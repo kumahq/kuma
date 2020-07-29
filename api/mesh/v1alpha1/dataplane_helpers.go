@@ -2,10 +2,8 @@ package v1alpha1
 
 import (
 	"fmt"
-	"net"
 	"reflect"
 	"sort"
-	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -13,18 +11,21 @@ import (
 
 const (
 	// Mandatory tag that has a reserved meaning in Kuma.
-	ServiceTag     = "service"
+	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"
 	// Mandatory tag that has a reserved meaning in Kuma.
-	ZoneTag = "zone"
+	ZoneTag = "kuma.io/zone"
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
-	ProtocolTag = "protocol"
+	ProtocolTag = "kuma.io/protocol"
+	// InstanceTag is set only for Dataplanes that implements headless services
+	InstanceTag = "kuma.io/instance"
 )
 
 type InboundInterface struct {
 	DataplaneIP   string
 	DataplanePort uint32
+	WorkloadIP    string
 	WorkloadPort  uint32
 }
 
@@ -39,72 +40,6 @@ type OutboundInterface struct {
 
 func (i OutboundInterface) String() string {
 	return fmt.Sprintf("%s:%d", i.DataplaneIP, i.DataplanePort)
-}
-
-const inboundInterfaceBNF = `( IPv4 | '[' IPv6 ']' ) ':' DATAPLANE_PORT ':' WORKLOAD_PORT`
-
-func ParseInboundInterface(text string) (InboundInterface, error) {
-	wpInd := strings.LastIndex(text, ":")
-	if wpInd < 0 {
-		return InboundInterface{}, errors.Errorf("invalid format: expected %q, got %q", inboundInterfaceBNF, text)
-	}
-	dpInd := strings.LastIndex(text[:wpInd], ":")
-	if dpInd < 0 {
-		return InboundInterface{}, errors.Errorf("invalid format: expected %q, got %q", inboundInterfaceBNF, text)
-	}
-	host, port, err := net.SplitHostPort(text[:wpInd])
-	if err != nil {
-		return InboundInterface{}, errors.Errorf("invalid format: expected %q, got %q", inboundInterfaceBNF, text)
-	}
-	dataplaneIP, err := ParseIP(host)
-	if err != nil {
-		return InboundInterface{}, errors.Wrapf(err, "invalid DATAPLANE_IP in %q", text)
-	}
-	dataplanePort, err := ParsePort(port)
-	if err != nil {
-		return InboundInterface{}, errors.Wrapf(err, "invalid DATAPLANE_PORT in %q", text)
-	}
-	workloadPort, err := ParsePort(text[wpInd+1:])
-	if err != nil {
-		return InboundInterface{}, errors.Wrapf(err, "invalid WORKLOAD_PORT in %q", text)
-	}
-	return InboundInterface{
-		DataplaneIP:   dataplaneIP,
-		DataplanePort: dataplanePort,
-		WorkloadPort:  workloadPort,
-	}, nil
-}
-
-const outboundInterfaceBNF = `[ IPv4 | '[' IPv6 ']' ] ':' DATAPLANE_PORT`
-
-func ParseOutboundInterface(text string) (OutboundInterface, error) {
-	wpInd := strings.LastIndex(text, ":")
-	if wpInd < 0 {
-		return OutboundInterface{}, errors.Errorf("invalid format: expected %q, got %q", outboundInterfaceBNF, text)
-	}
-	port := text[wpInd+1:]
-	var dataplaneIP string
-	if wpInd == 0 {
-		dataplaneIP = "127.0.0.1"
-	} else {
-		var err error
-		dataplaneIP, port, err = net.SplitHostPort(text)
-		if err != nil {
-			return OutboundInterface{}, errors.Errorf("invalid format: expected %q, got %q", outboundInterfaceBNF, text)
-		}
-		dataplaneIP, err = ParseIP(dataplaneIP)
-		if err != nil {
-			return OutboundInterface{}, errors.Wrapf(err, "invalid DATAPLANE_IP in %q", text)
-		}
-	}
-	dataplanePort, err := ParsePort(port)
-	if err != nil {
-		return OutboundInterface{}, errors.Wrapf(err, "invalid DATAPLANE_PORT in %q", text)
-	}
-	return OutboundInterface{
-		DataplaneIP:   dataplaneIP,
-		DataplanePort: dataplanePort,
-	}, nil
 }
 
 func (n *Dataplane_Networking) GetOutboundInterfaces() ([]OutboundInterface, error) {
@@ -128,24 +63,6 @@ func (n *Dataplane_Networking) ToOutboundInterface(outbound *Dataplane_Networkin
 		oface.DataplaneIP = "127.0.0.1"
 	}
 	return oface
-}
-
-func ParsePort(text string) (uint32, error) {
-	port, err := strconv.ParseUint(text, 10, 32)
-	if err != nil {
-		return 0, errors.Wrapf(err, "%q is not a valid port number", text)
-	}
-	if port < 1 || 65535 < port {
-		return 0, errors.Errorf("port number must be in the range [1, 65535] but got %d", port)
-	}
-	return uint32(port), nil
-}
-
-func ParseIP(text string) (string, error) {
-	if net.ParseIP(text) == nil {
-		return "", errors.Errorf("%q is not a valid IP address", text)
-	}
-	return text, nil
 }
 
 func (n *Dataplane_Networking) GetInboundInterface(service string) (*InboundInterface, error) {
@@ -178,6 +95,11 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		iface.DataplaneIP = inbound.Address
 	} else {
 		iface.DataplaneIP = n.Address
+	}
+	if inbound.ServiceAddress != "" {
+		iface.WorkloadIP = inbound.ServiceAddress
+	} else {
+		iface.WorkloadIP = "127.0.0.1"
 	}
 	if inbound.ServicePort != 0 {
 		iface.WorkloadPort = inbound.ServicePort
@@ -243,8 +165,8 @@ func (d *Dataplane_Networking_Outbound) MatchTags(selector TagSelector) bool {
 	return selector.Matches(d.GetTagsIncludingLegacy())
 }
 
-// GetTagsIncludingLegacy returns tags but taking on account old legacy format of "service" field in outbound
-// Remove it and migrate to GetTags() once "service" field is removed.
+// GetTagsIncludingLegacy returns tags but taking on account old legacy format of "kuma.io/service" field in outbound
+// Remove it and migrate to GetTags() once "kuma.io/service" field is removed.
 func (d *Dataplane_Networking_Outbound) GetTagsIncludingLegacy() map[string]string {
 	if d.Tags == nil {
 		return map[string]string{

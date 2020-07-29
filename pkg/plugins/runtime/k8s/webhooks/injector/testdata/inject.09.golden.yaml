@@ -5,7 +5,8 @@ metadata:
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-port: "15001"
+    kuma.io/transparent-proxying-outbound-port: "15001"
+    kuma.io/transparent-proxying-inbound-port: "15006"
     prometheus.metrics.kuma.io/path: /custom-metrics
     prometheus.metrics.kuma.io/port: "5678"
   creationTimestamp: null
@@ -95,6 +96,8 @@ spec:
   - args:
     - -p
     - "15001"
+    - -z
+    - "15006"
     - -u
     - "5678"
     - -g

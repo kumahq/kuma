@@ -3,19 +3,19 @@ package permissions_test
 import (
 	"context"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/permissions"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	"github.com/Kong/kuma/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/permissions"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("Match", func() {
@@ -64,7 +64,7 @@ var _ = Describe("Match", func() {
 									Port: 1234,
 									Path: "/non-standard-path",
 									Tags: map[string]string{
-										"service": "dataplane-metrics",
+										"kuma.io/service": "dataplane-metrics",
 									},
 								}),
 							},
@@ -85,20 +85,20 @@ var _ = Describe("Match", func() {
 								Port:        8080,
 								ServicePort: 8081,
 								Tags: map[string]string{
-									"service":  "web",
-									"version":  "0.1",
-									"region":   "eu",
-									"protocol": "http",
+									"kuma.io/service":  "web",
+									"version":          "0.1",
+									"region":           "eu",
+									"kuma.io/protocol": "http",
 								},
 							},
 							{
 								Port:        8081,
 								ServicePort: 8082,
 								Tags: map[string]string{
-									"service":  "web-api",
-									"version":  "0.1.2",
-									"region":   "us",
-									"protocol": "http",
+									"kuma.io/service":  "web-api",
+									"version":          "0.1.2",
+									"region":           "us",
+									"kuma.io/protocol": "http",
 								},
 							},
 						},
@@ -115,15 +115,15 @@ var _ = Describe("Match", func() {
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "kong",
+									"kuma.io/service": "kong",
 								},
 							},
 						},
 						Destinations: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "web",
-									"version": "0.1",
+									"kuma.io/service": "web",
+									"version":         "0.1",
 								},
 							},
 						},
@@ -138,14 +138,14 @@ var _ = Describe("Match", func() {
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "kong",
+									"kuma.io/service": "kong",
 								},
 							},
 						},
 						Destinations: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "web",
+									"kuma.io/service": "web",
 								},
 							},
 						},
@@ -160,14 +160,14 @@ var _ = Describe("Match", func() {
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "prometheus",
+									"kuma.io/service": "prometheus",
 								},
 							},
 						},
 						Destinations: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"service": "dataplane-metrics",
+									"kuma.io/service": "dataplane-metrics",
 								},
 							},
 						},
@@ -175,8 +175,8 @@ var _ = Describe("Match", func() {
 				},
 			},
 			expected: map[mesh_proto.InboundInterface]string{
-				mesh_proto.InboundInterface{DataplaneIP: "192.168.0.1", WorkloadPort: 8081, DataplanePort: 8080}: "more-specific-kong-to-web",
-				mesh_proto.InboundInterface{DataplaneIP: "192.168.0.1", WorkloadPort: 1234, DataplanePort: 1234}: "metrics",
+				mesh_proto.InboundInterface{DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 8081, DataplanePort: 8080}: "more-specific-kong-to-web",
+				mesh_proto.InboundInterface{DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 1234, DataplanePort: 1234}: "metrics",
 			},
 		}),
 	)

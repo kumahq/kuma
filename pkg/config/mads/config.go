@@ -6,7 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
-	"github.com/Kong/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config"
 )
 
 func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig {

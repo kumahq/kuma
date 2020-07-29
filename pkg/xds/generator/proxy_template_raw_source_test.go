@@ -5,13 +5,13 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var _ = Describe("ProxyTemplateRawSource", func() {
@@ -229,7 +229,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			resp, err := model.ResourceList(rs).ToDeltaDiscoveryResponse()
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when
@@ -320,7 +320,6 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                       statPrefix: pass_through
                 name: catch_all
                 useOriginalDst: true
-              version: raw-version
 `,
 			}),
 			Entry("should support Cluster resource as YAML", testCase{
@@ -379,7 +378,6 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                             portValue: 8080
                 name: localhost:8080
                 type: STATIC
-              version: raw-version
 `,
 			}),
 			Entry("should support Cluster resource as JSON", testCase{
@@ -450,7 +448,6 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                             portValue: 8080
                 name: localhost:8080
                 type: STATIC
-              version: raw-version
 `,
 			}),
 		)

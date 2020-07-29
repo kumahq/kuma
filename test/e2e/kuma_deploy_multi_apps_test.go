@@ -3,12 +3,14 @@ package e2e_test
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	. "github.com/Kong/kuma/test/framework"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 var _ = Describe("Test App deployment", func() {
@@ -19,7 +21,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: %s
-  labels:
+  annotations:
     kuma.io/sidecar-injection: "enabled"
 `, namespace)
 	}
@@ -35,18 +37,19 @@ metadata:
 		c1 = clusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma()).
+			Install(Kuma(core.Standalone)).
 			Install(KumaDNS()).
-			Install(Yaml(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClient()).
-			Install(EchoServer()).
+			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(DemoClientK8s()).
+			Install(EchoServerK8s()).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		_ = c1.DeleteKuma()
 		_ = k8s.KubectlDeleteFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
+		err := c1.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("Should deploy two apps", func() {
@@ -63,12 +66,12 @@ metadata:
 		clientPod := pods[0]
 
 		_, stderr, err := c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "echo-server")
+			"curl", "-v", "-m", "3", "echo-server")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		_, stderr, err = c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "echo-server_kuma-test_svc_80.mesh")
+			"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})

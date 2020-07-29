@@ -11,7 +11,8 @@ spec:
       - port: 80
         tags:
           app: test-app
+          kuma.io/instance: test-app-0
           pod-template-hash: 8646b8bbc8
-          service: test-app_playground_svc_80
+          kuma.io/service: test-app_playground_svc_80
     transparentProxying:
       redirectPort: 15001

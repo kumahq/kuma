@@ -7,33 +7,40 @@ import (
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
-	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
-	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
-	envoy_tls "github.com/Kong/kuma/pkg/xds/envoy/tls"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
+	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 const (
 	IngressProxy = "ingress-proxy"
+
+	// OriginIngress is a marker to indicate by which ProxyGenerator resources were generated.
+	OriginIngress = "ingress"
 )
 
 type IngressGenerator struct {
 }
 
-func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
-	resources := &model.ResourceSet{}
+func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
+	resources := model.NewResourceSet()
 
 	listener, err := i.generateLDS(proxy.Dataplane)
 	if err != nil {
 		return nil, err
 	}
-	resources.AddNamed(listener)
+	resources.Add(&model.Resource{
+		Name:     listener.Name,
+		Origin:   OriginIngress,
+		Resource: listener,
+	})
 
 	services := i.services(proxy)
 
@@ -46,7 +53,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 	edsResources := i.generateEDS(proxy, services)
 	resources.Add(edsResources...)
 
-	return resources.List(), nil
+	return resources, nil
 }
 
 // generateLDS generates one Ingress Listener
@@ -68,7 +75,8 @@ func (_ IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource) (*en
 	permUsed := map[string]bool{}
 	for _, inbound := range ingress.Spec.GetNetworking().GetIngress().GetAvailableServices() {
 		service := inbound.Tags[mesh_proto.ServiceTag]
-		permutations := TagPermutations(service, mesh_proto.SingleValueTagSet(inbound.GetTags()).Exclude(mesh_proto.ServiceTag))
+		withoutService := mesh_proto.SingleValueTagSet(inbound.GetTags()).Exclude(mesh_proto.ServiceTag)
+		permutations := TagPermutations(service, withoutService, "mesh", inbound.GetMesh())
 		for _, perm := range permutations {
 			if permUsed[perm] {
 				continue
@@ -79,7 +87,7 @@ func (_ IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource) (*en
 					Configure(envoy_listeners.FilterChainMatch(perm)).
 					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
 						ClusterName: service,
-						Tags:        envoy_tls.TagsFromSNI(perm),
+						Tags:        envoy_common.Tags(envoy_tls.TagsFromSNI(perm)).WithTags("mesh", inbound.GetMesh()),
 					}))))
 		}
 	}
@@ -107,6 +115,7 @@ func (i IngressGenerator) generateCDS(services []string, proxy *model.Proxy) (re
 		}
 		resources = append(resources, &model.Resource{
 			Name:     service,
+			Origin:   OriginIngress,
 			Resource: edsCluster,
 		})
 	}
@@ -140,21 +149,34 @@ func (_ IngressGenerator) generateEDS(proxy *model.Proxy, services []string) (re
 		endpoints := proxy.OutboundTargets[service]
 		resources = append(resources, &model.Resource{
 			Name:     service,
+			Origin:   OriginIngress,
 			Resource: envoy_endpoints.CreateClusterLoadAssignment(service, endpoints),
 		})
 	}
 	return
 }
 
-func TagPermutations(service string, tags map[string]string) []string {
+func TagPermutations(service string, tags map[string]string, keysAndValues ...string) []string {
 	pairs := []string{}
 	for k, v := range tags {
 		pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
 	}
 	sort.Strings(pairs)
 	rv := []string{}
-	for _, tagSet := range Permutation(pairs) {
-		rv = append(rv, fmt.Sprintf("%s{%s}", service, strings.Join(tagSet, ",")))
+	additionalPairs := []string{}
+	for i := 0; i < len(keysAndValues); {
+		key, value := keysAndValues[i], keysAndValues[i+1]
+		additionalPairs = append(additionalPairs, fmt.Sprintf("%s=%s", key, value))
+		i += 2
 	}
-	return append(rv, service)
+	for _, tagSet := range Permutation(pairs) {
+		tags := append(additionalPairs, tagSet...)
+		sort.Strings(tags)
+		if len(tags) != 0 {
+			rv = append(rv, fmt.Sprintf("%s{%s}", service, strings.Join(tags, ",")))
+		} else {
+			rv = append(rv, service)
+		}
+	}
+	return rv
 }

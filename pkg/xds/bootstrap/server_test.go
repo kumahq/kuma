@@ -12,13 +12,13 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	bootstrap_config "github.com/Kong/kuma/pkg/config/xds/bootstrap"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	"github.com/Kong/kuma/pkg/test"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("Bootstrap Server", func() {
@@ -83,7 +83,7 @@ var _ = Describe("Bootstrap Server", func() {
 								Port:        443,
 								ServicePort: 8443,
 								Tags: map[string]string{
-									"service": "backend",
+									"kuma.io/service": "backend",
 								},
 							},
 						},

@@ -10,13 +10,13 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
@@ -93,7 +93,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						{
 							Target: "192.168.0.3",
 							Port:   5432,
-							Tags:   map[string]string{"service": "db", "role": "master"},
+							Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
 							Weight: 1,
 						},
 					},
@@ -101,7 +101,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						{
 							Target: "192.168.0.4",
 							Port:   9200,
-							Tags:   map[string]string{"service": "elastic"},
+							Tags:   map[string]string{"kuma.io/service": "elastic"},
 							Weight: 1,
 						},
 					},
@@ -110,10 +110,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					"elastic": &mesh_core.HealthCheckResource{
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "elastic"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -136,7 +136,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			resp, err := model.ResourceList(rs).ToDeltaDiscoveryResponse()
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when
@@ -163,7 +163,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 - port: 80
                   servicePort: 8080
                   tags:
-                    service: backend
+                    kuma.io/service: backend
               outbound:
               - port: 54321
                 service: db
@@ -188,14 +188,15 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 - port: 80
                   servicePort: 8080
                   tags:
-                    service: backend
+                    kuma.io/service: backend
               outbound:
               - port: 54321
                 service: db
               - port: 59200
                 service: elastic
               transparentProxying:
-                redirectPort: 15001
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
 `,
 			profile:         mesh_core.ProfileDefaultProxy,
 			envoyConfigFile: "2-envoy-config.golden.yaml",
@@ -224,8 +225,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 - port: 80
                   servicePort: 8080
                   tags:
-                    service: backend
-                    protocol: http
+                    kuma.io/service: backend
+                    kuma.io/protocol: http
               outbound:
               - port: 54321
                 service: db
@@ -259,15 +260,16 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 - port: 80
                   servicePort: 8080
                   tags:
-                    service: backend
-                    protocol: http
+                    kuma.io/service: backend
+                    kuma.io/protocol: http
               outbound:
               - port: 54321
                 service: db
               - port: 59200
                 service: elastic
               transparentProxying:
-                redirectPort: 15001
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
 `,
 			profile:         mesh_core.ProfileDefaultProxy,
 			envoyConfigFile: "4-envoy-config.golden.yaml",

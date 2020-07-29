@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: kuma-example
-  labels:
+  annotations:
     kuma.io/sidecar-injection: enabled
 
 ---
@@ -168,7 +168,7 @@ spec:
     spec:
       containers:
       - name: kuma-example-backend
-        image: envoyproxy/envoy-alpine:v1.14.2
+        image: envoyproxy/envoy-alpine:v1.15.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 7070
@@ -216,7 +216,7 @@ spec:
     spec:
       containers:
       - name: kuma-example-backend
-        image: envoyproxy/envoy-alpine:v1.14.2
+        image: envoyproxy/envoy-alpine:v1.15.0
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 7070

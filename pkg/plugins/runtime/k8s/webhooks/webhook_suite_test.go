@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -14,7 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 func TestWebhook(t *testing.T) {
@@ -41,6 +43,7 @@ var _ = BeforeSuite(func() {
 
 	scheme = kube_runtime.NewScheme()
 	Expect(kube_core.AddToScheme(scheme)).To(Succeed())
+	Expect(sample_k8s.AddToScheme(scheme)).To(Succeed())
 	Expect(mesh_k8s.AddToScheme(scheme)).To(Succeed())
 
 	decoder, err = kube_admission.NewDecoder(scheme)

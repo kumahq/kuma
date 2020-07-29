@@ -6,12 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/ca"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/validators"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/ca"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
 var log = core.Log.WithName("secrets").WithName("validator")

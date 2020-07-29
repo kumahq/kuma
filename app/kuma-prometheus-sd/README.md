@@ -88,12 +88,12 @@ To serve `Monitoring Assignments`, `Kuma` Control Plane implements a gRPC servic
 
 And `kuma-prometheus-sd` is a client of that service.
 
-Definitions of both `Monitoring Assignment` and `MADS` are available at [kuma/api/observability](https://github.com/Kong/kuma/blob/master/api/observability/v1alpha1/mads.proto).
+Definitions of both `Monitoring Assignment` and `MADS` are available at [kuma/api/observability](https://github.com/kumahq/kuma/blob/master/api/observability/v1alpha1/mads.proto).
 
 ## References
 
 1. [Traffic Metrics in Kuma Service Mesh](https://kuma.io/docs/latest/policies/#traffic-metrics) @ `kuma.io/docs`
-2. [Monitoring Assignment Discovery Service](https://github.com/Kong/kuma/blob/master/api/observability/v1alpha1/mads.proto) @ `github.com/Kong/kuma`
+2. [Monitoring Assignment Discovery Service](https://github.com/kumahq/kuma/blob/master/api/observability/v1alpha1/mads.proto) @ `github.com/kumahq/kuma`
 3. [Implementing Custom Service Discovery](https://prometheus.io/blog/2018/07/05/implementing-custom-sd/) @ `prometheus.io/blog`
 4. [documentation/examples/custom-sd](https://github.com/prometheus/prometheus/tree/master/documentation/examples/custom-sd) @ `github.com/prometheus/prometheus`
 5. [Envoy xDS gRPC protocol](https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol) @ `envoyproxy.io/docs`

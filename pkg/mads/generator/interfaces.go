@@ -1,8 +1,8 @@
 package generator
 
 import (
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 type Args struct {

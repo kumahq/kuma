@@ -7,13 +7,15 @@ const (
 	// Annotation value must be the name of a Mesh resource.
 	KumaMeshAnnotation = "kuma.io/mesh"
 
-	// KumaSidecarInjectionAnnotation defines a Pod annotation that
-	// gives users a chance to opt out of side-car injection
-	// into a given Pod by setting its value to KumaSidecarInjectionDisabled.
+	// KumaSidecarInjectionAnnotation defines a Pod/Namespace annotation that
+	// gives users an ability to enable or disable sidecar-injection
 	KumaSidecarInjectionAnnotation = "kuma.io/sidecar-injection"
 	// KumaSidecarInjectionDisabled defines a value of KumaSidecarInjectionAnnotation
-	// that will prevent Kuma from injecting a side-car into that Pod.
+	// that will prevent Kuma from injecting a sidecar into that Pod or Namespace.
 	KumaSidecarInjectionDisabled = "disabled"
+	// KumaSidecarInjectionEnabled a value of KumaSidecarInjectionAnnotation
+	// that will let Kuma to be injected as a sidecar into that Pod or Namespace.
+	KumaSidecarInjectionEnabled = "enabled"
 )
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
@@ -24,7 +26,8 @@ const (
 	KumaTransparentProxyingAnnotation = "kuma.io/transparent-proxying"
 	KumaTransparentProxyingEnabled    = "enabled"
 
-	KumaTransparentProxyingPortAnnotation = "kuma.io/transparent-proxying-port"
+	KumaTransparentProxyingInboundPortAnnotation  = "kuma.io/transparent-proxying-inbound-port"
+	KumaTransparentProxyingOutboundPortAnnotation = "kuma.io/transparent-proxying-outbound-port"
 
 	KumaGatewayAnnotation = "kuma.io/gateway"
 	KumaGatewayEnabled    = "enabled"

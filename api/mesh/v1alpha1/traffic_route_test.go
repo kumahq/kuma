@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/api/mesh/v1alpha1"
+	. "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
-	util_proto "github.com/Kong/kuma/api/internal/util/proto"
+	util_proto "github.com/kumahq/kuma/api/internal/util/proto"
 )
 
 var _ = Describe("TrafficRoute", func() {

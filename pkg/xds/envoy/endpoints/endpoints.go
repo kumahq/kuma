@@ -6,8 +6,8 @@ import (
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	proto_wrappers "github.com/golang/protobuf/ptypes/wrappers"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 func CreateStaticEndpoint(clusterName string, address string, port uint32) *envoy_api.ClusterLoadAssignment {

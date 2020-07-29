@@ -6,6 +6,96 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `0.6.0`
+
+[Passive Health Check](https://kuma.io/docs/0.5.1/policies/health-check/) were removed in favor of [Circuit Breaking](https://kuma.io/docs/0.6.0/policies/circuit-breaker/).
+
+Format of Active Health Check changed from :
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: HealthCheck
+mesh: default
+metadata:
+  namespace: default
+  name: web-to-backend-check
+mesh: default
+spec:
+  sources:
+  - match:
+      service: web
+  destinations:
+  - match:
+      service: backend
+  conf:
+    activeChecks:
+      interval: 10s
+      timeout: 2s
+      unhealthyThreshold: 3
+      healthyThreshold: 1
+    passiveChecks:
+      unhealthyThreshold: 3
+      penaltyInterval: 5s
+```
+to 
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: HealthCheck
+mesh: default
+metadata:
+  namespace: default
+  name: web-to-backend-check
+mesh: default
+spec:
+  sources:
+  - match:
+      service: web
+  destinations:
+  - match:
+      service: backend
+  conf:
+    interval: 10s
+    timeout: 2s
+    unhealthyThreshold: 3
+    healthyThreshold: 1
+```
+
+### Suggested Upgrade Path on Kubernetes
+
+In the new Kuma version serivce tag format has been changed. Instead of `backend.kuma-demo.svc:5678` service tag will look like this `backend_kuma-demo_svc_5678`. This is a breaking change and Policies should be updated to be compatible with the new Kuma version.
+
+Please re-install Prometheus via `kubectl install metrics` and make sure that `skipMTLS` is set to `false` or omitted.
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+spec:
+  metrics:
+    enabledBackend: prometheus-1
+    backends:
+    - name: prometheus-1
+      type: prometheus
+      conf:
+        skipMTLS: false
+```
+
+### Suggested Upgrade Path on Universal
+
+Make sure that `skipMTLS` is set to `true`.
+
+```yaml
+type: Mesh
+name: default
+metrics:
+  enabledBackend: prometheus-1
+  backends:
+  - name: prometheus-1
+    type: prometheus
+    conf:
+      skipMTLS: true
+```
+
+
 ## Upgrade to `0.5.0`
 ### Suggested Upgrade Path on Kubernetes
 

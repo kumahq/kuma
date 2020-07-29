@@ -5,7 +5,7 @@ import (
 
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
 )
 
 type Secret interface {

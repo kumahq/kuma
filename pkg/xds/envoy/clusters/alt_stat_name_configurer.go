@@ -3,7 +3,7 @@ package clusters
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 func AltStatName() ClusterBuilderOpt {

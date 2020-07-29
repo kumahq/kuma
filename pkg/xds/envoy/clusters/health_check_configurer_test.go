@@ -5,10 +5,10 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/envoy/clusters"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -54,10 +54,10 @@ var _ = Describe("HealthCheckConfigurer", func() {
 			healthCheck: &mesh_core.HealthCheckResource{
 				Spec: mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "backend"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 					},
 					Destinations: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "redis"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
 						Interval:           ptypes.DurationProto(5 * time.Second),

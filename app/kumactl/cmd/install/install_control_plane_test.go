@@ -5,16 +5,16 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/Kong/kuma/app/kumactl/cmd"
-	"github.com/Kong/kuma/app/kumactl/cmd/install"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/app/kumactl/cmd/install"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
-	"github.com/Kong/kuma/pkg/tls"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/pkg/tls"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var _ = Describe("kumactl install control-plane", func() {
@@ -123,6 +123,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--kds-tls-cert", "KdsCert",
 				"--kds-tls-key", "KdsKey",
 				"--mode", "remote",
+				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--zone", "zone-1",
 				"--use-node-port",
 			},
@@ -140,10 +141,11 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.global.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources for remote", testCase{
+		Entry("should generate Kubernetes resources for Remote", testCase{
 			extraArgs: []string{
 				"--mode", "remote",
 				"--zone", "zone-1",
+				"--kds-global-address", "grpcs://192.168.0.1:5685",
 			},
 			goldenFile: "install-control-plane.remote.golden.yaml",
 		}),

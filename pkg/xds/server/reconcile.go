@@ -3,16 +3,15 @@ package server
 import (
 	"github.com/golang/protobuf/proto"
 
-	"github.com/Kong/kuma/pkg/core"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/core"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 )
 
 var (
@@ -110,36 +109,14 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 		return envoy_cache.Snapshot{}, err
 	}
 
-	listeners := []envoy_types.Resource{}
-	routes := []envoy_types.Resource{}
-	clusters := []envoy_types.Resource{}
-	endpoints := []envoy_types.Resource{}
-	secrets := []envoy_types.Resource{}
-
-	for _, r := range rs {
-		switch r.Resource.(type) {
-		case *envoy.Listener:
-			listeners = append(listeners, r.Resource)
-		case *envoy.RouteConfiguration:
-			routes = append(routes, r.Resource)
-		case *envoy.Cluster:
-			clusters = append(clusters, r.Resource)
-		case *envoy.ClusterLoadAssignment:
-			endpoints = append(endpoints, r.Resource)
-		case *envoy_auth.Secret:
-			secrets = append(secrets, r.Resource)
-		default:
-		}
-	}
-
 	version := "" // empty value is a sign to other components to generate the version automatically
 	out := envoy_cache.Snapshot{
 		Resources: [envoy_types.UnknownType]envoy_cache.Resources{
-			envoy_types.Endpoint: envoy_cache.NewResources(version, endpoints),
-			envoy_types.Cluster:  envoy_cache.NewResources(version, clusters),
-			envoy_types.Route:    envoy_cache.NewResources(version, routes),
-			envoy_types.Listener: envoy_cache.NewResources(version, listeners),
-			envoy_types.Secret:   envoy_cache.NewResources(version, secrets),
+			envoy_types.Endpoint: envoy_cache.NewResources(version, rs.ListOf(envoy_resource.EndpointType).Payloads()),
+			envoy_types.Cluster:  envoy_cache.NewResources(version, rs.ListOf(envoy_resource.ClusterType).Payloads()),
+			envoy_types.Route:    envoy_cache.NewResources(version, rs.ListOf(envoy_resource.RouteType).Payloads()),
+			envoy_types.Listener: envoy_cache.NewResources(version, rs.ListOf(envoy_resource.ListenerType).Payloads()),
+			envoy_types.Secret:   envoy_cache.NewResources(version, rs.ListOf(envoy_resource.SecretType).Payloads()),
 		},
 	}
 

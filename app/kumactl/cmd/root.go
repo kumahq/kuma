@@ -5,21 +5,29 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/app/kumactl/cmd/apply"
-	"github.com/Kong/kuma/app/kumactl/cmd/completion"
-	"github.com/Kong/kuma/app/kumactl/cmd/config"
-	"github.com/Kong/kuma/app/kumactl/cmd/delete"
-	"github.com/Kong/kuma/app/kumactl/cmd/generate"
-	"github.com/Kong/kuma/app/kumactl/cmd/get"
-	"github.com/Kong/kuma/app/kumactl/cmd/inspect"
-	"github.com/Kong/kuma/app/kumactl/cmd/install"
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	kumactl_config "github.com/Kong/kuma/app/kumactl/pkg/config"
-	kumactl_errors "github.com/Kong/kuma/app/kumactl/pkg/errors"
-	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
-	"github.com/Kong/kuma/pkg/cmd/version"
-	"github.com/Kong/kuma/pkg/core"
-	kuma_log "github.com/Kong/kuma/pkg/log"
+	"github.com/kumahq/kuma/app/kumactl/cmd/apply"
+	"github.com/kumahq/kuma/app/kumactl/cmd/completion"
+	"github.com/kumahq/kuma/app/kumactl/cmd/config"
+	"github.com/kumahq/kuma/app/kumactl/cmd/delete"
+	"github.com/kumahq/kuma/app/kumactl/cmd/generate"
+	"github.com/kumahq/kuma/app/kumactl/cmd/get"
+	"github.com/kumahq/kuma/app/kumactl/cmd/inspect"
+	"github.com/kumahq/kuma/app/kumactl/cmd/install"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	kumactl_config "github.com/kumahq/kuma/app/kumactl/pkg/config"
+	kumactl_errors "github.com/kumahq/kuma/app/kumactl/pkg/errors"
+	"github.com/kumahq/kuma/pkg/api-server/types"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/cmd/version"
+	"github.com/kumahq/kuma/pkg/core"
+	kuma_log "github.com/kumahq/kuma/pkg/log"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
+	_ "github.com/kumahq/kuma/pkg/xds/envoy" // import Envoy protobuf definitions so (un)marshalling Envoy protobuf works
+)
+
+var (
+	kumactlLog       = core.Log.WithName("kumactl")
+	kumaBuildVersion *types.IndexResponse
 )
 
 // newRootCmd represents the base command when called without any subcommands.
@@ -32,6 +40,12 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Management tool for Kuma",
 		Long:  `Management tool for Kuma.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
+			client, err := root.CurrentApiClient()
+			if err != nil {
+				kumactlLog.Error(err, "Unable to get index client")
+			} else {
+				kumaBuildVersion, _ = client.GetVersion()
+			}
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
 				return err
@@ -41,7 +55,9 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			// once command line flags have been parsed,
 			// avoid printing usage instructions
 			cmd.SilenceUsage = true
-
+			if kumaBuildVersion != nil && kumaBuildVersion.Version != kuma_version.Build.Version {
+				cmd.Println("Warning: Your kumactl version is " + kuma_version.Build.Version + " which is not the same as " + kumaBuildVersion.Version + " for CP. Update your kumactl.")
+			}
 			if root.IsFirstTimeUsage() {
 				root.Runtime.Config = kumactl_config.DefaultConfiguration()
 				if err := root.SaveConfig(); err != nil {

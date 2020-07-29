@@ -6,10 +6,10 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Kong/kuma/pkg/catalog"
-	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-	test_catalog "github.com/Kong/kuma/pkg/test/catalog"
+	"github.com/kumahq/kuma/pkg/catalog"
+	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -17,13 +17,13 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("kumactl delete ", func() {
@@ -97,9 +97,9 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret"))
+			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret, zone"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret`))
+			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret, zone`))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})

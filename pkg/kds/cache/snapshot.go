@@ -1,13 +1,15 @@
 package cache
 
 import (
+	"fmt"
+
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/kds"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/kds"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 type ResourceBuilder interface {
@@ -103,11 +105,13 @@ func (s *Snapshot) WithVersion(typ string, version string) util_xds.Snapshot {
 	return s
 }
 
-// IndexResourcesByName creates a map from the resource name to the resource.
+// IndexResourcesByName creates a map from the resource name to the resource. Name should be unique
+// across meshes that's why Name is <name>.<mesh>
 func IndexResourcesByName(items []envoy_types.Resource) map[string]envoy_types.Resource {
 	indexed := make(map[string]envoy_types.Resource, len(items))
 	for _, item := range items {
-		indexed[item.(*mesh_proto.KumaResource).GetMeta().GetName()] = item
+		key := fmt.Sprintf("%s.%s", item.(*mesh_proto.KumaResource).GetMeta().GetName(), item.(*mesh_proto.KumaResource).GetMeta().GetMesh())
+		indexed[key] = item
 	}
 	return indexed
 }

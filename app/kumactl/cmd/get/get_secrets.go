@@ -5,17 +5,17 @@ import (
 	"io"
 	"time"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/output/table"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/output"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/printers"
-	rest_types "github.com/Kong/kuma/pkg/core/resources/model/rest"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 func newGetSecretsCmd(pctx *getContext) *cobra.Command {

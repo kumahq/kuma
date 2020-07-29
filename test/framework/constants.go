@@ -11,11 +11,31 @@ const (
 	Kuma1 = "kuma-1"
 	Kuma2 = "kuma-2"
 	Kuma3 = "kuma-3"
+	Kuma4 = "kuma-4"
+	Kuma5 = "kuma-5"
 
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
 
 	kdsPort = 30685
+
+	ZoneTemplateK8s = `
+apiVersion: kuma.io/v1alpha1
+kind: Zone
+mesh: default
+metadata:
+  name: %s
+spec:
+  ingress:
+    address: %s
+`
+	ZoneTemplateUniversal = `
+type: Zone
+mesh: default
+name: %s
+ingress:
+  address: %s
+`
 )
 
 const (
@@ -34,7 +54,8 @@ const (
 	kumaDPImage   = "kuma/kuma-dp"
 	kumaInitImage = "kuma/kuma-init"
 
+	confPath = "/kuma/kuma-cp.conf"
+
 	kumaCPAPIPort        = 5681
-	kumaCPGUIPort        = 5683
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 )

@@ -7,24 +7,24 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/mads/reconcile"
+	. "github.com/kumahq/kuma/pkg/mads/reconcile"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/util/proto"
 
-	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
+	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 
-	mads_cache "github.com/Kong/kuma/pkg/mads/cache"
-	mads_generator "github.com/Kong/kuma/pkg/mads/generator"
+	mads_cache "github.com/kumahq/kuma/pkg/mads/cache"
+	mads_generator "github.com/kumahq/kuma/pkg/mads/generator"
 
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("snapshotGenerator", func() {
@@ -96,7 +96,7 @@ var _ = Describe("snapshotGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								}},
 							},
@@ -148,7 +148,7 @@ var _ = Describe("snapshotGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								}},
 							},
@@ -200,8 +200,8 @@ var _ = Describe("snapshotGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
-										"env":     "prod",
+										"kuma.io/service": "backend",
+										"env":             "prod",
 									},
 								}},
 							},
@@ -219,8 +219,8 @@ var _ = Describe("snapshotGenerator", func() {
 									Port:        443,
 									ServicePort: 8443,
 									Tags: map[string]string{
-										"service": "backend",
-										"env":     "intg",
+										"kuma.io/service": "backend",
+										"env":             "intg",
 									},
 								}},
 							},
@@ -236,8 +236,8 @@ var _ = Describe("snapshotGenerator", func() {
 								Address: "192.168.0.3",
 								Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 									Tags: map[string]string{
-										"service": "web",
-										"env":     "test",
+										"kuma.io/service": "web",
+										"env":             "test",
 									},
 								},
 							},
@@ -269,8 +269,8 @@ var _ = Describe("snapshotGenerator", func() {
 							"dataplane":        "backend-02",
 							"env":              "intg",
 							"envs":             ",intg,",
-							"service":          "backend",
-							"services":         ",backend,",
+							"kuma_io_service":  "backend",
+							"kuma_io_services": ",backend,",
 						},
 					},
 					"/meshes/demo/dataplanes/web-01": &observability_proto.MonitoringAssignment{
@@ -289,8 +289,8 @@ var _ = Describe("snapshotGenerator", func() {
 							"dataplane":        "web-01",
 							"env":              "test",
 							"envs":             ",test,",
-							"service":          "web",
-							"services":         ",web,",
+							"kuma_io_service":  "web",
+							"kuma_io_services": ",web,",
 						},
 					},
 				}),

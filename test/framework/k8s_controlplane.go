@@ -5,33 +5,29 @@ import (
 	"crypto/tls"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strconv"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	http_helper "github.com/gruntwork-io/terratest/modules/http-helper"
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	util_net "github.com/Kong/kuma/pkg/util/net"
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 )
 
 type PortFwd struct {
 	lowFwdPort   uint32
 	hiFwdPort    uint32
 	localAPIPort uint32
-	localGUIPort uint32
 }
 
 type K8sControlPlane struct {
 	t          testing.TestingT
-	mode       mode.CpMode
+	mode       core.CpMode
 	name       string
 	kubeconfig string
 	kumactl    *KumactlOptions
@@ -40,7 +36,7 @@ type K8sControlPlane struct {
 	verbose    bool
 }
 
-func NewK8sControlPlane(t testing.TestingT, mode mode.CpMode, clusterName string,
+func NewK8sControlPlane(t testing.TestingT, mode core.CpMode, clusterName string,
 	kubeconfig string, cluster *K8sCluster,
 	loPort, hiPort uint32,
 	verbose bool) *K8sControlPlane {
@@ -55,7 +51,6 @@ func NewK8sControlPlane(t testing.TestingT, mode mode.CpMode, clusterName string
 		cluster:    cluster,
 		portFwd: PortFwd{
 			localAPIPort: loPort,
-			localGUIPort: hiPort,
 		},
 		verbose: verbose,
 	}
@@ -77,61 +72,8 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 	return options
 }
 
-func (c *K8sControlPlane) AddCluster(name, rawurl, lbAddress string) error {
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t,
-		c.GetKubectlOptions())
-	if err != nil {
-		return err
-	}
-
-	kumaCM, err := clientset.CoreV1().ConfigMaps("kuma-system").Get(context.TODO(), "kuma-control-plane-config", metav1.GetOptions{})
-	if err != nil {
-		return err
-	}
-
-	cfg := kuma_cp.Config{}
-	err = yaml.Unmarshal([]byte(kumaCM.Data["config.yaml"]), &cfg)
-	if err != nil {
-		return err
-	}
-
-	if cfg.Mode == nil {
-		cfg.Mode = mode.DefaultModeConfig()
-		cfg.Mode.Mode = mode.Global
-	}
-
-	if cfg.Mode.Global == nil {
-		cfg.Mode.Global = mode.DefaultGlobalConfig()
-	}
-
-	parsed, err := url.Parse(rawurl)
-	if err != nil {
-		return err
-	}
-
-	cfg.Mode.Global.Zones = append(cfg.Mode.Global.Zones, &mode.ZoneConfig{
-		Remote:  mode.EndpointConfig{Address: rawurl},
-		Ingress: mode.EndpointConfig{Address: parsed.Host},
-	})
-	cfg.Mode.Global.LBAddress = lbAddress
-
-	yamlBytes, err := yaml.Marshal(&cfg)
-	if err != nil {
-		return err
-	}
-
-	kumaCM.Data["config.yaml"] = string(yamlBytes)
-
-	_, err = clientset.CoreV1().ConfigMaps("kuma-system").Update(context.TODO(), kumaCM, metav1.UpdateOptions{})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func (c *K8sControlPlane) PortForwardKumaCP() error {
-	var apiPort, guiPort uint32
+	var apiPort uint32
 	var err error
 
 	kumacpPods := c.GetKumaCPPods()
@@ -149,16 +91,7 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 
 	c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
 
-	// GUI
-	guiPort, err = util_net.PickTCPPort("", c.portFwd.lowFwdPort+2, c.portFwd.hiFwdPort)
-	if err != nil {
-		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
-	}
-
-	c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, guiPort, kumaCPGUIPort)
-
 	c.portFwd.localAPIPort = apiPort
-	c.portFwd.localGUIPort = guiPort
 
 	return nil
 }
@@ -201,17 +134,13 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
-	if c.mode == mode.Remote {
+	if c.mode == core.Remote {
 		return nil
-	}
-
-	if c.portFwd.localGUIPort == 0 {
-		return errors.Errorf("API port not forwarded")
 	}
 
 	return http_helper.HttpGetWithRetryWithCustomValidationE(
 		c.t,
-		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localGUIPort), 10),
+		"http://localhost:"+strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10)+"/gui",
 		&tls.Config{},
 		3,
 		DefaultTimeout,
@@ -251,8 +180,8 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 	return c.kumactl.KumactlConfigControlPlanesAdd(c.name, kumacpURL)
 }
 
-func (c *K8sControlPlane) InstallCP() (string, error) {
-	return c.kumactl.KumactlInstallCP(c.mode)
+func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
+	return c.kumactl.KumactlInstallCP(c.mode, args...)
 }
 
 func (c *K8sControlPlane) InjectDNS() error {
@@ -280,6 +209,32 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 	return "grpcs://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(kdsPort), 10)
 }
 
+func (c *K8sControlPlane) GetIngressAddress() string {
+	ctx := context.Background()
+	cs, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
+	if err != nil {
+		return "invalid"
+	}
+	ingressSvc, err := cs.CoreV1().Services(kumaNamespace).Get(ctx, "kuma-ingress", metav1.GetOptions{})
+	if err != nil {
+		return "invalid"
+	}
+	port := ingressSvc.Spec.Ports[0].NodePort
+
+	nodes, err := cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
+	if err != nil {
+		return "invalid"
+	}
+	// assume that we have single node cluster
+	for _, addr := range nodes.Items[0].Status.Addresses {
+		if addr.Type == v1.NodeInternalIP {
+			return addr.Address + ":" + strconv.Itoa(int(port))
+		}
+	}
+
+	return "invalid"
+}
+
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
-	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/clusters"
+	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
 }

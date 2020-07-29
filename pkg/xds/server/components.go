@@ -4,27 +4,27 @@ import (
 	"context"
 	"time"
 
-	"github.com/Kong/kuma/pkg/xds/ingress"
+	"github.com/kumahq/kuma/pkg/xds/ingress"
 
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/faultinjections"
-	"github.com/Kong/kuma/pkg/core/logs"
-	"github.com/Kong/kuma/pkg/core/permissions"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/xds"
-	util_watchdog "github.com/Kong/kuma/pkg/util/watchdog"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
-	xds_bootstrap "github.com/Kong/kuma/pkg/xds/bootstrap"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	xds_sync "github.com/Kong/kuma/pkg/xds/sync"
-	xds_template "github.com/Kong/kuma/pkg/xds/template"
-	xds_topology "github.com/Kong/kuma/pkg/xds/topology"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/faultinjections"
+	"github.com/kumahq/kuma/pkg/core/logs"
+	"github.com/kumahq/kuma/pkg/core/permissions"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	xds_bootstrap "github.com/kumahq/kuma/pkg/xds/bootstrap"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
+	xds_template "github.com/kumahq/kuma/pkg/xds/template"
+	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var (
@@ -120,12 +120,35 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
+				if dataplane.Spec.IsIngress() {
+					// update Ingress
+					allMeshDataplanes := &mesh_core.DataplaneResourceList{}
+					if err := rt.ReadOnlyResourceManager().List(ctx, allMeshDataplanes); err != nil {
+						return err
+					}
+					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, allMeshDataplanes.Items); err != nil {
+						return err
+					}
+					destinations := ingress.BuildDestinationMap(dataplane)
+					endpoints := ingress.BuildEndpointMap(destinations, allMeshDataplanes.Items)
+					proxy := xds.Proxy{
+						Id:              proxyID,
+						Dataplane:       dataplane,
+						OutboundTargets: endpoints,
+						Metadata:        metadataTracker.Metadata(streamId),
+					}
+					envoyCtx := xds_context.Context{
+						ControlPlane: envoyCpCtx,
+					}
+					return ingressReconciler.Reconcile(envoyCtx, &proxy)
+				}
+
 				mesh := &mesh_core.MeshResource{}
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
-				dataplanes := &mesh_core.DataplaneResourceList{}
-				if err := rt.ReadOnlyResourceManager().List(ctx, dataplanes, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
+				dataplanes, err := xds_topology.GetDataplanes(ctx, rt.ReadOnlyResourceManager(), dataplane.Meta.GetMesh())
+				if err != nil {
 					return err
 				}
 				envoyCtx := xds_context.Context{
@@ -134,22 +157,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 						Resource:   mesh,
 						Dataplanes: dataplanes,
 					},
-				}
-
-				if dataplane.Spec.IsIngress() {
-					// update Ingress
-					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, dataplanes.Items); err != nil {
-						return err
-					}
-					destinations := ingress.BuildDestinationMap(dataplane)
-					endpoints := xds_topology.BuildEndpointMap(destinations, dataplanes.Items, rt.Config().Mode.Remote.Zone)
-					proxy := xds.Proxy{
-						Id:              proxyID,
-						Dataplane:       dataplane,
-						OutboundTargets: endpoints,
-						Metadata:        metadataTracker.Metadata(streamId),
-					}
-					return ingressReconciler.Reconcile(envoyCtx, &proxy)
 				}
 
 				// Generate VIP outbounds only when not Ingress and Transparent Proxying is enabled
@@ -170,7 +177,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, rt.Config().Mode.Remote.Zone)
+				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, rt.Config().Multicluster.Remote.Zone, mesh)
 				if err != nil {
 					return err
 				}

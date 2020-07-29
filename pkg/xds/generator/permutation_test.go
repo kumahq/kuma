@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/xds/generator"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var _ = Describe("Permutation", func() {
@@ -22,6 +22,7 @@ var _ = Describe("Permutation", func() {
 		Entry("basic", testCase{
 			input: []string{"a", "b", "c", "d", "e"},
 			expected: [][]string{
+				{},
 				{"a"},
 				{"b"},
 				{"c"},
@@ -56,12 +57,14 @@ var _ = Describe("Permutation", func() {
 			},
 		}),
 		Entry("empty input", testCase{
-			input:    []string{},
-			expected: [][]string{},
+			input: []string{},
+			expected: [][]string{
+				{},
+			},
 		}),
 		Entry("one element input", testCase{
 			input:    []string{"a"},
-			expected: [][]string{{"a"}},
+			expected: [][]string{{}, {"a"}},
 		}),
 	)
 })

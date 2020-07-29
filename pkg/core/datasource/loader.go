@@ -4,13 +4,13 @@ import (
 	"context"
 	"io/ioutil"
 
-	"github.com/Kong/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 
 	"github.com/pkg/errors"
 
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type Loader interface {

@@ -5,14 +5,14 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/envoy"
-	"github.com/Kong/kuma/pkg/xds/envoy/clusters"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
 
 var _ = Describe("EdsClusterConfigurer", func() {
@@ -143,12 +143,12 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			},
 			tags: []envoy.Tags{
 				map[string]string{
-					"service": "backend",
-					"cluster": "1",
+					"kuma.io/service": "backend",
+					"cluster":         "1",
 				},
 				map[string]string{
-					"service": "backend",
-					"cluster": "2",
+					"kuma.io/service": "backend",
+					"cluster":         "2",
 				},
 			},
 			expected: `
@@ -160,7 +160,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
             transportSocketMatches:
             - match:
                 cluster: "1"
-              name: backend{cluster=1}
+              name: backend{cluster=1,mesh=default}
               transportSocket:
                 name: envoy.transport_sockets.tls
                 typedConfig:
@@ -196,10 +196,10 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-control-plane:5677
-                  sni: backend{cluster=1}
+                  sni: backend{cluster=1,mesh=default}
             - match:
                 cluster: "2"
-              name: backend{cluster=2}
+              name: backend{cluster=2,mesh=default}
               transportSocket:
                 name: envoy.transport_sockets.tls
                 typedConfig:
@@ -235,7 +235,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-control-plane:5677
-                  sni: backend{cluster=2}
+                  sni: backend{cluster=2,mesh=default}
             type: EDS`,
 		}),
 		Entry("cluster with mTLS and credentials", testCase{
@@ -271,8 +271,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
 			},
 			tags: []envoy.Tags{
 				{
-					"service": "backend",
-					"version": "v1",
+					"kuma.io/service": "backend",
+					"version":         "v1",
 				},
 			},
 			expected: `
@@ -332,7 +332,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
                             credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                             statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
-                sni: backend{version=v1}
+                sni: backend{mesh=default,version=v1}
             type: EDS`,
 		}),
 	)

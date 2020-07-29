@@ -6,7 +6,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	config "github.com/Kong/kuma/pkg/config/plugins/resources/postgres"
+	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 )
 
 func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {

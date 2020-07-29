@@ -8,16 +8,16 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/topology"
+	. "github.com/kumahq/kuma/pkg/xds/topology"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 
 	"github.com/golang/protobuf/ptypes"
 )
@@ -58,12 +58,12 @@ var _ = Describe("HealthCheck", func() {
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{
-								Tags:        map[string]string{"service": "backend", "region": "eu"},
+								Tags:        map[string]string{"kuma.io/service": "backend", "region": "eu"},
 								Port:        8080,
 								ServicePort: 18080,
 							},
 							{
-								Tags:        map[string]string{"service": "frontend", "region": "eu"},
+								Tags:        map[string]string{"kuma.io/service": "frontend", "region": "eu"},
 								Port:        7070,
 								ServicePort: 17070,
 							},
@@ -86,11 +86,11 @@ var _ = Describe("HealthCheck", func() {
 				},
 				Spec: mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "frontend"}},
-						{Match: mesh_proto.TagSelector{"service": "backend"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "frontend"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 					},
 					Destinations: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "redis"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
 						Interval:           ptypes.DurationProto(5 * time.Second),
@@ -107,10 +107,10 @@ var _ = Describe("HealthCheck", func() {
 				},
 				Spec: mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "*"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 					},
 					Destinations: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "elastic"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
 						Interval:           ptypes.DurationProto(5 * time.Second),
@@ -127,10 +127,10 @@ var _ = Describe("HealthCheck", func() {
 				},
 				Spec: mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "*"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 					},
 					Destinations: []*mesh_proto.Selector{
-						{Match: mesh_proto.TagSelector{"service": "*"}},
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
 						Interval:           ptypes.DurationProto(5 * time.Second),
@@ -211,7 +211,7 @@ var _ = Describe("HealthCheck", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{Tags: map[string]string{"service": "backend"}},
+								{Tags: map[string]string{"kuma.io/service": "backend"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{Service: "redis"},
@@ -232,7 +232,7 @@ var _ = Describe("HealthCheck", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{Tags: map[string]string{"service": "backend"}},
+								{Tags: map[string]string{"kuma.io/service": "backend"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{Service: "redis"},
@@ -251,10 +251,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "elastic"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -270,10 +270,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "redis"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -302,7 +302,7 @@ var _ = Describe("HealthCheck", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{Tags: map[string]string{"service": "backend"}},
+								{Tags: map[string]string{"kuma.io/service": "backend"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{Service: "redis"},
@@ -321,10 +321,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -341,10 +341,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -368,7 +368,7 @@ var _ = Describe("HealthCheck", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{Tags: map[string]string{"service": "backend", "region": "eu"}},
+								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{Service: "redis"},
@@ -386,10 +386,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "backend"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -405,10 +405,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "backend", "region": "eu"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend", "region": "eu"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -432,7 +432,7 @@ var _ = Describe("HealthCheck", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{Tags: map[string]string{"service": "backend", "region": "eu"}},
+								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{Service: "redis"},
@@ -450,10 +450,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -469,10 +469,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "backend"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -496,7 +496,7 @@ var _ = Describe("HealthCheck", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{Tags: map[string]string{"service": "backend", "region": "eu"}},
+								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{Service: "redis"},
@@ -514,10 +514,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -533,10 +533,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "redis"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -560,7 +560,7 @@ var _ = Describe("HealthCheck", func() {
 					Spec: mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{Tags: map[string]string{"service": "backend", "region": "eu"}},
+								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
 							},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{Service: "redis"},
@@ -579,10 +579,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "redis"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),
@@ -599,10 +599,10 @@ var _ = Describe("HealthCheck", func() {
 						},
 						Spec: mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "backend"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 							},
 							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"service": "*"}},
+								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
 								Interval:           ptypes.DurationProto(5 * time.Second),

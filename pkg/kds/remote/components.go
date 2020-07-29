@@ -1,23 +1,21 @@
 package remote
 
 import (
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	"github.com/go-logr/logr"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/kds/mux"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
-	"github.com/Kong/kuma/pkg/config/core/resources/store"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	kds_client "github.com/Kong/kuma/pkg/kds/client"
-	"github.com/Kong/kuma/pkg/kds/reconcile"
-	kds_server "github.com/Kong/kuma/pkg/kds/server"
-	sync_store "github.com/Kong/kuma/pkg/kds/store"
-	"github.com/Kong/kuma/pkg/kds/util"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	kds_client "github.com/kumahq/kuma/pkg/kds/client"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	sync_store "github.com/kumahq/kuma/pkg/kds/store"
+	"github.com/kumahq/kuma/pkg/kds/util"
 )
 
 var (
@@ -41,34 +39,35 @@ var (
 	}
 )
 
-func SetupServer(rt core_runtime.Runtime) error {
-	hasher, cache := kds_server.NewXdsContext(kdsRemoteLog)
-	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter(rt.Config().Mode.Remote.Zone))
-	versioner := kds_server.NewVersioner()
-	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
-	syncTracker := kds_server.NewSyncTracker(kdsRemoteLog, reconciler, rt.Config().KDS.Server.RefreshInterval)
+func Setup(rt core_runtime.Runtime) error {
+	zone := rt.Config().Multicluster.Remote.Zone
+	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes,
+		zone, rt.Config().Multicluster.Remote.KDS.RefreshInterval,
+		providedFilter(zone))
+	if err != nil {
+		return err
+	}
 	resourceSyncer := sync_store.NewResourceSyncer(kdsRemoteLog, rt.ResourceStore())
-
-	clientFactory := func(clusterAddress string) kds_client.ClientFactory {
-		return func() (kdsClient kds_client.KDSClient, err error) {
-			return kds_client.New(clusterAddress, rt.Config().KDS.Client)
-		}
-	}
-
-	componentFactory := func(log logr.Logger, req *envoy_api_v2.DiscoveryRequest) component.Component {
-		globalAddress := req.Node.Id
-		policiesSink := kds_client.NewKDSSink(kdsRemoteLog, rt.Config().Mode.Remote.Zone, consumedTypes,
-			clientFactory(globalAddress), Callbacks(resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, rt.Config().Mode.Remote.Zone))
-		return component.NewResilientComponent(kdsRemoteLog, policiesSink)
-	}
-
-	callbacks := util_xds.CallbacksChain{
-		util_xds.LoggingCallbacks{Log: kdsRemoteLog},
-		syncTracker,
-		NewComponentSpawner(kdsRemoteLog.WithName("policy-sink-spawner"), componentFactory),
-	}
-	srv := kds_server.NewServer(cache, callbacks, kdsRemoteLog, rt.Config().Mode.Remote.Zone)
-	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDS.Server))
+	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
+		log := kdsRemoteLog.WithValues("peer-id", session.PeerID())
+		log.Info("new session created")
+		go func() {
+			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
+				log.Error(err, "StreamKumaResources finished with an error")
+			}
+		}()
+		sink := kds_client.NewKDSSink(log, consumedTypes, kds_client.NewKDSStream(session.ClientStream(), zone),
+			Callbacks(resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone),
+		)
+		go func() {
+			if err := sink.Start(session.Done()); err != nil {
+				log.Error(err, "KDSSink finished with an error")
+			}
+		}()
+		return nil
+	})
+	muxClient := mux.NewClient(rt.Config().Multicluster.Remote.GlobalAddress, zone, onSessionStarted, *rt.Config().Multicluster.Remote.KDS)
+	return rt.Add(component.NewResilientComponent(kdsRemoteLog.WithName("mux-client"), muxClient))
 }
 
 // providedFilter filter Resources provided by Remote, specifically Ingresses that belongs to another zones
@@ -95,4 +94,13 @@ func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool, localZone string
 			return syncer.Sync(rs)
 		},
 	}
+}
+
+func ConsumesType(typ model.ResourceType) bool {
+	for _, consumedTyp := range consumedTypes {
+		if consumedTyp == typ {
+			return true
+		}
+	}
+	return false
 }

@@ -3,38 +3,38 @@ package bootstrap
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 
-	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
-	"github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 
-	"github.com/Kong/kuma/pkg/clusters/poller"
+	"github.com/kumahq/kuma/pkg/zones/poller"
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/Kong/kuma/pkg/config/core"
-	"github.com/Kong/kuma/pkg/config/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/datasource"
-	"github.com/Kong/kuma/pkg/core/managers/apis/dataplaneinsight"
-	mesh_managers "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	runtime_reports "github.com/Kong/kuma/pkg/core/runtime/reports"
-	secret_cipher "github.com/Kong/kuma/pkg/core/secrets/cipher"
-	secret_manager "github.com/Kong/kuma/pkg/core/secrets/manager"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	builtin_issuer "github.com/Kong/kuma/pkg/tokens/builtin/issuer"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplaneinsight"
+	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
+	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
@@ -58,9 +58,6 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
-	if err := initializeClusters(cfg, builder); err != nil {
-		return nil, err
-	}
 	if err := initializeConfigManager(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -68,6 +65,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	if err := initializeResourceManager(cfg, builder); err != nil {
+		return nil, err
+	}
+	if err := initializeZones(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -136,10 +136,13 @@ func createDefaultSigningKey(runtime core_runtime.Runtime) error {
 func createDefaultMesh(runtime core_runtime.Runtime) error {
 	switch env := runtime.Config().Environment; env {
 	case config_core.KubernetesEnvironment:
-		// default Mesh on Kubernetes is managed by a Controller
+		// default Mesh on Kubernetes is managed by the Namespace Controller
 		return nil
 	case config_core.UniversalEnvironment:
-		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), runtime.Config().Defaults.MeshProto())
+		if runtime.Config().Defaults.SkipMeshCreation {
+			return nil
+		}
+		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), v1alpha1.Mesh{})
 	default:
 		return errors.Errorf("unknown environment type %s", env)
 	}
@@ -273,7 +276,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator)
 	customManagers[mesh.MeshType] = meshManager
 
-	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Mode.Remote.Zone)
+	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multicluster.Remote.Zone)
 	customManagers[mesh.DataplaneType] = dpManager
 
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
@@ -289,8 +292,8 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 		return errors.Errorf("unknown store type %s", cfg.Store.Type)
 	}
 	var secretValidator secret_manager.SecretValidator
-	switch cfg.Mode.Mode {
-	case mode.Remote:
+	switch cfg.Mode {
+	case config_core.Remote:
 		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
 	default:
 		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())
@@ -313,13 +316,13 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	return nil
 }
 
-func initializeClusters(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	poller, err := poller.NewClustersStatusPoller(cfg.Mode.Global)
+func initializeZones(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	poller, err := poller.NewZonesStatusPoller(builder.ReadOnlyResourceManager(), cfg.Multicluster.Global.PollTimeout)
 	if err != nil {
 		return err
 	}
 
-	builder.WithClusters(poller)
+	builder.WithZones(poller)
 	return nil
 }
 

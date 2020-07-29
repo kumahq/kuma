@@ -5,23 +5,28 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+
+	"github.com/pkg/errors"
+
 	"io"
 	"net/http"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 
-	"github.com/Kong/kuma/pkg/clusters/poller"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+
+	"github.com/kumahq/kuma/pkg/zones/poller"
 
 	"github.com/emicklei/go-restful"
-	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/api-server/definitions"
-	"github.com/Kong/kuma/pkg/config"
-	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
+	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/runtime"
 )
 
 var (
@@ -58,7 +63,8 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, clusters poller.ClusterStatusPoller, defs []definitions.ResourceWsDefinition, serverConfig *api_server_config.ApiServerConfig, cfg config.Config) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, clusters poller.ZoneStatusPoller, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool) (*ApiServer, error) {
+	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
@@ -97,9 +103,18 @@ func NewApiServer(resManager manager.ResourceManager, clusters poller.ClusterSta
 	container.Add(clustersWs)
 
 	container.Filter(cors.Filter)
-	return &ApiServer{
+
+	newApiServer := &ApiServer{
 		server: srv,
-	}, nil
+	}
+
+	// Handle the GUI
+	if enableGUI {
+		container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(resources.GuiDir)))
+	} else {
+		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)
+	}
+	return newApiServer, nil
 }
 
 func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
@@ -112,7 +127,42 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	endpoints.addListEndpoint(ws, "") // listing all resources in all meshes
 
 	for _, definition := range defs {
-		if definition.ResourceFactory().GetType() != mesh.MeshType {
+		switch definition.ResourceFactory().GetType() {
+		case mesh.MeshType:
+			endpoints := resourceEndpoints{
+				publicURL:            config.Catalog.ApiServer.Url,
+				resManager:           resManager,
+				ResourceWsDefinition: definition,
+				meshFromRequest:      meshFromPathParam("name"),
+			}
+			if config.ReadOnly || definition.ReadOnly {
+				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
+				endpoints.addDeleteEndpointReadOnly(ws, "/meshes")
+			} else {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
+				endpoints.addDeleteEndpoint(ws, "/meshes")
+			}
+			endpoints.addFindEndpoint(ws, "/meshes")
+			endpoints.addListEndpoint(ws, "/meshes")
+		case system.ZoneType:
+			endpoints := resourceEndpoints{
+				publicURL:            config.Catalog.ApiServer.Url,
+				resManager:           resManager,
+				ResourceWsDefinition: definition,
+				meshFromRequest: func(request *restful.Request) string {
+					return "default"
+				},
+			}
+			if config.ReadOnly || definition.ReadOnly {
+				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/zones")
+				endpoints.addDeleteEndpointReadOnly(ws, "/zones")
+			} else {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/zones")
+				endpoints.addDeleteEndpoint(ws, "/zones")
+			}
+			endpoints.addFindEndpoint(ws, "/zones")
+			endpoints.addListEndpoint(ws, "/zones")
+		default:
 			endpoints := resourceEndpoints{
 				publicURL:            config.Catalog.ApiServer.Url,
 				resManager:           resManager,
@@ -129,22 +179,6 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
-		} else {
-			endpoints := resourceEndpoints{
-				publicURL:            config.Catalog.ApiServer.Url,
-				resManager:           resManager,
-				ResourceWsDefinition: definition,
-				meshFromRequest:      meshFromPathParam("name"),
-			}
-			if config.ReadOnly || definition.ReadOnly {
-				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
-				endpoints.addDeleteEndpointReadOnly(ws, "/meshes")
-			} else {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
-				endpoints.addDeleteEndpoint(ws, "/meshes")
-			}
-			endpoints.addFindEndpoint(ws, "/meshes")
-			endpoints.addListEndpoint(ws, "/meshes")
 		}
 	}
 }
@@ -173,16 +207,38 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 	}
 }
 
+func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *http.Request) {
+	writer.WriteHeader(http.StatusOK)
+	_, err := writer.Write([]byte("" +
+		"<!DOCTYPE html><html lang=en>" +
+		"<head>\n<style>\n.center {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  height: 200px;\n  border: 3px solid green; \n}\n</style>\n</head>" +
+		"<body><div class=\"center\"><strong>" +
+		"GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP." +
+		"</strong></div></body>" +
+		"</html>"))
+	if err != nil {
+		log.Error(err, "could not write the response")
+	}
+}
+
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	if cfg.Mode.Mode == mode.Remote {
-		for _, definition := range definitions.All {
-			if definition.ResourceFactory().GetType() != mesh.DataplaneType {
-				definition.ReadOnly = true
+	enableGUI := cfg.Mode != config_core.Remote
+	if cfg.Mode != config_core.Standalone {
+		for i, definition := range definitions.All {
+			switch cfg.Mode {
+			case config_core.Global:
+				if definition.ResourceFactory().GetType() == mesh.DataplaneType {
+					definitions.All[i].ReadOnly = true
+				}
+			case config_core.Remote:
+				if definition.ResourceFactory().GetType() != mesh.DataplaneType {
+					definitions.All[i].ReadOnly = true
+				}
 			}
 		}
 	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), rt.Clusters(), definitions.All, rt.Config().ApiServer, &cfg)
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.Zones(), definitions.All, &cfg, enableGUI)
 	if err != nil {
 		return err
 	}

@@ -1,9 +1,9 @@
 package k8s
 
 import (
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_rest "k8s.io/client-go/rest"
@@ -12,7 +12,7 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
-	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
+	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}

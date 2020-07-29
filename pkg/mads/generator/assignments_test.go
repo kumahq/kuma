@@ -5,17 +5,17 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/mads/generator"
+	. "github.com/kumahq/kuma/pkg/mads/generator"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/util/proto"
 
-	observability_proto "github.com/Kong/kuma/api/observability/v1alpha1"
+	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("MonitoringAssignmentsGenerator", func() {
@@ -59,7 +59,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								}},
 							},
@@ -90,7 +90,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								}},
 							},
@@ -141,8 +141,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Networking: &mesh_proto.Dataplane_Networking{
 								Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 									Tags: map[string]string{
-										"service": "gateway",
-										"region":  "eu",
+										"kuma.io/service": "gateway",
+										"region":          "eu",
 									},
 								},
 							},
@@ -151,8 +151,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/gateway-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/gateway-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/gateway-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -169,8 +168,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"dataplane":        "gateway-01",
 								"region":           "eu",
 								"regions":          ",eu,",
-								"service":          "gateway",
-								"services":         ",gateway,",
+								"kuma_io_service":  "gateway",
+								"kuma_io_services": ",gateway,",
 							},
 						},
 					},
@@ -214,9 +213,9 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 										Port:        80,
 										ServicePort: 8080,
 										Tags: map[string]string{
-											"service": "backend",
-											"env":     "prod",
-											"version": "v1",
+											"kuma.io/service": "backend",
+											"env":             "prod",
+											"version":         "v1",
 										},
 									},
 									{
@@ -224,9 +223,9 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 										Port:        443,
 										ServicePort: 8443,
 										Tags: map[string]string{
-											"service": "backend-https",
-											"env":     "prod",
-											"version": "v2",
+											"kuma.io/service": "backend-https",
+											"env":             "prod",
+											"version":         "v2",
 										},
 									},
 								},
@@ -236,8 +235,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -254,8 +252,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"dataplane":        "backend-01",
 								"env":              "prod",
 								"envs":             ",prod,",
-								"service":          "backend",
-								"services":         ",backend,backend-https,", // must have multiple values
+								"kuma_io_service":  "backend",
+								"kuma_io_services": ",backend,backend-https,", // must have multiple values
 								"version":          "v1",
 								"versions":         ",v1,v2,", // must have multiple values
 							},
@@ -300,9 +298,9 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service":  "backend",
-										"version":  "v1",
-										"versions": "v1+v1.0.1",
+										"kuma.io/service": "backend",
+										"version":         "v1",
+										"versions":        "v1+v1.0.1",
 									},
 								}},
 							},
@@ -311,8 +309,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -327,8 +324,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"instance":         "backend-01",
 								"mesh":             "demo",
 								"dataplane":        "backend-01",
-								"service":          "backend",
-								"services":         ",backend,",
+								"kuma_io_service":  "backend",
+								"kuma_io_services": ",backend,",
 								"version":          "v1",
 								"versions":         "v1+v1.0.1", // must have user-defined value
 								"versionss":        ",v1+v1.0.1,",
@@ -374,7 +371,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service":         "backend",
+										"kuma.io/service": "backend",
 										"app:description": "?!,.:;",
 										"com.company/tag": "&*()-+",
 									},
@@ -385,8 +382,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -401,8 +397,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"instance":         "backend-01",
 								"mesh":             "demo",
 								"dataplane":        "backend-01",
-								"service":          "backend",
-								"services":         ",backend,",
+								"kuma_io_service":  "backend",
+								"kuma_io_services": ",backend,",
 								"app_description":  "?!,.:;",   // tag name must be escaped
 								"app_descriptions": ",?!,.:;,", // tag name must be escaped
 								"com_company_tag":  "&*()-+",   // tag name must be escaped
@@ -470,8 +466,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
-										"env":     "prod",
+										"kuma.io/service": "backend",
+										"env":             "prod",
 									},
 								}},
 							},
@@ -489,8 +485,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        443,
 									ServicePort: 8443,
 									Tags: map[string]string{
-										"service": "web",
-										"env":     "intg",
+										"kuma.io/service": "web",
+										"env":             "intg",
 									},
 								}},
 							},
@@ -507,8 +503,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/default/dataplanes/backend-01",
-						Version: "",
+						Name: "/meshes/default/dataplanes/backend-01",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/default/dataplanes/backend-01",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -525,14 +520,13 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"dataplane":        "backend-01",
 								"env":              "prod",
 								"envs":             ",prod,",
-								"service":          "backend",
-								"services":         ",backend,",
+								"kuma_io_service":  "backend",
+								"kuma_io_services": ",backend,",
 							},
 						},
 					},
 					{
-						Name:    "/meshes/demo/dataplanes/web-02",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/web-02",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/web-02",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -549,8 +543,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"dataplane":        "web-02",
 								"env":              "intg",
 								"envs":             ",intg,",
-								"service":          "web",
-								"services":         ",web,",
+								"kuma_io_service":  "web",
+								"kuma_io_services": ",web,",
 							},
 						},
 					},
@@ -597,7 +591,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 									Port:        80,
 									ServicePort: 8080,
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								}},
 							},
@@ -606,8 +600,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				},
 				expected: []*core_xds.Resource{
 					{
-						Name:    "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
-						Version: "",
+						Name: "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
 						Resource: &observability_proto.MonitoringAssignment{
 							Name: "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
 							Targets: []*observability_proto.MonitoringAssignment_Target{{
@@ -624,8 +617,8 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 								"k8s_kuma_io_namespace": "my-namespace",
 								"mesh":                  "demo",
 								"dataplane":             "backend-5c89f4d995-85znn.my-namespace",
-								"service":               "backend",
-								"services":              ",backend,",
+								"kuma_io_service":       "backend",
+								"kuma_io_services":      ",backend,",
 							},
 						},
 					},

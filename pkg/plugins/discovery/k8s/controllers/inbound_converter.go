@@ -6,9 +6,9 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	util_k8s "github.com/Kong/kuma/pkg/plugins/discovery/k8s/util"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/discovery/k8s/util"
 )
 
 func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core.Service, isGateway bool) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {
@@ -49,6 +49,11 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 
 func InboundTagsFor(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort, isGateway bool) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
+	for key, value := range tags {
+		if value == "" {
+			delete(tags, key)
+		}
+	}
 	if tags == nil {
 		tags = make(map[string]string)
 	}
@@ -60,6 +65,9 @@ func InboundTagsFor(zone string, pod *kube_core.Pod, svc *kube_core.Service, svc
 	// since gateway proxies multiple services each with its own protocol
 	if !isGateway {
 		tags[mesh_proto.ProtocolTag] = ProtocolTagFor(svc, svcPort)
+	}
+	if isHeadlessService(svc) {
+		tags[mesh_proto.InstanceTag] = pod.Name
 	}
 	return tags
 }

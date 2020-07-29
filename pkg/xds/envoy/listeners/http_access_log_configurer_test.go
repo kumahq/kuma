@@ -5,13 +5,13 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/xds"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("HttpAccessLogConfigurer", func() {
@@ -45,7 +45,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 								Port:        80,
 								ServicePort: 8080,
 								Tags: map[string]string{
-									"service": "web",
+									"kuma.io/service": "web",
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
@@ -130,8 +130,9 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                   - name: envoy.file_access_log
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
-                      format: |
+                      format: |+
                         [%START_TIME%] demo "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "backend" "192.168.0.1" "%UPSTREAM_HOST%"
+
                       path: /tmp/log
                   httpFilters:
                   - name: envoy.router
@@ -186,10 +187,11 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                         grpcService:
                           envoyGrpc:
                             clusterName: access_log_sink
-                        logName: |
+                        logName: |+
                           127.0.0.1:1234;[%START_TIME%] "%REQ(x-request-id)%" "%REQ(:authority)%" "%REQ(origin)%" "%REQ(content-type)%" "web" "backend" "192.168.0.1:0" "192.168.0.1" "%UPSTREAM_HOST%"
 
                           "%RESP(server):5%" "%TRAILER(grpc-message):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
+
                   httpFilters:
                   - name: envoy.router
                   rds:

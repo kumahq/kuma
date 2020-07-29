@@ -1,8 +1,8 @@
 package components
 
 import (
-	"github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/dns"
 )
 
 func SetupServer(rt runtime.Runtime) error {

@@ -8,12 +8,12 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 
-	system_proto "github.com/Kong/kuma/api/system/v1alpha1"
-	secret_model "github.com/Kong/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	secret_store "github.com/Kong/kuma/pkg/core/secrets/store"
-	common_k8s "github.com/Kong/kuma/pkg/plugins/common/k8s"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	secret_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"

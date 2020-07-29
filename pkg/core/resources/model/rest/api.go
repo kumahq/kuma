@@ -3,10 +3,12 @@ package rest
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 type Api interface {
@@ -19,9 +21,12 @@ type ResourceApi interface {
 }
 
 func NewResourceApi(resType model.ResourceType, path string) ResourceApi {
-	if resType == mesh.MeshType {
+	switch resType {
+	case mesh.MeshType:
 		return &meshApi{}
-	} else {
+	case system.ZoneType:
+		return &zoneApi{}
+	default:
 		return &resourceApi{CollectionPath: path}
 	}
 }
@@ -47,6 +52,17 @@ func (r *meshApi) List(string) string {
 
 func (r *meshApi) Item(string, name string) string {
 	return fmt.Sprintf("/meshes/%s", name)
+}
+
+type zoneApi struct {
+}
+
+func (r *zoneApi) List(string) string {
+	return "/zones"
+}
+
+func (r *zoneApi) Item(string, name string) string {
+	return fmt.Sprintf("/zones/%s", name)
 }
 
 var _ Api = &ApiDescriptor{}

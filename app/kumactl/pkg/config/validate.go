@@ -9,8 +9,8 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/api-server/types"
-	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/api-server/types"
+	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 )
 
 // overridden by tests

@@ -4,21 +4,20 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Kong/kuma/pkg/kds/reconcile"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	. "github.com/onsi/gomega"
 
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	kds_config "github.com/Kong/kuma/pkg/config/kds"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	"github.com/Kong/kuma/pkg/kds"
-	kds_server "github.com/Kong/kuma/pkg/kds/server"
-	test_grpc "github.com/Kong/kuma/pkg/test/grpc"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	test_grpc "github.com/kumahq/kuma/pkg/test/grpc"
 )
 
 type testRuntimeContext struct {
@@ -41,32 +40,13 @@ func (t *testRuntimeContext) Add(c ...component.Component) error {
 	return nil
 }
 
-func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string) *test_grpc.MockServerStream {
-	createServer := func(rt runtime.Runtime) kds_server.Server {
-		log := core.Log
-		hasher, cache := kds_server.NewXdsContext(log)
-		generator := kds_server.NewSnapshotGenerator(rt, kds.SupportedTypes, reconcile.Any)
-		versioner := kds_server.NewVersioner()
-		reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
-		syncTracker := kds_server.NewSyncTracker(core.Log, reconciler, rt.Config().KDS.Server.RefreshInterval)
-		callbacks := util_xds.CallbacksChain{
-			util_xds.LoggingCallbacks{Log: log},
-			syncTracker,
-		}
-		return kds_server.NewServer(cache, callbacks, log, clusterID)
-	}
-
-	srv := createServer(&testRuntimeContext{
+func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter) *test_grpc.MockServerStream {
+	rt := &testRuntimeContext{
 		rom: manager.NewResourceManager(store),
-		cfg: kuma_cp.Config{
-			KDS: &kds_config.KdsConfig{
-				Server: &kds_config.KdsServerConfig{
-					RefreshInterval: 100 * time.Millisecond,
-				},
-			},
-		},
-	})
-
+		cfg: kuma_cp.Config{},
+	}
+	srv, err := kds_server.New(core.Log, rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter)
+	Expect(err).ToNot(HaveOccurred())
 	stream := test_grpc.MakeMockStream()
 	go func() {
 		err := srv.StreamKumaResources(stream)

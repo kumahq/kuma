@@ -6,8 +6,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 // Protocol identifies a protocol supported by a service.
@@ -17,12 +17,15 @@ const (
 	ProtocolUnknown = "<unknown>"
 	ProtocolTCP     = "tcp"
 	ProtocolHTTP    = "http"
+	ProtocolHTTP2   = "http2"
 )
 
 func ParseProtocol(tag string) Protocol {
 	switch strings.ToLower(tag) {
 	case ProtocolHTTP:
 		return ProtocolHTTP
+	case ProtocolHTTP2:
+		return ProtocolHTTP2
 	case ProtocolTCP:
 		return ProtocolTCP
 	default:
@@ -44,6 +47,7 @@ func (l ProtocolList) Strings() []string {
 // SupportedProtocols is a list of supported protocols that will be communicated to a user.
 var SupportedProtocols = ProtocolList{
 	ProtocolHTTP,
+	ProtocolHTTP2,
 	ProtocolTCP,
 }
 
@@ -70,7 +74,7 @@ func (d *DataplaneResource) UsesInboundInterface(address net.IP, port uint32) bo
 			return true
 		}
 		// compare against port and IP address of the application
-		if port == iface.WorkloadPort && overlap(address, IPv4Loopback) {
+		if port == iface.WorkloadPort && overlap(address, net.ParseIP(iface.WorkloadIP)) {
 			return true
 		}
 	}

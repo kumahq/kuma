@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 var _ = Describe("getCommonProtocol()", func() {
@@ -64,6 +64,21 @@ var _ = Describe("getCommonProtocol()", func() {
 		}),
 		Entry("`tcp` and `tcp`", testCase{
 			one:      mesh_core.ProtocolTCP,
+			another:  mesh_core.ProtocolTCP,
+			expected: mesh_core.ProtocolTCP,
+		}),
+		Entry("`http2` and `http2`", testCase{
+			one:      mesh_core.ProtocolHTTP2,
+			another:  mesh_core.ProtocolHTTP2,
+			expected: mesh_core.ProtocolHTTP2,
+		}),
+		Entry("`http2` and `http`", testCase{
+			one:      mesh_core.ProtocolHTTP2,
+			another:  mesh_core.ProtocolHTTP,
+			expected: mesh_core.ProtocolHTTP,
+		}),
+		Entry("`http2` and `tcp`", testCase{
+			one:      mesh_core.ProtocolHTTP2,
 			another:  mesh_core.ProtocolTCP,
 			expected: mesh_core.ProtocolTCP,
 		}),

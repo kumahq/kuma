@@ -1,29 +1,32 @@
 package topology
 
 import (
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 // GetOutboundTargets resolves all endpoints reachable from a given dataplane.
-func GetOutboundTargets(destinations core_xds.DestinationMap, dataplanes *mesh_core.DataplaneResourceList, localClusterName string) (core_xds.EndpointMap, error) {
+func GetOutboundTargets(destinations core_xds.DestinationMap, dataplanes *mesh_core.DataplaneResourceList, localClusterName string, mesh *mesh_core.MeshResource) (core_xds.EndpointMap, error) {
 	if len(destinations) == 0 {
 		return nil, nil
 	}
-	return BuildEndpointMap(destinations, dataplanes.Items, localClusterName), nil
+	return BuildEndpointMap(destinations, dataplanes.Items, localClusterName, mesh), nil
 }
 
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
-func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_core.DataplaneResource, zone string) core_xds.EndpointMap {
+func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_core.DataplaneResource, zone string, mesh *mesh_core.MeshResource) core_xds.EndpointMap {
 	if len(destinations) == 0 {
 		return nil
 	}
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
-		if dataplane.Spec.IsIngress() {
+		if dataplane.Spec.IsIngress() && mesh.MTLSEnabled() {
 			if dataplane.Spec.IsRemoteIngress(zone) {
 				for _, ingress := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
+					if ingress.Mesh != mesh.GetMeta().GetName() {
+						continue
+					}
 					service := ingress.Tags[mesh_proto.ServiceTag]
 					selectors, ok := destinations[service]
 					if !ok {

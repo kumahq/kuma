@@ -9,9 +9,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/app/kumactl/cmd"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var _ = Describe("kumactl install ingress", func() {
@@ -85,7 +85,6 @@ var _ = Describe("kumactl install ingress", func() {
 				"--version", "greatest",
 				"--image-pull-policy", "Never",
 				"--kuma-cp-address", "http://kuma.local:5681",
-				"--mesh", "non-default-mesh",
 				"--drain-time", "0s",
 				"--use-node-port",
 			},

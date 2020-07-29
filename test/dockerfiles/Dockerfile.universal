@@ -1,0 +1,26 @@
+# using Envoy's base to inherit the Envoy binary
+FROM envoyproxy/envoy-alpine:v1.15.0
+
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
+
+
+RUN mkdir -p /etc/kuma
+ADD $KUMA_ROOT/pkg/config/app/kuma-cp/kuma-cp.defaults.yaml /etc/kuma
+
+RUN mkdir /kuma
+COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
+COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
+COPY $KUMA_ROOT/tools/releases/templates/README /kuma
+RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
+    && chmod a+rw /kuma/kuma-cp.conf
+
+RUN apk add --no-cache openssh curl \
+  && ssh-keygen -A \
+  && sed -i s/#PermitRootLogin.*/PermitRootLogin\ yes/ /etc/ssh/sshd_config \
+  && sed -i s/#PermitEmptyPasswords.*/PermitEmptyPasswords\ yes/ /etc/ssh/sshd_config \
+  && passwd -d root
+
+# do not detach (-D), log to stderr (-e)
+ENTRYPOINT ["/usr/sbin/sshd", "-D", "-e"]

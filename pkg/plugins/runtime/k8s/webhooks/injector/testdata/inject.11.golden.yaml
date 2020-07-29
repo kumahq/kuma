@@ -4,9 +4,10 @@ metadata:
   annotations:
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
-    kuma.io/sidecar-injection: any-value-other-than-disabled
+    kuma.io/sidecar-injection: enabled
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-port: "15001"
+    kuma.io/transparent-proxying-outbound-port: "15001"
+    kuma.io/transparent-proxying-inbound-port: "15006"
   creationTimestamp: null
   labels:
     run: busybox
@@ -94,6 +95,8 @@ spec:
   - args:
     - -p
     - "15001"
+    - -z
+    - "15006"
     - -u
     - "5678"
     - -g

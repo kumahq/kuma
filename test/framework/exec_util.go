@@ -61,7 +61,7 @@ func (c *K8sCluster) ExecWithOptions(options ExecOptions) (string, string, error
 	}, scheme.ParameterCodec)
 
 	var stdout, stderr bytes.Buffer
-	err = execute("POST", req.URL(), config, strings.NewReader(""), &stdout, &stderr, tty)
+	err = executeK8s("POST", req.URL(), config, strings.NewReader(""), &stdout, &stderr, tty)
 
 	if options.PreserveWhitespace {
 		return stdout.String(), stderr.String(), err
@@ -102,7 +102,7 @@ func (c *K8sCluster) ExecWithRetries(namespace, podName, containerName string, c
 	return stdout, stderr, err
 }
 
-func execute(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {
+func executeK8s(method string, url *url.URL, config *restclient.Config, stdin io.Reader, stdout, stderr io.Writer, tty bool) error {
 	exec, err := remotecommand.NewSPDYExecutor(config, method, url)
 	if err != nil {
 		return err

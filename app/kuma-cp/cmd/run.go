@@ -4,28 +4,27 @@ import (
 	"fmt"
 	"time"
 
-	dns "github.com/Kong/kuma/pkg/dns/components"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	dns "github.com/kumahq/kuma/pkg/dns/components"
 
-	kds_remote "github.com/Kong/kuma/pkg/kds/remote"
+	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 
 	"github.com/spf13/cobra"
 
-	api_server "github.com/Kong/kuma/pkg/api-server"
-	"github.com/Kong/kuma/pkg/clusters"
-	kds_global "github.com/Kong/kuma/pkg/kds/global"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
+	kds_global "github.com/kumahq/kuma/pkg/kds/global"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
+	"github.com/kumahq/kuma/pkg/zones"
 
-	ui_server "github.com/Kong/kuma/app/kuma-ui/pkg/server"
-	admin_server "github.com/Kong/kuma/pkg/admin-server"
-	"github.com/Kong/kuma/pkg/config"
-	kuma_cp "github.com/Kong/kuma/pkg/config/app/kuma-cp"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/bootstrap"
-	mads_server "github.com/Kong/kuma/pkg/mads/server"
-	sds_server "github.com/Kong/kuma/pkg/sds/server"
-	xds_server "github.com/Kong/kuma/pkg/xds/server"
+	admin_server "github.com/kumahq/kuma/pkg/admin-server"
+	"github.com/kumahq/kuma/pkg/config"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/bootstrap"
+	mads_server "github.com/kumahq/kuma/pkg/mads/server"
+	sds_server "github.com/kumahq/kuma/pkg/sds/server"
+	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
 var (
@@ -75,15 +74,9 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
-			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode.Mode))
-			switch cfg.Mode.Mode {
-			case mode.Standalone:
-				if err := ui_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up GUI server")
-					return err
-				}
-				fallthrough
-			case mode.Remote:
+			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode))
+			switch cfg.Mode {
+			case config_core.Standalone:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
 					return err
@@ -96,33 +89,42 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
-				if err := kds_remote.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS Remote Server")
+				if err := dns.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up DNS server")
+					return err
+				}
+			case config_core.Remote:
+				if err := sds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up SDS server")
+					return err
+				}
+				if err := xds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up xDS server")
+					return err
+				}
+				if err := mads_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up Monitoring Assignment server")
+					return err
+				}
+				if err := kds_remote.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Remote")
 					return err
 				}
 				if err := dns.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up DNS server")
 					return err
 				}
-			case mode.Global:
+			case config_core.Global:
 				if err := xds_server.SetupDiagnosticsServer(rt); err != nil {
 					runLog.Error(err, "unable to set up xDS server")
 					return err
 				}
-				if err := ui_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up GUI server")
-					return err
-				}
-				if err := clusters.SetupServer(rt); err != nil {
+				if err := zones.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Clusters server")
 					return err
 				}
-				if err := kds_global.SetupComponent(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS Global Sink")
-					return err
-				}
-				if err := kds_global.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS Global Server")
+				if err := kds_global.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Global")
 					return err
 				}
 			}

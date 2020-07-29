@@ -4,9 +4,9 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-	core_registry "github.com/Kong/kuma/pkg/core/resources/registry"
-	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
 var _ = Describe("Consistent Kind Types", func() {

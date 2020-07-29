@@ -20,17 +20,17 @@ import (
 	"path/filepath"
 	"testing"
 
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -61,6 +61,9 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(cfg).ToNot(BeNil())
 
 	err = mesh_k8s.AddToScheme(k8sClientScheme)
+	Expect(err).NotTo(HaveOccurred())
+
+	err = kube_core.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme

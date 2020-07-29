@@ -7,12 +7,12 @@ import (
 
 	"github.com/pkg/errors"
 
-	admin_rest "github.com/Kong/kuma/pkg/admin-server/definitions"
-	kuma_rest "github.com/Kong/kuma/pkg/api-server/definitions"
-	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	remote_resources "github.com/Kong/kuma/pkg/plugins/resources/remote"
-	util_http "github.com/Kong/kuma/pkg/util/http"
+	admin_rest "github.com/kumahq/kuma/pkg/admin-server/definitions"
+	kuma_rest "github.com/kumahq/kuma/pkg/api-server/definitions"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	remote_resources "github.com/kumahq/kuma/pkg/plugins/resources/remote"
+	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
 func NewResourceStore(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {

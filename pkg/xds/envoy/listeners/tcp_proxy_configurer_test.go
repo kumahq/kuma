@@ -5,10 +5,10 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("TcpProxyConfigurer", func() {
@@ -71,11 +71,11 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			clusters: []envoy_common.ClusterSubset{{
 				ClusterName: "db",
 				Weight:      10,
-				Tags:        map[string]string{"service": "db", "version": "v1"},
+				Tags:        map[string]string{"kuma.io/service": "db", "version": "v1"},
 			}, {
 				ClusterName: "db",
 				Weight:      90,
-				Tags:        map[string]string{"service": "db", "version": "v2"},
+				Tags:        map[string]string{"kuma.io/service": "db", "version": "v2"},
 			}},
 			expected: `
             address:

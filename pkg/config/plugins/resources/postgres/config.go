@@ -3,7 +3,7 @@ package postgres
 import (
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/pkg/config"
+	"github.com/kumahq/kuma/pkg/config"
 )
 
 var _ config.Config = &PostgresStoreConfig{}

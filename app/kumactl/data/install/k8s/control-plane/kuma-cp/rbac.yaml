@@ -16,6 +16,13 @@ rules:
   - list
   - watch
 - apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+- apiGroups:
   - kuma.io
   resources:
   - dataplanes
@@ -59,12 +66,16 @@ rules:
   - faultinjections
   - circuitbreakers
   - healthchecks
+  - zones
   verbs:
   - get
   - list
   - watch
 {{- if eq .KumaCpMode "remote" }}
   - create
+  - update
+  - patch
+  - delete
 {{- end }}
 - apiGroups:
     - ""

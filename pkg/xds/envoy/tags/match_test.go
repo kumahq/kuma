@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/xds/envoy/tags"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 )
 
 func strictMatch(re *regexp.Regexp, s string) bool {
@@ -169,24 +169,24 @@ var _ = Describe("RegexOR", func() {
 		Entry("should match 2 services of 3", testCase{
 			servicesTags: []mesh_proto.MultiValueTagSet{
 				{
-					"service": {"web": true, "web-api": true},
+					"kuma.io/service": {"web": true, "web-api": true},
 				},
 				{
-					"service": {"backend": true},
-					"version": {"3": true},
+					"kuma.io/service": {"backend": true},
+					"version":         {"3": true},
 				},
 				{
-					"service": {"backend": true},
-					"version": {"2": true},
+					"kuma.io/service": {"backend": true},
+					"version":         {"2": true},
 				},
 			},
 			selectors: []mesh_proto.SingleValueTagSet{
 				{
-					"service": "web",
+					"kuma.io/service": "web",
 				},
 				{
-					"service": "backend",
-					"version": "3",
+					"kuma.io/service": "backend",
+					"version":         "3",
 				},
 			},
 			expected: []bool{true, true, false},

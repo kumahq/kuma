@@ -8,13 +8,13 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/generator"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var _ = Describe("IngressGenerator", func() {
@@ -48,7 +48,7 @@ var _ = Describe("IngressGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			resp, err := core_xds.ResourceList(rs).ToDeltaDiscoveryResponse()
+			resp, err := rs.List().ToDeltaDiscoveryResponse()
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when
@@ -66,12 +66,14 @@ var _ = Describe("IngressGenerator", func() {
               address: 10.0.0.1
               ingress:
                 availableServices:
-                  - tags:
-                      service: backend
+                  - mesh: mesh1
+                    tags:
+                      kuma.io/service: backend
                       version: v1
                       region: eu
-                  - tags:
-                      service: backend
+                  - mesh: mesh1
+                    tags:
+                      kuma.io/service: backend
                       version: v2
                       region: us
               inbound:
@@ -84,9 +86,9 @@ var _ = Describe("IngressGenerator", func() {
 						Target: "192.168.0.1",
 						Port:   2521,
 						Tags: map[string]string{
-							"service": "backend",
-							"version": "v1",
-							"region":  "eu",
+							"kuma.io/service": "backend",
+							"version":         "v1",
+							"region":          "eu",
 						},
 						Weight: 1,
 					},
@@ -94,9 +96,9 @@ var _ = Describe("IngressGenerator", func() {
 						Target: "192.168.0.2",
 						Port:   2521,
 						Tags: map[string]string{
-							"service": "backend",
-							"version": "v2",
-							"region":  "us",
+							"kuma.io/service": "backend",
+							"version":         "v2",
+							"region":          "us",
 						},
 						Weight: 1,
 					},

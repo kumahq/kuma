@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/api/mesh/v1alpha1"
+	. "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 var _ = Describe("MultiValueTagSet", func() {
@@ -22,225 +22,12 @@ var _ = Describe("MultiValueTagSet", func() {
 			},
 			Entry("`service` and `services` tags", testCase{
 				value: MultiValueTagSet{
-					"versions": map[string]bool{},
-					"version":  map[string]bool{},
-					"services": map[string]bool{},
-					"service":  map[string]bool{},
+					"versions":        map[string]bool{},
+					"version":         map[string]bool{},
+					"services":        map[string]bool{},
+					"kuma.io/service": map[string]bool{},
 				},
-				expected: []string{"service", "services", "version", "versions"},
-			}),
-		)
-	})
-})
-
-var _ = Describe("InboundInterface", func() {
-
-	Describe("String()", func() {
-		type testCase struct {
-			iface    InboundInterface
-			expected string
-		}
-
-		DescribeTable("should format properly",
-			func(given testCase) {
-				Expect(given.iface.String()).To(Equal(given.expected))
-			},
-			Entry("all fields set", testCase{
-				iface: InboundInterface{
-					DataplaneIP:   "1.2.3.4",
-					DataplanePort: 80,
-					WorkloadPort:  8080,
-				},
-				expected: "1.2.3.4:80:8080",
-			}),
-		)
-	})
-})
-
-var _ = Describe("ParseInboundInterface(..)", func() {
-
-	Context("valid input values", func() {
-		type testCase struct {
-			input    string
-			expected InboundInterface
-		}
-
-		DescribeTable("should parse valid input values",
-			func(given testCase) {
-				// when
-				iface, err := ParseInboundInterface(given.input)
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(iface).To(Equal(given.expected))
-			},
-			Entry("all fields set", testCase{
-				input: "1.2.3.4:80:8080",
-				expected: InboundInterface{
-					DataplaneIP:   "1.2.3.4",
-					DataplanePort: 80,
-					WorkloadPort:  8080,
-				},
-			}),
-			Entry("IPv6 full", testCase{
-				input: "[2001:db8:85a3:8d3:1319:8a2e:370:7348]:80:8080",
-				expected: InboundInterface{
-					DataplaneIP:   "2001:db8:85a3:8d3:1319:8a2e:370:7348",
-					DataplanePort: 80,
-					WorkloadPort:  8080,
-				},
-			}),
-			Entry("IPv6 shortend", testCase{
-				input: "[2001:db8::1:0:0:1]:80:8080",
-				expected: InboundInterface{
-					DataplaneIP:   "2001:db8::1:0:0:1",
-					DataplanePort: 80,
-					WorkloadPort:  8080,
-				},
-			}),
-			Entry("IPv4", testCase{
-				input: "[1.2.3.4]:80:8080", // unexpected side-effect of Golang SDK
-				expected: InboundInterface{
-					DataplaneIP:   "1.2.3.4",
-					DataplanePort: 80,
-					WorkloadPort:  8080,
-				},
-			}),
-		)
-	})
-
-	Context("invalid input values", func() {
-		type testCase struct {
-			input       string
-			expectedErr string
-		}
-
-		DescribeTable("should fail on invalid input values",
-			func(given testCase) {
-				// when
-				iface, err := ParseInboundInterface(given.input)
-				// then
-				Expect(err).To(HaveOccurred())
-				// then
-				Expect(err.Error()).To(Equal(given.expectedErr))
-				// and
-				Expect(iface).To(BeZero())
-			},
-			Entry("dataplane IP address is missing", testCase{
-				input:       ":80:8080",
-				expectedErr: `invalid DATAPLANE_IP in ":80:8080": "" is not a valid IP address`,
-			}),
-			Entry("dataplane IP address is not valid", testCase{
-				input:       "localhost:80:65536",
-				expectedErr: `invalid DATAPLANE_IP in "localhost:80:65536": "localhost" is not a valid IP address`,
-			}),
-			Entry("service port is missing", testCase{
-				input:       "1.2.3.4::8080",
-				expectedErr: `invalid DATAPLANE_PORT in "1.2.3.4::8080": "" is not a valid port number: strconv.ParseUint: parsing "": invalid syntax`,
-			}),
-			Entry("service port is out of range", testCase{
-				input:       "1.2.3.4:0:8080",
-				expectedErr: `invalid DATAPLANE_PORT in "1.2.3.4:0:8080": port number must be in the range [1, 65535] but got 0`,
-			}),
-			Entry("application port is missing", testCase{
-				input:       "1.2.3.4:80:",
-				expectedErr: `invalid WORKLOAD_PORT in "1.2.3.4:80:": "" is not a valid port number: strconv.ParseUint: parsing "": invalid syntax`,
-			}),
-			Entry("application port is out of range", testCase{
-				input:       "1.2.3.4:80:65536",
-				expectedErr: `invalid WORKLOAD_PORT in "1.2.3.4:80:65536": port number must be in the range [1, 65535] but got 65536`,
-			}),
-		)
-	})
-})
-
-var _ = Describe("ParseOutboundInterface(..)", func() {
-
-	Context("valid input values", func() {
-		type testCase struct {
-			input    string
-			expected OutboundInterface
-		}
-
-		DescribeTable("should parse valid input values",
-			func(given testCase) {
-				// when
-				oface, err := ParseOutboundInterface(given.input)
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(oface).To(Equal(given.expected))
-			},
-			Entry("all fields set", testCase{
-				input: "127.0.0.2:18080",
-				expected: OutboundInterface{
-					DataplaneIP:   "127.0.0.2",
-					DataplanePort: 18080,
-				},
-			}),
-			Entry("dataplane IP address is missing", testCase{
-				input: ":18080",
-				expected: OutboundInterface{
-					DataplaneIP:   "127.0.0.1",
-					DataplanePort: 18080,
-				},
-			}),
-			Entry("IPv6 full", testCase{
-				input: "[2001:db8:85a3:8d3:1319:8a2e:370:7348]:18080",
-				expected: OutboundInterface{
-					DataplaneIP:   "2001:db8:85a3:8d3:1319:8a2e:370:7348",
-					DataplanePort: 18080,
-				},
-			}),
-			Entry("IPv6 shortend", testCase{
-				input: "[2001:db8::1:0:0:1]:18080",
-				expected: OutboundInterface{
-					DataplaneIP:   "2001:db8::1:0:0:1",
-					DataplanePort: 18080,
-				},
-			}),
-			Entry("IPv4", testCase{
-				input: "[127.0.0.2]:18080", // unexpected side-effect of Golang SDK
-				expected: OutboundInterface{
-					DataplaneIP:   "127.0.0.2",
-					DataplanePort: 18080,
-				},
-			}),
-		)
-	})
-
-	Context("invalid input values", func() {
-		type testCase struct {
-			input       string
-			expectedErr string
-		}
-
-		DescribeTable("should fail on invalid input values",
-			func(given testCase) {
-				// when
-				iface, err := ParseOutboundInterface(given.input)
-				// then
-				Expect(err).To(HaveOccurred())
-				// and
-				Expect(err.Error()).To(Equal(given.expectedErr))
-				// and
-				Expect(iface).To(BeZero())
-			},
-			Entry("dataplane IP address is not valid", testCase{
-				input:       "localhost:65536",
-				expectedErr: `invalid DATAPLANE_IP in "localhost:65536": "localhost" is not a valid IP address`,
-			}),
-			Entry("dataplane IPv6 address is not valid", testCase{
-				input:       "[:65536",
-				expectedErr: `invalid format: expected "[ IPv4 | '[' IPv6 ']' ] ':' DATAPLANE_PORT", got "[:65536"`,
-			}),
-			Entry("port without colon", testCase{
-				input:       "18080",
-				expectedErr: `invalid format: expected "[ IPv4 | '[' IPv6 ']' ] ':' DATAPLANE_PORT", got "18080"`,
-			}),
-			Entry("colon without port", testCase{
-				input:       ":",
-				expectedErr: `invalid DATAPLANE_PORT in ":": "" is not a valid port number: strconv.ParseUint: parsing "": invalid syntax`,
+				expected: []string{"kuma.io/service", "services", "version", "versions"},
 			}),
 		)
 	})
@@ -326,15 +113,16 @@ var _ = Describe("Dataplane_Networking", func() {
 								Port: 80,
 							},
 							{
-								Address:     "192.168.0.2",
-								Port:        443,
-								ServicePort: 8443,
+								Address:        "192.168.0.2",
+								Port:           443,
+								ServiceAddress: "192.168.0.3",
+								ServicePort:    8443,
 							},
 						},
 					},
 					expected: []InboundInterface{
-						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadPort: 80},
-						{DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadPort: 8443},
+						{DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "127.0.0.1", WorkloadPort: 80},
+						{DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
 					},
 				}),
 			)
@@ -364,14 +152,14 @@ var _ = Describe("Dataplane_Networking_Outbound", func() {
 		Entry("it should match *", testCase{
 			serviceTag: "backend",
 			selector: map[string]string{
-				"service": "*",
+				"kuma.io/service": "*",
 			},
 			expectedMatch: true,
 		}),
 		Entry("it should match service", testCase{
 			serviceTag: "backend",
 			selector: map[string]string{
-				"service": "backend",
+				"kuma.io/service": "backend",
 			},
 			expectedMatch: true,
 		}),
@@ -409,7 +197,7 @@ var _ = Describe("Dataplane_Networking_Inbound", func() {
 			Entry("inbound has `service` tag", testCase{
 				inbound: &Dataplane_Networking_Inbound{
 					Tags: map[string]string{
-						"service": "backend",
+						"kuma.io/service": "backend",
 					},
 				},
 				expected: "backend",
@@ -462,15 +250,15 @@ var _ = Describe("Dataplane with inbound", func() {
 			Inbound: []*Dataplane_Networking_Inbound{
 				{
 					Tags: map[string]string{
-						"service": "backend",
-						"version": "v1",
+						"kuma.io/service": "backend",
+						"version":         "v1",
 					},
 				},
 				{
 					Tags: map[string]string{
-						"service": "backend-metrics",
-						"version": "v1",
-						"role":    "metrics",
+						"kuma.io/service": "backend-metrics",
+						"version":         "v1",
+						"role":            "metrics",
 					},
 				},
 			},
@@ -483,7 +271,7 @@ var _ = Describe("Dataplane with inbound", func() {
 			tags := d.Tags()
 
 			// then
-			Expect(tags.Values("service")).To(Equal([]string{"backend", "backend-metrics"}))
+			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend", "backend-metrics"}))
 			Expect(tags.Values("version")).To(Equal([]string{"v1"}))
 			Expect(tags.Values("role")).To(Equal([]string{"metrics"}))
 		})
@@ -493,8 +281,8 @@ var _ = Describe("Dataplane with inbound", func() {
 		It("should match any inbound", func() {
 			// when
 			selector := TagSelector{
-				"service": "backend",
-				"version": "v1",
+				"kuma.io/service": "backend",
+				"version":         "v1",
 			}
 
 			// then
@@ -504,7 +292,7 @@ var _ = Describe("Dataplane with inbound", func() {
 		It("should not match if all inbounds did not match", func() {
 			// when
 			selector := TagSelector{
-				"service": "unknown",
+				"kuma.io/service": "unknown",
 			}
 
 			// then
@@ -518,8 +306,8 @@ var _ = Describe("Dataplane with gateway", func() {
 		Networking: &Dataplane_Networking{
 			Gateway: &Dataplane_Networking_Gateway{
 				Tags: map[string]string{
-					"service": "backend",
-					"version": "v1",
+					"kuma.io/service": "backend",
+					"version":         "v1",
 				},
 			},
 		},
@@ -531,7 +319,7 @@ var _ = Describe("Dataplane with gateway", func() {
 			tags := d.Tags()
 
 			// then
-			Expect(tags.Values("service")).To(Equal([]string{"backend"}))
+			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend"}))
 		})
 	})
 
@@ -539,8 +327,8 @@ var _ = Describe("Dataplane with gateway", func() {
 		It("should match gateway", func() {
 			// when
 			selector := TagSelector{
-				"service": "backend",
-				"version": "v1",
+				"kuma.io/service": "backend",
+				"version":         "v1",
 			}
 
 			// then
@@ -550,7 +338,7 @@ var _ = Describe("Dataplane with gateway", func() {
 		It("should not match if gateway did not match", func() {
 			// when
 			selector := TagSelector{
-				"service": "unknown",
+				"kuma.io/service": "unknown",
 			}
 
 			// then
@@ -570,8 +358,8 @@ var _ = Describe("TagSelector", func() {
 			func(given testCase) {
 				// given
 				dpTags := map[string]string{
-					"service": "mobile",
-					"version": "v1",
+					"kuma.io/service": "mobile",
+					"version":         "v1",
 				}
 
 				// when
@@ -585,24 +373,24 @@ var _ = Describe("TagSelector", func() {
 				match: true,
 			}),
 			Entry("should match 1 tag", testCase{
-				tags:  map[string]string{"service": "mobile"},
+				tags:  map[string]string{"kuma.io/service": "mobile"},
 				match: true,
 			}),
 			Entry("should match all tags", testCase{
 				tags: map[string]string{
-					"service": "mobile",
-					"version": "v1",
+					"kuma.io/service": "mobile",
+					"version":         "v1",
 				},
 				match: true,
 			}),
 			Entry("should match * tag", testCase{
-				tags:  map[string]string{"service": "*"},
+				tags:  map[string]string{"kuma.io/service": "*"},
 				match: true,
 			}),
 			Entry("should not match on one mismatch", testCase{
 				tags: map[string]string{
-					"service": "backend",
-					"version": "v1",
+					"kuma.io/service": "backend",
+					"version":         "v1",
 				},
 				match: false,
 			}),
@@ -642,23 +430,23 @@ var _ = Describe("TagSelector", func() {
 				expected: true,
 			}),
 			Entry("equal selectors of 1 tag", testCase{
-				one:      TagSelector{"service": "backend"},
-				another:  TagSelector{"service": "backend"},
+				one:      TagSelector{"kuma.io/service": "backend"},
+				another:  TagSelector{"kuma.io/service": "backend"},
 				expected: true,
 			}),
 			Entry("equal selectors of 2 tag", testCase{
-				one:      TagSelector{"service": "backend", "version": "v1"},
-				another:  TagSelector{"service": "backend", "version": "v1"},
+				one:      TagSelector{"kuma.io/service": "backend", "version": "v1"},
+				another:  TagSelector{"kuma.io/service": "backend", "version": "v1"},
 				expected: true,
 			}),
 			Entry("unequal selectors of 1 tag", testCase{
-				one:      TagSelector{"service": "backend"},
-				another:  TagSelector{"service": "redis"},
+				one:      TagSelector{"kuma.io/service": "backend"},
+				another:  TagSelector{"kuma.io/service": "redis"},
 				expected: false,
 			}),
 			Entry("one 1 tag selector and one 2 tags selector", testCase{
-				one:      TagSelector{"service": "backend"},
-				another:  TagSelector{"service": "redis", "version": "v1"},
+				one:      TagSelector{"kuma.io/service": "backend"},
+				another:  TagSelector{"kuma.io/service": "redis", "version": "v1"},
 				expected: false,
 			}),
 		)
@@ -669,7 +457,7 @@ var _ = Describe("Tags", func() {
 	It("should print tags", func() {
 		// given
 		tags := map[string]map[string]bool{
-			"service": map[string]bool{
+			"kuma.io/service": {
 				"backend-api":   true,
 				"backend-admin": true,
 			},
@@ -682,7 +470,7 @@ var _ = Describe("Tags", func() {
 		result := MultiValueTagSet(tags).String()
 
 		// then
-		Expect(result).To(Equal("service=backend-admin,backend-api version=v1"))
+		Expect(result).To(Equal("kuma.io/service=backend-admin,backend-api version=v1"))
 	})
 })
 

@@ -7,16 +7,16 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-	util_cache "github.com/Kong/kuma/pkg/util/cache"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/template"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_cache "github.com/kumahq/kuma/pkg/util/cache"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
 var _ = Describe("Reconcile", func() {
@@ -75,6 +75,7 @@ var _ = Describe("Reconcile", func() {
 					mesh_proto.InboundInterface{
 						DataplaneIP:   "192.168.0.1",
 						DataplanePort: 80,
+						WorkloadIP:    "127.0.0.1",
 						WorkloadPort:  8080,
 					}: &mesh_core.TrafficPermissionResource{
 						Meta: &test_model.ResourceMeta{
@@ -85,16 +86,16 @@ var _ = Describe("Reconcile", func() {
 							Sources: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
-										"service": "web1",
-										"version": "1.0",
+										"kuma.io/service": "web1",
+										"version":         "1.0",
 									},
 								},
 							},
 							Destinations: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
-										"service": "backend1",
-										"env":     "dev",
+										"kuma.io/service": "backend1",
+										"env":             "dev",
 									},
 								},
 							},

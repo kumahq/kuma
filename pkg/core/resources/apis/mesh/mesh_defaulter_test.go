@@ -5,9 +5,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("MeshResource", func() {
@@ -55,7 +55,7 @@ var _ = Describe("MeshResource", func() {
                       port: 5670
                       path: /metrics
                       tags:
-                        service: dataplane-metrics
+                        kuma.io/service: dataplane-metrics
 `,
 			}),
 			Entry("when defaults are set", testCase{
@@ -69,7 +69,7 @@ var _ = Describe("MeshResource", func() {
                       path: /non-standard-path
                       port: 1234
                       tags:
-                        service: dataplane-metrics
+                        kuma.io/service: dataplane-metrics
                       skipMTLS: true
 `,
 				expected: `
@@ -82,7 +82,7 @@ var _ = Describe("MeshResource", func() {
                       path: /non-standard-path
                       port: 1234
                       tags:
-                        service: dataplane-metrics
+                        kuma.io/service: dataplane-metrics
                       skipMTLS: true
 `,
 			}),

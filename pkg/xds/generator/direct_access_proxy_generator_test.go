@@ -6,15 +6,15 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/model/rest"
-	"github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/test/resources/model"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	util_yaml "github.com/Kong/kuma/pkg/util/yaml"
-	"github.com/Kong/kuma/pkg/xds/context"
-	"github.com/Kong/kuma/pkg/xds/generator"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
+	"github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -89,7 +89,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			resp, err := xds.ResourceList(resources).ToDeltaDiscoveryResponse()
+			resp, err := resources.List().ToDeltaDiscoveryResponse()
 			Expect(err).ToNot(HaveOccurred())
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())

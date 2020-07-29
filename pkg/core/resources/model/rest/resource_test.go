@@ -7,10 +7,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/model/rest"
-	sample_proto "github.com/Kong/kuma/pkg/test/apis/sample/v1alpha1"
-	sample_core "github.com/Kong/kuma/pkg/test/resources/apis/sample"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
 var _ = Describe("Rest Resource", func() {

@@ -10,14 +10,14 @@ import (
 
 	"github.com/ghodss/yaml"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	api_server "github.com/Kong/kuma/pkg/api-server"
-	config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/core"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model/rest"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	api_server "github.com/kumahq/kuma/pkg/api-server"
+	config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/core"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("HealthCheck Endpoints", func() {
@@ -32,7 +32,7 @@ var _ = Describe("HealthCheck Endpoints", func() {
 			return now
 		}
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true)
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes/default/health-checks",
@@ -68,10 +68,10 @@ var _ = Describe("HealthCheck Endpoints", func() {
         modificationTime: "2018-07-17T16:05:36.995Z"
         sources:
         - match:
-            service: web
+            kuma.io/service: web
         destinations:
         - match:
-            service: backend
+            kuma.io/service: backend
         conf:
           interval: 10s
           timeout: 2s

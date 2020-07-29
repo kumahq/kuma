@@ -3,7 +3,7 @@ package dns
 import (
 	"fmt"
 
-	"github.com/Kong/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core"
 
 	"github.com/miekg/dns"
 )
@@ -81,6 +81,7 @@ func (d *SimpleDNSServer) Start(stop <-chan struct{}) error {
 
 	errChan := make(chan error)
 	go func() {
+		defer close(errChan)
 		err := server.ListenAndServe()
 		if err != nil {
 			serverLog.Error(err, "failed to start the DNS listener.")

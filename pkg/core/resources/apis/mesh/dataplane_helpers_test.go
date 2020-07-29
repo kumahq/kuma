@@ -7,12 +7,12 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
+	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
-	test_model "github.com/Kong/kuma/pkg/test/resources/model"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Dataplane", func() {
@@ -420,7 +420,7 @@ var _ = Describe("Dataplane", func() {
                   - port: 8080
                     address: 192.168.0.2
                     tags:
-                      service: backend
+                      kuma.io/service: backend
 `,
 				expected: "192.168.0.1",
 			}),
@@ -430,10 +430,10 @@ var _ = Describe("Dataplane", func() {
                   inbound:
                   - interface: x.y.z.0
                     tags:
-                      service: backend-https
+                      kuma.io/service: backend-https
                   - interface: 192.168.0.1:80:8080
                     tags:
-                      service: backend
+                      kuma.io/service: backend
 `,
 				expected: "",
 			}),
@@ -462,7 +462,7 @@ var _ = Describe("ParseProtocol()", func() {
 		}),
 		Entry("http2", testCase{
 			tag:      "http2",
-			expected: ProtocolUnknown,
+			expected: ProtocolHTTP2,
 		}),
 		Entry("grpc", testCase{
 			tag:      "grpc",

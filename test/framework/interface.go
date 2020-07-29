@@ -10,19 +10,50 @@ type Clusters interface {
 	Cluster
 }
 
+type deployOptions struct {
+	globalAddress string
+}
+
+type DeployOptionsFunc func(*deployOptions)
+
+func WithGlobalAddress(address string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.globalAddress = address
+	}
+}
+
+func newDeployOpt(fs ...DeployOptionsFunc) *deployOptions {
+	rv := &deployOptions{}
+	for _, f := range fs {
+		f(rv)
+	}
+	return rv
+}
+
+type Deployment interface {
+	Name() string
+	Deploy(cluster Cluster) error
+	Delete(cluster Cluster) error
+}
+
 type Cluster interface {
-	DeployKuma(mode ...string) (ControlPlane, error)
+	// Cluster
+	DismissCluster() error
+	// Generic
+	DeployKuma(mode string, opts ...DeployOptionsFunc) error
+	GetKuma() ControlPlane
 	VerifyKuma() error
 	RestartKuma() error
 	DeleteKuma() error
 	InjectDNS() error
 	GetKumactlOptions() *KumactlOptions
+	Deployment(name string) Deployment
+	Deploy(deployment Deployment) error
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
-	LabelNamespaceForSidecarInjection(namespace string) error
 	DeployApp(namespace, appname string) error
 	DeleteApp(namespace, appname string) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
@@ -34,8 +65,8 @@ type Cluster interface {
 
 type ControlPlane interface {
 	GetName() string
-	AddCluster(name, url, lbAddress string) error
 	GetKumaCPLogs() (string, error)
 	GetKDSServerAddress() string
+	GetIngressAddress() string
 	GetGlobaStatusAPI() string
 }

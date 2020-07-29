@@ -3,14 +3,15 @@ package controllers
 import (
 	"sort"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type Endpoint struct {
-	Address string
-	Port    uint32
+	Address  string
+	Port     uint32
+	Instance string
 }
 
 type EndpointsByService map[string][]Endpoint
@@ -41,7 +42,8 @@ func endpointsByService(dataplanes []*mesh_k8s.Dataplane) EndpointsByService {
 				continue
 			}
 			endpoint := Endpoint{
-				Port: inbound.Port,
+				Port:     inbound.Port,
+				Instance: inbound.GetTags()[mesh_proto.InstanceTag],
 			}
 			if inbound.Address != "" {
 				endpoint.Address = inbound.Address

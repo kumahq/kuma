@@ -3,15 +3,15 @@ package dns_test
 import (
 	"context"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	config_manager "github.com/Kong/kuma/pkg/core/config/manager"
-	config_store "github.com/Kong/kuma/pkg/core/config/store"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	resources_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	"github.com/Kong/kuma/pkg/dns"
-	memory_resources "github.com/Kong/kuma/pkg/plugins/resources/memory"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	config_store "github.com/kumahq/kuma/pkg/core/config/store"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	resources_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/dns"
+	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -68,7 +68,7 @@ var _ = Describe("DNS sync", func() {
 							{
 								Port: 1234,
 								Tags: map[string]string{
-									"service": "web",
+									"kuma.io/service": "web",
 								},
 							},
 						},
@@ -107,7 +107,7 @@ var _ = Describe("DNS sync", func() {
 							AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 								{
 									Tags: map[string]string{
-										"service": "backend",
+										"kuma.io/service": "backend",
 									},
 								},
 							},
@@ -116,7 +116,7 @@ var _ = Describe("DNS sync", func() {
 							{
 								Port: 1234,
 								Tags: map[string]string{
-									"zone": "zone-2",
+									mesh_proto.ZoneTag: "zone-2",
 								},
 							},
 						},

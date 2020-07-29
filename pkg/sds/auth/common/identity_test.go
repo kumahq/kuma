@@ -1,11 +1,11 @@
 package common_test
 
 import (
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
-	auth_common "github.com/Kong/kuma/pkg/sds/auth/common"
-	"github.com/Kong/kuma/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
+	auth_common "github.com/kumahq/kuma/pkg/sds/auth/common"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,14 +27,14 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 							Port:        8080,
 							ServicePort: 80,
 							Tags: map[string]string{
-								"service": "backend",
+								"kuma.io/service": "backend",
 							},
 						},
 						{
 							Port:        9080,
 							ServicePort: 90,
 							Tags: map[string]string{
-								"service": "backend-api",
+								"kuma.io/service": "backend-api",
 							},
 						},
 					},
@@ -66,7 +66,7 @@ var _ = Describe("GetDataplaneIdentity()", func() {
 				Networking: &mesh_proto.Dataplane_Networking{
 					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 						Tags: map[string]string{
-							"service": "edge",
+							"kuma.io/service": "edge",
 						},
 					},
 				},

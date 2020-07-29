@@ -6,13 +6,13 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/logs"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/logs"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Matcher", func() {
@@ -72,14 +72,14 @@ var _ = Describe("Matcher", func() {
 							Port:        8080,
 							ServicePort: 8081,
 							Tags: map[string]string{
-								"service": "kong",
+								"kuma.io/service": "kong",
 							},
 						},
 						{
 							Port:        8090,
 							ServicePort: 8091,
 							Tags: map[string]string{
-								"service": "kong-admin",
+								"kuma.io/service": "kong-admin",
 							},
 						},
 					},
@@ -107,14 +107,14 @@ var _ = Describe("Matcher", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "kong",
+							"kuma.io/service": "kong",
 						},
 					},
 				},
 				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "backend",
+							"kuma.io/service": "backend",
 						},
 					},
 				},
@@ -132,14 +132,14 @@ var _ = Describe("Matcher", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "*",
+							"kuma.io/service": "*",
 						},
 					},
 				},
 				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "*",
+							"kuma.io/service": "*",
 						},
 					},
 				},
@@ -168,14 +168,14 @@ var _ = Describe("Matcher", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "web",
+							"kuma.io/service": "web",
 						},
 					},
 				},
 				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "backend",
+							"kuma.io/service": "backend",
 						},
 					},
 				},
@@ -202,14 +202,14 @@ var _ = Describe("Matcher", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "*",
+							"kuma.io/service": "*",
 						},
 					},
 				},
 				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "*",
+							"kuma.io/service": "*",
 						},
 					},
 				},

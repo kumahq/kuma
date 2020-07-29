@@ -1,8 +1,9 @@
 package rest
 
 import (
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 var From = &from{}
@@ -11,7 +12,10 @@ type from struct{}
 
 func (c *from) Resource(r model.Resource) *Resource {
 	var meshName string
-	if r.GetType() != mesh.MeshType {
+	switch r.GetType() {
+	case mesh.MeshType:
+	case system.ZoneType:
+	default:
 		meshName = r.GetMeta().GetMesh()
 	}
 	return &Resource{

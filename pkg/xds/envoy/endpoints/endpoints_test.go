@@ -5,11 +5,11 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Endpoints", func() {
@@ -93,13 +93,13 @@ var _ = Describe("Endpoints", func() {
 					{
 						Target: "192.168.0.1",
 						Port:   8081,
-						Tags:   map[string]string{"service": "backend", "region": "us"},
+						Tags:   map[string]string{"kuma.io/service": "backend", "region": "us"},
 						Weight: 1,
 					},
 					{
 						Target: "192.168.0.2",
 						Port:   8082,
-						Tags:   map[string]string{"service": "backend", "region": "eu"},
+						Tags:   map[string]string{"kuma.io/service": "backend", "region": "eu"},
 						Weight: 2,
 					},
 				},

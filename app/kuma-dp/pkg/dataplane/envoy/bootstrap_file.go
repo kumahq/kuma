@@ -8,8 +8,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	kuma_dp "github.com/Kong/kuma/pkg/config/app/kuma-dp"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func GenerateBootstrapFile(cfg kuma_dp.DataplaneRuntime, config proto.Message) (string, error) {

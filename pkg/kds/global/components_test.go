@@ -5,27 +5,31 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
+
+	"github.com/kumahq/kuma/pkg/kds"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/kds/global"
-	sync_store "github.com/Kong/kuma/pkg/kds/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	"github.com/Kong/kuma/pkg/test/grpc"
-	kds_setup "github.com/Kong/kuma/pkg/test/kds/setup"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/global"
+	sync_store "github.com/kumahq/kuma/pkg/kds/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/grpc"
+	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
 )
 
-var _ = Describe("Global Sync", func() { // todo fix the test
+var _ = Describe("Global Sync", func() {
 
-	var localStores []store.ResourceStore
+	var remoteStores []store.ResourceStore
 	var globalStore store.ResourceStore
 	var globalSyncer sync_store.ResourceSyncer
 	var closeFunc func()
@@ -33,13 +37,13 @@ var _ = Describe("Global Sync", func() { // todo fix the test
 	BeforeEach(func() {
 		serverStreams := []*grpc.MockServerStream{}
 		wg := &sync.WaitGroup{}
-		localStores = []store.ResourceStore{}
+		remoteStores = []store.ResourceStore{}
 		for i := 0; i < 2; i++ {
 			wg.Add(1)
-			localStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(localStore, wg, fmt.Sprintf("cluster-%d", i))
+			remoteStore := memory.NewStore()
+			serverStream := kds_setup.StartServer(remoteStore, wg, fmt.Sprintf("cluster-%d", i), kds.SupportedTypes, reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
-			localStores = append(localStores, localStore)
+			remoteStores = append(remoteStores, remoteStore)
 		}
 
 		globalStore = memory.NewStore()
@@ -49,10 +53,14 @@ var _ = Describe("Global Sync", func() { // todo fix the test
 		for _, ss := range serverStreams {
 			clientStreams = append(clientStreams, ss.ClientStream(stopCh))
 		}
-		cfg := &mode.ZoneConfig{
-			Ingress: mode.EndpointConfig{Address: "192.168.0.1"},
+		zone := &system.ZoneResource{
+			Spec: system_proto.Zone{
+				Ingress: &system_proto.Zone_Ingress{
+					Address: "192.168.0.2:10001",
+				},
+			},
 		}
-		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, cfg))
+		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, zone))
 
 		closeFunc = func() {
 			close(stopCh)
@@ -83,13 +91,12 @@ var _ = Describe("Global Sync", func() { // todo fix the test
 		}
 	}
 
-	It("should add resource to global store after adding it to global", func() {
+	It("should add resource to global store after adding it to remote", func() {
 		for i := 0; i < 10; i++ {
 			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
-			err := localStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
+			err := remoteStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
-
 		Eventually(func() int {
 			actual := mesh.DataplaneResourceList{}
 			err := globalStore.List(context.Background(), &actual)
@@ -103,13 +110,13 @@ var _ = Describe("Global Sync", func() { // todo fix the test
 	It("should sync resources independently for each Remote", func() {
 		for i := 0; i < 10; i++ {
 			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
-			err := localStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
+			err := remoteStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
 
 		for i := 0; i < 10; i++ {
 			dp := dataplaneFunc("kuma-cluster-2", fmt.Sprintf("service-2-%d", i))
-			err := localStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-2-%d", i), "mesh-1"))
+			err := remoteStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-2-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
 
@@ -120,10 +127,10 @@ var _ = Describe("Global Sync", func() { // todo fix the test
 			return len(actual.Items)
 		}, "3s", "100ms").Should(Equal(20))
 
-		err := localStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-0", "mesh-1"))
+		err := remoteStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-0", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = localStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-1", "mesh-1"))
+		err = remoteStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {
@@ -138,11 +145,11 @@ var _ = Describe("Global Sync", func() { // todo fix the test
 
 	It("should support same dataplane names through clusters", func() {
 		dp1 := dataplaneFunc("kuma-cluster-1", "backend")
-		err := localStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp1}, store.CreateByKey("dp-1", "mesh-1"))
+		err := remoteStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp1}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		dp2 := dataplaneFunc("kuma-cluster-2", "web")
-		err = localStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp2}, store.CreateByKey("dp-1", "mesh-1"))
+		err = remoteStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp2}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {

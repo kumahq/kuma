@@ -3,9 +3,9 @@ package get
 import (
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/app/kumactl/pkg/output"
-	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 )
 
 type getContext struct {
@@ -46,6 +46,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(withPaginationArgs(newGetFaultInjectionsCmd(listCtx), listCtx))
 	cmd.AddCommand(withPaginationArgs(newGetCircuitBreakersCmd(listCtx), listCtx))
 	cmd.AddCommand(newGetSecretsCmd(ctx))
+	cmd.AddCommand(withPaginationArgs(newGetZonesCmd(listCtx), listCtx))
 
 	cmd.AddCommand(newGetMeshCmd(ctx))
 	cmd.AddCommand(newGetDataplaneCmd(ctx))
@@ -58,6 +59,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newGetFaultInjectionCmd(ctx))
 	cmd.AddCommand(newGetCircuitBreakerCmd(ctx))
 	cmd.AddCommand(newGetSecretCmd(ctx))
+	cmd.AddCommand(newGetZoneCmd(ctx))
 	return cmd
 }
 

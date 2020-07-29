@@ -344,6 +344,8 @@ func (m *Dataplane_Networking_Inbound) Validate() error {
 
 	// no validation rules for ServicePort
 
+	// no validation rules for ServiceAddress
+
 	// no validation rules for Address
 
 	if len(m.GetTags()) < 1 {
@@ -608,9 +610,16 @@ func (m *Dataplane_Networking_TransparentProxying) Validate() error {
 		return nil
 	}
 
-	if m.GetRedirectPort() > 65535 {
+	if m.GetRedirectPortInbound() > 65535 {
 		return Dataplane_Networking_TransparentProxyingValidationError{
-			field:  "RedirectPort",
+			field:  "RedirectPortInbound",
+			reason: "value must be less than or equal to 65535",
+		}
+	}
+
+	if m.GetRedirectPortOutbound() > 65535 {
+		return Dataplane_Networking_TransparentProxyingValidationError{
+			field:  "RedirectPortOutbound",
 			reason: "value must be less than or equal to 65535",
 		}
 	}
@@ -686,6 +695,8 @@ func (m *Dataplane_Networking_Ingress_AvailableService) Validate() error {
 	// no validation rules for Tags
 
 	// no validation rules for Instances
+
+	// no validation rules for Mesh
 
 	return nil
 }

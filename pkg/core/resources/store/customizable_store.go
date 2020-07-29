@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 
-	"github.com/Kong/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 func NewCustomizableResourceStore(defaultStore ResourceStore, customStores map[model.ResourceType]ResourceStore) ResourceStore {

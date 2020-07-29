@@ -4,29 +4,31 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/Kong/kuma/pkg/core/secrets/manager"
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+
+	"github.com/kumahq/kuma/pkg/core/secrets/manager"
 
 	"github.com/pkg/errors"
 	kube_schema "k8s.io/apimachinery/pkg/runtime/schema"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_webhook "sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	"github.com/Kong/kuma/pkg/core"
-	managers_mesh "github.com/Kong/kuma/pkg/core/managers/apis/mesh"
-	core_plugins "github.com/Kong/kuma/pkg/core/plugins"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_registry "github.com/Kong/kuma/pkg/core/resources/registry"
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	k8s_controllers "github.com/Kong/kuma/pkg/plugins/runtime/k8s/controllers"
-	k8s_webhooks "github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks"
-	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
-	k8s_runtime "github.com/Kong/kuma/pkg/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/core"
+	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	k8s_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+	k8s_webhooks "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
+	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
 )
 
 var (
@@ -51,10 +53,8 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	if rt.Config().Mode.Mode != mode.Remote {
-		if err := addValidators(mgr, rt); err != nil {
-			return err
-		}
+	if err := addValidators(mgr, rt); err != nil {
+		return err
 	}
 
 	addMutators(mgr, rt)
@@ -71,18 +71,19 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 
 func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	reconciler := &k8s_controllers.NamespaceReconciler{
-		Client:              mgr.GetClient(),
-		Log:                 core.Log.WithName("controllers").WithName("Namespace"),
-		SystemNamespace:     rt.Config().Store.Kubernetes.SystemNamespace,
-		CNIEnabled:          rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
-		ResourceManager:     rt.ResourceManager(),
-		DefaultMeshTemplate: rt.Config().Defaults.MeshProto(),
+		Client:                  mgr.GetClient(),
+		Log:                     core.Log.WithName("controllers").WithName("Namespace"),
+		SystemNamespace:         rt.Config().Store.Kubernetes.SystemNamespace,
+		CNIEnabled:              rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
+		ResourceManager:         rt.ResourceManager(),
+		SkipDefaultMeshCreation: rt.Config().Defaults.SkipMeshCreation,
+		DefaultMeshTemplate:     v1alpha1.Mesh{},
 	}
 	return reconciler.SetupWithManager(mgr)
 }
 
 func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
-	if rt.Config().Mode.Mode == mode.Remote {
+	if rt.Config().Mode == config_core.Remote {
 		return nil
 	}
 	reconciler := &k8s_controllers.MeshReconciler{
@@ -125,7 +126,7 @@ func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	composite := k8s_webhooks.CompositeValidator{}
 
-	handler := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global())
+	handler := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global(), rt.Config().Mode)
 	composite.AddValidator(handler)
 
 	coreMeshValidator := managers_mesh.MeshValidator{CaManagers: rt.CaManagers()}
@@ -150,7 +151,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 }
 
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) {
-	if rt.Config().Mode.Mode != mode.Global {
+	if rt.Config().Mode != config_core.Global {
 		kumaInjector := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
 			rt.Config().ApiServer.Catalog.ApiServer.Url,

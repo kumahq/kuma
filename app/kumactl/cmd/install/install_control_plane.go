@@ -3,19 +3,19 @@ package install
 import (
 	"fmt"
 
-	"github.com/Kong/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s"
-	controlplane "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/control-plane"
-	kumacni "github.com/Kong/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
-	kuma_cmd "github.com/Kong/kuma/pkg/cmd"
-	"github.com/Kong/kuma/pkg/tls"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
+	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
+	kumacni "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
+	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/tls"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var (
@@ -39,6 +39,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		SdsTlsKey               string
 		KdsTlsCert              string
 		KdsTlsKey               string
+		KdsGlobalAddress        string
 		CNIEnabled              bool
 		CNIImage                string
 		CNIVersion              string
@@ -60,7 +61,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		SdsTlsKey:               "",
 		CNIImage:                "lobkovilya/install-cni",
 		CNIVersion:              "0.0.1",
-		KumaCpMode:              mode.Standalone,
+		KumaCpMode:              core.Standalone,
 		Zone:                    "",
 		GlobalRemotePortType:    "LoadBalancer",
 	}
@@ -70,13 +71,16 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install Kuma Control Plane on Kubernetes",
 		Long:  `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := mode.ValidateCpMode(args.KumaCpMode); err != nil {
+			if err := core.ValidateCpMode(args.KumaCpMode); err != nil {
 				return err
 			}
-			if args.KumaCpMode == mode.Remote && args.Zone == "" {
+			if args.KumaCpMode == core.Remote && args.Zone == "" {
 				return errors.Errorf("--zone is mandatory with `remote` mode")
 			}
-			if useNodePort && args.KumaCpMode != mode.Standalone {
+			if args.KumaCpMode == core.Remote && args.KdsGlobalAddress == "" {
+				return errors.Errorf("--kds-global-address is mandatory with `remote` mode")
+			}
+			if useNodePort && args.KumaCpMode != core.Standalone {
 				args.GlobalRemotePortType = "NodePort"
 			}
 			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
@@ -171,6 +175,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.SdsTlsKey, "sds-tls-key", args.SdsTlsKey, "TLS key for the SDS server")
 	cmd.Flags().StringVar(&args.KdsTlsCert, "kds-tls-cert", args.KdsTlsCert, "TLS certificate for the KDS server")
 	cmd.Flags().StringVar(&args.KdsTlsKey, "kds-tls-key", args.KdsTlsKey, "TLS key for the KDS server")
+	cmd.Flags().StringVar(&args.KdsGlobalAddress, "kds-global-address", args.KdsGlobalAddress, "URL of Global Kuma CP")
 	cmd.Flags().BoolVar(&args.CNIEnabled, "cni-enabled", args.CNIEnabled, "install Kuma with CNI instead of proxy init container")
 	cmd.Flags().StringVar(&args.CNIImage, "cni-image", args.CNIImage, "image of Kuma CNI component, if CNIEnabled equals true")
 	cmd.Flags().StringVar(&args.CNIVersion, "cni-version", args.CNIVersion, "version of the CNIImage")

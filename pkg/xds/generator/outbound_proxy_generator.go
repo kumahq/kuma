@@ -5,32 +5,35 @@ import (
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	"github.com/Kong/kuma/pkg/core/validators"
-	envoy_endpoints "github.com/Kong/kuma/pkg/xds/envoy/endpoints"
-	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
-	envoy_routes "github.com/Kong/kuma/pkg/xds/envoy/routes"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
+	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 
 	"github.com/pkg/errors"
 
-	kuma_mesh "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
+	kuma_mesh "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
+
+// OriginOutbound is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginOutbound = "outbound"
 
 type OutboundProxyGenerator struct {
 }
 
-func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
+	resources := model.NewResourceSet()
 	if len(outbounds) == 0 {
-		return nil, nil
+		return resources, nil
 	}
-	resources := &model.ResourceSet{}
 	clusters := envoy_common.Clusters{}
 
 	for _, outbound := range outbounds {
@@ -49,7 +52,11 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 		if err != nil {
 			return nil, err
 		}
-		resources.AddNamed(listener)
+		resources.Add(&model.Resource{
+			Name:     listener.Name,
+			Origin:   OriginOutbound,
+			Resource: listener,
+		})
 
 		// Generate route, routes are only applicable to the HTTP
 		if protocol == mesh_core.ProtocolHTTP {
@@ -57,7 +64,11 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			if err != nil {
 				return nil, err
 			}
-			resources.AddNamed(route)
+			resources.Add(&model.Resource{
+				Name:     route.Name,
+				Origin:   OriginOutbound,
+				Resource: route,
+			})
 		}
 	}
 
@@ -71,7 +82,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	edsResources := g.generateEDS(proxy, clusters)
 	resources.AddSet(edsResources)
 
-	return resources.List(), nil
+	return resources, nil
 }
 
 func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_common.ClusterSubset, outbound *kuma_mesh.Dataplane_Networking_Outbound, protocol mesh_core.Protocol) (*envoy_api_v2.Listener, error) {
@@ -111,8 +122,8 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 	return listener, nil
 }
 
-func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (model.ResourceSet, error) {
-	var resources model.ResourceSet
+func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (*model.ResourceSet, error) {
+	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
 		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
 		tags := clusters.Tags(clusterName)
@@ -124,11 +135,16 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 			Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, tags)).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 			Configure(envoy_clusters.HealthCheck(healthCheck)).
+			Configure(envoy_clusters.Http2()).
 			Build()
 		if err != nil {
-			return model.ResourceSet{}, err
+			return nil, err
 		}
-		resources.AddNamed(edsCluster)
+		resources.Add(&model.Resource{
+			Name:     clusterName,
+			Origin:   OriginOutbound,
+			Resource: edsCluster,
+		})
 	}
 	return resources, nil
 }
@@ -147,8 +163,8 @@ func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]strin
 	return result
 }
 
-func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters envoy_common.Clusters) model.ResourceSet {
-	var resources model.ResourceSet
+func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters envoy_common.Clusters) *model.ResourceSet {
+	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
 		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
 		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])

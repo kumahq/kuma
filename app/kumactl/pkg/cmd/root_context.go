@@ -8,16 +8,16 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/config"
-	kumactl_resources "github.com/Kong/kuma/app/kumactl/pkg/resources"
-	"github.com/Kong/kuma/app/kumactl/pkg/tokens"
-	"github.com/Kong/kuma/pkg/catalog"
-	catalog_client "github.com/Kong/kuma/pkg/catalog/client"
-	config_proto "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	kumactl_config "github.com/Kong/kuma/pkg/config/app/kumactl/v1alpha1"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	util_files "github.com/Kong/kuma/pkg/util/files"
+	"github.com/kumahq/kuma/app/kumactl/pkg/config"
+	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
+	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
+	"github.com/kumahq/kuma/pkg/catalog"
+	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	util_files "github.com/kumahq/kuma/pkg/util/files"
 )
 
 type RootArgs struct {
@@ -33,6 +33,7 @@ type RootRuntime struct {
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewDataplaneTokenClient    func(string, *kumactl_config.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error)
 	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
+	NewAPIServerClient         func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
 }
 
 type RootContext struct {
@@ -49,6 +50,7 @@ func DefaultRootContext() *RootContext {
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
 			NewCatalogClient:           catalog_client.NewCatalogClient,
+			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
 		},
 	}
 }
@@ -243,4 +245,12 @@ func (rc *RootContext) IsFirstTimeUsage() bool {
 		return !util_files.FileExists(rc.Args.ConfigFile)
 	}
 	return !util_files.FileExists(config.DefaultConfigFile)
+}
+
+func (rc *RootContext) CurrentApiClient() (kumactl_resources.ApiServerClient, error) {
+	controlPlane, err := rc.CurrentControlPlane()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewAPIServerClient(controlPlane.Coordinates.ApiServer)
 }

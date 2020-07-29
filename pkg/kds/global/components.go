@@ -1,25 +1,28 @@
 package global
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"strconv"
 	"strings"
 
-	"github.com/Kong/kuma/pkg/config/core/resources/store"
-	"github.com/Kong/kuma/pkg/config/mode"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/apis/system"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/registry"
-	"github.com/Kong/kuma/pkg/core/runtime"
-	"github.com/Kong/kuma/pkg/core/runtime/component"
-	"github.com/Kong/kuma/pkg/kds/client"
-	kds_server "github.com/Kong/kuma/pkg/kds/server"
-	sync_store "github.com/Kong/kuma/pkg/kds/store"
-	"github.com/Kong/kuma/pkg/kds/util"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	"github.com/pkg/errors"
+
+	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/mux"
+	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/kds/client"
+	sync_store "github.com/kumahq/kuma/pkg/kds/store"
+	"github.com/kumahq/kuma/pkg/kds/util"
 )
 
 var (
@@ -43,22 +46,41 @@ var (
 	}
 )
 
-func SetupServer(rt runtime.Runtime) error {
-	hasher, cache := kds_server.NewXdsContext(kdsGlobalLog)
-	generator := kds_server.NewSnapshotGenerator(rt, providedTypes, providedFilter)
-	versioner := kds_server.NewVersioner()
-	reconciler := kds_server.NewReconciler(hasher, cache, generator, versioner)
-	syncTracker := kds_server.NewSyncTracker(kdsGlobalLog, reconciler, rt.Config().KDS.Server.RefreshInterval)
-	callbacks := util_xds.CallbacksChain{
-		util_xds.LoggingCallbacks{Log: kdsGlobalLog},
-		syncTracker,
+func Setup(rt runtime.Runtime) (err error) {
+	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes,
+		"global", rt.Config().Multicluster.Global.KDS.RefreshInterval,
+		ProvidedFilter)
+	if err != nil {
+		return err
 	}
-	srv := kds_server.NewServer(cache, callbacks, kdsGlobalLog, "global")
-	return rt.Add(kds_server.NewKDSServer(srv, *rt.Config().KDS.Server))
+	resourceSyncer := sync_store.NewResourceSyncer(kdsGlobalLog, rt.ResourceStore())
+	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
+		log := kdsGlobalLog.WithValues("peer-id", session.PeerID())
+		log.Info("new session created")
+		go func() {
+			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
+				log.Error(err, "StreamKumaResources finished with an error")
+			}
+		}()
+		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID())
+		zone := &system.ZoneResource{}
+		if err := rt.ReadOnlyResourceManager().Get(context.Background(), zone, store.GetByKey(session.PeerID(), "default")); err != nil {
+			// send error back to Remote CP, it will re-try later when ZoneResource will appear
+			return errors.Wrap(err, "ZoneResource doesn't exist")
+		}
+		sink := client.NewKDSSink(log, consumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, zone))
+		go func() {
+			if err := sink.Start(session.Done()); err != nil {
+				log.Error(err, "KDSSink finished with an error")
+			}
+		}()
+		return nil
+	})
+	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().Multicluster.Global.KDS))
 }
 
-// providedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
-func providedFilter(clusterID string, r model.Resource) bool {
+// ProvidedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
+func ProvidedFilter(clusterID string, r model.Resource) bool {
 	if r.GetType() != mesh.DataplaneType {
 		return true
 	}
@@ -68,32 +90,9 @@ func providedFilter(clusterID string, r model.Resource) bool {
 	return clusterID != util.ZoneTag(r)
 }
 
-func SetupComponent(rt runtime.Runtime) error {
-	syncStore := sync_store.NewResourceSyncer(kdsGlobalLog, rt.ResourceStore())
-
-	clientFactory := func(clusterIP string) client.ClientFactory {
-		return func() (kdsClient client.KDSClient, err error) {
-			return client.New(clusterIP, rt.Config().KDS.Client)
-		}
-	}
-
-	for _, zone := range rt.Config().Mode.Global.Zones {
-		log := kdsGlobalLog.WithValues("clusterIP", zone.Remote.Address)
-		dataplaneSink := client.NewKDSSink(log, rt.Config().Mode.Global.LBAddress, consumedTypes,
-			clientFactory(zone.Remote.Address), Callbacks(syncStore, rt.Config().Store.Type == store.KubernetesStore, zone))
-		if err := rt.Add(component.NewResilientComponent(log, dataplaneSink)); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *mode.ZoneConfig) *client.Callbacks {
+func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, zone *system.ZoneResource) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
-			if len(rs.GetItems()) == 0 {
-				return nil
-			}
 			util.AddPrefixToNames(rs.GetItems(), clusterName)
 			// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 			// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
@@ -102,7 +101,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *mode.ZoneConfig)
 			}
 			if rs.GetItemType() == mesh.DataplaneType {
 				rs = dedupIngresses(rs)
-				adjustIngressNetworking(cfg, rs)
+				adjustIngressNetworking(zone, rs)
 			}
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
@@ -111,8 +110,12 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, cfg *mode.ZoneConfig)
 	}
 }
 
-func adjustIngressNetworking(cfg *mode.ZoneConfig, rs model.ResourceList) {
-	host, portStr, _ := net.SplitHostPort(cfg.Ingress.Address) // err is ignored because we rely on the config validation
+func adjustIngressNetworking(zone *system.ZoneResource, rs model.ResourceList) {
+	host, portStr, err := net.SplitHostPort(zone.Spec.GetIngress().GetAddress())
+	if err != nil {
+		kdsGlobalLog.Error(err, "failed parsing ingress", "host", host, "port", portStr)
+		return
+	}
 	port, _ := strconv.ParseUint(portStr, 10, 32)
 	for _, r := range rs.GetItems() {
 		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
@@ -139,4 +142,13 @@ func dedupIngresses(rs model.ResourceList) model.ResourceList {
 		}
 	}
 	return rv
+}
+
+func ConsumesType(typ model.ResourceType) bool {
+	for _, consumedTyp := range consumedTypes {
+		if consumedTyp == typ {
+			return true
+		}
+	}
+	return false
 }

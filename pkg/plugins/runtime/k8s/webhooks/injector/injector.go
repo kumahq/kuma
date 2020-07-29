@@ -4,14 +4,15 @@ import (
 	"context"
 	"fmt"
 
-	runtime_k8s "github.com/Kong/kuma/pkg/config/plugins/runtime/k8s"
+	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/pkg/errors"
 
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	k8s_resources "github.com/Kong/kuma/pkg/plugins/resources/k8s"
-	mesh_k8s "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/Kong/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
@@ -46,17 +47,22 @@ type KumaInjector struct {
 }
 
 func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
-	// first, give users a chance to opt out of side-car injection into a given Pod
-	if pod.Annotations[metadata.KumaSidecarInjectionAnnotation] == metadata.KumaSidecarInjectionDisabled {
+	ns, err := i.namespaceFor(pod)
+	if err != nil {
+		return errors.Wrap(err, "could not retrieve namespace for pod")
+	}
+	if inject, err := needInject(pod, ns); err != nil {
+		return err
+	} else if !inject {
 		return nil
 	}
 	// sidecar container
 	if pod.Spec.Containers == nil {
 		pod.Spec.Containers = []kube_core.Container{}
 	}
-	pod.Spec.Containers = append(pod.Spec.Containers, i.NewSidecarContainer(pod))
+	pod.Spec.Containers = append(pod.Spec.Containers, i.NewSidecarContainer(pod, ns))
 
-	mesh, err := i.meshFor(pod)
+	mesh, err := i.meshFor(pod, ns)
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve mesh for pod")
 	}
@@ -80,8 +86,37 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	return nil
 }
 
-func (i *KumaInjector) meshFor(pod *kube_core.Pod) (*mesh_core.MeshResource, error) {
-	meshName := metadata.GetMesh(pod) // either user-defined value or default
+func needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
+	isEnabled := func(enabled string) (bool, error) {
+		switch enabled {
+		case metadata.KumaSidecarInjectionEnabled:
+			return true, nil
+		case metadata.KumaSidecarInjectionDisabled:
+			return false, nil
+		}
+		return false, errors.Errorf("annotation %s has wrong value", metadata.KumaSidecarInjectionAnnotation)
+	}
+	if enabled, ok := pod.Annotations[metadata.KumaSidecarInjectionAnnotation]; ok {
+		return isEnabled(enabled)
+	}
+	if enabled, ok := ns.Annotations[metadata.KumaSidecarInjectionAnnotation]; ok {
+		return isEnabled(enabled)
+	}
+	return false, nil
+}
+
+func meshName(pod *kube_core.Pod, ns *kube_core.Namespace) string {
+	if mesh, ok := pod.Annotations[metadata.KumaMeshAnnotation]; ok {
+		return mesh
+	}
+	if mesh, ok := ns.Annotations[metadata.KumaMeshAnnotation]; ok {
+		return mesh
+	}
+	return core_model.DefaultMesh
+}
+
+func (i *KumaInjector) meshFor(pod *kube_core.Pod, ns *kube_core.Namespace) (*mesh_core.MeshResource, error) {
+	meshName := meshName(pod, ns)
 	mesh := &mesh_k8s.Mesh{}
 	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
 		return nil, err
@@ -93,8 +128,20 @@ func (i *KumaInjector) meshFor(pod *kube_core.Pod) (*mesh_core.MeshResource, err
 	return meshResource, nil
 }
 
-func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod) kube_core.Container {
-	mesh := metadata.GetMesh(pod) // either user-defined value or default
+func (i *KumaInjector) namespaceFor(pod *kube_core.Pod) (*kube_core.Namespace, error) {
+	ns := &kube_core.Namespace{}
+	nsName := "default"
+	if pod.GetNamespace() != "" {
+		nsName = pod.GetNamespace()
+	}
+	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: nsName}, ns); err != nil {
+		return nil, err
+	}
+	return ns, nil
+}
+
+func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Namespace) kube_core.Container {
+	mesh := meshName(pod, ns)
 	return kube_core.Container{
 		Name:            KumaSidecarContainerName,
 		Image:           i.cfg.SidecarContainer.Image,
@@ -245,7 +292,9 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Args: []string{
 			"-p",
-			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
+			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
+			"-z",
+			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
 			"-u",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
 			"-g",
@@ -281,10 +330,11 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) map[string]string {
 	annotations := map[string]string{
-		metadata.KumaMeshAnnotation:                    mesh.GetMeta().GetName(), // either user-defined value or default
-		metadata.KumaSidecarInjectedAnnotation:         metadata.KumaSidecarInjected,
-		metadata.KumaTransparentProxyingAnnotation:     metadata.KumaTransparentProxyingEnabled,
-		metadata.KumaTransparentProxyingPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPort),
+		metadata.KumaMeshAnnotation:                            mesh.GetMeta().GetName(), // either user-defined value or default
+		metadata.KumaSidecarInjectedAnnotation:                 metadata.KumaSidecarInjected,
+		metadata.KumaTransparentProxyingAnnotation:             metadata.KumaTransparentProxyingEnabled,
+		metadata.KumaTransparentProxyingInboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
+		metadata.KumaTransparentProxyingOutboundPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
 	}
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI

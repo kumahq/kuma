@@ -26,6 +26,8 @@ message Dataplane {
         map<string, string> tags = 1;
         // number of instances available for given tags
         uint32 instances = 2;
+        // mesh of the instances available for given tags
+        string mesh = 3;
       }
       repeated AvailableService availableServices = 1;
     }
@@ -45,6 +47,11 @@ message Dataplane {
 
       // Port of the service that requests will be forwarded to.
       uint32 servicePort = 4;
+
+      // Address of the service that requests will be forwarded to.
+      // Empty value defaults to '127.0.0.1', since Kuma DP should be deployed
+      // next to service.
+      string serviceAddress = 6;
 
       // Address on which inbound listener will be exposed. Defaults to
       // networking.address.
@@ -84,11 +91,16 @@ message Dataplane {
     // TransparentProxying describes configuration for transparent proxying.
     message TransparentProxying {
 
-      // Port on which all traffic is being transparently redirected.
-      uint32 redirect_port = 1 [ (validate.rules).uint32 = {lte : 65535} ];
+      // Port on which all inbound traffic is being transparently redirected.
+      uint32 redirect_port_inbound = 1
+          [ (validate.rules).uint32 = {lte : 65535} ];
+
+      // Port on which all outbound traffic is being transparently redirected.
+      uint32 redirect_port_outbound = 2
+          [ (validate.rules).uint32 = {lte : 65535} ];
 
       // List of services that will be access directly via IP:PORT
-      repeated string direct_access_services = 2;
+      repeated string direct_access_services = 3;
     }
 
     // Gateway describes configuration of gateway of the dataplane.

@@ -13,13 +13,13 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	common_k8s "github.com/Kong/kuma/pkg/plugins/common/k8s"
-	k8s_model "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	k8s_registry "github.com/Kong/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-	util_k8s "github.com/Kong/kuma/pkg/util/k8s"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
+	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ store.ResourceStore = &KubernetesStore{}
@@ -62,6 +62,10 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 		}
 	}
 
+	if opts.Synced {
+		markAsSynced(obj)
+	}
+
 	if err := s.Client.Create(ctx, obj); err != nil {
 		if kube_apierrs.IsAlreadyExists(err) {
 			return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
@@ -75,11 +79,27 @@ func (s *KubernetesStore) Create(ctx context.Context, r core_model.Resource, fs 
 	return nil
 }
 
+func markAsSynced(obj k8s_model.KubernetesObject) {
+	annotations := obj.GetAnnotations()
+	if annotations == nil {
+		annotations = map[string]string{}
+	}
+	annotations[common_k8s.K8sSynced] = "true"
+	obj.SetAnnotations(annotations)
+}
+
 func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs ...store.UpdateOptionsFunc) error {
+	opts := store.NewUpdateOptions(fs...)
+
 	obj, err := s.Converter.ToKubernetesObject(r)
 	if err != nil {
 		return errors.Wrapf(err, "failed to convert core model of type %s into k8s counterpart", r.GetType())
 	}
+
+	if opts.Synced {
+		markAsSynced(obj)
+	}
+
 	if err := s.Client.Update(ctx, obj); err != nil {
 		if kube_apierrs.IsConflict(err) {
 			return store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh())

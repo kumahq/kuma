@@ -15,99 +15,6 @@ resources:
                       portValue: 8080
       name: localhost:8080
       type: STATIC
-  - name: inbound:192.168.0.1:80
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 192.168.0.1
-          portValue: 80
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.rbac
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
-                rules:
-                  policies:
-                    tp-1:
-                      permissions:
-                        - any: true
-                      principals:
-                        - authenticated:
-                            principalName:
-                              exact: spiffe://default/web1
-                statPrefix: inbound_192_168_0_1_80.
-            - name: envoy.http_connection_manager
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                httpFilters:
-                  - name: envoy.fault
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.http.fault.v2.HTTPFault
-                      delay:
-                        fixedDelay: 5s
-                        percentage:
-                          numerator: 50
-                      headers:
-                        - name: x-kuma-tags
-                          safeRegexMatch:
-                            googleRe2:
-                              maxProgramSize: 500
-                            regex: .*&service=[^&]*frontend[,&].*
-                  - name: envoy.router
-                routeConfig:
-                  name: inbound:backend1
-                  requestHeadersToRemove:
-                    - x-kuma-tags
-                  validateClusters: true
-                  virtualHosts:
-                    - domains:
-                        - '*'
-                      name: backend1
-                      routes:
-                        - match:
-                            prefix: /
-                          route:
-                            cluster: localhost:8080
-                statPrefix: localhost_8080
-          transportSocket:
-            name: envoy.transport_sockets.tls
-            typedConfig:
-              '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
-              commonTlsContext:
-                combinedValidationContext:
-                  defaultValidationContext:
-                    matchSubjectAltNames:
-                      - prefix: spiffe://default/
-                  validationContextSdsSecretConfig:
-                    name: mesh_ca
-                    sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: MTIzNDU=
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-system:5677
-                tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
-                    sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: MTIzNDU=
-                              statPrefix: sds_identity_cert
-                              targetUri: kuma-system:5677
-              requireClientCertificate: true
-      name: inbound:192.168.0.1:80
-      trafficDirection: INBOUND
   - name: localhost:8443
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -181,6 +88,156 @@ resources:
               requireClientCertificate: true
       name: inbound:192.168.0.1:443
       trafficDirection: INBOUND
+  - name: inbound:192.168.0.1:80
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          address: 192.168.0.1
+          portValue: 80
+      filterChains:
+        - filters:
+            - name: envoy.filters.network.rbac
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+                rules:
+                  policies:
+                    tp-1:
+                      permissions:
+                        - any: true
+                      principals:
+                        - authenticated:
+                            principalName:
+                              exact: spiffe://default/web1
+                statPrefix: inbound_192_168_0_1_80.
+            - name: envoy.http_connection_manager
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                httpFilters:
+                  - name: envoy.fault
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.config.filter.http.fault.v2.HTTPFault
+                      delay:
+                        fixedDelay: 5s
+                        percentage:
+                          numerator: 50
+                      headers:
+                        - name: x-kuma-tags
+                          safeRegexMatch:
+                            googleRe2:
+                              maxProgramSize: 500
+                            regex: .*&kuma.io/service=[^&]*frontend[,&].*
+                  - name: envoy.router
+                routeConfig:
+                  name: inbound:backend1
+                  requestHeadersToRemove:
+                    - x-kuma-tags
+                  validateClusters: true
+                  virtualHosts:
+                    - domains:
+                        - '*'
+                      name: backend1
+                      routes:
+                        - match:
+                            prefix: /
+                          route:
+                            cluster: localhost:8080
+                statPrefix: localhost_8080
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+              commonTlsContext:
+                combinedValidationContext:
+                  defaultValidationContext:
+                    matchSubjectAltNames:
+                      - prefix: spiffe://default/
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-system:5677
+                tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_identity_cert
+                              targetUri: kuma-system:5677
+              requireClientCertificate: true
+      name: inbound:192.168.0.1:80
+      trafficDirection: INBOUND
+  - name: inbound:192.168.0.2:443
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          address: 192.168.0.2
+          portValue: 443
+      filterChains:
+        - filters:
+            - name: envoy.filters.network.rbac
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+                rules: {}
+                statPrefix: inbound_192_168_0_2_443.
+            - name: envoy.tcp_proxy
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+                cluster: localhost:8443
+                statPrefix: localhost_8443
+          transportSocket:
+            name: envoy.transport_sockets.tls
+            typedConfig:
+              '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+              commonTlsContext:
+                combinedValidationContext:
+                  defaultValidationContext:
+                    matchSubjectAltNames:
+                      - prefix: spiffe://default/
+                  validationContextSdsSecretConfig:
+                    name: mesh_ca
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_mesh_ca
+                              targetUri: kuma-system:5677
+                tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                          - googleGrpc:
+                              channelCredentials:
+                                sslCredentials:
+                                  rootCerts:
+                                    inlineBytes: MTIzNDU=
+                              statPrefix: sds_identity_cert
+                              targetUri: kuma-system:5677
+              requireClientCertificate: true
+      name: inbound:192.168.0.2:443
+      trafficDirection: INBOUND
   - name: inbound:192.168.0.2:80
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -252,61 +309,4 @@ resources:
                               targetUri: kuma-system:5677
               requireClientCertificate: true
       name: inbound:192.168.0.2:80
-      trafficDirection: INBOUND
-  - name: inbound:192.168.0.2:443
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 192.168.0.2
-          portValue: 443
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.rbac
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
-                rules: {}
-                statPrefix: inbound_192_168_0_2_443.
-            - name: envoy.tcp_proxy
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                cluster: localhost:8443
-                statPrefix: localhost_8443
-          transportSocket:
-            name: envoy.transport_sockets.tls
-            typedConfig:
-              '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
-              commonTlsContext:
-                combinedValidationContext:
-                  defaultValidationContext:
-                    matchSubjectAltNames:
-                      - prefix: spiffe://default/
-                  validationContextSdsSecretConfig:
-                    name: mesh_ca
-                    sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: MTIzNDU=
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-system:5677
-                tlsCertificateSdsSecretConfigs:
-                  - name: identity_cert
-                    sdsConfig:
-                      apiConfigSource:
-                        apiType: GRPC
-                        grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: MTIzNDU=
-                              statPrefix: sds_identity_cert
-                              targetUri: kuma-system:5677
-              requireClientCertificate: true
-      name: inbound:192.168.0.2:443
       trafficDirection: INBOUND

@@ -1,10 +1,10 @@
 package server
 
 import (
-	"github.com/Kong/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core"
 
-	core_runtime "github.com/Kong/kuma/pkg/core/runtime"
-	util_xds "github.com/Kong/kuma/pkg/util/xds"
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 var (

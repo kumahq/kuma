@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Kong/kuma/pkg/core"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/model"
-	"github.com/Kong/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type ReadOnlyResourceManager interface {

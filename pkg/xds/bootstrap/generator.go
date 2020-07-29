@@ -12,15 +12,13 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	bootstrap_config "github.com/Kong/kuma/pkg/config/xds/bootstrap"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	"github.com/Kong/kuma/pkg/xds/bootstrap/types"
-	"github.com/Kong/kuma/pkg/xds/topology"
+	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 type BootstrapGenerator interface {
@@ -55,13 +53,6 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	}
 	bootstrapCfg, err := b.generateFor(*proxyId, dataplane, request)
 	if err != nil {
-		return nil, err
-	}
-	tracingBackend, err := b.fetchTracingBackend(ctx, dataplane)
-	if err != nil {
-		return nil, err
-	}
-	if err := AddTracingConfig(bootstrapCfg, tracingBackend); err != nil {
 		return nil, err
 	}
 	return bootstrapCfg, nil
@@ -124,23 +115,6 @@ func (b *bootstrapGenerator) fetchDataplane(ctx context.Context, proxyId *core_x
 		return nil, err
 	}
 	return &res, nil
-}
-
-func (b *bootstrapGenerator) fetchTracingBackend(ctx context.Context, dataplane *core_mesh.DataplaneResource) (*mesh_proto.TracingBackend, error) {
-	mesh := core_mesh.MeshResource{}
-	if err := b.resManager.Get(context.Background(), &mesh, core_store.GetByKey(dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetMesh())); err != nil {
-		return nil, err
-	}
-
-	trafficTrace, err := topology.GetTrafficTrace(ctx, dataplane, b.resManager)
-	if err != nil {
-		return nil, err
-	}
-	if trafficTrace == nil {
-		return nil, nil
-	}
-
-	return mesh.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend()), nil
 }
 
 func (b *bootstrapGenerator) configForParameters(params configParameters) (*envoy_bootstrap.Bootstrap, error) {

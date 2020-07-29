@@ -1,7 +1,7 @@
 package envoy
 
 import (
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -27,7 +27,7 @@ var _ = Describe("Metadata()", func() {
 	It("should skip service tag", func() {
 		// when
 		metadata := EndpointMetadata(map[string]string{
-			"service": "backend",
+			"kuma.io/service": "backend",
 		})
 		// then
 		Expect(metadata).To(BeNil())
@@ -49,9 +49,9 @@ var _ = Describe("Metadata()", func() {
 		},
 		Entry("map with multiple tags", testCase{
 			tags: map[string]string{
-				"service": "redis",
-				"version": "v1",
-				"region":  "eu",
+				"kuma.io/service": "redis",
+				"version":         "v1",
+				"region":          "eu",
 			},
 			expected: `
             filterMetadata:

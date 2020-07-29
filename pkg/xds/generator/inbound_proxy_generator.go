@@ -3,44 +3,52 @@ package generator
 import (
 	"github.com/pkg/errors"
 
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/validators"
-	model "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	model "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
-	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
+
+// OriginInbound is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginInbound = "inbound"
 
 type InboundProxyGenerator struct {
 }
 
-func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) ([]*model.Resource, error) {
+func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	endpoints, err := proxy.Dataplane.Spec.Networking.GetInboundInterfaces()
 	if err != nil {
 		return nil, err
 	}
-	if len(endpoints) == 0 {
-		return nil, nil
-	}
-	resources := &model.ResourceSet{}
+	resources := model.NewResourceSet()
 	for i, endpoint := range endpoints {
+		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
+		protocol := mesh_core.ParseProtocol(iface.GetProtocol())
+
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
-		cluster, err := envoy_clusters.NewClusterBuilder().
-			Configure(envoy_clusters.StaticCluster(localClusterName, "127.0.0.1", endpoint.WorkloadPort)).
-			Build()
+		clusterBuilder := envoy_clusters.NewClusterBuilder().
+			Configure(envoy_clusters.StaticCluster(localClusterName, endpoint.WorkloadIP, endpoint.WorkloadPort))
+		if protocol == mesh_core.ProtocolHTTP2 {
+			clusterBuilder.Configure(envoy_clusters.Http2())
+		}
+		cluster, err := clusterBuilder.Build()
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate cluster %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), localClusterName)
 		}
-		resources.AddNamed(cluster)
+		resources.Add(&model.Resource{
+			Name:     localClusterName,
+			Resource: cluster,
+			Origin:   OriginInbound,
+		})
 
 		// generate LDS resource
-		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
 		service := iface.GetService()
-		protocol := mesh_core.ParseProtocol(iface.GetProtocol())
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder()
@@ -70,7 +78,11 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
 		}
-		resources.AddNamed(inboundListener)
+		resources.Add(&model.Resource{
+			Name:     inboundListenerName,
+			Resource: inboundListener,
+			Origin:   OriginInbound,
+		})
 	}
-	return resources.List(), nil
+	return resources, nil
 }

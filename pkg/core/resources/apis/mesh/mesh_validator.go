@@ -7,10 +7,10 @@ import (
 
 	structpb "github.com/golang/protobuf/ptypes/struct"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core/validators"
-	"github.com/Kong/kuma/pkg/envoy/accesslog"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/envoy/accesslog"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func (m *MeshResource) Validate() error {

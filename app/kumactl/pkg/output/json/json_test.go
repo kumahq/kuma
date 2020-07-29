@@ -10,12 +10,12 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/output"
-	"github.com/Kong/kuma/app/kumactl/pkg/output/json"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output"
+	"github.com/kumahq/kuma/app/kumactl/pkg/output/json"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_rest "github.com/Kong/kuma/pkg/core/resources/model/rest"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 var _ = Describe("printer", func() {

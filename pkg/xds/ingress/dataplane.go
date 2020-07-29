@@ -2,37 +2,54 @@ package ingress
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"sort"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_mesh "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/xds/envoy"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 // tagSets represent map from tags (encoded as string) to number of instances
-type tagSets map[string]uint32
+type tagSets map[serviceKey]uint32
 
-func (s tagSets) addInstanceOfTags(tags envoy.Tags) {
+type serviceKey struct {
+	mesh string
+	tags string
+}
+
+type serviceKeySlice []serviceKey
+
+func (s serviceKeySlice) Len() int           { return len(s) }
+func (s serviceKeySlice) Less(i, j int) bool { return s[i].mesh < s[j].mesh || s[i].tags < s[j].tags }
+func (s serviceKeySlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+
+func (sk *serviceKey) String() string {
+	return fmt.Sprintf("%s.%s", sk.tags, sk.mesh)
+}
+
+func (s tagSets) addInstanceOfTags(mesh string, tags envoy.Tags) {
 	strTags := tags.String()
-	s[strTags]++
+	s[serviceKey{tags: strTags, mesh: mesh}]++
 }
 
 func (s tagSets) toAvailableServices() []*mesh_proto.Dataplane_Networking_Ingress_AvailableService {
 	var result []*mesh_proto.Dataplane_Networking_Ingress_AvailableService
 
-	var keys []string
+	var keys []serviceKey
 	for key := range s {
 		keys = append(keys, key)
 	}
-	sort.Strings(keys)
+	sort.Sort(serviceKeySlice(keys))
 
 	for _, key := range keys {
-		tags, _ := envoy.TagsFromString(key) // ignore error since we control how string looks like
+		tags, _ := envoy.TagsFromString(key.tags) // ignore error since we control how string looks like
 		result = append(result, &mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 			Tags:      tags,
 			Instances: s[key],
+			Mesh:      key.mesh,
 		})
 	}
 	return result
@@ -57,7 +74,7 @@ func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_
 			continue
 		}
 		for _, dpInbound := range dp.Spec.GetNetworking().GetInbound() {
-			tagSets.addInstanceOfTags(dpInbound.Tags)
+			tagSets.addInstanceOfTags(dp.GetMeta().GetMesh(), dpInbound.Tags)
 		}
 	}
 	return tagSets.toAvailableServices()

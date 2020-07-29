@@ -16,17 +16,17 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	"github.com/Kong/kuma/pkg/core"
-	"github.com/Kong/kuma/pkg/core/ca/issuer"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	mesh_helper "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	core_model "github.com/Kong/kuma/pkg/core/resources/model"
-	core_store "github.com/Kong/kuma/pkg/core/resources/store"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	sds_auth "github.com/Kong/kuma/pkg/sds/auth"
-	sds_provider "github.com/Kong/kuma/pkg/sds/provider"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/ca/issuer"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	mesh_helper "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
+	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
 )
 
 // DataplaneReconciler keeps the state of the Cache for SDS consistent

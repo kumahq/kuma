@@ -3,7 +3,7 @@ package dns_test
 import (
 	"math"
 
-	. "github.com/Kong/kuma/pkg/dns"
+	. "github.com/kumahq/kuma/pkg/dns"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

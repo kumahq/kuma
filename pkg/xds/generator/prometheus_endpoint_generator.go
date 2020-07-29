@@ -6,15 +6,18 @@ import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/pkg/errors"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	manager_dataplane "github.com/Kong/kuma/pkg/core/managers/apis/dataplane"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	xds_context "github.com/Kong/kuma/pkg/xds/context"
-	envoy_clusters "github.com/Kong/kuma/pkg/xds/envoy/clusters"
-	envoy_listeners "github.com/Kong/kuma/pkg/xds/envoy/listeners"
-	envoy_names "github.com/Kong/kuma/pkg/xds/envoy/names"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
+	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
+	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
+
+// OriginPrometheus is a marker to indicate by which ProxyGenerator resources were generated.
+const OriginPrometheus = "prometheus"
 
 // PrometheusEndpointGenerator generates an inbound Envoy listener
 // that forwards HTTP requests into the `/stats/prometheus`
@@ -27,7 +30,7 @@ import (
 type PrometheusEndpointGenerator struct {
 }
 
-func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) ([]*core_xds.Resource, error) {
+func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
 	prometheusEndpoint, err := proxy.Dataplane.GetPrometheusEndpoint(ctx.Mesh.Resource)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get prometheus endpoint")
@@ -103,8 +106,18 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	if err != nil {
 		return nil, err
 	}
-	resources := (&core_xds.ResourceSet{}).AddNamed(cluster, listener)
-	return resources.List(), nil
+	resources := core_xds.NewResourceSet()
+	resources.Add(&core_xds.Resource{
+		Name:     cluster.Name,
+		Origin:   OriginPrometheus,
+		Resource: cluster,
+	})
+	resources.Add(&core_xds.Resource{
+		Name:     listener.Name,
+		Origin:   OriginPrometheus,
+		Resource: listener,
+	})
+	return resources, nil
 }
 
 func secureMetrics(cfg *mesh_proto.PrometheusMetricsBackendConfig, mesh *mesh_core.MeshResource) bool {

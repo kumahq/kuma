@@ -6,8 +6,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
+	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("FaultInjection", func() {
@@ -31,11 +31,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                     service: frontend
-                    protocol: http
+                    kuma.io/protocol: http
                 destinations:
                 - match:
                     service: backend
-                    protocol: http
+                    kuma.io/protocol: http
                     region: eu
                     kuma.io/valid: abcd.123-456.under_score_.:80
                 conf:
@@ -52,11 +52,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                     service: frontend
-                    protocol: http
+                    kuma.io/protocol: http
                 destinations:
                 - match:
                     service: backend
-                    protocol: http
+                    kuma.io/protocol: http
                     region: "*"
                 conf:
                   delay:
@@ -109,11 +109,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                    service: frontend
-                   protocol: http
+                   kuma.io/protocol: http
                 destinations:
                 - match:
                    service: backend
-                   protocol: http
+                   kuma.io/protocol: http
                    region: eu
                 conf:
                   delay: {}
@@ -128,11 +128,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                    service: frontend
-                   protocol: http
+                   kuma.io/protocol: http
                 destinations:
                 - match:
                    service: backend
-                   protocol: http
+                   kuma.io/protocol: http
                    region: eu
                 conf:
                   delay:
@@ -154,11 +154,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                    service: frontend
-                   protocol: http
+                   kuma.io/protocol: http
                 destinations:
                 - match:
                    service: backend
-                   protocol: http
+                   kuma.io/protocol: http
                    region: eu
                 conf:
                   delay:
@@ -180,11 +180,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                    service: frontend
-                   protocol: http
+                   kuma.io/protocol: http
                 destinations:
                 - match:
                    service: backend
-                   protocol: http
+                   kuma.io/protocol: http
                    region: eu
                 conf:
                   abort:
@@ -199,11 +199,11 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                    service: frontend
-                   protocol: http
+                   kuma.io/protocol: http
                 destinations:
                 - match:
                    service: backend
-                   protocol: http
+                   kuma.io/protocol: http
                    region: eu
                 conf:
                   responseBandwidth:
@@ -215,12 +215,12 @@ var _ = Describe("FaultInjection", func() {
                  message: has to be in [0.0 - 100.0] range
                - field: conf.responseBandwidth.limit
                  message: has to be in kbps/mbps/gbps units`}),
-			Entry("protocol: wrong format", testCase{
+			Entry("kuma.io/protocol: wrong format", testCase{
 				faultInjection: `
                 sources:
                 - match:
                     service: frontend
-                    protocol: tcp
+                    kuma.io/protocol: tcp
                 destinations:
                 - match:
                     service: backend
@@ -231,7 +231,7 @@ var _ = Describe("FaultInjection", func() {
                     percentage: 100`,
 				expected: `
                violations:
-               - field: sources[0].match["protocol"]
+               - field: sources[0].match["kuma.io/protocol"]
                  message: must be one of the [http]
                - field: destinations[0].match
                  message: protocol must be specified`}),
@@ -240,12 +240,12 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                     service: frontend
-                    protocol: http
+                    kuma.io/protocol: http
                     invalidTag: v@/u^e
                 destinations:
                 - match:
                     service: backend
-                    protocol: http
+                    kuma.io/protocol: http
                     invalidTag: v@/u^e#!
                 conf:
                   responseBandwidth:
@@ -262,12 +262,12 @@ var _ = Describe("FaultInjection", func() {
                 sources:
                 - match:
                     service: frontend
-                    protocol: http
+                    kuma.io/protocol: http
                     inv@lidT@g#: value
                 destinations:
                 - match:
                     service: backend
-                    protocol: http
+                    kuma.io/protocol: http
                     inv@lidT@g#: value
                 conf:
                   responseBandwidth:

@@ -4,10 +4,10 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	"github.com/Kong/kuma/app/kumactl/pkg/install/data"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s"
-	"github.com/Kong/kuma/app/kumactl/pkg/install/k8s/ingress"
-	kuma_version "github.com/Kong/kuma/pkg/version"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/ingress"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 func newInstallIngressCmd() *cobra.Command {
@@ -64,7 +64,6 @@ func newInstallIngressCmd() *cobra.Command {
 	cmd.Flags().StringVar(&args.ImagePullPolicy, "image-pull-policy", args.ImagePullPolicy, "image pull policy for Ingress")
 	cmd.Flags().StringVar(&args.Version, "version", args.Version, "version of Ingress component")
 	cmd.Flags().StringVar(&args.Image, "image", args.Image, "image of the Ingress component")
-	cmd.Flags().StringVar(&args.Mesh, "mesh", args.Mesh, "mesh for Ingress")
 	cmd.Flags().StringVar(&args.DrainTime, "drain-time", args.DrainTime, "drain time for Envoy proxy")
 	cmd.Flags().StringVar(&args.KumaCpAddress, "kuma-cp-address", args.KumaCpAddress, "the address of Kuma CP")
 	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")

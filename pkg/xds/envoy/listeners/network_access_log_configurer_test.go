@@ -5,14 +5,14 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/envoy/listeners"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	"github.com/Kong/kuma/pkg/core/xds"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("NetworkAccessLogConfigurer", func() {
@@ -46,7 +46,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 								Port:        1234,
 								ServicePort: 8765,
 								Tags: map[string]string{
-									"service": "backend",
+									"kuma.io/service": "backend",
 								},
 							}},
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{{
@@ -126,8 +126,9 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                   - name: envoy.file_access_log
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
-                      format: |
+                      format: |+
                         [%START_TIME%] %RESPONSE_FLAGS% demo 192.168.0.1(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+
                       path: /tmp/log
                   cluster: db
                   statPrefix: db
@@ -177,10 +178,11 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                         grpcService:
                           envoyGrpc:
                             clusterName: access_log_sink
-                        logName: |
+                        logName: |+
                           127.0.0.1:1234;[%START_TIME%] "%REQ(x-request-id)%" "%REQ(:authority)%" "%REQ(origin)%" "%REQ(content-type)%" "backend" "db" "192.168.0.1:0" "192.168.0.1" "%UPSTREAM_HOST%
 
                           "%RESP(server):5%" "%TRAILER(grpc-message):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
+
                   cluster: db
                   statPrefix: db
 `,

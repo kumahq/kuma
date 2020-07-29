@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -12,13 +12,13 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	. "github.com/Kong/kuma/pkg/core/faultinjections"
-	"github.com/Kong/kuma/pkg/core/resources/apis/mesh"
-	core_manager "github.com/Kong/kuma/pkg/core/resources/manager"
-	"github.com/Kong/kuma/pkg/core/resources/store"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
-	"github.com/Kong/kuma/pkg/test/resources/model"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/core/faultinjections"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("Match", func() {
@@ -46,8 +46,8 @@ var _ = Describe("Match", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":  "*",
-							"protocol": "http",
+							"service":          "*",
+							"kuma.io/protocol": "http",
 						},
 					},
 				},
@@ -91,10 +91,10 @@ var _ = Describe("Match", func() {
 				{
 					ServicePort: 8080,
 					Tags: map[string]string{
-						"service":  "web",
-						"version":  "0.1",
-						"region":   "eu",
-						"protocol": "http",
+						"service":          "web",
+						"version":          "0.1",
+						"region":           "eu",
+						"kuma.io/protocol": "http",
 					},
 				},
 			}),
@@ -102,28 +102,29 @@ var _ = Describe("Match", func() {
 				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"region":   "us",
-							"protocol": "http",
+							"region":           "us",
+							"kuma.io/protocol": "http",
 						},
 					},
 				}),
 				policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":  "*",
-							"protocol": "http",
+							"service":          "*",
+							"kuma.io/protocol": "http",
 						},
 					},
 				}),
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8080,
 				}: &policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":  "*",
-							"protocol": "http",
+							"service":          "*",
+							"kuma.io/protocol": "http",
 						},
 					},
 				}).Spec,
@@ -133,19 +134,19 @@ var _ = Describe("Match", func() {
 				{
 					ServicePort: 8080,
 					Tags: map[string]string{
-						"service":  "web",
-						"version":  "0.1",
-						"region":   "eu",
-						"protocol": "http",
+						"service":          "web",
+						"version":          "0.1",
+						"region":           "eu",
+						"kuma.io/protocol": "http",
 					},
 				},
 				{
 					ServicePort: 8081,
 					Tags: map[string]string{
-						"service":  "web-api",
-						"version":  "0.1.2",
-						"region":   "us",
-						"protocol": "http",
+						"service":          "web-api",
+						"version":          "0.1.2",
+						"region":           "us",
+						"kuma.io/protocol": "http",
 					},
 				},
 			}),
@@ -153,20 +154,21 @@ var _ = Describe("Match", func() {
 				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":  "web-api",
-							"protocol": "http",
+							"service":          "web-api",
+							"kuma.io/protocol": "http",
 						},
 					},
 				}),
 			},
 			expected: core_xds.FaultInjectionMap{
 				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8081,
 				}: &policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service":  "web-api",
-							"protocol": "http",
+							"service":          "web-api",
+							"kuma.io/protocol": "http",
 						},
 					},
 				}).Spec,

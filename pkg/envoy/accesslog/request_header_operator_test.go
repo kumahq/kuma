@@ -5,7 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/envoy/accesslog"
+	. "github.com/kumahq/kuma/pkg/envoy/accesslog"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 

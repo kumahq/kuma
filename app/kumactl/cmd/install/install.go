@@ -3,7 +3,7 @@ package install
 import (
 	"github.com/spf13/cobra"
 
-	kumactl_cmd "github.com/Kong/kuma/app/kumactl/pkg/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 )
 
 func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -18,5 +18,6 @@ func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newInstallTracing())
 	cmd.AddCommand(newInstallIngressCmd())
 	cmd.AddCommand(newInstallDNS())
+	cmd.AddCommand(newInstallLogging())
 	return cmd
 }

@@ -22,6 +22,6 @@
 
 
 # These owners will be the default owners for everything in this repo.
-# Unless a later match takes precedence, @Kong/team-kuma will be requested for
+# Unless a later match takes precedence, @kumahq/kuma-maintainers will be requested for
 # review when someone opens a pull request.
-*       @Kong/team-kuma
+*       @kumahq/kuma-maintainers

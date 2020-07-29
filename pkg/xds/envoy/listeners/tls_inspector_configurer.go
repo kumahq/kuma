@@ -5,7 +5,7 @@ import (
 	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	"github.com/golang/protobuf/ptypes/empty"
 
-	"github.com/Kong/kuma/pkg/util/proto"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func TLSInspector() ListenerBuilderOpt {

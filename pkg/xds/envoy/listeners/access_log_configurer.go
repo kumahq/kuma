@@ -12,10 +12,10 @@ import (
 	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
-	core_xds "github.com/Kong/kuma/pkg/core/xds"
-	"github.com/Kong/kuma/pkg/envoy/accesslog"
-	"github.com/Kong/kuma/pkg/util/proto"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/envoy/accesslog"
+	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type TrafficDirection string
@@ -45,7 +45,8 @@ func convertLoggingBackend(mesh string, trafficDirection TrafficDirection, sourc
 	if backend.Format != "" {
 		formatString = backend.Format
 	}
-	format, err := accesslog.ParseFormat(formatString)
+	format, err := accesslog.ParseFormat(formatString + "\n")
+
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid access log format string: %s", formatString)
 	}

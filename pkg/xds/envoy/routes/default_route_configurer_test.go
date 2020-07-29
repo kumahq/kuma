@@ -5,10 +5,10 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/Kong/kuma/pkg/xds/envoy/routes"
+	. "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 
-	util_proto "github.com/Kong/kuma/pkg/util/proto"
-	envoy_common "github.com/Kong/kuma/pkg/xds/envoy"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ = Describe("DefaultRouteConfigurer", func() {
@@ -70,6 +70,34 @@ var _ = Describe("DefaultRouteConfigurer", func() {
                           version: v2
                     name: backend
                     weight: 70
+                  totalWeight: 100
+`,
+		}),
+		Entry("basic VirtualHost with weighted destination clusters with totalWeight less than 100", testCase{
+			clusters: []envoy_common.ClusterSubset{
+				{ClusterName: "backend", Weight: 30, Tags: map[string]string{"version": "v1"}},
+				{ClusterName: "backend", Weight: 60, Tags: map[string]string{"version": "v2"}},
+			},
+			expected: `
+            routes:
+            - match:
+                prefix: /
+              route:
+                weightedClusters:
+                  clusters:
+                  - metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          version: v1
+                    name: backend
+                    weight: 30
+                  - metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          version: v2
+                    name: backend
+                    weight: 60
+                  totalWeight: 90
 `,
 		}),
 	)

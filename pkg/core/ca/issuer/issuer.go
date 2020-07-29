@@ -14,8 +14,8 @@ import (
 	"github.com/spiffe/go-spiffe/spiffe"
 	"github.com/spiffe/spire/pkg/common/x509util"
 
-	"github.com/Kong/kuma/pkg/core"
-	util_tls "github.com/Kong/kuma/pkg/tls"
+	"github.com/kumahq/kuma/pkg/core"
+	util_tls "github.com/kumahq/kuma/pkg/tls"
 )
 
 const (

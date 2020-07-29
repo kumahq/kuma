@@ -9,8 +9,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	api_server_config "github.com/Kong/kuma/pkg/config/api-server"
-	"github.com/Kong/kuma/pkg/plugins/resources/memory"
+	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
 var _ = Describe("Config WS", func() {
@@ -21,7 +21,7 @@ var _ = Describe("Config WS", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		apiServer := createTestApiServer(resourceStore, cfg)
+		apiServer := createTestApiServer(resourceStore, cfg, true)
 
 		stop := make(chan struct{})
 		go func() {
@@ -110,7 +110,7 @@ var _ = Describe("Config WS", func() {
             }
           },
           "defaults": {
-            "mesh": "type: Mesh\nname: default\n"
+            "skipMeshCreation": false
           },
           "dnsServer": {
             "domain": "mesh",
@@ -122,7 +122,6 @@ var _ = Describe("Config WS", func() {
             "advertisedHostname": "localhost"
           },
           "guiServer": {
-            "port": 5683,
             "apiServerUrl": ""
           },
           "metrics": {
@@ -131,13 +130,24 @@ var _ = Describe("Config WS", func() {
               "subscriptionLimit": 10
             }
           },
-          "mode": {
-           "global": {
-             "zones": []
-           },
-           "remote": {},
-           "mode": "standalone"
-        },
+          "mode": "standalone",
+          "multicluster": {
+            "global": {
+              "pollTimeout": "500ms",
+              "kds": {
+                "grpcPort": 5685,
+                "refreshInterval": "1s",
+                "tlsCertFile": "",
+                "tlsKeyFile": ""
+              }
+            },
+            "remote": {
+              "kds": {
+                "refreshInterval": "1s",
+                "rootCaFile": ""
+              }
+            }
+          },
           "monitoringAssignmentServer": {
             "assignmentRefreshInterval": "1s",
             "grpcPort": 5676
@@ -175,7 +185,8 @@ var _ = Describe("Config WS", func() {
                     "successThreshold": 1,
                     "timeoutSeconds": 3
                   },
-                  "redirectPort": 15001,
+                  "redirectPortInbound": 15006,
+                  "redirectPortOutbound": 15001,
                   "resources": {
                     "limits": {
                       "cpu": "1000m",
@@ -229,17 +240,6 @@ var _ = Describe("Config WS", func() {
             "grpcPort": 5678,
             "tlsCertFile": "",
             "tlsKeyFile": ""
-          },
-          "kds": {
-            "server": {
-              "grpcPort": 5685,
-              "refreshInterval": "1s",
-              "tlsCertFile": "",
-              "tlsKeyFile": ""
-            },
-            "client": {
-              "rootCaFile": ""
-            }
           }
         }
 		`, port)

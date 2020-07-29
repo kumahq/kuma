@@ -1516,6 +1516,70 @@ _kumactl_get_traffic-traces()
     noun_aliases=()
 }
 
+_kumactl_get_zone()
+{
+    last_command="kumactl_get_zone"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_get_zones()
+{
+    last_command="kumactl_get_zones"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--offset=")
+    two_word_flags+=("--offset")
+    flags+=("--size=")
+    two_word_flags+=("--size")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--output=")
+    two_word_flags+=("--output")
+    two_word_flags+=("-o")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_get()
 {
     last_command="kumactl_get"
@@ -1545,6 +1609,8 @@ _kumactl_get()
     commands+=("traffic-routes")
     commands+=("traffic-trace")
     commands+=("traffic-traces")
+    commands+=("zone")
+    commands+=("zones")
 
     flags=()
     two_word_flags=()
@@ -1681,6 +1747,9 @@ _kumactl_install_control-plane()
     flags+=("--injector-failure-policy=")
     two_word_flags+=("--injector-failure-policy")
     local_nonpersistent_flags+=("--injector-failure-policy=")
+    flags+=("--kds-global-address=")
+    two_word_flags+=("--kds-global-address")
+    local_nonpersistent_flags+=("--kds-global-address=")
     flags+=("--kds-tls-cert=")
     two_word_flags+=("--kds-tls-cert")
     local_nonpersistent_flags+=("--kds-tls-cert=")
@@ -1731,6 +1800,9 @@ _kumactl_install_dns()
     flags_with_completion=()
     flags_completion=()
 
+    flags+=("--port=")
+    two_word_flags+=("--port")
+    local_nonpersistent_flags+=("--port=")
     flags+=("--config-file=")
     two_word_flags+=("--config-file")
     flags+=("--log-level=")
@@ -1778,6 +1850,36 @@ _kumactl_install_ingress()
     flags+=("--version=")
     two_word_flags+=("--version")
     local_nonpersistent_flags+=("--version=")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_install_logging()
+{
+    last_command="kumactl_install_logging"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--namespace=")
+    two_word_flags+=("--namespace")
+    local_nonpersistent_flags+=("--namespace=")
     flags+=("--config-file=")
     two_word_flags+=("--config-file")
     flags+=("--log-level=")
@@ -1870,6 +1972,7 @@ _kumactl_install()
     commands+=("control-plane")
     commands+=("dns")
     commands+=("ingress")
+    commands+=("logging")
     commands+=("metrics")
     commands+=("tracing")
 

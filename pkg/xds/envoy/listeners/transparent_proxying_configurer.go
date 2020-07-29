@@ -5,11 +5,11 @@ import (
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	mesh_proto "github.com/Kong/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 func TransparentProxying(transparentProxying *mesh_proto.Dataplane_Networking_TransparentProxying) ListenerBuilderOpt {
-	virtual := transparentProxying.GetRedirectPort() != 0
+	virtual := transparentProxying.GetRedirectPortOutbound() != 0 && transparentProxying.GetRedirectPortInbound() != 0
 	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
 		if virtual {
 			config.Add(&TransparentProxyingConfigurer{})
