@@ -254,7 +254,7 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	}
 
 	values := map[string]string{
-		"controlPlane.mode":                      mode,
+		"controlPlane.mode": mode,
 		// allow the CP to create a default mesh, for testing simplicity
 		"controlPlane.defaults.skipMeshCreation": "false",
 		"global.image.tag":                       "latest",
