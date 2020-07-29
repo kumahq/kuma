@@ -5137,7 +5137,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v2.18.0"
+          image: "prom/prometheus:v2.18.2"
           imagePullPolicy: "IfNotPresent"
           args:
             - --storage.tsdb.retention.time=15d
