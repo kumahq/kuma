@@ -39,6 +39,7 @@ var (
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
 		system.SecretType,
+		system.ConfigType,
 	}
 	consumedTypes = []model.ResourceType{
 		mesh.DataplaneType,
