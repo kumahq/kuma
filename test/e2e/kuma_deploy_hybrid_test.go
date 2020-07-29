@@ -266,10 +266,12 @@ metadata:
 
 		// Remote 3
 		// universal access remote k8s service
-		stdout, _, err = remote_3.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4000")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func() (string, error) {
+			stdout, _, err = remote_3.ExecWithRetries("", "", "demo-client",
+				"curl", "-v", "-m", "3", "localhost:4000")
+			return stdout, err
+		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
+
 		// Remote 4
 		// universal can't access remote universal service
 		Eventually(func() (string, error) {
