@@ -102,6 +102,7 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 						if trr, ok := resource.(*system.ConfigResource); ok {
 							clusterId := trr.Spec.Config
 							rt.SetClusterId(clusterId)
+							return nil
 						} else {
 							return model.ErrorInvalidItemType((*system.ConfigResource)(nil), resource)
 						}

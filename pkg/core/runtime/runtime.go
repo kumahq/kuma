@@ -38,6 +38,7 @@ type RuntimeContext interface {
 	ResourceStore() core_store.ResourceStore
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 	SecretStore() store.SecretStore
+	ConfigStore() core_store.ResourceStore
 	CaManagers() ca.Managers
 	Extensions() context.Context
 	DNSResolver() dns.DNSResolver
@@ -79,6 +80,7 @@ type runtimeContext struct {
 	rm       core_manager.ResourceManager
 	rs       core_store.ResourceStore
 	ss       store.SecretStore
+	cs       core_store.ResourceStore
 	rom      core_manager.ReadOnlyResourceManager
 	cam      ca.Managers
 	xds      core_xds.XdsContext
@@ -105,6 +107,9 @@ func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {
 }
 func (rc *runtimeContext) SecretStore() store.SecretStore {
 	return rc.ss
+}
+func (rc *runtimeContext) ConfigStore() core_store.ResourceStore {
+	return rc.cs
 }
 func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return rc.rom
