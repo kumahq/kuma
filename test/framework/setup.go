@@ -126,16 +126,16 @@ func Ingress(ingress *IngressDesc) InstallFunc {
 		}
 		return Combine(
 			YamlK8s(yaml),
-			WaitService(KumaNamespace, name),
+			WaitService(kumaNamespace, name),
 			WaitNumPods(1, name),
-			WaitPodsAvailable(KumaNamespace, name),
+			WaitPodsAvailable(kumaNamespace, name),
 			func(cluster Cluster) error {
 				ctx := context.Background()
 				cs, err := k8s.GetKubernetesClientFromOptionsE(c.GetTesting(), c.GetKubectlOptions())
 				if err != nil {
 					return err
 				}
-				ingressSvc, err := cs.CoreV1().Services(KumaNamespace).Get(ctx, name, kube_meta.GetOptions{})
+				ingressSvc, err := cs.CoreV1().Services(kumaNamespace).Get(ctx, name, kube_meta.GetOptions{})
 				if err != nil {
 					return nil
 				}

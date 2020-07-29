@@ -29,17 +29,6 @@ metadata:
 `, namespace)
 	}
 
-	systemNamespace := func(namespace string) string {
-		return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-  labels:
-    kuma.io/system-namespace: "true"
-`, namespace)
-	}
-
 	var c1 Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
@@ -61,7 +50,6 @@ metadata:
 		}
 
 		err = NewClusterSetup().
-			Install(YamlK8s(systemNamespace(KumaNamespace))).
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
@@ -76,7 +64,6 @@ metadata:
 		_ = c1.DeleteNamespace(TestNamespace)
 		// tear down kuma
 		_ = c1.DeleteKuma(deployOptsFuncs...)
-		_ = c1.DeleteNamespace(KumaNamespace)
 	})
 
 	It("Should deploy two apps", func() {

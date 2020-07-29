@@ -47,7 +47,7 @@ const (
 
 	maxClusters = 3
 
-	KumaNamespace   = "kuma-system"
+	kumaNamespace   = "kuma-system"
 	kumaServiceName = "kuma-control-plane"
 
 	kumaImageRegistry = "kuma"

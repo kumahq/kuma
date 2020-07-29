@@ -254,12 +254,14 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	}
 
 	values := map[string]string{
-		"controlPlane.mode":              mode,
-		"global.image.tag":               "latest",
-		"global.image.registry":          kumaImageRegistry,
-		"controlPlane.image.repository":  kumaCPImageRepo,
-		"dataPlane.image.repository":     kumaDPImageRepo,
-		"dataPlane.initImage.repository": kumaInitImageRepo,
+		"controlPlane.mode":                      mode,
+		// allow the CP to create a default mesh, for testing simplicity
+		"controlPlane.defaults.skipMeshCreation": "false",
+		"global.image.tag":                       "latest",
+		"global.image.registry":                  kumaImageRegistry,
+		"controlPlane.image.repository":          kumaCPImageRepo,
+		"dataPlane.image.repository":             kumaDPImageRepo,
+		"dataPlane.initImage.repository":         kumaInitImageRepo,
 	}
 
 	switch mode {
@@ -274,9 +276,11 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
 	}
 
+	kubectlOpts := c.GetKubectlOptions(kumaNamespace)
+
 	helmOpts := &helm.Options{
 		SetValues:      values,
-		KubectlOptions: c.GetKubectlOptions(KumaNamespace),
+		KubectlOptions: kubectlOpts,
 	}
 
 	releaseName := opts.helmReleaseName
@@ -285,6 +289,11 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 			"kuma-cp-%s",
 			strings.ToLower(random.UniqueId()),
 		)
+	}
+
+	// first create the namespace
+	if err := k8s.CreateNamespaceE(c.t, kubectlOpts, kumaNamespace); err != nil {
+		return err
 	}
 
 	return helm.InstallE(c.t, helmOpts, helmChartPath, releaseName)
@@ -317,7 +326,7 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	}
 
 	k8s.WaitUntilNumPodsCreated(c.t,
-		c.GetKubectlOptions(KumaNamespace),
+		c.GetKubectlOptions(kumaNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + kumaServiceName,
 		},
@@ -331,7 +340,7 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	}
 
 	k8s.WaitUntilPodAvailable(c.t,
-		c.GetKubectlOptions(KumaNamespace),
+		c.GetKubectlOptions(kumaNamespace),
 		kumacpPods[0].Name,
 		DefaultRetries,
 		DefaultTimeout)
@@ -397,7 +406,7 @@ func (c *K8sCluster) RestartKuma() error {
 		})
 
 	k8s.WaitUntilNumPodsCreated(c.t,
-		c.GetKubectlOptions(KumaNamespace),
+		c.GetKubectlOptions(kumaNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + kumaServiceName,
 		},
@@ -414,7 +423,7 @@ func (c *K8sCluster) RestartKuma() error {
 	gomega.Expect(oldPod.Name).ToNot(gomega.Equal(newPod.Name))
 
 	k8s.WaitUntilPodAvailable(c.t,
-		c.GetKubectlOptions(KumaNamespace),
+		c.GetKubectlOptions(kumaNamespace),
 		newPod.Name,
 		DefaultRetries,
 		DefaultTimeout)
@@ -449,7 +458,7 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) error {
 	}
 
 	helmOpts := &helm.Options{
-		KubectlOptions: c.GetKubectlOptions(KumaNamespace),
+		KubectlOptions: c.GetKubectlOptions(kumaNamespace),
 	}
 
 	return helm.DeleteE(c.t, helmOpts, opts.helmReleaseName, true)
@@ -471,7 +480,7 @@ func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
 		c.GetKubectlOptions(),
 		yaml)
 
-	c.WaitNamespaceDelete(KumaNamespace)
+	c.WaitNamespaceDelete(kumaNamespace)
 
 	return nil
 }
