@@ -1,4 +1,4 @@
-module github.com/Kong/kuma/tools/releases/changelog
+module github.com/kumahq/kuma/tools/releases/changelog
 
 go 1.14
 

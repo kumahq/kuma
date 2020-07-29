@@ -80,7 +80,7 @@ func (g *Generator) formatTitle(c *object.Commit) string {
 
 	// generate a Markdown link to the pull request
 	re := regexp.MustCompile(`\(#(?P<num>[0-9]*)\)`)
-	mdPullString := fmt.Sprintf("[#$num](github.com/%s/pull/$num)", gitHubOrgProject())
+	mdPullString := fmt.Sprintf("[#$num](https://github.com/%s/pull/$num)", gitHubOrgProject())
 	formattedTitle := re.ReplaceAllString(title, mdPullString)
 
 	return formattedTitle
@@ -108,7 +108,7 @@ func (g *Generator) addToLog(tag string, c *object.Commit) error {
 func (g *Generator) getGithubName(c *object.Commit) string {
 	client := github.NewClient(nil)
 	prNum := g.getPRNum(c)
-	pr, resp, err := client.PullRequests.Get(context.Background(), "Kong", "kuma", prNum)
+	pr, resp, err := client.PullRequests.Get(context.Background(), "kumahq", "kuma", prNum)
 	if err != nil {
 		Warning("Was not able to get PR %d with response [%v]", prNum, resp)
 		return ""
@@ -137,7 +137,7 @@ func (g *Generator) Generate() error {
 				g.addChangelog(fmt.Sprintln("> Released on ", g.formatTime(c)))
 				g.addChangelog("\nChanges:\n")
 			}
-			g.addChangelog(fmt.Sprintln("* ", g.formatTitle(c), "\n 👍contributed by", c.Author.Name))
+			g.addChangelog(fmt.Sprintln("*", g.formatTitle(c), "\n 👍contributed by", c.Author.Name))
 		}
 	}
 
