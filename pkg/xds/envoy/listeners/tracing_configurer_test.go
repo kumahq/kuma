@@ -46,8 +46,6 @@ var _ = Describe("TracingConfigurer", func() {
 				}),
 			},
 			expected: `
-            name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 192.168.0.1
@@ -57,13 +55,21 @@ var _ = Describe("TracingConfigurer", func() {
               - name: envoy.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                  httpFilters:
+                  - name: envoy.router
                   statPrefix: localhost_8080
                   tracing:
                     overallSampling:
                       value: 30.5
-                  httpFilters:
-                  - name: envoy.router
-`,
+                    provider:
+                      name: envoy.zipkin
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.config.trace.v2.ZipkinConfig
+                        collectorCluster: tracing:zipkin
+                        collectorEndpoint: /v2/spans
+                        collectorEndpointVersion: HTTP_JSON
+            name: inbound:192.168.0.1:8080
+            trafficDirection: INBOUND`,
 		}),
 		Entry("backend specified without sampling", testCase{
 			backend: &mesh_proto.TracingBackend{
@@ -74,8 +80,6 @@ var _ = Describe("TracingConfigurer", func() {
 				}),
 			},
 			expected: `
-            name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 192.168.0.1
@@ -85,11 +89,19 @@ var _ = Describe("TracingConfigurer", func() {
               - name: envoy.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                  statPrefix: localhost_8080
-                  tracing: {}
                   httpFilters:
                   - name: envoy.router
-`,
+                  statPrefix: localhost_8080
+                  tracing:
+                    provider:
+                      name: envoy.zipkin
+                      typedConfig:
+                        '@type': type.googleapis.com/envoy.config.trace.v2.ZipkinConfig
+                        collectorCluster: tracing:zipkin
+                        collectorEndpoint: /v2/spans
+                        collectorEndpointVersion: HTTP_JSON
+            name: inbound:192.168.0.1:8080
+            trafficDirection: INBOUND`,
 		}),
 		Entry("no backend specified", testCase{
 			backend: nil,

@@ -43,16 +43,6 @@ func (m *Zone) Validate() error {
 		return nil
 	}
 
-	if v, ok := interface{}(m.GetRemoteControlPlane()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ZoneValidationError{
-				field:  "RemoteControlPlane",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
 	if v, ok := interface{}(m.GetIngress()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ZoneValidationError{
@@ -119,75 +109,6 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ZoneValidationError{}
-
-// Validate checks the field values on Zone_RemoteControlPlane with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, an error is returned.
-func (m *Zone_RemoteControlPlane) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	// no validation rules for Address
-
-	return nil
-}
-
-// Zone_RemoteControlPlaneValidationError is the validation error returned by
-// Zone_RemoteControlPlane.Validate if the designated constraints aren't met.
-type Zone_RemoteControlPlaneValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e Zone_RemoteControlPlaneValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e Zone_RemoteControlPlaneValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e Zone_RemoteControlPlaneValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e Zone_RemoteControlPlaneValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e Zone_RemoteControlPlaneValidationError) ErrorName() string {
-	return "Zone_RemoteControlPlaneValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e Zone_RemoteControlPlaneValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sZone_RemoteControlPlane.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = Zone_RemoteControlPlaneValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = Zone_RemoteControlPlaneValidationError{}
 
 // Validate checks the field values on Zone_Ingress with the rules defined in
 // the proto definition for this message. If any rules are violated, an error

@@ -152,6 +152,7 @@ func (cs *UniversalClusters) DeleteApp(namespace, appname string) error {
 
 	return nil
 }
+
 func (cs *UniversalClusters) InjectDNS() error {
 	for name, c := range cs.clusters {
 		if err := c.InjectDNS(); err != nil {
@@ -165,11 +166,23 @@ func (cs *UniversalClusters) InjectDNS() error {
 func (cs *UniversalClusters) GetTesting() testing.TestingT {
 	return cs.t
 }
-
 func (cs *UniversalClusters) Exec(namespace, podName, containerName string, cmd ...string) (string, string, error) {
 	panic("implement me")
 }
 
 func (cs *UniversalClusters) ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error) {
 	panic("implement me")
+}
+
+func (cs *UniversalClusters) Deployment(name string) Deployment {
+	panic("not supported")
+}
+
+func (cs *UniversalClusters) Deploy(deployment Deployment) error {
+	for name, c := range cs.clusters {
+		if err := c.Deploy(deployment); err != nil {
+			return errors.Wrapf(err, "deployment %s failed on %s cluster", deployment.Name(), name)
+		}
+	}
+	return nil
 }

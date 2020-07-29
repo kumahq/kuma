@@ -13,7 +13,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	kds_config "github.com/kumahq/kuma/pkg/config/kds"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -44,15 +43,9 @@ func (t *testRuntimeContext) Add(c ...component.Component) error {
 func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter) *test_grpc.MockServerStream {
 	rt := &testRuntimeContext{
 		rom: manager.NewResourceManager(store),
-		cfg: kuma_cp.Config{
-			KDS: &kds_config.KdsConfig{
-				Server: &kds_config.KdsServerConfig{
-					RefreshInterval: 100 * time.Millisecond,
-				},
-			},
-		},
+		cfg: kuma_cp.Config{},
 	}
-	srv, err := kds_server.New(core.Log, rt, providedTypes, clusterID, providedFilter, false)
+	srv, err := kds_server.New(core.Log, rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, false)
 	Expect(err).ToNot(HaveOccurred())
 	stream := test_grpc.MakeMockStream()
 	go func() {

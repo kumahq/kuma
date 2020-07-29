@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	"github.com/kumahq/kuma/pkg/core/secrets/manager"
 
@@ -83,7 +83,7 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 }
 
 func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
-	if rt.Config().Mode.Mode == mode.Remote {
+	if rt.Config().Mode == config_core.Remote {
 		return nil
 	}
 	reconciler := &k8s_controllers.MeshReconciler{
@@ -126,7 +126,7 @@ func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	composite := k8s_webhooks.CompositeValidator{}
 
-	handler := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global(), rt.Config().Mode.Mode)
+	handler := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global(), rt.Config().Mode)
 	composite.AddValidator(handler)
 
 	coreMeshValidator := managers_mesh.MeshValidator{CaManagers: rt.CaManagers()}
@@ -151,7 +151,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 }
 
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) {
-	if rt.Config().Mode.Mode != mode.Global {
+	if rt.Config().Mode != config_core.Global {
 		kumaInjector := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
 			rt.Config().ApiServer.Catalog.ApiServer.Url,

@@ -87,6 +87,9 @@ rules:
   - watch
 {{- if eq .KumaCpMode "remote" }}
   - create
+  - update
+  - patch
+  - delete
 {{- end }}
 - apiGroups:
     - ""

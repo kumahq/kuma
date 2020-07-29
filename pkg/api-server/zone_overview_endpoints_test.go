@@ -77,18 +77,15 @@ var _ = Describe("Zone Overview Endpoints", func() {
 
 	BeforeEach(func() {
 		createZoneWithInsights("zone-1", system_proto.Zone{
-			RemoteControlPlane: &system_proto.Zone_RemoteControlPlane{Address: "grpcs://192.168.0.1:5685"},
-			Ingress:            &system_proto.Zone_Ingress{Address: "10.20.1.1:10001"},
+			Ingress: &system_proto.Zone_Ingress{Address: "10.20.1.1:10001"},
 		})
 
 		createZoneWithInsights("zone-2", system_proto.Zone{
-			RemoteControlPlane: &system_proto.Zone_RemoteControlPlane{Address: "grpcs://192.168.0.2:5685"},
-			Ingress:            &system_proto.Zone_Ingress{Address: "10.20.1.2:10002"},
+			Ingress: &system_proto.Zone_Ingress{Address: "10.20.1.2:10002"},
 		})
 
 		createZoneWithInsights("zone-3", system_proto.Zone{
-			RemoteControlPlane: &system_proto.Zone_RemoteControlPlane{Address: "grpcs://192.168.0.3:5685"},
-			Ingress:            &system_proto.Zone_Ingress{Address: "10.20.1.3:10003"},
+			Ingress: &system_proto.Zone_Ingress{Address: "10.20.1.3:10003"},
 		})
 	})
 

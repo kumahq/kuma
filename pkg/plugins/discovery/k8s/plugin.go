@@ -24,7 +24,7 @@ func (p *plugin) StartDiscovering(pc core_plugins.PluginContext, _ core_plugins.
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
 	// convert Pods into Dataplanes
-	return addPodReconciler(pc.Config().Mode.Remote.Zone, mgr)
+	return addPodReconciler(pc.Config().Multicluster.Remote.Zone, mgr)
 }
 
 func addPodReconciler(clusterName string, mgr kube_ctrl.Manager) error {
