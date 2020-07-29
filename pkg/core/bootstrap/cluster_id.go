@@ -36,9 +36,7 @@ func createClusterID(runtime core_runtime.Runtime) error {
 		}
 	}
 	clusterId := resource.Spec.Config
-	if err := runtime.SetClusterId(clusterId); err != nil {
-		return errors.Wrap(err, "could not set Cluster ID")
-	}
+	runtime.SetClusterId(clusterId)
 
 	return nil
 }

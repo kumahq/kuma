@@ -1,8 +1,12 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
+
+	kube_core "k8s.io/api/core/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -15,7 +19,7 @@ import (
 	"sigs.k8s.io/testing_frameworks/integration/addr"
 )
 
-var _ = XDescribe("K8S CMD test", func() {
+var _ = Describe("K8S CMD test", func() {
 	var k8sClient client.Client
 	var testEnv *envtest.Environment
 
@@ -34,6 +38,7 @@ var _ = XDescribe("K8S CMD test", func() {
 		k8sClient, err = client.New(cfg, client.Options{Scheme: scheme.Scheme})
 		Expect(err).ToNot(HaveOccurred())
 		Expect(k8sClient).ToNot(BeNil())
+		Expect(k8sClient.Create(context.Background(), &kube_core.Namespace{ObjectMeta: kube_meta.ObjectMeta{Name: "kuma-system"}})).To(Succeed())
 
 		ctrl.GetConfigOrDie = func() *rest.Config {
 			return testEnv.Config

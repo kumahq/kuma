@@ -106,6 +106,7 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 		return err
 	}
 	b.mutable["signal"] = pingType
+	b.mutable["cluster_id"] = rt.GetClusterId()
 	pingData, err := b.marshall()
 	if err != nil {
 		return err
@@ -136,7 +137,6 @@ func (b *reportsBuffer) Append(info map[string]string) {
 
 func (b *reportsBuffer) initImmutable(rt core_runtime.Runtime) {
 	b.immutable["version"] = kuma_version.Build.Version
-	b.immutable["cluster_id"] = rt.GetClusterId()
 	b.immutable["unique_id"] = rt.GetInstanceId()
 	b.immutable["backend"] = rt.Config().Store.Type
 	b.immutable["mode"] = rt.Config().Mode

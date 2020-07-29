@@ -29,7 +29,7 @@ type Runtime interface {
 
 type RuntimeInfo interface {
 	GetInstanceId() string
-	SetClusterId(clusterId string) error
+	SetClusterId(clusterId string)
 	GetClusterId() string
 }
 
@@ -67,9 +67,8 @@ func (i *runtimeInfo) GetInstanceId() string {
 	return i.instanceId
 }
 
-func (i *runtimeInfo) SetClusterId(clusterId string) error {
+func (i *runtimeInfo) SetClusterId(clusterId string) {
 	i.clusterId = clusterId
-	return nil
 }
 
 func (i *runtimeInfo) GetClusterId() string {

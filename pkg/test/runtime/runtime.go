@@ -35,9 +35,8 @@ func (i TestRuntimeInfo) GetInstanceId() string {
 	return i.InstanceId
 }
 
-func (i TestRuntimeInfo) SetClusterId(clusterId string) error {
+func (i TestRuntimeInfo) SetClusterId(clusterId string) {
 	i.ClusterId = clusterId
-	return nil
 }
 
 func (i TestRuntimeInfo) GetClusterId() string {

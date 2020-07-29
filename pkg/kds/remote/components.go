@@ -101,9 +101,7 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 					if resource.GetMeta().GetName() == config_manager.ClusterIdConfigKey {
 						if trr, ok := resource.(*system.ConfigResource); ok {
 							clusterId := trr.Spec.Config
-							if err := rt.SetClusterId(clusterId); err != nil {
-								kdsRemoteLog.Error(err, "unable to sync cluster id")
-							}
+							rt.SetClusterId(clusterId)
 						} else {
 							return model.ErrorInvalidItemType((*system.ConfigResource)(nil), resource)
 						}
