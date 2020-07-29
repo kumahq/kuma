@@ -1,0 +1,77 @@
+items:
+  - creationTime: "2018-07-17T16:05:36.995Z"
+    mesh: default
+    modificationTime: "2019-07-17T18:08:41Z"
+    name: zone-1
+    type: ZoneOverview
+    zone:
+      ingress:
+        address: 192.168.1.1:1000
+    zoneInsight:
+      subscriptions:
+        - connectTime: "2018-07-17T16:05:36.995Z"
+          globalInstanceId: node-001
+          id: "1"
+          status:
+            stat:
+              CircuitBreaker:
+                responsesRejected: "1"
+                responsesSent: "2"
+              FaultInjection:
+                responsesRejected: "1"
+                responsesSent: "2"
+              HealthCheck:
+                responsesRejected: "1"
+                responsesSent: "2"
+              Ingress:
+                responsesRejected: "1"
+                responsesSent: "2"
+              Mesh:
+                responsesRejected: "1"
+                responsesSent: "2"
+              ProxyTemplate:
+                responsesRejected: "1"
+                responsesSent: "2"
+              Secret:
+                responsesRejected: "1"
+                responsesSent: "2"
+              TrafficLog:
+                responsesRejected: "1"
+                responsesSent: "2"
+              TrafficPermission:
+                responsesRejected: "1"
+                responsesSent: "2"
+              TrafficRoute:
+                responsesRejected: "1"
+                responsesSent: "2"
+              TrafficTrace:
+                responsesRejected: "1"
+                responsesSent: "2"
+            total:
+              responsesRejected: "11"
+              responsesSent: "22"
+        - connectTime: "2019-07-17T16:05:36.995Z"
+          globalInstanceId: node-002
+          id: "2"
+          status:
+            total:
+              responsesRejected: "2"
+              responsesSent: "20"
+  - creationTime: "2018-07-17T16:05:36.995Z"
+    mesh: default
+    modificationTime: "2019-07-17T18:08:41Z"
+    name: zone-2
+    type: ZoneOverview
+    zone:
+      ingress:
+        address: 192.168.1.2:1000
+    zoneInsight:
+      subscriptions:
+        - globalInstanceId: node-001
+          id: "1"
+        - globalInstanceId: node-002
+          id: "2"
+        - globalInstanceId: node-003
+          id: "3"
+next: null
+total: 2

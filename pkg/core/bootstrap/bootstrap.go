@@ -10,8 +10,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 
-	"github.com/kumahq/kuma/pkg/zones/poller"
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/dns"
@@ -65,9 +63,6 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	if err := initializeResourceManager(cfg, builder); err != nil {
-		return nil, err
-	}
-	if err := initializeZones(cfg, builder); err != nil {
 		return nil, err
 	}
 
@@ -316,16 +311,6 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	builder.WithDNSResolver(dns.NewDNSResolver(cfg.DNSServer.Domain))
-	return nil
-}
-
-func initializeZones(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	poller, err := poller.NewZonesStatusPoller(builder.ReadOnlyResourceManager(), cfg.Multicluster.Global.PollTimeout)
-	if err != nil {
-		return err
-	}
-
-	builder.WithZones(poller)
 	return nil
 }
 
