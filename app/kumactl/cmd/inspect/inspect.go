@@ -27,5 +27,6 @@ func NewInspectCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&ctx.args.outputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
 	// sub-commands
 	cmd.AddCommand(newInspectDataplanesCmd(ctx))
+	cmd.AddCommand(newInspectZonesCmd(ctx))
 	return cmd
 }
