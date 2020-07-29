@@ -28,10 +28,19 @@ var _ core_runtime.RuntimeInfo = TestRuntimeInfo{}
 
 type TestRuntimeInfo struct {
 	InstanceId string
+	ClusterId  string
 }
 
 func (i TestRuntimeInfo) GetInstanceId() string {
 	return i.InstanceId
+}
+
+func (i TestRuntimeInfo) SetClusterId(clusterId string) {
+	i.ClusterId = clusterId
+}
+
+func (i TestRuntimeInfo) GetClusterId() string {
+	return i.ClusterId
 }
 
 func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {

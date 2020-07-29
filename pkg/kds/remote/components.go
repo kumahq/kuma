@@ -2,6 +2,7 @@ package remote
 
 import (
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
@@ -36,6 +37,7 @@ var (
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
 		system.SecretType,
+		system.ConfigType,
 	}
 )
 
@@ -57,7 +59,7 @@ func Setup(rt core_runtime.Runtime) error {
 			}
 		}()
 		sink := kds_client.NewKDSSink(log, consumedTypes, kds_client.NewKDSStream(session.ClientStream(), zone),
-			Callbacks(resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone),
+			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone),
 		)
 		go func() {
 			if err := sink.Start(session.Done()); err != nil {
@@ -80,16 +82,31 @@ func providedFilter(clusterName string) reconcile.ResourceFilter {
 	}
 }
 
-func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool, localZone string) *kds_client.Callbacks {
+func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
 		OnResourcesReceived: func(clusterID string, rs model.ResourceList) error {
-			if k8sStore && rs.GetItemType() != mesh.MeshType && rs.GetItemType() != system.SecretType {
+			if k8sStore &&
+				rs.GetItemType() != mesh.MeshType &&
+				rs.GetItemType() != system.SecretType &&
+				rs.GetItemType() != system.ConfigType {
 				util.AddSuffixToNames(rs.GetItems(), "default")
 			}
 			if rs.GetItemType() == mesh.DataplaneType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return r.(*mesh.DataplaneResource).Spec.IsIngress() && localZone != util.ZoneTag(r)
 				}))
+			}
+			if rs.GetItemType() == system.ConfigType {
+				for _, resource := range rs.GetItems() {
+					if resource.GetMeta().GetName() == config_manager.ClusterIdConfigKey {
+						if trr, ok := resource.(*system.ConfigResource); ok {
+							clusterId := trr.Spec.Config
+							rt.SetClusterId(clusterId)
+						} else {
+							return model.ErrorInvalidItemType((*system.ConfigResource)(nil), resource)
+						}
+					}
+				}
 			}
 			return syncer.Sync(rs)
 		},
