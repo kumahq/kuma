@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/ptypes"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -92,4 +93,16 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		}
 	}
 	return list, nil
+}
+
+func StatsOf(status *system_proto.KDSSubscriptionStatus, resourceType model.ResourceType) *system_proto.KDSServiceStats {
+	if status == nil {
+		return &system_proto.KDSServiceStats{}
+	}
+	stat, ok := status.Stat[string(resourceType)]
+	if !ok {
+		stat = &system_proto.KDSServiceStats{}
+		status.Stat[string(resourceType)] = stat
+	}
+	return stat
 }
