@@ -97,9 +97,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",
  "zone": {
-  "remoteControlPlane": {
-   "address": "grpcs://192.168.0.1:5685"
-  },
   "ingress": {
    "address": "10.20.1.1:10001"
   }
@@ -126,9 +123,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",
  "zone": {
-  "remoteControlPlane": {
-   "address": "grpcs://192.168.0.2:5685"
-  },
   "ingress": {
    "address": "10.20.1.2:10002"
   }
@@ -155,9 +149,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",
  "zone": {
-  "remoteControlPlane": {
-   "address": "grpcs://192.168.0.3:5685"
-  },
   "ingress": {
    "address": "10.20.1.3:10003"
   }
