@@ -6,9 +6,6 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	config_store "github.com/kumahq/kuma/pkg/core/config/store"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -20,12 +17,13 @@ import (
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	system_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/config/k8s"
 )
 
 var _ = Describe("KubernetesStore", func() {
 
-	var s config_store.ConfigStore
+	var s core_store.ResourceStore
 	var ns string
 
 	var backend = struct {
@@ -101,7 +99,7 @@ var _ = Describe("KubernetesStore", func() {
 `).(*kube_core.ConfigMap)
 
 			// when
-			err := s.Create(context.Background(), config, store.CreateByKey("kuma-internal-config", ""))
+			err := s.Create(context.Background(), config, core_store.CreateByKey("kuma-internal-config", ""))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -143,7 +141,7 @@ var _ = Describe("KubernetesStore", func() {
 			config := &system_model.ConfigResource{}
 
 			// when
-			err := s.Get(context.Background(), config, store.GetByKey("kuma-internal-config", ""))
+			err := s.Get(context.Background(), config, core_store.GetByKey("kuma-internal-config", ""))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -169,7 +167,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&kube_core.ConfigMap{}, ns, "kuma-internal-config")
 
 			// when
-			err := s.Get(context.Background(), &system_model.ConfigResource{}, store.GetByKey("kuma-internal-config", ""))
+			err := s.Get(context.Background(), &system_model.ConfigResource{}, core_store.GetByKey("kuma-internal-config", ""))
 
 			// then
 			Expect(err).To(HaveOccurred())
