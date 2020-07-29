@@ -15,7 +15,7 @@ import (
 	"sigs.k8s.io/testing_frameworks/integration/addr"
 )
 
-var _ = Describe("K8S CMD test", func() {
+var _ = XDescribe("K8S CMD test", func() {
 	var k8sClient client.Client
 	var testEnv *envtest.Environment
 
