@@ -1,13 +1,46 @@
-.PHONY: dev/tools dev/tools/all \
-		dev/install/protoc dev/install/protobuf-wellknown-types \
-		dev/install/protoc-gen-go dev/install/protoc-gen-validate \
-		dev/install/ginkgo \
-		dev/install/kubebuilder dev/install/kustomize \
-		dev/install/kubectl dev/install/kind dev/install/minikube \
-		dev/install/golangci-lint dev/install/goimports
+PROTOC_VERSION := 3.6.1
+PROTOC_PGV_VERSION := v0.3.0-java.0.20200311152155-ab56c3dd1cf9
+GOLANG_PROTOBUF_VERSION := v1.3.2
+GOLANGCI_LINT_VERSION := v1.27.0
+GINKGO_VERSION := v1.12.0
 
+CI_KUBEBUILDER_VERSION ?= 2.0.0
+CI_MINIKUBE_VERSION ?= v1.9.2
+CI_KUBECTL_VERSION ?= v1.18.0
+CI_TOOLS_IMAGE ?= circleci/golang:1.14.2
+
+CI_TOOLS_DIR ?= $(HOME)/bin
+GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
+GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
+export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
+
+PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
+PROTOBUF_WKT_DIR := $(CI_TOOLS_DIR)/protobuf.d
+KUBEBUILDER_DIR := $(CI_TOOLS_DIR)/kubebuilder.d
+KUBEBUILDER_PATH := $(CI_TOOLS_DIR)/kubebuilder
+KUSTOMIZE_PATH := $(CI_TOOLS_DIR)/kustomize
+MINIKUBE_PATH := $(CI_TOOLS_DIR)/minikube
+KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
+KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
+ETCD_PATH := $(CI_TOOLS_DIR)/etcd
+GOLANGCI_LINT_DIR := $(CI_TOOLS_DIR)
+
+PROTOC_OS=unknown
+PROTOC_ARCH=$(shell uname -m)
+
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S), Linux)
+	PROTOC_OS=linux
+else
+	ifeq ($(UNAME_S), Darwin)
+		PROTOC_OS=osx
+	endif
+endif
+
+.PHONY: dev/tools
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
 
+.PHONY: dev/tools/all
 dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/protoc-gen-go dev/install/protoc-gen-validate \
 	dev/install/ginkgo \
@@ -16,6 +49,7 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/golangci-lint \
 	dev/install/goimports
 
+.PHONY: dev/install/protoc
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 	@if [ -e $(PROTOC_PATH) ]; then echo "Protoc $$( $(PROTOC_PATH) --version ) is already installed at $(PROTOC_PATH)" ; fi
 	@if [ ! -e $(PROTOC_PATH) ]; then \
@@ -30,6 +64,7 @@ dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 		&& set +x \
 		&& echo "Protoc $(PROTOC_VERSION) has been installed at $(PROTOC_PATH)" ; fi
 
+.PHONY: dev/install/protobuf-wellknown-types
 dev/install/protobuf-wellknown-types:: ## Bootstrap: Install Protobuf well-known types
 	@if [ -e $(PROTOBUF_WKT_DIR) ]; then echo "Protobuf well-known types are already installed at $(PROTOBUF_WKT_DIR)" ; fi
 	@if [ ! -e $(PROTOBUF_WKT_DIR) ]; then \
@@ -44,18 +79,22 @@ dev/install/protobuf-wellknown-types:: ## Bootstrap: Install Protobuf well-known
 		&& set +x \
 		&& echo "Protobuf well-known types $(PROTOC_VERSION) have been installed at $(PROTOBUF_WKT_DIR)" ; fi
 
+.PHONY: dev/install/protoc-gen-go
 dev/install/protoc-gen-go: ## Bootstrap: Install Protoc Go Plugin (protobuf Go generator)
 	go get github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
 
+.PHONY: dev/install/protoc-gen-validate
 dev/install/protoc-gen-validate: ## Bootstrap: Install Protoc Gen Validate Plugin (protobuf validation code generator)
 	go get github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
+.PHONY: dev/install/ginkgo
 dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	# see https://github.com/onsi/ginkgo#set-me-up
 	echo "Installing Ginkgo ..."
 	go get github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)  # installs the ginkgo CLI
 	echo "Ginkgo has been installed at $(GOPATH_BIN_DIR)/ginkgo"
 
+.PHONY: dev/install/kubebuilder
 dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and kube-apiserver)
 	# see https://book.kubebuilder.io/quick-start.html#installation
 	@if [ -e $(KUBEBUILDER_PATH) ]; then echo "Kubebuilder $$( $(KUBEBUILDER_PATH) version ) is already installed at $(KUBEBUILDER_PATH)" ; fi
@@ -71,6 +110,7 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and k
 		&& set +x \
 		&& echo "Kubebuilder $(CI_KUBEBUILDER_VERSION) has been installed at $(KUBEBUILDER_PATH)" ; fi
 
+.PHONY: dev/install/kustomize
 dev/install/kustomize: ## Bootstrap: Install Kustomize
 	# see https://book.kubebuilder.io/quick-start.html#installation
 	@if [ -e $(KUSTOMIZE_PATH) ]; then echo "Kustomize $$( $(KUSTOMIZE_PATH) version ) is already installed at $(KUSTOMIZE_PATH)" ; fi
@@ -85,6 +125,7 @@ dev/install/kustomize: ## Bootstrap: Install Kustomize
 		&& set +x \
 		&& echo "Kustomize latest has been installed at $(KUSTOMIZE_PATH)" ; fi
 
+.PHONY: dev/install/kubectl
 dev/install/kubectl: ## Bootstrap: Install kubectl
 	# see https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-binary-with-curl-on-linux
 	@if [ -e $(KUBECTL_PATH) ]; then echo "Kubectl $$( $(KUBECTL_PATH) version ) is already installed at $(KUBECTL_PATH)" ; fi
@@ -98,6 +139,7 @@ dev/install/kubectl: ## Bootstrap: Install kubectl
 		&& set +x \
 		&& echo "Kubectl $(CI_KUBECTL_VERSION) has been installed at $(KUBECTL_PATH)" ; fi
 
+.PHONY: dev/install/kind
 dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
 	# see https://kind.sigs.k8s.io/docs/user/quick-start/#installation
 	@if [ -e $(KIND_PATH) ]; then echo "Kind $$( $(KIND_PATH) version ) is already installed at $(KIND_PATH)" ; fi
@@ -111,6 +153,7 @@ dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
 		&& set +x \
 		&& echo "Kind $(CI_KIND_VERSION) has been installed at $(KIND_PATH)" ; fi
 
+.PHONY: dev/install/minikube
 dev/install/minikube: ## Bootstrap: Install Minikube
 	# see https://kubernetes.io/docs/tasks/tools/install-minikube/#linux
 	@if [ -e $(MINIKUBE_PATH) ]; then echo "Minikube $$( $(MINIKUBE_PATH) version ) is already installed at $(MINIKUBE_PATH)" ; fi
@@ -124,8 +167,10 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 		&& set +x \
 		&& echo "Minikube $(CI_MINIKUBE_VERSION) has been installed at $(MINIKUBE_PATH)" ; fi
 
+.PHONY: dev/install/golangci-lint
 dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
 
+.PHONY: dev/install/goimports
 dev/install/goimports: ## Bootstrap: Install goimports
 	go get golang.org/x/tools/cmd/goimports

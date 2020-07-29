@@ -47,7 +47,9 @@ var (
 )
 
 func Setup(rt runtime.Runtime) (err error) {
-	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes, "global", ProvidedFilter)
+	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes,
+		"global", rt.Config().Multicluster.Global.KDS.RefreshInterval,
+		ProvidedFilter)
 	if err != nil {
 		return err
 	}
@@ -74,7 +76,7 @@ func Setup(rt runtime.Runtime) (err error) {
 		}()
 		return nil
 	})
-	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().KDS.Server))
+	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().Multicluster.Global.KDS))
 }
 
 // ProvidedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
@@ -140,4 +142,13 @@ func dedupIngresses(rs model.ResourceList) model.ResourceList {
 		}
 	}
 	return rv
+}
+
+func ConsumesType(typ model.ResourceType) bool {
+	for _, consumedTyp := range consumedTypes {
+		if consumedTyp == typ {
+			return true
+		}
+	}
+	return false
 }

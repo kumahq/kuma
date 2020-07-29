@@ -103,7 +103,7 @@ var _ = Describe("Components", func() {
 								Port:        9090,
 								ServicePort: 8080,
 								Tags: map[string]string{
-									"service": "backend",
+									"kuma.io/service": "backend",
 								},
 							},
 						},

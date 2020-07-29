@@ -32,7 +32,7 @@ var _ = Describe("TrafficRoute Endpoints", func() {
 			return now
 		}
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true)
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes/default/traffic-routes",
@@ -68,21 +68,21 @@ var _ = Describe("TrafficRoute Endpoints", func() {
         modificationTime: "2018-07-17T16:05:36.995Z"
         sources:
         - match:
-            service: web
+            kuma.io/service: web
             region: us-east-1
             version: v10
         destinations:
         - match:
-            service: backend
+            kuma.io/service: backend
         conf:
         - weight: 90
           destination:
-            service: backend
+            kuma.io/service: backend
             region: us-east-1
             version: v2
         - weight: 10
           destination:
-            service: backend
+            kuma.io/service: backend
             version: v3
 `
 		It("GET should return data saved by PUT", func() {

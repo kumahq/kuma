@@ -3,12 +3,12 @@ package e2e_test
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kumahq/kuma/pkg/config/mode"
 
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -30,10 +30,23 @@ name: traffic-permission-all
 mesh: default
 sources:
 - match:
-   service: "*"
+   kuma.io/service: "*"
 destinations:
 - match:
-   service: "*"
+   kuma.io/service: "*"
+`
+
+	trafficPermissionAllTo2Remote := `
+type: TrafficPermission
+name: all-to-2-remote
+mesh: default
+sources:
+- match:
+   kuma.io/service: "*"
+destinations:
+- match:
+   kuma.io/service: "*"
+   kuma.io/zone: kuma-2-remote
 `
 
 	namespaceWithSidecarInjection := func(namespace string) string {
@@ -64,7 +77,7 @@ metadata:
 		global = universalClusters.GetCluster(Kuma5)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Global)).
+			Install(Kuma(core.Global)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -76,7 +89,7 @@ metadata:
 		remote_1 = k8sClusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(KumaDNS()).
 			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
@@ -90,7 +103,7 @@ metadata:
 		remote_2 = k8sClusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(KumaDNS()).
 			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
@@ -105,7 +118,7 @@ metadata:
 		remote_3 = universalClusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(EchoServerUniversal()).
 			Install(DemoClientUniversal()).
 			Setup(remote_3)
@@ -117,7 +130,7 @@ metadata:
 		remote_4 = universalClusters.GetCluster(Kuma4)
 
 		err = NewClusterSetup().
-			Install(Kuma(mode.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal()).
 			Setup(remote_4)
 		Expect(err).ToNot(HaveOccurred())
@@ -132,28 +145,24 @@ metadata:
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
 				remote_1CP.GetName(),
-				"grpcs://1.1.1.1:1010",
 				remote_1CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
 				remote_2CP.GetName(),
-				"grpcs://1.1.1.1:1010",
 				remote_2CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
 				Kuma3,
-				"grpcs://1.1.1.1:1010",
 				remote_3CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.GetKumactlOptions().KumactlApplyFromString(
 			fmt.Sprintf(ZoneTemplateUniversal,
 				Kuma4,
-				"grpcs://1.1.1.1:1010",
 				remote_4CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -165,19 +174,25 @@ metadata:
 	})
 
 	AfterEach(func() {
-		_ = remote_1.DeleteKuma()
 		_ = k8s.KubectlDeleteFromStringE(remote_1.GetTesting(), remote_1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
-		_ = remote_2.DeleteKuma()
+		err := remote_1.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
 		_ = k8s.KubectlDeleteFromStringE(remote_2.GetTesting(), remote_2.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
-		_ = remote_3.DeleteKuma()
-		_ = remote_4.DeleteKuma()
-		_ = global.DeleteKuma()
+		err = remote_2.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
+		err = remote_3.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
+		err = remote_4.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
+		err = global.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
 
-		_ = remote_1.DismissCluster()
-		_ = remote_2.DismissCluster()
-		_ = remote_3.DismissCluster()
-		_ = remote_4.DismissCluster()
-		_ = global.DismissCluster()
+		err = remote_3.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
+		err = remote_4.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
+		err = global.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should access allservices", func() {
@@ -233,5 +248,35 @@ metadata:
 			"curl", "-v", "-m", "3", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+	})
+
+	It("should sync traffic permissions", func() {
+
+		// Remote 4
+		// universal access remote universal service
+		stdout, _, err := remote_4.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "-m", "3", "localhost:4001")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+
+		err = global.GetKumactlOptions().KumactlDelete("traffic-permission", "traffic-permission-all")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = YamlUniversal(trafficPermissionAllTo2Remote)(global)
+		Expect(err).ToNot(HaveOccurred())
+
+		// Remote 3
+		// universal access remote k8s service
+		stdout, _, err = remote_3.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "-m", "3", "localhost:4000")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+
+		// Remote 4
+		// universal can't access remote universal service
+		stdout, _, err = remote_4.ExecWithRetries("", "", "demo-client",
+			"curl", "-v", "-m", "3", "localhost:4001")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stdout).To(ContainSubstring("HTTP/1.1 503 Service Unavailable"))
 	})
 })

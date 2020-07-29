@@ -35,7 +35,7 @@ networking:
   inbound:
   - port: %d	
     tags:
-      service: ingress
+      kuma.io/service: ingress
 `
 	EchoServerDataplane = `
 type: Dataplane
@@ -47,8 +47,8 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      service: echo-server_kuma-test_svc_%s
-      protocol: http
+      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/protocol: http
 `
 	AppModeDemoClient   = "demo-client"
 	DemoClientDataplane = `
@@ -61,7 +61,7 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      service: demo-client
+      kuma.io/service: demo-client
   outbound:
   - port: 4000
     service: echo-server_kuma-test_svc_%s
@@ -110,7 +110,7 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 	app.allocatePublicPortsFor("22")
 
 	if mode == AppModeCP {
-		app.allocatePublicPortsFor("5678", "5679", "5680", "5681", "5682", "5683", "5684", "5685")
+		app.allocatePublicPortsFor("5678", "5679", "5680", "5681", "5682", "5684", "5685")
 	}
 
 	opts := defaultDockerOptions
@@ -123,10 +123,15 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 	}
 
 	app.container = container
-	app.ip, err = app.getIP()
-	if err != nil {
-		return nil, err
-	}
+
+	retry.DoWithRetry(app.t, "get IP "+app.container, DefaultRetries, DefaultTimeout,
+		func() (string, error) {
+			app.ip, err = app.getIP()
+			if err != nil {
+				return "Unable to get Container IP", err
+			}
+			return "Success", nil
+		})
 
 	fmt.Printf("Node IP %s\n", app.ip)
 

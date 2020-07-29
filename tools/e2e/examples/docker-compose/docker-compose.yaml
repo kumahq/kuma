@@ -29,7 +29,6 @@ services:
     - "5680"
     - "5681"
     - "5682"
-    - "5683"
     - "5684"
     ports:
     - "5678:5678"
@@ -37,7 +36,6 @@ services:
     - "5680:5680"
     - "5681:5681"
     - "5682:5682"
-    - "5683:5683"
     - "5684:5684"
     networks:
       kuma-example:
@@ -341,7 +339,7 @@ services:
   # Notice that we're using Envoy as a simple HTTP server with predefined responses.
   #
   kuma-example-backend-v1:
-    image: envoyproxy/envoy-alpine:v1.14.3
+    image: envoyproxy/envoy-alpine:v1.15.0
     command:
     - sh
     - -c
@@ -407,7 +405,7 @@ services:
   # Notice that we're using Envoy as a simple HTTP server with predefined responses.
   #
   kuma-example-backend-v2:
-    image: envoyproxy/envoy-alpine:v1.14.3
+    image: envoyproxy/envoy-alpine:v1.15.0
     command:
     - sh
     - -c

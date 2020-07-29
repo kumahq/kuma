@@ -57,8 +57,8 @@ var _ = Describe("DataplaneOverview", func() {
 								Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 									{
 										Tags: map[string]string{
-											"service": "mobile",
-											"version": "v1",
+											"kuma.io/service": "mobile",
+											"version":         "v1",
 										},
 									},
 								},
@@ -84,15 +84,15 @@ var _ = Describe("DataplaneOverview", func() {
 				expected: overviews,
 			}),
 			Entry("should retain with one matching tag", testCase{
-				tags:     map[string]string{"service": "mobile"},
+				tags:     map[string]string{"kuma.io/service": "mobile"},
 				expected: overviews,
 			}),
 			Entry("should retain with matching all tags", testCase{
-				tags:     map[string]string{"service": "mobile", "version": "v1"},
+				tags:     map[string]string{"kuma.io/service": "mobile", "version": "v1"},
 				expected: overviews,
 			}),
 			Entry("should retain none with mismatching tag", testCase{
-				tags:     map[string]string{"service": "mobile", "version": "v2"},
+				tags:     map[string]string{"kuma.io/service": "mobile", "version": "v2"},
 				expected: DataplaneOverviewResourceList{Items: []*DataplaneOverviewResource{}},
 			}))
 	})
@@ -105,7 +105,7 @@ var _ = Describe("DataplaneOverview", func() {
 							Networking: &v1alpha1.Dataplane_Networking{
 								Gateway: &v1alpha1.Dataplane_Networking_Gateway{
 									Tags: map[string]string{
-										"service": "gateway",
+										"kuma.io/service": "gateway",
 									},
 								},
 							},
@@ -119,8 +119,8 @@ var _ = Describe("DataplaneOverview", func() {
 								Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
 									{
 										Tags: map[string]string{
-											"service": "mobile",
-											"version": "v1",
+											"kuma.io/service": "mobile",
+											"version":         "v1",
 										},
 									},
 								},
@@ -138,7 +138,7 @@ var _ = Describe("DataplaneOverview", func() {
 							Networking: &v1alpha1.Dataplane_Networking{
 								Gateway: &v1alpha1.Dataplane_Networking_Gateway{
 									Tags: map[string]string{
-										"service": "gateway",
+										"kuma.io/service": "gateway",
 									},
 								},
 							},

@@ -96,14 +96,14 @@ var _ = Describe("TrafficTrace", func() {
 				trafficTrace: `
                 selectors:
                 - match:
-                    service:
+                    kuma.io/service:
                     region:
 `,
 				expected: `
                 violations:
-                - field: selectors[0].match["region"]
+                - field: selectors[0].match["kuma.io/service"]
                   message: tag value must be non-empty
-                - field: selectors[0].match["service"]
+                - field: selectors[0].match["region"]
                   message: tag value must be non-empty
 `,
 			}),
@@ -111,15 +111,15 @@ var _ = Describe("TrafficTrace", func() {
 				trafficTrace: `
                 selectors:
                 - match:
-                    service:
+                    kuma.io/service:
                     region:
                 - match: {}
 `,
 				expected: `
                 violations:
-                - field: selectors[0].match["region"]
+                - field: selectors[0].match["kuma.io/service"]
                   message: tag value must be non-empty
-                - field: selectors[0].match["service"]
+                - field: selectors[0].match["region"]
                   message: tag value must be non-empty
                 - field: selectors[1].match
                   message: must have at least one tag

@@ -30,7 +30,7 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 						{
 							Port: 8080,
 							Tags: map[string]string{
-								"service": "backend",
+								"kuma.io/service": "backend",
 							},
 						},
 					},
@@ -61,7 +61,7 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 								Port:    uint32(1234 + i),
 								Address: vip,
 								Tags: map[string]string{
-									"service": service,
+									"kuma.io/service": service,
 								},
 							},
 						},

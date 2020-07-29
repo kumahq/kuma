@@ -1,7 +1,18 @@
-
+EXAMPLE_NAMESPACE ?= kuma-example
 KIND_KUBECONFIG_DIR ?= $(HOME)/.kube
 KIND_KUBECONFIG ?= $(KIND_KUBECONFIG_DIR)/kind-kuma-config
 KIND_CLUSTER_NAME ?= kuma
+
+ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
+	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --dataplane-init-image=$(KUMA_INIT_DOCKER_IMAGE_NAME)
+else
+	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
+endif
+ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
+	KUMACTL_INSTALL_METRICS_IMAGES := --kuma-prometheus-sd-image=$(KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME)
+else
+	KUMACTL_INSTALL_METRICS_IMAGES :=
+endif
 
 define KIND_EXAMPLE_DATAPLANE_MESH
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_MESH)

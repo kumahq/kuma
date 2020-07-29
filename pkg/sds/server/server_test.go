@@ -99,7 +99,7 @@ var _ = Describe("SDS Server", func() {
 						{
 							Port: 1234,
 							Tags: map[string]string{
-								"service": "backend",
+								"kuma.io/service": "backend",
 							},
 						},
 					},

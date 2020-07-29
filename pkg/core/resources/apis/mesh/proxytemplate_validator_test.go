@@ -30,7 +30,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("full example", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   imports:
                   - default-proxy
@@ -55,12 +55,12 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("empty conf", `
                 selectors:
                 - match:
-                    service: backend`,
+                    kuma.io/service: backend`,
 			),
 			Entry("cluster modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - cluster:
@@ -82,7 +82,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - cluster:
                       operation: patch
                       match:
-                        direction: inbound
+                        origin: inbound
                       value: |
                         connectTimeout: 5s
                   - cluster:
@@ -94,13 +94,13 @@ var _ = Describe("ProxyTemplate", func() {
                   - cluster:
                       operation: remove
                       match:
-                        direction: inbound
+                        origin: inbound
                   `,
 			),
 			Entry("listener modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - listener:
@@ -128,7 +128,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - listener:
                       operation: patch
                       match:
-                        direction: inbound
+                        origin: inbound
                       value: |
                         address:
                           socketAddress:
@@ -142,13 +142,13 @@ var _ = Describe("ProxyTemplate", func() {
                   - listener:
                       operation: remove
                       match:
-                        direction: inbound
+                        origin: inbound
                   `,
 			),
 			Entry("network filter modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - networkFilter:
@@ -201,7 +201,7 @@ var _ = Describe("ProxyTemplate", func() {
 			Entry("http filter modifications", `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - httpFilter:
@@ -245,6 +245,62 @@ var _ = Describe("ProxyTemplate", func() {
                       operation: remove
                   `,
 			),
+			Entry("virtual host modifications", `
+                selectors:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  modifications:
+                  - virtualHost:
+                      operation: add
+                      match:
+                        origin: outbound
+                        routeConfigurationName: outbound:backend
+                      value: |
+                        name: backend
+                        domains:
+                        - backend.com
+                        routes:
+                        - match:
+                            prefix: /
+                          route:
+                            cluster: backend
+                  - virtualHost:
+                      operation: patch
+                      value: |
+                        retryPolicy:
+                          retryOn: 5xx
+                          numRetries: 3
+                  - virtualHost:
+                      operation: patch
+                      match:
+                        origin: outbound
+                      value: |
+                        retryPolicy:
+                          retryOn: 5xx
+                          numRetries: 3
+                  - virtualHost:
+                      operation: patch
+                      match:
+                        routeConfigurationName: outbound:backend
+                        name: backend
+                      value: |
+                        retryPolicy:
+                          retryOn: 5xx
+                          numRetries: 3
+                  - cluster:
+                      operation: remove
+                  - cluster:
+                      operation: remove
+                      match:
+                        routeConfigurationName: outbound:backend
+                        name: backend
+                  - cluster:
+                      operation: remove
+                      match:
+                        origin: inbound
+                  `,
+			),
 		)
 
 		type testCase struct {
@@ -278,7 +334,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - ""
                 selectors:
                 - match:
-                    service: backend`,
+                    kuma.io/service: backend`,
 				expected: `
                 violations:
                 - field: conf.imports[0]
@@ -291,7 +347,7 @@ var _ = Describe("ProxyTemplate", func() {
                   - unknown-profile
                 selectors:
                 - match:
-                    service: backend`,
+                    kuma.io/service: backend`,
 				expected: `
                 violations:
                 - field: conf.imports[0]
@@ -301,7 +357,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   resources:
                   - name:
@@ -325,7 +381,7 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: selectors[0].match
                   message: must have at least one tag
                 - field: selectors[0].match
-                  message: mandatory tag "service" is missing`,
+                  message: mandatory tag "kuma.io/service" is missing`,
 			}),
 			Entry("empty tag", testCase{
 				proxyTemplate: `
@@ -337,23 +393,23 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: selectors[0].match
                   message: tag name must be non-empty
                 - field: selectors[0].match
-                  message: mandatory tag "service" is missing`,
+                  message: mandatory tag "kuma.io/service" is missing`,
 			}),
 			Entry("empty tag value", testCase{
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service:`,
+                    kuma.io/service:`,
 				expected: `
                 violations:
-                - field: 'selectors[0].match["service"]'
+                - field: 'selectors[0].match["kuma.io/service"]'
                   message: tag value must be non-empty`,
 			}),
 			Entry("validation error from envoy protobuf resource", testCase{
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   resources:
                   - name: additional
@@ -378,7 +434,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   resources:
                   - name: additional
@@ -393,7 +449,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - cluster:
@@ -425,7 +481,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - listener:
@@ -461,7 +517,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - networkFilter:
@@ -498,7 +554,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate: `
                 selectors:
                 - match:
-                    service: backend
+                    kuma.io/service: backend
                 conf:
                   modifications:
                   - httpFilter:
@@ -529,6 +585,35 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: conf.modifications[3].httpFilter.match.name
                   message: cannot be empty
                 - field: conf.modifications[3].httpFilter.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'`,
+			}),
+			Entry("invalid virtual host operation", testCase{
+				proxyTemplate: `
+                selectors:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  modifications:
+                  - virtualHost:
+                      operation: add
+                      match:
+                        name: xyz
+                      value: '{'
+                  - virtualHost:
+                      operation: addFirst
+                  - virtualHost:
+                      operation: patch
+                      value: '{'
+`,
+				expected: `
+                violations:
+                - field: conf.modifications[0].virtualHost.match.name
+                  message: cannot be defined
+                - field: conf.modifications[0].virtualHost.value
+                  message: 'native Envoy resource is not valid: unexpected EOF'
+                - field: conf.modifications[1].virtualHost.operation
+                  message: 'invalid operation. Available operations: "add", "patch", "remove"'
+                - field: conf.modifications[2].virtualHost.value
                   message: 'native Envoy resource is not valid: unexpected EOF'`,
 			}),
 		)

@@ -31,7 +31,7 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
 			return now
 		}
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig())
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true)
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes/default/circuit-breakers",
@@ -67,11 +67,11 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
         modificationTime: "2018-07-17T16:05:36.995Z"
         sources:
         - match:
-            service: web
-            protocol: http
+            kuma.io/service: web
+            kuma.io/protocol: http
         destinations:
         - match:
-            service: backend
+            kuma.io/service: backend
         conf:
           baseEjectionTime: 5s
           detectors:

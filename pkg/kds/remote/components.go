@@ -40,8 +40,10 @@ var (
 )
 
 func Setup(rt core_runtime.Runtime) error {
-	zone := rt.Config().Mode.Remote.Zone
-	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes, zone, providedFilter(zone))
+	zone := rt.Config().Multicluster.Remote.Zone
+	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes,
+		zone, rt.Config().Multicluster.Remote.KDS.RefreshInterval,
+		providedFilter(zone))
 	if err != nil {
 		return err
 	}
@@ -64,7 +66,7 @@ func Setup(rt core_runtime.Runtime) error {
 		}()
 		return nil
 	})
-	muxClient := mux.NewClient(rt.Config().KDS.Client.GlobalAddress, zone, onSessionStarted, *rt.Config().KDS.Client)
+	muxClient := mux.NewClient(rt.Config().Multicluster.Remote.GlobalAddress, zone, onSessionStarted, *rt.Config().Multicluster.Remote.KDS)
 	return rt.Add(component.NewResilientComponent(kdsRemoteLog.WithName("mux-client"), muxClient))
 }
 
@@ -92,4 +94,13 @@ func Callbacks(syncer sync_store.ResourceSyncer, k8sStore bool, localZone string
 			return syncer.Sync(rs)
 		},
 	}
+}
+
+func ConsumesType(typ model.ResourceType) bool {
+	for _, consumedTyp := range consumedTypes {
+		if consumedTyp == typ {
+			return true
+		}
+	}
+	return false
 }

@@ -112,7 +112,7 @@ func autoconfigureSds(cfg *kuma_cp.Config) error {
 func autoconfigureKds(cfg *kuma_cp.Config) error {
 	// to improve UX, we want to auto-generate TLS cert for KDS if possible
 	if cfg.Environment == config_core.UniversalEnvironment {
-		if cfg.KDS.Server.TlsCertFile == "" {
+		if cfg.Multicluster.Global.KDS.TlsCertFile == "" {
 			hosts := []string{}
 			kdsCert, err := tls.NewSelfSignedCert("kuma-kds", tls.ServerCertType, hosts...)
 			if err != nil {
@@ -122,8 +122,8 @@ func autoconfigureKds(cfg *kuma_cp.Config) error {
 			if err != nil {
 				return errors.Wrap(err, "failed to save auto-generated TLS certificate for KDS server")
 			}
-			cfg.KDS.Server.TlsCertFile = crtFile
-			cfg.KDS.Server.TlsKeyFile = keyFile
+			cfg.Multicluster.Global.KDS.TlsCertFile = crtFile
+			cfg.Multicluster.Global.KDS.TlsKeyFile = keyFile
 
 			autoconfigureLog.Info("auto-generated TLS certificate for KDS server", "crtFile", crtFile, "keyFile", keyFile)
 		}

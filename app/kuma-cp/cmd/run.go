@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	dns "github.com/kumahq/kuma/pkg/dns/components"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/kumahq/kuma/pkg/config/mode"
+	dns "github.com/kumahq/kuma/pkg/dns/components"
 
 	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 
@@ -17,7 +17,6 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/zones"
 
-	ui_server "github.com/kumahq/kuma/app/kuma-ui/pkg/server"
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -75,15 +74,26 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
-			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode.Mode))
-			switch cfg.Mode.Mode {
-			case mode.Standalone:
-				if err := ui_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up GUI server")
+			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode))
+			switch cfg.Mode {
+			case config_core.Standalone:
+				if err := sds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up SDS server")
 					return err
 				}
-				fallthrough
-			case mode.Remote:
+				if err := xds_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up xDS server")
+					return err
+				}
+				if err := mads_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up Monitoring Assignment server")
+					return err
+				}
+				if err := dns.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up DNS server")
+					return err
+				}
+			case config_core.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
 					return err
@@ -104,13 +114,9 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DNS server")
 					return err
 				}
-			case mode.Global:
+			case config_core.Global:
 				if err := xds_server.SetupDiagnosticsServer(rt); err != nil {
 					runLog.Error(err, "unable to set up xDS server")
-					return err
-				}
-				if err := ui_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up GUI server")
 					return err
 				}
 				if err := zones.SetupServer(rt); err != nil {

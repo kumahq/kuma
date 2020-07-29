@@ -17,13 +17,13 @@ var _ = Describe("Ingress BuildDestinationMap", func() {
 					Ingress: &mesh_proto.Dataplane_Networking_Ingress{
 						AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 							{
-								Tags: map[string]string{"service": "backend", "version": "v1", "region": "us"},
+								Tags: map[string]string{"kuma.io/service": "backend", "version": "v1", "region": "us"},
 							},
 							{
-								Tags: map[string]string{"service": "backend"},
+								Tags: map[string]string{"kuma.io/service": "backend"},
 							},
 							{
-								Tags: map[string]string{"service": "web", "version": "v2", "region": "eu"},
+								Tags: map[string]string{"kuma.io/service": "web", "version": "v2", "region": "eu"},
 							},
 						},
 					},
@@ -34,19 +34,19 @@ var _ = Describe("Ingress BuildDestinationMap", func() {
 		expected := xds.DestinationMap{
 			"backend": []mesh_proto.TagSelector{
 				{
-					"region":  "us",
-					"version": "v1",
-					"service": "backend",
+					"region":          "us",
+					"version":         "v1",
+					"kuma.io/service": "backend",
 				},
 				{
-					"service": "backend",
+					"kuma.io/service": "backend",
 				},
 			},
 			"web": []mesh_proto.TagSelector{
 				{
-					"region":  "eu",
-					"service": "web",
-					"version": "v2",
+					"region":          "eu",
+					"kuma.io/service": "web",
+					"version":         "v2",
 				},
 			},
 		}

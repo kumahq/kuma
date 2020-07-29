@@ -72,14 +72,14 @@ var _ = Describe("Matcher", func() {
 							Port:        8080,
 							ServicePort: 8081,
 							Tags: map[string]string{
-								"service": "kong",
+								"kuma.io/service": "kong",
 							},
 						},
 						{
 							Port:        8090,
 							ServicePort: 8091,
 							Tags: map[string]string{
-								"service": "kong-admin",
+								"kuma.io/service": "kong-admin",
 							},
 						},
 					},
@@ -107,14 +107,14 @@ var _ = Describe("Matcher", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "kong",
+							"kuma.io/service": "kong",
 						},
 					},
 				},
 				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "backend",
+							"kuma.io/service": "backend",
 						},
 					},
 				},
@@ -132,14 +132,14 @@ var _ = Describe("Matcher", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "*",
+							"kuma.io/service": "*",
 						},
 					},
 				},
 				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "*",
+							"kuma.io/service": "*",
 						},
 					},
 				},
@@ -168,14 +168,14 @@ var _ = Describe("Matcher", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "web",
+							"kuma.io/service": "web",
 						},
 					},
 				},
 				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "backend",
+							"kuma.io/service": "backend",
 						},
 					},
 				},
@@ -202,14 +202,14 @@ var _ = Describe("Matcher", func() {
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "*",
+							"kuma.io/service": "*",
 						},
 					},
 				},
 				Destinations: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
-							"service": "*",
+							"kuma.io/service": "*",
 						},
 					},
 				},

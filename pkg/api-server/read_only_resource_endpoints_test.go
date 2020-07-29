@@ -28,7 +28,7 @@ var _ = Describe("Read only Resource Endpoints", func() {
 		resourceStore = memory.NewStore()
 		cfg := config.DefaultApiServerConfig()
 		cfg.ReadOnly = true
-		apiServer = createTestApiServer(resourceStore, cfg)
+		apiServer = createTestApiServer(resourceStore, cfg, true)
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/sample-traffic-routes",

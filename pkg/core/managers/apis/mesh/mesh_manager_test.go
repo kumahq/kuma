@@ -145,7 +145,7 @@ var _ = Describe("Mesh Manager", func() {
                           port: 5670
                           path: /metrics
                           tags:
-                            service: dataplane-metrics
+                            kuma.io/service: dataplane-metrics
 `,
 				}),
 			)
@@ -348,7 +348,7 @@ var _ = Describe("Mesh Manager", func() {
                           port: 1234
                           path: /non-standard-path
                           tags:
-                            service: custom-prom
+                            kuma.io/service: custom-prom
 `,
 					expected: `
                     metrics:
@@ -360,7 +360,7 @@ var _ = Describe("Mesh Manager", func() {
                           port: 1234
                           path: /non-standard-path
                           tags:
-                            service: custom-prom
+                            kuma.io/service: custom-prom
 `,
 				}),
 				Entry("when config remain unchanged", testCase{
@@ -374,7 +374,7 @@ var _ = Describe("Mesh Manager", func() {
                           port: 1234
                           path: /non-standard-path
                           tags:
-                            service: custom-prom
+                            kuma.io/service: custom-prom
 `,
 					updated: `
                     metrics:
@@ -386,7 +386,7 @@ var _ = Describe("Mesh Manager", func() {
                           port: 1234
                           path: /non-standard-path
                           tags:
-                            service: custom-prom
+                            kuma.io/service: custom-prom
 `,
 					expected: `
                     metrics:
@@ -398,7 +398,7 @@ var _ = Describe("Mesh Manager", func() {
                           port: 1234
                           path: /non-standard-path
                           tags:
-                            service: custom-prom
+                            kuma.io/service: custom-prom
 `,
 				}),
 			)

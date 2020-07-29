@@ -21,7 +21,7 @@ var _ = Describe("Config WS", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		apiServer := createTestApiServer(resourceStore, cfg)
+		apiServer := createTestApiServer(resourceStore, cfg, true)
 
 		stop := make(chan struct{})
 		go func() {
@@ -122,7 +122,6 @@ var _ = Describe("Config WS", func() {
             "advertisedHostname": "localhost"
           },
           "guiServer": {
-            "port": 5683,
             "apiServerUrl": ""
           },
           "metrics": {
@@ -131,11 +130,24 @@ var _ = Describe("Config WS", func() {
               "subscriptionLimit": 10
             }
           },
-          "mode": {
-           "global": {},
-           "remote": {},
-           "mode": "standalone"
-        },
+          "mode": "standalone",
+          "multicluster": {
+            "global": {
+              "pollTimeout": "500ms",
+              "kds": {
+                "grpcPort": 5685,
+                "refreshInterval": "1s",
+                "tlsCertFile": "",
+                "tlsKeyFile": ""
+              }
+            },
+            "remote": {
+              "kds": {
+                "refreshInterval": "1s",
+                "rootCaFile": ""
+              }
+            }
+          },
           "monitoringAssignmentServer": {
             "assignmentRefreshInterval": "1s",
             "grpcPort": 5676
@@ -228,18 +240,6 @@ var _ = Describe("Config WS", func() {
             "grpcPort": 5678,
             "tlsCertFile": "",
             "tlsKeyFile": ""
-          },
-          "kds": {
-            "server": {
-              "grpcPort": 5685,
-              "refreshInterval": "1s",
-              "tlsCertFile": "",
-              "tlsKeyFile": ""
-            },
-            "client": {
-              "rootCaFile": "",
-              "globalAddress": ""
-            }
           }
         }
 		`, port)
