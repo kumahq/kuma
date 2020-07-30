@@ -1,8 +1,8 @@
 [![][kuma-logo]][kuma-url]
 
-# kuma-cp
+# kuma
 
-The kuma-cp chart supports all the features and options provided by `kumactl install control-plane`.
+The kuma chart supports all the features and options provided by `kumactl install control-plane`.
 The chart supports Helm v3+.
 
 ## Values
@@ -39,7 +39,6 @@ The chart supports Helm v3+.
 | `dataPlane.initImage.registry`              | The Kuma DP init image registry                                                   | nil, uses global                     |
 | `dataPlane.initImage.repository`            | The Kuma DP init image repository                                                 | `kuma-init`                          |
 | `dataPlane.initImage.tag`                   | The Kuma DP init image tag                                                        | nil, uses global                     |
-| `nameOverride`                              | Override the control plane naming                                                 | nil, uses Chart.name                 |
 
 ## Custom Resource Definitions
 
