@@ -259,6 +259,7 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		"controlPlane.mode": mode,
 		// allow the CP to create a default mesh, for testing simplicity
 		"controlPlane.defaults.skipMeshCreation": "false",
+		"nameOverride":                           "kuma",
 		"global.image.tag":                       kuma_version.Build.Version,
 		"global.image.registry":                  kumaImageRegistry,
 		"controlPlane.image.repository":          kumaCPImageRepo,
