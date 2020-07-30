@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	kuma_version "github.com/kumahq/kuma/pkg/version"
+
 	"github.com/gruntwork-io/terratest/modules/random"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -257,7 +259,7 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		"controlPlane.mode": mode,
 		// allow the CP to create a default mesh, for testing simplicity
 		"controlPlane.defaults.skipMeshCreation": "false",
-		"global.image.tag":                       "latest",
+		"global.image.tag":                       kuma_version.Build.Version,
 		"global.image.registry":                  kumaImageRegistry,
 		"controlPlane.image.repository":          kumaCPImageRepo,
 		"dataPlane.image.repository":             kumaDPImageRepo,
