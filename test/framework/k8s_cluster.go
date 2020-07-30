@@ -455,7 +455,7 @@ func (c *K8sCluster) VerifyKuma() error {
 	return nil
 }
 
-func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) error {
+func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
 	if opts.helmReleaseName == "" {
 		return errors.New("must supply a helm release name for cleanup")
 	}
@@ -464,7 +464,15 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) error {
 		KubectlOptions: c.GetKubectlOptions(kumaNamespace),
 	}
 
-	return helm.DeleteE(c.t, helmOpts, opts.helmReleaseName, true)
+	if err := helm.DeleteE(c.t, helmOpts, opts.helmReleaseName, true); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
+	if err := k8s.DeleteNamespaceE(c.t, c.GetKubectlOptions(kumaNamespace), kumaNamespace); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
+	return errs
 }
 
 func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
