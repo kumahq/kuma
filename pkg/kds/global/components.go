@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+
 	"github.com/pkg/errors"
 
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -39,6 +41,7 @@ var (
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
 		system.SecretType,
+		system.ConfigType,
 	}
 	consumedTypes = []model.ResourceType{
 		mesh.DataplaneType,
@@ -81,6 +84,9 @@ func Setup(rt runtime.Runtime) (err error) {
 
 // ProvidedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
 func ProvidedFilter(clusterID string, r model.Resource) bool {
+	if r.GetType() == system.ConfigType && r.GetMeta().GetName() != config_manager.ClusterIdConfigKey {
+		return false
+	}
 	if r.GetType() != mesh.DataplaneType {
 		return true
 	}

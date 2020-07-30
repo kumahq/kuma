@@ -3,8 +3,6 @@ package plugins
 import (
 	"github.com/pkg/errors"
 
-	config_store "github.com/kumahq/kuma/pkg/core/config/store"
-
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -40,7 +38,7 @@ var AlreadyMigrated = errors.New("database already migrated")
 // ConfigStorePlugin is responsible for instantiating a particular ConfigStore.
 type ConfigStorePlugin interface {
 	Plugin
-	NewConfigStore(PluginContext, PluginConfig) (config_store.ConfigStore, error)
+	NewConfigStore(PluginContext, PluginConfig) (core_store.ResourceStore, error)
 }
 
 // SecretStorePlugin is responsible for instantiating a particular SecretStore.

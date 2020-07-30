@@ -4,11 +4,12 @@ import (
 	"context"
 	"time"
 
-	config_store "github.com/kumahq/kuma/pkg/core/config/store"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
+
+const ClusterIdConfigKey = "kuma-cluster-id"
 
 type ConfigManager interface {
 	Create(context.Context, *config_model.ConfigResource, ...core_store.CreateOptionsFunc) error
@@ -19,7 +20,7 @@ type ConfigManager interface {
 	List(context.Context, *config_model.ConfigResourceList, ...core_store.ListOptionsFunc) error
 }
 
-func NewConfigManager(configStore config_store.ConfigStore) ConfigManager {
+func NewConfigManager(configStore core_store.ResourceStore) ConfigManager {
 	return &configManager{
 		configStore: configStore,
 	}
@@ -28,7 +29,7 @@ func NewConfigManager(configStore config_store.ConfigStore) ConfigManager {
 var _ ConfigManager = &configManager{}
 
 type configManager struct {
-	configStore config_store.ConfigStore
+	configStore core_store.ResourceStore
 }
 
 func (s *configManager) Get(ctx context.Context, config *config_model.ConfigResource, fs ...core_store.GetOptionsFunc) error {

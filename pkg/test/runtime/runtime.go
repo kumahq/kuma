@@ -2,7 +2,6 @@ package runtime
 
 import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	config_store "github.com/kumahq/kuma/pkg/core/config/store"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/dns"
 
@@ -28,10 +27,19 @@ var _ core_runtime.RuntimeInfo = TestRuntimeInfo{}
 
 type TestRuntimeInfo struct {
 	InstanceId string
+	ClusterId  string
 }
 
 func (i TestRuntimeInfo) GetInstanceId() string {
 	return i.InstanceId
+}
+
+func (i TestRuntimeInfo) SetClusterId(clusterId string) {
+	i.ClusterId = clusterId
+}
+
+func (i TestRuntimeInfo) GetClusterId() string {
+	return i.ClusterId
 }
 
 func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
@@ -58,8 +66,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 }
 
 func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	store := config_store.NewConfigStore(builder.ResourceStore())
-	configm := config_manager.NewConfigManager(store)
+	configm := config_manager.NewConfigManager(builder.ResourceStore())
 	builder.WithConfigManager(configm)
 	return nil
 }

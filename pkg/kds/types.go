@@ -26,5 +26,6 @@ var (
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
 		system.SecretType,
+		system.ConfigType,
 	}
 )

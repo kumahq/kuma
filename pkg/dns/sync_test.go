@@ -5,7 +5,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	config_store "github.com/kumahq/kuma/pkg/core/config/store"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	resources_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -28,7 +27,7 @@ var _ = Describe("DNS sync", func() {
 		stop = make(chan struct{})
 		memory := memory_resources.NewStore()
 		resManager = resources_manager.NewResourceManager(memory)
-		cfgManager := config_manager.NewConfigManager(config_store.NewConfigStore(memory))
+		cfgManager := config_manager.NewConfigManager(memory)
 		persistence := dns.NewDNSPersistence(cfgManager)
 		dnsResolver = dns.NewDNSResolver("mesh")
 

@@ -49,10 +49,15 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeSecretStore(cfg, builder); err != nil {
 		return nil, err
 	}
+	if err := initializeConfigStore(cfg, builder); err != nil {
+		return nil, err
+	}
 	// we add Secret store to unified ResourceStore so global<->remote synchronizer can use unified interface
 	builder.WithResourceStore(core_store.NewCustomizableResourceStore(builder.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
 		system.SecretType: builder.SecretStore(),
+		system.ConfigType: builder.ConfigStore(),
 	}))
+
 	if err := initializeDiscovery(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -111,6 +116,9 @@ func onStartup(runtime core_runtime.Runtime) error {
 		return err
 	}
 	if err := createDefaultSigningKey(runtime); err != nil {
+		return err
+	}
+	if err := createClusterID(runtime); err != nil {
 		return err
 	}
 	return startReporter(runtime)
@@ -222,6 +230,29 @@ func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	}
 }
 
+func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	var pluginName core_plugins.PluginName
+	var pluginConfig core_plugins.PluginConfig
+	switch cfg.Store.Type {
+	case store.KubernetesStore:
+		pluginName = core_plugins.Kubernetes
+	case store.MemoryStore, store.PostgresStore:
+		pluginName = core_plugins.Universal
+	default:
+		return errors.Errorf("unknown store type %s", cfg.Store.Type)
+	}
+	plugin, err := core_plugins.Plugins().ConfigStore(pluginName)
+	if err != nil {
+		return errors.Wrapf(err, "could not retrieve secret store %s plugin", pluginName)
+	}
+	if cs, err := plugin.NewConfigStore(builder, pluginConfig); err != nil {
+		return err
+	} else {
+		builder.WithConfigStore(cs)
+		return nil
+	}
+}
+
 func initializeDiscovery(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	var pluginName core_plugins.PluginName
 	var pluginConfig core_plugins.PluginConfig
@@ -312,26 +343,8 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 }
 
 func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	var pluginName core_plugins.PluginName
-	var pluginConfig core_plugins.PluginConfig
-	switch cfg.Store.Type {
-	case store.KubernetesStore:
-		pluginName = core_plugins.Kubernetes
-	case store.MemoryStore, store.PostgresStore:
-		pluginName = core_plugins.Universal
-	default:
-		return errors.Errorf("unknown store type %s", cfg.Store.Type)
-	}
-	plugin, err := core_plugins.Plugins().ConfigStore(pluginName)
-	if err != nil {
-		return errors.Wrapf(err, "could not retrieve config store %s plugin", pluginName)
-	}
-	if configStore, err := plugin.NewConfigStore(builder, pluginConfig); err != nil {
-		return err
-	} else {
-		builder.WithConfigManager(config_manager.NewConfigManager(configStore))
-		return nil
-	}
+	builder.WithConfigManager(config_manager.NewConfigManager(builder.ConfigStore()))
+	return nil
 }
 
 func customizeRuntime(rt core_runtime.Runtime) error {
