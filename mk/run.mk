@@ -12,9 +12,9 @@ ENVOY_ADMIN_PORT ?= 9901
 POSTGRES_SSL_MODE ?= disable
 
 run/universal/postgres/ssl: POSTGRES_SSL_MODE=verifyCa
-run/universal/postgres/ssl: POSTGRES_SSL_CERT_PATH=$(shell pwd)/tools/postgres/ssl/certs/postgres.client.crt
-run/universal/postgres/ssl: POSTGRES_SSL_KEY_PATH=$(shell pwd)/tools/postgres/ssl/certs/postgres.client.key
-run/universal/postgres/ssl: POSTGRES_SSL_ROOT_CERT_PATH=$(shell pwd)/tools/postgres/ssl/certs/rootCA.crt
+run/universal/postgres/ssl: POSTGRES_SSL_CERT_PATH=$(TOOLS_DIR)/postgres/ssl/certs/postgres.client.crt
+run/universal/postgres/ssl: POSTGRES_SSL_KEY_PATH=$(TOOLS_DIR)/postgres/ssl/certs/postgres.client.key
+run/universal/postgres/ssl: POSTGRES_SSL_ROOT_CERT_PATH=$(TOOLS_DIR)/postgres/ssl/certs/rootCA.crt
 run/universal/postgres/ssl: run/universal/postgres ## Dev: Run Control Plane locally in universal mode with Postgres store and SSL enabled
 
 .PHONY: run/universal/postgres
@@ -73,13 +73,13 @@ run/universal/memory: ## Dev: Run Control Plane locally in universal mode with i
 
 .PHONY: start/postgres
 start/postgres: ## Boostrap: start Postgres for Control Plane with initial schema
-	docker-compose -f tools/postgres/docker-compose.yaml up -d
-	tools/postgres/wait-for-postgres.sh 15432
+	docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml up -d
+	$(TOOLS_DIR)/postgres/wait-for-postgres.sh 15432
 
 .PHONY: start/postgres/ssl
 start/postgres/ssl: ## Boostrap: start Postgres for Control Plane with initial schema and SSL enabled
-	docker-compose -f tools/postgres/ssl/docker-compose.yaml up -d
-	tools/postgres/wait-for-postgres.sh 15432
+	docker-compose -f $(TOOLS_DIR)/postgres/ssl/docker-compose.yaml up -d
+	$(TOOLS_DIR)/postgres/wait-for-postgres.sh 15432
 
 .PHONY: run/kuma-dp
 run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally
