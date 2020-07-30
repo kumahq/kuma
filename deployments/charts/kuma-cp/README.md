@@ -39,6 +39,7 @@ The chart supports Helm v3+.
 | `dataPlane.initImage.registry`              | The Kuma DP init image registry                                                   | nil, uses global                     |
 | `dataPlane.initImage.repository`            | The Kuma DP init image repository                                                 | `kuma-init`                          |
 | `dataPlane.initImage.tag`                   | The Kuma DP init image tag                                                        | nil, uses global                     |
+| `nameOverride`                              | Override the control plane naming                                                 | nil, uses Chart.name                 |
 
 ## Custom Resource Definitions
 
