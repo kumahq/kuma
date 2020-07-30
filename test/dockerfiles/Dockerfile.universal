@@ -6,9 +6,6 @@ ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 
 RUN mkdir /kuma
-COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
-COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
-COPY $KUMA_ROOT/tools/releases/templates/README /kuma
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
     && chmod a+rw /kuma/kuma-cp.conf
 

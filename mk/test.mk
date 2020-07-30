@@ -18,7 +18,9 @@ export TEST_ASSET_KUBECTL=$(KUBECTL_PATH)
 TEST_TARGETS ?= test/api test/k8s test/kuma
 
 .PHONY: test
-test: ${COVERAGE_PROFILE} $(TEST_TARGETS) coverage ## Dev: Run tests for all modules
+test: ${COVERAGE_PROFILE} ## Dev: Run tests for all modules
+	for test_target in $(TEST_TARGETS); do $(MAKE) $$test_target; done
+	$(MAKE) coverage
 
 ${COVERAGE_PROFILE}:
 	mkdir -p "$(shell dirname "$(COVERAGE_PROFILE)")"
