@@ -2,7 +2,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "kuma-cp.name" -}}
+{{- define "kuma.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -11,7 +11,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "kuma-cp.fullname" -}}
+{{- define "kuma.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -27,21 +27,21 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "kuma-cp.chart" -}}
+{{- define "kuma.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
-{{- define "kuma-cp.serviceName" -}}
-{{- $defaultSvcName := printf "%s-control-plane" (include "kuma-cp.name" .) -}}
+{{- define "kuma.serviceName" -}}
+{{- $defaultSvcName := printf "%s-control-plane" (include "kuma.name" .) -}}
 {{ printf "%s" (default $defaultSvcName .Values.controlPlane.service.name) }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "kuma-cp.labels" -}}
-helm.sh/chart: {{ include "kuma-cp.chart" . }}
-{{ include "kuma-cp.selectorLabels" . }}
+{{- define "kuma.labels" -}}
+helm.sh/chart: {{ include "kuma.chart" . }}
+{{ include "kuma.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -51,32 +51,32 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "kuma-cp.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "kuma-cp.name" . }}
+{{- define "kuma.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "kuma.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 CNI labels
 */}}
-{{- define "kuma-cp.cniLabels" -}}
-app: {{ include "kuma-cp.name" . }}-cni
-{{ include "kuma-cp.labels" . }}
+{{- define "kuma.cniLabels" -}}
+app: {{ include "kuma.name" . }}-cni
+{{ include "kuma.labels" . }}
 {{- end }}
 
 {{/*
 CNI selector labels
 */}}
-{{- define "kuma-cp.cniSelectorLabels" -}}
-app: {{ include "kuma-cp.name" . }}-cni
-{{ include "kuma-cp.selectorLabels" . }}
+{{- define "kuma.cniSelectorLabels" -}}
+app: {{ include "kuma.name" . }}-cni
+{{ include "kuma.selectorLabels" . }}
 {{- end }}
 
 {{/*
 params: { image: { registry?, repository, tag? }, root: $ }
 returns: formatted image string
 */}}
-{{- define "kuma-cp.formatImage" -}}
+{{- define "kuma.formatImage" -}}
 {{- $img := .image }}
 {{- $root := .root }}
 {{- $registry := ($img.registry | default $root.Values.global.image.registry) -}}

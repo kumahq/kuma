@@ -1,5 +1,5 @@
 {{- if .Values.patchSystemNamespace }}
-{{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma-cp.name" .) }}
+{{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -8,17 +8,17 @@ metadata:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
   labels:
-  {{- include "kuma-cp.labels" . | nindent 4 }}
+  {{- include "kuma.labels" . | nindent 4 }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kuma-cp.name" . }}:patch-ns-job
+  name: {{ include "kuma.name" . }}:patch-ns-job
   annotations:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
   labels:
-  {{- include "kuma-cp.labels" . | nindent 4 }}
+  {{- include "kuma.labels" . | nindent 4 }}
 rules:
   - apiGroups:
       - ""
@@ -33,16 +33,16 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kuma-cp.name" . }}:patch-ns-job
+  name: {{ include "kuma.name" . }}:patch-ns-job
   annotations:
     "helm.sh/hook": "pre-install"
     "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
   labels:
-  {{- include "kuma-cp.labels" . | nindent 4 }}
+  {{- include "kuma.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "kuma-cp.name" . }}:patch-ns-job
+  name: {{ include "kuma.name" . }}:patch-ns-job
 subjects:
   - kind: ServiceAccount
     name: {{ $serviceAccountName }}
@@ -51,9 +51,9 @@ subjects:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ template "kuma-cp.name" . }}-patch-ns
+  name: {{ template "kuma.name" . }}-patch-ns
   labels:
-  {{ include "kuma-cp.labels" . | nindent 4 }}
+  {{ include "kuma.labels" . | nindent 4 }}
   annotations:
     "helm.sh/hook": "pre-install"
     {{/* Ensure the job is created after the RBAC resources */}}
@@ -62,9 +62,9 @@ metadata:
 spec:
   template:
     metadata:
-      name: {{ template "kuma-cp.name" . }}-patch-ns-script
+      name: {{ template "kuma.name" . }}-patch-ns-script
       labels:
-      {{ include "kuma-cp.labels" . | nindent 8 }}
+      {{ include "kuma.labels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: OnFailure

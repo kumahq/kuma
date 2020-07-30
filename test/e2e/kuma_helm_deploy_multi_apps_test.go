@@ -41,7 +41,7 @@ metadata:
 		c1 = clusters.GetCluster(Kuma1)
 
 		releaseName := fmt.Sprintf(
-			"kuma-cp-%s",
+			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
 		deployOptsFuncs = []DeployOptionsFunc{

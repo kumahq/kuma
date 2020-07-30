@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "kuma-cp.serviceName" . }}
+  name: {{ include "kuma.serviceName" . }}
   labels:
-  {{- include "kuma-cp.labels" . | nindent 4 }}
+  {{- include "kuma.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.controlPlane.service.type }}
   ports:
@@ -28,4 +28,4 @@ spec:
       protocol: UDP
     {{- end }}
   selector:
-    {{- include "kuma-cp.selectorLabels" . | nindent 4 }}
+    {{- include "kuma.selectorLabels" . | nindent 4 }}

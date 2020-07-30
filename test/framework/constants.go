@@ -60,7 +60,7 @@ const (
 
 	confPath = "/kuma/kuma-cp.conf"
 
-	helmChartPath = "../../deployments/charts/kuma-cp"
+	helmChartPath = "../../deployments/charts/kuma"
 
 	kumaCPAPIPort        = 5681
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort

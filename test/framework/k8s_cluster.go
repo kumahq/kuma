@@ -247,7 +247,7 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 }
 
 // deployKumaViaHelm uses Helm to install kuma
-// using the kuma-cp helm chart
+// using the kuma helm chart
 func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	// run from test/e2e
 	helmChartPath, err := filepath.Abs(helmChartPath)
@@ -259,7 +259,6 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		"controlPlane.mode": mode,
 		// allow the CP to create a default mesh, for testing simplicity
 		"controlPlane.defaults.skipMeshCreation": "false",
-		"nameOverride":                           "kuma",
 		"global.image.tag":                       kuma_version.Build.Version,
 		"global.image.registry":                  kumaImageRegistry,
 		"controlPlane.image.repository":          kumaCPImageRepo,
@@ -289,7 +288,7 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	releaseName := opts.helmReleaseName
 	if releaseName == "" {
 		releaseName = fmt.Sprintf(
-			"kuma-cp-%s",
+			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
 	}

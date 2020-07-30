@@ -2,14 +2,14 @@
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
-  name: {{ include "kuma-cp.name" . }}-cni-node
+  name: {{ include "kuma.name" . }}-cni-node
   namespace: kube-system
   labels:
-    {{- include "kuma-cp.cniLabels" . | nindent 4 }}
+    {{- include "kuma.cniLabels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      {{- include "kuma-cp.cniSelectorLabels" . | nindent 6 }}
+      {{- include "kuma.cniSelectorLabels" . | nindent 6 }}
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,7 +17,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "kuma-cp.cniSelectorLabels" . | nindent 8 }}
+        {{- include "kuma.cniSelectorLabels" . | nindent 8 }}
       annotations:
         # This, along with the CriticalAddonsOnly toleration below,
         # marks the pod as a critical add-on, ensuring it gets
@@ -45,7 +45,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: {{ include "kuma-cp.formatImage" .Values.cni.image }}
+          image: {{ include "kuma.formatImage" .Values.cni.image }}
           imagePullPolicy: Always
           command: ["/install-cni.sh"]
           env:
@@ -56,7 +56,7 @@ spec:
             - name: CNI_NETWORK_CONFIG
               valueFrom:
                 configMapKeyRef:
-                  name: {{ include "kuma-cp.name" . }}-cni-config
+                  name: {{ include "kuma.name" . }}-cni-config
                   key: cni_network_config
             - name: CNI_NET_DIR
               value: /etc/cni/multus/net.d

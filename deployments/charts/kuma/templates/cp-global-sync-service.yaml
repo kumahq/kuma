@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "kuma-cp.name" . }}-global-remote-sync
+  name: {{ include "kuma.name" . }}-global-remote-sync
   namespace: kuma-system
 spec:
   {{- if .Values.controlPlane.useNodePort }}
@@ -15,5 +15,5 @@ spec:
       nodePort: 30685
       name: global-remote-sync
   selector:
-    {{ include "kuma-cp.selectorLabels" . | nindent 4 }}
+    {{ include "kuma.selectorLabels" . | nindent 4 }}
 {{- end }}

@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "kuma-cp.name" . }}-control-plane-config
+  name: {{ include "kuma.name" . }}-control-plane-config
   labels:
-    {{- include "kuma-cp.labels" . | nindent 4 }}
+    {{- include "kuma.labels" . | nindent 4 }}
 data:
   config.yaml: |
     # use this file to override default configuration of `kuma-cp`
