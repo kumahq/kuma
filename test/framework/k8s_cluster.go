@@ -248,7 +248,7 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 // using the kuma-cp helm chart
 func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	// run from test/e2e
-	helmChartPath, err := filepath.Abs("../../deployments/charts/kuma-cp")
+	helmChartPath, err := filepath.Abs(helmChartPath)
 	if err != nil {
 		return err
 	}
