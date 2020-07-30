@@ -25,6 +25,7 @@ type BuilderContext interface {
 	ComponentManager() component.Manager
 	ResourceStore() core_store.ResourceStore
 	SecretStore() store.SecretStore
+	ConfigStore() core_store.ResourceStore
 	ResourceManager() core_manager.ResourceManager
 	XdsContext() core_xds.XdsContext
 	Config() kuma_cp.Config
@@ -43,6 +44,7 @@ type Builder struct {
 	cm       component.Manager
 	rs       core_store.ResourceStore
 	ss       store.SecretStore
+	cs       core_store.ResourceStore
 	rm       core_manager.ResourceManager
 	rom      core_manager.ReadOnlyResourceManager
 	cam      core_ca.Managers
@@ -78,6 +80,11 @@ func (b *Builder) WithResourceStore(rs core_store.ResourceStore) *Builder {
 
 func (b *Builder) WithSecretStore(ss store.SecretStore) *Builder {
 	b.ss = ss
+	return b
+}
+
+func (b *Builder) WithConfigStore(cs core_store.ResourceStore) *Builder {
+	b.cs = cs
 	return b
 }
 
@@ -186,6 +193,9 @@ func (b *Builder) ResourceStore() core_store.ResourceStore {
 }
 func (b *Builder) SecretStore() store.SecretStore {
 	return b.ss
+}
+func (b *Builder) ConfigStore() core_store.ResourceStore {
+	return b.cs
 }
 func (b *Builder) ResourceManager() core_manager.ResourceManager {
 	return b.rm
