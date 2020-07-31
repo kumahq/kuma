@@ -12,7 +12,9 @@ DISTRIBUTIONS=(debian:linux ubuntu:linux rhel:linux centos:linux darwin:darwin)
 BINTRAY_ENDPOINT="https://api.bintray.com/"
 BINTRAY_SUBJECT="kong"
 [ -z "$BINTRAY_REPOSITORY" ] && BINTRAY_REPOSITORY="kuma"
+[ -z "$RELEASE_NAME" ] && RELEASE_NAME="kuma"
 ENVOY_VERSION=1.15.0
+[ -z "KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 
 function msg_green {
   builtin echo -en "\033[1;32m"
@@ -81,7 +83,7 @@ function create_tarball {
   cp -p build/artifacts-$system-$arch/kuma-dp/kuma-dp $kuma_dir/bin
   cp -p build/artifacts-$system-$arch/kumactl/kumactl $kuma_dir/bin
   cp -p build/artifacts-$system-$arch/kuma-prometheus-sd/kuma-prometheus-sd $kuma_dir/bin
-  cp -p pkg/config/app/kuma-cp/kuma-cp.defaults.yaml $kuma_dir/conf/kuma-cp.conf.yml
+  cp -p $KUMA_CONFIG_PATH $kuma_dir/conf/kuma-cp.conf.yml
 
   cp tools/releases/templates/* $kuma_dir
 
@@ -140,7 +142,7 @@ function release {
       local upload_status=$(curl -T $artifact \
            --write-out %{http_code} --silent --output /dev/null \
            -u $BINTRAY_USERNAME:$BINTRAY_API_KEY \
-           "$BINTRAY_ENDPOINT/content/$BINTRAY_SUBJECT/$BINTRAY_REPOSITORY/$distro/$KUMA_VERSION-$arch/kuma-$KUMA_VERSION-$distro-$arch.tar.gz?publish=1")
+           "$BINTRAY_ENDPOINT/content/$BINTRAY_SUBJECT/$BINTRAY_REPOSITORY/$distro/$KUMA_VERSION-$arch/$RELEASE_NAME-$KUMA_VERSION-$distro-$arch.tar.gz?publish=1")
 
       [ "$upload_status" -eq "409" ] && msg_red "Error: package for '$os', '$arch' already exists" && continue
       [ "$upload_status" -ne "201" ] && msg_red "Error: could not upload package for '$os', '$arch' :(" && continue
