@@ -6,7 +6,7 @@ metadata:
   name: {{ $serviceAccountName }}
   annotations:
     "helm.sh/hook": "pre-install"
-    "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 ---
@@ -16,7 +16,7 @@ metadata:
   name: {{ include "kuma.name" . }}:patch-ns-job
   annotations:
     "helm.sh/hook": "pre-install"
-    "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 rules:
@@ -36,7 +36,7 @@ metadata:
   name: {{ include "kuma.name" . }}:patch-ns-job
   annotations:
     "helm.sh/hook": "pre-install"
-    "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 roleRef:
@@ -58,7 +58,7 @@ metadata:
     "helm.sh/hook": "pre-install"
     {{/* Ensure the job is created after the RBAC resources */}}
     "helm.sh/hook-weight": "5"
-    "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
 spec:
   template:
     metadata:
