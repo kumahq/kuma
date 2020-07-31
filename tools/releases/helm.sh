@@ -8,7 +8,7 @@ CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
 GH_PAGES_BRANCH="gh-pages"
 GH_OWNER="kumahq"
-GH_REPO="kuma"
+GH_REPO="charts"
 
 function msg_green {
   builtin echo -en "\033[1;32m"
