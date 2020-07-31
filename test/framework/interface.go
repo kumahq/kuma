@@ -10,8 +10,17 @@ type Clusters interface {
 	Cluster
 }
 
+type InstallationMode string
+
+var (
+	HelmInstallationMode    = InstallationMode("helm")
+	KumactlInstallationMode = InstallationMode("kumactl")
+)
+
 type deployOptions struct {
-	globalAddress string
+	globalAddress    string
+	installationMode InstallationMode
+	helmReleaseName  string
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -22,8 +31,22 @@ func WithGlobalAddress(address string) DeployOptionsFunc {
 	}
 }
 
+func WithInstallationMode(mode InstallationMode) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.installationMode = mode
+	}
+}
+
+func WithHelmReleaseName(name string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.helmReleaseName = name
+	}
+}
+
 func newDeployOpt(fs ...DeployOptionsFunc) *deployOptions {
-	rv := &deployOptions{}
+	rv := &deployOptions{
+		installationMode: KumactlInstallationMode,
+	}
 	for _, f := range fs {
 		f(rv)
 	}
@@ -44,7 +67,7 @@ type Cluster interface {
 	GetKuma() ControlPlane
 	VerifyKuma() error
 	RestartKuma() error
-	DeleteKuma() error
+	DeleteKuma(opts ...DeployOptionsFunc) error
 	InjectDNS() error
 	GetKumactlOptions() *KumactlOptions
 	Deployment(name string) Deployment

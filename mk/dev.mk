@@ -47,7 +47,8 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/kubebuilder dev/install/kustomize \
 	dev/install/kubectl dev/install/kind dev/install/minikube \
 	dev/install/golangci-lint \
-	dev/install/goimports
+	dev/install/goimports \
+	dev/install/helm3
 
 .PHONY: dev/install/protoc
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
@@ -175,8 +176,12 @@ dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 dev/install/goimports: ## Bootstrap: Install goimports
 	go get golang.org/x/tools/cmd/goimports
 
+.PHONY: dev/install/helm3
+dev/install/helm3: ## Bootstrap: Install Helm 3
+	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
 GEN_CHANGELOG_MD ?= changelog.generated.md
-GEN_CHANGELOG_START_TAG ?= 0.5.0
+GEN_CHANGELOG_START_TAG ?= 0.6.0
 .PHONY: changelog
 changelog:
 	@cd tools/releases/changelog/ && \

@@ -1,0 +1,3 @@
+The Kuma Control Plane has been installed!
+
+You can access the control-plane via either the GUI, kubectl, the HTTP API, or the kumactl CLI.

@@ -90,7 +90,6 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 	}
 
 	c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
-
 	c.portFwd.localAPIPort = apiPort
 
 	return nil

@@ -1,0 +1,85 @@
+{{- if .Values.patchSystemNamespace }}
+{{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma.name" .) }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ $serviceAccountName }}
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "kuma.name" . }}:patch-ns-job
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+    resourceNames:
+      - {{ .Release.Namespace }}
+    verbs:
+      - get
+      - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ include "kuma.name" . }}:patch-ns-job
+  annotations:
+    "helm.sh/hook": "pre-install"
+    "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ include "kuma.name" . }}:patch-ns-job
+subjects:
+  - kind: ServiceAccount
+    name: {{ $serviceAccountName }}
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ template "kuma.name" . }}-patch-ns
+  labels:
+  {{ include "kuma.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": "pre-install"
+    {{/* Ensure the job is created after the RBAC resources */}}
+    "helm.sh/hook-weight": "5"
+    "helm.sh/hook-delete-policy": "hook-succeeded,hook-failed"
+spec:
+  template:
+    metadata:
+      name: {{ template "kuma.name" . }}-patch-ns-script
+      labels:
+      {{ include "kuma.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ $serviceAccountName }}
+      restartPolicy: OnFailure
+      containers:
+        - name: pre-install-job
+          {{- /* bitnami maintains an image for all k8s versions */}}
+          {{- /* see: https://hub.docker.com/r/bitnami/kubectl */}}
+          image: {{ printf "%s/%s:%s.%s" "bitnami" "kubectl" .Capabilities.KubeVersion.Major .Capabilities.KubeVersion.Minor }}
+          command:
+            - 'kubectl'
+            - 'patch'
+            - 'namespace'
+            - {{ .Release.Namespace | quote }}
+            - '--type'
+            - 'merge'
+            - '--patch'
+            - '{ "metadata": { "labels": { "kuma.io/system-namespace": "true" } } }'
+{{- end }}

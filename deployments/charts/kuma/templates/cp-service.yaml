@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kuma.serviceName" . }}
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.controlPlane.service.type }}
+  ports:
+    - port: 5681
+      name: http-api-server
+    - port: 443
+      name: https-admission-server
+      targetPort: 5443
+    {{- if ne .Values.controlPlane.mode "global" }}
+    - port: 5676
+      name: mads-server
+    - port: 5677
+      name: grpc-sds
+    - port: 5678
+      name: grpc-xds
+    - port: 5679
+      name: http-xds
+    - port: 5682
+      name: http-bootstrap-server
+    - port: 5653
+      name: dns-server
+      protocol: UDP
+    {{- end }}
+  selector:
+    {{- include "kuma.selectorLabels" . | nindent 4 }}
