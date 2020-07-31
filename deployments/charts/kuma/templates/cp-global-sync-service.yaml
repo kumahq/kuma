@@ -3,7 +3,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "kuma.name" . }}-global-remote-sync
-  namespace: kuma-system
+  namespace: {{ .Values.global.namespace }}
 spec:
   {{- if .Values.controlPlane.useNodePort }}
   type: NodePort

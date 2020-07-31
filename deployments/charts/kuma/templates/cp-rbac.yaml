@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ include "kuma.name" . }}-control-plane
+  namespace: {{ .Values.global.namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 ---
@@ -9,6 +10,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: {{ include "kuma.name" . }}:control-plane
+  namespace: {{ .Values.global.namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 rules:
@@ -128,6 +130,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: {{ include "kuma.name" . }}:control-plane
+  namespace: {{ .Values.global.namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 roleRef:
@@ -137,12 +140,13 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-control-plane
-    namespace: {{ .Release.Namespace }}
+    namespace: {{ .Values.global.namespace }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ include "kuma.name" . }}:control-plane
+  namespace: {{ .Values.global.namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 rules:
@@ -175,6 +179,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ include "kuma.name" . }}:control-plane
+  namespace: {{ .Values.global.namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -182,4 +187,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-control-plane
-    namespace: {{.Release.Namespace}}
+    namespace: {{ .Values.global.namespace }}

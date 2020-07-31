@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: {{ include "kuma.name" . }}-control-plane-config
+  namespace: {{ .Values.global.namespace }}
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
 data:

@@ -1,5 +1,6 @@
 # The default registry and tag to use for all Kuma images
 global:
+  namespace: "kuma-system"
   image:
     registry: "kong-docker-kuma-docker.bintray.io"
     # Defaults to .Chart.AppVersion

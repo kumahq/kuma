@@ -2,6 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: {{ include "kuma.serviceName" . }}
+  namespace: {{ .Values.global.namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 spec:
