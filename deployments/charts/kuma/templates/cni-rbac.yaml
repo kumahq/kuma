@@ -5,14 +5,14 @@ metadata:
   name: {{ include "kuma.name" . }}-cni
   namespace: kube-system
   labels:
-    {{ include "kuma.cniLabels" . | nindent 4 }}
+  {{ include "kuma.cniLabels" . | nindent 4 }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: {{ include "kuma.name" . }}-cni
   labels:
-    {{ include "kuma.cniLabels" . | nindent 4 }}
+  {{ include "kuma.cniLabels" . | nindent 4 }}
 rules:
   - apiGroups: [""]
     resources:
@@ -26,7 +26,7 @@ kind: ClusterRoleBinding
 metadata:
   name: {{ include "kuma.name" . }}-cni
   labels:
-    {{ include "kuma.cniLabels" . | nindent 4 }}
+  {{ include "kuma.cniLabels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -35,4 +35,4 @@ subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-cni
     namespace: kube-system
-{{- end }}
+  {{- end }}

@@ -27,6 +27,6 @@ spec:
     - port: 5653
       name: dns-server
       protocol: UDP
-    {{- end }}
+  {{- end }}
   selector:
-    {{- include "kuma.selectorLabels" . | nindent 4 }}
+  {{- include "kuma.selectorLabels" . | nindent 4 }}

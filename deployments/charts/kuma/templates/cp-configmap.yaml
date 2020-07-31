@@ -4,7 +4,7 @@ metadata:
   name: {{ include "kuma.name" . }}-control-plane-config
   namespace: {{ .Values.global.namespace }}
   labels:
-    {{- include "kuma.labels" . | nindent 4 }}
+  {{- include "kuma.labels" . | nindent 4 }}
 data:
   config.yaml: |
     # use this file to override default configuration of `kuma-cp`

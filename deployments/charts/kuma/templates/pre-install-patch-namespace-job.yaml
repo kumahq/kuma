@@ -1,5 +1,5 @@
 {{- if .Values.patchSystemNamespace }}
-{{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma.name" .) }}
+  {{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -68,7 +68,7 @@ spec:
     metadata:
       name: {{ template "kuma.name" . }}-patch-ns-script
       labels:
-      {{ include "kuma.labels" . | nindent 8 }}
+    {{ include "kuma.labels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: OnFailure
@@ -86,4 +86,4 @@ spec:
             - 'merge'
             - '--patch'
             - '{ "metadata": { "labels": { "kuma.io/system-namespace": "true" } } }'
-{{- end }}
+  {{- end }}

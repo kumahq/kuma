@@ -94,12 +94,12 @@ rules:
       - get
       - list
       - watch
-    {{- if eq .Values.controlPlane.mode "remote" }}
+      {{- if eq .Values.controlPlane.mode "remote" }}
       - create
       - update
       - patch
       - delete
-    {{- end }}
+  {{- end }}
   - apiGroups:
       - ""
     resources:

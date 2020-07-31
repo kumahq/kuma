@@ -15,5 +15,5 @@ spec:
       nodePort: 30685
       name: global-remote-sync
   selector:
-    {{ include "kuma.selectorLabels" . | nindent 4 }}
-{{- end }}
+  {{ include "kuma.selectorLabels" . | nindent 4 }}
+  {{- end }}
