@@ -1,0 +1,19 @@
+{{- if eq .Values.controlPlane.mode "global" }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kuma.name" . }}-global-remote-sync
+  namespace: kuma-system
+spec:
+  {{- if .Values.controlPlane.useNodePort }}
+  type: NodePort
+  {{- else }}
+  type: LoadBalancer
+  {{- end }}
+  ports:
+    - port: 5685
+      nodePort: 30685
+      name: global-remote-sync
+  selector:
+    {{ include "kuma.selectorLabels" . | nindent 4 }}
+{{- end }}

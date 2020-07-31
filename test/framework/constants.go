@@ -50,11 +50,17 @@ const (
 	kumaNamespace   = "kuma-system"
 	kumaServiceName = "kuma-control-plane"
 
-	kumaCPImage   = "kuma/kuma-cp"
-	kumaDPImage   = "kuma/kuma-dp"
-	kumaInitImage = "kuma/kuma-init"
+	kumaImageRegistry = "kuma"
+	kumaCPImageRepo   = "kuma-cp"
+	kumaCPImage       = kumaImageRegistry + "/" + kumaCPImageRepo
+	kumaDPImageRepo   = "kuma-dp"
+	kumaDPImage       = kumaImageRegistry + "/" + kumaDPImageRepo
+	kumaInitImageRepo = "kuma-init"
+	kumaInitImage     = kumaImageRegistry + "/" + kumaInitImageRepo
 
 	confPath = "/kuma/kuma-cp.conf"
+
+	helmChartPath = "../../deployments/charts/kuma"
 
 	kumaCPAPIPort        = 5681
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
