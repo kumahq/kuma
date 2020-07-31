@@ -45,7 +45,7 @@ controlPlane:
 
   imagePullPolicy: IfNotPresent
   image:
-    repository: "kuma"
+    repository: "kuma-cp"
 
 cni:
   enabled: false
