@@ -26,10 +26,11 @@ var (
 type InstallControlPlaneArgs struct {
 	Namespace               string
 	ImagePullPolicy         string
-	ImagePullSecret			string
+	ImagePullSecret         string
 	ControlPlaneVersion     string
 	ControlPlaneImage       string
 	ControlPlaneServiceName string
+	ControlPlaneSecrets     []ImageEnvSecret
 	AdmissionServerTlsCert  string
 	AdmissionServerTlsKey   string
 	InjectorFailurePolicy   string
@@ -46,6 +47,12 @@ type InstallControlPlaneArgs struct {
 	KumaCpMode              string
 	Zone                    string
 	GlobalRemotePortType    string
+}
+
+type ImageEnvSecret struct {
+	Env    string
+	Secret string
+	Key    string
 }
 
 var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
@@ -67,6 +74,8 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	Zone:                    "",
 	GlobalRemotePortType:    "LoadBalancer",
 }
+
+var InstallCpTemplateFilesFn = InstallCpTemplateFiles
 
 func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	args := DefaultInstallControlPlaneArgs
@@ -136,17 +145,9 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return errors.Errorf("KDS: both TLS Cert and TLS Key must be provided at the same time")
 			}
 
-			templateFiles, err := data.ReadFiles(controlplane.Templates)
+			templateFiles, err := InstallCpTemplateFilesFn(args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
-			}
-
-			if args.CNIEnabled {
-				templateCNI, err := data.ReadFiles(kumacni.Templates)
-				if err != nil {
-					return errors.Wrap(err, "Failed to read template files")
-				}
-				templateFiles = append(templateFiles, templateCNI...)
 			}
 
 			renderedFiles, err := renderFiles(templateFiles, args, simpleTemplateRenderer)
@@ -189,4 +190,19 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.Zone, "zone", args.Zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
 	return cmd
+}
+
+func InstallCpTemplateFiles(args InstallControlPlaneArgs) (data.FileList, error) {
+	templateFiles, err := data.ReadFiles(controlplane.Templates)
+	if err != nil {
+		return nil, err
+	}
+	if args.CNIEnabled {
+		templateCNI, err := data.ReadFiles(kumacni.Templates)
+		if err != nil {
+			return nil, errors.Wrap(err, "Failed to read template files")
+		}
+		templateFiles = append(templateFiles, templateCNI...)
+	}
+	return templateFiles, nil
 }
