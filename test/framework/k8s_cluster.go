@@ -233,7 +233,8 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 // using the resources from the `kumactl install control-plane` command
 func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) error {
 	var args []string
-	if opts.globalAddress != "" {
+	switch mode {
+	case core.Remote:
 		args = append(args, "--kds-global-address", opts.globalAddress)
 	}
 	yaml, err := c.controlplane.InstallCP(args...)
@@ -267,14 +268,10 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	}
 
 	switch mode {
-	case core.Remote:
-		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
-		fallthrough
 	case core.Global:
 		values["controlPlane.useNodePort"] = "true"
-	}
-
-	if opts.globalAddress != "" {
+	case core.Remote:
+		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
 	}
 

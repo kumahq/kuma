@@ -10,7 +10,7 @@ spec:
   names:
     kind: ZoneInsight
     plural: zoneinsights
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: ZoneInsight is the Schema for the zone insight API
