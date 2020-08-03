@@ -5581,6 +5581,7 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+    sideEffects: None
   - clientConfig:
       caBundle: QWRtaXNzaW9uQ2VydA==
       service:
