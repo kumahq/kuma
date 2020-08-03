@@ -3,10 +3,11 @@ package e2e_test
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/gruntwork-io/terratest/modules/random"
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/gruntwork-io/terratest/modules/random"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 
