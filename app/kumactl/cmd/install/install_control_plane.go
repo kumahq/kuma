@@ -23,48 +23,53 @@ var (
 	NewSelfSignedCert = tls.NewSelfSignedCert
 )
 
+type InstallControlPlaneArgs struct {
+	Namespace               string
+	ImagePullPolicy         string
+	ImagePullSecret			string
+	ControlPlaneVersion     string
+	ControlPlaneImage       string
+	ControlPlaneServiceName string
+	AdmissionServerTlsCert  string
+	AdmissionServerTlsKey   string
+	InjectorFailurePolicy   string
+	DataplaneImage          string
+	DataplaneInitImage      string
+	SdsTlsCert              string
+	SdsTlsKey               string
+	KdsTlsCert              string
+	KdsTlsKey               string
+	KdsGlobalAddress        string
+	CNIEnabled              bool
+	CNIImage                string
+	CNIVersion              string
+	KumaCpMode              string
+	Zone                    string
+	GlobalRemotePortType    string
+}
+
+var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
+	Namespace:               "kuma-system",
+	ImagePullPolicy:         "IfNotPresent",
+	ControlPlaneVersion:     kuma_version.Build.Version,
+	ControlPlaneImage:       "kong-docker-kuma-docker.bintray.io/kuma-cp",
+	ControlPlaneServiceName: "kuma-control-plane",
+	AdmissionServerTlsCert:  "",
+	AdmissionServerTlsKey:   "",
+	InjectorFailurePolicy:   "Ignore",
+	DataplaneImage:          "kong-docker-kuma-docker.bintray.io/kuma-dp",
+	DataplaneInitImage:      "kong-docker-kuma-docker.bintray.io/kuma-init",
+	SdsTlsCert:              "",
+	SdsTlsKey:               "",
+	CNIImage:                "lobkovilya/install-cni",
+	CNIVersion:              "0.0.1",
+	KumaCpMode:              core.Standalone,
+	Zone:                    "",
+	GlobalRemotePortType:    "LoadBalancer",
+}
+
 func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
-	args := struct {
-		Namespace               string
-		ImagePullPolicy         string
-		ControlPlaneVersion     string
-		ControlPlaneImage       string
-		ControlPlaneServiceName string
-		AdmissionServerTlsCert  string
-		AdmissionServerTlsKey   string
-		InjectorFailurePolicy   string
-		DataplaneImage          string
-		DataplaneInitImage      string
-		SdsTlsCert              string
-		SdsTlsKey               string
-		KdsTlsCert              string
-		KdsTlsKey               string
-		KdsGlobalAddress        string
-		CNIEnabled              bool
-		CNIImage                string
-		CNIVersion              string
-		KumaCpMode              string
-		Zone                    string
-		GlobalRemotePortType    string
-	}{
-		Namespace:               "kuma-system",
-		ImagePullPolicy:         "IfNotPresent",
-		ControlPlaneVersion:     kuma_version.Build.Version,
-		ControlPlaneImage:       "kong-docker-kuma-docker.bintray.io/kuma-cp",
-		ControlPlaneServiceName: "kuma-control-plane",
-		AdmissionServerTlsCert:  "",
-		AdmissionServerTlsKey:   "",
-		InjectorFailurePolicy:   "Ignore",
-		DataplaneImage:          "kong-docker-kuma-docker.bintray.io/kuma-dp",
-		DataplaneInitImage:      "kong-docker-kuma-docker.bintray.io/kuma-init",
-		SdsTlsCert:              "",
-		SdsTlsKey:               "",
-		CNIImage:                "lobkovilya/install-cni",
-		CNIVersion:              "0.0.1",
-		KumaCpMode:              core.Standalone,
-		Zone:                    "",
-		GlobalRemotePortType:    "LoadBalancer",
-	}
+	args := DefaultInstallControlPlaneArgs
 	useNodePort := false
 	cmd := &cobra.Command{
 		Use:   "control-plane",
@@ -163,6 +168,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	// flags
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install Kuma Control Plane to")
 	cmd.Flags().StringVar(&args.ImagePullPolicy, "image-pull-policy", args.ImagePullPolicy, "image pull policy that applies to all components of the Kuma Control Plane")
+	cmd.Flags().StringVar(&args.ImagePullSecret, "image-pull-secret", args.ImagePullSecret, "image pull secret that applies to all components of the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.ControlPlaneVersion, "control-plane-version", args.ControlPlaneVersion, "version shared by all components of the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.ControlPlaneImage, "control-plane-image", args.ControlPlaneImage, "image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlaneServiceName, "control-plane-service-name", args.ControlPlaneServiceName, "Service name of the Kuma Control Plane")

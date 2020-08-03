@@ -116,6 +116,10 @@ spec:
         app: kuma-control-plane
     spec:
       serviceAccountName: kuma-control-plane
+{{- if .ImagePullSecret }}
+      imagePullSecrets:
+        - name: {{ .ImagePullSecret }}
+{{- end }}
       containers:
       - name: control-plane
         image: {{ .ControlPlaneImage }}:{{ .ControlPlaneVersion }}
@@ -159,6 +163,8 @@ spec:
           value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
         - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
           value: "{{ .CNIEnabled }}"
+        - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_IMAGE_PULL_SECRET
+          value: "{{ .ImagePullSecret }}"
         - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
           value: {{ .DataplaneImage }}:{{ .ControlPlaneVersion }}
         - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE

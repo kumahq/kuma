@@ -30,11 +30,13 @@ const (
 
 type Registry interface {
 	Bootstrap(PluginName) (BootstrapPlugin, error)
+	BootstrapPlugins() map[PluginName]BootstrapPlugin
 	ResourceStore(name PluginName) (ResourceStorePlugin, error)
 	SecretStore(name PluginName) (SecretStorePlugin, error)
 	ConfigStore(name PluginName) (ConfigStorePlugin, error)
 	Discovery(name PluginName) (DiscoveryPlugin, error)
 	Runtime(name PluginName) (RuntimePlugin, error)
+	RuntimePlugins() map[PluginName]RuntimePlugin
 	Ca(name PluginName) (CaPlugin, error)
 	CaPlugins() map[PluginName]CaPlugin
 }
@@ -130,6 +132,14 @@ func (r *registry) Ca(name PluginName) (CaPlugin, error) {
 
 func (r *registry) CaPlugins() map[PluginName]CaPlugin {
 	return r.ca
+}
+
+func (r *registry) RuntimePlugins() map[PluginName]RuntimePlugin {
+	return r.runtime
+}
+
+func (r *registry) BootstrapPlugins() map[PluginName]BootstrapPlugin {
+	return r.bootstrap
 }
 
 func (r *registry) Register(name PluginName, plugin Plugin) error {
