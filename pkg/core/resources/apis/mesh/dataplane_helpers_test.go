@@ -491,5 +491,9 @@ var _ = Describe("ParseProtocol()", func() {
 			tag:      "",
 			expected: ProtocolUnknown,
 		}),
+		Entry("udp", testCase{
+			tag:      "udp",
+			expected: ProtocolUDP,
+		}),
 	)
 })

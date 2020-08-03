@@ -11,12 +11,14 @@ var (
 	// HTTP has a protocol stack [HTTP, TCP],
 	// GRPC has a protocol stack [GRPC, HTTP2, TCP],
 	// TCP  has a protocol stack [TCP].
+	// UDP has a protocol stack [UDP].
 	protocolStacks = map[mesh_core.Protocol]mesh_core.ProtocolList{
 		mesh_core.ProtocolGRPC:  {mesh_core.ProtocolGRPC, mesh_core.ProtocolHTTP2, mesh_core.ProtocolTCP},
 		mesh_core.ProtocolHTTP2: {mesh_core.ProtocolHTTP2, mesh_core.ProtocolTCP},
 		mesh_core.ProtocolHTTP:  {mesh_core.ProtocolHTTP, mesh_core.ProtocolTCP},
 		mesh_core.ProtocolKafka: {mesh_core.ProtocolKafka, mesh_core.ProtocolTCP},
 		mesh_core.ProtocolTCP:   {mesh_core.ProtocolTCP},
+		mesh_core.ProtocolUDP:   {mesh_core.ProtocolUDP},
 	}
 )
 
