@@ -62,7 +62,7 @@ metadata:
 	AfterEach(func() {
 		// tear down apps
 		_ = c1.DeleteNamespace(TestNamespace)
-		// tear down kuma
+		// tear down Kuma
 		_ = c1.DeleteKuma(deployOptsFuncs...)
 	})
 
