@@ -11,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/api-server/types"
 	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 // overridden by tests
@@ -41,7 +42,7 @@ func ValidateCpCoordinates(cp *kumactl_config.ControlPlane) error {
 	if err := json.Unmarshal(body, &response); err != nil {
 		return errors.Wrap(err, "could not unmarshal body from the Control Plane API Server. Provided address is not valid Kuma Control Plane API Server")
 	}
-	if response.Tagline != types.TaglineKuma {
+	if response.Tagline != version.Product {
 		return errors.New("provided address is not valid Kuma Control Plane API Server")
 	}
 	return nil
