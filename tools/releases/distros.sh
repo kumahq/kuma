@@ -66,8 +66,8 @@ function create_tarball {
   local arch=$2
   local distro=$3
 
-  local dest_dir=build/kuma-$distro-$arch
-  local kuma_dir=$dest_dir/kuma-$KUMA_VERSION
+  local dest_dir=build/$RELEASE_NAME-$distro-$arch
+  local kuma_dir=$dest_dir/$RELEASE_NAME-$KUMA_VERSION
 
   rm -rf $dest_dir
   mkdir $dest_dir
@@ -87,7 +87,7 @@ function create_tarball {
 
   cp tools/releases/templates/* $kuma_dir
 
-  tar -czf build/artifacts-$system-$arch/kuma-$distro-$arch.tar.gz -C $dest_dir .
+  tar -czf build/artifacts-$system-$arch/$RELEASE_NAME-$distro-$arch.tar.gz -C $dest_dir .
 }
 
 
@@ -129,7 +129,7 @@ function release {
     local system=$(echo "$os" | awk '{split($0,parts,":"); print parts[2]}')
 
     for arch in "${GOARCH[@]}"; do
-      local artifact="build/artifacts-$system-$arch/kuma-$distro-$arch.tar.gz"
+      local artifact="build/artifacts-$system-$arch/$RELEASE_NAME-$distro-$arch.tar.gz"
       [ ! -f "$artifact" ] && msg_yellow "Package '$artifact' not found, skipping..." && continue
 
       msg_green "Releasing Kuma for '$os', '$arch'..."
