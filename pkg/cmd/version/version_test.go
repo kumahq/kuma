@@ -65,11 +65,12 @@ var _ = Describe("version", func() {
 		},
 		Entry("app version", testCase{
 			args:     []string{"version"},
-			expected: `1.2.3`,
+			expected: `Kuma: 1.2.3`,
 		}),
 		Entry("app version --detailed", testCase{
 			args: []string{"version", "--detailed"},
 			expected: `
+Product:    Kuma
 Version:    1.2.3
 Git Tag:    v1.2.3
 Git Commit: 91ce236824a9d875601679aa80c63783fb0e8725
@@ -79,6 +80,7 @@ Build Date: 2019-08-07T11:26:06Z
 		Entry("app version -a", testCase{
 			args: []string{"version", "-a"},
 			expected: `
+Product:    Kuma
 Version:    1.2.3
 Git Tag:    v1.2.3
 Git Commit: 91ce236824a9d875601679aa80c63783fb0e8725
