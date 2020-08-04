@@ -26,7 +26,6 @@ var (
 type InstallControlPlaneArgs struct {
 	Namespace               string
 	ImagePullPolicy         string
-	ImagePullSecret         string
 	ControlPlaneVersion     string
 	ControlPlaneImage       string
 	ControlPlaneServiceName string
@@ -169,7 +168,6 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	// flags
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install Kuma Control Plane to")
 	cmd.Flags().StringVar(&args.ImagePullPolicy, "image-pull-policy", args.ImagePullPolicy, "image pull policy that applies to all components of the Kuma Control Plane")
-	cmd.Flags().StringVar(&args.ImagePullSecret, "image-pull-secret", args.ImagePullSecret, "image pull secret that applies to all components of the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.ControlPlaneVersion, "control-plane-version", args.ControlPlaneVersion, "version shared by all components of the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.ControlPlaneImage, "control-plane-image", args.ControlPlaneImage, "image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlaneServiceName, "control-plane-service-name", args.ControlPlaneServiceName, "Service name of the Kuma Control Plane")
@@ -200,7 +198,7 @@ func InstallCpTemplateFiles(args InstallControlPlaneArgs) (data.FileList, error)
 	if args.CNIEnabled {
 		templateCNI, err := data.ReadFiles(kumacni.Templates)
 		if err != nil {
-			return nil, errors.Wrap(err, "Failed to read template files")
+			return nil, err
 		}
 		templateFiles = append(templateFiles, templateCNI...)
 	}

@@ -410,10 +410,6 @@ spec:
         kuma.io/direct-access-services: "*"
     spec:
       serviceAccountName: prometheus-server
-{{- if .ImagePullSecret }}
-      imagePullSecrets:
-      - name: {{ .ImagePullSecret }}
-{{- end }}
       containers:
         - name: prometheus-server-configmap-reload
           image: "jimmidyson/configmap-reload:v0.4.0"

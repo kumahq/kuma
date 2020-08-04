@@ -43,10 +43,6 @@ spec:
         app: kuma-ingress
     spec:
       serviceAccountName: kuma-ingress
-{{- if .ImagePullSecret }}
-      imagePullSecrets:
-      - name: {{ .ImagePullSecret }}
-{{- end }}
       containers:
         - name: ingress
           image: {{ .Image }}:{{ .Version }}

@@ -235,7 +235,6 @@ Flags:
       --dataplane-init-image string         init image of the Kuma Dataplane component (default "kong-docker-kuma-docker.bintray.io/kuma-init")
   -h, --help                                help for control-plane
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
-      --image-pull-secret string            image pull secret that applies to all components of the Kuma Control Plane
       --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
       --kds-global-address string           URL of Global Kuma CP
       --kds-tls-cert string                 TLS certificate for the KDS server

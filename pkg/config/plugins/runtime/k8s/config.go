@@ -83,8 +83,6 @@ type Injector struct {
 	SidecarContainer SidecarContainer `yaml:"sidecarContainer,omitempty"`
 	// InitContainer defines configuration of the Kuma init container.
 	InitContainer InitContainer `yaml:"initContainer,omitempty"`
-	// ImagePullSecret defines secret for pulling images from docker repository
-	ImagePullSecret string `yaml:"imagePullSecret" envconfig:"kuma_runtime_kubernetes_injector_image_pull_secret"`
 	// CNIEnabled if true runs kuma-cp in CNI compatible mode
 	CNIEnabled bool `yaml:"cniEnabled" envconfig:"kuma_runtime_kubernetes_injector_cni_enabled"`
 }

@@ -61,9 +61,6 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		pod.Spec.Containers = []kube_core.Container{}
 	}
 	pod.Spec.Containers = append(pod.Spec.Containers, i.NewSidecarContainer(pod, ns))
-	if i.cfg.ImagePullSecret != "" {
-		pod.Spec.ImagePullSecrets = append(pod.Spec.ImagePullSecrets, kube_core.LocalObjectReference{Name: i.cfg.ImagePullSecret})
-	}
 
 	mesh, err := i.meshFor(pod, ns)
 	if err != nil {
