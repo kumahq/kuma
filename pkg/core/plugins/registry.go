@@ -29,15 +29,12 @@ const (
 )
 
 type Registry interface {
-	Bootstrap(PluginName) (BootstrapPlugin, error)
 	BootstrapPlugins() map[PluginName]BootstrapPlugin
 	ResourceStore(name PluginName) (ResourceStorePlugin, error)
 	SecretStore(name PluginName) (SecretStorePlugin, error)
 	ConfigStore(name PluginName) (ConfigStorePlugin, error)
 	Discovery(name PluginName) (DiscoveryPlugin, error)
-	Runtime(name PluginName) (RuntimePlugin, error)
 	RuntimePlugins() map[PluginName]RuntimePlugin
-	Ca(name PluginName) (CaPlugin, error)
 	CaPlugins() map[PluginName]CaPlugin
 }
 
@@ -74,14 +71,6 @@ type registry struct {
 	ca            map[PluginName]CaPlugin
 }
 
-func (r *registry) Bootstrap(name PluginName) (BootstrapPlugin, error) {
-	if p, ok := r.bootstrap[name]; ok {
-		return p, nil
-	} else {
-		return nil, noSuchPluginError(bootstrapPlugin, name)
-	}
-}
-
 func (r *registry) ResourceStore(name PluginName) (ResourceStorePlugin, error) {
 	if p, ok := r.resourceStore[name]; ok {
 		return p, nil
@@ -111,22 +100,6 @@ func (r *registry) Discovery(name PluginName) (DiscoveryPlugin, error) {
 		return p, nil
 	} else {
 		return nil, noSuchPluginError(discoveryPlugin, name)
-	}
-}
-
-func (r *registry) Runtime(name PluginName) (RuntimePlugin, error) {
-	if p, ok := r.runtime[name]; ok {
-		return p, nil
-	} else {
-		return nil, noSuchPluginError(runtimePlugin, name)
-	}
-}
-
-func (r *registry) Ca(name PluginName) (CaPlugin, error) {
-	if p, ok := r.ca[name]; ok {
-		return p, nil
-	} else {
-		return nil, noSuchPluginError(caPlugin, name)
 	}
 }
 
