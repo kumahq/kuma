@@ -22,30 +22,20 @@ type metricsTemplateArgs struct {
 	DashboardServiceToService string
 }
 
+var DefaultMetricsTemplateArgs = metricsTemplateArgs{
+	Namespace:               "kuma-metrics",
+	KumaPrometheusSdImage:   "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd",
+	KumaPrometheusSdVersion: kuma_version.Build.Version,
+	KumaCpAddress:           "http://kuma-control-plane.kuma-system:5681",
+}
+
 func newInstallMetrics() *cobra.Command {
-	args := struct {
-		Namespace               string
-		KumaPrometheusSdImage   string
-		KumaPrometheusSdVersion string
-		KumaCpAddress           string
-	}{
-		Namespace:               "kuma-metrics",
-		KumaPrometheusSdImage:   "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd",
-		KumaPrometheusSdVersion: kuma_version.Build.Version,
-		KumaCpAddress:           "http://kuma-control-plane.kuma-system:5681",
-	}
+	args := DefaultMetricsTemplateArgs
 	cmd := &cobra.Command{
 		Use:   "metrics",
 		Short: "Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)",
 		Long:  `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in a kuma-metrics namespace`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			templateArgs := metricsTemplateArgs{
-				Namespace:               args.Namespace,
-				KumaPrometheusSdImage:   args.KumaPrometheusSdImage,
-				KumaPrometheusSdVersion: args.KumaPrometheusSdVersion,
-				KumaCpAddress:           args.KumaCpAddress,
-			}
-
 			templateFiles, err := data.ReadFiles(metrics.Templates)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
@@ -58,21 +48,21 @@ func newInstallMetrics() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			templateArgs.DashboardDataplane = dashboard.String()
+			args.DashboardDataplane = dashboard.String()
 
 			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-mesh.json")
 			if err != nil {
 				return err
 			}
-			templateArgs.DashboardMesh = dashboard.String()
+			args.DashboardMesh = dashboard.String()
 
 			dashboard, err = data.ReadFile(metrics.Templates, ("/grafana/kuma-service-to-service.json"))
 			if err != nil {
 				return err
 			}
-			templateArgs.DashboardServiceToService = dashboard.String()
+			args.DashboardServiceToService = dashboard.String()
 
-			renderedFiles, err := renderFiles(yamlTemplateFiles, templateArgs, simpleTemplateRenderer)
+			renderedFiles, err := renderFiles(yamlTemplateFiles, args, simpleTemplateRenderer)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render template files")
 			}

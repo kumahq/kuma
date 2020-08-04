@@ -160,21 +160,14 @@ func startReporter(runtime core_runtime.Runtime) error {
 }
 
 func initializeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	var pluginName core_plugins.PluginName
-	switch cfg.Environment {
-	case config_core.KubernetesEnvironment:
-		pluginName = core_plugins.Kubernetes
-	case config_core.UniversalEnvironment:
-		pluginName = core_plugins.Universal
-	default:
-		return errors.Errorf("unknown environment type %s", cfg.Environment)
-	}
-	plugin, err := core_plugins.Plugins().Bootstrap(pluginName)
-	if err != nil {
-		return errors.Wrapf(err, "could not retrieve bootstrap %s plugin", pluginName)
-	}
-	if err := plugin.Bootstrap(builder, nil); err != nil {
-		return err
+	for name, plugin := range core_plugins.Plugins().BootstrapPlugins() {
+		if (cfg.Environment == config_core.KubernetesEnvironment && name == core_plugins.Universal) ||
+			(cfg.Environment == config_core.UniversalEnvironment && name == core_plugins.Kubernetes) {
+			continue
+		}
+		if err := plugin.Bootstrap(builder, nil); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -348,18 +341,15 @@ func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 }
 
 func customizeRuntime(rt core_runtime.Runtime) error {
-	var pluginName core_plugins.PluginName
-	switch env := rt.Config().Environment; env {
-	case config_core.KubernetesEnvironment:
-		pluginName = core_plugins.Kubernetes
-	case config_core.UniversalEnvironment:
-		return nil
-	default:
-		return errors.Errorf("unknown environment type %q", env)
+	env := rt.Config().Environment
+	for name, plugin := range core_plugins.Plugins().RuntimePlugins() {
+		if (env == config_core.KubernetesEnvironment && name == core_plugins.Universal) ||
+			(env == config_core.UniversalEnvironment && name == core_plugins.Kubernetes) {
+			continue
+		}
+		if err := plugin.Customize(rt); err != nil {
+			return err
+		}
 	}
-	plugin, err := core_plugins.Plugins().Runtime(pluginName)
-	if err != nil {
-		return err
-	}
-	return plugin.Customize(rt)
+	return nil
 }

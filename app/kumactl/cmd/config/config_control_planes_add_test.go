@@ -14,6 +14,8 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/kumahq/kuma/pkg/version"
+
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	"github.com/kumahq/kuma/pkg/api-server/types"
 
@@ -249,7 +251,7 @@ switched active Control Plane to "example"
 func setupCpIndexServer() (*httptest.Server, int) {
 	return setupCpServer(func(writer http.ResponseWriter, req *http.Request) {
 		response := types.IndexResponse{
-			Tagline: types.TaglineKuma,
+			Tagline: version.Product,
 			Version: "unknown",
 		}
 		marshaled, err := json.Marshal(response)
