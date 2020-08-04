@@ -5719,6 +5719,7 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+    sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
