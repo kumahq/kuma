@@ -18,6 +18,7 @@ const (
 	ProtocolTCP     = "tcp"
 	ProtocolHTTP    = "http"
 	ProtocolHTTP2   = "http2"
+	ProtocolGRPC    = "grpc"
 )
 
 func ParseProtocol(tag string) Protocol {
@@ -28,6 +29,8 @@ func ParseProtocol(tag string) Protocol {
 		return ProtocolHTTP2
 	case ProtocolTCP:
 		return ProtocolTCP
+	case ProtocolGRPC:
+		return ProtocolGRPC
 	default:
 		return ProtocolUnknown
 	}
@@ -46,6 +49,7 @@ func (l ProtocolList) Strings() []string {
 
 // SupportedProtocols is a list of supported protocols that will be communicated to a user.
 var SupportedProtocols = ProtocolList{
+	ProtocolGRPC,
 	ProtocolHTTP,
 	ProtocolHTTP2,
 	ProtocolTCP,
