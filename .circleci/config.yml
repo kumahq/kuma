@@ -90,7 +90,7 @@ jobs:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-      CLANG_FORMAT_PATH: clang-format-11
+      CLANG_FORMAT_PATH: clang-format-12
       # if GOPATH is not set, `golang-ci` fails with an obscure message
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
@@ -206,7 +206,7 @@ jobs:
   check:
     executor: golang
     environment:
-      CLANG_FORMAT_PATH: clang-format-11
+      CLANG_FORMAT_PATH: clang-format-12
     steps:
     - checkout
     - restore_cache:
@@ -238,7 +238,7 @@ jobs:
 
          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
-         apt update && apt install -y clang-format-11
+         apt update && apt install -y clang-format-12
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
@@ -344,7 +344,7 @@ jobs:
           make dev/tools
     - run:
         name: "Run integration tests"
-        command: | 
+        command: |
           export PATH=$HOME/go/bin:$PATH
           make << parameters.target >>
     - store_artifacts:
