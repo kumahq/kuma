@@ -275,11 +275,9 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
 	}
 
-	kubectlOpts := c.GetKubectlOptions()
-
 	helmOpts := &helm.Options{
 		SetValues:      values,
-		KubectlOptions: kubectlOpts,
+		KubectlOptions: c.GetKubectlOptions(kumaNamespace),
 	}
 
 	releaseName := opts.helmReleaseName
@@ -291,7 +289,7 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	}
 
 	// first create the namespace
-	if err := k8s.CreateNamespaceE(c.t, kubectlOpts, kumaNamespace); err != nil {
+	if err := k8s.CreateNamespaceE(c.t, c.GetKubectlOptions(), kumaNamespace); err != nil {
 		return err
 	}
 
@@ -457,7 +455,7 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
 	}
 
 	helmOpts := &helm.Options{
-		KubectlOptions: c.GetKubectlOptions(),
+		KubectlOptions: c.GetKubectlOptions(kumaNamespace),
 	}
 
 	if err := helm.DeleteE(c.t, helmOpts, opts.helmReleaseName, true); err != nil {

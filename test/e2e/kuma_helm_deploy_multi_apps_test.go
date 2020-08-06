@@ -61,9 +61,9 @@ metadata:
 
 	AfterEach(func() {
 		// tear down apps
-		_ = c1.DeleteNamespace(TestNamespace)
+		Expect(c1.DeleteNamespace(TestNamespace)).To(Succeed())
 		// tear down Kuma
-		_ = c1.DeleteKuma(deployOptsFuncs...)
+		Expect(c1.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 	})
 
 	It("Should deploy two apps", func() {

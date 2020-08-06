@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "kuma.name" . }}-control-plane
-  namespace: {{ .Values.global.namespace }}
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
     app: kuma-control-plane
@@ -35,9 +35,9 @@ spec:
             - name: KUMA_STORE_TYPE
               value: "kubernetes"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
-              value: {{ .Values.global.namespace | quote }}
+              value: {{ .Release.Namespace | quote }}
             - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              value: {{ include "kuma.name" . }}-control-plane.{{ .Values.global.namespace }}
+              value: {{ include "kuma.name" . }}-control-plane.{{ .Release.Namespace }}
             {{- if ne .Values.controlPlane.mode "global" }}
             - name: KUMA_SDS_SERVER_GRPC_PORT
               value: "5677"

@@ -113,9 +113,9 @@ metadata:
 
 	AfterEach(func() {
 		// tear down apps
-		_ = c2.DeleteNamespace(TestNamespace)
+		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		// tear down Kuma
-		_ = clusters.DeleteKuma(deployOptsFuncs...)
+		Expect(clusters.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 	})
 
 	It("Should deploy Remote and Global on 2 clusters", func() {

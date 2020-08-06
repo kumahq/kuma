@@ -9,7 +9,6 @@ The chart supports Helm v3+.
 
 | Parameter                                   | Description                                                                       | Default                              |
 |---------------------------------------------|-----------------------------------------------------------------------------------|--------------------------------------|
-| `global.namespace     `                     | The namspace where all resources will be installed                                | `kuma-system`                        |
 | `global.image.registry`                     | Default registry for all Kuma images                                              | `kong-docker-kuma-docker.bintray.io` |
 | `global.image.tag`                          | Default tag for all Kuma images                                                   | nil, defaults to Chart.AppVersion    |
 | `patchSystemNamespace`                      | Patch the release namespace with the Kuma system label                            | `true`                               |
