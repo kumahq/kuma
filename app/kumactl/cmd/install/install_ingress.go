@@ -10,26 +10,30 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
+type InstallIngressArgs struct {
+	Namespace       string
+	Image           string
+	Version         string
+	ImagePullPolicy string
+	Mesh            string
+	DrainTime       string
+	KumaCpAddress   string
+	IngressPortType string
+}
+
+var DefaultInstallIngressArgs = InstallIngressArgs{
+	Namespace:       "kuma-system",
+	Image:           "kong-docker-kuma-docker.bintray.io/kuma-dp",
+	Version:         kuma_version.Build.Version,
+	ImagePullPolicy: "IfNotPresent",
+	Mesh:            "default",
+	DrainTime:       "30s",
+	KumaCpAddress:   "http://kuma-control-plane.kuma-system:5681",
+	IngressPortType: "LoadBalancer",
+}
+
 func newInstallIngressCmd() *cobra.Command {
-	args := struct {
-		Namespace       string
-		Image           string
-		Version         string
-		ImagePullPolicy string
-		Mesh            string
-		DrainTime       string
-		KumaCpAddress   string
-		IngressPortType string
-	}{
-		Namespace:       "kuma-system",
-		Image:           "kong-docker-kuma-docker.bintray.io/kuma-dp",
-		Version:         kuma_version.Build.Version,
-		ImagePullPolicy: "IfNotPresent",
-		Mesh:            "default",
-		DrainTime:       "30s",
-		KumaCpAddress:   "http://kuma-control-plane.kuma-system:5681",
-		IngressPortType: "LoadBalancer",
-	}
+	args := DefaultInstallIngressArgs
 	useNodePort := false
 	cmd := &cobra.Command{
 		Use:   "ingress",
