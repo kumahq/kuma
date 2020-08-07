@@ -2,6 +2,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ include "kuma.name" . }}-control-plane
+  namespace: {{ .Release.Namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 ---
@@ -92,12 +93,12 @@ rules:
       - get
       - list
       - watch
-    {{- if eq .Values.controlPlane.mode "remote" }}
+      {{- if eq .Values.controlPlane.mode "remote" }}
       - create
       - update
       - patch
       - delete
-    {{- end }}
+  {{- end }}
   - apiGroups:
       - ""
     resources:
@@ -143,6 +144,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: {{ include "kuma.name" . }}:control-plane
+  namespace: {{ .Release.Namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 rules:
@@ -175,6 +177,7 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
   name: {{ include "kuma.name" . }}:control-plane
+  namespace: {{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
@@ -182,4 +185,4 @@ roleRef:
 subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-control-plane
-    namespace: {{.Release.Namespace}}
+    namespace: {{ .Release.Namespace }}

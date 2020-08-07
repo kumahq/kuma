@@ -61,9 +61,9 @@ metadata:
 
 	AfterEach(func() {
 		// tear down apps
-		_ = c1.DeleteNamespace(TestNamespace)
-		// tear down kuma
-		_ = c1.DeleteKuma(deployOptsFuncs...)
+		Expect(c1.DeleteNamespace(TestNamespace)).To(Succeed())
+		// tear down Kuma
+		Expect(c1.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 	})
 
 	It("Should deploy two apps", func() {
@@ -79,14 +79,16 @@ metadata:
 
 		clientPod := pods[0]
 
-		_, stderr, err := c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "echo-server")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func() (string, error) {
+			_, stderr, err := c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+				"curl", "-v", "-m", "3", "echo-server")
+			return stderr, err
+		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
-		_, stderr, err = c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_80.mesh")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Eventually(func() (string, error) {
+			_, stderr, err := c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+				"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_80.mesh")
+			return stderr, err
+		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 })

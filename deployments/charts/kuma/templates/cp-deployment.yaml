@@ -2,6 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "kuma.name" . }}-control-plane
+  namespace: {{ .Release.Namespace }}
   labels:
     {{- include "kuma.labels" . | nindent 4 }}
     app: kuma-control-plane
@@ -36,7 +37,7 @@ spec:
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: {{ .Release.Namespace | quote }}
             - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              value: {{ include "kuma.name" . }}-control-plane.{{.Release.Namespace}}
+              value: {{ include "kuma.name" . }}-control-plane.{{ .Release.Namespace }}
             {{- if ne .Values.controlPlane.mode "global" }}
             - name: KUMA_SDS_SERVER_GRPC_PORT
               value: "5677"
@@ -78,7 +79,7 @@ spec:
             {{- if .Values.controlPlane.zone }}
             - name: KUMA_MULTICLUSTER_REMOTE_ZONE
               value: {{ .Values.controlPlane.zone | quote }}
-            {{- end }}
+          {{- end }}
           args:
             - run
             - --log-level={{ .Values.controlPlane.logLevel }}
@@ -93,7 +94,7 @@ spec:
             - containerPort: 5682
             - containerPort: 5653
               protocol: UDP
-            {{- end }}
+          {{- end }}
           livenessProbe:
             httpGet:
               path: /healthy
@@ -103,13 +104,13 @@ spec:
               path: /ready
               port: 5680
           resources:
-          {{- if .Values.controlPlane.resources }}
-          {{ .Values.controlPlane.resources | toYaml | nindent 12 }}
-          {{- else if eq .Values.controlPlane.mode "global" }}
+            {{- if .Values.controlPlane.resources }}
+            {{ .Values.controlPlane.resources | toYaml | nindent 12 }}
+            {{- else if eq .Values.controlPlane.mode "global" }}
             requests:
               cpu: 500m
               memory: 256Mi
-          {{- else }}
+            {{- else }}
             requests:
               cpu: 100m
               memory: 256Mi
