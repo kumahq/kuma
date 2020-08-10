@@ -1,5 +1,6 @@
 {{- if .Values.patchSystemNamespace }}
   {{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma.name" .) }}
+  {{- $kubeMinor := .Capabilities.KubeVersion.Minor | replace "+" "" }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -76,7 +77,7 @@ spec:
         - name: pre-install-job
           {{- /* bitnami maintains an image for all k8s versions */}}
           {{- /* see: https://hub.docker.com/r/bitnami/kubectl */}}
-          image: {{ printf "%s/%s:%s.%s" "bitnami" "kubectl" .Capabilities.KubeVersion.Major .Capabilities.KubeVersion.Minor }}
+          image: {{ printf "%s/%s:%s.%s" "bitnami" "kubectl" .Capabilities.KubeVersion.Major $kubeMinor }}
           command:
             - 'kubectl'
             - 'patch'
