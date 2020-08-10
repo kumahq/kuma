@@ -47,6 +47,12 @@ var _ = Describe("InferServiceProtocol()", func() {
 			},
 			expected: mesh_core.ProtocolTCP,
 		}),
+		Entry("one-item list: `kuma.io/protocol: grpc`", testCase{
+			endpoints: []core_xds.Endpoint{
+				{Tags: map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "grpc"}},
+			},
+			expected: mesh_core.ProtocolGRPC,
+		}),
 		Entry("one-item list: `kuma.io/protocol: not-yet-supported-protocol`", testCase{
 			endpoints: []core_xds.Endpoint{
 				{Tags: map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "not-yet-supported-protocol"}},
@@ -85,6 +91,34 @@ var _ = Describe("InferServiceProtocol()", func() {
 			endpoints: []core_xds.Endpoint{
 				{Tags: map[string]string{"kuma.io/service": "backend", "region": "us", "kuma.io/protocol": "tcp"}},
 				{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu", "kuma.io/protocol": "http"}},
+			},
+			expected: mesh_core.ProtocolTCP,
+		}),
+		Entry("multi-item list: `kuma.io/protocol: grpc` on every endpoint", testCase{
+			endpoints: []core_xds.Endpoint{
+				{Tags: map[string]string{"kuma.io/service": "backend", "region": "us", "kuma.io/protocol": "grpc"}},
+				{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu", "kuma.io/protocol": "grpc"}},
+			},
+			expected: mesh_core.ProtocolGRPC,
+		}),
+		Entry("multi-item list: `kuma.io/protocol: grpc` and `kuma.io/protocol: http`", testCase{
+			endpoints: []core_xds.Endpoint{
+				{Tags: map[string]string{"kuma.io/service": "backend", "region": "us", "kuma.io/protocol": "grpc"}},
+				{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu", "kuma.io/protocol": "http"}},
+			},
+			expected: mesh_core.ProtocolTCP,
+		}),
+		Entry("multi-item list: `kuma.io/protocol: grpc` and `kuma.io/protocol: http2`", testCase{
+			endpoints: []core_xds.Endpoint{
+				{Tags: map[string]string{"kuma.io/service": "backend", "region": "us", "kuma.io/protocol": "grpc"}},
+				{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu", "kuma.io/protocol": "http2"}},
+			},
+			expected: mesh_core.ProtocolHTTP2,
+		}),
+		Entry("multi-item list: `kuma.io/protocol: grpc` and `kuma.io/protocol: tcp`", testCase{
+			endpoints: []core_xds.Endpoint{
+				{Tags: map[string]string{"kuma.io/service": "backend", "region": "us", "kuma.io/protocol": "grpc"}},
+				{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu", "kuma.io/protocol": "tcp"}},
 			},
 			expected: mesh_core.ProtocolTCP,
 		}),

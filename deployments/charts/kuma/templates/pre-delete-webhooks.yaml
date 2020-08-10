@@ -1,12 +1,14 @@
-{{- if .Values.patchSystemNamespace }}
-  {{- $serviceAccountName := printf "%s-patch-ns-job" (include "kuma.name" .) }}
+# HELM first deletes RBAC of Kuma, then it tries to delete Secrets. We've got validating webhook on Secrets.
+# But even that the policy of this webhook is Ignore, it fails because Kuma does not have permission to access Secrets anymore.
+# Therefore we first need to delete webhook so we can delete the rest of the deployment
+{{- $serviceAccountName := printf "%s-pre-delete-job" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: {{ $serviceAccountName }}
   namespace: {{ .Release.Namespace }}
   annotations:
-    "helm.sh/hook": "pre-install"
+    "helm.sh/hook": "pre-delete"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
@@ -14,38 +16,35 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kuma.name" . }}:patch-ns-job
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "kuma.name" . }}:pre-delete-job
   annotations:
-    "helm.sh/hook": "pre-install"
+    "helm.sh/hook": "pre-delete"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 rules:
   - apiGroups:
-      - ""
+      - admissionregistration.k8s.io
     resources:
-      - namespaces
+      - validatingwebhookconfigurations
     resourceNames:
-      - {{ .Release.Namespace }}
+      - {{ include "kuma.name" . }}-validating-webhook-configuration
     verbs:
-      - get
-      - patch
+      - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kuma.name" . }}:patch-ns-job
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "kuma.name" . }}:pre-delete-job
   annotations:
-    "helm.sh/hook": "pre-install"
+    "helm.sh/hook": "pre-delete"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "kuma.name" . }}:patch-ns-job
+  name: {{ include "kuma.name" . }}:pre-delete-job
 subjects:
   - kind: ServiceAccount
     name: {{ $serviceAccountName }}
@@ -54,36 +53,31 @@ subjects:
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ template "kuma.name" . }}-patch-ns
+  name: {{ template "kuma.name" . }}-delete-webhook
   namespace: {{ .Release.Namespace }}
   labels:
   {{ include "kuma.labels" . | nindent 4 }}
   annotations:
-    "helm.sh/hook": "pre-install"
+    "helm.sh/hook": "pre-delete"
     {{/* Ensure the job is created after the RBAC resources */}}
     "helm.sh/hook-weight": "5"
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
 spec:
   template:
     metadata:
-      name: {{ template "kuma.name" . }}-patch-ns-script
+      name: {{ template "kuma.name" . }}-delete-webhook
       labels:
     {{ include "kuma.labels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
       restartPolicy: OnFailure
       containers:
-        - name: pre-install-job
+        - name: pre-delete-job
           {{- /* bitnami maintains an image for all k8s versions */}}
           {{- /* see: https://hub.docker.com/r/bitnami/kubectl */}}
           image: {{ printf "%s/%s:%s.%s" "bitnami" "kubectl" .Capabilities.KubeVersion.Major .Capabilities.KubeVersion.Minor }}
           command:
             - 'kubectl'
-            - 'patch'
-            - 'namespace'
-            - {{ .Release.Namespace | quote }}
-            - '--type'
-            - 'merge'
-            - '--patch'
-            - '{ "metadata": { "labels": { "kuma.io/system-namespace": "true" } } }'
-  {{- end }}
+            - 'delete'
+            - 'ValidatingWebhookConfiguration'
+            - {{ include "kuma.name" . }}-validating-webhook-configuration

@@ -5,14 +5,14 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	kuma_version "github.com/kumahq/kuma/pkg/version"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/app/kumactl/cmd/install"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 var _ = Describe("kumactl install metrics", func() {
@@ -37,6 +37,7 @@ var _ = Describe("kumactl install metrics", func() {
 			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
 			BuildDate: "2019-08-07T11:26:06Z",
 		}
+		install.DefaultMetricsTemplateArgs.KumaPrometheusSdVersion = "0.0.1"
 	})
 
 	DescribeTable("should generate Kubernetes resources",

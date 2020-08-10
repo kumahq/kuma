@@ -75,10 +75,30 @@ var _ = Describe("getCommonProtocol()", func() {
 		Entry("`http2` and `http`", testCase{
 			one:      mesh_core.ProtocolHTTP2,
 			another:  mesh_core.ProtocolHTTP,
-			expected: mesh_core.ProtocolHTTP,
+			expected: mesh_core.ProtocolTCP,
 		}),
 		Entry("`http2` and `tcp`", testCase{
 			one:      mesh_core.ProtocolHTTP2,
+			another:  mesh_core.ProtocolTCP,
+			expected: mesh_core.ProtocolTCP,
+		}),
+		Entry("`grpc` and `grpc`", testCase{
+			one:      mesh_core.ProtocolGRPC,
+			another:  mesh_core.ProtocolGRPC,
+			expected: mesh_core.ProtocolGRPC,
+		}),
+		Entry("`grpc` and `http`", testCase{
+			one:      mesh_core.ProtocolGRPC,
+			another:  mesh_core.ProtocolHTTP,
+			expected: mesh_core.ProtocolTCP,
+		}),
+		Entry("`grpc` and `http2`", testCase{
+			one:      mesh_core.ProtocolGRPC,
+			another:  mesh_core.ProtocolHTTP2,
+			expected: mesh_core.ProtocolHTTP2,
+		}),
+		Entry("`grpc` and `tcp`", testCase{
+			one:      mesh_core.ProtocolGRPC,
 			another:  mesh_core.ProtocolTCP,
 			expected: mesh_core.ProtocolTCP,
 		}),

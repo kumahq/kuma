@@ -123,6 +123,11 @@ func (b *Builder) WithExtensions(ext context.Context) *Builder {
 	return b
 }
 
+func (b *Builder) WithExtension(key interface{}, value interface{}) *Builder {
+	b.ext = context.WithValue(b.ext, key, value)
+	return b
+}
+
 func (b *Builder) WithDNSResolver(dns dns.DNSResolver) *Builder {
 	b.dns = dns
 	return b

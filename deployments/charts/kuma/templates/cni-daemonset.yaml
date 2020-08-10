@@ -5,11 +5,11 @@ metadata:
   name: {{ include "kuma.name" . }}-cni-node
   namespace: kube-system
   labels:
-    {{- include "kuma.cniLabels" . | nindent 4 }}
+  {{- include "kuma.cniLabels" . | nindent 4 }}
 spec:
   selector:
     matchLabels:
-      {{- include "kuma.cniSelectorLabels" . | nindent 6 }}
+  {{- include "kuma.cniSelectorLabels" . | nindent 6 }}
   updateStrategy:
     type: RollingUpdate
     rollingUpdate:
@@ -17,7 +17,7 @@ spec:
   template:
     metadata:
       labels:
-        {{- include "kuma.cniSelectorLabels" . | nindent 8 }}
+      {{- include "kuma.cniSelectorLabels" . | nindent 8 }}
       annotations:
         # This, along with the CriticalAddonsOnly toleration below,
         # marks the pod as a critical add-on, ensuring it gets
@@ -76,4 +76,4 @@ spec:
         - name: cni-net-dir
           hostPath:
             path: /etc/cni/multus/net.d
-{{- end }}
+  {{- end }}

@@ -2,13 +2,13 @@
 
 set -e
 
-CHARTS_REPO_URL="https://kumahq.github.io/kuma"
+CHARTS_REPO_URL="https://kumahq.github.io/charts"
 CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
 GH_PAGES_BRANCH="gh-pages"
 GH_OWNER="kumahq"
-GH_REPO="kuma"
+GH_REPO="charts"
 
 function msg_green {
   builtin echo -en "\033[1;32m"
@@ -44,14 +44,14 @@ function msg_err() {
 
 function package {
   # First package all the charts
-  for dir in "$CHARTS_DIR"/*; do
+  for dir in "${CHARTS_DIR}"/*; do
     if [ ! -d "$dir" ]; then
       continue
     fi
 
     helm package \
-      --app-version "$KUMA_VERSION" \
-      --destination "$CHARTS_PACKAGE_PATH" \
+      --app-version "${KUMA_VERSION}" \
+      --destination "${CHARTS_PACKAGE_PATH}" \
       --dependency-update \
       "$dir"
   done
@@ -60,24 +60,28 @@ function package {
 function release {
   # First upload the packaged charts to the release
   cr upload \
-    --owner "$GH_OWNER" \
-    --git-repo "$GH_REPO" \
-    --token "$GH_TOKEN" \
-    --package-path "$CHARTS_PACKAGE_PATH"
+    --owner "${GH_OWNER}" \
+    --git-repo "${GH_REPO}" \
+    --token "${GH_TOKEN}" \
+    --package-path "${CHARTS_PACKAGE_PATH}"
+
 
   # Then build and upload the index file to github pages
-  git checkout "$GH_PAGES_BRANCH"
+  git clone --single-branch --branch "${GH_PAGES_BRANCH}" git@github.com:kumahq/${GH_REPO}.git
 
   cr index \
-    --owner "$GH_OWNER" \
-    --git-repo "$GH_REPO" \
-    --charts-repo "$CHARTS_REPO_URL" \
-    --package-path "$CHARTS_PACKAGE_PATH" \
-    --index-path "$CHARTS_INDEX_FILE"
+    --owner "${GH_OWNER}" \
+    --git-repo "${GH_REPO}" \
+    --charts-repo "${CHARTS_REPO_URL}" \
+    --package-path "${CHARTS_PACKAGE_PATH}" \
+    --index-path "charts/${CHARTS_INDEX_FILE}"
 
-  git add "$CHARTS_INDEX_FILE"
-  git commit -m "ci(helm) publish charts for version $KUMA_VERSION@$KUMA_COMMIT"
+  pushd charts
+  git add "${CHARTS_INDEX_FILE}"
+  git commit -m "ci(helm) publish charts for version ${KUMA_VERSION}@${KUMA_COMMIT}"
   git push
+  popd
+  rm -rf charts
 }
 
 
@@ -116,9 +120,9 @@ function main {
     shift
   done
 
-  [ -z "$GH_TOKEN" ] && msg_err "GH_TOKEN required"
-  [ -z "$KUMA_VERSION" ] && msg_err "Error: --version required"
-  [ -z "$KUMA_COMMIT" ] && msg_err "Error: --sha required"
+  [ -z "${GH_TOKEN}" ] && msg_err "GH_TOKEN required"
+  [ -z "${KUMA_VERSION}" ] && msg_err "Error: --version required"
+  [ -z "${KUMA_COMMIT}" ] && msg_err "Error: --sha required"
 
   case $op in
     package)

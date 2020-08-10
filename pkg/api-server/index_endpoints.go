@@ -17,7 +17,7 @@ func addIndexWsEndpoints(ws *restful.WebService) error {
 	ws.Route(ws.GET("/").To(func(req *restful.Request, resp *restful.Response) {
 		response := types.IndexResponse{
 			Hostname: hostname,
-			Tagline:  types.TaglineKuma,
+			Tagline:  kuma_version.Product,
 			Version:  kuma_version.Build.Version,
 		}
 		if err := resp.WriteAsJson(response); err != nil {

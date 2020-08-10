@@ -25,6 +25,8 @@ KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
 ETCD_PATH := $(CI_TOOLS_DIR)/etcd
 GOLANGCI_LINT_DIR := $(CI_TOOLS_DIR)
 
+TOOLS_DIR ?= $(shell pwd)/tools
+
 PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)
 

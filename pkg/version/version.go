@@ -1,6 +1,7 @@
 package version
 
 var (
+	Product   = "Kuma"
 	version   = "unknown"
 	gitTag    = "unknown"
 	gitCommit = "unknown"
