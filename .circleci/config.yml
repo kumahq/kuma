@@ -586,14 +586,12 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - go_cache
-#    - test:
-#        <<: *commit_workflow_filters
-#        requires:
-#        - check
     - integration:
         <<: *commit_workflow_filters
         requires:
         - check
+        # custom parameters
+        target: -j1 integration test
     - images:
         <<: *commit_workflow_filters
         requires:
