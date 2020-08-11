@@ -80,7 +80,7 @@ type DataplaneRuntime struct {
 	ConfigDir string `yaml:"configDir,omitempty" envconfig:"kuma_dataplane_runtime_config_dir"`
 	// Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)
 	TokenPath string `yaml:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
-	// Token is dataplane token's value provided directly, will be store into the file in /tmp directory
+	// Token is dataplane token's value provided directly, will be stored to a temporary file before applying
 	Token string `yaml:"dataplaneToken,omitempty" envconfig:"kuma_dataplane_runtime_token"`
 }
 

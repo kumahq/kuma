@@ -1,4 +1,4 @@
-package dns_test
+package lookup_test
 
 import (
 	"testing"

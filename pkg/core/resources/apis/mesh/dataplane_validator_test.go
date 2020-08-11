@@ -130,6 +130,22 @@ var _ = Describe("Dataplane", func() {
                 inbound:
                   - port: 10001`,
 		),
+		Entry("dataplane domain name in the address", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: example.com
+              inbound:
+                - port: 8080
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  tags:
+                    kuma.io/service: redis`,
+		),
 	)
 
 	type testCase struct {
@@ -170,6 +186,47 @@ var _ = Describe("Dataplane", func() {
                 violations:
                 - field: networking
                   message: has to contain at least one inbound interface or gateway`,
+		}),
+		Entry("networking.address: empty", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  inbound:
+                    - port: 8080
+                      tags:
+                        kuma.io/service: backend
+                        version: "1"
+                  outbound:
+                    - port: 3333
+                      tags:
+                        kuma.io/service: redis`,
+			expected: `
+                violations:
+                - field: networking.address
+                  message: address can't be empty`,
+		}),
+		Entry("networking.address: invalid format", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: ..>_<..
+                  inbound:
+                    - port: 8080
+                      tags:
+                        kuma.io/service: backend
+                        version: "1"
+                  outbound:
+                    - port: 3333
+                      tags:
+                        kuma.io/service: redis`,
+			expected: `
+                violations:
+                - field: networking.address
+                  message:  address has to be valid IP address or domain name`,
 		}),
 		Entry("networking: both inbounds and gateway are defined", testCase{
 			dataplane: `

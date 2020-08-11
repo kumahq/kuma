@@ -1,13 +1,13 @@
-package dns_test
+package lookup_test
 
 import (
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"net"
 	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/core/dns"
 )
 
 var _ = Describe("DNS with cache", func() {
@@ -17,10 +17,10 @@ var _ = Describe("DNS with cache", func() {
 		counter++
 		return table[host], nil
 	}
-	var cachingLookupFunc dns.LookupIPFunc
+	var cachingLookupFunc lookup.LookupIPFunc
 
 	BeforeEach(func() {
-		cachingLookupFunc = dns.MakeCaching(lookupFunc, 1*time.Second)
+		cachingLookupFunc = lookup.CachedLookupIP(lookupFunc, 1*time.Second)
 		table = map[string][]net.IP{}
 		counter = 0
 	})
@@ -41,7 +41,9 @@ var _ = Describe("DNS with cache", func() {
 		Expect(ip[0]).To(Equal(net.ParseIP("192.168.0.1")))
 
 		table["example.com"] = []net.IP{net.ParseIP("10.20.0.1")}
-		<-time.After(2 * time.Second)
+		core.Now = func() time.Time {
+			return time.Now().Add(2 * time.Second)
+		}
 		ip, _ = cachingLookupFunc("example.com")
 		Expect(ip[0]).To(Equal(net.ParseIP("10.20.0.1")))
 		Expect(counter).To(Equal(2))

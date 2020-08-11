@@ -2,10 +2,10 @@ package topology
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/core/dns"
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 )
@@ -29,7 +29,7 @@ func GetDataplanes(ctx context.Context, rm manager.ReadOnlyResourceManager, mesh
 }
 
 func ResolveAddress(dataplane *core_mesh.DataplaneResource) error {
-	ips, err := core.LookupIP(dataplane.Spec.Networking.Address)
+	ips, err := dns.LookupIP(dataplane.Spec.Networking.Address)
 	if err != nil {
 		return err
 	}

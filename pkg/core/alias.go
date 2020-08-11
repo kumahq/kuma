@@ -1,10 +1,7 @@
 package core
 
 import (
-	"net"
 	"time"
-
-	"github.com/kumahq/kuma/pkg/core/dns"
 
 	kube_uuid "k8s.io/apimachinery/pkg/util/uuid"
 	kube_log "sigs.k8s.io/controller-runtime/pkg/log"
@@ -18,7 +15,6 @@ var (
 	NewLogger = kuma_log.NewLogger
 	SetLogger = kube_log.SetLogger
 	Now       = time.Now
-	LookupIP  = dns.MakeCaching(net.LookupIP, 10*time.Second)
 
 	SetupSignalHandler = kube_signals.SetupSignalHandler
 

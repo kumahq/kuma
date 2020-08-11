@@ -1,19 +1,18 @@
-package dns
+package lookup
 
 import (
+	"github.com/kumahq/kuma/pkg/core"
 	"net"
 	"sync"
 	"time"
 )
-
-type LookupIPFunc func(string) ([]net.IP, error)
 
 type cacheRecord struct {
 	ips          []net.IP
 	creationTime time.Time
 }
 
-func MakeCaching(f LookupIPFunc, ttl time.Duration) LookupIPFunc {
+func CachedLookupIP(f LookupIPFunc, ttl time.Duration) LookupIPFunc {
 	cache := map[string]*cacheRecord{}
 	var rwmux sync.RWMutex
 	return func(host string) ([]net.IP, error) {
@@ -21,7 +20,7 @@ func MakeCaching(f LookupIPFunc, ttl time.Duration) LookupIPFunc {
 		r, ok := cache[host]
 		rwmux.RUnlock()
 
-		if ok && r.creationTime.Add(ttl).After(time.Now()) {
+		if ok && r.creationTime.Add(ttl).After(core.Now()) {
 			return r.ips, nil
 		}
 
@@ -31,7 +30,7 @@ func MakeCaching(f LookupIPFunc, ttl time.Duration) LookupIPFunc {
 		}
 
 		rwmux.Lock()
-		cache[host] = &cacheRecord{ips: ips, creationTime: time.Now()}
+		cache[host] = &cacheRecord{ips: ips, creationTime: core.Now()}
 		rwmux.Unlock()
 
 		return ips, nil

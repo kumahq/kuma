@@ -1,6 +1,7 @@
 package topology
 
 import (
+	"github.com/kumahq/kuma/pkg/core/dns"
 	"net"
 
 	. "github.com/onsi/ginkgo"
@@ -8,12 +9,11 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 var _ = Describe("Resolve Dataplane address", func() {
-	core.LookupIP = func(s string) ([]net.IP, error) {
+	dns.LookupIP = func(s string) ([]net.IP, error) {
 		if s == "example.com" {
 			return []net.IP{net.ParseIP("192.168.0.1")}, nil
 		}

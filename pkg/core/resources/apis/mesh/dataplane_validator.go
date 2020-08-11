@@ -3,6 +3,7 @@ package mesh
 import (
 	"fmt"
 	"net"
+	"regexp"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -31,9 +32,7 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 	if len(networking.GetInbound()) > 0 && networking.Gateway != nil {
 		err.AddViolationAt(path, "inbound cannot be defined both with gateway")
 	}
-	if networking.Address == "" {
-		err.AddViolationAt(path.Field("address"), "address has to be valid IP address or domain name")
-	}
+	err.Add(validateAddress(path, networking.Address))
 	if networking.Gateway != nil {
 		result := validateGateway(networking.Gateway)
 		err.AddErrorAt(path.Field("gateway"), result)
@@ -45,6 +44,20 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 	for i, outbound := range networking.GetOutbound() {
 		result := validateOutbound(outbound)
 		err.AddErrorAt(path.Field("outbound").Index(i), result)
+	}
+	return err
+}
+
+var DNSRegex = regexp.MustCompile(`^([a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62}){1}(\.[a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62})*[\._]?$`)
+
+func validateAddress(path validators.PathBuilder, address string) validators.ValidationError {
+	var err validators.ValidationError
+	if address == "" {
+		err.AddViolationAt(path.Field("address"), "address can't be empty")
+		return err
+	}
+	if !DNSRegex.MatchString(address) {
+		err.AddViolationAt(path.Field("address"), "address has to be valid IP address or domain name")
 	}
 	return err
 }
