@@ -21,6 +21,7 @@ type deployOptions struct {
 	globalAddress    string
 	installationMode InstallationMode
 	helmReleaseName  string
+	helmOpts         map[string]string
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -40,6 +41,15 @@ func WithInstallationMode(mode InstallationMode) DeployOptionsFunc {
 func WithHelmReleaseName(name string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.helmReleaseName = name
+	}
+}
+
+func WithHelmOpt(name, value string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		if o.helmOpts == nil {
+			o.helmOpts = map[string]string{}
+		}
+		o.helmOpts[name] = value
 	}
 }
 

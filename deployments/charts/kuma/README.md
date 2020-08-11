@@ -24,7 +24,7 @@ The chart supports Helm v3+.
 | `controlPlane.resources`                    | The K8s resources spec for Kuma CP                                                | nil, differs based on mode           |
 | `controlPlane.tls.{admission,sds,kds}.cert` | TLS certificate for the Admission, SDS, and KDS servers, respectively             | nil, generated and self-signed       |
 | `controlPlane.tls.{admission,sds,kds}.key`  | TLS key for the Admission, SDS, and KDS servers, respectively                     | nil, generated and self-signed       |
-| `controlPlane.imagePullPolicy`              | Kuma CP ImagePullPolicy                                                           | `IfNotPresent`                       |
+| `controlPlane.image.pullPolicy`              | Kuma CP ImagePullPolicy                                                          | `IfNotPresent`                       |
 | `controlPlane.image.registry`               | Kuma CP image registry                                                            | nil, uses global                     |
 | `controlPlane.image.repository`             | Kuma CP image repository                                                          | `kuma-cp`                            |
 | `controlPlane.image.tag`                    | Kuma CP image tag                                                                 | nil, uses global                     |
@@ -39,6 +39,12 @@ The chart supports Helm v3+.
 | `dataPlane.initImage.registry`              | The Kuma DP init image registry                                                   | nil, uses global                     |
 | `dataPlane.initImage.repository`            | The Kuma DP init image repository                                                 | `kuma-init`                          |
 | `dataPlane.initImage.tag`                   | The Kuma DP init image tag                                                        | nil, uses global                     |
+| `ingress.enabled`                           | If true, it deploys Ingress for cross cluster communication                       | false                                |
+| `ingress.drainTime`                         | Time for which old listener will still be active as draining                      | 30s                                  |
+| `ingress.service.name`                      | Service name of the Ingress                                                       | nil                                  |
+| `ingress.service.type`                      | Service type of the Ingress                                                       | LoadBalancer                         |
+| `ingress.service.port`                      | Port on which Ingress is exposed                                                  | 10001                                |
+| `ingress.mesh`                              | Mesh to which Dataplane Ingress belongs to                                        | default                              |
 
 ## Custom Resource Definitions
 
