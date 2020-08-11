@@ -195,7 +195,7 @@ var _ = Describe("Auto configuration", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(cfg.GuiServer.ApiServerUrl).To(Equal("/"))
+		Expect(cfg.GuiServer.ApiServerUrl).To(Equal(""))
 	})
 
 	It("should autoconfigure xds params", func() {

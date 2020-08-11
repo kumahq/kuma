@@ -240,7 +240,7 @@ general:
 
 # Web GUI Server configuration
 guiServer:
-  # URL of the Api Server that requests with /api prefix will be redirected to. By default autoconfigured to /
+  # URL of the Api Server
   apiServerUrl: # ENV: KUMA_GUI_SERVER_API_SERVER_URL
 
 # DNS Server configuration

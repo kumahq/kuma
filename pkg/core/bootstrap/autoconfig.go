@@ -25,7 +25,6 @@ var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 func autoconfigure(cfg *kuma_cp.Config) error {
 	autoconfigureAdminServer(cfg)
 	autoconfigureCatalog(cfg)
-	autoconfigureGui(cfg)
 	autoconfigBootstrapXdsParams(cfg)
 	if err := autoconfigureKds(cfg); err != nil {
 		return err
@@ -156,12 +155,6 @@ func autoconfigureAdminServer(cfg *kuma_cp.Config) {
 
 	if cfg.AdminServer.Public.Enabled && cfg.AdminServer.Public.Port == 0 {
 		cfg.AdminServer.Public.Port = cfg.AdminServer.Local.Port
-	}
-}
-
-func autoconfigureGui(cfg *kuma_cp.Config) {
-	if cfg.GuiServer.ApiServerUrl == "" {
-		cfg.GuiServer.ApiServerUrl = "/"
 	}
 }
 
