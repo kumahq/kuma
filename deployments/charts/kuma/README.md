@@ -22,6 +22,7 @@ The chart supports Helm v3+.
 | `controlPlane.service.annotations`                 | Additional annotations to put on the Kuma Control Plane service                   | {}                                   |
 | `controlPlane.globalRemoteSyncService.name`        | Service name of the Global-Remote Sync                                            | nil                                  |
 | `controlPlane.globalRemoteSyncService.type`        | Service type of the Global-Remote Sync                                            | LoadBalancer                         |
+| `controlPlane.globalRemoteSyncService.port`        | Port on which Global-Remote Sync is exposed                                       | 5685                                 |
 | `controlPlane.globalRemoteSyncService.annotations` | Additional annotations to put on the Global-Remote Sync service                   | {}                                   |
 | `controlPlane.defaults.skipMeshCreation`           | Whether or not to skip creating the default Mesh                                  | `true`                               |
 | `controlPlane.resources`                           | The K8s resources spec for Kuma CP                                                | nil, differs based on mode           |

@@ -11,8 +11,8 @@ metadata:
 spec:
   type: {{ .Values.controlPlane.globalRemoteSyncService.type }}
   ports:
-    - port: 5685
-  {{- if eq .Values.controlPlane.service.type "NodePort" }}
+    - port: {{ .Values.controlPlane.globalRemoteSyncService.port }}
+  {{- if eq .Values.controlPlane.globalRemoteSyncService.type "NodePort" }}
       nodePort: 30685
   {{- end }}
       name: global-remote-sync

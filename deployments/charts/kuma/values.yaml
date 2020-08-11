@@ -27,6 +27,7 @@ controlPlane:
     # name: ""
     type: LoadBalancer
     annotations: {}
+    port: 5685
 
   defaults:
     skipMeshCreation: false
