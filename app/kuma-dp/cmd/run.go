@@ -152,7 +152,7 @@ func newRunCmd() *cobra.Command {
 }
 
 func writeFile(filename string, data []byte, perm os.FileMode) error {
-	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(filename), perm); err != nil {
 		return err
 	}
 	return ioutil.WriteFile(filename, data, perm)
