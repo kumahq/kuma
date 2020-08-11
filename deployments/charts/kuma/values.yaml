@@ -44,8 +44,8 @@ controlPlane:
   #      cert: ""
   #      key: ""
 
-  imagePullPolicy: IfNotPresent
   image:
+    pullPolicy: IfNotPresent
     repository: "kuma-cp"
 
 cni:
@@ -61,7 +61,15 @@ cni:
 dataPlane:
   image:
     repository: "kuma-dp"
+    pullPolicy: IfNotPresent
 
   # Configuration for the kuma init phase in the sidecar
   initImage:
     repository: "kuma-init"
+
+ingress:
+  enabled: false
+  drainTime: 30s
+  service:
+    # name: ""
+    type: LoadBalancer

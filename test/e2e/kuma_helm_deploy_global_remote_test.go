@@ -69,11 +69,11 @@ metadata:
 		global = c1.GetKuma()
 		Expect(global).ToNot(BeNil())
 
-		deployOptsFuncs = append(deployOptsFuncs, WithGlobalAddress(global.GetKDSServerAddress()))
+		deployOptsFuncs = append(deployOptsFuncs, WithGlobalAddress(global.GetKDSServerAddress()), WithHelmOpt("ingress.enabled", "true"))
+
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, deployOptsFuncs...)).
 			Install(KumaDNS()).
-			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
 			Install(EchoServerK8s()).

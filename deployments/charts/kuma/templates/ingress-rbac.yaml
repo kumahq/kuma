@@ -1,0 +1,9 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "kuma.name" . }}-ingress
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+{{- end }}
