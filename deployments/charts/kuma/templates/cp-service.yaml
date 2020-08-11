@@ -1,10 +1,14 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "kuma.serviceName" . }}
+  name: {{ include "kuma.controlPlane.serviceName" . }}
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.controlPlane.service.annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
 spec:
   type: {{ .Values.controlPlane.service.type }}
   ports:
@@ -29,4 +33,5 @@ spec:
       protocol: UDP
   {{- end }}
   selector:
+    app: kuma-control-plane
   {{- include "kuma.selectorLabels" . | nindent 4 }}

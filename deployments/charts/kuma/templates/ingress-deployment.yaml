@@ -1,0 +1,88 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "kuma.name" . }}-ingress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kuma.labels" . | nindent 4 }}
+    app: kuma-ingress
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      {{- include "kuma.selectorLabels" . | nindent 6 }}
+      app: kuma-ingress
+  template:
+    metadata:
+      annotations:
+        kuma.io/ingress: enabled
+        kuma.io/mesh: {{ .Values.ingress.mesh }}
+      labels:
+        {{- include "kuma.selectorLabels" . | nindent 8 }}
+        app: kuma-ingress
+    spec:
+      serviceAccountName: {{ include "kuma.name" . }}-ingress
+      containers:
+        - name: ingress
+          image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
+          imagePullPolicy: {{ .Values.dataPlane.image.pullPolicy }}
+          env:
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KUMA_CONTROL_PLANE_API_SERVER_URL
+              value: "http://{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}:5681"
+            - name: KUMA_DATAPLANE_MESH
+              value: {{ .Values.ingress.mesh }}
+            - name: KUMA_DATAPLANE_NAME
+              value: $(POD_NAME).$(POD_NAMESPACE)
+            - name: KUMA_DATAPLANE_ADMIN_PORT
+              value: "9901"
+            - name: KUMA_DATAPLANE_DRAIN_TIME
+              value: {{ .Values.ingress.drainTime }}
+            - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+              value: /var/run/secrets/kubernetes.io/serviceaccount/token
+          args:
+            - run
+            - --log-level=info
+          ports:
+            - containerPort: 10001
+          livenessProbe:
+            exec:
+              command:
+                - wget
+                - -qO-
+                - http://127.0.0.1:9901
+            failureThreshold: 12
+            initialDelaySeconds: 60
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          readinessProbe:
+            exec:
+              command:
+                - wget
+                - -qO-
+                - http://127.0.0.1:9901
+            failureThreshold: 12
+            initialDelaySeconds: 1
+            periodSeconds: 5
+            successThreshold: 1
+            timeoutSeconds: 3
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 1000m
+              memory: 512Mi
+{{- end }}

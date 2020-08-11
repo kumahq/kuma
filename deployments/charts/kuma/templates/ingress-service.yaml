@@ -1,0 +1,22 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "kuma.ingress.serviceName" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.ingress.service.annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  type: {{ .Values.ingress.service.type }}
+  ports:
+    - port: {{ .Values.ingress.service.port }}
+      protocol: TCP
+      targetPort: 10001
+  selector:
+    app: kuma-ingress
+  {{- include "kuma.selectorLabels" . | nindent 4 }}
+{{- end }}

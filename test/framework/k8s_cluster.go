@@ -257,19 +257,20 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	}
 
 	values := map[string]string{
-		"controlPlane.mode": mode,
-		// allow the CP to create a default mesh, for testing simplicity
-		"controlPlane.defaults.skipMeshCreation": "false",
-		"global.image.tag":                       kuma_version.Build.Version,
-		"global.image.registry":                  kumaImageRegistry,
-		"controlPlane.image.repository":          kumaCPImageRepo,
-		"dataPlane.image.repository":             kumaDPImageRepo,
-		"dataPlane.initImage.repository":         kumaInitImageRepo,
+		"controlPlane.mode":              mode,
+		"global.image.tag":               kuma_version.Build.Version,
+		"global.image.registry":          kumaImageRegistry,
+		"controlPlane.image.repository":  kumaCPImageRepo,
+		"dataPlane.image.repository":     kumaDPImageRepo,
+		"dataPlane.initImage.repository": kumaInitImageRepo,
+	}
+	for opt, value := range opts.helmOpts {
+		values[opt] = value
 	}
 
 	switch mode {
 	case core.Global:
-		values["controlPlane.useNodePort"] = "true"
+		values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
 	case core.Remote:
 		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
