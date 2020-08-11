@@ -1,9 +1,10 @@
 package dns
 
 import (
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"net"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 )
 
 const (

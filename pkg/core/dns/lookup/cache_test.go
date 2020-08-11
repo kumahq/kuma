@@ -1,10 +1,11 @@
 package lookup_test
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"net"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

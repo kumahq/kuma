@@ -1,10 +1,11 @@
 package lookup
 
 import (
-	"github.com/kumahq/kuma/pkg/core"
 	"net"
 	"sync"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/core"
 )
 
 type cacheRecord struct {

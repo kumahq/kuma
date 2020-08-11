@@ -2,6 +2,7 @@ package topology
 
 import (
 	"context"
+
 	"github.com/kumahq/kuma/pkg/core/dns"
 
 	"github.com/pkg/errors"

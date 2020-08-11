@@ -1,8 +1,9 @@
 package topology
 
 import (
-	"github.com/kumahq/kuma/pkg/core/dns"
 	"net"
+
+	"github.com/kumahq/kuma/pkg/core/dns"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
