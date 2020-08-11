@@ -5,6 +5,10 @@ metadata:
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
+  annotations:
+    {{- range $key, $value := .Values.controlPlane.service.annotations }}
+      {{ $key }}: {{ $value | quote }}
+    {{- end }}
 spec:
   type: {{ .Values.controlPlane.service.type }}
   ports:
