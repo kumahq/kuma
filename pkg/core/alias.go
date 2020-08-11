@@ -1,9 +1,10 @@
 package core
 
 import (
-	"github.com/kumahq/kuma/pkg/core/dns"
 	"net"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/core/dns"
 
 	kube_uuid "k8s.io/apimachinery/pkg/util/uuid"
 	kube_log "sigs.k8s.io/controller-runtime/pkg/log"

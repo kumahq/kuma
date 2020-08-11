@@ -1,11 +1,13 @@
 package dns_test
 
 import (
-	"github.com/kumahq/kuma/pkg/core/dns"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 	"net"
 	"time"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/core/dns"
 )
 
 var _ = Describe("DNS with cache", func() {
