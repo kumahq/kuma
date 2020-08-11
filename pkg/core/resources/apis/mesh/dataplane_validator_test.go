@@ -195,27 +195,6 @@ var _ = Describe("Dataplane", func() {
                 - field: networking
                   message: inbound cannot be defined both with gateway`,
 		}),
-		Entry("networking: invalid address", testCase{
-			dataplane: `
-                type: Dataplane
-                name: dp-1
-                mesh: default
-                networking:
-                  address: invalid
-                  inbound:
-                    - port: 8080
-                      servicePort: 7777
-                      tags:
-                        kuma.io/service: backend
-                        version: "1"
-                  outbound:
-                    - port: 3333
-                      service: redis`,
-			expected: `
-                violations:
-                - field: networking.address
-                  message: address has to be valid IP address`,
-		}),
 		Entry("networking.inbound: port of the range", testCase{
 			dataplane: `
                 type: Dataplane

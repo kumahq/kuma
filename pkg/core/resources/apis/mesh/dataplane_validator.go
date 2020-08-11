@@ -31,8 +31,8 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 	if len(networking.GetInbound()) > 0 && networking.Gateway != nil {
 		err.AddViolationAt(path, "inbound cannot be defined both with gateway")
 	}
-	if net.ParseIP(networking.Address) == nil {
-		err.AddViolationAt(path.Field("address"), "address has to be valid IP address")
+	if networking.Address == "" {
+		err.AddViolationAt(path.Field("address"), "address has to be valid IP address or domain name")
 	}
 	if networking.Gateway != nil {
 		result := validateGateway(networking.Gateway)

@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -67,12 +68,14 @@ func newRunCmd() *cobra.Command {
 				return errors.Wrap(err, "could retrieve catalog")
 			}
 			if catalog.Apis.DataplaneToken.Enabled() {
-				if cfg.DataplaneRuntime.TokenPath == "" {
+				if cfg.DataplaneRuntime.TokenPath == "" && cfg.DataplaneRuntime.Token == "" {
 					return errors.New("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. " +
 						"Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
 				}
-				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
-					return err
+				if cfg.DataplaneRuntime.TokenPath != "" {
+					if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
+						return err
+					}
 				}
 			}
 
@@ -99,6 +102,15 @@ func newRunCmd() *cobra.Command {
 				}()
 				cfg.DataplaneRuntime.ConfigDir = tmpDir
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
+			}
+
+			if cfg.DataplaneRuntime.Token != "" {
+				path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
+				if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0600); err != nil {
+					runLog.Error(err, "unable to create file with dataplane token")
+					return err
+				}
+				cfg.DataplaneRuntime.TokenPath = path
 			}
 
 			dataplane, err := envoy.New(envoy.Opts{
@@ -135,5 +147,13 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
 	return cmd
+}
+
+func writeFile(filename string, data []byte, perm os.FileMode) error {
+	if err := os.MkdirAll(filepath.Dir(filename), 0755); err != nil {
+		return err
+	}
+	return ioutil.WriteFile(filename, data, perm)
 }

@@ -120,11 +120,20 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
+				if err := xds_topology.ResolveAddress(dataplane); err != nil {
+					return err
+				}
+
 				if dataplane.Spec.IsIngress() {
 					// update Ingress
 					allMeshDataplanes := &mesh_core.DataplaneResourceList{}
 					if err := rt.ReadOnlyResourceManager().List(ctx, allMeshDataplanes); err != nil {
 						return err
+					}
+					for _, dp := range allMeshDataplanes.Items {
+						if err := xds_topology.ResolveAddress(dp); err != nil {
+							return err
+						}
 					}
 					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, allMeshDataplanes.Items); err != nil {
 						return err
