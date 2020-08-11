@@ -10,7 +10,6 @@ import (
 
 	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
 	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
-	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 	token_server "github.com/kumahq/kuma/pkg/config/token-server"
 
 	"github.com/pkg/errors"
@@ -161,10 +160,8 @@ func autoconfigureAdminServer(cfg *kuma_cp.Config) {
 }
 
 func autoconfigureGui(cfg *kuma_cp.Config) {
-	cfg.GuiServer.ApiServerUrl = fmt.Sprintf("http://localhost:%d", cfg.ApiServer.Port)
-	cfg.GuiServer.GuiConfig = &gui_server.GuiConfig{
-		ApiUrl:      "/api",
-		Environment: cfg.Environment,
+	if cfg.GuiServer.ApiServerUrl == "" {
+		cfg.GuiServer.ApiServerUrl = "/"
 	}
 }
 
