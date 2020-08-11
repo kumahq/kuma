@@ -43,6 +43,8 @@ The chart supports Helm v3+.
 | `ingress.drainTime`                         | Time for which old listener will still be active as draining                      | 30s                                  |
 | `ingress.service.name`                      | Service name of the Ingress                                                       | nil                                  |
 | `ingress.service.type`                      | Service type of the Ingress                                                       | LoadBalancer                         |
+| `ingress.service.port`                      | Port on which Ingress is exposed                                                  | 10001                                |
+| `ingress.mesh`                              | Mesh to which Dataplane Ingress belongs to                                        | default                              |
 
 ## Custom Resource Definitions
 

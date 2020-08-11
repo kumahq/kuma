@@ -20,7 +20,7 @@ spec:
     metadata:
       annotations:
         kuma.io/ingress: enabled
-        kuma.io/mesh: default
+        kuma.io/mesh: {{ .Values.ingress.mesh }}
       labels:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
         app: kuma-ingress
@@ -42,7 +42,7 @@ spec:
             - name: KUMA_CONTROL_PLANE_API_SERVER_URL
               value: "http://{{ include "kuma.controlPlane.serviceName" . }}.{{ .Release.Namespace }}:5681"
             - name: KUMA_DATAPLANE_MESH
-              value: default
+              value: {{ .Values.ingress.mesh }}
             - name: KUMA_DATAPLANE_NAME
               value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_ADMIN_PORT

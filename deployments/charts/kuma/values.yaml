@@ -68,8 +68,10 @@ dataPlane:
     repository: "kuma-init"
 
 ingress:
+  mesh: default
   enabled: false
   drainTime: 30s
   service:
     # name: ""
     type: LoadBalancer
+    port: 10001
