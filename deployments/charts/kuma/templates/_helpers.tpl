@@ -36,6 +36,11 @@ Create chart name and version as used by the chart label.
 {{ printf "%s" (default $defaultSvcName .Values.controlPlane.service.name) }}
 {{- end }}
 
+{{- define "kuma.controlPlane.globalRemoteSync.serviceName" -}}
+{{- $defaultSvcName := printf "%s-global-remote-sync" (include "kuma.name" .) -}}
+{{ printf "%s" (default $defaultSvcName .Values.controlPlane.globalRemoteSyncService.name) }}
+{{- end }}
+
 {{- define "kuma.ingress.serviceName" -}}
 {{- $defaultSvcName := printf "%s-ingress" (include "kuma.name" .) -}}
 {{ printf "%s" (default $defaultSvcName .Values.ingress.service.name) }}

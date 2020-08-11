@@ -16,13 +16,17 @@ controlPlane:
 
   kdsGlobalAddress: ""
 
-  useNodePort: false
-
   injectorFailurePolicy: Ignore
 
   service:
     # name: ""
     type: ClusterIP
+    annotations: {}
+
+  globalRemoteSyncService:
+    # name: ""
+    type: LoadBalancer
+    annotations: {}
 
   defaults:
     skipMeshCreation: false
@@ -68,10 +72,11 @@ dataPlane:
     repository: "kuma-init"
 
 ingress:
-  mesh: default
   enabled: false
+  mesh: default
   drainTime: 30s
   service:
     # name: ""
     type: LoadBalancer
+    annotations: {}
     port: 10001

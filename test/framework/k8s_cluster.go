@@ -270,7 +270,7 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 
 	switch mode {
 	case core.Global:
-		values["controlPlane.useNodePort"] = "true"
+		values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
 	case core.Remote:
 		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
