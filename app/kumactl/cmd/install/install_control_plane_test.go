@@ -161,8 +161,12 @@ var _ = Describe("kumactl install control-plane", func() {
 			// given
 			rootCmd := cmd.DefaultRootCmd()
 			rootCmd.SetArgs(append([]string{"install", "control-plane"}, given.extraArgs...))
+			rootCmd.SetOut(stdout)
+			rootCmd.SetErr(stderr)
+
 			//when
 			err := rootCmd.Execute()
+
 			// then
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal(given.errorMsg))
@@ -175,8 +179,12 @@ var _ = Describe("kumactl install control-plane", func() {
 			extraArgs: []string{"--mode", "remote", "--zone", "zone-1"},
 			errorMsg:  "--kds-global-address is mandatory with `remote` mode",
 		}),
-		Entry("--kds-global-address is invalid", errTestCase{
+		Entry("--kds-global-address is not valid URL", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234"},
+			errorMsg:  "--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port",
+		}),
+		Entry("--kds-global-address has no grpcs scheme", errTestCase{
+			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234"},
 			errorMsg:  "--kds-global-address should start with grpcs://",
 		}),
 		Entry("--admission-server-tls-cert without --admission-server-tls-key", errTestCase{

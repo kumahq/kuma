@@ -2,9 +2,7 @@ package install
 
 import (
 	"fmt"
-	"strings"
-
-	"github.com/kumahq/kuma/pkg/config/core"
+	"net/url"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -15,6 +13,7 @@ import (
 	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
 	kumacni "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/tls"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -153,8 +152,14 @@ func validateArgs(args InstallControlPlaneArgs) error {
 	if args.KumaCpMode == core.Remote && args.KdsGlobalAddress == "" {
 		return errors.Errorf("--kds-global-address is mandatory with `remote` mode")
 	}
-	if args.KdsGlobalAddress != "" && !strings.HasPrefix(args.KdsGlobalAddress, "grpcs://") {
-		return errors.Errorf("--kds-global-address should start with grpcs://")
+	if args.KdsGlobalAddress != "" {
+		u, err := url.Parse(args.KdsGlobalAddress)
+		if err != nil {
+			return errors.Errorf("--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port")
+		}
+		if u.Scheme != "grpcs" {
+			return errors.Errorf("--kds-global-address should start with grpcs://")
+		}
 	}
 	if (args.AdmissionServerTlsCert == "") != (args.AdmissionServerTlsKey == "") {
 		return errors.Errorf("both --admission-server-tls-cert and --admission-server-tls-key must be provided at the same time")
