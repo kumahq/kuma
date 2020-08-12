@@ -94,8 +94,16 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 	filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
 		filterChainBuilder := envoy_listeners.NewFilterChainBuilder()
 		switch protocol {
+		case mesh_core.ProtocolGRPC:
+			filterChainBuilder.
+				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
+				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
+				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
+				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName))).
+				Configure(envoy_listeners.GrpcStats())
+		case mesh_core.ProtocolHTTP2:
+			fallthrough
 		case mesh_core.ProtocolHTTP:
-			// configuration for HTTP case
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
 				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).

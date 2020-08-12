@@ -105,6 +105,28 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 40003,
+					}: &mesh_core.TrafficRouteResource{
+						Spec: mesh_proto.TrafficRoute{
+							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+								Weight:      100,
+								Destination: mesh_proto.MatchService("api-http2"),
+							}},
+						},
+					},
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 40004,
+					}: &mesh_core.TrafficRouteResource{
+						Spec: mesh_proto.TrafficRoute{
+							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+								Weight:      100,
+								Destination: mesh_proto.MatchService("api-grpc"),
+							}},
+						},
+					},
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 18080,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
@@ -138,6 +160,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					"api-tcp": model.TagSelectorSet{
 						{"kuma.io/service": "api-tcp"},
+					},
+					"api-http2": model.TagSelectorSet{
+						{"kuma.io/service": "api-http2"},
+					},
+					"api-grpc": model.TagSelectorSet{
+						{"kuma.io/service": "api-grpc"},
 					},
 					"backend": model.TagSelectorSet{
 						{"kuma.io/service": "backend"},
@@ -174,6 +202,22 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							Target: "192.168.0.7",
 							Port:   8087,
 							Tags:   map[string]string{"kuma.io/service": "api-tcp", "region": "eu"},
+							Weight: 1,
+						},
+					},
+					"api-http2": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: http2`
+						{
+							Target: "192.168.0.4",
+							Port:   8088,
+							Tags:   map[string]string{"kuma.io/service": "api-http2", "kuma.io/protocol": "http2"},
+							Weight: 1,
+						},
+					},
+					"api-grpc": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: grpc`
+						{
+							Target: "192.168.0.4",
+							Port:   8089,
+							Tags:   map[string]string{"kuma.io/service": "api-grpc", "kuma.io/protocol": "grpc"},
 							Weight: 1,
 						},
 					},
@@ -279,6 +323,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
                 service: api-http
               - port: 40002
                 service: api-tcp
+              - port: 40003
+                service: api-http2
+              - port: 40004
+                service: api-grpc
 `,
 			expected: "03.envoy.golden.yaml",
 		}),
