@@ -3,6 +3,8 @@ package runtime
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
 
 	"github.com/kumahq/kuma/pkg/dns"
@@ -54,6 +56,7 @@ type Builder struct {
 	dns      dns.DNSResolver
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
+	lif      lookup.LookupIPFunc
 	*runtimeInfo
 }
 
@@ -143,6 +146,11 @@ func (b *Builder) WithLeaderInfo(leadInfo component.LeaderInfo) *Builder {
 	return b
 }
 
+func (b *Builder) WithLookupIP(lif lookup.LookupIPFunc) *Builder {
+	b.lif = lif
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -171,6 +179,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.leadInfo == nil {
 		return nil, errors.Errorf("LeaderInfo has not been configured")
 	}
+	if b.lif == nil {
+		return nil, errors.Errorf("LookupIP func has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -185,6 +196,7 @@ func (b *Builder) Build() (Runtime, error) {
 			dns:      b.dns,
 			configm:  b.configm,
 			leadInfo: b.leadInfo,
+			lif:      b.lif,
 		},
 		Manager: b.cm,
 	}, nil
@@ -231,4 +243,7 @@ func (b *Builder) ConfigManager() config_manager.ConfigManager {
 }
 func (b *Builder) LeaderInfo() component.LeaderInfo {
 	return b.leadInfo
+}
+func (b *Builder) LookupIP() lookup.LookupIPFunc {
+	return b.lif
 }

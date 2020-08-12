@@ -3,23 +3,22 @@ package topology
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/dns"
+	"github.com/kumahq/kuma/pkg/core/runtime"
 
 	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 )
 
 // GetDataplanes returns list of Dataplane in provided Mesh and Ingresses (which are cluster-scoped, not mesh-scoped)
-func GetDataplanes(ctx context.Context, rm manager.ReadOnlyResourceManager, mesh string) (*core_mesh.DataplaneResourceList, error) {
+func GetDataplanes(rt runtime.RuntimeContext, ctx context.Context, mesh string) (*core_mesh.DataplaneResourceList, error) {
 	dataplanes := &core_mesh.DataplaneResourceList{}
-	if err := rm.List(ctx, dataplanes); err != nil {
+	if err := rt.ReadOnlyResourceManager().List(ctx, dataplanes); err != nil {
 		return nil, err
 	}
 	rv := &core_mesh.DataplaneResourceList{}
 	for _, d := range dataplanes.Items {
-		if err := ResolveAddress(d); err != nil {
+		if err := ResolveAddress(rt, d); err != nil {
 			return nil, err
 		}
 		if d.GetMeta().GetMesh() == mesh || d.Spec.IsIngress() {
@@ -29,8 +28,11 @@ func GetDataplanes(ctx context.Context, rm manager.ReadOnlyResourceManager, mesh
 	return rv, nil
 }
 
-func ResolveAddress(dataplane *core_mesh.DataplaneResource) error {
-	ips, err := dns.LookupIP(dataplane.Spec.Networking.Address)
+// ResolveAddress resolves 'dataplane.networking.address' if it has DNS name in it. This is a crucial feature for
+// some environments specifically AWS ECS. Dataplane resource has to be created before running Kuma DP, but IP address
+// will be assigned only after container's start. Being able to set dp's address as a DNS name solves this problem
+func ResolveAddress(rt runtime.RuntimeContext, dataplane *core_mesh.DataplaneResource) error {
+	ips, err := rt.LookupIP()(dataplane.Spec.Networking.Address)
 	if err != nil {
 		return err
 	}

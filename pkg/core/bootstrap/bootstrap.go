@@ -2,8 +2,10 @@ package bootstrap
 
 import (
 	"context"
+	"net"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -81,6 +83,8 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 
 	leaderInfoComponent := &component.LeaderInfoComponent{}
 	builder.WithLeaderInfo(leaderInfoComponent)
+
+	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
 
 	rt, err := builder.Build()
 	if err != nil {

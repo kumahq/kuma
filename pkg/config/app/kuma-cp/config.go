@@ -1,6 +1,8 @@
 package kuma_cp
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/multicluster"
@@ -249,6 +251,8 @@ type GeneralConfig struct {
 	// Hostname that other components should use in order to connect to the Control Plane.
 	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
 	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_general_advertised_hostname"`
+	// DNSCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
+	DNSCacheTTL time.Duration `yaml:"dnsCacheTTL" envconfig:"kuma_general_dns_cache_ttl"`
 }
 
 var _ config.Config = &GeneralConfig{}
@@ -263,5 +267,6 @@ func (g *GeneralConfig) Validate() error {
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
 		AdvertisedHostname: "localhost",
+		DNSCacheTTL:        10 * time.Second,
 	}
 }
