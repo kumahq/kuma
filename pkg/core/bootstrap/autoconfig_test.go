@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/core"
-	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 )
 
 var _ = Describe("Auto configuration", func() {
@@ -196,10 +195,7 @@ var _ = Describe("Auto configuration", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(*cfg.GuiServer.GuiConfig).To(Equal(gui_server.GuiConfig{
-			ApiUrl:      "/api",
-			Environment: "kubernetes",
-		}))
+		Expect(cfg.GuiServer.ApiServerUrl).To(Equal(""))
 	})
 
 	It("should autoconfigure xds params", func() {

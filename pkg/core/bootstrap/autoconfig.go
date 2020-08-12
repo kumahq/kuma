@@ -10,7 +10,6 @@ import (
 
 	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
 	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
-	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 	token_server "github.com/kumahq/kuma/pkg/config/token-server"
 
 	"github.com/pkg/errors"
@@ -26,7 +25,6 @@ var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 func autoconfigure(cfg *kuma_cp.Config) error {
 	autoconfigureAdminServer(cfg)
 	autoconfigureCatalog(cfg)
-	autoconfigureGui(cfg)
 	autoconfigBootstrapXdsParams(cfg)
 	if err := autoconfigureKds(cfg); err != nil {
 		return err
@@ -157,14 +155,6 @@ func autoconfigureAdminServer(cfg *kuma_cp.Config) {
 
 	if cfg.AdminServer.Public.Enabled && cfg.AdminServer.Public.Port == 0 {
 		cfg.AdminServer.Public.Port = cfg.AdminServer.Local.Port
-	}
-}
-
-func autoconfigureGui(cfg *kuma_cp.Config) {
-	cfg.GuiServer.ApiServerUrl = fmt.Sprintf("http://localhost:%d", cfg.ApiServer.Port)
-	cfg.GuiServer.GuiConfig = &gui_server.GuiConfig{
-		ApiUrl:      "/api",
-		Environment: cfg.Environment,
 	}
 }
 
