@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## [0.7.1]
+> Released on  2020/08/12
+
+Changes:
+* feat: add Helm chart for kuma [#916](https://github.com//kumahq/kuma/pull/916)
+ 👍contributed by @austince
+ [#945](https://github.com//kumahq/kuma/pull/945) [#956](https://github.com//kumahq/kuma/pull/956) [#957](https://github.com//kumahq/kuma/pull/957) [#962](https://github.com//kumahq/kuma/pull/962) [#966](https://github.com//kumahq/kuma/pull/966)
+
+* feat: gRPC support [#924](https://github.com//kumahq/kuma/pull/924)
+ 👍contributed by @tharun208
+
+* fix: support http2 and grpc on outbound [#958](https://github.com//kumahq/kuma/pull/958)
+
+* feat: compile Kuma with custom Runtime and Bootstrap plugins [#947](https://github.com//kumahq/kuma/pull/947)
+
+* fix: GUI access from remote hosts [#963](https://github.com//kumahq/kuma/pull/963)
+
+* fix: dry-run after Kuma installed [#944](https://github.com//kumahq/kuma/pull/944)
+
 
 ## [0.7.0]
 > Released on  2020/07/29
