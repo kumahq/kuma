@@ -14,7 +14,7 @@ BINTRAY_SUBJECT="kong"
 [ -z "$BINTRAY_REPOSITORY" ] && BINTRAY_REPOSITORY="kuma"
 [ -z "$RELEASE_NAME" ] && RELEASE_NAME="kuma"
 ENVOY_VERSION=1.15.0
-[ -z "KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
+[ -z "$KUMA_CONFIG_PATH" ] && KUMA_CONFIG_PATH=pkg/config/app/kuma-cp/kuma-cp.defaults.yaml
 
 function msg_green {
   builtin echo -en "\033[1;32m"
