@@ -2,6 +2,7 @@ package system
 
 import (
 	"net"
+	"net/url"
 
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
@@ -14,15 +15,24 @@ func (c *ZoneResource) Validate() error {
 
 func (c *ZoneResource) validateIngress() validators.ValidationError {
 	var verr validators.ValidationError
-	host, port, err := net.SplitHostPort(c.Spec.GetIngress().GetAddress())
-	if err != nil {
-		verr.AddViolation("address", "invalid address")
+	if c.Spec.GetIngress().GetAddress() == "" {
+		verr.AddViolation("address", "cannot be empty")
 	} else {
-		if host == "" {
-			verr.AddViolation("address", "host has to be explicitly specified")
-		}
-		if port == "" {
-			verr.AddViolation("address", "port has to be explicitly specified")
+		host, port, err := net.SplitHostPort(c.Spec.GetIngress().GetAddress())
+		if err != nil {
+			url, urlErr := url.Parse(c.Spec.GetIngress().GetAddress())
+			if urlErr == nil && url.Scheme != "" {
+				verr.AddViolation("address", "should not be URL. Expected format is hostname:port")
+			} else {
+				verr.AddViolation("address", "invalid address: "+err.Error())
+			}
+		} else {
+			if host == "" {
+				verr.AddViolation("address", "host has to be explicitly specified")
+			}
+			if port == "" {
+				verr.AddViolation("address", "port has to be explicitly specified")
+			}
 		}
 	}
 
