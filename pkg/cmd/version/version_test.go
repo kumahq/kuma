@@ -64,8 +64,9 @@ var _ = Describe("version", func() {
 			Expect(strings.TrimSpace(buf.String())).To(Equal(strings.TrimSpace(given.expected)))
 		},
 		Entry("app version", testCase{
-			args:     []string{"version"},
-			expected: `Kuma: 1.2.3`,
+			args: []string{"version"},
+			expected: `Kuma: 1.2.3
+`,
 		}),
 		Entry("app version --detailed", testCase{
 			args: []string{"version", "--detailed"},

@@ -26,7 +26,7 @@ func NewVersionCmd() *cobra.Command {
 				cmd.Println(fmt.Sprintf("Git Commit: %s", buildInfo.GitCommit))
 				cmd.Println(fmt.Sprintf("Build Date: %s", buildInfo.BuildDate))
 			} else {
-				cmd.Printf("%s: %s", kuma_version.Product, buildInfo.Version)
+				cmd.Printf("%s: %s\n", kuma_version.Product, buildInfo.Version)
 			}
 
 			return nil
