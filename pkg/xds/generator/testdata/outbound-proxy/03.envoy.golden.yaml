@@ -1,4 +1,22 @@
 resources:
+  - name: api-grpc
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+      clusterName: api-grpc
+      endpoints:
+        - lbEndpoints:
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.0.4
+                    portValue: 8089
+              loadBalancingWeight: 1
+              metadata:
+                filterMetadata:
+                  envoy.lb:
+                    kuma.io/protocol: grpc
+                  envoy.transport_socket_match:
+                    kuma.io/protocol: grpc
   - name: api-http
     resource:
       '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
@@ -33,6 +51,24 @@ resources:
                   envoy.transport_socket_match:
                     kuma.io/protocol: http
                     region: eu
+  - name: api-http2
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+      clusterName: api-http2
+      endpoints:
+        - lbEndpoints:
+            - endpoint:
+                address:
+                  socketAddress:
+                    address: 192.168.0.4
+                    portValue: 8088
+              loadBalancingWeight: 1
+              metadata:
+                filterMetadata:
+                  envoy.lb:
+                    kuma.io/protocol: http2
+                  envoy.transport_socket_match:
+                    kuma.io/protocol: http2
   - name: api-tcp
     resource:
       '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
@@ -107,6 +143,16 @@ resources:
                     role: master
                   envoy.transport_socket_match:
                     role: master
+  - name: api-grpc
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+      http2ProtocolOptions: {}
+      name: api-grpc
+      type: EDS
   - name: api-http
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -122,6 +168,16 @@ resources:
         enforcingConsecutiveLocalOriginFailure: 0
         enforcingFailurePercentage: 0
         enforcingSuccessRate: 0
+      type: EDS
+  - name: api-http2
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Cluster
+      connectTimeout: 5s
+      edsClusterConfig:
+        edsConfig:
+          ads: {}
+      http2ProtocolOptions: {}
+      name: api-http2
       type: EDS
   - name: api-tcp
     resource:
@@ -248,6 +304,53 @@ resources:
                 cluster: api-tcp
                 statPrefix: api-tcp
       name: outbound:127.0.0.1:40002
+      trafficDirection: OUTBOUND
+  - name: outbound:127.0.0.1:40003
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          address: 127.0.0.1
+          portValue: 40003
+      filterChains:
+        - filters:
+            - name: envoy.http_connection_manager
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                httpFilters:
+                  - name: envoy.router
+                rds:
+                  configSource:
+                    ads: {}
+                  routeConfigName: outbound:api-http2
+                statPrefix: api-http2
+      name: outbound:127.0.0.1:40003
+      trafficDirection: OUTBOUND
+  - name: outbound:127.0.0.1:40004
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          address: 127.0.0.1
+          portValue: 40004
+      filterChains:
+        - filters:
+            - name: envoy.http_connection_manager
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                httpFilters:
+                  - name: envoy.filters.http.grpc_stats
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.config.filter.http.grpc_stats.v2alpha.FilterConfig
+                      emitFilterState: true
+                      statsForAllMethods: true
+                  - name: envoy.router
+                rds:
+                  configSource:
+                    ads: {}
+                  routeConfigName: outbound:api-grpc
+                statPrefix: api-grpc
+      name: outbound:127.0.0.1:40004
       trafficDirection: OUTBOUND
   - name: outbound:127.0.0.1:54321
     resource:
