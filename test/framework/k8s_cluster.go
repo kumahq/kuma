@@ -483,11 +483,7 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
 }
 
 func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
-	argsMap := map[string]string{
-		"--control-plane-image":  kumaCPImage,
-		"--dataplane-image":      kumaDPImage,
-		"--dataplane-init-image": kumaInitImage,
-	}
+	argsMap := map[string]string{}
 	switch c.controlplane.mode {
 	case core.Remote:
 		argsMap["--kds-global-address"] = opts.globalAddress
