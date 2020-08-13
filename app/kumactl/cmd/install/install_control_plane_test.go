@@ -180,12 +180,16 @@ var _ = Describe("kumactl install control-plane", func() {
 			errorMsg:  "--kds-global-address is mandatory with `remote` mode",
 		}),
 		Entry("--kds-global-address is not valid URL", errTestCase{
-			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234"},
+			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "remote", "--zone", "zone-1"},
 			errorMsg:  "--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port",
 		}),
 		Entry("--kds-global-address has no grpcs scheme", errTestCase{
-			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234"},
+			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234", "--mode", "remote", "--zone", "zone-1"},
 			errorMsg:  "--kds-global-address should start with grpcs://",
+		}),
+		Entry("--kds-global-address is used with standalone", errTestCase{
+			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},
+			errorMsg:  "--kds-global-address can only be used when --mode=remote",
 		}),
 		Entry("--admission-server-tls-cert without --admission-server-tls-key", errTestCase{
 			extraArgs: []string{"--admission-server-tls-cert", "cert.pem"},

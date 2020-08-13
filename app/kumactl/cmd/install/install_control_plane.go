@@ -153,6 +153,9 @@ func validateArgs(args InstallControlPlaneArgs) error {
 		return errors.Errorf("--kds-global-address is mandatory with `remote` mode")
 	}
 	if args.KdsGlobalAddress != "" {
+		if args.KumaCpMode != core.Remote {
+			return errors.Errorf("--kds-global-address can only be used when --mode=remote")
+		}
 		u, err := url.Parse(args.KdsGlobalAddress)
 		if err != nil {
 			return errors.Errorf("--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port")
