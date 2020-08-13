@@ -3,6 +3,8 @@ package bootstrap
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
+
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -300,6 +302,9 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
 	customManagers[mesh.DataplaneInsightType] = dpInsightManager
+
+	zoneInsightManager := zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone)
+	customManagers[system.ZoneInsightType] = zoneInsightManager
 
 	var cipher secret_cipher.Cipher
 	switch cfg.Store.Type {

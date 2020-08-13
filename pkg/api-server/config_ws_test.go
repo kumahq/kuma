@@ -128,6 +128,10 @@ var _ = Describe("Config WS", func() {
             "dataplane": {
               "enabled": true,
               "subscriptionLimit": 10
+            },
+            "zone": {
+              "enabled": true,
+              "subscriptionLimit": 10
             }
           },
           "mode": "standalone",

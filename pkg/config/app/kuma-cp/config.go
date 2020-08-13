@@ -37,6 +37,7 @@ func (d *Defaults) Validate() error {
 
 type Metrics struct {
 	Dataplane *DataplaneMetrics `yaml:"dataplane"`
+	Zone      *ZoneMetrics      `yaml:"zone"`
 }
 
 func (m *Metrics) Sanitize() {
@@ -58,6 +59,21 @@ func (d *DataplaneMetrics) Sanitize() {
 }
 
 func (d *DataplaneMetrics) Validate() error {
+	if d.SubscriptionLimit < 0 {
+		return errors.New("SubscriptionLimit should be positive or equal 0")
+	}
+	return nil
+}
+
+type ZoneMetrics struct {
+	Enabled           bool `yaml:"enabled" envconfig:"kuma_metrics_zone_enabled"`
+	SubscriptionLimit int  `yaml:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
+}
+
+func (d *ZoneMetrics) Sanitize() {
+}
+
+func (d *ZoneMetrics) Validate() error {
 	if d.SubscriptionLimit < 0 {
 		return errors.New("SubscriptionLimit should be positive or equal 0")
 	}
@@ -144,6 +160,10 @@ func DefaultConfig() Config {
 		},
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
+				Enabled:           true,
+				SubscriptionLimit: 10,
+			},
+			Zone: &ZoneMetrics{
 				Enabled:           true,
 				SubscriptionLimit: 10,
 			},
