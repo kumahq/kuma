@@ -232,10 +232,22 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 // deployKumaViaKubectl uses kubectl to install kuma
 // using the resources from the `kumactl install control-plane` command
 func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) error {
-	var args []string
+	argsMap := map[string]string{
+		"--control-plane-image":  kumaCPImage,
+		"--dataplane-image":      kumaDPImage,
+		"--dataplane-init-image": kumaInitImage,
+	}
 	switch mode {
 	case core.Remote:
-		args = append(args, "--kds-global-address", opts.globalAddress)
+		argsMap["--kds-global-address"] = opts.globalAddress
+	}
+	for opt, value := range opts.ctlOpts {
+		argsMap[opt] = value
+	}
+
+	var args []string
+	for k, v := range argsMap {
+		args = append(args, k, v)
 	}
 	yaml, err := c.controlplane.InstallCP(args...)
 	if err != nil {
@@ -471,11 +483,22 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
 }
 
 func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
-	args := []string{}
+	argsMap := map[string]string{
+		"--control-plane-image":  kumaCPImage,
+		"--dataplane-image":      kumaDPImage,
+		"--dataplane-init-image": kumaInitImage,
+	}
 	switch c.controlplane.mode {
 	case core.Remote:
-		// kumactl remote deployment will fail if GlobalAddress is not specified
-		args = append(args, "--kds-global-address", "grpc://0.0.0.0:5685")
+		argsMap["--kds-global-address"] = opts.globalAddress
+	}
+	for opt, value := range opts.ctlOpts {
+		argsMap[opt] = value
+	}
+
+	var args []string
+	for k, v := range argsMap {
+		args = append(args, k, v)
 	}
 	yaml, err := c.controlplane.InstallCP(args...)
 	if err != nil {
