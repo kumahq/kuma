@@ -100,11 +100,18 @@ var _ = Describe("Util", func() {
 							},
 						},
 					},
+					{
+						ObjectMeta: kube_meta.ObjectMeta{
+							Name:      "kubernetes",
+							Namespace: "default",
+						},
+						Spec: kube_core.ServiceSpec{},
+					},
 				},
 			}
 
 			// when
-			matchingServices := FindServices(svcs, MatchServiceThatSelectsPod(pod))
+			matchingServices := FindServices(svcs, AnySelector(), MatchServiceThatSelectsPod(pod))
 			// then
 			Expect(matchingServices).To(HaveLen(1))
 			Expect(matchingServices).To(ConsistOf(&svcs.Items[0]))
