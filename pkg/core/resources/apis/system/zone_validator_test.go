@@ -65,7 +65,7 @@ var _ = Describe("Zone", func() {
 				expected: `
                violations:
                  - field: address
-                   message: invalid address`}),
+                   message: cannot be empty`}),
 			Entry("wrong format", testCase{
 				zone: `
                ingress:
@@ -73,7 +73,21 @@ var _ = Describe("Zone", func() {
 				expected: `
                violations:
                  - field: address
-                   message: invalid address`}),
+                   message: "invalid address: address 192.168.0.2: missing port in address"`}),
+			Entry("spec: empty", testCase{
+				zone: ``,
+				expected: `
+               violations:
+                 - field: address
+                   message: cannot be empty`}),
+			Entry("url instead of address", testCase{
+				zone: `
+               ingress:
+                 address: grpcs://192.168.0.2:1234`,
+				expected: `
+               violations:
+                 - field: address
+                   message: should not be URL. Expected format is hostname:port`}),
 		)
 	})
 })
