@@ -236,7 +236,7 @@ Flags:
   -h, --help                                help for control-plane
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
-      --kds-global-address string           URL of Global Kuma CP
+      --kds-global-address string           URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
       --kds-tls-cert string                 TLS certificate for the KDS server
       --kds-tls-key string                  TLS key for the KDS server
       --mode string                         kuma cp modes: one of standalone|remote|global (default "standalone")

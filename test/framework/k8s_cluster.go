@@ -486,7 +486,8 @@ func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
 	argsMap := map[string]string{}
 	switch c.controlplane.mode {
 	case core.Remote:
-		argsMap["--kds-global-address"] = opts.globalAddress
+		// kumactl remote deployment will fail if GlobalAddress is not specified
+		argsMap["--kds-global-address"] = "grpcs://0.0.0.0:5685"
 	}
 	for opt, value := range opts.ctlOpts {
 		argsMap[opt] = value
