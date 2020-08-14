@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestDataplainInsightManaget(t *testing.T) {
+func TestZoneInsightManager(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Zone Insights Manager Suite")
 }

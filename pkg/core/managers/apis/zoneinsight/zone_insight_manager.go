@@ -36,11 +36,11 @@ func (m *zoneInsightManager) Create(ctx context.Context, resource core_model.Res
 
 	m.limitSubscription(resource.(*system.ZoneInsightResource))
 
-	dp := system.ZoneResource{}
-	if err := m.store.Get(ctx, &dp, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
+	zone := system.ZoneResource{}
+	if err := m.store.Get(ctx, &zone, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
 		return err
 	}
-	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()), core_store.CreateWithOwner(&dp))...)
+	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()), core_store.CreateWithOwner(&zone))...)
 }
 
 func (m *zoneInsightManager) Update(ctx context.Context, resource core_model.Resource, fs ...core_store.UpdateOptionsFunc) error {
@@ -48,17 +48,17 @@ func (m *zoneInsightManager) Update(ctx context.Context, resource core_model.Res
 	return m.ResourceManager.Update(ctx, resource, fs...)
 }
 
-func (m *zoneInsightManager) limitSubscription(dpInsight *system.ZoneInsightResource) {
+func (m *zoneInsightManager) limitSubscription(zoneInsight *system.ZoneInsightResource) {
 	if !m.config.Enabled {
-		dpInsight.Spec.Subscriptions = nil
+		zoneInsight.Spec.Subscriptions = nil
 		return
 	}
 	if m.config.SubscriptionLimit == 0 {
 		return
 	}
-	if len(dpInsight.Spec.Subscriptions) <= m.config.SubscriptionLimit {
+	if len(zoneInsight.Spec.Subscriptions) <= m.config.SubscriptionLimit {
 		return
 	}
-	s := dpInsight.Spec.Subscriptions
-	dpInsight.Spec.Subscriptions = s[len(s)-m.config.SubscriptionLimit:]
+	s := zoneInsight.Spec.Subscriptions
+	zoneInsight.Spec.Subscriptions = s[len(s)-m.config.SubscriptionLimit:]
 }
