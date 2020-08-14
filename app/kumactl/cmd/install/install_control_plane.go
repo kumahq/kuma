@@ -2,8 +2,7 @@ package install
 
 import (
 	"fmt"
-
-	"github.com/kumahq/kuma/pkg/config/core"
+	"net/url"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -14,6 +13,7 @@ import (
 	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
 	kumacni "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/tls"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -84,64 +84,16 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Install Kuma Control Plane on Kubernetes",
 		Long:  `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := core.ValidateCpMode(args.KumaCpMode); err != nil {
+			if err := validateArgs(args); err != nil {
 				return err
 			}
-			if args.KumaCpMode == core.Remote && args.Zone == "" {
-				return errors.Errorf("--zone is mandatory with `remote` mode")
-			}
-			if args.KumaCpMode == core.Remote && args.KdsGlobalAddress == "" {
-				return errors.Errorf("--kds-global-address is mandatory with `remote` mode")
-			}
+
 			if useNodePort && args.KumaCpMode != core.Standalone {
 				args.GlobalRemotePortType = "NodePort"
 			}
-			if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
-				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
-				// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
-				admissionCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType)
-				if err != nil {
-					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
-				}
-				args.AdmissionServerTlsCert = string(admissionCert.CertPEM)
-				args.AdmissionServerTlsKey = string(admissionCert.KeyPEM)
-			} else if args.AdmissionServerTlsCert == "" || args.AdmissionServerTlsKey == "" {
-				return errors.Errorf("Admission Server: both TLS Cert and TLS Key must be provided at the same time")
-			}
 
-			if args.SdsTlsCert == "" && args.SdsTlsKey == "" {
-				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
-				hosts := []string{
-					fqdn,
-					fmt.Sprintf("%s.%s", args.ControlPlaneServiceName, args.Namespace),
-					args.ControlPlaneServiceName,
-					"localhost",
-				}
-				// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server
-				sdsCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
-				if err != nil {
-					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
-				}
-				args.SdsTlsCert = string(sdsCert.CertPEM)
-				args.SdsTlsKey = string(sdsCert.KeyPEM)
-			} else if args.SdsTlsCert == "" || args.SdsTlsKey == "" {
-				return errors.Errorf("SDS: both TLS Cert and TLS Key must be provided at the same time")
-			}
-
-			if args.KdsTlsCert == "" && args.KdsTlsKey == "" {
-				fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
-				hosts := []string{
-					fqdn,
-					"localhost",
-				}
-				kdsCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
-				if err != nil {
-					return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
-				}
-				args.KdsTlsCert = string(kdsCert.CertPEM)
-				args.KdsTlsKey = string(kdsCert.KeyPEM)
-			} else if args.KdsTlsCert == "" || args.KdsTlsKey == "" {
-				return errors.Errorf("KDS: both TLS Cert and TLS Key must be provided at the same time")
+			if err := autogenerateCerts(&args); err != nil {
+				return err
 			}
 
 			templateFiles, err := InstallCpTemplateFilesFn(args)
@@ -180,7 +132,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.SdsTlsKey, "sds-tls-key", args.SdsTlsKey, "TLS key for the SDS server")
 	cmd.Flags().StringVar(&args.KdsTlsCert, "kds-tls-cert", args.KdsTlsCert, "TLS certificate for the KDS server")
 	cmd.Flags().StringVar(&args.KdsTlsKey, "kds-tls-key", args.KdsTlsKey, "TLS key for the KDS server")
-	cmd.Flags().StringVar(&args.KdsGlobalAddress, "kds-global-address", args.KdsGlobalAddress, "URL of Global Kuma CP")
+	cmd.Flags().StringVar(&args.KdsGlobalAddress, "kds-global-address", args.KdsGlobalAddress, "URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)")
 	cmd.Flags().BoolVar(&args.CNIEnabled, "cni-enabled", args.CNIEnabled, "install Kuma with CNI instead of proxy init container")
 	cmd.Flags().StringVar(&args.CNIImage, "cni-image", args.CNIImage, "image of Kuma CNI component, if CNIEnabled equals true")
 	cmd.Flags().StringVar(&args.CNIVersion, "cni-version", args.CNIVersion, "version of the CNIImage")
@@ -188,6 +140,85 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.Zone, "zone", args.Zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
 	return cmd
+}
+
+func validateArgs(args InstallControlPlaneArgs) error {
+	if err := core.ValidateCpMode(args.KumaCpMode); err != nil {
+		return err
+	}
+	if args.KumaCpMode == core.Remote && args.Zone == "" {
+		return errors.Errorf("--zone is mandatory with `remote` mode")
+	}
+	if args.KumaCpMode == core.Remote && args.KdsGlobalAddress == "" {
+		return errors.Errorf("--kds-global-address is mandatory with `remote` mode")
+	}
+	if args.KdsGlobalAddress != "" {
+		if args.KumaCpMode != core.Remote {
+			return errors.Errorf("--kds-global-address can only be used when --mode=remote")
+		}
+		u, err := url.Parse(args.KdsGlobalAddress)
+		if err != nil {
+			return errors.Errorf("--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port")
+		}
+		if u.Scheme != "grpcs" {
+			return errors.Errorf("--kds-global-address should start with grpcs://")
+		}
+	}
+	if (args.AdmissionServerTlsCert == "") != (args.AdmissionServerTlsKey == "") {
+		return errors.Errorf("both --admission-server-tls-cert and --admission-server-tls-key must be provided at the same time")
+	}
+	if (args.SdsTlsCert == "") != (args.SdsTlsKey == "") {
+		return errors.Errorf("both --sds-tls-cert and --sds-tls-key must be provided at the same time")
+	}
+	if (args.KdsTlsCert == "") != (args.KdsTlsKey == "") {
+		return errors.Errorf("both --kds-tls-cert and --kds-tls-key must be provided at the same time")
+	}
+	return nil
+}
+
+func autogenerateCerts(args *InstallControlPlaneArgs) error {
+	if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
+		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
+		// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
+		admissionCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
+		}
+		args.AdmissionServerTlsCert = string(admissionCert.CertPEM)
+		args.AdmissionServerTlsKey = string(admissionCert.KeyPEM)
+	}
+
+	if args.SdsTlsCert == "" && args.SdsTlsKey == "" {
+		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
+		hosts := []string{
+			fqdn,
+			fmt.Sprintf("%s.%s", args.ControlPlaneServiceName, args.Namespace),
+			args.ControlPlaneServiceName,
+			"localhost",
+		}
+		// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server
+		sdsCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
+		}
+		args.SdsTlsCert = string(sdsCert.CertPEM)
+		args.SdsTlsKey = string(sdsCert.KeyPEM)
+	}
+
+	if args.KdsTlsCert == "" && args.KdsTlsKey == "" {
+		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
+		hosts := []string{
+			fqdn,
+			"localhost",
+		}
+		kdsCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
+		if err != nil {
+			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
+		}
+		args.KdsTlsCert = string(kdsCert.CertPEM)
+		args.KdsTlsKey = string(kdsCert.KeyPEM)
+	}
+	return nil
 }
 
 func InstallCpTemplateFiles(args InstallControlPlaneArgs) (data.FileList, error) {
