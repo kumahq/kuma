@@ -475,7 +475,7 @@ func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
 	switch c.controlplane.mode {
 	case core.Remote:
 		// kumactl remote deployment will fail if GlobalAddress is not specified
-		args = append(args, "--kds-global-address", "grpc://0.0.0.0:5685")
+		args = append(args, "--kds-global-address", "grpcs://0.0.0.0:5685")
 	}
 	yaml, err := c.controlplane.InstallCP(args...)
 	if err != nil {
