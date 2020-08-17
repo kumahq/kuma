@@ -5588,7 +5588,7 @@ webhooks:
         name: kuma-ctrl-plane
         namespace: kuma
         path: /validate-v1-service
-    failurePolicy: Fail
+    failurePolicy: Ignore
     name: service.validator.kuma-admission.kuma.io
     rules:
       - apiGroups:
