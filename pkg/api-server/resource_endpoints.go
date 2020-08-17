@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/emicklei/go-restful"
@@ -26,10 +28,10 @@ const (
 	k8sReadOnlyMessage = "On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply' or via the HTTP API." +
 		" As a best practice, you should always be using 'kubectl apply' instead." +
 		" You can still use 'kumactl' or the HTTP API to make read-only operations. On Universal this limitation does not apply.\n"
-	//globalReadOnlyMessage = "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API." +
-	//	" You can still use 'kumactl' or the HTTP API to modify them on the remote control plane.\n"
-	//remoteReadOnlyMessage = "On remote control plane you can only modify dataplane resources with 'kumactl apply' or via the HTTP API." +
-	//	" You can still use 'kumactl' or the HTTP API to modify the rest of the resource on the global control plane.\n"
+	globalReadOnlyMessage = "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API." +
+		" You can still use 'kumactl' or the HTTP API to modify them on the remote control plane.\n"
+	remoteReadOnlyMessage = "On remote control plane you can only modify dataplane resources with 'kumactl apply' or via the HTTP API." +
+		" You can still use 'kumactl' or the HTTP API to modify the rest of the resource on the global control plane.\n"
 )
 
 func meshFromPathParam(param string) meshFromRequestFn {
@@ -39,6 +41,7 @@ func meshFromPathParam(param string) meshFromRequestFn {
 }
 
 type resourceEndpoints struct {
+	mode            config_core.CpMode
 	publicURL       string
 	resManager      manager.ResourceManager
 	meshFromRequest meshFromRequestFn
@@ -167,7 +170,7 @@ func (r *resourceEndpoints) addCreateOrUpdateEndpointReadOnly(ws *restful.WebSer
 }
 
 func (r *resourceEndpoints) createOrUpdateResourceReadOnly(request *restful.Request, response *restful.Response) {
-	err := response.WriteErrorString(http.StatusMethodNotAllowed, k8sReadOnlyMessage)
+	err := response.WriteErrorString(http.StatusMethodNotAllowed, r.readOnlyMessage())
 	if err != nil {
 		core.Log.Error(err, "Could not write the response")
 	}
@@ -197,7 +200,7 @@ func (r *resourceEndpoints) addDeleteEndpointReadOnly(ws *restful.WebService, pa
 }
 
 func (r *resourceEndpoints) deleteResourceReadOnly(request *restful.Request, response *restful.Response) {
-	err := response.WriteErrorString(http.StatusMethodNotAllowed, k8sReadOnlyMessage)
+	err := response.WriteErrorString(http.StatusMethodNotAllowed, r.readOnlyMessage())
 	if err != nil {
 		core.Log.Error(err, "Could not write the response")
 	}
@@ -220,4 +223,15 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	}
 	err.AddError("", mesh.ValidateMeta(name, meshName))
 	return err.OrNil()
+}
+
+func (r *resourceEndpoints) readOnlyMessage() string {
+	switch r.mode {
+	case config_core.Global:
+		return globalReadOnlyMessage
+	case config_core.Remote:
+		return remoteReadOnlyMessage
+	default:
+		return k8sReadOnlyMessage
+	}
 }
