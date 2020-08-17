@@ -1,6 +1,13 @@
 controlPlane:
   apiServer:
     url: http://localhost:5681
+    retry:
+      backoff: 3s
+      maxDuration: 5m0s
+  bootstrapServer:
+    retry:
+      backoff: 1s
+      maxDuration: 30s
 dataplane:
   mesh: default
   drainTime: 30s
