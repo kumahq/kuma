@@ -7,7 +7,7 @@ GINKGO_VERSION := v1.12.0
 CI_KUBEBUILDER_VERSION ?= 2.0.0
 CI_MINIKUBE_VERSION ?= v1.9.2
 CI_KUBECTL_VERSION ?= v1.18.2
-CI_TOOLS_IMAGE ?= circleci/golang:1.14.6
+CI_TOOLS_IMAGE ?= circleci/golang:1.15
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')

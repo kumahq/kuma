@@ -1,6 +1,6 @@
 FROM ubuntu:bionic as builder
 
-ENV GOVERSION 1.14.6
+ENV GOVERSION 1.15
 ENV GOROOT /opt/go
 ENV GOPATH /root/.go
 
