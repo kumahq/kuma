@@ -120,7 +120,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
-				if err := xds_topology.ResolveAddress(rt, dataplane); err != nil {
+				if err := xds_topology.ResolveAddress(rt.LookupIP(), dataplane); err != nil {
 					return err
 				}
 
@@ -130,11 +130,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					if err := rt.ReadOnlyResourceManager().List(ctx, allMeshDataplanes); err != nil {
 						return err
 					}
-					for _, dp := range allMeshDataplanes.Items {
-						if err := xds_topology.ResolveAddress(rt, dp); err != nil {
-							return err
-						}
-					}
+					allMeshDataplanes.Items = xds_topology.ResolveAddresses(log, rt.LookupIP(), allMeshDataplanes.Items)
 					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, allMeshDataplanes.Items); err != nil {
 						return err
 					}
@@ -156,7 +152,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
-				dataplanes, err := xds_topology.GetDataplanes(rt, ctx, dataplane.Meta.GetMesh())
+				dataplanes, err := xds_topology.GetDataplanes(log, ctx, rt.ReadOnlyResourceManager(), rt.LookupIP(), dataplane.Meta.GetMesh())
 				if err != nil {
 					return err
 				}

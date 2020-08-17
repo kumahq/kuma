@@ -3,8 +3,7 @@ package topology
 import (
 	"net"
 
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -14,30 +13,61 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
-type testRuntimeContext struct {
-	runtime.Runtime
-	lif lookup.LookupIPFunc
-}
-
-func (t *testRuntimeContext) LookupIP() lookup.LookupIPFunc {
-	return t.lif
-}
-
 var _ = Describe("Resolve Dataplane address", func() {
-	rc := &testRuntimeContext{
-		lif: func(s string) ([]net.IP, error) {
-			if s == "example.com" {
-				return []net.IP{net.ParseIP("192.168.0.1")}, nil
-			}
-			return nil, errors.New("can't resolve host name")
-		},
-	}
-	It("should resolve if networking.address is domain name", func() {
-		dp := &mesh.DataplaneResource{Spec: mesh_proto.Dataplane{
-			Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"}},
+	lif := func(s string) ([]net.IP, error) {
+		if s == "example.com" {
+			return []net.IP{net.ParseIP("192.168.0.1")}, nil
 		}
-		err := ResolveAddress(rc, dp)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(dp.Spec.Networking.Address).To(Equal("192.168.0.1"))
+		if s == "example-0.com" {
+			return []net.IP{net.ParseIP("192.168.1.0")}, nil
+		}
+		if s == "example-1.com" {
+			return []net.IP{net.ParseIP("192.168.1.1")}, nil
+		}
+		return nil, errors.New("can't resolve host name")
+	}
+
+	Context("ResolveAddress", func() {
+		It("should resolve if networking.address is domain name", func() {
+			dp := &mesh.DataplaneResource{Spec: mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"}},
+			}
+			err := ResolveAddress(lif, dp)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(dp.Spec.Networking.Address).To(Equal("192.168.0.1"))
+		})
+	})
+
+	Context("ResolveAddresses", func() {
+		It("should resolve addresses for all dataplanes", func() {
+			given := []*mesh.DataplaneResource{
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"}}},
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example-0.com"}}},
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example-1.com"}}},
+			}
+			expected := []*mesh.DataplaneResource{
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.0.1"}}},
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.0"}}},
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.1"}}},
+			}
+
+			actual := ResolveAddresses(core.Log, lif, given)
+			Expect(actual).To(HaveLen(3))
+			Expect(actual).To(Equal(expected))
+		})
+		It("should skip dataplane if unable to resolve domain name", func() {
+			given := []*mesh.DataplaneResource{
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"}}},
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "unresolvable.com"}}},
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example-1.com"}}},
+			}
+			expected := []*mesh.DataplaneResource{
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.0.1"}}},
+				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.1"}}},
+			}
+			actual := ResolveAddresses(core.Log, lif, given)
+			Expect(actual).To(HaveLen(2))
+			Expect(actual).To(Equal(expected))
+		})
 	})
 })
