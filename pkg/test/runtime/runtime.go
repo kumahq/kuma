@@ -1,14 +1,12 @@
 package runtime
 
 import (
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/kumahq/kuma/pkg/dns"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -18,9 +16,11 @@ import (
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"net"
 )
 
 var _ core_runtime.RuntimeInfo = TestRuntimeInfo{}
@@ -58,6 +58,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
+	builder.WithLookupIP(net.LookupIP)
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)
