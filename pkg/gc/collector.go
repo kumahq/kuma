@@ -1,0 +1,83 @@
+package gc
+
+import (
+	"context"
+	"fmt"
+	"time"
+
+	"github.com/golang/protobuf/ptypes"
+
+	"github.com/kumahq/kuma/pkg/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
+)
+
+type collector struct {
+	rm         manager.ResourceManager
+	cleanupAge time.Duration
+	polling    time.Duration
+}
+
+func NewCollector(rm manager.ResourceManager, polling, cleanupAge time.Duration) component.Component {
+	return &collector{
+		cleanupAge: cleanupAge,
+		rm:         rm,
+		polling:    polling,
+	}
+}
+
+func (d *collector) Start(stop <-chan struct{}) error {
+	ticker := time.NewTicker(d.polling)
+	defer ticker.Stop()
+
+	for {
+		select {
+		case <-ticker.C:
+			if err := d.cleanup(); err != nil {
+				gcLog.Error(err, "unable to cleanup")
+				continue
+			}
+		case <-stop:
+			return d.cleanup()
+		}
+	}
+}
+
+func (d *collector) cleanup() error {
+	ctx := context.Background()
+	dataplaneInsights := &core_mesh.DataplaneInsightResourceList{}
+	if err := d.rm.List(ctx, dataplaneInsights); err != nil {
+		return err
+	}
+	onDelete := []model.ResourceKey{}
+	for _, di := range dataplaneInsights.Items {
+		if di.Spec.IsOnline() {
+			continue
+		}
+		if s, _ := di.Spec.GetLatestSubscription(); s != nil {
+			dt, err := ptypes.Timestamp(s.GetDisconnectTime())
+			if err != nil {
+				gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime())
+				continue
+			}
+			if core.Now().Sub(dt) > d.cleanupAge {
+				onDelete = append(onDelete, model.ResourceKey{Name: di.GetMeta().GetName(), Mesh: di.GetMeta().GetMesh()})
+			}
+		}
+	}
+	for _, rk := range onDelete {
+		gcLog.Info(fmt.Sprintf("deleting dataplane which is offline for %v", d.cleanupAge), "name", rk.Name, "mesh", rk.Mesh)
+		if err := d.rm.Delete(ctx, &core_mesh.DataplaneResource{}, store.DeleteBy(rk)); err != nil {
+			gcLog.Error(err, "unable to delete dataplane", "name", rk.Name, "mesh", rk.Mesh)
+			continue
+		}
+	}
+	return nil
+}
+
+func (d *collector) NeedLeaderElection() bool {
+	return true
+}
