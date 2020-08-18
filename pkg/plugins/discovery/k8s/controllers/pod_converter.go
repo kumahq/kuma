@@ -11,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	injector_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -79,7 +80,7 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 		}
 		dataplane.Networking.Gateway = gateway
 	} else {
-		ifaces, err := InboundInterfacesFor(p.Zone, pod, services, false)
+		ifaces, err := InboundInterfacesFor(p.Zone, pod, services)
 		if err != nil {
 			return nil, err
 		}
@@ -106,7 +107,8 @@ func (p *PodConverter) IngressFor(pod *kube_core.Pod) *mesh_proto.Dataplane {
 
 	if p.Zone != "" {
 		ingressTags = map[string]string{
-			mesh_proto.ZoneTag: p.Zone,
+			mesh_proto.ZoneTag:     p.Zone,
+			mesh_proto.ProtocolTag: mesh.ProtocolTCP,
 		}
 	}
 
@@ -125,7 +127,7 @@ func (p *PodConverter) IngressFor(pod *kube_core.Pod) *mesh_proto.Dataplane {
 }
 
 func GatewayFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
-	interfaces, err := InboundInterfacesFor(clusterName, pod, services, true)
+	interfaces, err := InboundInterfacesFor(clusterName, pod, services)
 	if err != nil {
 		return nil, err
 	}
