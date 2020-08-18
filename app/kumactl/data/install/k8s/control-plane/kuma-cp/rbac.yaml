@@ -36,7 +36,6 @@ rules:
   - update
   - patch
   - delete
-{{- if eq .KumaCpMode "global" }}
 - apiGroups:
     - kuma.io
   resources:
@@ -50,7 +49,6 @@ rules:
     - update
     - patch
     - delete
-{{- end}}
 - apiGroups:
   - kuma.io
   resources:
