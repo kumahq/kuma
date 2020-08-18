@@ -11,7 +11,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	injector_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -19,10 +18,6 @@ import (
 
 var (
 	converterLog = core.Log.WithName("discovery").WithName("k8s").WithName("pod-to-dataplane-converter")
-)
-
-const (
-	ingressPort = 10001
 )
 
 type PodConverter struct {
@@ -44,9 +39,12 @@ func (p *PodConverter) PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_c
 	return nil
 }
 
-func (p *PodConverter) PodToIngress(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod) error {
+func (p *PodConverter) PodToIngress(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service) error {
 	dataplane.Mesh = MeshFor(pod)
-	ingressProto := p.IngressFor(pod)
+	ingressProto, err := p.IngressFor(pod, services)
+	if err != nil {
+		return err
+	}
 	spec, err := util_proto.ToMap(ingressProto)
 	if err != nil {
 		return err
@@ -102,28 +100,22 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 	return dataplane, nil
 }
 
-func (p *PodConverter) IngressFor(pod *kube_core.Pod) *mesh_proto.Dataplane {
-	var ingressTags map[string]string
-
-	if p.Zone != "" {
-		ingressTags = map[string]string{
-			mesh_proto.ZoneTag:     p.Zone,
-			mesh_proto.ProtocolTag: mesh.ProtocolTCP,
-		}
+func (p *PodConverter) IngressFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane, error) {
+	ifaces, err := InboundInterfacesFor(p.Zone, pod, services)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not generate inbound interfaces")
+	}
+	if len(ifaces) != 1 {
+		return nil, errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
 	}
 
 	return &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
 			Address: pod.Status.PodIP,
-			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-				{
-					Port: ingressPort,
-					Tags: ingressTags,
-				},
-			},
+			Inbound: ifaces,
 		},
-	}
+	}, nil
 }
 
 func GatewayFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {

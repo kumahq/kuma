@@ -204,6 +204,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "07.services-for-pod.yaml",
 			dataplane:      "07.dataplane.yaml",
 		}),
+		Entry("08.Pod with Kuma Ingress", testCase{
+			pod:            "08.pod.yaml",
+			servicesForPod: "08.services-for-pod.yaml",
+			dataplane:      "08.dataplane.yaml",
+		}),
 	)
 
 	Context("when Dataplane cannot be generated", func() {
@@ -441,8 +446,8 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"version": "",
 			},
 			expected: map[string]string{
-				"app":             "example",
-				"kuma.io/service": "example_demo_svc_80",
+				"app":              "example",
+				"kuma.io/service":  "example_demo_svc_80",
 				"kuma.io/protocol": "tcp",
 			},
 		}),

@@ -70,7 +70,11 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 
 	// for Pods marked with ingress annotation special type of Dataplane will be injected
 	if enabled := pod.Annotations[injector_metadata.KumaIngressAnnotation]; enabled == injector_metadata.KumaIngressEnabled {
-		return kube_ctrl.Result{}, r.createOrUpdateIngress(pod)
+		services, err := r.findMatchingServices(pod)
+		if err != nil {
+			return kube_ctrl.Result{}, err
+		}
+		return kube_ctrl.Result{}, r.createOrUpdateIngress(pod, services)
 	}
 
 	// only Pods with injected Kuma need a Dataplane descriptor
@@ -171,7 +175,7 @@ func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*
 	return nil
 }
 
-func (r *PodReconciler) createOrUpdateIngress(pod *kube_core.Pod) error {
+func (r *PodReconciler) createOrUpdateIngress(pod *kube_core.Pod, services []*kube_core.Service) error {
 	ctx := context.Background()
 
 	ingress := &mesh_k8s.Dataplane{
@@ -182,7 +186,7 @@ func (r *PodReconciler) createOrUpdateIngress(pod *kube_core.Pod) error {
 		Mesh: model.DefaultMesh,
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ingress, func() error {
-		if err := r.PodConverter.PodToIngress(ingress, pod); err != nil {
+		if err := r.PodConverter.PodToIngress(ingress, pod, services); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Ingress")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, ingress, r.Scheme); err != nil {
