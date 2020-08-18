@@ -20,7 +20,6 @@ import (
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
-	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -84,7 +83,7 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, serverConfig)
+	addResourcesEndpoints(ws, defs, resManager, cfg)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws); err != nil {
@@ -115,7 +114,8 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	return newApiServer, nil
 }
 
-func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
+func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, cfg *kuma_cp.Config) {
+	config := cfg.ApiServer
 	endpoints := dataplaneOverviewEndpoints{
 		publicURL:  config.Catalog.ApiServer.Url,
 		resManager: resManager,
@@ -135,6 +135,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 		switch definition.ResourceFactory().GetType() {
 		case mesh.MeshType:
 			endpoints := resourceEndpoints{
+				mode:                 cfg.Mode,
 				publicURL:            config.Catalog.ApiServer.Url,
 				resManager:           resManager,
 				ResourceWsDefinition: definition,
