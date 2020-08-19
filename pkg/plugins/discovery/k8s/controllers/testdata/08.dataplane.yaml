@@ -3,12 +3,13 @@ metadata:
   creationTimestamp: null
 spec:
   networking:
-    address: 10.244.0.8
+    address: 192.168.0.1
     inbound:
-      - port: 10001
+      - port: 8080
         tags:
-          app: kuma-ingress
+          app: example
           kuma.io/protocol: tcp
-          kuma.io/service: kuma-ingress_kuma-system_svc_10001
-          kuma.io/zone: zone-1
-          pod-template-hash: 74c9b794cf
+          kuma.io/service: example_demo_svc_80
+          version: "0.1"
+          kuma.io/zone: "zone-1"
+    transparentProxying: {}

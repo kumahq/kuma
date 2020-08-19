@@ -199,15 +199,20 @@ var _ = Describe("PodToDataplane(..)", func() {
 			otherServices:   "06.other-services.yaml",
 			dataplane:       "06.dataplane.yaml",
 		}),
-		Entry("07.Pod with metrics override", testCase{
+		Entry("07. Pod with metrics override", testCase{
 			pod:            "07.pod.yaml",
 			servicesForPod: "07.services-for-pod.yaml",
 			dataplane:      "07.dataplane.yaml",
 		}),
-		Entry("08.Pod with Kuma Ingress", testCase{
+		Entry("08. Pod with transparent proxy enabled, without direct access servies", testCase{
 			pod:            "08.pod.yaml",
 			servicesForPod: "08.services-for-pod.yaml",
 			dataplane:      "08.dataplane.yaml",
+		}),
+		Entry("09.Pod with Kuma Ingress", testCase{
+			pod:            "09.pod.yaml",
+			servicesForPod: "09.services-for-pod.yaml",
+			dataplane:      "09.dataplane.yaml",
 		}),
 	)
 

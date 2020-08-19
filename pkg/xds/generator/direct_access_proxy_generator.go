@@ -95,6 +95,11 @@ func directAccessEndpoints(dataplane *mesh_core.DataplaneResource, other *mesh_c
 		if dp.Meta.GetName() == dataplane.Meta.GetName() { // skip itself
 			continue
 		}
+		// ingress doesn't have inbounds[0].Tags[ServiceTag] set, so right now
+		// there is no way to create direct access outbound to ingress
+		if dp.Spec.IsIngress() {
+			continue
+		}
 		inbounds, err := manager_dataplane.AdditionalInbounds(dp, mesh)
 		if err != nil {
 			return nil, err
