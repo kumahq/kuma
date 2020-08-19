@@ -9,7 +9,8 @@ import (
 	"net/http"
 
 	"github.com/emicklei/go-restful"
-	"github.com/slok/go-http-metrics/metrics/prometheus"
+	"github.com/prometheus/client_golang/prometheus"
+	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 
 	"github.com/pkg/errors"
@@ -60,7 +61,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool, registry prometheus.Registerer) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 	srv := &http.Server{
@@ -69,8 +70,9 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	}
 
 	promMiddleware := middleware.New(middleware.Config{
-		Recorder: prometheus.NewRecorder(prometheus.Config{
-			Prefix: "api_server",
+		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
+			Registry: registry,
+			Prefix:   "api_server",
 		}),
 	})
 	container.Filter(util_prometheus.MetricsHandler("", promMiddleware))
