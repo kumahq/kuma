@@ -67,7 +67,9 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 		dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
 			RedirectPortInbound:  injector_metadata.GetTransparentProxyingInboundPort(pod),
 			RedirectPortOutbound: injector_metadata.GetTransparentProxyingOutboundPort(pod),
-			DirectAccessServices: strings.Split(services, ","),
+		}
+		if services != "" {
+			dataplane.Networking.TransparentProxying.DirectAccessServices = strings.Split(services, ",")
 		}
 	}
 
