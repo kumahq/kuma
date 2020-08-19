@@ -8,11 +8,14 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
@@ -42,10 +45,17 @@ func SetupServer(rt core_runtime.Runtime) error {
 		identityProvider:   identityProvider,
 		cache:              cache,
 	}
+	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+		Help: "Number of generated certificates",
+		Name: "sds_cert_generation",
+	}, func() float64 {
+		return float64(reconciler.GeneratedCerts())
+	})
+
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: sdsServerLog},
 		authCallbacks,
-		syncTracker(reconciler, rt.Config().SdsServer.DataplaneConfigurationRefreshInterval),
+		syncTracker(&reconciler, rt.Config().SdsServer.DataplaneConfigurationRefreshInterval),
 	}
 
 	srv := envoy_server.NewServer(context.Background(), cache, callbacks)
@@ -53,16 +63,30 @@ func SetupServer(rt core_runtime.Runtime) error {
 	return rt.Add(&grpcServer{srv, *rt.Config().SdsServer})
 }
 
-func syncTracker(reconciler DataplaneReconciler, refresh time.Duration) envoy_server.Callbacks {
+func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration) envoy_server.Callbacks {
+	sdsGenerations := promauto.NewSummary(prometheus.SummaryOpts{
+		Name:       "sds_generation",
+		Help:       "Summary of SDS Snapshot generation",
+		Objectives: metrics.DefaultObjectives,
+	})
+	sdsGenerationsErrors := promauto.NewCounter(prometheus.CounterOpts{
+		Help: "Counter of errors during SDS generation",
+		Name: "sds_generation_errors",
+	})
 	return xds_sync.NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)
 			},
 			OnTick: func() error {
+				start := core.Now()
+				defer func() {
+					sdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
+				}()
 				return reconciler.Reconcile(dataplaneId)
 			},
 			OnError: func(err error) {
+				sdsGenerationsErrors.Inc()
 				sdsServerLog.Error(err, "OnTick() failed")
 			},
 		}

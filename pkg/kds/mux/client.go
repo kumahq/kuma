@@ -7,14 +7,14 @@ import (
 	"io/ioutil"
 	"net/url"
 
-	"github.com/kumahq/kuma/pkg/config/multicluster"
-
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/config/multicluster"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
@@ -39,7 +39,10 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	if err != nil {
 		return err
 	}
-	var dialOpts []grpc.DialOption
+	dialOpts := []grpc.DialOption{
+		grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
+		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
+	}
 	switch u.Scheme {
 	case "grpc":
 		dialOpts = append(dialOpts, grpc.WithInsecure())

@@ -16,8 +16,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/dns"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -36,6 +34,8 @@ import (
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/metrics"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
@@ -93,7 +93,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	if err := rt.Add(&component.LeaderInfoComponent{}); err != nil {
+	if err := rt.Add(leaderInfoComponent); err != nil {
 		return nil, err
 	}
 
@@ -201,7 +201,7 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if rs, err := plugin.NewResourceStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		builder.WithResourceStore(rs)
+		builder.WithResourceStore(metrics.NewMeteredStore(rs))
 		return nil
 	}
 }

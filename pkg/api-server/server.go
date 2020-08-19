@@ -5,25 +5,25 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"github.com/pkg/errors"
-
 	"io"
 	"net/http"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/emicklei/go-restful"
+	"github.com/slok/go-http-metrics/metrics/prometheus"
+	"github.com/slok/go-http-metrics/middleware"
+
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 )
 
 var (
@@ -67,6 +67,13 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
 		Handler: container.ServeMux,
 	}
+
+	promMiddleware := middleware.New(middleware.Config{
+		Recorder: prometheus.NewRecorder(prometheus.Config{
+			Prefix: "api_server",
+		}),
+	})
+	container.Filter(util_prometheus.MetricsHandler("", promMiddleware))
 
 	cors := restful.CrossOriginResourceSharing{
 		ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},

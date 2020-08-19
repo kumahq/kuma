@@ -4,17 +4,14 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/kumahq/kuma/pkg/config/multicluster"
-
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/pkg/errors"
-	"google.golang.org/grpc/credentials"
-
-	"google.golang.org/grpc"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
+	"github.com/kumahq/kuma/pkg/config/multicluster"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
@@ -48,8 +45,12 @@ func NewServer(callbacks Callbacks, config multicluster.KdsServerConfig) compone
 }
 
 func (s *server) Start(stop <-chan struct{}) error {
-	var grpcOptions []grpc.ServerOption
-	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
+	grpc_prometheus.EnableHandlingTimeHistogram()
+	grpcOptions := []grpc.ServerOption{
+		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
+	}
 	useTLS := s.config.TlsCertFile != ""
 	if useTLS {
 		creds, err := credentials.NewServerTLSFromFile(s.config.TlsCertFile, s.config.TlsKeyFile)
@@ -67,6 +68,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 
 	// register services
 	mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	grpc_prometheus.Register(grpcServer)
 
 	errChan := make(chan error)
 	go func() {

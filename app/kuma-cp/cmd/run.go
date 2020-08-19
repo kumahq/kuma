@@ -4,22 +4,20 @@ import (
 	"fmt"
 	"time"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-
-	dns "github.com/kumahq/kuma/pkg/dns/components"
-
-	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
-
 	"github.com/spf13/cobra"
 
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
+	dns "github.com/kumahq/kuma/pkg/dns/components"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
+	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
+	metrics "github.com/kumahq/kuma/pkg/metrics/components"
 	sds_server "github.com/kumahq/kuma/pkg/sds/server"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	xds_server "github.com/kumahq/kuma/pkg/xds/server"
@@ -131,6 +129,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up Admin server")
 				return err
 			}
+
+			metrics.Setup(rt)
 
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
 			if err := rt.Start(opts.SetupSignalHandler()); err != nil {

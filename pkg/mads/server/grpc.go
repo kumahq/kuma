@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net"
 
+	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+
 	"google.golang.org/grpc"
 
 	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
@@ -29,7 +31,11 @@ var (
 )
 
 func (s *grpcServer) Start(stop <-chan struct{}) error {
-	var grpcOptions []grpc.ServerOption
+	grpcOptions := []grpc.ServerOption{
+		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
+		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
+	}
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
 	grpcServer := grpc.NewServer(grpcOptions...)
 
@@ -40,6 +46,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 
 	// register services
 	observability_proto.RegisterMonitoringAssignmentDiscoveryServiceServer(grpcServer, s.server)
+	grpc_prometheus.Register(grpcServer)
 
 	errChan := make(chan error)
 	go func() {

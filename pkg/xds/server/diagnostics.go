@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
@@ -34,6 +36,7 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 	mux.HandleFunc("/healthy", func(resp http.ResponseWriter, _ *http.Request) {
 		resp.WriteHeader(http.StatusOK)
 	})
+	mux.Handle("/metrics", promhttp.Handler())
 
 	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", s.port), Handler: mux}
 

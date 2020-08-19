@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/xds/ingress"
-
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -18,10 +18,12 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_bootstrap "github.com/kumahq/kuma/pkg/xds/bootstrap"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -102,6 +104,15 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	if err != nil {
 		return nil, err
 	}
+	xdsGenerations := promauto.NewSummary(prometheus.SummaryOpts{
+		Name:       "xds_generation",
+		Help:       "Summary of XDS Snapshot generation",
+		Objectives: metrics.DefaultObjectives,
+	})
+	xdsGenerationsErrors := promauto.NewCounter(prometheus.CounterOpts{
+		Name: "xds_generation_errors",
+		Help: "Counter of errors during KDS generation",
+	})
 	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
 		return &util_watchdog.SimpleWatchdog{
@@ -109,6 +120,11 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				return time.NewTicker(rt.Config().XdsServer.DataplaneConfigurationRefreshInterval)
 			},
 			OnTick: func() error {
+				start := core.Now()
+				defer func() {
+					xdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
+				}()
+
 				ctx := context.Background()
 				dataplane := &mesh_core.DataplaneResource{}
 				proxyID := xds.FromResourceKey(key)
@@ -239,6 +255,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},
 			OnError: func(err error) {
+				xdsGenerationsErrors.Inc()
 				log.Error(err, "OnTick() failed")
 			},
 		}
@@ -246,7 +263,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 }
 
 func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTracker {
-	return NewDataplaneStatusTracker(rt, func(accessor SubscriptionStatusAccessor) DataplaneInsightSink {
+	tracker := NewDataplaneStatusTracker(rt, func(accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 		return NewDataplaneInsightSink(
 			accessor,
 			func() *time.Ticker {
@@ -254,4 +271,11 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTrack
 			},
 			NewDataplaneInsightStore(rt.ResourceManager()))
 	})
+	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+		Help: "Number of active XDS streams",
+		Name: "xds_streams_active",
+	}, func() float64 {
+		return float64(tracker.ActiveStreams())
+	})
+	return tracker
 }

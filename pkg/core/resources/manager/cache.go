@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -22,6 +24,7 @@ import (
 type cachedManager struct {
 	delegate ReadOnlyResourceManager
 	cache    *cache.Cache
+	metrics  *prometheus.CounterVec
 }
 
 var _ ReadOnlyResourceManager = &cachedManager{}
@@ -30,6 +33,10 @@ func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Dura
 	return &cachedManager{
 		delegate: delegate,
 		cache:    cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
+		metrics: promauto.NewCounterVec(prometheus.CounterOpts{
+			Name: "store_cache",
+			Help: "Summary of Store Cache",
+		}, []string{"operation", "resource_type", "result"}),
 	}
 }
 
@@ -38,11 +45,13 @@ func (c cachedManager) Get(ctx context.Context, res model.Resource, fs ...store.
 	cacheKey := fmt.Sprintf("GET:%s:%s", res.GetType(), opts.HashCode())
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
+		c.metrics.WithLabelValues("get", string(res.GetType()), "miss").Inc()
 		if err := c.delegate.Get(ctx, res, fs...); err != nil {
 			return err
 		}
 		c.cache.SetDefault(cacheKey, res)
 	} else {
+		c.metrics.WithLabelValues("get", string(res.GetType()), "hit").Inc()
 		cached := obj.(model.Resource)
 		if err := res.SetSpec(cached.GetSpec()); err != nil {
 			return err
@@ -57,11 +66,13 @@ func (c cachedManager) List(ctx context.Context, list model.ResourceList, fs ...
 	cacheKey := fmt.Sprintf("LIST:%s:%s", list.GetItemType(), opts.HashCode())
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
+		c.metrics.WithLabelValues("list", string(list.GetItemType()), "miss").Inc()
 		if err := c.delegate.List(ctx, list, fs...); err != nil {
 			return err
 		}
 		c.cache.SetDefault(cacheKey, list.GetItems())
 	} else {
+		c.metrics.WithLabelValues("list", string(list.GetItemType()), "hit").Inc()
 		resources := obj.([]model.Resource)
 		for _, res := range resources {
 			if err := list.AddItem(res); err != nil {
