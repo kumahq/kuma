@@ -1,6 +1,8 @@
 package runtime
 
 import (
+	"net"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -20,7 +22,6 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"net"
 )
 
 var _ core_runtime.RuntimeInfo = TestRuntimeInfo{}
