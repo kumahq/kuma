@@ -119,7 +119,8 @@ var _ = Describe("Config WS", func() {
           },
           "environment": "universal",
           "general": {
-            "advertisedHostname": "localhost"
+            "advertisedHostname": "localhost",
+            "dnsCacheTTL": "10s"
           },
           "guiServer": {
             "apiServerUrl": ""

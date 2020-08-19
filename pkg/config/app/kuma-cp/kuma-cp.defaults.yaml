@@ -237,6 +237,8 @@ general:
   # Hostname that other components should use in order to connect to the Control Plane.
   # Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
   advertisedHostname: localhost # ENV: KUMA_GENERAL_ADVERTISED_HOSTNAME
+  # dnsCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
+  dnsCacheTTL: 10s
 
 # Web GUI Server configuration
 guiServer:
