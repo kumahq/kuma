@@ -160,7 +160,7 @@ func fetchCatalog(cfg kuma_dp.Config) (*catalog.Catalog, error) {
 	})
 
 	if err != nil {
-		return nil, errors.Wrap(err, "could retrieve catalog")
+		return nil, errors.Wrap(err, "could not retrieve catalog")
 	}
 	runLog.Info("connection successful", "catalog", c)
 	return &c, nil
