@@ -32,7 +32,7 @@ func NewCollector(rm manager.ResourceManager, polling, cleanupAge time.Duration)
 func (d *collector) Start(stop <-chan struct{}) error {
 	ticker := time.NewTicker(d.polling)
 	defer ticker.Stop()
-
+	gcLog.Info("started")
 	for {
 		select {
 		case <-ticker.C:
@@ -41,7 +41,8 @@ func (d *collector) Start(stop <-chan struct{}) error {
 				continue
 			}
 		case <-stop:
-			return d.cleanup()
+			gcLog.Info("stopped")
+			return nil
 		}
 	}
 }

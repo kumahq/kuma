@@ -76,7 +76,7 @@ var _ = Describe("Dataplane Collector", func() {
 		core.Now = func() time.Time {
 			return time.Now().Add(90 * time.Minute)
 		}
-		// run dataplane collector after 1.5 hours
+		// when dataplane collector is run after 1.5 hours
 		collector := gc.NewCollector(rm, 100*time.Millisecond, 1*time.Hour)
 
 		stop := make(chan struct{})
@@ -85,6 +85,7 @@ var _ = Describe("Dataplane Collector", func() {
 			_ = collector.Start(stop)
 		}()
 
+		// then first 5 dataplanes that are offline for more than 1 hour are deleted
 		Eventually(func() (int, error) {
 			dataplanes := &core_mesh.DataplaneResourceList{}
 			if err := rm.List(context.Background(), dataplanes); err != nil {

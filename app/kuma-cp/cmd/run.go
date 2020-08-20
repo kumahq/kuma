@@ -93,6 +93,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DNS server")
 					return err
 				}
+				if err := gc.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up GC")
+					return err
+				}
 			case config_core.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
@@ -114,6 +118,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DNS server")
 					return err
 				}
+				if err := gc.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up GC")
+					return err
+				}
 			case config_core.Global:
 				if err := xds_server.SetupDiagnosticsServer(rt); err != nil {
 					runLog.Error(err, "unable to set up xDS server")
@@ -131,10 +139,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			if err := admin_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up Admin server")
-				return err
-			}
-			if err := gc.Setup(rt); err != nil {
-				runLog.Error(err, "unable to set up GC")
 				return err
 			}
 

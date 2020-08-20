@@ -13,8 +13,10 @@ var (
 )
 
 func Setup(rt runtime.Runtime) error {
+	// Dataplane GC is run only on Universal because on Kubernetes Dataplanes are bounded by ownership to Pods.
+	// Therefore on K8S offline dataplanes are cleaned up quickly enough to not run this.
 	if rt.Config().Environment != config_core.UniversalEnvironment {
 		return nil
 	}
-	return rt.Add(NewCollector(rt.ResourceManager(), 2*time.Second, rt.Config().Runtime.Universal.DataplaneCleanupAge))
+	return rt.Add(NewCollector(rt.ResourceManager(), 1*time.Minute, rt.Config().Runtime.Universal.DataplaneCleanupAge))
 }
