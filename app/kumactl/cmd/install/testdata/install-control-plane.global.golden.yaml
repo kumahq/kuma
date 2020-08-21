@@ -5558,7 +5558,7 @@ webhooks:
           - proxytemplates
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
-    failurePolicy: Fail
+    failurePolicy: Ignore
     clientConfig:
       caBundle: Q0VSVA==
       service:
