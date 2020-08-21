@@ -28,6 +28,8 @@ rules:
   - dataplanes
   - dataplaneinsights
   - meshes
+  - zones
+  - zoneinsights
   verbs:
   - get
   - list
@@ -36,19 +38,6 @@ rules:
   - update
   - patch
   - delete
-- apiGroups:
-    - kuma.io
-  resources:
-    - zones
-    - zoneinsights
-  verbs:
-    - get
-    - list
-    - watch
-    - create
-    - update
-    - patch
-    - delete
 - apiGroups:
   - kuma.io
   resources:
