@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -16,16 +15,19 @@ type MeteredStore struct {
 	metric   *prometheus.SummaryVec
 }
 
-func NewMeteredStore(delegate store.ResourceStore) *MeteredStore {
+func NewMeteredStore(delegate store.ResourceStore, metrics Metrics) (*MeteredStore, error) {
 	meteredStore := MeteredStore{
 		delegate: delegate,
-		metric: promauto.NewSummaryVec(prometheus.SummaryOpts{
+		metric: prometheus.NewSummaryVec(prometheus.SummaryOpts{
 			Name:       "store",
 			Help:       "Summary of Store operations",
 			Objectives: DefaultObjectives,
 		}, []string{"operation", "resource_type"}),
 	}
-	return &meteredStore
+	if err := metrics.Register(meteredStore.metric); err != nil {
+		return nil, err
+	}
+	return &meteredStore, nil
 }
 
 func (m *MeteredStore) Create(ctx context.Context, resource model.Resource, optionsFunc ...store.CreateOptionsFunc) error {

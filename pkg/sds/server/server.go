@@ -9,7 +9,6 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -45,34 +44,51 @@ func SetupServer(rt core_runtime.Runtime) error {
 		identityProvider:   identityProvider,
 		cache:              cache,
 	}
-	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+	certGenerationsMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Help: "Number of generated certificates",
 		Name: "sds_cert_generation",
 	}, func() float64 {
 		return float64(reconciler.GeneratedCerts())
 	})
+	if err := rt.Metrics().Register(certGenerationsMetric); err != nil {
+		return err
+	}
 
+	syncTracker, err := syncTracker(&reconciler, rt.Config().SdsServer.DataplaneConfigurationRefreshInterval, rt.Metrics())
+	if err != nil {
+		return err
+	}
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: sdsServerLog},
 		authCallbacks,
-		syncTracker(&reconciler, rt.Config().SdsServer.DataplaneConfigurationRefreshInterval),
+		syncTracker,
 	}
 
 	srv := envoy_server.NewServer(context.Background(), cache, callbacks)
 
-	return rt.Add(&grpcServer{srv, *rt.Config().SdsServer})
+	return rt.Add(&grpcServer{
+		server:  srv,
+		config:  *rt.Config().SdsServer,
+		metrics: rt.Metrics(),
+	})
 }
 
-func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration) envoy_server.Callbacks {
-	sdsGenerations := promauto.NewSummary(prometheus.SummaryOpts{
+func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, metrics2 metrics.Metrics) (envoy_server.Callbacks, error) {
+	sdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "sds_generation",
 		Help:       "Summary of SDS Snapshot generation",
 		Objectives: metrics.DefaultObjectives,
 	})
-	sdsGenerationsErrors := promauto.NewCounter(prometheus.CounterOpts{
+	if err := metrics2.Register(sdsGenerations); err != nil {
+		return nil, err
+	}
+	sdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Help: "Counter of errors during SDS generation",
 		Name: "sds_generation_errors",
 	})
+	if err := metrics2.Register(sdsGenerationsErrors); err != nil {
+		return nil, err
+	}
 	return xds_sync.NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
@@ -90,7 +106,7 @@ func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration) envoy_s
 				sdsServerLog.Error(err, "OnTick() failed")
 			},
 		}
-	})
+	}), nil
 }
 
 type hasher struct {

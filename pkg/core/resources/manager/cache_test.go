@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/metrics"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -47,7 +49,10 @@ var _ = Describe("Cached Resource Manager", func() {
 		countingManager = &countingResourcesManager{
 			store: store,
 		}
-		cachedManager = core_manager.NewCachedManager(countingManager, expiration)
+		metrics, err := metrics.NewMetrics()
+		Expect(err).ToNot(HaveOccurred())
+		cachedManager, err = core_manager.NewCachedManager(countingManager, expiration, metrics)
+		Expect(err).ToNot(HaveOccurred())
 
 		// and created resources
 		res = &core_mesh.DataplaneResource{
@@ -63,7 +68,7 @@ var _ = Describe("Cached Resource Manager", func() {
 				},
 			},
 		}
-		err := store.Create(context.Background(), res, core_store.CreateByKey("dp-1", "default"))
+		err = store.Create(context.Background(), res, core_store.CreateByKey("dp-1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

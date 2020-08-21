@@ -11,12 +11,11 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
-	"github.com/kumahq/kuma/pkg/metrics"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
@@ -26,7 +25,10 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter)
 	versioner := util_xds.SnapshotAutoVersioner{UUID: core.NewUUID}
 	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner)
-	syncTracker := newSyncTracker(log, reconciler, refresh)
+	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
+	if err != nil {
+		return nil, err
+	}
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: log},
 		syncTracker,
@@ -49,16 +51,22 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 	}, log)
 }
 
-func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration) envoy_xds.Callbacks {
-	kdsGenerations := promauto.NewSummary(prometheus.SummaryOpts{
+func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_xds.Callbacks, error) {
+	kdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "kds_generation",
 		Help:       "Summary of KDS Snapshot generation",
-		Objectives: metrics.DefaultObjectives,
+		Objectives: core_metrics.DefaultObjectives,
 	})
-	kdsGenerationsErrors := promauto.NewCounter(prometheus.CounterOpts{
+	if err := metrics.Register(kdsGenerations); err != nil {
+		return nil, err
+	}
+	kdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Help: "Counter of errors during KDS generation",
 		Name: "kds_generation_errors",
 	})
+	if err := metrics.Register(kdsGenerationsErrors); err != nil {
+		return nil, err
+	}
 	return util_xds.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
 		log := log.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
@@ -78,7 +86,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 				log.Error(err, "OnTick() failed")
 			},
 		}, nil
-	})
+	}), nil
 }
 
 func newKDSContext(log logr.Logger) (envoy_cache.NodeHash, util_xds.SnapshotCache) {

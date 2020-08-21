@@ -7,7 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/slok/go-http-metrics/metrics/prometheus"
+	"github.com/prometheus/client_golang/prometheus"
+	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
 
@@ -23,6 +24,7 @@ var log = core.Log.WithName("bootstrap-server")
 type BootstrapServer struct {
 	Port      uint32
 	Generator BootstrapGenerator
+	Metrics   prometheus.Registerer
 }
 
 func (b *BootstrapServer) NeedLeaderElection() bool {
@@ -33,8 +35,9 @@ var _ component.Component = &BootstrapServer{}
 
 func (b *BootstrapServer) Start(stop <-chan struct{}) error {
 	promMiddleware := middleware.New(middleware.Config{
-		Recorder: prometheus.NewRecorder(prometheus.Config{
-			Prefix: "bootstrap_server",
+		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
+			Registry: b.Metrics,
+			Prefix:   "bootstrap_server",
 		}),
 	})
 

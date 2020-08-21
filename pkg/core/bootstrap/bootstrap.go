@@ -4,26 +4,23 @@ import (
 	"context"
 	"net"
 
-	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
-	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
-
-	"github.com/pkg/errors"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplaneinsight"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -44,6 +41,11 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	builder := core_runtime.BuilderFor(cfg)
+	metrics, err := metrics.NewMetrics()
+	if err != nil {
+		return nil, err
+	}
+	builder.WithMetrics(metrics)
 	if err := initializeBootstrap(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -201,7 +203,11 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if rs, err := plugin.NewResourceStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		builder.WithResourceStore(metrics.NewMeteredStore(rs))
+		meteredStore, err := metrics.NewMeteredStore(rs, builder.Metrics())
+		if err != nil {
+			return err
+		}
+		builder.WithResourceStore(meteredStore)
 		return nil
 	}
 }
@@ -332,7 +338,11 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	builder.WithResourceManager(customizableManager)
 
 	if builder.Config().Store.Cache.Enabled {
-		builder.WithReadOnlyResourceManager(core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime))
+		cachedManager, err := core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime, builder.Metrics())
+		if err != nil {
+			return err
+		}
+		builder.WithReadOnlyResourceManager(cachedManager)
 	} else {
 		builder.WithReadOnlyResourceManager(customizableManager)
 	}

@@ -20,6 +20,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
@@ -32,13 +33,14 @@ var (
 type AdminServer struct {
 	cfg       admin_server.AdminServerConfig
 	container *restful.Container
+	metrics   metrics.Metrics
 }
 
 func (a *AdminServer) NeedLeaderElection() bool {
 	return false
 }
 
-func NewAdminServer(cfg admin_server.AdminServerConfig, services ...*restful.WebService) *AdminServer {
+func NewAdminServer(cfg admin_server.AdminServerConfig, metrics metrics.Metrics, services ...*restful.WebService) *AdminServer {
 	container := restful.NewContainer()
 	for _, service := range services {
 		container.Add(service)
@@ -46,7 +48,8 @@ func NewAdminServer(cfg admin_server.AdminServerConfig, services ...*restful.Web
 
 	promMiddleware := middleware.New(middleware.Config{
 		Recorder: prometheus.NewRecorder(prometheus.Config{
-			Prefix: "admin_server",
+			Registry: metrics,
+			Prefix:   "admin_server",
 		}),
 	})
 	container.Filter(util_prometheus.MetricsHandler("", promMiddleware))
@@ -54,6 +57,7 @@ func NewAdminServer(cfg admin_server.AdminServerConfig, services ...*restful.Web
 	return &AdminServer{
 		cfg:       cfg,
 		container: container,
+		metrics:   metrics,
 	}
 }
 
@@ -190,7 +194,7 @@ func SetupServer(rt runtime.Runtime) error {
 		webservices = append(webservices, ws)
 	}
 
-	srv := NewAdminServer(*rt.Config().AdminServer, webservices...)
+	srv := NewAdminServer(*rt.Config().AdminServer, rt.Metrics(), webservices...)
 	return rt.Add(srv)
 }
 

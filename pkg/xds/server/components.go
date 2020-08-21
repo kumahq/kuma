@@ -6,7 +6,6 @@ import (
 
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -36,7 +35,10 @@ var (
 func SetupDiagnosticsServer(rt core_runtime.Runtime) error {
 	return rt.Add(
 		// diagnostics server
-		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort},
+		&diagnosticsServer{
+			port:    rt.Config().XdsServer.DiagnosticsPort,
+			metrics: rt.Metrics(),
+		},
 	)
 }
 
@@ -51,24 +53,35 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	ingressReconciler := DefaultIngressReconciler(rt)
 
-	tracker, err := DefaultDataplaneSyncTracker(rt, reconciler, ingressReconciler, metadataTracker)
+	syncTracker, err := DefaultDataplaneSyncTracker(rt, reconciler, ingressReconciler, metadataTracker)
+	if err != nil {
+		return err
+	}
+	statusTracker, err := DefaultDataplaneStatusTracker(rt)
 	if err != nil {
 		return err
 	}
 	callbacks := util_xds.CallbacksChain{
-		tracker,
+		syncTracker,
 		metadataTracker,
-		DefaultDataplaneStatusTracker(rt),
+		statusTracker,
 	}
 
 	srv := NewServer(rt.XDS().Cache(), callbacks)
 	return rt.Add(
 		// xDS gRPC API
-		&grpcServer{srv, rt.Config().XdsServer.GrpcPort, rt.Config().XdsServer.TlsCertFile, rt.Config().XdsServer.TlsKeyFile},
+		&grpcServer{
+			server:      srv,
+			port:        rt.Config().XdsServer.GrpcPort,
+			tlsCertFile: rt.Config().XdsServer.TlsCertFile,
+			tlsKeyFile:  rt.Config().XdsServer.TlsKeyFile,
+			metrics:     rt.Metrics(),
+		},
 		// bootstrap server
 		&xds_bootstrap.BootstrapServer{
 			Port:      rt.Config().BootstrapServer.Port,
 			Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params, rt.Config().XdsServer.TlsCertFile),
+			Metrics:   rt.Metrics(),
 		},
 	)
 }
@@ -104,15 +117,21 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	if err != nil {
 		return nil, err
 	}
-	xdsGenerations := promauto.NewSummary(prometheus.SummaryOpts{
+	xdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "xds_generation",
 		Help:       "Summary of XDS Snapshot generation",
 		Objectives: metrics.DefaultObjectives,
 	})
-	xdsGenerationsErrors := promauto.NewCounter(prometheus.CounterOpts{
+	if err := rt.Metrics().Register(xdsGenerations); err != nil {
+		return nil, err
+	}
+	xdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "xds_generation_errors",
 		Help: "Counter of errors during KDS generation",
 	})
+	if err := rt.Metrics().Register(xdsGenerationsErrors); err != nil {
+		return nil, err
+	}
 	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
 		return &util_watchdog.SimpleWatchdog{
@@ -262,7 +281,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	}), nil
 }
 
-func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTracker {
+func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) (DataplaneStatusTracker, error) {
 	tracker := NewDataplaneStatusTracker(rt, func(accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 		return NewDataplaneInsightSink(
 			accessor,
@@ -271,11 +290,14 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTrack
 			},
 			NewDataplaneInsightStore(rt.ResourceManager()))
 	})
-	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+	metric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Help: "Number of active XDS streams",
 		Name: "xds_streams_active",
 	}, func() float64 {
 		return float64(tracker.ActiveStreams())
 	})
-	return tracker
+	if err := rt.Metrics().Register(metric); err != nil {
+		return nil, err
+	}
+	return tracker, nil
 }

@@ -5,10 +5,9 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/metrics"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
 const dnsTTL = "60"
@@ -28,22 +27,28 @@ type SimpleDNSServer struct {
 	resolutionMetric *prometheus.CounterVec
 }
 
-func NewDNSServer(port uint32, resolver DNSResolver) DNSServer {
+func NewDNSServer(port uint32, resolver DNSResolver, metrics core_metrics.Metrics) (DNSServer, error) {
 	handler := &SimpleDNSServer{
 		address:  fmt.Sprintf("0.0.0.0:%d", port),
 		resolver: resolver,
-		latencyMetric: promauto.NewSummary(prometheus.SummaryOpts{
+		latencyMetric: prometheus.NewSummary(prometheus.SummaryOpts{
 			Name:       "dns_server",
 			Help:       "Summary of DNS Server responses",
-			Objectives: metrics.DefaultObjectives,
+			Objectives: core_metrics.DefaultObjectives,
 		}),
-		resolutionMetric: promauto.NewCounterVec(prometheus.CounterOpts{
+		resolutionMetric: prometheus.NewCounterVec(prometheus.CounterOpts{
 			Name: "dns_server_resolution",
 			Help: "Counter for DNS Server resolutions",
 		}, []string{"result"}),
 	}
+	if err := metrics.Register(handler.latencyMetric); err != nil {
+		return nil, err
+	}
+	if err := metrics.Register(handler.resolutionMetric); err != nil {
+		return nil, err
+	}
 	handler.registerDNSHandler()
-	return handler
+	return handler, nil
 }
 
 func (h *SimpleDNSServer) parseQuery(m *dns.Msg) {

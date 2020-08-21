@@ -1,18 +1,14 @@
 package components
 
 import (
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/version"
 )
 
-func Setup(rt runtime.Runtime) {
-	grpc_prometheus.EnableHandlingTimeHistogram() // setup histograms for all gRPC metrics
-
-	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+func Setup(rt runtime.Runtime) error {
+	cpInfoMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "cp_info",
 		Help: "Static information about the CP instance",
 		ConstLabels: map[string]string{
@@ -28,8 +24,11 @@ func Setup(rt runtime.Runtime) {
 	}, func() float64 {
 		return 1.0
 	})
+	if err := rt.Metrics().Register(cpInfoMetric); err != nil {
+		return err
+	}
 
-	promauto.NewGaugeFunc(prometheus.GaugeOpts{
+	leaderMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "leader",
 		Help: "1 indicates that this instance is leader",
 	}, func() float64 {
@@ -39,4 +38,8 @@ func Setup(rt runtime.Runtime) {
 			return 0.0
 		}
 	})
+	if err := rt.Metrics().Register(leaderMetric); err != nil {
+		return err
+	}
+	return nil
 }

@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/metrics"
 )
 
 var (
@@ -16,7 +17,8 @@ var (
 )
 
 type diagnosticsServer struct {
-	port int
+	port    int
+	metrics metrics.Metrics
 }
 
 func (s *diagnosticsServer) NeedLeaderElection() bool {
@@ -36,7 +38,7 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 	mux.HandleFunc("/healthy", func(resp http.ResponseWriter, _ *http.Request) {
 		resp.WriteHeader(http.StatusOK)
 	})
-	mux.Handle("/metrics", promhttp.Handler())
+	mux.Handle("/metrics", promhttp.InstrumentMetricHandler(s.metrics, promhttp.HandlerFor(s.metrics, promhttp.HandlerOpts{})))
 
 	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", s.port), Handler: mux}
 

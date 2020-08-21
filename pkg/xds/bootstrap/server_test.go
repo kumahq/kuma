@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
 )
@@ -37,9 +38,12 @@ var _ = Describe("Bootstrap Server", func() {
 		port, err := test.GetFreePort()
 		baseUrl = "http://localhost:" + strconv.Itoa(port)
 		Expect(err).ToNot(HaveOccurred())
+		metrics, err := metrics.NewMetrics()
+		Expect(err).ToNot(HaveOccurred())
 		server := BootstrapServer{
 			Port:      uint32(port),
 			Generator: NewDefaultBootstrapGenerator(resManager, config, ""),
+			Metrics:   metrics,
 		}
 		stop = make(chan struct{})
 		go func() {

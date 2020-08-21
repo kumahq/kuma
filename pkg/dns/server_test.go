@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/test"
 )
 
@@ -25,7 +26,10 @@ var _ = Describe("DNS server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			resolver := NewDNSResolver("mesh")
-			server := NewDNSServer(port, resolver)
+			metrics, err := metrics.NewMetrics()
+			Expect(err).ToNot(HaveOccurred())
+			server, err := NewDNSServer(port, resolver, metrics)
+			Expect(err).ToNot(HaveOccurred())
 			resolver.SetVIPs(map[string]string{
 				"service": "240.0.0.1",
 			})

@@ -130,7 +130,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				return err
 			}
 
-			metrics.Setup(rt)
+			if err := metrics.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Metrics")
+				return err
+			}
 
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
 			if err := rt.Start(opts.SetupSignalHandler()); err != nil {

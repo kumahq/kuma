@@ -7,10 +7,10 @@ import (
 
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promauto"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/metrics"
 )
 
 // Cached version of the ReadOnlyResourceManager designed to be used only for use cases of eventual consistency.
@@ -29,15 +29,19 @@ type cachedManager struct {
 
 var _ ReadOnlyResourceManager = &cachedManager{}
 
-func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Duration) ReadOnlyResourceManager {
+func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Duration, metrics metrics.Metrics) (ReadOnlyResourceManager, error) {
+	metric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "store_cache",
+		Help: "Summary of Store Cache",
+	}, []string{"operation", "resource_type", "result"})
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
+	}
 	return &cachedManager{
 		delegate: delegate,
 		cache:    cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
-		metrics: promauto.NewCounterVec(prometheus.CounterOpts{
-			Name: "store_cache",
-			Help: "Summary of Store Cache",
-		}, []string{"operation", "resource_type", "result"}),
-	}
+		metrics:  metric,
+	}, nil
 }
 
 func (c cachedManager) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {

@@ -7,7 +7,6 @@ import (
 	"io/ioutil"
 	"net/url"
 
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
@@ -16,6 +15,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/config/multicluster"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/metrics"
 )
 
 type client struct {
@@ -23,9 +23,10 @@ type client struct {
 	globalURL string
 	clientID  string
 	config    multicluster.KdsClientConfig
+	metrics   metrics.Metrics
 }
 
-func NewClient(globalURL string, clientID string, callbacks Callbacks, config multicluster.KdsClientConfig) component.Component {
+func NewClient(globalURL string, clientID string, callbacks Callbacks, config multicluster.KdsClientConfig, metrics metrics.Metrics) component.Component {
 	return &client{
 		callbacks: callbacks,
 		globalURL: globalURL,
@@ -39,10 +40,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	if err != nil {
 		return err
 	}
-	dialOpts := []grpc.DialOption{
-		grpc.WithUnaryInterceptor(grpc_prometheus.UnaryClientInterceptor),
-		grpc.WithStreamInterceptor(grpc_prometheus.StreamClientInterceptor),
-	}
+	dialOpts := c.metrics.GRPCClientInterceptors()
 	switch u.Scheme {
 	case "grpc":
 		dialOpts = append(dialOpts, grpc.WithInsecure())

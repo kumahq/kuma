@@ -6,13 +6,13 @@ import (
 
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
-	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/metrics"
 )
 
 const grpcMaxConcurrentStreams = 1000000
@@ -26,6 +26,7 @@ type grpcServer struct {
 	port        int
 	tlsCertFile string
 	tlsKeyFile  string
+	metrics     metrics.Metrics
 }
 
 func (s *grpcServer) NeedLeaderElection() bool {
@@ -40,9 +41,8 @@ var (
 func (s *grpcServer) Start(stop <-chan struct{}) error {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
-		grpc.StreamInterceptor(grpc_prometheus.StreamServerInterceptor),
-		grpc.UnaryInterceptor(grpc_prometheus.UnaryServerInterceptor),
 	}
+	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	useTLS := s.tlsCertFile != ""
 	if useTLS {
 		creds, err := credentials.NewServerTLSFromFile(s.tlsCertFile, s.tlsKeyFile)
@@ -60,7 +60,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 
 	// register services
 	envoy_discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, s.server)
-	grpc_prometheus.Register(grpcServer)
+	s.metrics.RegisterGRPC(grpcServer)
 
 	errChan := make(chan error)
 	go func() {
