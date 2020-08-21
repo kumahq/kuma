@@ -344,7 +344,7 @@ webhooks:
           - zones
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
-    failurePolicy: Fail
+    failurePolicy: Ignore
     clientConfig:
       caBundle: {{ .AdmissionServerTlsCert | b64enc }}
       service:

@@ -1,6 +1,13 @@
 controlPlane:
   apiServer:
     url: https://kuma-control-plane.internal:5682
+    retry:
+      backoff: 1s
+      maxDuration: 10s
+  bootstrapServer:
+    retry:
+      backoff: 2s
+      maxDuration: 11s
 dataplane:
   mesh: demo
   name: example

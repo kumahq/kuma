@@ -17,11 +17,28 @@ func MatchServiceThatSelectsPod(pod *kube_core.Pod) ServicePredicate {
 	}
 }
 
-func FindServices(svcs *kube_core.ServiceList, predicate ServicePredicate) []*kube_core.Service {
+// According to K8S docs about Service#selector:
+// Route service traffic to pods with label keys and values matching this selector.
+// If empty or not present, the service is assumed to have an external process managing its endpoints, which Kubernetes will not modify.
+// Only applies to types ClusterIP, NodePort, and LoadBalancer. Ignored if type is ExternalName. More info: https://kubernetes.io/docs/concepts/services-networking/service/
+//
+// When converting Pod to Dataplane, we don't want to take into account Services that has no Selector, otherwise any Pod will match this service
+// and since we just take any int target port in #util.FindPort every Dataplane in the same namespace as this service would get an extra inbound for it.
+func AnySelector() ServicePredicate {
+	return func(svc *kube_core.Service) bool {
+		return len(svc.Spec.Selector) > 0
+	}
+}
+
+func FindServices(svcs *kube_core.ServiceList, predicates ...ServicePredicate) []*kube_core.Service {
 	matching := make([]*kube_core.Service, 0)
 	for i := range svcs.Items {
 		svc := &svcs.Items[i]
-		if predicate(svc) {
+		allMatched := true
+		for _, predicate := range predicates {
+			allMatched = allMatched && predicate(svc)
+		}
+		if allMatched {
 			matching = append(matching, svc)
 		}
 	}
@@ -52,6 +69,11 @@ func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, error) {
 			}
 		}
 	case kube_intstr.Int:
+		// According to K8S docs about Container#ports:
+		// List of ports to expose from the container. Exposing a port here gives the system additional information about the network connections a container uses, but is primarily informational.
+		// Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network
+		//
+		// Therefore we cannot match service port to the container port.
 		return portName.IntValue(), nil
 	}
 
