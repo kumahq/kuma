@@ -51,7 +51,7 @@ var _ = Describe("kumactl install control-plane", func() {
 			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
 			BuildDate: "2019-08-07T11:26:06Z",
 		}
-		install.DefaultInstallControlPlaneArgs.ControlPlaneVersion = "0.0.1"
+		install.DefaultInstallControlPlaneArgs.Values_controlPlane_image_tag = "0.0.1"
 	})
 
 	var stdout *bytes.Buffer
@@ -112,13 +112,13 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--namespace", "kuma",
 				"--image-pull-policy", "Never",
 				"--control-plane-version", "greatest",
-				"--control-plane-image", "kuma-ci/kuma-cp",
+				"--control-plane-registry", "kuma-ci",
 				"--control-plane-service-name", "kuma-ctrl-plane",
 				"--admission-server-tls-cert", "AdmissionCert",
 				"--admission-server-tls-key", "AdmissionKey",
 				"--injector-failure-policy", "Crash",
-				"--dataplane-image", "kuma-ci/kuma-dp",
-				"--dataplane-init-image", "kuma-ci/kuma-init",
+				"--dataplane-registry", "kuma-ci",
+				"--dataplane-init-registry", "kuma-ci",
 				"--sds-tls-cert", "SdsCert",
 				"--sds-tls-key", "SdsKey",
 				"--kds-tls-cert", "KdsCert",

@@ -21,7 +21,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var _ = Describe("Test Remote and Global", func() {
+var _ = FDescribe("Test Remote and Global", func() {
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1

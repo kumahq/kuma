@@ -16,14 +16,14 @@ import (
 
 var _ = Describe("Templates", func() {
 
-	kumactlSrcDir := filepath.Join("..", "..", "..", "..")
-	controlplaneTemplatesDir := controlplane.TemplatesDir(kumactlSrcDir)
+	rootSrcDir := filepath.Join("..", "..", "..", "..", "..", "..")
+	controlplaneTemplatesDir := controlplane.HelmTemplatesDir(rootSrcDir)
 	controlplaneTemplatesTestEntries := vfsgen.GenerateEntries(controlplaneTemplatesDir)
 
 	DescribeTable("generated Go code must be in sync with the original template files",
 		func(given vfsgen.FileTestCase) {
 			// when
-			file, err := controlplane.Templates.Open(given.Filename)
+			file, err := controlplane.HelmTemplates.Open(given.Filename)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

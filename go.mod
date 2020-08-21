@@ -4,11 +4,10 @@ go 1.14
 
 require (
 	cirello.io/pglock v1.8.0
-	github.com/Masterminds/goutils v1.1.0 // indirect
 	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.20.0+incompatible
 	github.com/Nordix/simple-ipam v1.0.0
-	github.com/asaskevich/govalidator v0.0.0-20190424111038-f61b66f89f4a
+	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emicklei/go-restful v2.9.6+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.5
@@ -23,17 +22,16 @@ require (
 	github.com/golang/protobuf v1.3.5
 	github.com/gruntwork-io/terratest v0.27.5
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
-	github.com/huandu/xstrings v1.2.0 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
-	github.com/lib/pq v1.2.0
+	github.com/lib/pq v1.7.0
 	github.com/miekg/dns v1.1.29
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/ginkgo v1.12.1
 	github.com/onsi/gomega v1.9.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
-	github.com/pkg/errors v0.9.0
+	github.com/pkg/errors v0.9.1
 	github.com/prometheus/common v0.9.1
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
 	github.com/sethvargo/go-retry v0.1.0
@@ -41,15 +39,15 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v0.10.0
-	github.com/stretchr/testify v1.6.1 // indirect
-	go.uber.org/multierr v1.1.0
-	go.uber.org/zap v1.10.0
+	go.uber.org/multierr v1.3.0
+	go.uber.org/zap v1.13.0
 	golang.org/x/tools v0.0.0-20200806022845-90696ccdc692 // indirect
 	google.golang.org/genproto v0.0.0-20200108215221-bd8f9a0ef82f
 	google.golang.org/grpc v1.30.0
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/fsnotify.v1 v1.4.9 // indirect
 	gopkg.in/yaml.v2 v2.3.0
+	helm.sh/helm/v3 v3.3.0
 	k8s.io/api v0.18.6
 	k8s.io/apimachinery v0.18.6
 	k8s.io/client-go v10.0.0+incompatible
@@ -59,6 +57,7 @@ require (
 )
 
 replace (
+	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible
 	github.com/golang/protobuf => github.com/golang/protobuf v1.3.2
 	github.com/kumahq/kuma/api => ./api
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
@@ -66,5 +65,5 @@ replace (
 	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
 	github.com/spiffe/spire/proto/spire => github.com/spiffe/spire/proto/spire v0.10.0
 	gopkg.in/fsnotify.v1 => gopkg.in/fsnotify.v1 v1.4.7
-	k8s.io/client-go => k8s.io/client-go v0.18.2
+	k8s.io/client-go => k8s.io/client-go v0.18.6
 )
