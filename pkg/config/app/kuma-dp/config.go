@@ -16,6 +16,16 @@ func DefaultConfig() Config {
 		ControlPlane: ControlPlane{
 			ApiServer: ApiServer{
 				URL: "http://localhost:5681",
+				Retry: ApiServerRetry{
+					Backoff:     3 * time.Second,
+					MaxDuration: 5 * time.Minute, // this value can be fairy long since what will happen when there there is a connection error is that the Dataplane will be restarted (by process manager like systemd/K8S etc.) and will try to connect again.
+				},
+			},
+			BootstrapServer: BootstrapServer{
+				Retry: BootstrapServerRetry{
+					Backoff:     1 * time.Second,
+					MaxDuration: 30 * time.Second, // CP should be able to create Dataplen definition in this time, if it hasn't there is probably an error with Pod -> Dataplane conversion.
+				},
 			},
 		},
 		Dataplane: Dataplane{
@@ -51,12 +61,76 @@ func (c *Config) Sanitize() {
 type ControlPlane struct {
 	// ApiServer defines coordinates of the Control Plane API Server
 	ApiServer ApiServer `yaml:"apiServer,omitempty"`
+	// BootstrapServer defines settings of the Control Plane Bootstrap Server
+	BootstrapServer BootstrapServer `yaml:"bootstrapServer,omitempty"`
 }
 
 type ApiServer struct {
 	// Address defines the address of Control Plane API server.
 	URL string `yaml:"url,omitempty" envconfig:"kuma_control_plane_api_server_url"`
+	// Retry settings for API Server
+	Retry ApiServerRetry `yaml:"retry,omitempty"`
 }
+
+type ApiServerRetry struct {
+	// Duration to wait between retries
+	Backoff time.Duration `yaml:"backoff,omitempty" envconfig:"kuma_control_plane_api_server_retry_backoff"`
+	// Max duration for retries (this is not exact time for execution, the check is done between retries)
+	MaxDuration time.Duration `yaml:"maxDuration,omitempty" envconfig:"kuma_control_plane_api_server_retry_max_duration"`
+}
+
+func (a *ApiServerRetry) Sanitize() {
+}
+
+func (a *ApiServerRetry) Validate() error {
+	if a.Backoff <= 0 {
+		return errors.New(".Backoff must be a positive duration")
+	}
+	if a.MaxDuration <= 0 {
+		return errors.New(".MaxDuration must be a positive duration")
+	}
+	return nil
+}
+
+var _ config.Config = &ApiServerRetry{}
+
+type BootstrapServer struct {
+	Retry BootstrapServerRetry `yaml:"retry,omitempty"`
+}
+
+func (b *BootstrapServer) Sanitize() {
+}
+
+func (b *BootstrapServer) Validate() error {
+	if err := b.Retry.Validate(); err != nil {
+		return errors.Wrap(err, ".Retry is not valid")
+	}
+	return nil
+}
+
+var _ config.Config = &BootstrapServer{}
+
+type BootstrapServerRetry struct {
+	// Duration to wait between retries
+	Backoff time.Duration `yaml:"backoff,omitempty" envconfig:"kuma_control_plane_bootstrap_server_retry_backoff"`
+	// Max duration for retries (this is not exact time for execution, the check is done between retries)
+	MaxDuration time.Duration `yaml:"maxDuration,omitempty" envconfig:"kuma_control_plane_bootstrap_server_retry_max_duration"`
+}
+
+func (b *BootstrapServerRetry) Sanitize() {
+}
+
+func (b *BootstrapServerRetry) Validate() error {
+	if b.Backoff <= 0 {
+		return errors.New(".Backoff must be a positive duration")
+	}
+	if b.MaxDuration <= 0 {
+		return errors.New(".MaxDuration must be a positive duration")
+	}
+	return nil
+}
+
+var _ config.Config = &BootstrapServerRetry{}
 
 // Dataplane defines bootstrap configuration of the dataplane (Envoy).
 type Dataplane struct {
@@ -109,6 +183,9 @@ func (c *ControlPlane) Validate() (errs error) {
 	if err := c.ApiServer.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ApiServer is not valid"))
 	}
+	if err := c.BootstrapServer.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".BootstrapServer is not valid"))
+	}
 	return
 }
 
@@ -156,6 +233,9 @@ func (d *ApiServer) Validate() (errs error) {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".URL must be a valid absolute URI"))
 	} else if !url.IsAbs() {
 		errs = multierr.Append(errs, errors.Errorf(".URL must be a valid absolute URI"))
+	}
+	if err := d.Retry.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrap(err, ".Retry is not valid"))
 	}
 	return
 }
