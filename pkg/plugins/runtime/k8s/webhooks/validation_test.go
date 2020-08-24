@@ -17,6 +17,7 @@ import (
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -393,6 +394,99 @@ var _ = Describe("Validation", func() {
 							},
 						},
 						Code: 403,
+					},
+				},
+			},
+		}),
+		Entry("should pass validation due to applying Zone on Global CP", testCase{
+			mode:        core.Global,
+			objTemplate: &system_proto.Zone{},
+			obj: `
+			{
+			  "apiVersion": "kuma.io/v1alpha1",
+			  "kind": "Zone",
+			  "mesh": "default",
+			  "metadata": {
+				"name": "zone-1",
+				"creationTimestamp": null
+			  },
+			  "spec": {
+			    "ingress": {
+			      "address": "192.168.0.1:10001"
+			    }
+			  }			
+			}
+			`,
+			resp: kube_admission.Response{
+				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+					UID:     "12345",
+					Allowed: true,
+					Result: &kube_meta.Status{
+						Code: 200,
+					},
+				},
+			},
+		}),
+		Entry("should fail validation due to applying Zone on Remote CP", testCase{
+			mode:        core.Remote,
+			objTemplate: &system_proto.Zone{},
+			obj: `
+			{
+			  "apiVersion": "kuma.io/v1alpha1",
+			  "kind": "Zone",
+			  "mesh": "default",
+			  "metadata": {
+				"name": "zone-1",
+				"creationTimestamp": null
+			  },
+			  "spec": {
+			    "ingress": {
+			      "address": "192.168.0.1:10001"
+			    }
+			  }			
+			}
+			`,
+			resp: kube_admission.Response{
+				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+					UID:     "12345",
+					Allowed: false,
+					Result: &kube_meta.Status{
+						Status:  "Failure",
+						Message: "Zone resource can only be applied on CP with mode: [global]",
+						Reason:  "Forbidden",
+						Code:    403,
+					},
+				},
+			},
+		}),
+		Entry("should fail validation due to applying Zone on Standalone CP", testCase{
+			mode:        core.Standalone,
+			objTemplate: &system_proto.Zone{},
+			obj: `
+			{
+			  "apiVersion": "kuma.io/v1alpha1",
+			  "kind": "Zone",
+			  "mesh": "default",
+			  "metadata": {
+				"name": "zone-1",
+				"creationTimestamp": null
+			  },
+			  "spec": {
+			    "ingress": {
+			      "address": "192.168.0.1:10001"
+			    }
+			  }			
+			}
+			`,
+			resp: kube_admission.Response{
+				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+					UID:     "12345",
+					Allowed: false,
+					Result: &kube_meta.Status{
+						Status:  "Failure",
+						Message: "Zone resource can only be applied on CP with mode: [global]",
+						Reason:  "Forbidden",
+						Code:    403,
 					},
 				},
 			},

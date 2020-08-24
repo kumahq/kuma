@@ -5201,6 +5201,8 @@ rules:
       - dataplanes
       - dataplaneinsights
       - meshes
+      - zones
+      - zoneinsights
     verbs:
       - get
       - list
@@ -5573,6 +5575,7 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+          - zones
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
     failurePolicy: Ignore
