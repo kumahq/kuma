@@ -68,6 +68,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		err := tracker.OnStreamOpen(ctx, streamID, "")
 		// then
 		Expect(err).ToNot(HaveOccurred())
+		Expect(tracker.ActiveStreams()).To(Equal(1))
 
 		// when
 		accessor, _ := tracker.GetStatusAccessor(streamID)
@@ -95,6 +96,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		// when
 		tracker.OnStreamClosed(streamID)
 		// then
+		Expect(tracker.ActiveStreams()).To(Equal(0))
 
 		By("ensuring ADS subscription final state")
 		// when

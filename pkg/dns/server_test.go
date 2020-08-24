@@ -8,8 +8,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/metrics"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/test"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 )
 
 var _ = Describe("DNS server", func() {
@@ -19,6 +20,8 @@ var _ = Describe("DNS server", func() {
 		var port uint32
 		stop := make(chan struct{})
 		done := make(chan struct{})
+		var metrics core_metrics.Metrics
+
 		BeforeEach(func() {
 			// setup
 			p, err := test.GetFreePort()
@@ -26,7 +29,8 @@ var _ = Describe("DNS server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			resolver := NewDNSResolver("mesh")
-			metrics, err := metrics.NewMetrics()
+			m, err := core_metrics.NewMetrics()
+			metrics = m
 			Expect(err).ToNot(HaveOccurred())
 			server, err := NewDNSServer(port, resolver, metrics)
 			Expect(err).ToNot(HaveOccurred())
@@ -51,7 +55,7 @@ var _ = Describe("DNS server", func() {
 			<-done
 		})
 
-		It("Should resolve", func() {
+		It("should resolve", func() {
 			// when
 			client := new(dns.Client)
 			message := new(dns.Msg)
@@ -62,11 +66,16 @@ var _ = Describe("DNS server", func() {
 				response, _, err = client.Exchange(message, fmt.Sprintf("127.0.0.1:%d", port))
 				return err
 			}).ShouldNot(HaveOccurred())
+
 			// then
 			Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("service.mesh.\t60\tIN\tA\t%s", ip)))
+
+			// and metrics are published
+			Expect(test_metrics.FindMetric(metrics, "dns_server")).ToNot(BeNil())
+			Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "resolved").Counter.GetValue()).To(Equal(1.0))
 		})
 
-		It("Should resolve concurrent", func() {
+		It("should resolve concurrent", func() {
 			resolved := make(chan struct{})
 			for i := 0; i < 100; i++ {
 				go func() {
@@ -91,7 +100,7 @@ var _ = Describe("DNS server", func() {
 			}
 		})
 
-		It("Should not resolve", func() {
+		It("should not resolve", func() {
 			// when
 			client := new(dns.Client)
 			message := new(dns.Msg)
@@ -106,6 +115,9 @@ var _ = Describe("DNS server", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			Expect(len(response.Answer)).To(Equal(0))
+
+			// and metrics are published
+			Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "unresolved").Counter.GetValue()).To(Equal(1.0))
 		})
 	})
 })

@@ -21,9 +21,11 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
 	"github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/test"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/runtime"
 	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -38,6 +40,7 @@ var _ = Describe("SDS Server", func() {
 	var stop chan struct{}
 	var client envoy_discovery.SecretDiscoveryServiceClient
 	var conn *grpc.ClientConn
+	var metrics core_metrics.Metrics
 
 	var resManager core_manager.ResourceManager
 
@@ -57,6 +60,7 @@ var _ = Describe("SDS Server", func() {
 
 		runtime, err := runtime.BuilderFor(cfg).Build()
 		Expect(err).ToNot(HaveOccurred())
+		metrics = runtime.Metrics()
 		resManager = runtime.ResourceManager()
 
 		// setup default mesh with active mTLS and 2 CA
@@ -183,6 +187,10 @@ var _ = Describe("SDS Server", func() {
 		Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(1)))
 		expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
 		Expect(dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds).To(Equal(expirationSeconds))
+
+		// and metrics are published
+		Expect(test_metrics.FindMetric(metrics, "sds_cert_generation").GetGauge().GetValue()).To(Equal(1.0))
+		Expect(test_metrics.FindMetric(metrics, "sds_generation")).ToNot(BeNil())
 
 		close(done)
 	}, 10)

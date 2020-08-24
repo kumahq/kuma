@@ -14,7 +14,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/metrics"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
@@ -73,20 +73,20 @@ func SetupServer(rt core_runtime.Runtime) error {
 	})
 }
 
-func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, metrics2 metrics.Metrics) (envoy_server.Callbacks, error) {
+func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_server.Callbacks, error) {
 	sdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "sds_generation",
 		Help:       "Summary of SDS Snapshot generation",
-		Objectives: metrics.DefaultObjectives,
+		Objectives: core_metrics.DefaultObjectives,
 	})
-	if err := metrics2.Register(sdsGenerations); err != nil {
+	if err := metrics.Register(sdsGenerations); err != nil {
 		return nil, err
 	}
 	sdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Help: "Counter of errors during SDS generation",
 		Name: "sds_generation_errors",
 	})
-	if err := metrics2.Register(sdsGenerationsErrors); err != nil {
+	if err := metrics.Register(sdsGenerationsErrors); err != nil {
 		return nil, err
 	}
 	return xds_sync.NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {

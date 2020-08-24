@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/metrics"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -41,6 +41,7 @@ var _ = Describe("Cached Resource Manager", func() {
 	var cachedManager core_manager.ReadOnlyResourceManager
 	var countingManager *countingResourcesManager
 	var res *core_mesh.DataplaneResource
+	var metrics core_metrics.Metrics
 	expiration := 100 * time.Millisecond
 
 	BeforeEach(func() {
@@ -49,7 +50,8 @@ var _ = Describe("Cached Resource Manager", func() {
 		countingManager = &countingResourcesManager{
 			store: store,
 		}
-		metrics, err := metrics.NewMetrics()
+		m, err := core_metrics.NewMetrics()
+		metrics = m
 		Expect(err).ToNot(HaveOccurred())
 		cachedManager, err = core_manager.NewCachedManager(countingManager, expiration, metrics)
 		Expect(err).ToNot(HaveOccurred())
@@ -95,6 +97,10 @@ var _ = Describe("Cached Resource Manager", func() {
 		// then
 		Expect(fetch().Spec).To(Equal(res.Spec))
 		Expect(countingManager.getQueries).To(Equal(2))
+
+		// and metrics are published
+		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit").Counter.GetValue()).To(Equal(100.0))
+		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "miss").Counter.GetValue()).To(Equal(2.0))
 	})
 
 	It("should cache List() queries", func() {
@@ -111,16 +117,22 @@ var _ = Describe("Cached Resource Manager", func() {
 		}
 
 		// then real manager should be called only once
-		Expect(fetch().Items).To(HaveLen(1))
-		Expect(fetch().Items[0].GetSpec()).To(Equal(&res.Spec))
+		list := fetch()
+		Expect(list.Items).To(HaveLen(1))
+		Expect(list.Items[0].GetSpec()).To(Equal(&res.Spec))
 		Expect(countingManager.listQueries).To(Equal(1))
 
 		// when
 		time.Sleep(expiration)
 
 		// then
-		Expect(fetch().Items).To(HaveLen(1))
-		Expect(fetch().Items[0].GetSpec()).To(Equal(&res.Spec))
+		list = fetch()
+		Expect(list.Items).To(HaveLen(1))
+		Expect(list.Items[0].GetSpec()).To(Equal(&res.Spec))
 		Expect(countingManager.listQueries).To(Equal(2))
+
+		// and metrics are published
+		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "miss").Counter.GetValue()).To(Equal(2.0))
+		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit").Counter.GetValue()).To(Equal(100.0))
 	})
 })

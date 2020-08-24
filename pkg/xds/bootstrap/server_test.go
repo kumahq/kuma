@@ -17,9 +17,10 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/metrics"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 )
 
 var _ = Describe("Bootstrap Server", func() {
@@ -28,6 +29,7 @@ var _ = Describe("Bootstrap Server", func() {
 	var resManager manager.ResourceManager
 	var config *bootstrap_config.BootstrapParamsConfig
 	var baseUrl string
+	var metrics core_metrics.Metrics
 
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
@@ -38,7 +40,7 @@ var _ = Describe("Bootstrap Server", func() {
 		port, err := test.GetFreePort()
 		baseUrl = "http://localhost:" + strconv.Itoa(port)
 		Expect(err).ToNot(HaveOccurred())
-		metrics, err := metrics.NewMetrics()
+		metrics, err = core_metrics.NewMetrics()
 		Expect(err).ToNot(HaveOccurred())
 		server := BootstrapServer{
 			Port:      uint32(port),
@@ -144,5 +146,36 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
 		Expect(resp.StatusCode).To(Equal(404))
+	})
+
+	It("should publish metrics", func() {
+		// given
+		res := mesh.DataplaneResource{
+			Spec: mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "8.8.8.8",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:        443,
+							ServicePort: 8443,
+							Tags: map[string]string{
+								"kuma.io/service": "backend",
+							},
+						},
+					},
+				},
+			},
+		}
+		err := resManager.Create(context.Background(), &res, store.CreateByKey("dp-1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		_, err = http.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(`{ "mesh": "default", "name": "dp-1" }`))
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(test_metrics.FindMetric(metrics, "bootstrap_server_http_request_duration_seconds", "handler", "/bootstrap")).ToNot(BeNil())
+		Expect(test_metrics.FindMetric(metrics, "bootstrap_server_http_requests_inflight", "handler", "/bootstrap")).ToNot(BeNil())
+		Expect(test_metrics.FindMetric(metrics, "bootstrap_server_http_response_size_bytes", "handler", "/bootstrap")).ToNot(BeNil())
 	})
 })

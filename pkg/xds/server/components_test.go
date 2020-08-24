@@ -15,6 +15,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	. "github.com/kumahq/kuma/pkg/xds/server"
@@ -120,6 +121,9 @@ var _ = Describe("Components", func() {
 				nextEvent := <-reconciler.events
 				return nextEvent.Update != nil
 			}, "1s", "1ms").Should(BeTrue())
+
+			// and metrics are published
+			Expect(test_metrics.FindMetric(runtime.Metrics(), "xds_generation")).ToNot(BeNil())
 
 			By("simulating Envoy disconnecting from the Control Plane")
 			// and

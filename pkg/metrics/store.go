@@ -38,7 +38,7 @@ func (m *MeteredStore) Create(ctx context.Context, resource model.Resource, opti
 	return m.delegate.Create(ctx, resource, optionsFunc...)
 }
 
-func (m MeteredStore) Update(ctx context.Context, resource model.Resource, optionsFunc ...store.UpdateOptionsFunc) error {
+func (m *MeteredStore) Update(ctx context.Context, resource model.Resource, optionsFunc ...store.UpdateOptionsFunc) error {
 	start := core.Now()
 	defer func() {
 		m.metric.WithLabelValues("update", string(resource.GetType())).Observe(float64(core.Now().Sub(start).Milliseconds()))
@@ -46,7 +46,7 @@ func (m MeteredStore) Update(ctx context.Context, resource model.Resource, optio
 	return m.delegate.Update(ctx, resource, optionsFunc...)
 }
 
-func (m MeteredStore) Delete(ctx context.Context, resource model.Resource, optionsFunc ...store.DeleteOptionsFunc) error {
+func (m *MeteredStore) Delete(ctx context.Context, resource model.Resource, optionsFunc ...store.DeleteOptionsFunc) error {
 	start := core.Now()
 	defer func() {
 		m.metric.WithLabelValues("delete", string(resource.GetType())).Observe(float64(core.Now().Sub(start).Milliseconds()))
@@ -54,7 +54,7 @@ func (m MeteredStore) Delete(ctx context.Context, resource model.Resource, optio
 	return m.delegate.Delete(ctx, resource, optionsFunc...)
 }
 
-func (m MeteredStore) Get(ctx context.Context, resource model.Resource, optionsFunc ...store.GetOptionsFunc) error {
+func (m *MeteredStore) Get(ctx context.Context, resource model.Resource, optionsFunc ...store.GetOptionsFunc) error {
 	start := core.Now()
 	defer func() {
 		m.metric.WithLabelValues("get", string(resource.GetType())).Observe(float64(core.Now().Sub(start).Milliseconds()))
@@ -62,7 +62,7 @@ func (m MeteredStore) Get(ctx context.Context, resource model.Resource, optionsF
 	return m.delegate.Get(ctx, resource, optionsFunc...)
 }
 
-func (m MeteredStore) List(ctx context.Context, list model.ResourceList, optionsFunc ...store.ListOptionsFunc) error {
+func (m *MeteredStore) List(ctx context.Context, list model.ResourceList, optionsFunc ...store.ListOptionsFunc) error {
 	start := core.Now()
 	defer func() {
 		m.metric.WithLabelValues("list", string(list.GetItemType())).Observe(float64(core.Now().Sub(start).Milliseconds()))
