@@ -37,7 +37,7 @@ var _ = Describe("Metered Store", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "store", "operation", "get", "resource_type", "Mesh").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+		Expect(test_metrics.FindMetric(metrics, "store", "operation", "get", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 	})
 
 	It("should public metrics of LIST", func() {
@@ -46,7 +46,7 @@ var _ = Describe("Metered Store", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "store", "operation", "list", "resource_type", "Mesh").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+		Expect(test_metrics.FindMetric(metrics, "store", "operation", "list", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 	})
 
 	It("should public metrics of DELETE", func() {
@@ -55,7 +55,7 @@ var _ = Describe("Metered Store", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "store", "operation", "delete", "resource_type", "Mesh").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+		Expect(test_metrics.FindMetric(metrics, "store", "operation", "delete", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 	})
 
 	It("should public metrics of UPDATE", func() {
@@ -69,7 +69,7 @@ var _ = Describe("Metered Store", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "store", "operation", "get", "resource_type", "Mesh").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
-		Expect(test_metrics.FindMetric(metrics, "store", "operation", "update", "resource_type", "Mesh").GetSummary().GetSampleCount()).To(Equal(uint64(1)))
+		Expect(test_metrics.FindMetric(metrics, "store", "operation", "get", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
+		Expect(test_metrics.FindMetric(metrics, "store", "operation", "update", "resource_type", "Mesh").GetHistogram().GetSampleCount()).To(Equal(uint64(1)))
 	})
 })

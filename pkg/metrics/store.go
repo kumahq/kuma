@@ -12,16 +12,15 @@ import (
 
 type MeteredStore struct {
 	delegate store.ResourceStore
-	metric   *prometheus.SummaryVec
+	metric   *prometheus.HistogramVec
 }
 
 func NewMeteredStore(delegate store.ResourceStore, metrics Metrics) (*MeteredStore, error) {
 	meteredStore := MeteredStore{
 		delegate: delegate,
-		metric: prometheus.NewSummaryVec(prometheus.SummaryOpts{
-			Name:       "store",
-			Help:       "Summary of Store operations",
-			Objectives: DefaultObjectives,
+		metric: prometheus.NewHistogramVec(prometheus.HistogramOpts{
+			Name: "store",
+			Help: "Summary of Store operations",
 		}, []string{"operation", "resource_type"}),
 	}
 	if err := metrics.Register(meteredStore.metric); err != nil {
