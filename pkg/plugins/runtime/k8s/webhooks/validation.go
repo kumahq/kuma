@@ -12,6 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -67,6 +68,9 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 	if resp := h.validateSync(resType, obj); !resp.Allowed {
 		return resp
 	}
+	if resp := h.validateResourceLocation(resType, obj); !resp.Allowed {
+		return resp
+	}
 
 	if err := h.converter.ToCoreResource(obj.(k8s_model.KubernetesObject), coreRes); err != nil {
 		return admission.Errored(http.StatusInternalServerError, err)
@@ -83,6 +87,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 	return admission.Allowed("")
 }
 
+// Note that this func does not validate ConfigMap and Secret since this webhook does not support those
 func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8s_model.KubernetesObject) admission.Response {
 	if isDefaultMesh(resType, obj) { // skip validation for the default mesh
 		return admission.Allowed("")
@@ -132,6 +137,24 @@ func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admi
 
 func isDefaultMesh(resType core_model.ResourceType, obj k8s_model.KubernetesObject) bool {
 	return resType == core_mesh.MeshType && obj.GetName() == core_model.DefaultMesh && len(obj.GetSpec()) == 0
+}
+
+// validateResourceLocation validates if resources that supouse to be applied on Global are applied on Global and other way around
+func (h *validatingHandler) validateResourceLocation(resType core_model.ResourceType, obj k8s_model.KubernetesObject) admission.Response {
+	if err := system.ValidateLocation(resType, h.mode); err != nil {
+		return admission.Response{
+			AdmissionResponse: v1beta1.AdmissionResponse{
+				Allowed: false,
+				Result: &metav1.Status{
+					Status:  "Failure",
+					Message: err.Error(),
+					Reason:  "Forbidden",
+					Code:    403,
+				},
+			},
+		}
+	}
+	return admission.Allowed("")
 }
 
 func (h *validatingHandler) Supports(admission.Request) bool {

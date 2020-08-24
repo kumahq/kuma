@@ -5192,17 +5192,6 @@ rules:
   - dataplanes
   - dataplaneinsights
   - meshes
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - kuma.io
-  resources:
   - zones
   - zoneinsights
   verbs:
@@ -5556,6 +5545,7 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+          - zones
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
     failurePolicy: Ignore
