@@ -41,5 +41,12 @@ func Setup(rt runtime.Runtime) error {
 	if err := rt.Metrics().Register(leaderMetric); err != nil {
 		return err
 	}
+
+	if err := rt.Metrics().Register(prometheus.NewGoCollector()); err != nil {
+		return err
+	}
+	if err := rt.Metrics().Register(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{})); err != nil {
+		return err
+	}
 	return nil
 }
