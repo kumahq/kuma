@@ -209,6 +209,11 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "08.services-for-pod.yaml",
 			dataplane:      "08.dataplane.yaml",
 		}),
+		Entry("09.Pod with Kuma Ingress", testCase{
+			pod:            "09.pod.yaml",
+			servicesForPod: "09.services-for-pod.yaml",
+			dataplane:      "09.dataplane.yaml",
+		}),
 	)
 
 	Context("when Dataplane cannot be generated", func() {
@@ -355,7 +360,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			}
 
 			// expect
-			Expect(InboundTagsFor(given.zone, pod, svc, &svc.Spec.Ports[0], given.isGateway)).To(Equal(given.expected))
+			Expect(InboundTagsFor(given.zone, pod, svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
 		},
 		Entry("Pod without labels", testCase{
 			isGateway: false,
@@ -424,33 +429,6 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"kuma.io/protocol": "http",
 			},
 		}),
-		Entry("`gateway` Pod should not have a `protocol` tag", testCase{
-			isGateway: true,
-			podLabels: map[string]string{
-				"app":     "example",
-				"version": "0.1",
-			},
-			expected: map[string]string{
-				"app":             "example",
-				"version":         "0.1",
-				"kuma.io/service": "example_demo_svc_80",
-			},
-		}),
-		Entry("`gateway` Pod should not have a `protocol` tag even if `<port>.service.kuma.io/protocol` annotation is present", testCase{
-			isGateway: true,
-			podLabels: map[string]string{
-				"app":     "example",
-				"version": "0.1",
-			},
-			svcAnnotations: map[string]string{
-				"80.service.kuma.io/protocol": "http",
-			},
-			expected: map[string]string{
-				"app":             "example",
-				"version":         "0.1",
-				"kuma.io/service": "example_demo_svc_80",
-			},
-		}),
 		Entry("Inject a zone tag if Zone is set", testCase{
 			isGateway: false,
 			zone:      "zone-1",
@@ -473,8 +451,9 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"version": "",
 			},
 			expected: map[string]string{
-				"app":             "example",
-				"kuma.io/service": "example_demo_svc_80",
+				"app":              "example",
+				"kuma.io/service":  "example_demo_svc_80",
+				"kuma.io/protocol": "tcp",
 			},
 		}),
 	)

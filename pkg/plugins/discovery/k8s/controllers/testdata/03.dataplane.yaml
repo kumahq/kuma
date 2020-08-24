@@ -8,5 +8,6 @@ spec:
       tags:
         app: example
         kuma.io/service: example_demo_svc_80
+        kuma.io/protocol: tcp
         version: "0.1"
         kuma.io/zone: "zone-1"
