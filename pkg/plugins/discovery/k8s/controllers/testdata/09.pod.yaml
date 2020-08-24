@@ -1,0 +1,15 @@
+metadata:
+  namespace: kuma-system
+  name: kuma-ingress-74c9b794cf-vft7l
+  labels:
+    app: kuma-ingress
+    pod-template-hash: 74c9b794cf
+  annotations:
+    kuma.io/ingress: enabled
+    kuma.io/mesh: default
+spec:
+  containers:
+    - ports:
+        - containerPort: 10001
+status:
+  podIP: 10.244.0.8

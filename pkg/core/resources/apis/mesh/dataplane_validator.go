@@ -88,7 +88,12 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 		if inbound.Address != "" {
 			err.AddViolationAt(p.Field("address"), `cannot be defined in the ingress mode`)
 		}
-		err.AddErrorAt(p.Field("address"), validateTags(inbound.Tags))
+		err.AddErrorAt(p.Field("tags"), validateTags(inbound.Tags))
+		if protocol, exist := inbound.Tags[mesh_proto.ProtocolTag]; exist {
+			if protocol != ProtocolTCP {
+				err.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), `other values than TCP are not allowed`)
+			}
+		}
 	}
 	for i, ingressInterface := range networking.GetIngress().GetAvailableServices() {
 		p := path.Field("ingress").Field("availableService").Index(i)
@@ -166,6 +171,11 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 	var result validators.ValidationError
 	if _, exist := gateway.Tags[mesh_proto.ServiceTag]; !exist {
 		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
+	}
+	if protocol, exist := gateway.Tags[mesh_proto.ProtocolTag]; exist {
+		if protocol != ProtocolTCP {
+			result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), `other values than TCP are not allowed`)
+		}
 	}
 	result.Add(validateTags(gateway.Tags))
 	return result
