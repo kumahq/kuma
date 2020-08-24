@@ -5202,6 +5202,8 @@ rules:
       - dataplanes
       - dataplaneinsights
       - meshes
+      - zones
+      - zoneinsights
     verbs:
       - get
       - list
@@ -5581,6 +5583,7 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+          - zones
     sideEffects: None
   - clientConfig:
       caBundle: QWRtaXNzaW9uQ2VydA==

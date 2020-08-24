@@ -28,6 +28,8 @@ rules:
   - dataplanes
   - dataplaneinsights
   - meshes
+  - zones
+  - zoneinsights
   verbs:
   - get
   - list
@@ -36,21 +38,6 @@ rules:
   - update
   - patch
   - delete
-{{- if eq .KumaCpMode "global" }}
-- apiGroups:
-    - kuma.io
-  resources:
-    - zones
-    - zoneinsights
-  verbs:
-    - get
-    - list
-    - watch
-    - create
-    - update
-    - patch
-    - delete
-{{- end}}
 - apiGroups:
   - kuma.io
   resources:
