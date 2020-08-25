@@ -2,8 +2,9 @@ package install
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 	"net/url"
+
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 
@@ -74,8 +75,8 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	Values_dataPlane_initImage_registry:       "kong-docker-kuma-docker.bintray.io",
 	Values_dataPlane_initImage_repositry:      "kuma-init",
 	Values_dataPlane_initImage_tag:            kuma_version.Build.Version,
-	Values_cni_image_registry:                 "lobkovilya",
-	Values_cni_image_repositry:                "install-cni",
+	Values_cni_image_registry:                 "docker.io",
+	Values_cni_image_repositry:                "lobkovilya/install-cni",
 	Values_cni_image_tag:                      "0.0.1",
 	Values_controlPlane_mode:                  core.Standalone,
 	Values_controlPlane_zone:                  "",
