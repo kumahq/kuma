@@ -52,6 +52,8 @@ var _ = Describe("kumactl install control-plane", func() {
 			BuildDate: "2019-08-07T11:26:06Z",
 		}
 		install.DefaultInstallControlPlaneArgs.Values_controlPlane_image_tag = "0.0.1"
+		install.DefaultInstallControlPlaneArgs.Values_dataPlane_image_tag = "0.0.1"
+		install.DefaultInstallControlPlaneArgs.Values_dataPlane_initImage_tag = "0.0.1"
 	})
 
 	var stdout *bytes.Buffer
