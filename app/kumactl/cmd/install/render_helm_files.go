@@ -3,6 +3,7 @@ package install
 import (
 	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -131,11 +132,18 @@ func postRender(loadedChart *chart.Chart, files map[string]string) []data.File {
 		})
 	}
 
-	for n, d := range files {
-		if strings.HasSuffix(n, "yaml") {
+	// sorted map of files to ensure consistency of the output
+	keys := make([]string, 0, len(files))
+	for k := range files {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		if strings.HasSuffix(k, "yaml") {
 			result = append(result, data.File{
-				Data: []byte(d),
-				Name: n,
+				Data: []byte(files[k]),
+				Name: k,
 			})
 		}
 	}
