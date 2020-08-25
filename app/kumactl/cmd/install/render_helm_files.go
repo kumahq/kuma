@@ -97,7 +97,7 @@ func generateOverrideValues(args interface{}) map[string]interface{} {
 
 		root := overrideValues
 
-		for i := 0; i < len-1; i++ {
+		for i := 1; i < len-1; i++ {
 			n := splitName[i]
 
 			if _, ok := root[n]; !ok {
