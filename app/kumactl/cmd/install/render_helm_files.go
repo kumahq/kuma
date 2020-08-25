@@ -1,6 +1,7 @@
 package install
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 
@@ -13,6 +14,17 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
 
+var kumaSystemNamespace = func(namespace string) string {
+	return fmt.Sprintf(`
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: %s
+  labels:
+    kuma.io/system-namespace: "true"
+`, namespace)
+}
+
 func renderHelmFiles(templates []data.File, args interface{}) ([]data.File, error) {
 	loadedChart, err := loadCharts(templates)
 	if err != nil {
@@ -24,7 +36,7 @@ func renderHelmFiles(templates []data.File, args interface{}) ([]data.File, erro
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)
 	}
 
-	namespace := (overrideValues["Release"].(map[string]interface{}))["Namespace"].(string)
+	namespace := overrideValues["Namespace"].(string)
 	options := generateReleaseOptions(loadedChart.Metadata.Name, namespace)
 
 	valuesToRender, err := chartutil.ToRenderValues(loadedChart, overrideValues, options, nil)
@@ -36,6 +48,7 @@ func renderHelmFiles(templates []data.File, args interface{}) ([]data.File, erro
 	if err != nil {
 		return nil, errors.Errorf("Failed to render templates: %s", err)
 	}
+	files["namespace.yaml"] = kumaSystemNamespace(namespace)
 
 	return postRender(loadedChart, files), nil
 }
