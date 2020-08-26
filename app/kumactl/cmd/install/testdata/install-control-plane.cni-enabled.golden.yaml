@@ -14,11 +14,8 @@ metadata:
   name: kuma-admission-server-tls-cert
   namespace: kuma-system
   labels:
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 data:
   tls.crt: Q0VSVA==
   tls.key: S0VZ
@@ -30,11 +27,8 @@ metadata:
   name: kuma-sds-tls-cert
   namespace: kuma-system
   labels:
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 data:
   tls.crt: Q0VSVA==
   tls.key: S0VZ
@@ -46,11 +40,8 @@ metadata:
   name: kuma-kds-tls-cert
   namespace: kuma-system
   labels:
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 data:
   tls.crt: Q0VSVA==
   tls.key: S0VZ
@@ -63,11 +54,8 @@ metadata:
   labels:
 
     app: kuma-cni
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 data:
   # The CNI network configuration to add to the plugin chain on each node.
   cni_network_config: |-
@@ -89,11 +77,8 @@ metadata:
   name: kuma-control-plane-config
   namespace: kuma-system
   labels:
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 data:
   config.yaml: |
     # use this file to override default configuration of `kuma-cp`
@@ -108,11 +93,8 @@ metadata:
   labels:
 
     app: kuma-cni
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -120,11 +102,8 @@ metadata:
   name: kuma-control-plane
   namespace: kuma-system
   labels:
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -5252,11 +5231,8 @@ metadata:
   labels:
 
     app: kuma-cni
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 rules:
   - apiGroups: [""]
     resources:
@@ -5270,11 +5246,8 @@ kind: ClusterRole
 metadata:
   name: kuma:control-plane
   labels:
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 rules:
   - apiGroups:
       - ""
@@ -5376,11 +5349,8 @@ metadata:
   labels:
 
     app: kuma-cni
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5395,11 +5365,8 @@ kind: ClusterRoleBinding
 metadata:
   name: kuma:control-plane
   labels:
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -5415,11 +5382,8 @@ metadata:
   name: kuma:control-plane
   namespace: kuma-system
   labels:
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 rules:
   - apiGroups:
       - ""
@@ -5466,11 +5430,8 @@ metadata:
   name: kuma-control-plane
   namespace: kuma-system
   labels:
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
   annotations:
 spec:
   type: ClusterIP
@@ -5505,11 +5466,8 @@ metadata:
   namespace: kube-system
   labels:
     app: kuma-cni
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 spec:
   selector:
     matchLabels:
@@ -5593,11 +5551,8 @@ metadata:
   name: kuma-control-plane
   namespace: kuma-system
   labels:
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
     app: kuma-control-plane
 spec:
   strategy:
@@ -5727,12 +5682,8 @@ metadata:
   name: kuma-admission-mutating-webhook-configuration
   namespace: kuma-system
   labels:
-
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
     failurePolicy: Fail
@@ -5803,12 +5754,8 @@ metadata:
   name: kuma-validating-webhook-configuration
   namespace: kuma-system
   labels:
-
-    helm.sh/chart: kuma-0.3.0
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
-    app.kubernetes.io/version: "0.7.1"
-    app.kubernetes.io/managed-by: Helm
 webhooks:
   - name: validator.kuma-admission.kuma.io
     failurePolicy: Fail

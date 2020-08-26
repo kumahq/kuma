@@ -3,6 +3,7 @@ package install
 import (
 	"fmt"
 	"reflect"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -14,6 +15,12 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
+
+var stripLabels = []string{
+	"app.kubernetes.io/managed-by",
+	"helm.sh/chart",
+	"app.kubernetes.io/version",
+}
 
 var kumaSystemNamespace = func(namespace string) string {
 	return fmt.Sprintf(`
@@ -141,8 +148,16 @@ func postRender(loadedChart *chart.Chart, files map[string]string) []data.File {
 
 	for _, k := range keys {
 		if strings.HasSuffix(k, "yaml") {
+			content := files[k]
+
+			// strip Helm Chart specific labels
+			for _, label := range stripLabels {
+				re := regexp.MustCompile("(?m)[\r\n]+^.*" + label + ".*$")
+				content = re.ReplaceAllString(content, "")
+			}
+
 			result = append(result, data.File{
-				Data: []byte(files[k]),
+				Data: []byte(content),
 				Name: k,
 			})
 		}
