@@ -26,61 +26,61 @@ var (
 )
 
 type InstallControlPlaneArgs struct {
-	Release_Namespace                         string
-	Values_controlPlane_image_pullPolicy      string
-	Values_controlPlane_image_registry        string
-	Values_controlPlane_image_repositry       string
-	Values_controlPlane_image_tag             string
-	Values_controlPlane_service_name          string
-	Values_controlPlane_tls_admission_cert    string
-	Values_controlPlane_tls_admission_key     string
-	Values_controlPlane_tls_sds_cert          string
-	Values_controlPlane_tls_sds_key           string
-	Values_controlPlane_tls_kds_cert          string
-	Values_controlPlane_tls_kds_key           string
-	Values_controlPlane_injectorFailurePolicy string
-	Values_dataPlane_image_registry           string
-	Values_dataPlane_image_repositry          string
-	Values_dataPlane_image_tag                string
-	Values_dataPlane_initImage_registry       string
-	Values_dataPlane_initImage_repositry      string
-	Values_dataPlane_initImage_tag            string
-	Values_controlPlane_kdsGlobalAddress      string
-	Values_cni_enabled                        bool
-	Values_cni_image_registry                 string
-	Values_cni_image_repositry                string
-	Values_cni_image_tag                      string
-	Values_controlPlane_mode                  string
-	Values_controlPlane_zone                  string
-	Values_globalRemoteSyncService_type       string
+	Release_Namespace                                string
+	Values_controlPlane_image_pullPolicy             string
+	Values_controlPlane_image_registry               string
+	Values_controlPlane_image_repositry              string
+	Values_controlPlane_image_tag                    string
+	Values_controlPlane_service_name                 string
+	Values_controlPlane_tls_admission_cert           string
+	Values_controlPlane_tls_admission_key            string
+	Values_controlPlane_tls_sds_cert                 string
+	Values_controlPlane_tls_sds_key                  string
+	Values_controlPlane_tls_kds_cert                 string
+	Values_controlPlane_tls_kds_key                  string
+	Values_controlPlane_injectorFailurePolicy        string
+	Values_dataPlane_image_registry                  string
+	Values_dataPlane_image_repositry                 string
+	Values_dataPlane_image_tag                       string
+	Values_dataPlane_initImage_registry              string
+	Values_dataPlane_initImage_repositry             string
+	Values_dataPlane_initImage_tag                   string
+	Values_controlPlane_kdsGlobalAddress             string
+	Values_cni_enabled                               bool
+	Values_cni_image_registry                        string
+	Values_cni_image_repositry                       string
+	Values_cni_image_tag                             string
+	Values_controlPlane_mode                         string
+	Values_controlPlane_zone                         string
+	Values_controlPlane_globalRemoteSyncService_type string
 }
 
 var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
-	Release_Namespace:                         "kuma-system",
-	Values_controlPlane_image_pullPolicy:      "IfNotPresent",
-	Values_controlPlane_image_registry:        "kong-docker-kuma-docker.bintray.io",
-	Values_controlPlane_image_repositry:       "kuma-cp",
-	Values_controlPlane_image_tag:             kuma_version.Build.Version,
-	Values_controlPlane_service_name:          "kuma-control-plane",
-	Values_controlPlane_tls_admission_cert:    "",
-	Values_controlPlane_tls_admission_key:     "",
-	Values_controlPlane_tls_sds_cert:          "",
-	Values_controlPlane_tls_sds_key:           "",
-	Values_controlPlane_tls_kds_cert:          "",
-	Values_controlPlane_tls_kds_key:           "",
-	Values_controlPlane_injectorFailurePolicy: "Ignore",
-	Values_dataPlane_image_registry:           "kong-docker-kuma-docker.bintray.io",
-	Values_dataPlane_image_repositry:          "kuma-dp",
-	Values_dataPlane_image_tag:                kuma_version.Build.Version,
-	Values_dataPlane_initImage_registry:       "kong-docker-kuma-docker.bintray.io",
-	Values_dataPlane_initImage_repositry:      "kuma-init",
-	Values_dataPlane_initImage_tag:            kuma_version.Build.Version,
-	Values_cni_image_registry:                 "docker.io",
-	Values_cni_image_repositry:                "lobkovilya/install-cni",
-	Values_cni_image_tag:                      "0.0.1",
-	Values_controlPlane_mode:                  core.Standalone,
-	Values_controlPlane_zone:                  "",
-	Values_globalRemoteSyncService_type:       "LoadBalancer",
+	Release_Namespace:                                "kuma-system",
+	Values_controlPlane_image_pullPolicy:             "IfNotPresent",
+	Values_controlPlane_image_registry:               "kong-docker-kuma-docker.bintray.io",
+	Values_controlPlane_image_repositry:              "kuma-cp",
+	Values_controlPlane_image_tag:                    kuma_version.Build.Version,
+	Values_controlPlane_service_name:                 "kuma-control-plane",
+	Values_controlPlane_tls_admission_cert:           "",
+	Values_controlPlane_tls_admission_key:            "",
+	Values_controlPlane_tls_sds_cert:                 "",
+	Values_controlPlane_tls_sds_key:                  "",
+	Values_controlPlane_tls_kds_cert:                 "",
+	Values_controlPlane_tls_kds_key:                  "",
+	Values_controlPlane_injectorFailurePolicy:        "Ignore",
+	Values_dataPlane_image_registry:                  "kong-docker-kuma-docker.bintray.io",
+	Values_dataPlane_image_repositry:                 "kuma-dp",
+	Values_dataPlane_image_tag:                       kuma_version.Build.Version,
+	Values_dataPlane_initImage_registry:              "kong-docker-kuma-docker.bintray.io",
+	Values_dataPlane_initImage_repositry:             "kuma-init",
+	Values_dataPlane_initImage_tag:                   kuma_version.Build.Version,
+	Values_cni_image_registry:                        "docker.io",
+	Values_cni_image_repositry:                       "lobkovilya/install-cni",
+	Values_cni_image_tag:                             "0.0.1",
+	Values_controlPlane_mode:                         core.Standalone,
+	Values_controlPlane_zone:                         "",
+	Values_controlPlane_globalRemoteSyncService_type: "LoadBalancer",
 }
 
 var InstallCpTemplateFilesFn = InstallCpTemplateFiles
@@ -97,8 +97,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return err
 			}
 
-			if useNodePort && args.Values_controlPlane_mode != core.Standalone {
-				args.Values_globalRemoteSyncService_type = "NodePort"
+			if useNodePort && args.Values_controlPlane_mode == core.Global {
+				args.Values_controlPlane_globalRemoteSyncService_type = "NodePort"
 			}
 
 			if err := autogenerateCerts(&args); err != nil {
