@@ -47,7 +47,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: {{ include "kuma.formatImage" .Values.cni }}
+          image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
           imagePullPolicy: Always
           command: ["/install-cni.sh"]
           env:
