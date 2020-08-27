@@ -156,6 +156,8 @@ type DataplaneRuntime struct {
 	TokenPath string `yaml:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
 	// Token is dataplane token's value provided directly, will be stored to a temporary file before applying
 	Token string `yaml:"dataplaneToken,omitempty" envconfig:"kuma_dataplane_runtime_token"`
+	// DataplaneTemplate is a Dataplane resource that will be applied on Kuma CP
+	DataplaneTemplate string `yaml:"resource,omitempty" envconfig:"kuma_dataplane_runtime_resource"`
 }
 
 var _ config.Config = &Config{}
