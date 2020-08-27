@@ -25,7 +25,6 @@ var (
 
 type DataplaneStatusTracker interface {
 	envoy_xds.Callbacks
-	ActiveStreams() int
 	GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool)
 }
 
@@ -83,12 +82,6 @@ func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int6
 
 	xdsServerLog.V(1).Info("OnStreamOpen", "context", ctx, "streamid", streamID, "type", typ, "subscription", subscription)
 	return nil
-}
-
-func (c *dataplaneStatusTracker) ActiveStreams() int {
-	c.mu.RLock()
-	defer c.mu.RUnlock()
-	return len(c.streams)
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.

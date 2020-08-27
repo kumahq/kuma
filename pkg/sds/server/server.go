@@ -58,7 +58,12 @@ func SetupServer(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "sds")
+	if err != nil {
+		return err
+	}
 	callbacks := util_xds.CallbacksChain{
+		statsCallbacks,
 		util_xds.LoggingCallbacks{Log: sdsServerLog},
 		authCallbacks,
 		syncTracker,

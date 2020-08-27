@@ -29,8 +29,13 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 	if err != nil {
 		return nil, err
 	}
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "kds")
+	if err != nil {
+		return nil, err
+	}
 	callbacks := util_xds.CallbacksChain{
 		util_xds.LoggingCallbacks{Log: log},
+		statsCallbacks,
 		syncTracker,
 	}
 	if insight {

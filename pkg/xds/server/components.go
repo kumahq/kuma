@@ -61,7 +61,13 @@ func SetupServer(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
+
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
+	if err != nil {
+		return err
+	}
 	callbacks := util_xds.CallbacksChain{
+		statsCallbacks,
 		syncTracker,
 		metadataTracker,
 		statusTracker,
@@ -127,7 +133,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	}
 	xdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
 		Name: "xds_generation_errors",
-		Help: "Counter of errors during KDS generation",
+		Help: "Counter of errors during XDS generation",
 	})
 	if err := rt.Metrics().Register(xdsGenerationsErrors); err != nil {
 		return nil, err
@@ -139,6 +145,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				return time.NewTicker(rt.Config().XdsServer.DataplaneConfigurationRefreshInterval)
 			},
 			OnTick: func() error {
+				log.Info("TICK")
 				start := core.Now()
 				defer func() {
 					xdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
@@ -290,14 +297,5 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) (DataplaneStatusTrac
 			},
 			NewDataplaneInsightStore(rt.ResourceManager()))
 	})
-	metric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-		Help: "Number of active XDS streams",
-		Name: "xds_streams_active",
-	}, func() float64 {
-		return float64(tracker.ActiveStreams())
-	})
-	if err := rt.Metrics().Register(metric); err != nil {
-		return nil, err
-	}
 	return tracker, nil
 }
