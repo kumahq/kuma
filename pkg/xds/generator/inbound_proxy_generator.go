@@ -53,8 +53,10 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder()
 			switch protocol {
+			// configuration for HTTP case
 			case mesh_core.ProtocolHTTP:
-				// configuration for HTTP case
+				fallthrough
+			case mesh_core.ProtocolHTTP2:
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
 					Configure(envoy_listeners.FaultInjection(proxy.FaultInjections[endpoint])).
