@@ -5,12 +5,14 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"github.com/ghodss/yaml"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"io/ioutil"
 	"net/http"
 	net_url "net/url"
+
+	"github.com/ghodss/yaml"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"

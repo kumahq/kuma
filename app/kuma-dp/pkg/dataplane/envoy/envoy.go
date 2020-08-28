@@ -3,11 +3,12 @@ package envoy
 import (
 	"context"
 	"fmt"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"io"
 	"os"
 	"os/exec"
 	"time"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"path/filepath"
 

@@ -5,10 +5,12 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/ghodss/yaml"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"io/ioutil"
 	"text/template"
+
+	"github.com/ghodss/yaml"
+
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 

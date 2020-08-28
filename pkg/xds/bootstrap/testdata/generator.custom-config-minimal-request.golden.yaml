@@ -19,6 +19,7 @@ node:
   id: mesh.name.namespace
   metadata:
     dataplane.admin.port: "9902"
+    dataplaneResource: Y3JlYXRpb25UaW1lOiAiMjAxOC0wNy0xN1QxNjowNTozNi45OTVaIgptZXNoOiBtZXNoCm1vZGlmaWNhdGlvblRpbWU6ICIyMDE4LTA3LTE3VDE2OjA1OjM2Ljk5NVoiCm5hbWU6IG5hbWUubmFtZXNwYWNlCm5ldHdvcmtpbmc6CiAgYWRkcmVzczogOC44LjguOAogIGluYm91bmQ6CiAgLSBwb3J0OiA0NDMKICAgIHNlcnZpY2VQb3J0OiA4NDQzCiAgICB0YWdzOgogICAgICBrdW1hLmlvL3NlcnZpY2U6IGJhY2tlbmQKdHlwZTogRGF0YXBsYW5lCg==
 statsConfig:
   statsTags:
     - tagName: name

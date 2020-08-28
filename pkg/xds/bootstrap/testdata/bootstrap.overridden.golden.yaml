@@ -19,6 +19,7 @@ node:
   id: default.dp-1.default
   metadata:
     dataplane.admin.port: "1234"
+    dataplaneResource: Y3JlYXRpb25UaW1lOiAiMjAxOC0wNy0xN1QxNjowNTozNi45OTVaIgptZXNoOiBkZWZhdWx0Cm1vZGlmaWNhdGlvblRpbWU6ICIyMDE4LTA3LTE3VDE2OjA1OjM2Ljk5NVoiCm5hbWU6IGRwLTEuZGVmYXVsdApuZXR3b3JraW5nOgogIGFkZHJlc3M6IDguOC44LjgKICBpbmJvdW5kOgogIC0gcG9ydDogNDQzCiAgICBzZXJ2aWNlUG9ydDogODQ0MwogICAgdGFnczoKICAgICAga3VtYS5pby9zZXJ2aWNlOiBiYWNrZW5kCnR5cGU6IERhdGFwbGFuZQo=
     dataplaneTokenPath: /tmp/token
 statsConfig:
   statsTags:

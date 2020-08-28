@@ -2,8 +2,9 @@ package xds
 
 import (
 	"encoding/base64"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"strconv"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/kumahq/kuma/pkg/core"
 

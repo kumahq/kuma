@@ -5,13 +5,14 @@ package envoy
 import (
 	"bytes"
 	"fmt"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/golang/protobuf/proto"
 

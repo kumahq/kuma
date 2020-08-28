@@ -39,7 +39,7 @@ var (
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	},
 	)
-	catalogClientFactory    = client.NewCatalogClient
+	catalogClientFactory = client.NewCatalogClient
 )
 
 func newRunCmd() *cobra.Command {

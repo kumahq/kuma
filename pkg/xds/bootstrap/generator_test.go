@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core"
+
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -30,6 +32,10 @@ var _ = Describe("bootstrapGenerator", func() {
 
 	BeforeEach(func() {
 		resManager = core_manager.NewResourceManager(memory.NewStore())
+		core.Now = func() time.Time {
+			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
+			return now
+		}
 	})
 
 	BeforeEach(func() {
@@ -71,7 +77,7 @@ var _ = Describe("bootstrapGenerator", func() {
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator := NewDefaultBootstrapGenerator(resManager, given.config(), "", core.KubernetesEnvironment)
+			generator := NewDefaultBootstrapGenerator(resManager, given.config(), "", config_core.KubernetesEnvironment)
 
 			// when
 			bootstrapConfig, err := generator.Generate(context.Background(), given.request)
@@ -200,7 +206,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		params.XdsHost = "127.0.0.1"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params, "", core.KubernetesEnvironment)
+		generator := NewDefaultBootstrapGenerator(resManager, params, "", config_core.KubernetesEnvironment)
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
 			Name:      "name-1.namespace",
@@ -264,7 +270,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		params.XdsHost = "127.0.0.1"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params, "", core.KubernetesEnvironment)
+		generator := NewDefaultBootstrapGenerator(resManager, params, "", config_core.KubernetesEnvironment)
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
 			Name:      "name-3.namespace",

@@ -2,8 +2,6 @@ package envoy
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/test/resources/model"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +9,9 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"

@@ -7,8 +7,11 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core"
+
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -41,7 +44,7 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		server := BootstrapServer{
 			Port:      uint32(port),
-			Generator: NewDefaultBootstrapGenerator(resManager, config, "", core.KubernetesEnvironment),
+			Generator: NewDefaultBootstrapGenerator(resManager, config, "", config_core.KubernetesEnvironment),
 		}
 		stop = make(chan struct{})
 		go func() {
@@ -66,6 +69,10 @@ var _ = Describe("Bootstrap Server", func() {
 	BeforeEach(func() {
 		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default"))
 		Expect(err).ToNot(HaveOccurred())
+		core.Now = func() time.Time {
+			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
+			return now
+		}
 	})
 
 	type testCase struct {

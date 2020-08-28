@@ -2,13 +2,15 @@ package server
 
 import (
 	"context"
+	"sync"
+
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/config/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/pkg/errors"
-	"sync"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	go_cp_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"

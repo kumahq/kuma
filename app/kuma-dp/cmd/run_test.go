@@ -4,10 +4,7 @@ package cmd
 
 import (
 	"bytes"
-	"context"
-	"errors"
 	"fmt"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"io/ioutil"
 	"net"
 	"os"
@@ -16,9 +13,7 @@ import (
 	"strings"
 	"syscall"
 
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
@@ -35,40 +30,6 @@ import (
 	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
-
-type countingStore struct {
-	create   int
-	update   int
-	delete   int
-	get      int
-	list     int
-	getError error
-}
-
-func (c *countingStore) Create(context.Context, model.Resource, ...store.CreateOptionsFunc) error {
-	c.create++
-	return nil
-}
-
-func (c *countingStore) Update(context.Context, model.Resource, ...store.UpdateOptionsFunc) error {
-	c.update++
-	return nil
-}
-
-func (c *countingStore) Delete(context.Context, model.Resource, ...store.DeleteOptionsFunc) error {
-	c.delete++
-	return nil
-}
-
-func (c *countingStore) Get(context.Context, model.Resource, ...store.GetOptionsFunc) error {
-	c.get++
-	return c.getError
-}
-
-func (c *countingStore) List(context.Context, model.ResourceList, ...store.ListOptionsFunc) error {
-	c.list++
-	return nil
-}
 
 var _ = Describe("run", func() {
 
@@ -406,98 +367,5 @@ var _ = Describe("run", func() {
 		// then
 		Expect(err).To(HaveOccurred())
 		Expect(err.Error()).To(ContainSubstring(fmt.Sprintf(`unable to find a free port in the range "%d" for Envoy Admin API to listen on`, port)))
-	})
-
-	Context("Dataplane resource", func() {
-		dp := `
-type: Dataplane
-mesh: default
-name: redis-1
-networking:
-  address: 127.0.0.1
-  inbound:
-  - port: 9000
-    servicePort: 6379
-    tags:
-      kuma.io/service: redis
-`
-		var cs *countingStore
-		BeforeEach(func() {
-			cs = &countingStore{}
-			newResourceStoreFactory = func(*config_proto.ControlPlaneCoordinates_ApiServer) (store.ResourceStore, error) {
-				return cs, nil
-			}
-		})
-
-		It("should create and delete Dataplane resource", func() {
-			cs.getError = errors.New("Resource not found")
-
-			// given
-			cmd := newRootCmd()
-			cmd.SetIn(strings.NewReader(dp))
-			cmd.SetArgs([]string{
-				"run",
-				"--cp-address", "http://localhost:1234",
-				"--name", "redis-1",
-				"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
-				"-t-",
-			})
-
-			// when
-			By("starting the dataplane manager")
-			errCh := make(chan error)
-			go func() {
-				defer close(errCh)
-				errCh <- cmd.Execute()
-			}()
-
-			// when
-			By("signalling the dataplane manager to stop")
-			close(stopCh)
-
-			// then
-			err := <-errCh
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(cs.get).To(Equal(1))
-			Expect(cs.create).To(Equal(1))
-			Expect(cs.delete).To(Equal(1))
-		})
-
-		It("should not update resource if it already exists", func() {
-			// given
-			cs.getError = nil
-
-			cmd := newRootCmd()
-			cmd.SetIn(strings.NewReader(dp))
-			cmd.SetArgs([]string{
-				"run",
-				"--cp-address", "http://localhost:1234",
-				"--name", "redis-1",
-				"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
-				"-t-",
-			})
-
-			// when
-			By("starting the dataplane manager")
-			errCh := make(chan error)
-			go func() {
-				defer close(errCh)
-				errCh <- cmd.Execute()
-			}()
-
-			// when
-			By("signalling the dataplane manager to stop")
-			close(stopCh)
-
-			// then
-			err := <-errCh
-			Expect(err).To(HaveOccurred())
-			Expect(err.Error()).To(ContainSubstring("provided Dataplane redis-1 already exists in default mesh"))
-
-			Expect(cs.get).To(Equal(1))
-			Expect(cs.create).To(Equal(0))
-			Expect(cs.delete).To(Equal(0))
-		})
 	})
 })
