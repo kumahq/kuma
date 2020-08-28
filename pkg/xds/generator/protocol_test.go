@@ -41,6 +41,12 @@ var _ = Describe("InferServiceProtocol()", func() {
 			},
 			expected: mesh_core.ProtocolHTTP,
 		}),
+		Entry("one-item list: `kuma.io/protocol: http2`", testCase{
+			endpoints: []core_xds.Endpoint{
+				{Tags: map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "http2"}},
+			},
+			expected: mesh_core.ProtocolHTTP2,
+		}),
 		Entry("one-item list: `kuma.io/protocol: tcp`", testCase{
 			endpoints: []core_xds.Endpoint{
 				{Tags: map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "tcp"}},
@@ -79,6 +85,13 @@ var _ = Describe("InferServiceProtocol()", func() {
 				{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu", "kuma.io/protocol": "http"}},
 			},
 			expected: mesh_core.ProtocolHTTP,
+		}),
+		Entry("multi-item list: `kuma.io/protocol: http` on every endpoint", testCase{
+			endpoints: []core_xds.Endpoint{
+				{Tags: map[string]string{"kuma.io/service": "backend", "region": "us", "kuma.io/protocol": "http2"}},
+				{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu", "kuma.io/protocol": "http2"}},
+			},
+			expected: mesh_core.ProtocolHTTP2,
 		}),
 		Entry("multi-item list: `kuma.io/protocol: tcp` on every endpoint", testCase{
 			endpoints: []core_xds.Endpoint{
