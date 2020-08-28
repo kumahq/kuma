@@ -5,6 +5,7 @@ package envoy
 import (
 	"bytes"
 	"fmt"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -72,7 +73,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config, *core_mesh.DataplaneResource) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{
 					Node: &envoy_core.Node{
 						Id: "example",
@@ -143,7 +144,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config, *core_mesh.DataplaneResource) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{}, nil
 			}
 
@@ -185,7 +186,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config, *core_mesh.DataplaneResource) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{}, nil
 			}
 

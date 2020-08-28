@@ -30,6 +30,7 @@ type Resource interface {
 	GetSpec() ResourceSpec
 	SetSpec(ResourceSpec) error
 	Validate() error
+	Meshed() bool
 }
 
 type ResourceType string

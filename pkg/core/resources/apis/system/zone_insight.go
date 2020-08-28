@@ -49,6 +49,10 @@ func (t *ZoneInsightResource) Validate() error {
 	return nil
 }
 
+func (t *ZoneInsightResource) Meshed() bool {
+	return false
+}
+
 var _ model.ResourceList = &ZoneInsightResourceList{}
 
 type ZoneInsightResourceList struct {

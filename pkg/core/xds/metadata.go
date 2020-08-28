@@ -1,6 +1,8 @@
 package xds
 
 import (
+	"encoding/base64"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"strconv"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -13,8 +15,9 @@ var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
 const (
 	// Supported Envoy node metadata fields.
 
-	fieldDataplaneTokenPath = "dataplaneTokenPath"
-	fieldDataplaneAdminPort = "dataplane.admin.port"
+	fieldDataplaneTokenPath         = "dataplaneTokenPath"
+	fieldDataplaneAdminPort         = "dataplane.admin.port"
+	fieldDataplaneDataplaneResource = "dataplaneResource"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -33,6 +36,7 @@ const (
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
 	DataplaneTokenPath string
+	DataplaneResource  *core_mesh.DataplaneResource
 	AdminPort          uint32
 }
 
@@ -41,6 +45,13 @@ func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
 		return ""
 	}
 	return m.DataplaneTokenPath
+}
+
+func (m *DataplaneMetadata) GetDataplaneResource() *core_mesh.DataplaneResource {
+	if m == nil {
+		return nil
+	}
+	return m.DataplaneResource
 }
 
 func (m *DataplaneMetadata) GetAdminPort() uint32 {
@@ -64,6 +75,17 @@ func DataplaneMetadataFromNode(node *envoy_core.Node) *DataplaneMetadata {
 		} else {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneAdminPort, "value", value)
 		}
+	}
+	if value := node.Metadata.Fields[fieldDataplaneDataplaneResource]; value != nil {
+		dpYAML, err := base64.StdEncoding.DecodeString(value.GetStringValue())
+		if err != nil {
+			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
+		}
+		dp, err := core_mesh.ParseDataplaneYAML(dpYAML)
+		if err != nil {
+			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
+		}
+		metadata.DataplaneResource = dp
 	}
 	return &metadata
 }

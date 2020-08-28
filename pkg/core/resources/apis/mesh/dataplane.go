@@ -41,6 +41,10 @@ func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (t *DataplaneResource) Meshed() bool {
+	return true
+}
+
 var _ model.ResourceList = &DataplaneResourceList{}
 
 type DataplaneResourceList struct {

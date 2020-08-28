@@ -45,6 +45,10 @@ func (t *DataplaneInsightResource) Validate() error {
 	return nil
 }
 
+func (t *DataplaneInsightResource) Meshed() bool {
+	return true
+}
+
 var _ model.ResourceList = &DataplaneInsightResourceList{}
 
 type DataplaneInsightResourceList struct {

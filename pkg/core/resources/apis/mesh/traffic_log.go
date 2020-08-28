@@ -40,6 +40,9 @@ func (t *TrafficLogResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+func (t *TrafficLogResource) Meshed() bool {
+	return true
+}
 
 var _ model.ResourceList = &TrafficLogResourceList{}
 

@@ -50,6 +50,10 @@ func (t *DataplaneOverviewResource) Validate() error {
 	return nil
 }
 
+func (t *DataplaneOverviewResource) Meshed() bool {
+	return true
+}
+
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
 
 type DataplaneOverviewResourceList struct {

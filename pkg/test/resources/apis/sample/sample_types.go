@@ -49,6 +49,10 @@ func (t *TrafficRouteResource) Validate() error {
 	return err.OrNil()
 }
 
+func (t *TrafficRouteResource) Meshed() bool {
+	return true
+}
+
 var _ model.ResourceList = &TrafficRouteResourceList{}
 
 type TrafficRouteResourceList struct {

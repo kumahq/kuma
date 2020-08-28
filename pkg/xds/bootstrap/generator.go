@@ -5,8 +5,12 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"github.com/ghodss/yaml"
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"io/ioutil"
 	"text/template"
+
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
@@ -28,18 +32,21 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	config *bootstrap_config.BootstrapParamsConfig,
-	cacertFile string) BootstrapGenerator {
+	cacertFile string,
+	environmentType core.EnvironmentType) BootstrapGenerator {
 	return &bootstrapGenerator{
-		resManager:  resManager,
-		config:      config,
-		xdsCertFile: cacertFile,
+		resManager:      resManager,
+		config:          config,
+		xdsCertFile:     cacertFile,
+		environmentType: environmentType,
 	}
 }
 
 type bootstrapGenerator struct {
-	resManager  core_manager.ResourceManager
-	config      *bootstrap_config.BootstrapParamsConfig
-	xdsCertFile string
+	resManager      core_manager.ResourceManager
+	config          *bootstrap_config.BootstrapParamsConfig
+	xdsCertFile     string
+	environmentType core.EnvironmentType
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
@@ -47,10 +54,24 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if err != nil {
 		return nil, err
 	}
-	dataplane, err := b.fetchDataplane(ctx, proxyId)
-	if err != nil {
-		return nil, err
+	var dataplane *core_mesh.DataplaneResource
+	switch b.environmentType {
+	case core.KubernetesEnvironment:
+		if dataplane, err = b.fetchDataplane(ctx, proxyId); err != nil {
+			return nil, err
+		}
+	case core.UniversalEnvironment:
+		dpYAML, err := base64.StdEncoding.DecodeString(request.DataplaneResource)
+		if err != nil {
+			return nil, err
+		}
+		if dataplane, err = core_mesh.ParseDataplaneYAML(dpYAML); err != nil {
+			return nil, err
+		}
+	default:
+		return nil, errors.Errorf("unknown environment type %s", b.environmentType)
 	}
+
 	bootstrapCfg, err := b.generateFor(*proxyId, dataplane, request)
 	if err != nil {
 		return nil, err
@@ -79,6 +100,10 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		}
 		certBytes = base64.StdEncoding.EncodeToString(cert)
 	}
+	dpYAML, err := yaml.Marshal(rest_types.From.Resource(dataplane))
+	if err != nil {
+		return nil, err
+	}
 	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
 	params := configParameters{
 		Id:                 proxyId.String(),
@@ -91,6 +116,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		XdsConnectTimeout:  b.config.XdsConnectTimeout,
 		AccessLogPipe:      accessLogPipe,
 		DataplaneTokenPath: request.DataplaneTokenPath,
+		DataplaneResource:  base64.StdEncoding.EncodeToString(dpYAML),
 		CertBytes:          certBytes,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")

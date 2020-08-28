@@ -485,5 +485,24 @@ var _ = Describe("ParseProtocol()", func() {
 			expected: ProtocolUnknown,
 		}),
 	)
+})
 
+var _ = Describe("Parse Dataplane", func() {
+	It("should parse Dataplane from yaml", func() {
+		dpYAML := `
+type: Dataplane
+mesh: default
+name: redis-1
+networking:
+  address: 127.0.0.1
+  inbound:
+  - port: 9000
+    servicePort: 6379
+    tags:
+      kuma.io/service: redis
+`
+		dp, err := ParseDataplaneYAML([]byte(dpYAML))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(dp.GetMeta().GetName()).To(Equal("redis-1"))
+	})
 })

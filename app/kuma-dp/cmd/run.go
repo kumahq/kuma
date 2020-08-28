@@ -9,16 +9,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/ghodss/yaml"
-
-	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/util/proto"
-
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 	"github.com/spf13/cobra"
@@ -32,6 +22,7 @@ import (
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
@@ -49,7 +40,6 @@ var (
 	},
 	)
 	catalogClientFactory    = client.NewCatalogClient
-	newResourceStoreFactory = kumactl_resources.NewResourceStore
 )
 
 func newRunCmd() *cobra.Command {
@@ -91,16 +81,6 @@ func newRunCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if dp != nil {
-				if err := registerDataplaneResource(context.Background(), cfg.ControlPlane.ApiServer.URL, dp); err != nil {
-					return err
-				}
-				defer func() {
-					if err := unregisterDataplaneResource(context.Background(), cfg.ControlPlane.ApiServer.URL, dp); err != nil {
-						runLog.Error(err, "unable to unregister Dataplane resource")
-					}
-				}()
-			}
 
 			if !cfg.Dataplane.AdminPort.Empty() {
 				// unless a user has explicitly opted out of Envoy Admin API, pick a free port from the range
@@ -140,6 +120,7 @@ func newRunCmd() *cobra.Command {
 				Catalog:   *catalog,
 				Config:    cfg,
 				Generator: bootstrapGenerator,
+				Dataplane: dp,
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
 			})
@@ -213,30 +194,6 @@ func fetchCatalog(cfg kuma_dp.Config) (*catalog.Catalog, error) {
 	return &c, nil
 }
 
-func registerDataplaneResource(ctx context.Context, address string, dataplane *core_mesh.DataplaneResource) error {
-	rs, err := newResourceStoreFactory(&config_proto.ControlPlaneCoordinates_ApiServer{Url: address})
-	if err != nil {
-		return err
-	}
-	existing := &core_mesh.DataplaneResource{}
-	err = rs.Get(ctx, existing, store.GetBy(model.MetaToResourceKey(dataplane.GetMeta())))
-	if err == nil {
-		return errors.Errorf("provided Dataplane %s already exists in %s mesh", dataplane.GetMeta().GetName(), dataplane.GetMeta().GetMesh())
-	}
-	if store.IsResourceNotFound(err) {
-		return rs.Create(ctx, dataplane, store.CreateBy(model.MetaToResourceKey(dataplane.GetMeta())))
-	}
-	return err
-}
-
-func unregisterDataplaneResource(ctx context.Context, address string, dataplane *core_mesh.DataplaneResource) error {
-	rs, err := newResourceStoreFactory(&config_proto.ControlPlaneCoordinates_ApiServer{Url: address})
-	if err != nil {
-		return err
-	}
-	return rs.Delete(ctx, dataplane, store.DeleteBy(model.MetaToResourceKey(dataplane.GetMeta())))
-}
-
 func readDataplaneResource(cmd *cobra.Command, cfg kuma_dp.Config) (*core_mesh.DataplaneResource, error) {
 	var b []byte
 	var err error
@@ -252,58 +209,5 @@ func readDataplaneResource(cmd *cobra.Command, cfg kuma_dp.Config) (*core_mesh.D
 			return nil, errors.Wrap(err, "error while reading provided file")
 		}
 	}
-	return parseDataplane(b)
-}
-
-func parseDataplane(bytes []byte) (*core_mesh.DataplaneResource, error) {
-	resMeta := rest.ResourceMeta{}
-	if err := yaml.Unmarshal(bytes, &resMeta); err != nil {
-		return nil, err
-	}
-	if resMeta.Name == "" {
-		return nil, errors.New("Name field cannot be empty")
-	}
-	if resMeta.Mesh == "" {
-		return nil, errors.New("Mesh field cannot be empty")
-	}
-	dp := &core_mesh.DataplaneResource{}
-	if err := proto.FromYAML(bytes, dp.GetSpec()); err != nil {
-		return nil, err
-	}
-	dp.SetMeta(meta{
-		Name: resMeta.Name,
-		Mesh: resMeta.Mesh,
-	})
-	return dp, nil
-}
-
-var _ model.ResourceMeta = &meta{}
-
-type meta struct {
-	Name string
-	Mesh string
-}
-
-func (m meta) GetName() string {
-	return m.Name
-}
-
-func (m meta) GetNameExtensions() model.ResourceNameExtensions {
-	return model.ResourceNameExtensionsUnsupported
-}
-
-func (m meta) GetVersion() string {
-	return ""
-}
-
-func (m meta) GetMesh() string {
-	return m.Mesh
-}
-
-func (m meta) GetCreationTime() time.Time {
-	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
-}
-
-func (m meta) GetModificationTime() time.Time {
-	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
+	return core_mesh.ParseDataplaneYAML(b)
 }

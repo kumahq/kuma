@@ -2,6 +2,12 @@ package server
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/config/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/pkg/errors"
 	"sync"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -13,12 +19,16 @@ import (
 type DataplaneMetadataTracker struct {
 	mutex             sync.RWMutex
 	metadataForStream map[int64]*xds.DataplaneMetadata
+	rm                manager.ResourceManager
+	environmentType   core.EnvironmentType
 }
 
-func NewDataplaneMetadataTracker() *DataplaneMetadataTracker {
+func NewDataplaneMetadataTracker(rm manager.ResourceManager, environmentType core.EnvironmentType) *DataplaneMetadataTracker {
 	return &DataplaneMetadataTracker{
 		mutex:             sync.RWMutex{},
 		metadataForStream: map[int64]*xds.DataplaneMetadata{},
+		rm:                rm,
+		environmentType:   environmentType,
 	}
 }
 
@@ -42,6 +52,13 @@ func (d *DataplaneMetadataTracker) OnStreamOpen(context.Context, int64, string) 
 func (d *DataplaneMetadataTracker) OnStreamClosed(stream int64) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
+	md, ok := d.metadataForStream[stream]
+	if !ok {
+		return
+	}
+	if err := d.unregisterDataplane(md.DataplaneResource); err != nil {
+		xdsServerLog.Error(err, "unable to delete Dataplane resource on stream closing")
+	}
 	delete(d.metadataForStream, stream)
 }
 
@@ -58,7 +75,13 @@ func (d *DataplaneMetadataTracker) OnStreamRequest(stream int64, req *envoy.Disc
 
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
-	d.metadataForStream[stream] = xds.DataplaneMetadataFromNode(req.Node)
+	md := xds.DataplaneMetadataFromNode(req.Node)
+	if _, exist := d.metadataForStream[stream]; !exist {
+		if err := d.registerDataplane(md.DataplaneResource); err != nil {
+			return err
+		}
+	}
+	d.metadataForStream[stream] = md
 	return nil
 }
 
@@ -70,4 +93,26 @@ func (d *DataplaneMetadataTracker) OnFetchRequest(context.Context, *envoy.Discov
 }
 
 func (d *DataplaneMetadataTracker) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {
+}
+
+func (d *DataplaneMetadataTracker) registerDataplane(dp *core_mesh.DataplaneResource) error {
+	if d.environmentType != core.UniversalEnvironment {
+		return nil
+	}
+	existing := &core_mesh.DataplaneResource{}
+	err := d.rm.Get(context.Background(), existing, store.GetBy(model.MetaToResourceKey(dp.GetMeta())))
+	if err == nil {
+		return errors.Errorf("provided Dataplane %s already exists in %s mesh", dp.GetMeta().GetName(), dp.GetMeta().GetMesh())
+	}
+	if !store.IsResourceNotFound(err) {
+		return err
+	}
+	return d.rm.Create(context.Background(), dp, store.CreateBy(model.MetaToResourceKey(dp.GetMeta())))
+}
+
+func (d *DataplaneMetadataTracker) unregisterDataplane(dp *core_mesh.DataplaneResource) error {
+	if d.environmentType != core.UniversalEnvironment {
+		return nil
+	}
+	return d.rm.Delete(context.Background(), &core_mesh.DataplaneResource{}, store.DeleteBy(model.MetaToResourceKey(dp.GetMeta())))
 }

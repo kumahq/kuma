@@ -3,6 +3,7 @@ package envoy
 import (
 	"context"
 	"fmt"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"io"
 	"os"
 	"os/exec"
@@ -28,12 +29,13 @@ var (
 	newConfigFile = GenerateBootstrapFile
 )
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config) (proto.Message, error)
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *core_mesh.DataplaneResource) (proto.Message, error)
 
 type Opts struct {
 	Catalog   catalog.Catalog
 	Config    kuma_dp.Config
 	Generator BootstrapConfigFactoryFunc
+	Dataplane *core_mesh.DataplaneResource
 	Stdout    io.Writer
 	Stderr    io.Writer
 }
@@ -101,7 +103,7 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
 	runLog.Info("generating bootstrap configuration")
-	bootstrapConfig, err := e.opts.Generator(e.opts.Catalog.Apis.Bootstrap.Url, e.opts.Config)
+	bootstrapConfig, err := e.opts.Generator(e.opts.Catalog.Apis.Bootstrap.Url, e.opts.Config, e.opts.Dataplane)
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 	}

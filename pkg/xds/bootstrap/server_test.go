@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -39,7 +41,7 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		server := BootstrapServer{
 			Port:      uint32(port),
-			Generator: NewDefaultBootstrapGenerator(resManager, config, ""),
+			Generator: NewDefaultBootstrapGenerator(resManager, config, "", core.KubernetesEnvironment),
 		}
 		stop = make(chan struct{})
 		go func() {

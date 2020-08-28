@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"io/ioutil"
 	"net"
 	"os"
@@ -94,7 +95,7 @@ var _ = Describe("run", func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
 		backupCatalogClientFactory = catalogClientFactory
-		bootstrapGenerator = func(_ string, cfg kumadp.Config) (proto.Message, error) {
+		bootstrapGenerator = func(_ string, cfg kumadp.Config, dp *core_mesh.DataplaneResource) (proto.Message, error) {
 			bootstrap := envoy_bootstrap.Bootstrap{}
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())

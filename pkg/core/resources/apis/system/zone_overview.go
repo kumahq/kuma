@@ -50,6 +50,10 @@ func (t *ZoneOverviewResource) Validate() error {
 	return nil
 }
 
+func (t *ZoneOverviewResource) Meshed() bool {
+	return false
+}
+
 var _ model.ResourceList = &ZoneOverviewResourceList{}
 
 type ZoneOverviewResourceList struct {

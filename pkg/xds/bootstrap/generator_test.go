@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -69,7 +71,7 @@ var _ = Describe("bootstrapGenerator", func() {
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator := NewDefaultBootstrapGenerator(resManager, given.config(), "")
+			generator := NewDefaultBootstrapGenerator(resManager, given.config(), "", core.KubernetesEnvironment)
 
 			// when
 			bootstrapConfig, err := generator.Generate(context.Background(), given.request)
@@ -198,7 +200,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		params.XdsHost = "127.0.0.1"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params, "")
+		generator := NewDefaultBootstrapGenerator(resManager, params, "", core.KubernetesEnvironment)
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
 			Name:      "name-1.namespace",
@@ -262,7 +264,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		params.XdsHost = "127.0.0.1"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params, "")
+		generator := NewDefaultBootstrapGenerator(resManager, params, "", core.KubernetesEnvironment)
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
 			Name:      "name-3.namespace",

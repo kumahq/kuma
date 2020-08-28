@@ -3,7 +3,11 @@ package envoy
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"github.com/ghodss/yaml"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"io/ioutil"
 	"net/http"
 	net_url "net/url"
@@ -33,7 +37,7 @@ var (
 	DpNotFoundErr = errors.New("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection.")
 )
 
-func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Message, error) {
+func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *core_mesh.DataplaneResource) (proto.Message, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
 		return nil, err
@@ -47,7 +51,7 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Messag
 	var respBytes []byte
 	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")
-		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg)
+		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg, dp)
 		if err == nil {
 			return nil
 		}
@@ -71,8 +75,16 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Messag
 	return &bootstrap, nil
 }
 
-func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config) ([]byte, error) {
+func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, dp *core_mesh.DataplaneResource) ([]byte, error) {
 	url.Path = "/bootstrap"
+	var dataplaneResource string
+	if dp != nil {
+		dpYAML, err := yaml.Marshal(rest_types.From.Resource(dp))
+		if err != nil {
+			return nil, err
+		}
+		dataplaneResource = base64.StdEncoding.EncodeToString(dpYAML)
+	}
 	request := types.BootstrapRequest{
 		Mesh: cfg.Dataplane.Mesh,
 		Name: cfg.Dataplane.Name,
@@ -80,6 +92,7 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		// that is set in the control plane bootstrap params
 		AdminPort:          cfg.Dataplane.AdminPort.Lowest(),
 		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
+		DataplaneResource:  dataplaneResource,
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {

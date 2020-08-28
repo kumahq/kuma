@@ -2,6 +2,8 @@ package envoy
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -48,7 +50,9 @@ var _ = Describe("Remote Bootstrap", func() {
 		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
 
 		// when
-		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config)
+		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, &mesh.DataplaneResource{
+			Meta: &model.ResourceMeta{Mesh: "default", Name: "dp-1"},
+		})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -69,7 +73,8 @@ var _ = Describe("Remote Bootstrap", func() {
                       "mesh": "demo",
                       "name": "sample",
                       "adminPort": 4321,
-                      "dataplaneTokenPath": "/tmp/token"
+                      "dataplaneTokenPath": "/tmp/token",
+                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlZmF1bHQKbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBkcC0xCnR5cGU6IERhdGFwbGFuZQo="
                     }
 `,
 				}
@@ -90,7 +95,8 @@ var _ = Describe("Remote Bootstrap", func() {
                       "mesh": "demo",
                       "name": "sample",
                       "adminPort": 4321,
-                      "dataplaneTokenPath": "/tmp/token"
+                      "dataplaneTokenPath": "/tmp/token",
+                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlZmF1bHQKbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBkcC0xCnR5cGU6IERhdGFwbGFuZQo="
                     }
 `,
 				}
@@ -109,7 +115,8 @@ var _ = Describe("Remote Bootstrap", func() {
                     {
                       "mesh": "demo",
                       "name": "sample",
-                      "dataplaneTokenPath": "/tmp/token"
+                      "dataplaneTokenPath": "/tmp/token",
+                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlZmF1bHQKbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBkcC0xCnR5cGU6IERhdGFwbGFuZQo="
                     }
 `,
 				}
@@ -143,7 +150,9 @@ var _ = Describe("Remote Bootstrap", func() {
 		// when
 		cfg := kuma_dp.DefaultConfig()
 		cfg.ControlPlane.BootstrapServer.Retry.Backoff = 10 * time.Millisecond
-		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg)
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, &mesh.DataplaneResource{
+			Meta: &model.ResourceMeta{Mesh: "default", Name: "dp-1"},
+		})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -169,7 +178,9 @@ var _ = Describe("Remote Bootstrap", func() {
 		config := kuma_dp.DefaultConfig()
 		config.ControlPlane.BootstrapServer.Retry.Backoff = 10 * time.Millisecond
 		config.ControlPlane.BootstrapServer.Retry.MaxDuration = 100 * time.Millisecond
-		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config)
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config, &mesh.DataplaneResource{
+			Meta: &model.ResourceMeta{Mesh: "default", Name: "dp-1"},
+		})
 
 		// then
 		Expect(err).To(MatchError("retryable: Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))

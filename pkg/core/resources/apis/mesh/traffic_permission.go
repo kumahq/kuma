@@ -40,6 +40,9 @@ func (t *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+func (t *TrafficPermissionResource) Meshed() bool {
+	return true
+}
 
 var _ model.ResourceList = &TrafficPermissionResourceList{}
 
