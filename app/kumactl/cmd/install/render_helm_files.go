@@ -16,10 +16,14 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
 
-var stripLabels = []string{
-	"app.kubernetes.io/managed-by",
-	"helm.sh/chart",
-	"app.kubernetes.io/version",
+func labelRegex(label string) *regexp.Regexp {
+	return regexp.MustCompile("(?m)[\r\n]+^.*" + label + ".*$")
+}
+
+var stripLabelsRegexps = []*regexp.Regexp{
+	labelRegex("app.kubernetes.io/managed-by"),
+	labelRegex("helm.sh/chart"),
+	labelRegex("app.kubernetes.io/version"),
 }
 
 var kumaSystemNamespace = func(namespace string) string {
@@ -44,7 +48,7 @@ func renderHelmFiles(templates []data.File, args interface{}) ([]data.File, erro
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)
 	}
 
-	namespace := overrideValues["Namespace"].(string)
+	namespace := overrideValues["namespace"].(string)
 	options := generateReleaseOptions(loadedChart.Metadata.Name, namespace)
 
 	valuesToRender, err := chartutil.ToRenderValues(loadedChart, overrideValues, options, nil)
@@ -80,7 +84,8 @@ func loadCharts(templates []data.File) (*chart.Chart, error) {
 	loadedChart.Templates = []*chart.File{}
 
 	for _, t := range loadedTemplates {
-		if !strings.HasPrefix(t.Name, "templates/pre-") {
+		if !strings.HasPrefix(t.Name, "templates/pre-") &&
+			!strings.HasPrefix(t.Name, "templates/post-") {
 			loadedChart.Templates = append(loadedChart.Templates, &chart.File{
 				Name: t.Name,
 				Data: t.Data,
@@ -99,21 +104,22 @@ func generateOverrideValues(args interface{}) map[string]interface{} {
 	for i := 0; i < t.NumField(); i++ {
 		name := t.Field(i).Name
 		value := v.FieldByName(name).Interface()
+		tag := t.Field(i).Tag.Get("helm")
 
-		splitName := strings.Split(name, "_")
-		len := len(splitName)
+		splitTag := strings.Split(tag, ".")
+		tagCount := len(splitTag)
 
 		root := overrideValues
 
-		for i := 1; i < len-1; i++ {
-			n := splitName[i]
+		for i := 0; i < tagCount-1; i++ {
+			n := splitTag[i]
 
 			if _, ok := root[n]; !ok {
 				root[n] = map[string]interface{}{}
 			}
 			root = root[n].(map[string]interface{})
 		}
-		root[splitName[len-1]] = value
+		root[splitTag[tagCount-1]] = value
 	}
 
 	return overrideValues
@@ -151,9 +157,8 @@ func postRender(loadedChart *chart.Chart, files map[string]string) []data.File {
 			content := files[k]
 
 			// strip Helm Chart specific labels
-			for _, label := range stripLabels {
-				re := regexp.MustCompile("(?m)[\r\n]+^.*" + label + ".*$")
-				content = re.ReplaceAllString(content, "")
+			for _, stripRegEx := range stripLabelsRegexps {
+				content = stripRegEx.ReplaceAllString(content, "")
 			}
 
 			result = append(result, data.File{

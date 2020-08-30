@@ -26,61 +26,61 @@ var (
 )
 
 type InstallControlPlaneArgs struct {
-	Release_Namespace                                string
-	Values_controlPlane_image_pullPolicy             string
-	Values_controlPlane_image_registry               string
-	Values_controlPlane_image_repositry              string
-	Values_controlPlane_image_tag                    string
-	Values_controlPlane_service_name                 string
-	Values_controlPlane_tls_admission_cert           string
-	Values_controlPlane_tls_admission_key            string
-	Values_controlPlane_tls_sds_cert                 string
-	Values_controlPlane_tls_sds_key                  string
-	Values_controlPlane_tls_kds_cert                 string
-	Values_controlPlane_tls_kds_key                  string
-	Values_controlPlane_injectorFailurePolicy        string
-	Values_dataPlane_image_registry                  string
-	Values_dataPlane_image_repositry                 string
-	Values_dataPlane_image_tag                       string
-	Values_dataPlane_initImage_registry              string
-	Values_dataPlane_initImage_repositry             string
-	Values_dataPlane_initImage_tag                   string
-	Values_controlPlane_kdsGlobalAddress             string
-	Values_cni_enabled                               bool
-	Values_cni_image_registry                        string
-	Values_cni_image_repositry                       string
-	Values_cni_image_tag                             string
-	Values_controlPlane_mode                         string
-	Values_controlPlane_zone                         string
-	Values_controlPlane_globalRemoteSyncService_type string
+	Namespace                                 string `helm:"namespace"`
+	ControlPlane_image_pullPolicy             string `helm:"controlPlane.image.pullPolicy"`
+	ControlPlane_image_registry               string `helm:"controlPlane.image.registry"`
+	ControlPlane_image_repositry              string `helm:"controlPlane.image.repositry"`
+	ControlPlane_image_tag                    string `helm:"controlPlane.image.tag"`
+	ControlPlane_service_name                 string `helm:"controlPlane.service.name"`
+	ControlPlane_tls_admission_cert           string `helm:"controlPlane.tls.admission.cert"`
+	ControlPlane_tls_admission_key            string `helm:"controlPlane.tls.admission.key"`
+	ControlPlane_tls_sds_cert                 string `helm:"controlPlane.tls.sds.cert"`
+	ControlPlane_tls_sds_key                  string `helm:"controlPlane.tls.sds.key"`
+	ControlPlane_tls_kds_cert                 string `helm:"controlPlane.tls.kds.cert"`
+	ControlPlane_tls_kds_key                  string `helm:"controlPlane.tls.kds.key"`
+	ControlPlane_injectorFailurePolicy        string `helm:"controlPlane.injectorFailurePolicy"`
+	DataPlane_image_registry                  string `helm:"dataPlane.image.registry"`
+	DataPlane_image_repositry                 string `helm:"dataPlane.image.repositry"`
+	DataPlane_image_tag                       string `helm:"dataPlane.image.tag"`
+	DataPlane_initImage_registry              string `helm:"dataPlane.initImage.registry"`
+	DataPlane_initImage_repositry             string `helm:"dataPlane.initImage.repositry"`
+	DataPlane_initImage_tag                   string `helm:"dataPlane.initImage.tag"`
+	ControlPlane_kdsGlobalAddress             string `helm:"controlPlane.kdsGlobalAddress"`
+	Cni_enabled                               bool   `helm:"cni.enabled"`
+	Cni_image_registry                        string `helm:"cni.image.registry"`
+	Cni_image_repositry                       string `helm:"cni.image.repositry"`
+	Cni_image_tag                             string `helm:"cni.image.tag"`
+	ControlPlane_mode                         string `helm:"controlPlane.mode"`
+	ControlPlane_zone                         string `helm:"controlPlane.zone"`
+	ControlPlane_globalRemoteSyncService_type string `helm:"controlPlane.globalRemoteSyncService.type"`
 }
 
 var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
-	Release_Namespace:                                "kuma-system",
-	Values_controlPlane_image_pullPolicy:             "IfNotPresent",
-	Values_controlPlane_image_registry:               "kong-docker-kuma-docker.bintray.io",
-	Values_controlPlane_image_repositry:              "kuma-cp",
-	Values_controlPlane_image_tag:                    kuma_version.Build.Version,
-	Values_controlPlane_service_name:                 "kuma-control-plane",
-	Values_controlPlane_tls_admission_cert:           "",
-	Values_controlPlane_tls_admission_key:            "",
-	Values_controlPlane_tls_sds_cert:                 "",
-	Values_controlPlane_tls_sds_key:                  "",
-	Values_controlPlane_tls_kds_cert:                 "",
-	Values_controlPlane_tls_kds_key:                  "",
-	Values_controlPlane_injectorFailurePolicy:        "Ignore",
-	Values_dataPlane_image_registry:                  "kong-docker-kuma-docker.bintray.io",
-	Values_dataPlane_image_repositry:                 "kuma-dp",
-	Values_dataPlane_image_tag:                       kuma_version.Build.Version,
-	Values_dataPlane_initImage_registry:              "kong-docker-kuma-docker.bintray.io",
-	Values_dataPlane_initImage_repositry:             "kuma-init",
-	Values_dataPlane_initImage_tag:                   kuma_version.Build.Version,
-	Values_cni_image_registry:                        "docker.io",
-	Values_cni_image_repositry:                       "lobkovilya/install-cni",
-	Values_cni_image_tag:                             "0.0.1",
-	Values_controlPlane_mode:                         core.Standalone,
-	Values_controlPlane_zone:                         "",
-	Values_controlPlane_globalRemoteSyncService_type: "LoadBalancer",
+	Namespace:                                 "kuma-system",
+	ControlPlane_image_pullPolicy:             "IfNotPresent",
+	ControlPlane_image_registry:               "kong-docker-kuma-docker.bintray.io",
+	ControlPlane_image_repositry:              "kuma-cp",
+	ControlPlane_image_tag:                    kuma_version.Build.Version,
+	ControlPlane_service_name:                 "kuma-control-plane",
+	ControlPlane_tls_admission_cert:           "",
+	ControlPlane_tls_admission_key:            "",
+	ControlPlane_tls_sds_cert:                 "",
+	ControlPlane_tls_sds_key:                  "",
+	ControlPlane_tls_kds_cert:                 "",
+	ControlPlane_tls_kds_key:                  "",
+	ControlPlane_injectorFailurePolicy:        "Ignore",
+	DataPlane_image_registry:                  "kong-docker-kuma-docker.bintray.io",
+	DataPlane_image_repositry:                 "kuma-dp",
+	DataPlane_image_tag:                       kuma_version.Build.Version,
+	DataPlane_initImage_registry:              "kong-docker-kuma-docker.bintray.io",
+	DataPlane_initImage_repositry:             "kuma-init",
+	DataPlane_initImage_tag:                   kuma_version.Build.Version,
+	Cni_image_registry:                        "docker.io",
+	Cni_image_repositry:                       "lobkovilya/install-cni",
+	Cni_image_tag:                             "0.0.1",
+	ControlPlane_mode:                         core.Standalone,
+	ControlPlane_zone:                         "",
+	ControlPlane_globalRemoteSyncService_type: "LoadBalancer",
 }
 
 var InstallCpTemplateFilesFn = InstallCpTemplateFiles
@@ -97,8 +97,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return err
 			}
 
-			if useNodePort && args.Values_controlPlane_mode == core.Global {
-				args.Values_controlPlane_globalRemoteSyncService_type = "NodePort"
+			if useNodePort && args.ControlPlane_mode == core.Global {
+				args.ControlPlane_globalRemoteSyncService_type = "NodePort"
 			}
 
 			if err := autogenerateCerts(&args); err != nil {
@@ -127,51 +127,51 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		},
 	}
 	// flags
-	cmd.Flags().StringVar(&args.Release_Namespace, "namespace", args.Release_Namespace, "namespace to install Kuma Control Plane to")
-	cmd.Flags().StringVar(&args.Values_controlPlane_image_pullPolicy, "image-pull-policy", args.Values_controlPlane_image_pullPolicy, "image pull policy that applies to all components of the Kuma Control Plane")
-	cmd.Flags().StringVar(&args.Values_controlPlane_image_registry, "control-plane-registry", args.Values_controlPlane_image_registry, "registry for the image of the Kuma Control Plane component")
-	cmd.Flags().StringVar(&args.Values_controlPlane_image_repositry, "control-plane-repository", args.Values_controlPlane_image_repositry, "repository for the image of the Kuma Control Plane component")
-	cmd.Flags().StringVar(&args.Values_controlPlane_image_tag, "control-plane-version", args.Values_controlPlane_image_tag, "version of the image of the Kuma Control Plane component")
-	cmd.Flags().StringVar(&args.Values_controlPlane_service_name, "control-plane-service-name", args.Values_controlPlane_service_name, "Service name of the Kuma Control Plane")
-	cmd.Flags().StringVar(&args.Values_controlPlane_tls_admission_cert, "admission-server-tls-cert", args.Values_controlPlane_tls_admission_cert, "TLS certificate for the admission web hooks implemented by the Kuma Control Plane")
-	cmd.Flags().StringVar(&args.Values_controlPlane_tls_admission_key, "admission-server-tls-key", args.Values_controlPlane_tls_admission_key, "TLS key for the admission web hooks implemented by the Kuma Control Plane")
-	cmd.Flags().StringVar(&args.Values_controlPlane_tls_sds_cert, "sds-tls-cert", args.Values_controlPlane_tls_sds_cert, "TLS certificate for the SDS server")
-	cmd.Flags().StringVar(&args.Values_controlPlane_tls_sds_key, "sds-tls-key", args.Values_controlPlane_tls_sds_key, "TLS key for the SDS server")
-	cmd.Flags().StringVar(&args.Values_controlPlane_tls_kds_cert, "kds-tls-cert", args.Values_controlPlane_tls_kds_cert, "TLS certificate for the KDS server")
-	cmd.Flags().StringVar(&args.Values_controlPlane_tls_kds_key, "kds-tls-key", args.Values_controlPlane_tls_kds_key, "TLS key for the KDS server")
-	cmd.Flags().StringVar(&args.Values_controlPlane_injectorFailurePolicy, "injector-failure-policy", args.Values_controlPlane_injectorFailurePolicy, "failue policy of the mutating web hook implemented by the Kuma Injector component")
-	cmd.Flags().StringVar(&args.Values_dataPlane_image_registry, "dataplane-registry", args.Values_dataPlane_image_registry, "registry for the image of the Kuma DataPlane component")
-	cmd.Flags().StringVar(&args.Values_dataPlane_image_repositry, "dataplane-repository", args.Values_dataPlane_image_repositry, "repository for the image of the Kuma DataPlane component")
-	cmd.Flags().StringVar(&args.Values_dataPlane_image_tag, "dataplane-version", args.Values_dataPlane_image_tag, "version of the image of the Kuma DataPlane component")
-	cmd.Flags().StringVar(&args.Values_dataPlane_initImage_registry, "dataplane-init-registry", args.Values_dataPlane_image_registry, "registry for the init image of the Kuma DataPlane component")
-	cmd.Flags().StringVar(&args.Values_dataPlane_initImage_repositry, "dataplane-init-repository", args.Values_dataPlane_image_repositry, "repository for the init image of the Kuma DataPlane component")
-	cmd.Flags().StringVar(&args.Values_dataPlane_initImage_tag, "dataplane-init-version", args.Values_dataPlane_image_tag, "version of the init image of the Kuma DataPlane component")
-	cmd.Flags().StringVar(&args.Values_controlPlane_kdsGlobalAddress, "kds-global-address", args.Values_controlPlane_kdsGlobalAddress, "URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)")
-	cmd.Flags().BoolVar(&args.Values_cni_enabled, "cni-enabled", args.Values_cni_enabled, "install Kuma with CNI instead of proxy init container")
-	cmd.Flags().StringVar(&args.Values_cni_image_registry, "cni-registry", args.Values_dataPlane_image_registry, "registry for the image of the Kuma CNI component")
-	cmd.Flags().StringVar(&args.Values_cni_image_repositry, "cni-repository", args.Values_dataPlane_image_repositry, "repository for the image of the Kuma CNI component")
-	cmd.Flags().StringVar(&args.Values_cni_image_tag, "cni-version", args.Values_dataPlane_image_tag, "version of the image of the Kuma CNI component")
-	cmd.Flags().StringVar(&args.Values_controlPlane_mode, "mode", args.Values_controlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
-	cmd.Flags().StringVar(&args.Values_controlPlane_zone, "zone", args.Values_controlPlane_zone, "set the Kuma zone name")
+	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install Kuma Control Plane to")
+	cmd.Flags().StringVar(&args.ControlPlane_image_pullPolicy, "image-pull-policy", args.ControlPlane_image_pullPolicy, "image pull policy that applies to all components of the Kuma Control Plane")
+	cmd.Flags().StringVar(&args.ControlPlane_image_registry, "control-plane-registry", args.ControlPlane_image_registry, "registry for the image of the Kuma Control Plane component")
+	cmd.Flags().StringVar(&args.ControlPlane_image_repositry, "control-plane-repository", args.ControlPlane_image_repositry, "repository for the image of the Kuma Control Plane component")
+	cmd.Flags().StringVar(&args.ControlPlane_image_tag, "control-plane-version", args.ControlPlane_image_tag, "version of the image of the Kuma Control Plane component")
+	cmd.Flags().StringVar(&args.ControlPlane_service_name, "control-plane-service-name", args.ControlPlane_service_name, "Service name of the Kuma Control Plane")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_admission_cert, "admission-server-tls-cert", args.ControlPlane_tls_admission_cert, "TLS certificate for the admission web hooks implemented by the Kuma Control Plane")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_admission_key, "admission-server-tls-key", args.ControlPlane_tls_admission_key, "TLS key for the admission web hooks implemented by the Kuma Control Plane")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_sds_cert, "sds-tls-cert", args.ControlPlane_tls_sds_cert, "TLS certificate for the SDS server")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_sds_key, "sds-tls-key", args.ControlPlane_tls_sds_key, "TLS key for the SDS server")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_kds_cert, "kds-tls-cert", args.ControlPlane_tls_kds_cert, "TLS certificate for the KDS server")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_kds_key, "kds-tls-key", args.ControlPlane_tls_kds_key, "TLS key for the KDS server")
+	cmd.Flags().StringVar(&args.ControlPlane_injectorFailurePolicy, "injector-failure-policy", args.ControlPlane_injectorFailurePolicy, "failue policy of the mutating web hook implemented by the Kuma Injector component")
+	cmd.Flags().StringVar(&args.DataPlane_image_registry, "dataplane-registry", args.DataPlane_image_registry, "registry for the image of the Kuma DataPlane component")
+	cmd.Flags().StringVar(&args.DataPlane_image_repositry, "dataplane-repository", args.DataPlane_image_repositry, "repository for the image of the Kuma DataPlane component")
+	cmd.Flags().StringVar(&args.DataPlane_image_tag, "dataplane-version", args.DataPlane_image_tag, "version of the image of the Kuma DataPlane component")
+	cmd.Flags().StringVar(&args.DataPlane_initImage_registry, "dataplane-init-registry", args.DataPlane_initImage_registry, "registry for the init image of the Kuma DataPlane component")
+	cmd.Flags().StringVar(&args.DataPlane_initImage_repositry, "dataplane-init-repository", args.DataPlane_initImage_repositry, "repository for the init image of the Kuma DataPlane component")
+	cmd.Flags().StringVar(&args.DataPlane_initImage_tag, "dataplane-init-version", args.DataPlane_initImage_tag, "version of the init image of the Kuma DataPlane component")
+	cmd.Flags().StringVar(&args.ControlPlane_kdsGlobalAddress, "kds-global-address", args.ControlPlane_kdsGlobalAddress, "URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)")
+	cmd.Flags().BoolVar(&args.Cni_enabled, "cni-enabled", args.Cni_enabled, "install Kuma with CNI instead of proxy init container")
+	cmd.Flags().StringVar(&args.Cni_image_registry, "cni-registry", args.Cni_image_registry, "registry for the image of the Kuma CNI component")
+	cmd.Flags().StringVar(&args.Cni_image_repositry, "cni-repository", args.Cni_image_repositry, "repository for the image of the Kuma CNI component")
+	cmd.Flags().StringVar(&args.Cni_image_tag, "cni-version", args.Cni_image_tag, "version of the image of the Kuma CNI component")
+	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
+	cmd.Flags().StringVar(&args.ControlPlane_zone, "zone", args.ControlPlane_zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
 	return cmd
 }
 
 func validateArgs(args InstallControlPlaneArgs) error {
-	if err := core.ValidateCpMode(args.Values_controlPlane_mode); err != nil {
+	if err := core.ValidateCpMode(args.ControlPlane_mode); err != nil {
 		return err
 	}
-	if args.Values_controlPlane_mode == core.Remote && args.Values_controlPlane_zone == "" {
+	if args.ControlPlane_mode == core.Remote && args.ControlPlane_zone == "" {
 		return errors.Errorf("--zone is mandatory with `remote` mode")
 	}
-	if args.Values_controlPlane_mode == core.Remote && args.Values_controlPlane_kdsGlobalAddress == "" {
+	if args.ControlPlane_mode == core.Remote && args.ControlPlane_kdsGlobalAddress == "" {
 		return errors.Errorf("--kds-global-address is mandatory with `remote` mode")
 	}
-	if args.Values_controlPlane_kdsGlobalAddress != "" {
-		if args.Values_controlPlane_mode != core.Remote {
+	if args.ControlPlane_kdsGlobalAddress != "" {
+		if args.ControlPlane_mode != core.Remote {
 			return errors.Errorf("--kds-global-address can only be used when --mode=remote")
 		}
-		u, err := url.Parse(args.Values_controlPlane_kdsGlobalAddress)
+		u, err := url.Parse(args.ControlPlane_kdsGlobalAddress)
 		if err != nil {
 			return errors.Errorf("--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port")
 		}
@@ -179,36 +179,36 @@ func validateArgs(args InstallControlPlaneArgs) error {
 			return errors.Errorf("--kds-global-address should start with grpcs://")
 		}
 	}
-	if (args.Values_controlPlane_tls_admission_cert == "") != (args.Values_controlPlane_tls_admission_key == "") {
+	if (args.ControlPlane_tls_admission_cert == "") != (args.ControlPlane_tls_admission_key == "") {
 		return errors.Errorf("both --admission-server-tls-cert and --admission-server-tls-key must be provided at the same time")
 	}
-	if (args.Values_controlPlane_tls_sds_cert == "") != (args.Values_controlPlane_tls_sds_key == "") {
+	if (args.ControlPlane_tls_sds_cert == "") != (args.ControlPlane_tls_sds_key == "") {
 		return errors.Errorf("both --sds-tls-cert and --sds-tls-key must be provided at the same time")
 	}
-	if (args.Values_controlPlane_tls_kds_cert == "") != (args.Values_controlPlane_tls_kds_key == "") {
+	if (args.ControlPlane_tls_kds_cert == "") != (args.ControlPlane_tls_kds_key == "") {
 		return errors.Errorf("both --kds-tls-cert and --kds-tls-key must be provided at the same time")
 	}
 	return nil
 }
 
 func autogenerateCerts(args *InstallControlPlaneArgs) error {
-	if args.Values_controlPlane_tls_admission_cert == "" && args.Values_controlPlane_tls_admission_key == "" {
-		fqdn := fmt.Sprintf("%s.%s.svc", args.Values_controlPlane_service_name, args.Release_Namespace)
+	if args.ControlPlane_tls_admission_cert == "" && args.ControlPlane_tls_admission_key == "" {
+		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlane_service_name, args.Namespace)
 		// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
 		admissionCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
 		}
-		args.Values_controlPlane_tls_admission_cert = string(admissionCert.CertPEM)
-		args.Values_controlPlane_tls_admission_key = string(admissionCert.KeyPEM)
+		args.ControlPlane_tls_admission_cert = string(admissionCert.CertPEM)
+		args.ControlPlane_tls_admission_key = string(admissionCert.KeyPEM)
 	}
 
-	if args.Values_controlPlane_tls_sds_cert == "" && args.Values_controlPlane_tls_sds_key == "" {
-		fqdn := fmt.Sprintf("%s.%s.svc", args.Values_controlPlane_service_name, args.Release_Namespace)
+	if args.ControlPlane_tls_sds_cert == "" && args.ControlPlane_tls_sds_key == "" {
+		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlane_service_name, args.Namespace)
 		hosts := []string{
 			fqdn,
-			fmt.Sprintf("%s.%s", args.Values_controlPlane_service_name, args.Release_Namespace),
-			args.Values_controlPlane_service_name,
+			fmt.Sprintf("%s.%s", args.ControlPlane_service_name, args.Namespace),
+			args.ControlPlane_service_name,
 			"localhost",
 		}
 		// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server
@@ -216,12 +216,12 @@ func autogenerateCerts(args *InstallControlPlaneArgs) error {
 		if err != nil {
 			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
 		}
-		args.Values_controlPlane_tls_sds_cert = string(sdsCert.CertPEM)
-		args.Values_controlPlane_tls_sds_key = string(sdsCert.KeyPEM)
+		args.ControlPlane_tls_sds_cert = string(sdsCert.CertPEM)
+		args.ControlPlane_tls_sds_key = string(sdsCert.KeyPEM)
 	}
 
-	if args.Values_controlPlane_tls_kds_cert == "" && args.Values_controlPlane_tls_kds_key == "" {
-		fqdn := fmt.Sprintf("%s.%s.svc", args.Values_controlPlane_service_name, args.Release_Namespace)
+	if args.ControlPlane_tls_kds_cert == "" && args.ControlPlane_tls_kds_key == "" {
+		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlane_service_name, args.Namespace)
 		hosts := []string{
 			fqdn,
 			"localhost",
@@ -230,8 +230,8 @@ func autogenerateCerts(args *InstallControlPlaneArgs) error {
 		if err != nil {
 			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
 		}
-		args.Values_controlPlane_tls_kds_cert = string(kdsCert.CertPEM)
-		args.Values_controlPlane_tls_kds_key = string(kdsCert.KeyPEM)
+		args.ControlPlane_tls_kds_cert = string(kdsCert.CertPEM)
+		args.ControlPlane_tls_kds_key = string(kdsCert.KeyPEM)
 	}
 	return nil
 }
@@ -241,7 +241,7 @@ func InstallCpTemplateFiles(args InstallControlPlaneArgs) (data.FileList, error)
 	if err != nil {
 		return nil, err
 	}
-	if args.Values_cni_enabled {
+	if args.Cni_enabled {
 		templateCNI, err := data.ReadFiles(kumacni.Templates)
 		if err != nil {
 			return nil, err

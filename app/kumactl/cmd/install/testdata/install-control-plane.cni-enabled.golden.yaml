@@ -5513,7 +5513,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: kong-docker-kuma-docker.bintray.io/lobkovilya/install-cni:0.0.1
+          image: docker.io/lobkovilya/install-cni:0.0.1
           imagePullPolicy: Always
           command: ["/install-cni.sh"]
           env:
