@@ -143,12 +143,6 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml string) error {
-	// apply the dataplane
-	err := c.controlplane.kumactl.KumactlApplyFromString(dpyaml)
-	if err != nil {
-		return err
-	}
-
 	// generate the token on the CP node
 	sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
 		"-H", "\"Content-Type: application/json\"",
@@ -161,7 +155,7 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml string) e
 	token := sshApp.Out()
 
 	cpAddress := "http://" + c.apps[AppModeCP].ip + ":5681"
-	app.CreateDP(token, cpAddress, appname)
+	app.CreateDP(token, cpAddress, appname, dpyaml)
 
 	return app.dpApp.Start()
 }
