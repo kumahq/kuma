@@ -214,6 +214,8 @@ runtime:
             memory: 512Mi
       initContainer:
         image: kuma/kuma-init:latest
+  universal:
+    dataplaneCleanupAge: 72h0m0s
 
 # Default Kuma entities configuration
 defaults:
