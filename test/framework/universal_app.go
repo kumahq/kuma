@@ -202,19 +202,24 @@ func (s *UniversalApp) CreateMainApp(env []string, args []string) {
 	s.mainApp = NewSshApp(s.verbose, s.ports[sshPort], env, args)
 }
 
-func (s *UniversalApp) CreateDP(token, cpAddress, appname string) {
+func (s *UniversalApp) CreateDP(token, cpAddress, appname, dpyaml string) {
 	// and echo it to the Application Node
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
 		panic(err)
 	}
 
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + dpyaml + "\"", ">", "/kuma/dpyaml-" + appname}).Run()
+	if err != nil {
+		panic(err)
+	}
 	// run the DP
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"kuma-dp", "run",
 		"--name=dp-" + appname,
 		"--mesh=default",
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
+		"--dataplane-template=/kuma/dpyaml-" + appname,
 		"--binary-path", "/usr/local/bin/envoy"})
 }
 
