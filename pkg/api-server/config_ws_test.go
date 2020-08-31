@@ -205,6 +205,9 @@ var _ = Describe("Config WS", func() {
                   "uid": 5678
                 }
               }
+            },
+            "universal": {
+              "dataplaneCleanupAge": "72h0m0s"
             }
           },
           "sdsServer": {
