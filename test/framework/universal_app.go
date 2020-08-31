@@ -64,9 +64,11 @@ networking:
       kuma.io/service: demo-client
   outbound:
   - port: 4000
-    service: echo-server_kuma-test_svc_%s
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
   - port: 4001
-    service: echo-server_kuma-test_svc_%s
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
 `
 )
 
@@ -217,9 +219,9 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"kuma-dp", "run",
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
-		"--dataplane-template=/kuma/dpyaml-" + appname,
-		"--var name=dp-" + appname,
-		"--var address=" + ip,
+		"--dataplane=/kuma/dpyaml-" + appname,
+		"--var", "name=dp-" + appname,
+		"--var", "address=" + ip,
 		"--binary-path", "/usr/local/bin/envoy"})
 }
 

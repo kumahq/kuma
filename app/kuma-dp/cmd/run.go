@@ -152,7 +152,7 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
-	cmd.PersistentFlags().StringVarP(&cfg.DataplaneRuntime.DataplaneTemplate, "dataplane-template", "t", "", "Path to Dataplane template to apply")
+	cmd.PersistentFlags().StringVarP(&cfg.DataplaneRuntime.DataplaneTemplate, "dataplane", "d", "", "Path to Dataplane template to apply")
 	cmd.PersistentFlags().StringToStringVarP(&cfg.DataplaneRuntime.DataplaneTemplateVars, "var", "v", map[string]string{}, "Variables to replace Dataplane template")
 	return cmd
 }

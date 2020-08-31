@@ -323,9 +323,9 @@ var _ = Describe("run", func() {
 					"--admin-port", fmt.Sprintf("%d", port),
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					"--dataplane-token-file", filepath.Join("testdata", "token"),
-					"--dataplane-template", filepath.Join("testdata", "dataplane_template.yaml"),
-					"--var name=example",
-					"--var address=192.168.0.1",
+					"--dataplane", filepath.Join("testdata", "dataplane_template.yaml"),
+					"--var", "name=example",
+					"--var", "address=127.0.0.1",
 				},
 				expectedFile: "",
 			}
