@@ -60,9 +60,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 
 		// Generate route, routes are only applicable to the HTTP, HTTP/2 and GRPC protocols
 		switch protocol {
-		case mesh_core.ProtocolHTTP:
-			fallthrough
-		case mesh_core.ProtocolHTTP2:
+		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 			fallthrough
 		case mesh_core.ProtocolGRPC:
 			route, err := g.generateRDS(proxy, subsets, outbound)
@@ -106,9 +104,7 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName))).
 				Configure(envoy_listeners.GrpcStats())
-		case mesh_core.ProtocolHTTP:
-			fallthrough
-		case mesh_core.ProtocolHTTP2:
+		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
 				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).

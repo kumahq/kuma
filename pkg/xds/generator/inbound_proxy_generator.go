@@ -34,7 +34,8 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
 		clusterBuilder := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.StaticCluster(localClusterName, endpoint.WorkloadIP, endpoint.WorkloadPort))
-		if protocol == mesh_core.ProtocolHTTP2 || protocol == mesh_core.ProtocolGRPC {
+		switch protocol {
+		case mesh_core.ProtocolHTTP2, mesh_core.ProtocolGRPC:
 			clusterBuilder.Configure(envoy_clusters.Http2())
 		}
 		cluster, err := clusterBuilder.Build()
@@ -54,9 +55,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			filterChainBuilder := envoy_listeners.NewFilterChainBuilder()
 			switch protocol {
 			// configuration for HTTP case
-			case mesh_core.ProtocolHTTP:
-				fallthrough
-			case mesh_core.ProtocolHTTP2:
+			case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
 					Configure(envoy_listeners.FaultInjection(proxy.FaultInjections[endpoint])).
