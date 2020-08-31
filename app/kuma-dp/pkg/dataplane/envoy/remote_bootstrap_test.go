@@ -25,6 +25,7 @@ var _ = Describe("Remote Bootstrap", func() {
 
 	type testCase struct {
 		config                   kuma_dp.Config
+		dataplane                *mesh.DataplaneResource
 		expectedBootstrapRequest string
 	}
 
@@ -51,9 +52,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
 
 		// when
-		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, &mesh.DataplaneResource{
-			Meta: &model.ResourceMeta{Mesh: "default", Name: "dp-1"},
-		})
+		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, given.dataplane)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -69,13 +68,16 @@ var _ = Describe("Remote Bootstrap", func() {
 
 				return testCase{
 					config: cfg,
+					dataplane: &mesh.DataplaneResource{
+						Meta: &model.ResourceMeta{Mesh: "demo", Name: "sample"},
+					},
 					expectedBootstrapRequest: `
                     {
                       "mesh": "demo",
                       "name": "sample",
                       "adminPort": 4321,
                       "dataplaneTokenPath": "/tmp/token",
-                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlZmF1bHQKbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBkcC0xCnR5cGU6IERhdGFwbGFuZQo="
+                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlbW8KbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBzYW1wbGUKdHlwZTogRGF0YXBsYW5lCg=="
                     }
 `,
 				}
@@ -91,13 +93,16 @@ var _ = Describe("Remote Bootstrap", func() {
 
 				return testCase{
 					config: cfg,
+					dataplane: &mesh.DataplaneResource{
+						Meta: &model.ResourceMeta{Mesh: "demo", Name: "sample"},
+					},
 					expectedBootstrapRequest: `
                     {
                       "mesh": "demo",
                       "name": "sample",
                       "adminPort": 4321,
                       "dataplaneTokenPath": "/tmp/token",
-                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlZmF1bHQKbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBkcC0xCnR5cGU6IERhdGFwbGFuZQo="
+                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlbW8KbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBzYW1wbGUKdHlwZTogRGF0YXBsYW5lCg=="
                     }
 `,
 				}
@@ -112,12 +117,15 @@ var _ = Describe("Remote Bootstrap", func() {
 
 				return testCase{
 					config: cfg,
+					dataplane: &mesh.DataplaneResource{
+						Meta: &model.ResourceMeta{Mesh: "demo", Name: "sample"},
+					},
 					expectedBootstrapRequest: `
                     {
                       "mesh": "demo",
                       "name": "sample",
                       "dataplaneTokenPath": "/tmp/token",
-                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlZmF1bHQKbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBkcC0xCnR5cGU6IERhdGFwbGFuZQo="
+                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlbW8KbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBzYW1wbGUKdHlwZTogRGF0YXBsYW5lCg=="
                     }
 `,
 				}

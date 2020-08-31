@@ -315,6 +315,21 @@ var _ = Describe("run", func() {
 				expectedFile: "",
 			}
 		}),
+		Entry("can be launched with dataplane template", func() testCase {
+			return testCase{
+				envVars: map[string]string{},
+				args: []string{
+					"--cp-address", "http://localhost:1234",
+					"--admin-port", fmt.Sprintf("%d", port),
+					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+					"--dataplane-token-file", filepath.Join("testdata", "token"),
+					"--dataplane-template", filepath.Join("testdata", "dataplane_template.yaml"),
+					"--var name=example",
+					"--var address=192.168.0.1",
+				},
+				expectedFile: "",
+			}
+		}),
 	)
 
 	It("should fail when dataplane token server is enabled but token is not provided", func() {

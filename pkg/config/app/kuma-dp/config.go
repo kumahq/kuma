@@ -158,6 +158,8 @@ type DataplaneRuntime struct {
 	Token string `yaml:"dataplaneToken,omitempty" envconfig:"kuma_dataplane_runtime_token"`
 	// DataplaneTemplate is a Dataplane resource that will be applied on Kuma CP
 	DataplaneTemplate string `yaml:"resource,omitempty" envconfig:"kuma_dataplane_runtime_resource"`
+	// DataplaneTemplateVars are the StringToString values tat
+	DataplaneTemplateVars map[string]string `yaml:"vars,omitempty"`
 }
 
 var _ config.Config = &Config{}
@@ -166,9 +168,17 @@ func (c *Config) Validate() (errs error) {
 	if err := c.ControlPlane.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ControlPlane is not valid"))
 	}
-	if err := c.Dataplane.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
+	switch c.DataplaneRuntime.DataplaneTemplate {
+	case "":
+		if err := c.Dataplane.Validate(); err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
+		}
+	default:
+		if err := c.Dataplane.ValidateForTemplate(); err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
+		}
 	}
+
 	if err := c.DataplaneRuntime.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".DataplaneRuntime is not valid"))
 	}
@@ -203,6 +213,14 @@ func (d *Dataplane) Validate() (errs error) {
 	if d.Name == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Name must be non-empty"))
 	}
+	// Notice that d.AdminPort is always valid by design of PortRange
+	if d.DrainTime <= 0 {
+		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
+	}
+	return
+}
+
+func (d *Dataplane) ValidateForTemplate() (errs error) {
 	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))

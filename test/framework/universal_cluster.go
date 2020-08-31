@@ -92,8 +92,8 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 
 	switch mode {
 	case core.Remote:
-		dpyaml := fmt.Sprintf(IngressDataplane, app.ip, kdsPort)
-		err = c.CreateDP(app, "ingress", dpyaml)
+		dpyaml := fmt.Sprintf(IngressDataplane, kdsPort)
+		err = c.CreateDP(app, "ingress", app.ip, dpyaml)
 		if err != nil {
 			return err
 		}
@@ -142,7 +142,7 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml string) error {
+func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml string) error {
 	// generate the token on the CP node
 	sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
 		"-H", "\"Content-Type: application/json\"",
@@ -155,7 +155,7 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml string) e
 	token := sshApp.Out()
 
 	cpAddress := "http://" + c.apps[AppModeCP].ip + ":5681"
-	app.CreateDP(token, cpAddress, appname, dpyaml)
+	app.CreateDP(token, cpAddress, appname, ip, dpyaml)
 
 	return app.dpApp.Start()
 }
@@ -185,12 +185,12 @@ func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 	dpyaml := ""
 	switch appname {
 	case AppModeEchoServer:
-		dpyaml = fmt.Sprintf(EchoServerDataplane, "dp-"+appname, ip, "8080", "80", "8080")
+		dpyaml = fmt.Sprintf(EchoServerDataplane, "8080", "80", "8080")
 	case AppModeDemoClient:
-		dpyaml = fmt.Sprintf(DemoClientDataplane, "dp-"+appname, ip, "13000", "3000", "80", "8080")
+		dpyaml = fmt.Sprintf(DemoClientDataplane, "13000", "3000", "80", "8080")
 	}
 
-	err = c.CreateDP(app, appname, dpyaml)
+	err = c.CreateDP(app, appname, ip, dpyaml)
 	if err != nil {
 		return err
 	}

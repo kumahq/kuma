@@ -22,7 +22,6 @@ import (
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
@@ -77,8 +76,9 @@ func newRunCmd() *cobra.Command {
 				}
 			}
 
-			dp, err := readDataplaneResource(cmd, cfg)
+			dp, err := readDataplaneResource(cmd, &cfg)
 			if err != nil {
+				runLog.Error(err, "unable to load template")
 				return err
 			}
 
@@ -153,6 +153,7 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
 	cmd.PersistentFlags().StringVarP(&cfg.DataplaneRuntime.DataplaneTemplate, "dataplane-template", "t", "", "Path to Dataplane template to apply")
+	cmd.PersistentFlags().StringToStringVarP(&cfg.DataplaneRuntime.DataplaneTemplateVars, "var", "v", map[string]string{}, "Variables to replace Dataplane template")
 	return cmd
 }
 
@@ -192,22 +193,4 @@ func fetchCatalog(cfg kuma_dp.Config) (*catalog.Catalog, error) {
 	}
 	runLog.Info("connection successful", "catalog", c)
 	return &c, nil
-}
-
-func readDataplaneResource(cmd *cobra.Command, cfg kuma_dp.Config) (*core_mesh.DataplaneResource, error) {
-	var b []byte
-	var err error
-	switch cfg.DataplaneRuntime.DataplaneTemplate {
-	case "":
-		return nil, nil
-	case "-":
-		if b, err = ioutil.ReadAll(cmd.InOrStdin()); err != nil {
-			return nil, err
-		}
-	default:
-		if b, err = ioutil.ReadFile(cfg.DataplaneRuntime.DataplaneTemplate); err != nil {
-			return nil, errors.Wrap(err, "error while reading provided file")
-		}
-	}
-	return core_mesh.ParseDataplaneYAML(b)
 }

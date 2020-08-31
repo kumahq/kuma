@@ -30,7 +30,7 @@ type: Dataplane
 mesh: default
 name: dp-ingress
 networking:
-  address: %s
+  address: {{ address }}
   ingress: {}
   inbound:
   - port: %d	
@@ -40,9 +40,9 @@ networking:
 	EchoServerDataplane = `
 type: Dataplane
 mesh: default
-name: %s
+name: {{ name }}
 networking:
-  address: %s
+  address:  {{ address }}
   inbound:
   - port: %s
     servicePort: %s
@@ -54,9 +54,9 @@ networking:
 	DemoClientDataplane = `
 type: Dataplane
 mesh: default
-name: %s
+name: {{ name }}
 networking:
-  address: %s
+  address: {{ address }}
   inbound:
   - port: %s
     servicePort: %s
@@ -202,7 +202,7 @@ func (s *UniversalApp) CreateMainApp(env []string, args []string) {
 	s.mainApp = NewSshApp(s.verbose, s.ports[sshPort], env, args)
 }
 
-func (s *UniversalApp) CreateDP(token, cpAddress, appname, dpyaml string) {
+func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 	// and echo it to the Application Node
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
@@ -215,11 +215,11 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, dpyaml string) {
 	}
 	// run the DP
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"kuma-dp", "run",
-		"--name=dp-" + appname,
-		"--mesh=default",
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
 		"--dataplane-template=/kuma/dpyaml-" + appname,
+		"--var name=dp-" + appname,
+		"--var address=" + ip,
 		"--binary-path", "/usr/local/bin/envoy"})
 }
 
