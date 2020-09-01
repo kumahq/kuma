@@ -43,8 +43,8 @@ func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
 func (t *SecretResource) Validate() error {
 	return nil
 }
-func (t *SecretResource) Meshed() bool {
-	return true
+func (t *SecretResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
 }
 
 var _ model.ResourceList = &SecretResourceList{}

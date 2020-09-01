@@ -10,7 +10,7 @@ type from struct{}
 
 func (c *from) Resource(r model.Resource) *Resource {
 	var meshName string
-	if r.Meshed() {
+	if r.Scope() == model.ScopeMesh {
 		meshName = r.GetMeta().GetMesh()
 	}
 	return &Resource{

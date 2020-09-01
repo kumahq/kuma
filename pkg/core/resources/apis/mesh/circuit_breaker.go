@@ -46,8 +46,8 @@ func (c *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (c *CircuitBreakerResource) Meshed() bool {
-	return true
+func (c *CircuitBreakerResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
 }
 
 var _ model.ResourceList = &CircuitBreakerResourceList{}

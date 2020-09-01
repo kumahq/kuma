@@ -49,8 +49,8 @@ func (t *ZoneInsightResource) Validate() error {
 	return nil
 }
 
-func (t *ZoneInsightResource) Meshed() bool {
-	return false
+func (t *ZoneInsightResource) Scope() model.ResourceScope {
+	return model.ScopeGlobal
 }
 
 var _ model.ResourceList = &ZoneInsightResourceList{}

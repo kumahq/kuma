@@ -40,8 +40,8 @@ func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
-func (t *ProxyTemplateResource) Meshed() bool {
-	return true
+func (t *ProxyTemplateResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
 }
 
 var _ model.ResourceList = &ProxyTemplateResourceList{}

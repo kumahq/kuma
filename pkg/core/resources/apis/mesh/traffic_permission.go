@@ -40,8 +40,8 @@ func (t *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
-func (t *TrafficPermissionResource) Meshed() bool {
-	return true
+func (t *TrafficPermissionResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
 }
 
 var _ model.ResourceList = &TrafficPermissionResourceList{}

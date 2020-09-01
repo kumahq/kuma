@@ -44,9 +44,8 @@ func (t *DataplaneInsightResource) SetSpec(spec model.ResourceSpec) error {
 func (t *DataplaneInsightResource) Validate() error {
 	return nil
 }
-
-func (t *DataplaneInsightResource) Meshed() bool {
-	return true
+func (t *DataplaneInsightResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
 }
 
 var _ model.ResourceList = &DataplaneInsightResourceList{}

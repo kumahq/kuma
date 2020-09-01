@@ -21,10 +21,11 @@ type ResourceApi interface {
 
 func NewResourceApi(resType model.ResourceType, path string) ResourceApi {
 	res, _ := registry.Global().NewObject(resType)
-	if res.Meshed() {
+	if res.Scope() == model.ScopeGlobal {
+		return &nonMeshedApi{CollectionPath: path}
+	} else {
 		return &meshedApi{CollectionPath: path}
 	}
-	return &nonMeshedApi{CollectionPath: path}
 }
 
 type meshedApi struct {

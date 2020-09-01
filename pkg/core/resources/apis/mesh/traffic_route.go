@@ -40,8 +40,8 @@ func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
-func (t *TrafficRouteResource) Meshed() bool {
-	return true
+func (t *TrafficRouteResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
 }
 
 var _ model.ResourceList = &TrafficRouteResourceList{}

@@ -49,8 +49,8 @@ func (t *TrafficRouteResource) Validate() error {
 	return err.OrNil()
 }
 
-func (t *TrafficRouteResource) Meshed() bool {
-	return true
+func (t *TrafficRouteResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
 }
 
 var _ model.ResourceList = &TrafficRouteResourceList{}

@@ -40,8 +40,8 @@ func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
-func (t *ZoneResource) Meshed() bool {
-	return false
+func (t *ZoneResource) Scope() model.ResourceScope {
+	return model.ScopeGlobal
 }
 
 var _ model.ResourceList = &ZoneResourceList{}

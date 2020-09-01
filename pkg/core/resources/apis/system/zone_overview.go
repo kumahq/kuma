@@ -50,8 +50,8 @@ func (t *ZoneOverviewResource) Validate() error {
 	return nil
 }
 
-func (t *ZoneOverviewResource) Meshed() bool {
-	return false
+func (t *ZoneOverviewResource) Scope() model.ResourceScope {
+	return model.ScopeGlobal
 }
 
 var _ model.ResourceList = &ZoneOverviewResourceList{}

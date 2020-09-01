@@ -23,6 +23,13 @@ type ResourceKey struct {
 	Name string
 }
 
+type ResourceScope string
+
+const(
+	ScopeMesh = "Mesh"
+	ScopeGlobal = "Global"
+)
+
 type Resource interface {
 	GetType() ResourceType
 	GetMeta() ResourceMeta
@@ -30,7 +37,7 @@ type Resource interface {
 	GetSpec() ResourceSpec
 	SetSpec(ResourceSpec) error
 	Validate() error
-	Meshed() bool
+	Scope() ResourceScope
 }
 
 type ResourceType string

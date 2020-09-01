@@ -40,8 +40,8 @@ func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
-func (t *MeshResource) Meshed() bool {
-	return false
+func (t *MeshResource) Scope() model.ResourceScope {
+	return model.ScopeGlobal
 }
 
 var _ model.ResourceList = &MeshResourceList{}

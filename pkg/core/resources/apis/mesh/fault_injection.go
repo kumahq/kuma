@@ -46,8 +46,8 @@ func (f *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (f *FaultInjectionResource) Meshed() bool {
-	return true
+func (f *FaultInjectionResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
 }
 
 var _ model.ResourceList = &FaultInjectionResourceList{}

@@ -41,8 +41,8 @@ func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
-func (t *DataplaneResource) Meshed() bool {
-	return true
+func (t *DataplaneResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
 }
 
 var _ model.ResourceList = &DataplaneResourceList{}
