@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
 var From = &from{}
@@ -34,4 +35,16 @@ func (c *from) ResourceList(rs model.ResourceList) *ResourceList {
 		Total: rs.GetPagination().Total,
 		Items: items,
 	}
+}
+
+func (r *Resource) ToCore() (model.Resource, error) {
+	resource, err := registry.Global().NewObject(model.ResourceType(r.Meta.Type))
+	if err != nil {
+		return nil, err
+	}
+	resource.SetMeta(&r.Meta)
+	if err := resource.SetSpec(r.Spec); err != nil {
+		return nil, err
+	}
+	return resource, nil
 }

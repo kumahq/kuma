@@ -373,9 +373,9 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Expect(buf.String()).To(Equal(
-			`creationTime: "1970-01-01T00:00:00Z"
+			`creationTime: "0001-01-01T00:00:00Z"
 mesh: default
-modificationTime: "1970-01-01T00:00:00Z"
+modificationTime: "0001-01-01T00:00:00Z"
 name: sample
 networking:
   address: 2.2.2.2
@@ -431,14 +431,14 @@ type: Dataplane
 type: Dataplane
 name: dp-1
 `,
-			err: "YAML contains invalid resource: Mesh field cannot be empty",
+			err: "mesh: cannot be empty",
 		}),
 		Entry("no name", testCase{
 			resource: `
 type: Dataplane
 mesh: default
 `,
-			err: "YAML contains invalid resource: Name field cannot be empty",
+			err: "name: cannot be empty",
 		}),
 		Entry("invalid data", testCase{
 			resource: `

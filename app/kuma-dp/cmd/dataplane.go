@@ -10,9 +10,11 @@ import (
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
-func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*core_mesh.DataplaneResource, error) {
+func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*rest.Resource, error) {
 	var b []byte
 	var err error
 	// load from file first
@@ -37,16 +39,18 @@ func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*core_mesh.
 	b = processDataplaneTemplate(b, cfg.DataplaneRuntime.ResourceVars)
 	runLog.Info("rendered dataplane", "dataplane", string(b))
 
-	dp, err := core_mesh.ParseDataplaneYAML(b)
+	res, err := rest.Unmarshall(b)
 	if err != nil {
 		return nil, err
 	}
-
-	if err := core_mesh.ValidateMeta(dp.Meta.GetName(), dp.Meta.GetMesh()); err.HasViolations() {
+	if res.Meta.Type != string(core_mesh.DataplaneType) {
+		return nil, errors.Errorf("invalid resource of type: %s. Expected: Dataplane", res.Meta.Type)
+	}
+	if err := core_mesh.ValidateMeta(res.Meta.GetName(), res.Meta.GetMesh(), model.ScopeMesh); err.HasViolations() {
 		return nil, &err
 	}
 
-	return dp, nil
+	return res, nil
 }
 
 type contextMap map[string]interface{}

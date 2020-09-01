@@ -10,12 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/test/resources/model"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
@@ -25,7 +24,7 @@ var _ = Describe("Remote Bootstrap", func() {
 
 	type testCase struct {
 		config                   kuma_dp.Config
-		dataplane                *mesh.DataplaneResource
+		dataplane                *rest.Resource
 		expectedBootstrapRequest string
 	}
 
@@ -68,8 +67,12 @@ var _ = Describe("Remote Bootstrap", func() {
 
 				return testCase{
 					config: cfg,
-					dataplane: &mesh.DataplaneResource{
-						Meta: &model.ResourceMeta{Mesh: "demo", Name: "sample"},
+					dataplane: &rest.Resource{
+						Meta: rest.ResourceMeta{
+							Type: "Dataplane",
+							Mesh: "demo",
+							Name: "sample",
+						},
 					},
 					expectedBootstrapRequest: `
                     {
@@ -93,8 +96,12 @@ var _ = Describe("Remote Bootstrap", func() {
 
 				return testCase{
 					config: cfg,
-					dataplane: &mesh.DataplaneResource{
-						Meta: &model.ResourceMeta{Mesh: "demo", Name: "sample"},
+					dataplane: &rest.Resource{
+						Meta: rest.ResourceMeta{
+							Type: "Dataplane",
+							Mesh: "demo",
+							Name: "sample",
+						},
 					},
 					expectedBootstrapRequest: `
                     {
@@ -117,8 +124,12 @@ var _ = Describe("Remote Bootstrap", func() {
 
 				return testCase{
 					config: cfg,
-					dataplane: &mesh.DataplaneResource{
-						Meta: &model.ResourceMeta{Mesh: "demo", Name: "sample"},
+					dataplane: &rest.Resource{
+						Meta: rest.ResourceMeta{
+							Type: "Dataplane",
+							Mesh: "demo",
+							Name: "sample",
+						},
 					},
 					expectedBootstrapRequest: `
                     {
@@ -159,8 +170,12 @@ var _ = Describe("Remote Bootstrap", func() {
 		// when
 		cfg := kuma_dp.DefaultConfig()
 		cfg.ControlPlane.BootstrapServer.Retry.Backoff = 10 * time.Millisecond
-		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, &mesh.DataplaneResource{
-			Meta: &model.ResourceMeta{Mesh: "default", Name: "dp-1"},
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, &rest.Resource{
+			Meta: rest.ResourceMeta{
+				Type: "Dataplane",
+				Mesh: "default",
+				Name: "dp-1",
+			},
 		})
 
 		// then
@@ -187,8 +202,8 @@ var _ = Describe("Remote Bootstrap", func() {
 		config := kuma_dp.DefaultConfig()
 		config.ControlPlane.BootstrapServer.Retry.Backoff = 10 * time.Millisecond
 		config.ControlPlane.BootstrapServer.Retry.MaxDuration = 100 * time.Millisecond
-		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config, &mesh.DataplaneResource{
-			Meta: &model.ResourceMeta{Mesh: "default", Name: "dp-1"},
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config, &rest.Resource{
+			Meta: rest.ResourceMeta{Mesh: "default", Name: "dp-1"},
 		})
 
 		// then

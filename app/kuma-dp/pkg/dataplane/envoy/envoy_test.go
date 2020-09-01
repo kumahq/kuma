@@ -12,8 +12,6 @@ import (
 	"strings"
 	"time"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
 	"github.com/golang/protobuf/proto"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -23,6 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 var _ = Describe("Envoy", func() {
@@ -74,7 +73,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *core_mesh.DataplaneResource) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config, *rest.Resource) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{
 					Node: &envoy_core.Node{
 						Id: "example",
@@ -145,7 +144,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *core_mesh.DataplaneResource) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config, *rest.Resource) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{}, nil
 			}
 
@@ -187,7 +186,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *core_mesh.DataplaneResource) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config, *rest.Resource) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{}, nil
 			}
 

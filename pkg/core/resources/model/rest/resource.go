@@ -19,6 +19,32 @@ type ResourceMeta struct {
 	ModificationTime time.Time `json:"modificationTime"`
 }
 
+func (r *ResourceMeta) GetName() string {
+	return r.Name
+}
+
+func (r *ResourceMeta) GetNameExtensions() model.ResourceNameExtensions {
+	return model.ResourceNameExtensionsUnsupported
+}
+
+func (r *ResourceMeta) GetVersion() string {
+	return ""
+}
+
+func (r *ResourceMeta) GetMesh() string {
+	return r.Mesh
+}
+
+func (r *ResourceMeta) GetCreationTime() time.Time {
+	return r.CreationTime
+}
+
+func (r *ResourceMeta) GetModificationTime() time.Time {
+	return r.ModificationTime
+}
+
+var _ model.ResourceMeta = &ResourceMeta{}
+
 type Resource struct {
 	Meta ResourceMeta
 	Spec model.ResourceSpec

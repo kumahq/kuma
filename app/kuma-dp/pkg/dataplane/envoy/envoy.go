@@ -6,11 +6,10 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"time"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-
-	"path/filepath"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -30,13 +29,13 @@ var (
 	newConfigFile = GenerateBootstrapFile
 )
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *core_mesh.DataplaneResource) (proto.Message, error)
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource) (proto.Message, error)
 
 type Opts struct {
 	Catalog   catalog.Catalog
 	Config    kuma_dp.Config
 	Generator BootstrapConfigFactoryFunc
-	Dataplane *core_mesh.DataplaneResource
+	Dataplane *rest.Resource
 	Stdout    io.Writer
 	Stderr    io.Writer
 }

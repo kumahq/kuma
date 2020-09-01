@@ -13,7 +13,7 @@ import (
 	"strings"
 	"syscall"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
@@ -56,7 +56,7 @@ var _ = Describe("run", func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
 		backupCatalogClientFactory = catalogClientFactory
-		bootstrapGenerator = func(_ string, cfg kumadp.Config, dp *core_mesh.DataplaneResource) (proto.Message, error) {
+		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource) (proto.Message, error) {
 			bootstrap := envoy_bootstrap.Bootstrap{}
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())

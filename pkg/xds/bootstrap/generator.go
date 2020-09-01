@@ -9,6 +9,7 @@ import (
 	"text/template"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
@@ -70,9 +71,13 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 // 2) Dataplane is created before kuma-dp run, in this case we access storage to fetch it (ex. Kubernetes)
 func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {
 	if request.DataplaneResource != "" {
-		dp, err := core_mesh.ParseDataplaneYAML([]byte(request.DataplaneResource))
+		res, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
 		if err != nil {
 			return nil, err
+		}
+		dp, ok := res.(*core_mesh.DataplaneResource)
+		if !ok {
+			return nil, errors.Errorf("invalid resource")
 		}
 		if err := dp.Validate(); err != nil {
 			return nil, err

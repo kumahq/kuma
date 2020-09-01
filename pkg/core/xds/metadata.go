@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	"github.com/kumahq/kuma/pkg/core"
 
@@ -77,8 +78,12 @@ func DataplaneMetadataFromNode(node *envoy_core.Node) *DataplaneMetadata {
 		}
 	}
 	if value := node.Metadata.Fields[fieldDataplaneDataplaneResource]; value != nil {
-		dp, err := core_mesh.ParseDataplaneYAML([]byte(value.GetStringValue()))
+		res, err := rest.UnmarshallToCore([]byte(value.GetStringValue()))
 		if err != nil {
+			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
+		}
+		dp, ok := res.(*core_mesh.DataplaneResource)
+		if !ok {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
 		}
 		metadata.DataplaneResource = dp

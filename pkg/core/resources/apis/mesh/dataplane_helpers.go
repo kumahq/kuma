@@ -3,12 +3,6 @@ package mesh
 import (
 	"net"
 	"strings"
-	"time"
-
-	"github.com/ghodss/yaml"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	"github.com/golang/protobuf/proto"
 
@@ -142,52 +136,4 @@ func (d *DataplaneResource) GetIP() string {
 		return ""
 	}
 	return d.Spec.Networking.Address
-}
-
-func ParseDataplaneYAML(bytes []byte) (*DataplaneResource, error) {
-	resMeta := rest.ResourceMeta{}
-	if err := yaml.Unmarshal(bytes, &resMeta); err != nil {
-		return nil, err
-	}
-	dp := &DataplaneResource{}
-	if err := util_proto.FromYAML(bytes, dp.GetSpec()); err != nil {
-		return nil, err
-	}
-	dp.SetMeta(meta{
-		Name: resMeta.Name,
-		Mesh: resMeta.Mesh,
-	})
-	return dp, nil
-}
-
-var _ model.ResourceMeta = &meta{}
-
-// meta is private implementation of ResourceMeta exclusively for parsing Dataplanes
-type meta struct {
-	Name string
-	Mesh string
-}
-
-func (m meta) GetName() string {
-	return m.Name
-}
-
-func (m meta) GetNameExtensions() model.ResourceNameExtensions {
-	return model.ResourceNameExtensionsUnsupported
-}
-
-func (m meta) GetVersion() string {
-	return ""
-}
-
-func (m meta) GetMesh() string {
-	return m.Mesh
-}
-
-func (m meta) GetCreationTime() time.Time {
-	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
-}
-
-func (m meta) GetModificationTime() time.Time {
-	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
 }

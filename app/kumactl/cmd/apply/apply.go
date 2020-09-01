@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
-	"github.com/ghodss/yaml"
 	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -18,13 +18,11 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const (
@@ -91,9 +89,12 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return errors.Wrap(err, "error compiling config from template")
 			}
 
-			res, err := parseResource(configBytes)
+			res, err := rest.UnmarshallToCore(configBytes)
 			if err != nil {
 				return errors.Wrap(err, "YAML contains invalid resource")
+			}
+			if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Scope()); err.HasViolations() {
+				return err.OrNil()
 			}
 
 			if ctx.args.dryRun {
@@ -178,62 +179,4 @@ func upsert(rs store.ResourceStore, res model.Resource) error {
 		return err
 	}
 	return rs.Update(context.Background(), newRes)
-}
-
-func parseResource(bytes []byte) (model.Resource, error) {
-	resMeta := rest.ResourceMeta{}
-	if err := yaml.Unmarshal(bytes, &resMeta); err != nil {
-		return nil, err
-	}
-	if resMeta.Name == "" {
-		return nil, errors.New("Name field cannot be empty")
-	}
-	if resMeta.Mesh == "" &&
-		resMeta.Type != string(mesh.MeshType) &&
-		resMeta.Type != string(system.ZoneType) {
-		return nil, errors.New("Mesh field cannot be empty")
-	}
-	resource, err := registry.Global().NewObject(model.ResourceType(resMeta.Type))
-	if err != nil {
-		return nil, err
-	}
-	if err := proto.FromYAML(bytes, resource.GetSpec()); err != nil {
-		return nil, err
-	}
-	resource.SetMeta(meta{
-		Name: resMeta.Name,
-		Mesh: resMeta.Mesh,
-	})
-	return resource, nil
-}
-
-var _ model.ResourceMeta = &meta{}
-
-type meta struct {
-	Name string
-	Mesh string
-}
-
-func (m meta) GetName() string {
-	return m.Name
-}
-
-func (m meta) GetNameExtensions() model.ResourceNameExtensions {
-	return model.ResourceNameExtensionsUnsupported
-}
-
-func (m meta) GetVersion() string {
-	return ""
-}
-
-func (m meta) GetMesh() string {
-	return m.Mesh
-}
-
-func (m meta) GetCreationTime() time.Time {
-	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
-}
-
-func (m meta) GetModificationTime() time.Time {
-	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
 }
