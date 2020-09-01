@@ -10,6 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/validators"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
@@ -82,6 +83,9 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 		if err := dp.Validate(); err != nil {
 			return nil, err
 		}
+		if err := b.validateMeshExist(ctx, dp.Meta.GetMesh()); err != nil {
+			return nil, err
+		}
 		return dp, nil
 	} else {
 		dataplane := &core_mesh.DataplaneResource{}
@@ -90,6 +94,18 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 		}
 		return dataplane, nil
 	}
+}
+
+func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string) error {
+	if err := b.resManager.Get(ctx, &core_mesh.MeshResource{}, core_store.GetByKey(mesh, mesh)); err != nil {
+		if core_store.IsResourceNotFound(err) {
+			verr := validators.ValidationError{}
+			verr.AddViolation("mesh", fmt.Sprintf("mesh %q does not exist", mesh))
+			return verr.OrNil()
+		}
+		return err
+	}
+	return nil
 }
 
 func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *core_mesh.DataplaneResource, request types.BootstrapRequest) (*envoy_bootstrap.Bootstrap, error) {
