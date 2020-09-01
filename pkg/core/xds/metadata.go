@@ -1,7 +1,6 @@
 package xds
 
 import (
-	"encoding/base64"
 	"strconv"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -18,7 +17,7 @@ const (
 
 	fieldDataplaneTokenPath         = "dataplaneTokenPath"
 	fieldDataplaneAdminPort         = "dataplane.admin.port"
-	fieldDataplaneDataplaneResource = "dataplaneResource"
+	fieldDataplaneDataplaneResource = "dataplane.resource"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -78,11 +77,7 @@ func DataplaneMetadataFromNode(node *envoy_core.Node) *DataplaneMetadata {
 		}
 	}
 	if value := node.Metadata.Fields[fieldDataplaneDataplaneResource]; value != nil {
-		dpYAML, err := base64.StdEncoding.DecodeString(value.GetStringValue())
-		if err != nil {
-			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
-		}
-		dp, err := core_mesh.ParseDataplaneYAML(dpYAML)
+		dp, err := core_mesh.ParseDataplaneYAML([]byte(value.GetStringValue()))
 		if err != nil {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
 		}

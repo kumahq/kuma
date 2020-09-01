@@ -8,10 +8,6 @@ import (
 	"io/ioutil"
 	"text/template"
 
-	"github.com/ghodss/yaml"
-
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
-
 	"github.com/kumahq/kuma/pkg/config/core"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
@@ -56,22 +52,10 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if err != nil {
 		return nil, err
 	}
-	var dataplane *core_mesh.DataplaneResource
-	switch b.environmentType {
-	case core.KubernetesEnvironment:
-		if dataplane, err = b.fetchDataplane(ctx, proxyId); err != nil {
-			return nil, err
-		}
-	case core.UniversalEnvironment:
-		dpYAML, err := base64.StdEncoding.DecodeString(request.DataplaneResource)
-		if err != nil {
-			return nil, err
-		}
-		if dataplane, err = core_mesh.ParseDataplaneYAML(dpYAML); err != nil {
-			return nil, err
-		}
-	default:
-		return nil, errors.Errorf("unknown environment type %s", b.environmentType)
+
+	dataplane, err := b.dataplaneFor(ctx, request, proxyId)
+	if err != nil {
+		return nil, err
 	}
 
 	bootstrapCfg, err := b.generateFor(*proxyId, dataplane, request)
@@ -79,6 +63,21 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, err
 	}
 	return bootstrapCfg, nil
+}
+
+// dataplaneFor returns dataplane for two flows
+// 1) Dataplane is passed to kuma-dp run, in this case we just read DP from the BootstrapRequest
+// 2) Dataplane is created before kuma-dp run, in this case we access storage to fetch it (ex. Kubernetes)
+func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {
+	if request.DataplaneResource != "" {
+		return core_mesh.ParseDataplaneYAML([]byte(request.DataplaneResource))
+	} else {
+		dataplane := &core_mesh.DataplaneResource{}
+		if err := b.resManager.Get(ctx, dataplane, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
+			return nil, err
+		}
+		return dataplane, nil
+	}
 }
 
 func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *core_mesh.DataplaneResource, request types.BootstrapRequest) (*envoy_bootstrap.Bootstrap, error) {
@@ -102,10 +101,6 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		}
 		certBytes = base64.StdEncoding.EncodeToString(cert)
 	}
-	dpYAML, err := yaml.Marshal(rest_types.From.Resource(dataplane))
-	if err != nil {
-		return nil, err
-	}
 	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
 	params := configParameters{
 		Id:                 proxyId.String(),
@@ -118,7 +113,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		XdsConnectTimeout:  b.config.XdsConnectTimeout,
 		AccessLogPipe:      accessLogPipe,
 		DataplaneTokenPath: request.DataplaneTokenPath,
-		DataplaneResource:  base64.StdEncoding.EncodeToString(dpYAML),
+		DataplaneResource:  request.DataplaneResource,
 		CertBytes:          certBytes,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
@@ -135,14 +130,6 @@ func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_m
 		return errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", adminPort)
 	}
 	return nil
-}
-
-func (b *bootstrapGenerator) fetchDataplane(ctx context.Context, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {
-	res := core_mesh.DataplaneResource{}
-	if err := b.resManager.Get(ctx, &res, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
-		return nil, err
-	}
-	return &res, nil
 }
 
 func (b *bootstrapGenerator) configForParameters(params configParameters) (*envoy_bootstrap.Bootstrap, error) {

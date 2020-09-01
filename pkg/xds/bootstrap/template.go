@@ -26,7 +26,7 @@ node:
     dataplaneTokenPath: {{.DataplaneTokenPath}}
 {{end}}
 {{if .DataplaneResource}}
-    dataplaneResource: {{.DataplaneResource}}
+    dataplane.resource: '{{.DataplaneResource}}'
 {{end}}
 {{if .AdminPort }}
     dataplane.admin.port: "{{ .AdminPort }}"

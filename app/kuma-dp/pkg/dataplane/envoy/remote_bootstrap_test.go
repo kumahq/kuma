@@ -77,7 +77,7 @@ var _ = Describe("Remote Bootstrap", func() {
                       "name": "sample",
                       "adminPort": 4321,
                       "dataplaneTokenPath": "/tmp/token",
-                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlbW8KbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBzYW1wbGUKdHlwZTogRGF0YXBsYW5lCg=="
+                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}"
                     }
 `,
 				}
@@ -102,7 +102,7 @@ var _ = Describe("Remote Bootstrap", func() {
                       "name": "sample",
                       "adminPort": 4321,
                       "dataplaneTokenPath": "/tmp/token",
-                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlbW8KbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBzYW1wbGUKdHlwZTogRGF0YXBsYW5lCg=="
+                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}"
                     }
 `,
 				}
@@ -125,7 +125,7 @@ var _ = Describe("Remote Bootstrap", func() {
                       "mesh": "demo",
                       "name": "sample",
                       "dataplaneTokenPath": "/tmp/token",
-                      "dataplaneResource": "Y3JlYXRpb25UaW1lOiAiMDAwMS0wMS0wMVQwMDowMDowMFoiCm1lc2g6IGRlbW8KbW9kaWZpY2F0aW9uVGltZTogIjAwMDEtMDEtMDFUMDA6MDA6MDBaIgpuYW1lOiBzYW1wbGUKdHlwZTogRGF0YXBsYW5lCg=="
+                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}"
                     }
 `,
 				}

@@ -219,7 +219,7 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"kuma-dp", "run",
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
-		"--dataplane=/kuma/dpyaml-" + appname,
+		"--dataplane-file=/kuma/dpyaml-" + appname,
 		"--var", "name=dp-" + appname,
 		"--var", "address=" + ip,
 		"--binary-path", "/usr/local/bin/envoy"})

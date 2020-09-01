@@ -11,8 +11,6 @@ dynamicResources:
 node:
   cluster: backend
   id: default.dp-1
-  metadata:
-    dataplaneResource: Y3JlYXRpb25UaW1lOiAiMjAxOC0wNy0xN1QxNjowNTozNi45OTVaIgptZXNoOiBkZWZhdWx0Cm1vZGlmaWNhdGlvblRpbWU6ICIyMDE4LTA3LTE3VDE2OjA1OjM2Ljk5NVoiCm5hbWU6IGRwLTEKbmV0d29ya2luZzoKICBhZGRyZXNzOiA4LjguOC44CiAgaW5ib3VuZDoKICAtIHBvcnQ6IDQ0MwogICAgc2VydmljZVBvcnQ6IDg0NDMKICAgIHRhZ3M6CiAgICAgIGt1bWEuaW8vc2VydmljZTogYmFja2VuZAp0eXBlOiBEYXRhcGxhbmUK
 statsConfig:
   statsTags:
     - tagName: name

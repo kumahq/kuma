@@ -45,7 +45,8 @@ func SetupServer(rt core_runtime.Runtime) error {
 	}
 	reconciler := DefaultReconciler(rt)
 
-	metadataTracker := NewDataplaneMetadataTracker(rt.ResourceManager(), rt.Config().Environment)
+	metadataTracker := NewDataplaneMetadataTracker()
+	lifecycle := NewDataplaneLifecycle(rt.ResourceManager())
 
 	ingressReconciler := DefaultIngressReconciler(rt)
 
@@ -56,6 +57,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	callbacks := util_xds.CallbacksChain{
 		tracker,
 		metadataTracker,
+		lifecycle,
 		DefaultDataplaneStatusTracker(rt),
 	}
 

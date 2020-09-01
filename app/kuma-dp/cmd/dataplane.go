@@ -15,7 +15,7 @@ import (
 func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*core_mesh.DataplaneResource, error) {
 	var b []byte
 	var err error
-	switch cfg.DataplaneRuntime.DataplaneTemplate {
+	switch cfg.DataplaneRuntime.ResourcePath {
 	case "":
 		return nil, nil
 	case "-":
@@ -23,15 +23,16 @@ func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*core_mesh.
 			return nil, err
 		}
 	default:
-		if b, err = ioutil.ReadFile(cfg.DataplaneRuntime.DataplaneTemplate); err != nil {
+		if b, err = ioutil.ReadFile(cfg.DataplaneRuntime.ResourcePath); err != nil {
 			return nil, errors.Wrap(err, "error while reading provided file")
 		}
 	}
-	b, err = processDataplaneTemplate(b, cfg.DataplaneRuntime.DataplaneTemplateVars)
-	runLog.Info("rendered template:", cfg.DataplaneRuntime.DataplaneTemplate, string(b))
-	if err != nil {
-		return nil, err
+	if cfg.DataplaneRuntime.Resource != "" {
+		b = []byte(cfg.DataplaneRuntime.Resource)
 	}
+	b = processDataplaneTemplate(b, cfg.DataplaneRuntime.ResourceVars)
+	runLog.Info("rendered dataplane", "dataplane", string(b))
+
 	dp, err := core_mesh.ParseDataplaneYAML(b)
 	if err != nil {
 		return nil, err
@@ -41,12 +42,8 @@ func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*core_mesh.
 		return nil, err
 	}
 
-	cfg.Dataplane.Mesh = dp.Meta.GetMesh()
-	cfg.Dataplane.Name = dp.Meta.GetName()
-
-	err = cfg.Dataplane.Validate()
-	if err != nil {
-		return nil, err
+	if err := core_mesh.ValidateMeta(dp.Meta.GetName(), dp.Meta.GetMesh()); err.HasViolations() {
+		return nil, &err
 	}
 
 	return dp, nil
@@ -73,13 +70,11 @@ func newContextMap(key, value string) contextMap {
 	}
 }
 
-func processDataplaneTemplate(template []byte, values map[string]string) ([]byte, error) {
-	// TODO error checking -- match number of placeholders with number of
-	// passed values
+func processDataplaneTemplate(template []byte, values map[string]string) []byte {
 	ctx := contextMap{}
 	for k, v := range values {
 		ctx.merge(newContextMap(k, v))
 	}
 	data := mustache.Render(string(template), ctx)
-	return []byte(data), nil
+	return []byte(data)
 }

@@ -25,8 +25,8 @@ type ResourceKey struct {
 
 type ResourceScope string
 
-const(
-	ScopeMesh = "Mesh"
+const (
+	ScopeMesh   = "Mesh"
 	ScopeGlobal = "Global"
 )
 

@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	. "github.com/onsi/ginkgo"
@@ -63,7 +61,7 @@ var _ = Describe("Components", func() {
 			reconciler := eventSnapshotReconciler{}
 			reconciler.events = make(chan event)
 			// and
-			tracker, err := DefaultDataplaneSyncTracker(runtime, &reconciler, nil, NewDataplaneMetadataTracker(runtime.ResourceManager(), core.KubernetesEnvironment))
+			tracker, err := DefaultDataplaneSyncTracker(runtime, &reconciler, nil, NewDataplaneMetadataTracker())
 			Expect(err).ToNot(HaveOccurred())
 
 			// given

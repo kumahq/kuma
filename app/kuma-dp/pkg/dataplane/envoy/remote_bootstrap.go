@@ -3,13 +3,10 @@ package envoy
 import (
 	"bytes"
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
 	net_url "net/url"
-
-	"github.com/ghodss/yaml"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -81,11 +78,11 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 	url.Path = "/bootstrap"
 	var dataplaneResource string
 	if dp != nil {
-		dpYAML, err := yaml.Marshal(rest_types.From.Resource(dp))
+		dpJSON, err := json.Marshal(rest_types.From.Resource(dp))
 		if err != nil {
 			return nil, err
 		}
-		dataplaneResource = base64.StdEncoding.EncodeToString(dpYAML)
+		dataplaneResource = string(dpJSON)
 	}
 	request := types.BootstrapRequest{
 		Mesh: cfg.Dataplane.Mesh,

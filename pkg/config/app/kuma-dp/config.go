@@ -156,10 +156,12 @@ type DataplaneRuntime struct {
 	TokenPath string `yaml:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
 	// Token is dataplane token's value provided directly, will be stored to a temporary file before applying
 	Token string `yaml:"dataplaneToken,omitempty" envconfig:"kuma_dataplane_runtime_token"`
-	// DataplaneTemplate is a Dataplane resource that will be applied on Kuma CP
-	DataplaneTemplate string `yaml:"resource,omitempty" envconfig:"kuma_dataplane_runtime_resource"`
-	// DataplaneTemplateVars are the StringToString values tat
-	DataplaneTemplateVars map[string]string `yaml:"vars,omitempty"`
+	// Resource is a Dataplane resource that will be applied on Kuma CP
+	Resource string `yaml:"resource,omitempty" envconfig:"kuma_dataplane_runtime_resource"`
+	// ResourcePath is a path to Dataplane resource that will be applied on Kuma CP
+	ResourcePath string `yaml:"resourcePath,omitempty" envconfig:"kuma_dataplane_runtime_resource_path"`
+	// ResourceVars are the StringToString values that can fill the Resource template
+	ResourceVars map[string]string `yaml:"resourceVars,omitempty"`
 }
 
 var _ config.Config = &Config{}
@@ -168,13 +170,12 @@ func (c *Config) Validate() (errs error) {
 	if err := c.ControlPlane.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ControlPlane is not valid"))
 	}
-	switch c.DataplaneRuntime.DataplaneTemplate {
-	case "":
-		if err := c.Dataplane.Validate(); err != nil {
+	if c.DataplaneRuntime.Resource != "" || c.DataplaneRuntime.ResourcePath != "" {
+		if err := c.Dataplane.ValidateForTemplate(); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
 		}
-	default:
-		if err := c.Dataplane.ValidateForTemplate(); err != nil {
+	} else {
+		if err := c.Dataplane.Validate(); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
 		}
 	}
