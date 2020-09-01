@@ -10,6 +10,12 @@ var nameMeshRegexp = regexp.MustCompile("^[0-9a-z-_]*$")
 
 func ValidateMeta(name, mesh string) validators.ValidationError {
 	var err validators.ValidationError
+	if name == "" {
+		err.AddViolation("name", "cannot be empty")
+	}
+	if mesh == "" {
+		err.AddViolation("mesh", "cannot be empty")
+	}
 	if !nameMeshRegexp.MatchString(name) {
 		err.AddViolation("name", "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.")
 	}

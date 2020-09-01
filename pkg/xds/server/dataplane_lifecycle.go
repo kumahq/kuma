@@ -32,6 +32,8 @@ type DataplaneLifecycle struct {
 	sync.RWMutex       // protects createdDpForStream
 }
 
+var _ go_cp_server.Callbacks = &DataplaneLifecycle{}
+
 func NewDataplaneLifecycle(resManager manager.ResourceManager) *DataplaneLifecycle {
 	return &DataplaneLifecycle{
 		resManager:         resManager,
@@ -61,12 +63,9 @@ func (d *DataplaneLifecycle) OnStreamRequest(streamID int64, request *envoy_api_
 		return nil
 	}
 
-	d.RLock()
-	if _, ok := d.createdDpForStream[streamID]; ok {
-		d.RUnlock()
+	if d.streamProcessed(streamID) {
 		return nil
 	}
-	d.RUnlock()
 
 	d.Lock()
 	defer d.Unlock()
@@ -82,6 +81,13 @@ func (d *DataplaneLifecycle) OnStreamRequest(streamID int64, request *envoy_api_
 		d.createdDpForStream[streamID] = nil // put nil so we don't have to read metadata every time
 	}
 	return nil
+}
+
+func (d *DataplaneLifecycle) streamProcessed(streamID int64) bool {
+	d.RLock()
+	defer d.RUnlock()
+	_, ok := d.createdDpForStream[streamID]
+	return ok
 }
 
 func (d *DataplaneLifecycle) registerDataplane(dp *core_mesh.DataplaneResource) error {
@@ -105,5 +111,3 @@ func (d *DataplaneLifecycle) OnFetchRequest(_ context.Context, _ *envoy_api_v2.D
 
 func (d *DataplaneLifecycle) OnFetchResponse(request *envoy_api_v2.DiscoveryRequest, response *envoy_api_v2.DiscoveryResponse) {
 }
-
-var _ go_cp_server.Callbacks = &DataplaneLifecycle{}

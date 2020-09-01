@@ -15,21 +15,25 @@ import (
 func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*core_mesh.DataplaneResource, error) {
 	var b []byte
 	var err error
-	switch cfg.DataplaneRuntime.ResourcePath {
-	case "":
-		return nil, nil
-	case "-":
+	// load from file first
+	if cfg.DataplaneRuntime.ResourcePath == "-" {
 		if b, err = ioutil.ReadAll(cmd.InOrStdin()); err != nil {
 			return nil, err
 		}
-	default:
+	} else if cfg.DataplaneRuntime.ResourcePath != "" {
 		if b, err = ioutil.ReadFile(cfg.DataplaneRuntime.ResourcePath); err != nil {
 			return nil, errors.Wrap(err, "error while reading provided file")
 		}
 	}
+	// override with inline resource
 	if cfg.DataplaneRuntime.Resource != "" {
 		b = []byte(cfg.DataplaneRuntime.Resource)
 	}
+
+	if len(b) == 0 {
+		return nil, nil
+	}
+
 	b = processDataplaneTemplate(b, cfg.DataplaneRuntime.ResourceVars)
 	runLog.Info("rendered dataplane", "dataplane", string(b))
 

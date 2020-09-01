@@ -78,7 +78,7 @@ func newRunCmd() *cobra.Command {
 
 			dp, err := readDataplaneResource(cmd, &cfg)
 			if err != nil {
-				runLog.Error(err, "unable to load template")
+				runLog.Error(err, "unable to read provided dataplane")
 				return err
 			}
 			if dp != nil {
@@ -158,7 +158,7 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Resource, "dataplane", "", "Dataplane template to apply (YAML or JSON)")
 	cmd.PersistentFlags().StringVarP(&cfg.DataplaneRuntime.ResourcePath, "dataplane-file", "d", "", "Path to Dataplane template to apply (YAML or JSON)")
-	cmd.PersistentFlags().StringToStringVarP(&cfg.DataplaneRuntime.ResourceVars, "var", "v", map[string]string{}, "Variables to replace Dataplane template")
+	cmd.PersistentFlags().StringToStringVarP(&cfg.DataplaneRuntime.ResourceVars, "dataplane-var", "v", map[string]string{}, "Variables to replace Dataplane template")
 	return cmd
 }
 

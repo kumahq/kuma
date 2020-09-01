@@ -220,8 +220,8 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
 		"--dataplane-file=/kuma/dpyaml-" + appname,
-		"--var", "name=dp-" + appname,
-		"--var", "address=" + ip,
+		"--dataplane-var", "name=dp-" + appname,
+		"--dataplane-var", "address=" + ip,
 		"--binary-path", "/usr/local/bin/envoy"})
 }
 

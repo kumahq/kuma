@@ -9,10 +9,12 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test/resources/model"
 	"github.com/kumahq/kuma/pkg/xds/server"
 )
 
@@ -82,8 +84,31 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 	})
 
-	It("should not create DP when it is not carried in metadata", func() {
-		// given
+	It("should not delete DP when it is not carried in metadata", func() {
+		// given already created DP
+		dp := &core_mesh.DataplaneResource{
+			Meta: &model.ResourceMeta{
+				Mesh: "default",
+				Name: "backend-01",
+			},
+			Spec: mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "192.168.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:        8080,
+							ServicePort: 8081,
+							Tags: map[string]string{
+								"kuma.io/service": "backend",
+							},
+						},
+					},
+				},
+			},
+		}
+		err := resManager.Create(context.Background(), dp, core_store.CreateByKey("backend-01", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
 		req := v2.DiscoveryRequest{
 			Node: &envoy_core.Node{
 				Id: "default.backend-01",
@@ -92,11 +117,16 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		const streamId = 123
 
 		// when
-		err := dpLifecycle.OnStreamRequest(streamId, &req)
+		err = dpLifecycle.OnStreamRequest(streamId, &req)
 
-		// then dataplane is not created
+		// then
 		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		dpLifecycle.OnStreamClosed(streamId)
+
+		// then DP is not deleted because it was not carried in metadata
 		err = resManager.Get(context.Background(), &core_mesh.DataplaneResource{}, core_store.GetByKey("backend-01", "default"))
-		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+		Expect(err).ToNot(HaveOccurred())
 	})
 })
