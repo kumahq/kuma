@@ -2,9 +2,7 @@ package cmd
 
 import (
 	"io/ioutil"
-	"strings"
 
-	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -12,6 +10,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/util/template"
 )
 
 func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*rest.Resource, error) {
@@ -36,7 +35,7 @@ func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*rest.Resou
 		return nil, nil
 	}
 
-	b = processDataplaneTemplate(b, cfg.DataplaneRuntime.ResourceVars)
+	b = template.Render(string(b), cfg.DataplaneRuntime.ResourceVars)
 	runLog.Info("rendered dataplane", "dataplane", string(b))
 
 	res, err := rest.Unmarshall(b)
@@ -51,34 +50,4 @@ func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*rest.Resou
 	}
 
 	return res, nil
-}
-
-type contextMap map[string]interface{}
-
-func (cm contextMap) merge(other contextMap) {
-	for k, v := range other {
-		cm[k] = v
-	}
-}
-
-func newContextMap(key, value string) contextMap {
-	if !strings.Contains(key, ".") {
-		return map[string]interface{}{
-			key: value,
-		}
-	}
-
-	parts := strings.SplitAfterN(key, ".", 2)
-	return map[string]interface{}{
-		parts[0][:len(parts[0])-1]: newContextMap(parts[1], value),
-	}
-}
-
-func processDataplaneTemplate(template []byte, values map[string]string) []byte {
-	ctx := contextMap{}
-	for k, v := range values {
-		ctx.merge(newContextMap(k, v))
-	}
-	data := mustache.Render(string(template), ctx)
-	return []byte(data)
 }

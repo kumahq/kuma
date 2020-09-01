@@ -10,8 +10,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/util/template"
 
-	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -84,12 +84,8 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				}
 			}
 
-			configBytes, err := processConfigTemplate(string(b), ctx.args.vars)
-			if err != nil {
-				return errors.Wrap(err, "error compiling config from template")
-			}
-
-			res, err := rest.UnmarshallToCore(configBytes)
+			bytes := template.Render(string(b), ctx.args.vars)
+			res, err := rest.UnmarshallToCore(bytes)
 			if err != nil {
 				return errors.Wrap(err, "YAML contains invalid resource")
 			}
@@ -128,38 +124,6 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringToStringVarP(&ctx.args.vars, "var", "v", map[string]string{}, "Variable to replace in configuration")
 	cmd.PersistentFlags().BoolVar(&ctx.args.dryRun, "dry-run", false, "Resolve variable and prints result out without actual applying")
 	return cmd
-}
-
-type contextMap map[string]interface{}
-
-func (cm contextMap) merge(other contextMap) {
-	for k, v := range other {
-		cm[k] = v
-	}
-}
-
-func newContextMap(key, value string) contextMap {
-	if !strings.Contains(key, ".") {
-		return map[string]interface{}{
-			key: value,
-		}
-	}
-
-	parts := strings.SplitAfterN(key, ".", 2)
-	return map[string]interface{}{
-		parts[0][:len(parts[0])-1]: newContextMap(parts[1], value),
-	}
-}
-
-func processConfigTemplate(config string, values map[string]string) ([]byte, error) {
-	// TODO error checking -- match number of placeholders with number of
-	// passed values
-	ctx := contextMap{}
-	for k, v := range values {
-		ctx.merge(newContextMap(k, v))
-	}
-	data := mustache.Render(config, ctx)
-	return []byte(data), nil
 }
 
 func upsert(rs store.ResourceStore, res model.Resource) error {
