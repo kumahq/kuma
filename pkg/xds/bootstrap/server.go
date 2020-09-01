@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -81,6 +82,15 @@ func (b *BootstrapServer) handleBootstrapRequest(resp http.ResponseWriter, req *
 			return
 		}
 		if store.IsResourcePreconditionFailed(err) {
+			resp.WriteHeader(http.StatusUnprocessableEntity)
+			_, err = resp.Write([]byte(err.Error()))
+			if err != nil {
+				log.WithValues("params", reqParams).Error(err, "Error while writing the response")
+				return
+			}
+			return
+		}
+		if validators.IsValidationError(err) {
 			resp.WriteHeader(http.StatusUnprocessableEntity)
 			_, err = resp.Write([]byte(err.Error()))
 			if err != nil {

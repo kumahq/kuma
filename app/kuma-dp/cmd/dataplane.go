@@ -42,10 +42,6 @@ func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*core_mesh.
 		return nil, err
 	}
 
-	if err = dp.Validate(); err != nil {
-		return nil, err
-	}
-
 	if err := core_mesh.ValidateMeta(dp.Meta.GetName(), dp.Meta.GetMesh()); err.HasViolations() {
 		return nil, &err
 	}

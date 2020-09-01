@@ -70,7 +70,14 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 // 2) Dataplane is created before kuma-dp run, in this case we access storage to fetch it (ex. Kubernetes)
 func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {
 	if request.DataplaneResource != "" {
-		return core_mesh.ParseDataplaneYAML([]byte(request.DataplaneResource))
+		dp, err := core_mesh.ParseDataplaneYAML([]byte(request.DataplaneResource))
+		if err != nil {
+			return nil, err
+		}
+		if err := dp.Validate(); err != nil {
+			return nil, err
+		}
+		return dp, nil
 	} else {
 		dataplane := &core_mesh.DataplaneResource{}
 		if err := b.resManager.Get(ctx, dataplane, core_store.GetBy(proxyId.ToResourceKey())); err != nil {

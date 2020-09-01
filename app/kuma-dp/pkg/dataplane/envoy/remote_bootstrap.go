@@ -7,9 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	net_url "net/url"
-
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"strings"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
@@ -18,6 +16,8 @@ import (
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -36,6 +36,14 @@ var (
 	DpNotFoundErr = errors.New("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection.")
 )
 
+func InvalidRequestErr(msg string) error {
+	return errors.Errorf("Invalid request: %s", msg)
+}
+
+func IsInvalidRequestErr(err error) bool {
+	return strings.HasPrefix(err.Error(), "Invalid request: ")
+}
+
 func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *core_mesh.DataplaneResource) (proto.Message, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
@@ -53,6 +61,9 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *core_mesh
 		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg, dp)
 		if err == nil {
 			return nil
+		}
+		if IsInvalidRequestErr(err) { // there is no point in retrying invalid request
+			return err
 		}
 		switch err {
 		case DpNotFoundErr:
@@ -111,7 +122,7 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 			if err != nil {
 				return nil, errors.Errorf("Unable to read the response with status code: %d", resp.StatusCode)
 			}
-			return nil, errors.Errorf("Error: %s", string(bodyBytes))
+			return nil, InvalidRequestErr(string(bodyBytes))
 		}
 		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
