@@ -46,6 +46,9 @@ func (t *HealthCheckResource) Sources() []*mesh_proto.Selector {
 func (t *HealthCheckResource) Destinations() []*mesh_proto.Selector {
 	return t.Spec.GetDestinations()
 }
+func (t *HealthCheckResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
+}
 
 var _ model.ResourceList = &HealthCheckResourceList{}
 

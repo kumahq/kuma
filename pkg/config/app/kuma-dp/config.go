@@ -156,6 +156,12 @@ type DataplaneRuntime struct {
 	TokenPath string `yaml:"dataplaneTokenPath,omitempty" envconfig:"kuma_dataplane_runtime_token_path"`
 	// Token is dataplane token's value provided directly, will be stored to a temporary file before applying
 	Token string `yaml:"dataplaneToken,omitempty" envconfig:"kuma_dataplane_runtime_token"`
+	// Resource is a Dataplane resource that will be applied on Kuma CP
+	Resource string `yaml:"resource,omitempty" envconfig:"kuma_dataplane_runtime_resource"`
+	// ResourcePath is a path to Dataplane resource that will be applied on Kuma CP
+	ResourcePath string `yaml:"resourcePath,omitempty" envconfig:"kuma_dataplane_runtime_resource_path"`
+	// ResourceVars are the StringToString values that can fill the Resource template
+	ResourceVars map[string]string `yaml:"resourceVars,omitempty"`
 }
 
 var _ config.Config = &Config{}
@@ -164,9 +170,16 @@ func (c *Config) Validate() (errs error) {
 	if err := c.ControlPlane.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".ControlPlane is not valid"))
 	}
-	if err := c.Dataplane.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
+	if c.DataplaneRuntime.Resource != "" || c.DataplaneRuntime.ResourcePath != "" {
+		if err := c.Dataplane.ValidateForTemplate(); err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
+		}
+	} else {
+		if err := c.Dataplane.Validate(); err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, ".Dataplane is not valid"))
+		}
 	}
+
 	if err := c.DataplaneRuntime.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".DataplaneRuntime is not valid"))
 	}
@@ -201,6 +214,14 @@ func (d *Dataplane) Validate() (errs error) {
 	if d.Name == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Name must be non-empty"))
 	}
+	// Notice that d.AdminPort is always valid by design of PortRange
+	if d.DrainTime <= 0 {
+		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
+	}
+	return
+}
+
+func (d *Dataplane) ValidateForTemplate() (errs error) {
 	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))

@@ -49,6 +49,10 @@ func (t *TrafficRouteResource) Validate() error {
 	return err.OrNil()
 }
 
+func (t *TrafficRouteResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
+}
+
 var _ model.ResourceList = &TrafficRouteResourceList{}
 
 type TrafficRouteResourceList struct {

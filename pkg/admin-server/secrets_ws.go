@@ -163,6 +163,6 @@ func (s *secretsEndpoints) validateResourceRequest(request *restful.Request, res
 	if string(core_system.SecretType) != resource.Meta.Type {
 		err.AddViolation("type", "type from the URL has to be the same as in body")
 	}
-	err.AddError("", core_mesh.ValidateMeta(name, meshName))
+	err.AddError("", core_mesh.ValidateMeta(name, meshName, core_model.ScopeMesh))
 	return err.OrNil()
 }

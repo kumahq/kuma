@@ -46,6 +46,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	reconciler := DefaultReconciler(rt)
 
 	metadataTracker := NewDataplaneMetadataTracker()
+	lifecycle := NewDataplaneLifecycle(rt.ResourceManager())
 
 	ingressReconciler := DefaultIngressReconciler(rt)
 
@@ -56,6 +57,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	callbacks := util_xds.CallbacksChain{
 		tracker,
 		metadataTracker,
+		lifecycle,
 		DefaultDataplaneStatusTracker(rt),
 	}
 
@@ -65,8 +67,9 @@ func SetupServer(rt core_runtime.Runtime) error {
 		&grpcServer{srv, rt.Config().XdsServer.GrpcPort, rt.Config().XdsServer.TlsCertFile, rt.Config().XdsServer.TlsKeyFile},
 		// bootstrap server
 		&xds_bootstrap.BootstrapServer{
-			Port:      rt.Config().BootstrapServer.Port,
-			Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params, rt.Config().XdsServer.TlsCertFile),
+			Port: rt.Config().BootstrapServer.Port,
+			Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(),
+				rt.Config().BootstrapServer.Params, rt.Config().XdsServer.TlsCertFile, rt.Config().Environment),
 		},
 	)
 }

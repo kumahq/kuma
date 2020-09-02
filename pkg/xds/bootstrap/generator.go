@@ -8,6 +8,10 @@ import (
 	"io/ioutil"
 	"text/template"
 
+	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/validators"
+
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -28,18 +32,21 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	config *bootstrap_config.BootstrapParamsConfig,
-	cacertFile string) BootstrapGenerator {
+	cacertFile string,
+	environmentType core.EnvironmentType) BootstrapGenerator {
 	return &bootstrapGenerator{
-		resManager:  resManager,
-		config:      config,
-		xdsCertFile: cacertFile,
+		resManager:      resManager,
+		config:          config,
+		xdsCertFile:     cacertFile,
+		environmentType: environmentType,
 	}
 }
 
 type bootstrapGenerator struct {
-	resManager  core_manager.ResourceManager
-	config      *bootstrap_config.BootstrapParamsConfig
-	xdsCertFile string
+	resManager      core_manager.ResourceManager
+	config          *bootstrap_config.BootstrapParamsConfig
+	xdsCertFile     string
+	environmentType core.EnvironmentType
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
@@ -47,15 +54,58 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 	if err != nil {
 		return nil, err
 	}
-	dataplane, err := b.fetchDataplane(ctx, proxyId)
+
+	dataplane, err := b.dataplaneFor(ctx, request, proxyId)
 	if err != nil {
 		return nil, err
 	}
+
 	bootstrapCfg, err := b.generateFor(*proxyId, dataplane, request)
 	if err != nil {
 		return nil, err
 	}
 	return bootstrapCfg, nil
+}
+
+// dataplaneFor returns dataplane for two flows
+// 1) Dataplane is passed to kuma-dp run, in this case we just read DP from the BootstrapRequest
+// 2) Dataplane is created before kuma-dp run, in this case we access storage to fetch it (ex. Kubernetes)
+func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.BootstrapRequest, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {
+	if request.DataplaneResource != "" {
+		res, err := rest.UnmarshallToCore([]byte(request.DataplaneResource))
+		if err != nil {
+			return nil, err
+		}
+		dp, ok := res.(*core_mesh.DataplaneResource)
+		if !ok {
+			return nil, errors.Errorf("invalid resource")
+		}
+		if err := dp.Validate(); err != nil {
+			return nil, err
+		}
+		if err := b.validateMeshExist(ctx, dp.Meta.GetMesh()); err != nil {
+			return nil, err
+		}
+		return dp, nil
+	} else {
+		dataplane := &core_mesh.DataplaneResource{}
+		if err := b.resManager.Get(ctx, dataplane, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
+			return nil, err
+		}
+		return dataplane, nil
+	}
+}
+
+func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string) error {
+	if err := b.resManager.Get(ctx, &core_mesh.MeshResource{}, core_store.GetByKey(mesh, mesh)); err != nil {
+		if core_store.IsResourceNotFound(err) {
+			verr := validators.ValidationError{}
+			verr.AddViolation("mesh", fmt.Sprintf("mesh %q does not exist", mesh))
+			return verr.OrNil()
+		}
+		return err
+	}
+	return nil
 }
 
 func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *core_mesh.DataplaneResource, request types.BootstrapRequest) (*envoy_bootstrap.Bootstrap, error) {
@@ -91,6 +141,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		XdsConnectTimeout:  b.config.XdsConnectTimeout,
 		AccessLogPipe:      accessLogPipe,
 		DataplaneTokenPath: request.DataplaneTokenPath,
+		DataplaneResource:  request.DataplaneResource,
 		CertBytes:          certBytes,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
@@ -107,14 +158,6 @@ func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_m
 		return errors.Errorf("Resource precondition failed: Port %d requested as both admin and outbound port.", adminPort)
 	}
 	return nil
-}
-
-func (b *bootstrapGenerator) fetchDataplane(ctx context.Context, proxyId *core_xds.ProxyId) (*core_mesh.DataplaneResource, error) {
-	res := core_mesh.DataplaneResource{}
-	if err := b.resManager.Get(ctx, &res, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
-		return nil, err
-	}
-	return &res, nil
 }
 
 func (b *bootstrapGenerator) configForParameters(params configParameters) (*envoy_bootstrap.Bootstrap, error) {

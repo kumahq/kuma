@@ -41,6 +41,12 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
 
+	opts := core_store.NewCreateOptions(fs...)
+	owner := &core_mesh.MeshResource{}
+	if err := m.store.Get(ctx, owner, core_store.GetByKey(opts.Mesh, opts.Mesh)); err != nil {
+		return core_manager.MeshNotFound(opts.Mesh)
+	}
+
 	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()))...)
 }
 

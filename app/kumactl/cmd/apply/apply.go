@@ -8,23 +8,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/util/template"
 
-	"github.com/ghodss/yaml"
-	"github.com/hoisie/mustache"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const (
@@ -86,14 +84,13 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				}
 			}
 
-			configBytes, err := processConfigTemplate(string(b), ctx.args.vars)
-			if err != nil {
-				return errors.Wrap(err, "error compiling config from template")
-			}
-
-			res, err := parseResource(configBytes)
+			bytes := template.Render(string(b), ctx.args.vars)
+			res, err := rest.UnmarshallToCore(bytes)
 			if err != nil {
 				return errors.Wrap(err, "YAML contains invalid resource")
+			}
+			if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Scope()); err.HasViolations() {
+				return err.OrNil()
 			}
 
 			if ctx.args.dryRun {
@@ -129,38 +126,6 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-type contextMap map[string]interface{}
-
-func (cm contextMap) merge(other contextMap) {
-	for k, v := range other {
-		cm[k] = v
-	}
-}
-
-func newContextMap(key, value string) contextMap {
-	if !strings.Contains(key, ".") {
-		return map[string]interface{}{
-			key: value,
-		}
-	}
-
-	parts := strings.SplitAfterN(key, ".", 2)
-	return map[string]interface{}{
-		parts[0][:len(parts[0])-1]: newContextMap(parts[1], value),
-	}
-}
-
-func processConfigTemplate(config string, values map[string]string) ([]byte, error) {
-	// TODO error checking -- match number of placeholders with number of
-	// passed values
-	ctx := contextMap{}
-	for k, v := range values {
-		ctx.merge(newContextMap(k, v))
-	}
-	data := mustache.Render(config, ctx)
-	return []byte(data), nil
-}
-
 func upsert(rs store.ResourceStore, res model.Resource) error {
 	newRes, err := registry.Global().NewObject(res.GetType())
 	if err != nil {
@@ -178,62 +143,4 @@ func upsert(rs store.ResourceStore, res model.Resource) error {
 		return err
 	}
 	return rs.Update(context.Background(), newRes)
-}
-
-func parseResource(bytes []byte) (model.Resource, error) {
-	resMeta := rest.ResourceMeta{}
-	if err := yaml.Unmarshal(bytes, &resMeta); err != nil {
-		return nil, err
-	}
-	if resMeta.Name == "" {
-		return nil, errors.New("Name field cannot be empty")
-	}
-	if resMeta.Mesh == "" &&
-		resMeta.Type != string(mesh.MeshType) &&
-		resMeta.Type != string(system.ZoneType) {
-		return nil, errors.New("Mesh field cannot be empty")
-	}
-	resource, err := registry.Global().NewObject(model.ResourceType(resMeta.Type))
-	if err != nil {
-		return nil, err
-	}
-	if err := proto.FromYAML(bytes, resource.GetSpec()); err != nil {
-		return nil, err
-	}
-	resource.SetMeta(meta{
-		Name: resMeta.Name,
-		Mesh: resMeta.Mesh,
-	})
-	return resource, nil
-}
-
-var _ model.ResourceMeta = &meta{}
-
-type meta struct {
-	Name string
-	Mesh string
-}
-
-func (m meta) GetName() string {
-	return m.Name
-}
-
-func (m meta) GetNameExtensions() model.ResourceNameExtensions {
-	return model.ResourceNameExtensionsUnsupported
-}
-
-func (m meta) GetVersion() string {
-	return ""
-}
-
-func (m meta) GetMesh() string {
-	return m.Mesh
-}
-
-func (m meta) GetCreationTime() time.Time {
-	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
-}
-
-func (m meta) GetModificationTime() time.Time {
-	return time.Unix(0, 0).UTC() // the date doesn't matter since it is set on server side anyways
 }
