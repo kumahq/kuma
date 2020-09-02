@@ -6,10 +6,6 @@ Parameters:
     Default: kuma-vpc
     Description: The name of the parent Fargate networking stack that you created. Necessary
       to locate and reference resources created by that stack.
-  CPStackName:
-    Type: String
-    Default: kuma-cp
-    Description: The name of the Kuma Control Plane stack
   Image:
     Type: String
     Default: "kong-docker-kuma-docker.bintray.io/kuma-dp:0.7.1"
@@ -26,10 +22,17 @@ Parameters:
     Type: String
     Default: 80
     Description: The port of the workload service
+  DesiredCount:
+    Type: String
+    Default: 1
+    Description: The desired replica count of the workload
   CPAddress:
     Type: String
     Default: "http://controlplane.kuma.io:5681"
     Description: The kuma-cp address
+  KumaDNSIP:
+    Type: String
+    Default: ""
   DPTemplate:
     Type: String
     Default: '{"type": "Dataplane", "name": "{{ dpname }}", "mesh": "{{ mesh }}", "networking": { "address": "{{ address }}", "inbound": [ { "port": {{ port }}, "tags": { "kuma.io/service": "{{ service }}" } } ],"transparentProxying": {"redirectPortOutbound": 15001, "redirectPortInbound": 15006 }}}'
@@ -135,7 +138,7 @@ Resources:
       Cluster:
         Fn::ImportValue:
           !Join [ ':', [ !Ref 'VPCStackName', 'ClusterName' ] ]
-      DesiredCount: 1
+      DesiredCount: !Ref DesiredCount
       TaskDefinition: !Ref 'TaskDefinitionWorkload'
       ServiceRegistries:
         - RegistryArn: !GetAtt DiscoveryServiceApp.Arn
