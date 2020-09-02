@@ -29,9 +29,11 @@ aws cloudformation deploy \
     --template-file kuma-cp-standalone.yaml
 ```
 
-The `kuma-vpc` stack is the default for the `StackName` parameter. Note that `AllowedCidr` parameter and override it accordingly to enable access to Kuma CP ports accordingly.
+The `kuma-vpc` stack is the default for the `VPCStackName` parameter. Note that `AllowedCidr` parameter and override it accordingly to enable access to Kuma CP ports accordingly.
 
 ### Global
+
+Deplyng a global control plane is simple as it does not have many setting to tune.
 
 ```bash
 aws cloudformation deploy \
@@ -41,38 +43,63 @@ aws cloudformation deploy \
 ```
 
 
+### Remote
 
+Setting up a remote `kuma-cp` is a two step process. First, deploy the kuma-cp itself:
 
-## Generating the DP token
-
-Before starting a workload, One needs
-
-Find the public IP address of the `kuma-cp` ECS Task in either `standalone` or `remote` mode and replace `<ip address>` in the followiing instructions.
 ```bash
-`export PUBLIC_IP=<ip address>`
-ssh root@$PUBLIC_IP 'apk update 2>&1 > /dev/null && apk add curl 2>&1 && curl -s -XPOST -H "Content-Type: application/json" --data \'{"name": "httpbin", "mesh": "default"}\' http://localhost:5679/tokens'
+aws cloudformation deploy \
+    --capabilities CAPABILITY_IAM \
+    --stack-name kuma-cp \
+    --template-file kuma-cp-remote.yaml
 ```
 
-Save the generated token and use it when installing a new workload.
+Then add a resource in the global (see how to configure `kumactl` in the next session)
 
+```bash
+echo "type: Zone
+name: zone-1
+ingress:
+  address: <zone-ingress-address>" | kumactl apply -f -
+```
+
+Where `<zone-ingress-address>` is composed of the public address of the remote kuma-cp
+
+
+## Configure `kumactl` to access the API 
+
+```bash
+export PUBLIC_IP=<ip address>
+kumactl config control-planes add --name=ecs --address=http://$PUBLIC_IP:5681 --overwrite
+```
 
 ### Install the workload
 
 
-The `workload` template provides a basic example how `kuma-dp` can be run as a sidecar container alongside an arbitrary, single port service container. As a prerequisite one needs to obtain a token as already explained, then deploy the default workload with `httpbin` container.
+The `workload` template provides a basic example how `kuma-dp` can be run as a sidecar container alongside an arbitrary, single port service container.
 
+#### Standalone
 ```bash
-export DPTOKEN=<token>
+aws cloudformation deploy \
+    --capabilities CAPABILITY_IAM \
+    --stack-name workload \
+    --template-file workload.yaml \
+    --parameter-overrides \
+      Image="nickolaev/kuma-dp:latest"
+```
+
+#### Remote
+```bash
 aws cloudformation deploy \
     --capabilities CAPABILITY_IAM \
     --stack-name workload \
     --template-file workload.yaml \
     --parameter-overrides \
       Image="nickolaev/kuma-dp:latest" \
-      DPToken=$DPTOKEN
+      CPAddress="http://zone-1-controlplane.kuma.io:5681"
 ```
 
-The `workload` template has a lot fo parameters so it cna be customized for many scenarios, with different workload images, service name and port etc. Find more information in the template itself.
+The `workload` template has a lot of parameters so it can be customized for many scenarios, with different workload images, service name and port etc. Find more information in the template itself.
 
 # Examples with custom parameters
 

@@ -194,8 +194,8 @@ Resources:
           User: '5678'
           #          DNSServers:
           Environment:
-            - Name: KUMA_DATAPLANE_RUNTIME_TOKEN
-              Value: !Ref DPToken
+#            - Name: KUMA_DATAPLANE_RUNTIME_TOKEN
+#              Value: !Ref DPToken
             - Name: KUMA_DATAPLANE_RUNTIME_RESOURCE
               Value: !Ref DPTemplate
           EntryPoint: [ "sh", "-c" ]
