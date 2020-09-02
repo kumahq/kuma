@@ -56,6 +56,7 @@ aws cloudformation deploy \
 
 Then add a resource in the global (see how to configure `kumactl` in the next session)
 
+#### ECS/Universal
 ```bash
 echo "type: Zone
 name: zone-1
@@ -63,10 +64,24 @@ ingress:
   address: <zone-ingress-address>" | kumactl apply -f -
 ```
 
-Where `<zone-ingress-address>` is composed of the public address of the remote kuma-cp
+#### Kubernetes
+
+```bash
+echo "apiVersion: kuma.io/v1alpha1
+kind: Zone
+mesh: default
+metadata:
+  name: zone-1
+spec:
+  ingress:
+    address:  <zone-ingress-address>" | kubectl apply -f -
+```
+
+Where `<zone-ingress-address>` is composed of the public address of the remote kuma-cp and the port assigned for the Ingress.
 
 
-## Configure `kumactl` to access the API 
+## OPTIONAL: Configure `kumactl` to access the API 
+Find the public IP address fo the remote or standalone `kuma-cp` and use it in the command below.
 
 ```bash
 export PUBLIC_IP=<ip address>
@@ -85,6 +100,7 @@ aws cloudformation deploy \
     --stack-name workload \
     --template-file workload.yaml \
     --parameter-overrides \
+      DesiredCount=2 \
       Image="nickolaev/kuma-dp:latest"
 ```
 
@@ -95,43 +111,13 @@ aws cloudformation deploy \
     --stack-name workload \
     --template-file workload.yaml \
     --parameter-overrides \
+      DesiredCount=2 \
       Image="nickolaev/kuma-dp:latest" \
       CPAddress="http://zone-1-controlplane.kuma.io:5681"
 ```
 
 The `workload` template has a lot of parameters so it can be customized for many scenarios, with different workload images, service name and port etc. Find more information in the template itself.
 
-# Examples with custom parameters
-
-```bash
-aws cloudformation deploy \
-    --capabilities CAPABILITY_IAM \
-    --stack-name kuma-cp \
-    --template-file kuma-cp-standalone.yaml \
-    --parameter-overrides \
-      Image="nickolaev/kuma-cp:latest" \
-      AllowedCidr="82.146.27.0/24"
-```
-
-```bash
-aws cloudformation deploy \
-    --capabilities CAPABILITY_IAM \
-    --stack-name kuma-cp-global \
-    --template-file kuma-cp-global.yaml \
-    --parameter-overrides \
-      Image="nickolaev/kuma-cp:latest" \
-      AllowedCidr="82.146.27.0/24"
-```
-
-```bash
-aws cloudformation deploy \
-    --capabilities CAPABILITY_IAM \
-    --stack-name kuma-cp \
-    --template-file kuma-cp-remote.yaml \
-    --parameter-overrides \
-      Image="nickolaev/kuma-cp:latest" \
-      AllowedCidr="82.146.27.0/24"
-```
 
 # Future work
 
