@@ -1,7 +1,7 @@
 AWSTemplateFormatVersion: "2010-09-09"
 Description: Kuma Control Plane on ECS
 Parameters:
-  StackName:
+  VPCStackName:
     Type: String
     Default: kuma-vpc
     Description: The name of the parent Fargate networking stack that you created. Necessary
@@ -21,14 +21,6 @@ Resources:
   # Service Discovery configuration #
   ###################################
 
-  PrivateNamespace:
-    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
-    Properties:
-      Name: kuma.io
-      Vpc:
-        Fn::ImportValue:
-          !Join [ ':', [ !Ref 'StackName', 'VPCId' ] ]
-
   DiscoveryServiceKumaCP:
     Type: AWS::ServiceDiscovery::Service
     Properties:
@@ -43,7 +35,9 @@ Resources:
       HealthCheckCustomConfig:
         FailureThreshold: 1
       Name: controlplane
-      NamespaceId: !Ref PrivateNamespace
+      NamespaceId:
+        Fn::ImportValue:
+          !Join [ ':', [ !Ref 'VPCStackName', 'PrivateNamespace' ] ]
 
   KumaECSTaskExecutionRole:
     Type: AWS::IAM::Role
@@ -93,7 +87,7 @@ Resources:
       GroupDescription: Access to Kuma CP
       VpcId:
         Fn::ImportValue:
-          !Join [ ':', [ !Ref 'StackName', 'VPCId' ] ]
+          !Join [ ':', [ !Ref 'VPCStackName', 'VPCId' ] ]
 
   KumaCpIngressTcp:
     Type: AWS::EC2::SecurityGroupIngress
@@ -141,7 +135,7 @@ Resources:
       LaunchType: FARGATE
       Cluster:
         Fn::ImportValue:
-          !Join [ ':', [ !Ref 'StackName', 'ClusterName' ] ]
+          !Join [ ':', [ !Ref 'VPCStackName', 'ClusterName' ] ]
       DesiredCount: 1
       TaskDefinition: !Ref 'TaskDefinitionKumaCP'
       ServiceRegistries:
@@ -152,11 +146,11 @@ Resources:
           AssignPublicIp: ENABLED
           Subnets:
             - Fn::ImportValue:
-                !Join [ ':', [ !Ref 'StackName', 'PublicSubnet' ] ]
+                !Join [ ':', [ !Ref 'VPCStackName', 'PublicSubnet' ] ]
           SecurityGroups:
             - !Ref KumaCpSecurityGroup
             - Fn::ImportValue:
-                !Join [ ':', [ !Ref 'StackName', 'FargateContainerSecurityGroup' ] ]
+                !Join [ ':', [ !Ref 'VPCStackName', 'FargateContainerSecurityGroup' ] ]
 
   TaskDefinitionKumaCP:
     Type: AWS::ECS::TaskDefinition
@@ -179,12 +173,26 @@ Resources:
           Essential: true
           Image: !Ref Image
           PortMappings:
+            - ContainerPort: 5676
+              Protocol: tcp
+            - ContainerPort: 5677
+              Protocol: tcp
+            - ContainerPort: 5678
+              Protocol: tcp
+            - ContainerPort: 5679
+              Protocol: tcp
+            - ContainerPort: 5680
+              Protocol: tcp
             - ContainerPort: 5681
+              Protocol: tcp
+            - ContainerPort: 5682
               Protocol: tcp
             - ContainerPort: 53
               Protocol: udp
           User: root:root # needed for UDP port 53 binding
           Environment:
+            - Name: KUMA_MODE
+              Value: standalone
             - Name: KUMA_GENERAL_ADVERTISED_HOSTNAME
               Value: controlplane.kuma.io
             - Name: KUMA_DNS_SERVER_PORT
@@ -197,10 +205,3 @@ Resources:
               awslogs-group: !Ref AWS::StackName
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: kuma-cp
-
-Outputs:
-  PrivateNamespace:
-    Description: The private DNS namespace
-    Value: !Ref 'PrivateNamespace'
-    Export:
-      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateNamespace' ] ]

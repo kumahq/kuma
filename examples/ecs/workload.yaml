@@ -95,7 +95,7 @@ Resources:
       Name: !Ref WorkloadName
       NamespaceId:
         Fn::ImportValue:
-          !Join [ ':', [ !Ref 'CPStackName', 'PrivateNamespace' ] ]
+          !Join [ ':', [ !Ref 'VPCStackName', 'PrivateNamespace' ] ]
 
   #########################
   #       Log Group       #
@@ -189,13 +189,13 @@ Resources:
             - ContainerPort: 30001
           Essential: true
           User: '5678'
-#          DNSServers:
+          #          DNSServers:
           Environment:
             - Name: KUMA_DATAPLANE_RUNTIME_TOKEN
               Value: !Ref DPToken
             - Name: KUMA_DATAPLANE_RUNTIME_RESOURCE
               Value: !Ref DPTemplate
-          EntryPoint: ["sh", "-c"]
+          EntryPoint: [ "sh", "-c" ]
           Command:
             - !Join
               - " "

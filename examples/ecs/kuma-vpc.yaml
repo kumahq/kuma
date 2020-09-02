@@ -133,6 +133,13 @@ Resources:
                   - 'logs:PutLogEvents'
                 Resource: '*'
 
+
+  PrivateNamespace:
+    Type: AWS::ServiceDiscovery::PrivateDnsNamespace
+    Properties:
+      Name: kuma.io
+      Vpc: !Ref VPC
+
 # These are the values output by the CloudFormation template. Be careful
 # about changing any of them, because of them are exported with specific
 # names so that the other task related CF templates can use them.
@@ -167,3 +174,9 @@ Outputs:
     Value: !Ref 'FargateContainerSecurityGroup'
     Export:
       Name: !Join [ ':', [ !Ref 'AWS::StackName', 'FargateContainerSecurityGroup' ] ]
+
+  PrivateNamespace:
+    Description: Private namespace
+    Value: !Ref 'PrivateNamespace'
+    Export:
+      Name: !Join [ ':', [ !Ref 'AWS::StackName', 'PrivateNamespace' ] ]
