@@ -187,8 +187,6 @@ Resources:
           Environment:
             - Name: KUMA_GENERAL_ADVERTISED_HOSTNAME
               Value: controlplane.kuma.io
-            - Name: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS
-              Value: "0.0.0.0"
             - Name: KUMA_DNS_SERVER_PORT
               Value: 53
           Command:
