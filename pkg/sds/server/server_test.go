@@ -18,9 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
 	"github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/test"
@@ -116,7 +114,10 @@ var _ = Describe("SDS Server", func() {
 		// retrieve example DP token
 		tokenIssuer, err := tokens_builtin.NewDataplaneTokenIssuer(runtime)
 		Expect(err).ToNot(HaveOccurred())
-		dpCredential, err = tokenIssuer.Generate(core_xds.FromResourceKey(core_model.MetaToResourceKey(dpRes.GetMeta())))
+		dpCredential, err = tokenIssuer.Generate(tokens_issuer.DataplaneIdentity{
+			Name: dpRes.GetMeta().GetName(),
+			Mesh: dpRes.GetMeta().GetMesh(),
+		})
 		Expect(err).ToNot(HaveOccurred())
 
 		// start the runtime
@@ -289,7 +290,7 @@ var _ = Describe("SDS Server", func() {
 		_, err = stream.Recv()
 
 		// then
-		Expect(err).To(MatchError("rpc error: code = Unknown desc = could not parse token: token contains an invalid number of segments"))
+		Expect(err).To(MatchError("rpc error: code = Unknown desc = authentication failed: could not parse token: token contains an invalid number of segments"))
 
 		close(done)
 	}, 10)

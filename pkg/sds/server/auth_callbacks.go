@@ -70,7 +70,7 @@ func (a *authCallbacks) authenticate(credential sds_auth.Credential, req *envoy_
 
 	_, err = a.authenticator.Authenticate(context.Background(), *proxyId, credential)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "authentication failed")
 	}
 	return nil
 }
