@@ -232,6 +232,24 @@ Resources:
   # Ingress DP configuration #
   ############################
 
+  IngressDPSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to Kuma Ingress DP
+      VpcId:
+        Fn::ImportValue:
+          !Join [ ':', [ !Ref 'VPCStackName', 'VPCId' ] ]
+
+  IngressDPTcp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: For Ingress DP
+      GroupId: !Ref IngressDPSecurityGroup
+      IpProtocol: tcp
+      CidrIp: 0.0.0.0/0
+      FromPort: !Ref IngressPort
+      ToPort: !Ref IngressPort
+
   ServiceIngressDP:
     Type: AWS::ECS::Service
     Properties:
@@ -241,16 +259,13 @@ Resources:
           !Join [ ':', [ !Ref 'VPCStackName', 'ClusterName' ] ]
       DesiredCount: 1
       TaskDefinition: !Ref 'TaskDefinitionIngressDP'
-      ServiceRegistries:
-        - RegistryArn: !GetAtt DiscoveryServiceKumaCP.Arn
-          Port: !Ref IngressPort
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           Subnets:
             - Fn::ImportValue:
                 !Join [ ':', [ !Ref 'VPCStackName', 'PublicSubnet' ] ]
-          SecurityGroups: [ !Ref 'KumaCpSecurityGroup' ]
+          SecurityGroups: [ !Ref 'IngressDPSecurityGroup' ]
 
   TaskDefinitionIngressDP:
     Type: AWS::ECS::TaskDefinition
