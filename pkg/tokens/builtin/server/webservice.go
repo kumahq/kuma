@@ -5,9 +5,9 @@ import (
 
 	"github.com/emicklei/go-restful"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/rest/errors"
-	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 )
@@ -41,19 +41,12 @@ func (d *dataplaneTokenWebService) handleIdentityRequest(request *restful.Reques
 		response.WriteHeader(http.StatusBadRequest)
 		return
 	}
-	verr := validators.ValidationError{}
-	if idReq.Name == "" {
-		verr.AddViolation("name", "cannot be empty")
-	}
-	if idReq.Mesh == "" {
-		verr.AddViolation("mesh", "cannot be empty")
-	}
-	if verr.HasViolations() {
-		errors.HandleError(response, verr.OrNil(), "Invalid request")
-		return
-	}
 
-	token, err := d.issuer.Generate(idReq.ToProxyId())
+	token, err := d.issuer.Generate(issuer.DataplaneIdentity{
+		Mesh: idReq.Mesh,
+		Name: idReq.Name,
+		Tags: mesh_proto.MultiValueTagSetFrom(idReq.Tags),
+	})
 	if err != nil {
 		errors.HandleError(response, err, "Could not issue a token")
 		return
