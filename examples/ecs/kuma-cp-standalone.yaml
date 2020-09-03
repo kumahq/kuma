@@ -8,7 +8,7 @@ Parameters:
       to locate and reference resources created by that stack.
   Image:
     Type: String
-    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:0.7.1"
+    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:080-preview-1"
     Description: The name of the kuma-cp docker image
   AllowedCidr:
     Type: String
@@ -155,7 +155,7 @@ Resources:
   TaskDefinitionKumaCP:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: kuma-cp-family
+      Family: kuma-cp-standalone-family
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -169,7 +169,7 @@ Resources:
           PortMappings:
             - ContainerPort: 22
               Protocol: tcp
-        - Name: kuma-cp-family
+        - Name: kuma-cp-standalone
           Essential: true
           Image: !Ref Image
           PortMappings:

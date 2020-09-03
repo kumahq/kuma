@@ -100,8 +100,7 @@ aws cloudformation deploy \
     --stack-name workload \
     --template-file workload.yaml \
     --parameter-overrides \
-      DesiredCount=2 \
-      Image="nickolaev/kuma-dp:latest"
+      DesiredCount=2
 ```
 
 #### Remote
@@ -112,7 +111,6 @@ aws cloudformation deploy \
     --template-file workload.yaml \
     --parameter-overrides \
       DesiredCount=2 \
-      Image="nickolaev/kuma-dp:latest" \
       CPAddress="http://zone-1-controlplane.kuma.io:5681"
 ```
 
