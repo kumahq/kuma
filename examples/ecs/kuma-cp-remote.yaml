@@ -10,6 +10,10 @@ Parameters:
     Type: String
     Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:080-preview-1"
     Description: The name of the kuma-cp docker image
+  IngressImage:
+    Type: String
+    Default: "kong-docker-kuma-docker.bintray.io/kuma-dp:080-preview-1"
+    Description: The name of the kuma-dp docker image
   Zone:
     Type: String
     Default: "zone-1"
@@ -21,6 +25,9 @@ Parameters:
     Type: String
     Default: '10.0.0.0/8'
     Description: The CIDR used to restrict the kuma-cp ports access
+  IngressPort:
+    Type: String
+    Default: 10001
 
 Resources:
 
@@ -219,3 +226,69 @@ Resources:
               awslogs-group: !Ref AWS::StackName
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: kuma-cp
+
+
+  ############################
+  # Ingress DP configuration #
+  ############################
+
+  ServiceIngressDP:
+    Type: AWS::ECS::Service
+    Properties:
+      LaunchType: FARGATE
+      Cluster:
+        Fn::ImportValue:
+          !Join [ ':', [ !Ref 'VPCStackName', 'ClusterName' ] ]
+      DesiredCount: 1
+      TaskDefinition: !Ref 'TaskDefinitionIngressDP'
+      ServiceRegistries:
+        - RegistryArn: !GetAtt DiscoveryServiceKumaCP.Arn
+          Port: !Ref IngressPort
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - Fn::ImportValue:
+                !Join [ ':', [ !Ref 'VPCStackName', 'PublicSubnet' ] ]
+          SecurityGroups: [ !Ref 'KumaCpSecurityGroup' ]
+
+  TaskDefinitionIngressDP:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: kuma-dp-ingress
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref KumaECSTaskIamRole
+      ExecutionRoleArn: !Ref 'KumaECSTaskExecutionRole'
+      Cpu: 256
+      Memory: 512
+      ContainerDefinitions:
+        - Name: kuma-dp
+          Image: !Ref IngressImage
+          PortMappings:
+            - ContainerPort: !Ref IngressPort
+              Protocol: tcp
+          Essential: true
+          User: '5678'
+          Environment:
+            - Name: KUMA_DATAPLANE_RUNTIME_RESOURCE
+              Value: '{"type": "Dataplane", "name": "dp-ingress", "mesh": "default", "networking": { "address": "{{ address }}", "ingress": {}, "inbound": [ { "port": {{ port }}, "tags": { "kuma.io/service": "ingress" } } ]}}'
+          EntryPoint: [ "sh", "-c" ]
+          Command:
+            - !Join
+              - " "
+              - - "kuma-dp"
+                - "run"
+                - "--cp-address"
+                - !Join [ "", [ "http://", !Join [ "-", [ !Ref Zone, "controlplane" ] ], ".kuma.io:5681" ] ]
+                - "--dataplane-var"
+                - "address=`hostname -i`"
+                - "--dataplane-var"
+                - !Join [ "=", [ "port", !Ref IngressPort ] ]
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref AWS::StackName
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: kuma-dp
