@@ -92,7 +92,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	zone1Json := `
 {
  "type": "ZoneOverview",
- "mesh": "default",
  "name": "zone-1",
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",
@@ -118,7 +117,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	zone2Json := `
 {
  "type": "ZoneOverview",
- "mesh": "default",
  "name": "zone-2",
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",
@@ -144,7 +142,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	zone3Json := `
 {
  "type": "ZoneOverview",
- "mesh": "default",
  "name": "zone-3",
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",

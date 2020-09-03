@@ -13,6 +13,7 @@ type configParameters struct {
 	XdsConnectTimeout  time.Duration
 	AccessLogPipe      string
 	DataplaneTokenPath string
+	DataplaneResource  string
 	CertBytes          string
 }
 
@@ -23,6 +24,9 @@ node:
   metadata:
 {{if .DataplaneTokenPath}}
     dataplaneTokenPath: {{.DataplaneTokenPath}}
+{{end}}
+{{if .DataplaneResource}}
+    dataplane.resource: '{{.DataplaneResource}}'
 {{end}}
 {{if .AdminPort }}
     dataplane.admin.port: "{{ .AdminPort }}"

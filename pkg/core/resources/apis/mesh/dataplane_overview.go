@@ -50,6 +50,10 @@ func (t *DataplaneOverviewResource) Validate() error {
 	return nil
 }
 
+func (t *DataplaneOverviewResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
+}
+
 var _ model.ResourceList = &DataplaneOverviewResourceList{}
 
 type DataplaneOverviewResourceList struct {

@@ -76,6 +76,16 @@ func newRunCmd() *cobra.Command {
 				}
 			}
 
+			dp, err := readDataplaneResource(cmd, &cfg)
+			if err != nil {
+				runLog.Error(err, "unable to read provided dataplane")
+				return err
+			}
+			if dp != nil {
+				cfg.Dataplane.Mesh = dp.Meta.GetMesh()
+				cfg.Dataplane.Name = dp.Meta.GetName()
+			}
+
 			if !cfg.Dataplane.AdminPort.Empty() {
 				// unless a user has explicitly opted out of Envoy Admin API, pick a free port from the range
 				adminPort, err := util_net.PickTCPPort("127.0.0.1", cfg.Dataplane.AdminPort.Lowest(), cfg.Dataplane.AdminPort.Highest())
@@ -114,6 +124,7 @@ func newRunCmd() *cobra.Command {
 				Catalog:   *catalog,
 				Config:    cfg,
 				Generator: bootstrapGenerator,
+				Dataplane: dp,
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
 			})
@@ -145,6 +156,9 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Token, "dataplane-token", cfg.DataplaneRuntime.Token, "Dataplane Token")
+	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Resource, "dataplane", "", "Dataplane template to apply (YAML or JSON)")
+	cmd.PersistentFlags().StringVarP(&cfg.DataplaneRuntime.ResourcePath, "dataplane-file", "d", "", "Path to Dataplane template to apply (YAML or JSON)")
+	cmd.PersistentFlags().StringToStringVarP(&cfg.DataplaneRuntime.ResourceVars, "dataplane-var", "v", map[string]string{}, "Variables to replace Dataplane template")
 	return cmd
 }
 

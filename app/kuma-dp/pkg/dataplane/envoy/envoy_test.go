@@ -21,6 +21,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
 var _ = Describe("Envoy", func() {
@@ -72,7 +73,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config, *rest.Resource) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{
 					Node: &envoy_core.Node{
 						Id: "example",
@@ -143,7 +144,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config, *rest.Resource) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{}, nil
 			}
 
@@ -185,7 +186,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config) (proto.Message, error) {
+			sampleConfig := func(string, kuma_dp.Config, *rest.Resource) (proto.Message, error) {
 				return &envoy_bootstrap.Bootstrap{}, nil
 			}
 

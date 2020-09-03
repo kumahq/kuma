@@ -50,6 +50,10 @@ func (t *ZoneOverviewResource) Validate() error {
 	return nil
 }
 
+func (t *ZoneOverviewResource) Scope() model.ResourceScope {
+	return model.ScopeGlobal
+}
+
 var _ model.ResourceList = &ZoneOverviewResourceList{}
 
 type ZoneOverviewResourceList struct {

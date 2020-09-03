@@ -7,8 +7,6 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/emicklei/go-restful"
 
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
@@ -216,12 +214,10 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	if string(r.ResourceFactory().GetType()) != resource.Meta.Type {
 		err.AddViolation("type", "type from the URL has to be the same as in body")
 	}
-	if meshName != resource.Meta.Mesh &&
-		r.ResourceFactory().GetType() != mesh.MeshType &&
-		r.ResourceFactory().GetType() != system.ZoneType {
+	if r.ResourceFactory().Scope() == model.ScopeMesh && meshName != resource.Meta.Mesh {
 		err.AddViolation("mesh", "mesh from the URL has to be the same as in body")
 	}
-	err.AddError("", mesh.ValidateMeta(name, meshName))
+	err.AddError("", mesh.ValidateMeta(name, meshName, r.ResourceFactory().Scope()))
 	return err.OrNil()
 }
 

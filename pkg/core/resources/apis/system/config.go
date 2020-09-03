@@ -43,6 +43,9 @@ func (t *ConfigResource) SetSpec(spec model.ResourceSpec) error {
 func (t *ConfigResource) Validate() error {
 	return nil
 }
+func (t *ConfigResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
+}
 
 var _ model.ResourceList = &ConfigResourceList{}
 

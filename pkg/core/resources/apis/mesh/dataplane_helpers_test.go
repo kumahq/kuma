@@ -485,5 +485,4 @@ var _ = Describe("ParseProtocol()", func() {
 			expected: ProtocolUnknown,
 		}),
 	)
-
 })
