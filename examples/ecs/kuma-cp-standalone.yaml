@@ -200,6 +200,8 @@ Resources:
             # TODO: remove this one once the token workflow is fixed
             - Name: KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED
               Value: "false"
+            - Name: KUMA_DATAPLANE_TOKEN_SERVER_ENABLED
+              Value: "false"
           Command:
             - "run"
           LogConfiguration:
