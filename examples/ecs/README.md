@@ -88,8 +88,23 @@ export PUBLIC_IP=<ip address>
 kumactl config control-planes add --name=ecs --address=http://$PUBLIC_IP:5681 --overwrite
 ```
 
-### Install the workload
+### Install the Kuma DNS
 
+The services within the Kuma mesh are exposed whtough their names (as defined in the `kuma.io/service` tag) in the `.mesh` DNS zone. In the default workload example that would be `httpbin.mesh`.
+Run the following command to create the necessary Forwarding rules in Route 53 and leverage the integrated DNS server in `kuma-cp`.
+
+```bash
+aws cloudformation deploy \
+    --capabilities CAPABILITY_IAM \
+    --stack-name kuma-dns \
+    --template-file kuma-dns.yaml \
+    --parameter-overrides \
+      DNSServer=<kuma-cp-ip>
+```
+
+Note: We strongly recommend exposing the Kuma-CP instances behind a load balancer, and use that IP as the `DNSServer` parameter. This will ensure a more robust operation during upgrades, restarts and re-configurations. 
+
+### Install the workload
 
 The `workload` template provides a basic example how `kuma-dp` can be run as a sidecar container alongside an arbitrary, single port service container.
 
@@ -114,7 +129,7 @@ aws cloudformation deploy \
       CPAddress="http://zone-1-controlplane.kuma.io:5681"
 ```
 
-The `workload` template has a lot of parameters so it can be customized for many scenarios, with different workload images, service name and port etc. Find more information in the template itself.
+The `workload` template has a lot of parameters, so it can be customized for many scenarios, with different workload images, service name and port etc. Find more information in the template itself.
 
 
 # Future work
