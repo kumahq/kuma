@@ -18,6 +18,10 @@ Parameters:
     Type: String
     Default: "kennethreitz/httpbin"
     Description: The name of the workload image
+  WorkloadProtocol:
+    Type: String
+    Default: "http"
+    Description: The protocol for the workload [tcp|http|http2|grpc]
   WorkloadPort:
     Type: String
     Default: 80
@@ -36,7 +40,21 @@ Parameters:
     Description: The kuma-cp address
   DPTemplate:
     Type: String
-    Default: '{"type": "Dataplane", "name": "{{ dpname }}", "mesh": "{{ mesh }}", "networking": { "address": "{{ address }}", "inbound": [ { "port": {{ port }}, "tags": { "kuma.io/service": "{{ service }}" } } ],"transparentProxying": {"redirectPortOutbound": 15001, "redirectPortInbound": 15006 }}}'
+    Default: |
+      ---
+      type: Dataplane
+      name: "{{ dpname }}"
+      mesh: "{{ mesh }}"
+      networking:
+        address: "{{ address }}"
+        inbound:
+        - port: {{ port }}
+          tags:
+            kuma.io/service: "{{ service }}"
+            kuma.io/protocol: "{{ protocol }}"
+        transparentProxying:
+          redirectPortOutbound: 15001
+          redirectPortInbound: 15006
   DPMesh:
     Type: String
     Default: "default"
@@ -226,6 +244,8 @@ Resources:
                 - !Join [ "=", [ "port", !Ref WorkloadPort ] ]
                 - "--dataplane-var"
                 - !Join [ "=", [ "service", !Ref WorkloadName ] ]
+                - "--dataplane-var"
+                - !Join [ "=", [ "protocol", !Ref WorkloadProtocol ] ]
           LogConfiguration:
             LogDriver: awslogs
             Options:
