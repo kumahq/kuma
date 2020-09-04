@@ -20,9 +20,10 @@ import (
 )
 
 type PortFwd struct {
-	lowFwdPort   uint32
-	hiFwdPort    uint32
-	localAPIPort uint32
+	lowFwdPort     uint32
+	hiFwdPort      uint32
+	localAPIPort   uint32
+	localAdminPort uint32
 }
 
 type K8sControlPlane struct {
@@ -73,9 +74,6 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 }
 
 func (c *K8sControlPlane) PortForwardKumaCP() error {
-	var apiPort uint32
-	var err error
-
 	kumacpPods := c.GetKumaCPPods()
 	if len(kumacpPods) != 1 {
 		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
@@ -84,13 +82,22 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 	kumacpPodName := kumacpPods[0].Name
 
 	// API
-	apiPort, err = util_net.PickTCPPort("", c.portFwd.lowFwdPort+1, c.portFwd.hiFwdPort)
+	apiPort, err := util_net.PickTCPPort("", c.portFwd.lowFwdPort+1, c.portFwd.hiFwdPort)
 	if err != nil {
 		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
 	}
 
 	c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
 	c.portFwd.localAPIPort = apiPort
+
+	// Admin
+	adminPort, err := util_net.PickTCPPort("", c.portFwd.lowFwdPort+2, c.portFwd.hiFwdPort)
+	if err != nil {
+		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
+	}
+
+	c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, adminPort, kumaCPAdminPort)
+	c.portFwd.localAdminPort = adminPort
 
 	return nil
 }
@@ -236,4 +243,18 @@ func (c *K8sControlPlane) GetIngressAddress() string {
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
 	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
+}
+
+func (c *K8sControlPlane) GenerateDpToken(service string) (string, error) {
+	return http_helper.HTTPDoWithRetryE(
+		c.t,
+		"POST",
+		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAdminPort),
+		[]byte(fmt.Sprintf(`{"mesh": "default", "tags": {"kuma.io/service": ["%s"]}}`, service)),
+		map[string]string{"content-type": "application/json"},
+		200,
+		DefaultRetries,
+		DefaultTimeout,
+		&tls.Config{},
+	)
 }

@@ -29,17 +29,35 @@ type claims struct {
 	jwt.StandardClaims
 }
 
-func NewDataplaneTokenIssuer(privateKey []byte) DataplaneTokenIssuer {
-	return &jwtTokenIssuer{privateKey}
+type SigningKeyAccessor func() ([]byte, error)
+
+func NewDataplaneTokenIssuer(signingKeyAccessor SigningKeyAccessor) DataplaneTokenIssuer {
+	return &jwtTokenIssuer{signingKeyAccessor}
 }
 
 var _ DataplaneTokenIssuer = &jwtTokenIssuer{}
 
 type jwtTokenIssuer struct {
-	privateKey []byte
+	signingKeyAccessor SigningKeyAccessor
+}
+
+func (i *jwtTokenIssuer) signingKey() ([]byte, error) {
+	signingKey, err := i.signingKeyAccessor()
+	if err != nil {
+		return nil, err
+	}
+	if len(signingKey) == 0 {
+		return nil, SigningKeyNotFound
+	}
+	return signingKey, nil
 }
 
 func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (auth.Credential, error) {
+	signingKey, err := i.signingKey()
+	if err != nil {
+		return "", err
+	}
+
 	tags := map[string][]string{}
 	for tagName := range identity.Tags {
 		tags[tagName] = identity.Tags.Values(tagName)
@@ -53,7 +71,7 @@ func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (auth.Credential, 
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
-	tokenString, err := token.SignedString(i.privateKey)
+	tokenString, err := token.SignedString(signingKey)
 	if err != nil {
 		return "", errors.Wrap(err, "could not sign a token")
 	}
@@ -61,10 +79,15 @@ func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (auth.Credential, 
 }
 
 func (i *jwtTokenIssuer) Validate(credential auth.Credential) (DataplaneIdentity, error) {
+	signingKey, err := i.signingKey()
+	if err != nil {
+		return DataplaneIdentity{}, err
+	}
+
 	c := &claims{}
 
 	token, err := jwt.ParseWithClaims(string(credential), c, func(*jwt.Token) (interface{}, error) {
-		return i.privateKey, nil
+		return signingKey, nil
 	})
 	if err != nil {
 		return DataplaneIdentity{}, errors.Wrap(err, "could not parse token")

@@ -63,5 +63,6 @@ const (
 	helmChartPath = "../../deployments/charts/kuma"
 
 	kumaCPAPIPort        = 5681
+	kumaCPAdminPort      = 5679
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 )

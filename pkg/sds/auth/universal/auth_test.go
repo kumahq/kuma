@@ -22,7 +22,9 @@ import (
 var _ = Describe("Authentication flow", func() {
 	var privateKey = []byte("testPrivateKey")
 
-	issuer := builtin_issuer.NewDataplaneTokenIssuer(privateKey)
+	issuer := builtin_issuer.NewDataplaneTokenIssuer(func() ([]byte, error) {
+		return privateKey, nil
+	})
 	var authenticator auth.Authenticator
 	var resStore store.ResourceStore
 
@@ -149,7 +151,7 @@ var _ = Describe("Authentication flow", func() {
 					},
 				},
 			},
-			err: `dataplane contains tag "kuma.io/service" with value "web" which is not allowed with this token. Allowed values in token are ["backend"]`,
+			err: `which is not allowed with this token. Allowed values in token are ["backend"]`,
 		}),
 		Entry("on token with tag that is absent in dataplane", testCase{
 			id: builtin_issuer.DataplaneIdentity{
@@ -207,5 +209,18 @@ var _ = Describe("Authentication flow", func() {
 
 		// then
 		Expect(err).To(MatchError(`unable to find Dataplane for proxy "default.non-existent-dp": Resource not found: type="Dataplane" name="non-existent-dp" mesh="default"`))
+	})
+
+	It("should throw an error when signing key is not found", func() {
+		// given
+		issuer := builtin_issuer.NewDataplaneTokenIssuer(func() ([]byte, error) {
+			return nil, nil
+		})
+
+		// when
+		_, err := issuer.Generate(builtin_issuer.DataplaneIdentity{})
+
+		// then
+		Expect(err).To(MatchError("there is no Signing Key in the Control Plane. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens."))
 	})
 })
