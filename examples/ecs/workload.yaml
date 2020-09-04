@@ -199,7 +199,7 @@ Resources:
           - Name: ProxyEgressPort
             Value: '15001'
           - Name: AppPorts
-            Value: '30080'
+            Value: !Ref WorkloadPort
       ContainerDefinitions:
         - Name: workload
           Essential: true
