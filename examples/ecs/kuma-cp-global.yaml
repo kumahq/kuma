@@ -89,7 +89,7 @@ Resources:
         Fn::ImportValue:
           !Join [ ':', [ !Ref 'VPCStackName', 'VPCId' ] ]
 
-  KumaCpIngressTcp:
+  KumaCpApiIngressTcp:
     Type: AWS::EC2::SecurityGroupIngress
     Properties:
       Description: Ingress for kuma-cp TCP
@@ -98,6 +98,16 @@ Resources:
       CidrIp: !Ref AllowedCidr
       FromPort: 5681
       ToPort: 5681
+
+  KDSIngressTcp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Ingress for kuma-cp TCP
+      GroupId: !Ref KumaCpSecurityGroup
+      IpProtocol: tcp
+      CidrIp: !Ref AllowedCidr
+      FromPort: 5685
+      ToPort: 5685
 
   KumaCpIngressSSH:
     Type: AWS::EC2::SecurityGroupIngress
