@@ -288,7 +288,19 @@ Resources:
           User: '5678'
           Environment:
             - Name: KUMA_DATAPLANE_RUNTIME_RESOURCE
-              Value: '{"type": "Dataplane", "name": "dp-ingress", "mesh": "default", "networking": { "address": "{{ address }}", "ingress": {}, "inbound": [ { "port": {{ port }}, "tags": { "kuma.io/service": "ingress" } } ]}}'
+              Value: |
+                ---
+                type: Dataplane
+                name: dp-ingress
+                mesh: default
+                networking:
+                  address: "{{ address }}"
+                  ingress: { }
+                  inbound:
+                    - port: {{ port }}
+                      tags:
+                        kuma.io/service: ingress
+                        kuma.io/protocol: tcp
           EntryPoint: [ "sh", "-c" ]
           Command:
             - !Join
