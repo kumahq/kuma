@@ -103,9 +103,9 @@ func EchoServerK8s() InstallFunc {
 	)
 }
 
-func EchoServerUniversal() InstallFunc {
+func EchoServerUniversal(token string) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp("", AppModeEchoServer)
+		return cluster.DeployApp("", AppModeEchoServer, token)
 	}
 }
 
@@ -167,9 +167,9 @@ func DemoClientK8s() InstallFunc {
 	)
 }
 
-func DemoClientUniversal() InstallFunc {
+func DemoClientUniversal(token string) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp("", AppModeDemoClient)
+		return cluster.DeployApp("", AppModeDemoClient, token)
 	}
 }
 
