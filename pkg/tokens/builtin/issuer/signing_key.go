@@ -66,7 +66,7 @@ func createSigningKey() (system.SecretResource, error) {
 	}
 	return res, nil
 }
-func GetSigningKey(manager manager.ResourceManager) ([]byte, error) {
+func GetSigningKey(manager manager.ReadOnlyResourceManager) ([]byte, error) {
 	resource := system.SecretResource{}
 	if err := manager.Get(context.Background(), &resource, store.GetBy(signingKeyResourceKey)); err != nil {
 		if store.IsResourceNotFound(err) {

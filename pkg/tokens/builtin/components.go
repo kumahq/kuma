@@ -7,6 +7,6 @@ import (
 
 func NewDataplaneTokenIssuer(rt runtime.Runtime) (issuer.DataplaneTokenIssuer, error) {
 	return issuer.NewDataplaneTokenIssuer(func() ([]byte, error) {
-		return issuer.GetSigningKey(rt.ResourceManager())
+		return issuer.GetSigningKey(rt.ReadOnlyResourceManager())
 	}), nil
 }
