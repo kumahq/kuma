@@ -17,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
 	"github.com/kumahq/kuma/pkg/config/sds"
-	token_server "github.com/kumahq/kuma/pkg/config/token-server"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 )
@@ -102,8 +101,6 @@ type Config struct {
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer,omitempty"`
 	// Envoy SDS server configuration
 	SdsServer *sds.SdsServerConfig `yaml:"sdsServer,omitempty"`
-	// Dataplane Token server configuration (DEPRECATED: use adminServer)
-	DataplaneTokenServer *token_server.DataplaneTokenServerConfig `yaml:"dataplaneTokenServer,omitempty"`
 	// Monitoring Assignment Discovery Service (MADS) server configuration
 	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer,omitempty"`
 	// Admin server configuration
@@ -132,7 +129,6 @@ func (c *Config) Sanitize() {
 	c.BootstrapServer.Sanitize()
 	c.XdsServer.Sanitize()
 	c.SdsServer.Sanitize()
-	c.DataplaneTokenServer.Sanitize()
 	c.MonitoringAssignmentServer.Sanitize()
 	c.AdminServer.Sanitize()
 	c.ApiServer.Sanitize()
@@ -151,7 +147,6 @@ func DefaultConfig() Config {
 		Store:                      store.DefaultStoreConfig(),
 		XdsServer:                  xds.DefaultXdsServerConfig(),
 		SdsServer:                  sds.DefaultSdsServerConfig(),
-		DataplaneTokenServer:       token_server.DefaultDataplaneTokenServerConfig(),
 		MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
 		AdminServer:                admin_server.DefaultAdminServerConfig(),
 		ApiServer:                  api_server.DefaultApiServerConfig(),
@@ -205,9 +200,6 @@ func (c *Config) Validate() error {
 		if err := c.SdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "SDS Server validation failed")
 		}
-		if err := c.DataplaneTokenServer.Validate(); err != nil {
-			return errors.Wrap(err, "Dataplane Token Server validation failed")
-		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
 		}
@@ -232,9 +224,6 @@ func (c *Config) Validate() error {
 		}
 		if err := c.SdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "SDS Server validation failed")
-		}
-		if err := c.DataplaneTokenServer.Validate(); err != nil {
-			return errors.Wrap(err, "Dataplane Token Server validation failed")
 		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
