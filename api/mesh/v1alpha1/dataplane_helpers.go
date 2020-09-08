@@ -274,6 +274,21 @@ func (t MultiValueTagSet) Values(key string) []string {
 	return result
 }
 
+func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
+	set := MultiValueTagSet{}
+	for tagName, values := range data {
+		for _, value := range values {
+			m, ok := set[tagName]
+			if !ok {
+				m = map[string]bool{}
+			}
+			m[value] = true
+			set[tagName] = m
+		}
+	}
+	return set
+}
+
 func (d *Dataplane) Tags() MultiValueTagSet {
 	tags := MultiValueTagSet{}
 	for _, inbound := range d.GetNetworking().GetInbound() {

@@ -97,7 +97,7 @@ type Cluster interface {
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
-	DeployApp(namespace, appname string) error
+	DeployApp(namespace, appname, token string) error
 	DeleteApp(namespace, appname string) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
 	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
@@ -112,4 +112,5 @@ type ControlPlane interface {
 	GetKDSServerAddress() string
 	GetIngressAddress() string
 	GetGlobaStatusAPI() string
+	GenerateDpToken(appname string) (string, error)
 }

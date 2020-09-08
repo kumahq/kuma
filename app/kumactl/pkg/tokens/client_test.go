@@ -15,7 +15,6 @@ import (
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
 	admin_server_config "github.com/kumahq/kuma/pkg/config/admin-server"
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/sds/auth"
 	"github.com/kumahq/kuma/pkg/test"
@@ -28,12 +27,12 @@ type staticTokenIssuer struct {
 
 var _ issuer.DataplaneTokenIssuer = &staticTokenIssuer{}
 
-func (s *staticTokenIssuer) Generate(proxyId xds.ProxyId) (auth.Credential, error) {
-	return auth.Credential(fmt.Sprintf("token-for-%s-%s", proxyId.Name, proxyId.Mesh)), nil
+func (s *staticTokenIssuer) Generate(identity issuer.DataplaneIdentity) (auth.Credential, error) {
+	return auth.Credential(fmt.Sprintf("token-for-%s-%s", identity.Name, identity.Mesh)), nil
 }
 
-func (s *staticTokenIssuer) Validate(credential auth.Credential) (xds.ProxyId, error) {
-	return xds.ProxyId{}, errors.New("not implemented")
+func (s *staticTokenIssuer) Validate(credential auth.Credential) (issuer.DataplaneIdentity, error) {
+	return issuer.DataplaneIdentity{}, errors.New("not implemented")
 }
 
 var _ = Describe("Tokens Client", func() {
@@ -91,12 +90,12 @@ var _ = Describe("Tokens Client", func() {
 
 			// wait for server
 			Eventually(func() error {
-				_, err := client.Generate("example", "default")
+				_, err := client.Generate("example", "default", nil)
 				return err
 			}, "5s", "100ms").ShouldNot(HaveOccurred())
 
 			// when
-			token, err := client.Generate("example", "default")
+			token, err := client.Generate("example", "default", nil)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -131,7 +130,7 @@ var _ = Describe("Tokens Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = client.Generate("example", "default")
+		_, err = client.Generate("example", "default", nil)
 
 		// then
 		Expect(err).To(MatchError("unexpected status code 500. Expected 200"))

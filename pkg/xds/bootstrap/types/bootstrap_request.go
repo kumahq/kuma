@@ -5,4 +5,5 @@ type BootstrapRequest struct {
 	Name               string `json:"name"`
 	AdminPort          uint32 `json:"adminPort,omitempty"`
 	DataplaneTokenPath string `json:"dataplaneTokenPath,omitempty"`
+	DataplaneResource  string `json:"dataplaneResource,omitempty"`
 }

@@ -1,6 +1,5 @@
 items:
   - creationTime: "2018-07-17T16:05:36.995Z"
-    mesh: default
     modificationTime: "2019-07-17T18:08:41Z"
     name: zone-1
     type: ZoneOverview
@@ -58,7 +57,6 @@ items:
               responsesRejected: "2"
               responsesSent: "20"
   - creationTime: "2018-07-17T16:05:36.995Z"
-    mesh: default
     modificationTime: "2019-07-17T18:08:41Z"
     name: zone-2
     type: ZoneOverview

@@ -4,7 +4,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -30,7 +30,7 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string) (envoy_xds.
 	stats.RequestsReceivedMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
 		Name: dsType + "_requests_received",
 		Help: "Number of confirmations requests from a client",
-		}, []string{"type_url", "confirmation"})
+	}, []string{"type_url", "confirmation"})
 	if err := metrics.Register(stats.RequestsReceivedMetric); err != nil {
 		return nil, err
 	}
@@ -61,7 +61,7 @@ func (s *StatsCallbacks) OnStreamClosed(stream int64) {
 	s.StreamsActive--
 }
 
-func (s *StatsCallbacks) OnStreamRequest(stream int64, request *envoy_api_v2.DiscoveryRequest) error {
+func (s *StatsCallbacks) OnStreamRequest(stream int64, request *envoy_api.DiscoveryRequest) error {
 	if request.ResponseNonce != "" {
 		if request.ErrorDetail != nil {
 			s.RequestsReceivedMetric.WithLabelValues(request.TypeUrl, "NACK").Inc()
@@ -72,15 +72,15 @@ func (s *StatsCallbacks) OnStreamRequest(stream int64, request *envoy_api_v2.Dis
 	return nil
 }
 
-func (s *StatsCallbacks) OnStreamResponse(stream int64, request *envoy_api_v2.DiscoveryRequest, response *envoy_api_v2.DiscoveryResponse) {
+func (s *StatsCallbacks) OnStreamResponse(stream int64, request *envoy_api.DiscoveryRequest, response *envoy_api.DiscoveryResponse) {
 	s.ResponsesSentMetric.WithLabelValues(response.TypeUrl).Inc()
 }
 
-func (s *StatsCallbacks) OnFetchRequest(ctx context.Context, request *envoy_api_v2.DiscoveryRequest) error {
+func (s *StatsCallbacks) OnFetchRequest(ctx context.Context, request *envoy_api.DiscoveryRequest) error {
 	return nil
 }
 
-func (s *StatsCallbacks) OnFetchResponse(request *envoy_api_v2.DiscoveryRequest, response *envoy_api_v2.DiscoveryResponse) {
+func (s *StatsCallbacks) OnFetchResponse(request *envoy_api.DiscoveryRequest, response *envoy_api.DiscoveryResponse) {
 }
 
 var _ envoy_xds.Callbacks = &StatsCallbacks{}

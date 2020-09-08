@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
 	dns "github.com/kumahq/kuma/pkg/dns/components"
+	"github.com/kumahq/kuma/pkg/gc"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
@@ -89,6 +90,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DNS server")
 					return err
 				}
+				if err := gc.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up GC")
+					return err
+				}
 			case config_core.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
@@ -108,6 +113,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := dns.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up DNS server")
+					return err
+				}
+				if err := gc.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up GC")
 					return err
 				}
 			case config_core.Global:

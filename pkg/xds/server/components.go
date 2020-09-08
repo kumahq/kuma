@@ -50,6 +50,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	reconciler := DefaultReconciler(rt)
 
 	metadataTracker := NewDataplaneMetadataTracker()
+	lifecycle := NewDataplaneLifecycle(rt.ResourceManager())
 
 	ingressReconciler := DefaultIngressReconciler(rt)
 
@@ -70,6 +71,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 		statsCallbacks,
 		syncTracker,
 		metadataTracker,
+		lifecycle,
 		statusTracker,
 	}
 
@@ -145,7 +147,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				return time.NewTicker(rt.Config().XdsServer.DataplaneConfigurationRefreshInterval)
 			},
 			OnTick: func() error {
-				log.Info("TICK")
 				start := core.Now()
 				defer func() {
 					xdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))

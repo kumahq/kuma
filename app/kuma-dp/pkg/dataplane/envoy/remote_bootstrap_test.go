@@ -14,6 +14,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
@@ -22,6 +24,7 @@ var _ = Describe("Remote Bootstrap", func() {
 
 	type testCase struct {
 		config                   kuma_dp.Config
+		dataplane                *rest.Resource
 		expectedBootstrapRequest string
 	}
 
@@ -48,7 +51,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
 
 		// when
-		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config)
+		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, given.dataplane)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -64,12 +67,20 @@ var _ = Describe("Remote Bootstrap", func() {
 
 				return testCase{
 					config: cfg,
+					dataplane: &rest.Resource{
+						Meta: rest.ResourceMeta{
+							Type: "Dataplane",
+							Mesh: "demo",
+							Name: "sample",
+						},
+					},
 					expectedBootstrapRequest: `
                     {
                       "mesh": "demo",
                       "name": "sample",
                       "adminPort": 4321,
-                      "dataplaneTokenPath": "/tmp/token"
+                      "dataplaneTokenPath": "/tmp/token",
+                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}"
                     }
 `,
 				}
@@ -85,12 +96,20 @@ var _ = Describe("Remote Bootstrap", func() {
 
 				return testCase{
 					config: cfg,
+					dataplane: &rest.Resource{
+						Meta: rest.ResourceMeta{
+							Type: "Dataplane",
+							Mesh: "demo",
+							Name: "sample",
+						},
+					},
 					expectedBootstrapRequest: `
                     {
                       "mesh": "demo",
                       "name": "sample",
                       "adminPort": 4321,
-                      "dataplaneTokenPath": "/tmp/token"
+                      "dataplaneTokenPath": "/tmp/token",
+                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}"
                     }
 `,
 				}
@@ -105,11 +124,19 @@ var _ = Describe("Remote Bootstrap", func() {
 
 				return testCase{
 					config: cfg,
+					dataplane: &rest.Resource{
+						Meta: rest.ResourceMeta{
+							Type: "Dataplane",
+							Mesh: "demo",
+							Name: "sample",
+						},
+					},
 					expectedBootstrapRequest: `
                     {
                       "mesh": "demo",
                       "name": "sample",
-                      "dataplaneTokenPath": "/tmp/token"
+                      "dataplaneTokenPath": "/tmp/token",
+                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}"
                     }
 `,
 				}
@@ -143,7 +170,13 @@ var _ = Describe("Remote Bootstrap", func() {
 		// when
 		cfg := kuma_dp.DefaultConfig()
 		cfg.ControlPlane.BootstrapServer.Retry.Backoff = 10 * time.Millisecond
-		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg)
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, &rest.Resource{
+			Meta: rest.ResourceMeta{
+				Type: "Dataplane",
+				Mesh: "default",
+				Name: "dp-1",
+			},
+		})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -169,7 +202,9 @@ var _ = Describe("Remote Bootstrap", func() {
 		config := kuma_dp.DefaultConfig()
 		config.ControlPlane.BootstrapServer.Retry.Backoff = 10 * time.Millisecond
 		config.ControlPlane.BootstrapServer.Retry.MaxDuration = 100 * time.Millisecond
-		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config)
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config, &rest.Resource{
+			Meta: rest.ResourceMeta{Mesh: "default", Name: "dp-1"},
+		})
 
 		// then
 		Expect(err).To(MatchError("retryable: Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))
