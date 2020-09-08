@@ -77,20 +77,6 @@ var _ = Describe("Config WS", func() {
             },
             "port": 5682
           },
-          "dataplaneTokenServer": {
-            "enabled": true,
-            "local": {
-              "port": 5679
-            },
-            "public": {
-              "clientCertsDir": "",
-              "enabled": false,
-              "interface": "",
-              "port": 0,
-              "tlsCertFile": "",
-              "tlsKeyFile": ""
-            }
-          },
           "adminServer": {
             "local": {
               "port": 5679
