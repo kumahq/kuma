@@ -5,14 +5,11 @@ import (
 	"io/ioutil"
 	"net/url"
 	"os"
-	"reflect"
 	"strings"
 
-	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
-	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
-	token_server "github.com/kumahq/kuma/pkg/config/token-server"
-
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -130,29 +127,6 @@ func autoconfigureKds(cfg *kuma_cp.Config) error {
 }
 
 func autoconfigureAdminServer(cfg *kuma_cp.Config) {
-	// use old dataplane token server config values for admin server
-	if !reflect.DeepEqual(cfg.DataplaneTokenServer, token_server.DefaultDataplaneTokenServerConfig()) {
-		autoconfigureLog.Info("Deprecated DataplaneTokenServer config is used. It will be removed in the next major version of Kuma - use AdminServer config instead.")
-		cfg.AdminServer = &admin_server.AdminServerConfig{
-			Apis: &admin_server.AdminServerApisConfig{
-				DataplaneToken: &admin_server.DataplaneTokenApiConfig{
-					Enabled: cfg.DataplaneTokenServer.Enabled,
-				},
-			},
-			Local: &admin_server.LocalAdminServerConfig{
-				Port: cfg.DataplaneTokenServer.Local.Port,
-			},
-			Public: &admin_server.PublicAdminServerConfig{
-				Enabled:        cfg.DataplaneTokenServer.Public.Enabled,
-				Interface:      cfg.DataplaneTokenServer.Public.Interface,
-				Port:           cfg.DataplaneTokenServer.Public.Port,
-				TlsCertFile:    cfg.DataplaneTokenServer.Public.TlsCertFile,
-				TlsKeyFile:     cfg.DataplaneTokenServer.Public.TlsKeyFile,
-				ClientCertsDir: cfg.DataplaneTokenServer.Public.ClientCertsDir,
-			},
-		}
-	}
-
 	if cfg.AdminServer.Public.Enabled && cfg.AdminServer.Public.Port == 0 {
 		cfg.AdminServer.Public.Port = cfg.AdminServer.Local.Port
 	}

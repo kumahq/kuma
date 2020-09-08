@@ -17,12 +17,12 @@ services:
     environment:
     # DNS name of the Kuma xDS server
     - KUMA_GENERAL_ADVERTISED_HOSTNAME=kuma-control-plane
-    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_ENABLED=true
-    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE=0.0.0.0
-    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT=5684 # otherwise there would be conflict with local port
-    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE=/certs/server/cert.pem
-    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE=/certs/server/key.pem
-    - KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR=/certs/client
+    - KUMA_ADMIN_SERVER_PUBLIC_ENABLED=true
+    - KUMA_ADMIN_SERVER_PUBLIC_INTERFACE=0.0.0.0
+    - KUMA_ADMIN_SERVER_PUBLIC_PORT=5684 # otherwise there would be conflict with local port
+    - KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE=/certs/server/cert.pem
+    - KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE=/certs/server/key.pem
+    - KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR=/certs/client
     expose:
     - "5678"
     - "5679"
