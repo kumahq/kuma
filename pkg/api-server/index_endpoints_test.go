@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -35,7 +36,9 @@ var _ = Describe("Index Endpoints", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true)
+		metrics, err := metrics.NewMetrics()
+		Expect(err).ToNot(HaveOccurred())
+		apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
 
 		stop := make(chan struct{})
 		go func() {

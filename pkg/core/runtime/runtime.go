@@ -5,6 +5,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/metrics"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 
@@ -46,6 +47,7 @@ type RuntimeContext interface {
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	LookupIP() lookup.LookupIPFunc
+	Metrics() metrics.Metrics
 }
 
 var _ Runtime = &runtime{}
@@ -91,6 +93,11 @@ type runtimeContext struct {
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
+	metrics  metrics.Metrics
+}
+
+func (rc *runtimeContext) Metrics() metrics.Metrics {
+	return rc.metrics
 }
 
 func (rc *runtimeContext) CaManagers() ca.Managers {

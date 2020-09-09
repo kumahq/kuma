@@ -7,15 +7,15 @@ import (
 	"io/ioutil"
 	"net/url"
 
-	"github.com/kumahq/kuma/pkg/config/multicluster"
-
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/config/multicluster"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/metrics"
 )
 
 type client struct {
@@ -23,14 +23,16 @@ type client struct {
 	globalURL string
 	clientID  string
 	config    multicluster.KdsClientConfig
+	metrics   metrics.Metrics
 }
 
-func NewClient(globalURL string, clientID string, callbacks Callbacks, config multicluster.KdsClientConfig) component.Component {
+func NewClient(globalURL string, clientID string, callbacks Callbacks, config multicluster.KdsClientConfig, metrics metrics.Metrics) component.Component {
 	return &client{
 		callbacks: callbacks,
 		globalURL: globalURL,
 		clientID:  clientID,
 		config:    config,
+		metrics:   metrics,
 	}
 }
 
@@ -39,7 +41,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	if err != nil {
 		return err
 	}
-	var dialOpts []grpc.DialOption
+	dialOpts := c.metrics.GRPCClientInterceptors()
 	switch u.Scheme {
 	case "grpc":
 		dialOpts = append(dialOpts, grpc.WithInsecure())

@@ -15,6 +15,7 @@ import (
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
 	admin_server_config "github.com/kumahq/kuma/pkg/config/admin-server"
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/sds/auth"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -65,7 +66,9 @@ var _ = Describe("Tokens Client", func() {
 				ClientCertsDir: filepath.Join("..", "..", "..", "..", "pkg", "admin-server", "testdata", "authorized-clients"),
 			},
 		}
-		srv := admin_server.NewAdminServer(adminCfg, server.NewWebservice(&staticTokenIssuer{}))
+		metrics, err := metrics.NewMetrics()
+		Expect(err).ToNot(HaveOccurred())
+		srv := admin_server.NewAdminServer(adminCfg, metrics, server.NewWebservice(&staticTokenIssuer{}))
 
 		ch := make(chan struct{})
 		errCh := make(chan error)

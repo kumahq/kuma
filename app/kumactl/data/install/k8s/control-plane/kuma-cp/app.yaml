@@ -4,6 +4,9 @@ kind: Service
 metadata:
   name: {{ .ControlPlaneServiceName }}
   namespace: {{ .Namespace }}
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "5680"
 spec:
   type: ClusterIP
   ports:

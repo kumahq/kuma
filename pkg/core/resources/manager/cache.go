@@ -6,9 +6,11 @@ import (
 	"time"
 
 	"github.com/patrickmn/go-cache"
+	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/metrics"
 )
 
 // Cached version of the ReadOnlyResourceManager designed to be used only for use cases of eventual consistency.
@@ -22,15 +24,24 @@ import (
 type cachedManager struct {
 	delegate ReadOnlyResourceManager
 	cache    *cache.Cache
+	metrics  *prometheus.CounterVec
 }
 
 var _ ReadOnlyResourceManager = &cachedManager{}
 
-func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Duration) ReadOnlyResourceManager {
+func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Duration, metrics metrics.Metrics) (ReadOnlyResourceManager, error) {
+	metric := prometheus.NewCounterVec(prometheus.CounterOpts{
+		Name: "store_cache",
+		Help: "Summary of Store Cache",
+	}, []string{"operation", "resource_type", "result"})
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
+	}
 	return &cachedManager{
 		delegate: delegate,
 		cache:    cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
-	}
+		metrics:  metric,
+	}, nil
 }
 
 func (c cachedManager) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
@@ -38,11 +49,13 @@ func (c cachedManager) Get(ctx context.Context, res model.Resource, fs ...store.
 	cacheKey := fmt.Sprintf("GET:%s:%s", res.GetType(), opts.HashCode())
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
+		c.metrics.WithLabelValues("get", string(res.GetType()), "miss").Inc()
 		if err := c.delegate.Get(ctx, res, fs...); err != nil {
 			return err
 		}
 		c.cache.SetDefault(cacheKey, res)
 	} else {
+		c.metrics.WithLabelValues("get", string(res.GetType()), "hit").Inc()
 		cached := obj.(model.Resource)
 		if err := res.SetSpec(cached.GetSpec()); err != nil {
 			return err
@@ -57,11 +70,13 @@ func (c cachedManager) List(ctx context.Context, list model.ResourceList, fs ...
 	cacheKey := fmt.Sprintf("LIST:%s:%s", list.GetItemType(), opts.HashCode())
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
+		c.metrics.WithLabelValues("list", string(list.GetItemType()), "miss").Inc()
 		if err := c.delegate.List(ctx, list, fs...); err != nil {
 			return err
 		}
 		c.cache.SetDefault(cacheKey, list.GetItems())
 	} else {
+		c.metrics.WithLabelValues("list", string(list.GetItemType()), "hit").Inc()
 		resources := obj.([]model.Resource)
 		for _, res := range resources {
 			if err := list.AddItem(res); err != nil {

@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"text/template"
 
-	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/validators"
 
@@ -32,21 +31,18 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	config *bootstrap_config.BootstrapParamsConfig,
-	cacertFile string,
-	environmentType core.EnvironmentType) BootstrapGenerator {
+	cacertFile string) BootstrapGenerator {
 	return &bootstrapGenerator{
-		resManager:      resManager,
-		config:          config,
-		xdsCertFile:     cacertFile,
-		environmentType: environmentType,
+		resManager:  resManager,
+		config:      config,
+		xdsCertFile: cacertFile,
 	}
 }
 
 type bootstrapGenerator struct {
-	resManager      core_manager.ResourceManager
-	config          *bootstrap_config.BootstrapParamsConfig
-	xdsCertFile     string
-	environmentType core.EnvironmentType
+	resManager  core_manager.ResourceManager
+	config      *bootstrap_config.BootstrapParamsConfig
+	xdsCertFile string
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
