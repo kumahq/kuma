@@ -32,6 +32,7 @@ func NewClient(globalURL string, clientID string, callbacks Callbacks, config mu
 		globalURL: globalURL,
 		clientID:  clientID,
 		config:    config,
+		metrics:   metrics,
 	}
 }
 
