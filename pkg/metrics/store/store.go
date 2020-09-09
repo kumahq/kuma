@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
 type MeteredStore struct {
@@ -15,7 +16,7 @@ type MeteredStore struct {
 	metric   *prometheus.HistogramVec
 }
 
-func NewMeteredStore(delegate store.ResourceStore, metrics Metrics) (*MeteredStore, error) {
+func NewMeteredStore(delegate store.ResourceStore, metrics core_metrics.Metrics) (*MeteredStore, error) {
 	meteredStore := MeteredStore{
 		delegate: delegate,
 		metric: prometheus.NewHistogramVec(prometheus.HistogramOpts{

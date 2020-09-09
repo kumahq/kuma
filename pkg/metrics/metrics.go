@@ -16,7 +16,8 @@ type Metrics interface {
 }
 
 type metrics struct {
-	*prometheus.Registry
+	prometheus.Registerer
+	prometheus.Gatherer
 	grpcServerMetrics *grpc_prometheus.ServerMetrics
 	grpcClientMetrics *grpc_prometheus.ClientMetrics
 }
@@ -41,8 +42,11 @@ func (m *metrics) GRPCClientInterceptors() []grpc.DialOption {
 
 var _ Metrics = &metrics{}
 
-func NewMetrics() (Metrics, error) {
+func NewMetrics(zone string) (Metrics, error) {
 	registry := prometheus.NewRegistry()
+	registerer := prometheus.WrapRegistererWith(map[string]string{
+		"zone": zone,
+	}, registry)
 
 	grpcServerMetrics := grpc_prometheus.NewServerMetrics()
 	if err := registry.Register(grpcServerMetrics); err != nil {
@@ -57,7 +61,8 @@ func NewMetrics() (Metrics, error) {
 	grpcClientMetrics.EnableClientHandlingTimeHistogram()
 
 	m := &metrics{
-		Registry:          registry,
+		Registerer: registerer,
+		Gatherer: registry,
 		grpcServerMetrics: grpcServerMetrics,
 		grpcClientMetrics: grpcClientMetrics,
 	}
