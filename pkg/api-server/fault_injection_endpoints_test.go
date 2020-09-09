@@ -32,7 +32,7 @@ var _ = Describe("FaultInjection Endpoints", func() {
 			return now
 		}
 		resourceStore = memory.NewStore()
-		metrics, err := metrics.NewMetrics()
+		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
 		client = resourceApiClient{

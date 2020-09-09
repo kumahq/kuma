@@ -6,6 +6,7 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	store_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 
@@ -19,11 +20,11 @@ var _ = Describe("Metered Store", func() {
 	var store core_store.ResourceStore
 
 	BeforeEach(func() {
-		m, err := core_metrics.NewMetrics()
+		m, err := core_metrics.NewMetrics("Standalone")
 		metrics = m
 		Expect(err).ToNot(HaveOccurred())
 		memoryStore := store_memory.NewStore()
-		store, err = core_metrics.NewMeteredStore(memoryStore, metrics)
+		store, err = metrics_store.NewMeteredStore(memoryStore, metrics)
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup test data

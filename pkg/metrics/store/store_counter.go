@@ -17,7 +17,7 @@ var log = core.Log.WithName("metrics").WithName("store-counter")
 
 type storeCounter struct {
 	resManager manager.ReadOnlyResourceManager
-	counts *prometheus.GaugeVec
+	counts     *prometheus.GaugeVec
 }
 
 var _ component.Component = &storeCounter{}
@@ -75,5 +75,3 @@ func (s *storeCounter) count() error {
 	}
 	return nil
 }
-
-

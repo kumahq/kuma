@@ -61,8 +61,8 @@ func NewMetrics(zone string) (Metrics, error) {
 	grpcClientMetrics.EnableClientHandlingTimeHistogram()
 
 	m := &metrics{
-		Registerer: registerer,
-		Gatherer: registry,
+		Registerer:        registerer,
+		Gatherer:          registry,
 		grpcServerMetrics: grpcServerMetrics,
 		grpcClientMetrics: grpcClientMetrics,
 	}
