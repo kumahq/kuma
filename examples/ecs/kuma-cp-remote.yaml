@@ -8,11 +8,11 @@ Parameters:
       to locate and reference resources created by that stack.
   Image:
     Type: String
-    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:080-preview-1"
+    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:080-preview-2"
     Description: The name of the kuma-cp docker image
   IngressImage:
     Type: String
-    Default: "kong-docker-kuma-docker.bintray.io/kuma-dp:080-preview-1"
+    Default: "kong-docker-kuma-docker.bintray.io/kuma-dp:080-preview-2"
     Description: The name of the kuma-dp docker image
   Zone:
     Type: String

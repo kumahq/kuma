@@ -20,7 +20,7 @@ NOTE: It is recommended that the stack name is `kuma-vpc`, as that is the defaul
 The examples provide separate templates for each Kuma CP mode. Follow the instructions below depending on the needed usecase.
 
 ### Standalone
-The command to deploy the `kuma-cp` stack in snadalone mode is as follows
+The command to deploy the `kuma-cp` stack in the standalone mode is as follows
 
 ```bash
 aws cloudformation deploy \
@@ -41,7 +41,6 @@ aws cloudformation deploy \
     --stack-name kuma-cp-global \
     --template-file kuma-cp-global.yaml
 ```
-
 
 ### Remote
 
@@ -107,6 +106,16 @@ Note: We strongly recommend exposing the Kuma-CP instances behind a load balance
 ### Install the workload
 
 The `workload` template provides a basic example how `kuma-dp` can be run as a sidecar container alongside an arbitrary, single port service container.
+In order to run `kuma-dp` container, we have to issue a token. Token could be generated using Admin API of the Kuma CP. By default Admin API
+doesn't require security and serves only on `localhost`. If you'd like to run Admin API on the public interface please 
+check the [instructions](https://kuma.io/docs/0.7.1/documentation/security/#accessing-admin-server-from-a-different-machine).
+
+Run in the same network namespace as Kuma CP (this example deploys ssh server as a sidecar for Kuma CP):
+```bash
+wget --header='Content-Type: application/json' --post-data='{"mesh": "default"}' -O /tmp/dp-httpbin-1 http://localhost:5679/tokens
+```
+Note: this command generates token which is valid for all Dataplanes in the `default` mesh. Kuma also allows you to generate tokens based
+on Dataplane's Name and Tags.   
 
 #### Standalone
 ```bash
@@ -115,7 +124,8 @@ aws cloudformation deploy \
     --stack-name workload \
     --template-file workload.yaml \
     --parameter-overrides \
-      DesiredCount=2
+      DesiredCount=2 \
+      DPToken="<DP_TOKEN_VALUE>
 ```
 
 #### Remote
@@ -126,6 +136,7 @@ aws cloudformation deploy \
     --template-file workload.yaml \
     --parameter-overrides \
       DesiredCount=2 \
+      DPToken="<DP_TOKEN_VALUE> \
       CPAddress="http://zone-1-controlplane.kuma.io:5681"
 ```
 
@@ -150,5 +161,5 @@ The default mode for deploying `kuma-cp` in these examples is to use the ephemer
     	KUMA_STORE_POSTGRES_TLS_CERT_PATH=
     	KUMA_STORE_POSTGRES_TLS_KEY_PATH=
     	KUMA_STORE_POSTGRES_TLS_CA_PATH=
-
+ * call `kuma-cp migrate up` with all aforementioned environments set
 
