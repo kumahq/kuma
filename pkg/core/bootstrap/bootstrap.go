@@ -6,7 +6,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -120,9 +119,6 @@ func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 }
 
 func onStartup(runtime core_runtime.Runtime) error {
-	if err := createDefaultMesh(runtime); err != nil {
-		return err
-	}
 	if err := createDefaultSigningKey(runtime); err != nil {
 		return err
 	}
@@ -146,21 +142,6 @@ func createDefaultSigningKey(runtime core_runtime.Runtime) error {
 		return builtin_issuer.CreateDefaultSigningKey(runtime.ResourceManager())
 	}
 	return nil
-}
-
-func createDefaultMesh(runtime core_runtime.Runtime) error {
-	switch env := runtime.Config().Environment; env {
-	case config_core.KubernetesEnvironment:
-		// default Mesh on Kubernetes is managed by the Namespace Controller
-		return nil
-	case config_core.UniversalEnvironment:
-		if runtime.Config().Defaults.SkipMeshCreation {
-			return nil
-		}
-		return mesh_managers.CreateDefaultMesh(runtime.ResourceManager(), v1alpha1.Mesh{})
-	default:
-		return errors.Errorf("unknown environment type %s", env)
-	}
 }
 
 func startReporter(runtime core_runtime.Runtime) error {

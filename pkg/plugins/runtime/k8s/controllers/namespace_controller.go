@@ -17,9 +17,7 @@ import (
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8scnicncfio "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
 	network_v1 "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
@@ -38,11 +36,9 @@ type NamespaceReconciler struct {
 	DefaultMeshTemplate     mesh_proto.Mesh
 }
 
-// Reconcile is in charge for two things:
-//   - create NetworkAttachmentDefinition if CNI enabled and namespace has label 'kuma.io/sidecar-injection: enabled'
-//   - create 'default' mesh for cluster
+// Reconcile is in charge for creating NetworkAttachmentDefinition if CNI enabled and namespace has label 'kuma.io/sidecar-injection: enabled'
 func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	if !r.CNIEnabled && req.Name != r.SystemNamespace {
+	if !r.CNIEnabled {
 		return kube_ctrl.Result{}, nil
 	}
 	log := r.Log.WithValues("namespace", req.Name)
@@ -58,28 +54,9 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 		return kube_ctrl.Result{}, err
 	}
 
-	if req.Name == r.SystemNamespace && !r.SkipDefaultMeshCreation {
-		// Fetch default Mesh instance
-		mesh := &mesh_k8s.Mesh{}
-		name := kube_types.NamespacedName{Name: core_model.DefaultMesh}
-		if err := r.Get(ctx, name, mesh); err != nil {
-			if kube_apierrs.IsNotFound(err) {
-				err := mesh_managers.CreateDefaultMesh(r.ResourceManager, r.DefaultMeshTemplate)
-				if err != nil {
-					log.Error(err, "unable to create default Mesh")
-				}
-				return kube_ctrl.Result{}, err
-			}
-			log.Error(err, "unable to fetch Mesh", "name", name)
-			return kube_ctrl.Result{}, err
-		}
-	}
-
-	if r.CNIEnabled {
-		if label, ok := ns.Labels["kuma.io/sidecar-injection"]; ok && label == "enabled" {
-			err := r.createOrUpdateNetworkAttachmentDefinition(req.Name)
-			return kube_ctrl.Result{}, err
-		}
+	if label, ok := ns.Labels["kuma.io/sidecar-injection"]; ok && label == "enabled" {
+		err := r.createOrUpdateNetworkAttachmentDefinition(req.Name)
+		return kube_ctrl.Result{}, err
 	}
 	return kube_ctrl.Result{}, nil
 }
@@ -110,7 +87,6 @@ func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Namespace{}).
-		// on Mesh update reconcile Namespace it belongs to (in case default Mesh gets deleted)
 		Watches(&kube_source.Kind{Type: &mesh_k8s.Mesh{}}, &kube_handler.EnqueueRequestsFromMapFunc{
 			ToRequests: kube_handler.ToRequestsFunc(func(obj kube_handler.MapObject) []kube_reconcile.Request {
 				return []kube_reconcile.Request{{
