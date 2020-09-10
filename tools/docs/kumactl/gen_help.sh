@@ -51,7 +51,9 @@ gen_help kumactl get traffic-traces
 gen_help kumactl get fault-injections
 gen_help kumactl get secret
 gen_help kumactl get secrets
+gen_help kumactl get zones
 gen_help kumactl delete
 gen_help kumactl inspect
 gen_help kumactl inspect dataplanes
+gen_help kumactl inspect zones
 gen_help kumactl version
