@@ -3,17 +3,20 @@ package defaults_test
 import (
 	"context"
 
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	"github.com/kumahq/kuma/pkg/defaults"
+	"github.com/kumahq/kuma/pkg/config/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_component "github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/defaults"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Defaults Component", func() {
@@ -29,7 +32,7 @@ var _ = Describe("Defaults Component", func() {
 			}
 			store := resources_memory.NewStore()
 			manager = core_manager.NewResourceManager(store)
-			component = defaults.NewDefaultsComponent(cfg, manager)
+			component = defaults.NewDefaultsComponent(cfg, core.Standalone, core.UniversalEnvironment, manager, store)
 		})
 
 		It("should create default mesh", func() {
@@ -83,7 +86,7 @@ var _ = Describe("Defaults Component", func() {
 			}
 			store := resources_memory.NewStore()
 			manager = core_manager.NewResourceManager(store)
-			component = defaults.NewDefaultsComponent(cfg, manager)
+			component = defaults.NewDefaultsComponent(cfg, core.Standalone, core.UniversalEnvironment, manager, store)
 		})
 
 		It("should not create default mesh", func() {
@@ -96,5 +99,69 @@ var _ = Describe("Defaults Component", func() {
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 		})
 	})
+
+	type testCase struct {
+		cpMode      core.CpMode
+		environment core.EnvironmentType
+	}
+	DescribeTable("should create signing key",
+		func(given testCase) {
+			// given
+			store := resources_memory.NewStore()
+			manager := core_manager.NewResourceManager(store)
+			component := defaults.NewDefaultsComponent(&kuma_cp.Defaults{}, given.cpMode, given.environment, manager, store)
+			err := manager.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey("default", "default"))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			err = component.Start(nil)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			_, err = issuer.GetSigningKey(manager)
+			Expect(err).ToNot(HaveOccurred())
+		},
+		Entry("when mode is global and env is universal", testCase{
+			cpMode:      core.Global,
+			environment: core.UniversalEnvironment,
+		}),
+		Entry("when mode is global and env is kubernetes", testCase{
+			cpMode:      core.Global,
+			environment: core.KubernetesEnvironment,
+		}),
+		Entry("when mode is standalone and env is universal", testCase{
+			cpMode:      core.Standalone,
+			environment: core.UniversalEnvironment,
+		}),
+	)
+
+	DescribeTable("should not create a signing key",
+		func(given testCase) {
+			// given
+			store := resources_memory.NewStore()
+			manager := core_manager.NewResourceManager(store)
+			component := defaults.NewDefaultsComponent(&kuma_cp.Defaults{}, given.cpMode, given.environment, manager, store)
+
+			// when
+			err := component.Start(nil)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			_, err = issuer.GetSigningKey(manager)
+			Expect(err).To(Equal(issuer.SigningKeyNotFound))
+		},
+		Entry("when mode is remote and env is universal", testCase{
+			cpMode:      core.Remote,
+			environment: core.UniversalEnvironment,
+		}),
+		Entry("when mode is remote and env is kubernetes", testCase{
+			cpMode:      core.Remote,
+			environment: core.KubernetesEnvironment,
+		}),
+		Entry("when mode is standalone and env is kubernetes", testCase{
+			cpMode:      core.Standalone,
+			environment: core.KubernetesEnvironment,
+		}),
+	)
 
 })

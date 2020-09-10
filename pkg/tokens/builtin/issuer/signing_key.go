@@ -24,13 +24,13 @@ const defaultRsaBits = 2048
 
 var SigningKeyNotFound = errors.New("there is no Signing Key in the Control Plane. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens.")
 
-var signingKeyResourceKey = model.ResourceKey{
+var SigningKeyResourceKey = model.ResourceKey{
 	Mesh: "default",
 	Name: "dataplane-token-signing-key",
 }
 
 func CreateDefaultSigningKey(manager manager.ResourceManager) error {
-	key, err := createSigningKey()
+	key, err := CreateSigningKey()
 	if err != nil {
 		return err
 	}
@@ -40,10 +40,10 @@ func CreateDefaultSigningKey(manager manager.ResourceManager) error {
 func storeKeyIfNotExist(manager manager.ResourceManager, keyResource system.SecretResource) error {
 	ctx := context.Background()
 	resource := system.SecretResource{}
-	if err := manager.Get(ctx, &resource, store.GetBy(signingKeyResourceKey)); err != nil {
+	if err := manager.Get(ctx, &resource, store.GetBy(SigningKeyResourceKey)); err != nil {
 		if store.IsResourceNotFound(err) {
 			log.Info("generating signing key for generating dataplane tokens")
-			if err := manager.Create(ctx, &keyResource, store.CreateBy(signingKeyResourceKey)); err != nil {
+			if err := manager.Create(ctx, &keyResource, store.CreateBy(SigningKeyResourceKey)); err != nil {
 				return errors.Wrap(err, "could not store a private key")
 			}
 		} else {
@@ -53,7 +53,7 @@ func storeKeyIfNotExist(manager manager.ResourceManager, keyResource system.Secr
 	return nil
 }
 
-func createSigningKey() (system.SecretResource, error) {
+func CreateSigningKey() (system.SecretResource, error) {
 	res := system.SecretResource{}
 	key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
 	if err != nil {
@@ -68,7 +68,7 @@ func createSigningKey() (system.SecretResource, error) {
 }
 func GetSigningKey(manager manager.ReadOnlyResourceManager) ([]byte, error) {
 	resource := system.SecretResource{}
-	if err := manager.Get(context.Background(), &resource, store.GetBy(signingKeyResourceKey)); err != nil {
+	if err := manager.Get(context.Background(), &resource, store.GetBy(SigningKeyResourceKey)); err != nil {
 		if store.IsResourceNotFound(err) {
 			return nil, SigningKeyNotFound
 		}

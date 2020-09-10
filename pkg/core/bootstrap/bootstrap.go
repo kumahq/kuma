@@ -32,7 +32,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/metrics"
-	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
@@ -119,29 +118,10 @@ func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 }
 
 func onStartup(runtime core_runtime.Runtime) error {
-	if err := createDefaultSigningKey(runtime); err != nil {
-		return err
-	}
 	if err := createClusterID(runtime); err != nil {
 		return err
 	}
 	return startReporter(runtime)
-}
-
-func createDefaultSigningKey(runtime core_runtime.Runtime) error {
-	create := false
-	switch runtime.Config().Mode {
-	case config_core.Standalone:
-		create = runtime.Config().Environment == config_core.UniversalEnvironment // Signing Key should be created only on Universal since it is not used on K8S
-	case config_core.Global:
-		create = true // Signing Key with multi-zone should be created on Global even if the Environment is K8S, because we may connect Universal Remote
-	case config_core.Remote:
-		create = false // Signing Key should be synced from Global
-	}
-	if create {
-		return builtin_issuer.CreateDefaultSigningKey(runtime.ResourceManager())
-	}
-	return nil
 }
 
 func startReporter(runtime core_runtime.Runtime) error {
