@@ -29,30 +29,6 @@ var SigningKeyResourceKey = model.ResourceKey{
 	Name: "dataplane-token-signing-key",
 }
 
-func CreateDefaultSigningKey(manager manager.ResourceManager) error {
-	key, err := CreateSigningKey()
-	if err != nil {
-		return err
-	}
-	return storeKeyIfNotExist(manager, key)
-}
-
-func storeKeyIfNotExist(manager manager.ResourceManager, keyResource system.SecretResource) error {
-	ctx := context.Background()
-	resource := system.SecretResource{}
-	if err := manager.Get(ctx, &resource, store.GetBy(SigningKeyResourceKey)); err != nil {
-		if store.IsResourceNotFound(err) {
-			log.Info("generating signing key for generating dataplane tokens")
-			if err := manager.Create(ctx, &keyResource, store.CreateBy(SigningKeyResourceKey)); err != nil {
-				return errors.Wrap(err, "could not store a private key")
-			}
-		} else {
-			return errors.Wrap(err, "could not check if private key exists")
-		}
-	}
-	return nil
-}
-
 func CreateSigningKey() (system.SecretResource, error) {
 	res := system.SecretResource{}
 	key, err := rsa.GenerateKey(rand.Reader, defaultRsaBits)
