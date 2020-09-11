@@ -59,7 +59,7 @@ func (s *storeCounter) Start(stop <-chan struct{}) error {
 }
 
 func (s *storeCounter) NeedLeaderElection() bool {
-	return false
+	return true
 }
 
 func (s *storeCounter) count() error {
