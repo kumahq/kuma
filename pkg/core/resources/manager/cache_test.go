@@ -2,6 +2,7 @@ package manager_test
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -112,9 +113,15 @@ var _ = Describe("Cached Resource Manager", func() {
 			return fetched
 		}
 
+		var wg sync.WaitGroup
 		for i := 0; i < 100; i++ {
-			fetch()
+			wg.Add(1)
+			go func() {
+				fetch()
+				wg.Done()
+			}()
 		}
+		wg.Wait()
 
 		// then real manager should be called only once
 		list := fetch()
