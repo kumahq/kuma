@@ -17,6 +17,7 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
 		listenerName    string
 		listenerAddress string
 		listenerPort    uint32
+		isUDP           bool
 		statsName       string
 		expected        string
 	}
@@ -42,6 +43,7 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
 			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
+			isUDP:           false,
 			statsName:       "localhost:8080",
 			expected: `
             name: inbound:192.168.0.1:8080

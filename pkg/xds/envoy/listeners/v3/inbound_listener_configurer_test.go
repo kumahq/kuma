@@ -17,6 +17,7 @@ var _ = Describe("InboundListenerConfigurer", func() {
 		listenerName    string
 		listenerAddress string
 		listenerPort    uint32
+		isUDP           bool
 		expected        string
 	}
 
@@ -39,6 +40,7 @@ var _ = Describe("InboundListenerConfigurer", func() {
 			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
+			isUDP:           false,
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
@@ -46,6 +48,22 @@ var _ = Describe("InboundListenerConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
+`,
+		}),
+		Entry("basic listener udp=true", testCase{
+			listenerName:    "inbound:192.168.0.1:8080",
+			listenerAddress: "192.168.0.1",
+			listenerPort:    8080,
+			isUDP:           true,
+			expected: `
+            name: inbound:192.168.0.1:8080
+            reusePort: true
+            trafficDirection: INBOUND
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+                protocol: UDP
 `,
 		}),
 	)

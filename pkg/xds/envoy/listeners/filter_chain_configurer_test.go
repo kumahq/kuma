@@ -17,6 +17,7 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
 		listenerName    string
 		listenerAddress string
 		listenerPort    uint32
+		isUDP           bool
 		expected        string
 	}
 

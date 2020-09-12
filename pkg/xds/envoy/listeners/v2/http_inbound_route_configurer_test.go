@@ -17,6 +17,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 		listenerName    string
 		listenerAddress string
 		listenerPort    uint32
+		isUDP           bool
 		statsName       string
 		service         string
 		cluster         envoy_common.ClusterSubset
@@ -45,6 +46,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
+			isUDP:           false,
 			statsName:       "localhost:8080",
 			service:         "backend",
 			cluster:         envoy_common.ClusterSubset{ClusterName: "localhost:8080", Weight: 200},

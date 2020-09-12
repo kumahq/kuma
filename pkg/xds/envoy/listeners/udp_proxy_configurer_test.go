@@ -11,12 +11,13 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-var _ = Describe("UdpProxyConfigurer", func() {
+var _ = Describe("UDPProxyConfigurer", func() {
 
 	type testCase struct {
 		listenerName    string
 		listenerAddress string
 		listenerPort    uint32
+		isUDP           bool
 		statsName       string
 		cluster         envoy_common.ClusterSubset
 		expected        string
@@ -26,9 +27,9 @@ var _ = Describe("UdpProxyConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder().
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.isUDP)).
 				Configure(FilterChain(NewFilterChainBuilder().
-					Configure(UdpProxy(given.statsName, given.cluster)))).
+					Configure(UDPProxy(given.statsName, given.cluster)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -39,21 +40,24 @@ var _ = Describe("UdpProxyConfigurer", func() {
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
 		},
-		Entry("basic tcp_proxy with a single destination cluster", testCase{
+		Entry("basic udp_proxy with a single destination cluster", testCase{
 			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
+			isUDP:           true,
 			statsName:       "localhost:8080",
 			cluster: envoy_common.ClusterSubset{
 				ClusterName: "localhost:8080",
 			},
 			expected: `
         name: inbound:192.168.0.1:8080
+        reusePort: true
         trafficDirection: INBOUND
         address:
           socketAddress:
             address: 192.168.0.1
             portValue: 8080
+            protocol: UDP
         filterChains:
         - filters:
           - name: envoy.filters.udp_listener.udp_proxy

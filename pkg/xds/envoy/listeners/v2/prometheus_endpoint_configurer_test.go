@@ -17,6 +17,7 @@ var _ = Describe("PrometheusEndpointConfigurer", func() {
 		listenerName    string
 		listenerAddress string
 		listenerPort    uint32
+		isUDP           bool
 		path            string
 		clusterName     string
 		expected        string
@@ -43,6 +44,7 @@ var _ = Describe("PrometheusEndpointConfigurer", func() {
 			listenerName:    "kuma:metrics:prometheus",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
+			isUDP:           false,
 			path:            "/non-standard-path",
 			clusterName:     "kuma:envoy:admin",
 			expected: `

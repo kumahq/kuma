@@ -14,6 +14,11 @@ type InboundListenerConfigurer struct {
 func (c *InboundListenerConfigurer) Configure(l *v2.Listener) error {
 	l.Name = c.ListenerName
 	l.TrafficDirection = envoy_core.TrafficDirection_INBOUND
+	listenerProtocol := envoy_core.SocketAddress_TCP
+	if c.isUDP {
+		listenerProtocol = envoy_core.SocketAddress_UDP
+		l.ReusePort = true
+	}
 	l.Address = &envoy_core.Address{
 		Address: &envoy_core.Address_SocketAddress{
 			SocketAddress: &envoy_core.SocketAddress{

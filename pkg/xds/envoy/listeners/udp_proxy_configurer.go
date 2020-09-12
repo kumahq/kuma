@@ -9,22 +9,22 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-func UdpProxy(statsName string, cluster envoy_common.ClusterSubset) FilterChainBuilderOpt {
+func UDPProxy(statsName string, cluster envoy_common.ClusterSubset) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
-		config.Add(&UdpProxyConfigurer{
+		config.Add(&UDPProxyConfigurer{
 			statsName: statsName,
 			cluster:   cluster,
 		})
 	})
 }
 
-type UdpProxyConfigurer struct {
+type UDPProxyConfigurer struct {
 	statsName string
 	// Cluster to forward traffic to.
 	cluster envoy_common.ClusterSubset
 }
 
-func (c *UdpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+func (c *UDPProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	udpProxy := c.udpProxy()
 
 	pbst, err := proto.MarshalAnyDeterministic(udpProxy)
@@ -41,7 +41,7 @@ func (c *UdpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) 
 	return nil
 }
 
-func (c *UdpProxyConfigurer) udpProxy() *envoy_udp_proxy.UdpProxyConfig {
+func (c *UDPProxyConfigurer) udpProxy() *envoy_udp_proxy.UdpProxyConfig {
 	proxy := envoy_udp_proxy.UdpProxyConfig{
 		StatPrefix: util_xds.SanitizeMetric(c.statsName),
 	}
