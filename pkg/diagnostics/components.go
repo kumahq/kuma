@@ -6,10 +6,10 @@ import (
 
 func SetupServer(rt core_runtime.Runtime) error {
 	return rt.Add(
-		// diagnostics server
 		&diagnosticsServer{
-			port:    rt.Config().XdsServer.DiagnosticsPort,
-			metrics: rt.Metrics(),
+			port:           rt.Config().XdsServer.DiagnosticsPort,
+			metrics:        rt.Metrics(),
+			debugEndpoints: rt.Config().Diagnostics.DebugEndpoints,
 		},
 	)
 }

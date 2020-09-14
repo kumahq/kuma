@@ -237,6 +237,9 @@ var _ = Describe("Config WS", func() {
             "grpcPort": 5678,
             "tlsCertFile": "",
             "tlsKeyFile": ""
+          },
+          "diagnostics": {
+            "debugEndpoints": false
           }
         }
 		`, port)

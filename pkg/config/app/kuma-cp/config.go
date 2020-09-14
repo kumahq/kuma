@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/config/diagnostics"
 	"github.com/kumahq/kuma/pkg/config/multicluster"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -121,6 +122,8 @@ type Config struct {
 	Multicluster *multicluster.MulticlusterConfig `yaml:"multicluster,omitempty"`
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
+	// Diagnostics configuration
+	Diagnostics *diagnostics.DiagnosticsConfig `yaml:"diagnostics,omitempty"`
 }
 
 func (c *Config) Sanitize() {
@@ -138,6 +141,7 @@ func (c *Config) Sanitize() {
 	c.GuiServer.Sanitize()
 	c.DNSServer.Sanitize()
 	c.Multicluster.Sanitize()
+	c.Diagnostics.Sanitize()
 }
 
 func DefaultConfig() Config {
@@ -172,6 +176,7 @@ func DefaultConfig() Config {
 		GuiServer:    gui_server.DefaultGuiServerConfig(),
 		DNSServer:    dns_server.DefaultDNSServerConfig(),
 		Multicluster: multicluster.DefaultMulticlusterConfig(),
+		Diagnostics:  diagnostics.DefaultDiagnosticsConfig(),
 	}
 }
 
@@ -252,6 +257,9 @@ func (c *Config) Validate() error {
 	}
 	if err := c.DNSServer.Validate(); err != nil {
 		return errors.Wrap(err, "DNSServer validation failed")
+	}
+	if err := c.Diagnostics.Validate(); err != nil {
+		return errors.Wrap(err, "Diagnostics validation failed")
 	}
 	return nil
 }
