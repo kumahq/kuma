@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestDataplainManaget(t *testing.T) {
+func TestDataplaneManager(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "Dataplane Manager Suite")
 }

@@ -68,7 +68,7 @@ func Setup(rt core_runtime.Runtime) error {
 		}()
 		return nil
 	})
-	muxClient := mux.NewClient(rt.Config().Multicluster.Remote.GlobalAddress, zone, onSessionStarted, *rt.Config().Multicluster.Remote.KDS)
+	muxClient := mux.NewClient(rt.Config().Multicluster.Remote.GlobalAddress, zone, onSessionStarted, *rt.Config().Multicluster.Remote.KDS, rt.Metrics())
 	return rt.Add(component.NewResilientComponent(kdsRemoteLog.WithName("mux-client"), muxClient))
 }
 

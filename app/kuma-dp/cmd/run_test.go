@@ -13,6 +13,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
@@ -54,7 +56,7 @@ var _ = Describe("run", func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
 		backupCatalogClientFactory = catalogClientFactory
-		bootstrapGenerator = func(_ string, cfg kumadp.Config) (proto.Message, error) {
+		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource) (proto.Message, error) {
 			bootstrap := envoy_bootstrap.Bootstrap{}
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
@@ -309,6 +311,21 @@ var _ = Describe("run", func() {
 					"--admin-port", "",
 					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
 					// Notice: --config-dir is not set in order to let `kuma-dp` to create a temporary directory
+				},
+				expectedFile: "",
+			}
+		}),
+		Entry("can be launched with dataplane template", func() testCase {
+			return testCase{
+				envVars: map[string]string{},
+				args: []string{
+					"--cp-address", "http://localhost:1234",
+					"--admin-port", fmt.Sprintf("%d", port),
+					"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
+					"--dataplane-token-file", filepath.Join("testdata", "token"),
+					"--dataplane-file", filepath.Join("testdata", "dataplane_template.yaml"),
+					"--dataplane-var", "name=example",
+					"--dataplane-var", "address=127.0.0.1",
 				},
 				expectedFile: "",
 			}

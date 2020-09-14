@@ -22,6 +22,7 @@ type deployOptions struct {
 	installationMode InstallationMode
 	helmReleaseName  string
 	helmOpts         map[string]string
+	ctlOpts          map[string]string
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -50,6 +51,15 @@ func WithHelmOpt(name, value string) DeployOptionsFunc {
 			o.helmOpts = map[string]string{}
 		}
 		o.helmOpts[name] = value
+	}
+}
+
+func WithCtlOpt(name, value string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		if o.ctlOpts == nil {
+			o.ctlOpts = map[string]string{}
+		}
+		o.ctlOpts[name] = value
 	}
 }
 
@@ -87,7 +97,7 @@ type Cluster interface {
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
-	DeployApp(namespace, appname string) error
+	DeployApp(namespace, appname, token string) error
 	DeleteApp(namespace, appname string) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
 	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
@@ -102,4 +112,5 @@ type ControlPlane interface {
 	GetKDSServerAddress() string
 	GetIngressAddress() string
 	GetGlobaStatusAPI() string
+	GenerateDpToken(appname string) (string, error)
 }

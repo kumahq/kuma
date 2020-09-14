@@ -11,6 +11,7 @@ import (
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
 const grpcMaxConcurrentStreams = 1000000
@@ -20,8 +21,9 @@ var (
 )
 
 type grpcServer struct {
-	server Server
-	config mads_config.MonitoringAssignmentServerConfig
+	server  Server
+	config  mads_config.MonitoringAssignmentServerConfig
+	metrics core_metrics.Metrics
 }
 
 var (
@@ -29,7 +31,10 @@ var (
 )
 
 func (s *grpcServer) Start(stop <-chan struct{}) error {
-	var grpcOptions []grpc.ServerOption
+	grpcOptions := []grpc.ServerOption{
+		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+	}
+	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
 	grpcServer := grpc.NewServer(grpcOptions...)
 
@@ -40,6 +45,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 
 	// register services
 	observability_proto.RegisterMonitoringAssignmentDiscoveryServiceServer(grpcServer, s.server)
+	s.metrics.RegisterGRPC(grpcServer)
 
 	errChan := make(chan error)
 	go func() {

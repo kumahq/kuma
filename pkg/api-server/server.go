@@ -5,26 +5,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"github.com/pkg/errors"
-
 	"io"
 	"net/http"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/emicklei/go-restful"
+	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
+	"github.com/slok/go-http-metrics/middleware"
+
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
-	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/metrics"
+	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 )
 
 var (
@@ -61,13 +61,21 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
 		Handler: container.ServeMux,
 	}
+
+	promMiddleware := middleware.New(middleware.Config{
+		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
+			Registry: metrics,
+			Prefix:   "api_server",
+		}),
+	})
+	container.Filter(util_prometheus.MetricsHandler("", promMiddleware))
 
 	cors := restful.CrossOriginResourceSharing{
 		ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},
@@ -84,7 +92,7 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	addResourcesEndpoints(ws, defs, resManager, serverConfig)
+	addResourcesEndpoints(ws, defs, resManager, cfg)
 	container.Add(ws)
 
 	if err := addIndexWsEndpoints(ws); err != nil {
@@ -115,7 +123,8 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	return newApiServer, nil
 }
 
-func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, config *api_server_config.ApiServerConfig) {
+func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, cfg *kuma_cp.Config) {
+	config := cfg.ApiServer
 	endpoints := dataplaneOverviewEndpoints{
 		publicURL:  config.Catalog.ApiServer.Url,
 		resManager: resManager,
@@ -135,6 +144,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 		switch definition.ResourceFactory().GetType() {
 		case mesh.MeshType:
 			endpoints := resourceEndpoints{
+				mode:                 cfg.Mode,
 				publicURL:            config.Catalog.ApiServer.Url,
 				resManager:           resManager,
 				ResourceWsDefinition: definition,
@@ -243,7 +253,7 @@ func SetupServer(rt runtime.Runtime) error {
 			}
 		}
 	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, &cfg, enableGUI)
+	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, &cfg, enableGUI, rt.Metrics())
 	if err != nil {
 		return err
 	}

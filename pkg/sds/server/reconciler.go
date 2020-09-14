@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
@@ -41,6 +42,15 @@ type DataplaneReconciler struct {
 	meshCaProvider     sds_provider.SecretProvider
 	identityProvider   sds_provider.SecretProvider
 	cache              envoy_cache.SnapshotCache
+
+	sync.RWMutex
+	certGenerated int
+}
+
+func (d *DataplaneReconciler) GeneratedCerts() int {
+	d.RLock()
+	defer d.RUnlock()
+	return d.certGenerated
 }
 
 func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) error {
@@ -78,6 +88,9 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 		if err != nil {
 			return err
 		}
+		d.Lock()
+		d.certGenerated++
+		d.Unlock()
 		if err := d.updateInsights(dataplaneId, snapshot); err != nil {
 			// do not stop updating Envoy even if insights update fails
 			sdsServerLog.Error(err, "Could not update Dataplane Insights", "dataplaneId", dataplaneId)

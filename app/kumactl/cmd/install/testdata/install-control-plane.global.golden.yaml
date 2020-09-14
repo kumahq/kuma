@@ -5192,17 +5192,6 @@ rules:
   - dataplanes
   - dataplaneinsights
   - meshes
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - kuma.io
-  resources:
   - zones
   - zoneinsights
   verbs:
@@ -5334,6 +5323,9 @@ subjects:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    prometheus.io/port: "5680"
+    prometheus.io/scrape: "true"
   name: kuma-control-plane
   namespace: kuma-system
 spec:
@@ -5556,9 +5548,10 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+          - zones
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
-    failurePolicy: Fail
+    failurePolicy: Ignore
     clientConfig:
       caBundle: Q0VSVA==
       service:

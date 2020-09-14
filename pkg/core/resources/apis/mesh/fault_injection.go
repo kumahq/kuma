@@ -46,6 +46,10 @@ func (f *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 	}
 }
 
+func (f *FaultInjectionResource) Scope() model.ResourceScope {
+	return model.ScopeMesh
+}
+
 var _ model.ResourceList = &FaultInjectionResourceList{}
 
 type FaultInjectionResourceList struct {

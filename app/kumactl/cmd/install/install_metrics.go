@@ -20,6 +20,7 @@ type metricsTemplateArgs struct {
 	DashboardDataplane        string
 	DashboardMesh             string
 	DashboardServiceToService string
+	DashboardCP               string
 }
 
 var DefaultMetricsTemplateArgs = metricsTemplateArgs{
@@ -61,6 +62,12 @@ func newInstallMetrics() *cobra.Command {
 				return err
 			}
 			args.DashboardServiceToService = dashboard.String()
+
+			dashboard, err = data.ReadFile(metrics.Templates, ("/grafana/kuma-cp.json"))
+			if err != nil {
+				return err
+			}
+			args.DashboardCP = dashboard.String()
 
 			renderedFiles, err := renderFiles(yamlTemplateFiles, args, simpleTemplateRenderer)
 			if err != nil {

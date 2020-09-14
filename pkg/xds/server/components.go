@@ -4,9 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/xds/ingress"
-
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	"github.com/prometheus/client_golang/prometheus"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -18,10 +17,12 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_bootstrap "github.com/kumahq/kuma/pkg/xds/bootstrap"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -34,7 +35,10 @@ var (
 func SetupDiagnosticsServer(rt core_runtime.Runtime) error {
 	return rt.Add(
 		// diagnostics server
-		&diagnosticsServer{rt.Config().XdsServer.DiagnosticsPort},
+		&diagnosticsServer{
+			port:    rt.Config().XdsServer.DiagnosticsPort,
+			metrics: rt.Metrics(),
+		},
 	)
 }
 
@@ -46,27 +50,46 @@ func SetupServer(rt core_runtime.Runtime) error {
 	reconciler := DefaultReconciler(rt)
 
 	metadataTracker := NewDataplaneMetadataTracker()
+	lifecycle := NewDataplaneLifecycle(rt.ResourceManager())
 
 	ingressReconciler := DefaultIngressReconciler(rt)
 
-	tracker, err := DefaultDataplaneSyncTracker(rt, reconciler, ingressReconciler, metadataTracker)
+	syncTracker, err := DefaultDataplaneSyncTracker(rt, reconciler, ingressReconciler, metadataTracker)
+	if err != nil {
+		return err
+	}
+	statusTracker, err := DefaultDataplaneStatusTracker(rt)
+	if err != nil {
+		return err
+	}
+
+	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
 	if err != nil {
 		return err
 	}
 	callbacks := util_xds.CallbacksChain{
-		tracker,
+		statsCallbacks,
+		syncTracker,
 		metadataTracker,
-		DefaultDataplaneStatusTracker(rt),
+		lifecycle,
+		statusTracker,
 	}
 
 	srv := NewServer(rt.XDS().Cache(), callbacks)
 	return rt.Add(
 		// xDS gRPC API
-		&grpcServer{srv, rt.Config().XdsServer.GrpcPort, rt.Config().XdsServer.TlsCertFile, rt.Config().XdsServer.TlsKeyFile},
+		&grpcServer{
+			server:      srv,
+			port:        rt.Config().XdsServer.GrpcPort,
+			tlsCertFile: rt.Config().XdsServer.TlsCertFile,
+			tlsKeyFile:  rt.Config().XdsServer.TlsKeyFile,
+			metrics:     rt.Metrics(),
+		},
 		// bootstrap server
 		&xds_bootstrap.BootstrapServer{
 			Port:      rt.Config().BootstrapServer.Port,
 			Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params, rt.Config().XdsServer.TlsCertFile),
+			Metrics:   rt.Metrics(),
 		},
 	)
 }
@@ -102,6 +125,21 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	if err != nil {
 		return nil, err
 	}
+	xdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
+		Name:       "xds_generation",
+		Help:       "Summary of XDS Snapshot generation",
+		Objectives: metrics.DefaultObjectives,
+	})
+	if err := rt.Metrics().Register(xdsGenerations); err != nil {
+		return nil, err
+	}
+	xdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
+		Name: "xds_generation_errors",
+		Help: "Counter of errors during XDS generation",
+	})
+	if err := rt.Metrics().Register(xdsGenerationsErrors); err != nil {
+		return nil, err
+	}
 	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
 		return &util_watchdog.SimpleWatchdog{
@@ -109,6 +147,11 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				return time.NewTicker(rt.Config().XdsServer.DataplaneConfigurationRefreshInterval)
 			},
 			OnTick: func() error {
+				start := core.Now()
+				defer func() {
+					xdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
+				}()
+
 				ctx := context.Background()
 				dataplane := &mesh_core.DataplaneResource{}
 				proxyID := xds.FromResourceKey(key)
@@ -120,12 +163,17 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
+				if err := xds_topology.ResolveAddress(rt.LookupIP(), dataplane); err != nil {
+					return err
+				}
+
 				if dataplane.Spec.IsIngress() {
 					// update Ingress
 					allMeshDataplanes := &mesh_core.DataplaneResourceList{}
 					if err := rt.ReadOnlyResourceManager().List(ctx, allMeshDataplanes); err != nil {
 						return err
 					}
+					allMeshDataplanes.Items = xds_topology.ResolveAddresses(log, rt.LookupIP(), allMeshDataplanes.Items)
 					if err := ingress.UpdateAvailableServices(ctx, rt.ResourceManager(), dataplane, allMeshDataplanes.Items); err != nil {
 						return err
 					}
@@ -147,7 +195,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
-				dataplanes, err := xds_topology.GetDataplanes(ctx, rt.ReadOnlyResourceManager(), dataplane.Meta.GetMesh())
+				dataplanes, err := xds_topology.GetDataplanes(log, ctx, rt.ReadOnlyResourceManager(), rt.LookupIP(), dataplane.Meta.GetMesh())
 				if err != nil {
 					return err
 				}
@@ -234,14 +282,15 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},
 			OnError: func(err error) {
+				xdsGenerationsErrors.Inc()
 				log.Error(err, "OnTick() failed")
 			},
 		}
 	}), nil
 }
 
-func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTracker {
-	return NewDataplaneStatusTracker(rt, func(accessor SubscriptionStatusAccessor) DataplaneInsightSink {
+func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) (DataplaneStatusTracker, error) {
+	tracker := NewDataplaneStatusTracker(rt, func(accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 		return NewDataplaneInsightSink(
 			accessor,
 			func() *time.Ticker {
@@ -249,4 +298,5 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) DataplaneStatusTrack
 			},
 			NewDataplaneInsightStore(rt.ResourceManager()))
 	})
+	return tracker, nil
 }

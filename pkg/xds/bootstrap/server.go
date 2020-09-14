@@ -7,9 +7,15 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/prometheus/client_golang/prometheus"
+	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
+	"github.com/slok/go-http-metrics/middleware"
+	"github.com/slok/go-http-metrics/middleware/std"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -19,6 +25,7 @@ var log = core.Log.WithName("bootstrap-server")
 type BootstrapServer struct {
 	Port      uint32
 	Generator BootstrapGenerator
+	Metrics   prometheus.Registerer
 }
 
 func (b *BootstrapServer) NeedLeaderElection() bool {
@@ -28,12 +35,19 @@ func (b *BootstrapServer) NeedLeaderElection() bool {
 var _ component.Component = &BootstrapServer{}
 
 func (b *BootstrapServer) Start(stop <-chan struct{}) error {
+	promMiddleware := middleware.New(middleware.Config{
+		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
+			Registry: b.Metrics,
+			Prefix:   "bootstrap_server",
+		}),
+	})
+
 	mux := http.NewServeMux()
 	mux.HandleFunc("/bootstrap", b.handleBootstrapRequest)
 
 	bootstrapServer := &http.Server{
 		Addr:    fmt.Sprintf(":%d", b.Port),
-		Handler: mux,
+		Handler: std.Handler("", promMiddleware, mux),
 	}
 
 	errChan := make(chan error)
@@ -81,6 +95,15 @@ func (b *BootstrapServer) handleBootstrapRequest(resp http.ResponseWriter, req *
 			return
 		}
 		if store.IsResourcePreconditionFailed(err) {
+			resp.WriteHeader(http.StatusUnprocessableEntity)
+			_, err = resp.Write([]byte(err.Error()))
+			if err != nil {
+				log.WithValues("params", reqParams).Error(err, "Error while writing the response")
+				return
+			}
+			return
+		}
+		if validators.IsValidationError(err) {
 			resp.WriteHeader(http.StatusUnprocessableEntity)
 			_, err = resp.Write([]byte(err.Error()))
 			if err != nil {

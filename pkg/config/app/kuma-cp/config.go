@@ -1,6 +1,8 @@
 package kuma_cp
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/multicluster"
@@ -15,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
 	"github.com/kumahq/kuma/pkg/config/sds"
-	token_server "github.com/kumahq/kuma/pkg/config/token-server"
 	"github.com/kumahq/kuma/pkg/config/xds"
 	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 )
@@ -37,6 +38,7 @@ func (d *Defaults) Validate() error {
 
 type Metrics struct {
 	Dataplane *DataplaneMetrics `yaml:"dataplane"`
+	Zone      *ZoneMetrics      `yaml:"zone"`
 }
 
 func (m *Metrics) Sanitize() {
@@ -64,6 +66,21 @@ func (d *DataplaneMetrics) Validate() error {
 	return nil
 }
 
+type ZoneMetrics struct {
+	Enabled           bool `yaml:"enabled" envconfig:"kuma_metrics_zone_enabled"`
+	SubscriptionLimit int  `yaml:"subscriptionLimit" envconfig:"kuma_metrics_zone_subscription_limit"`
+}
+
+func (d *ZoneMetrics) Sanitize() {
+}
+
+func (d *ZoneMetrics) Validate() error {
+	if d.SubscriptionLimit < 0 {
+		return errors.New("SubscriptionLimit should be positive or equal 0")
+	}
+	return nil
+}
+
 type Reports struct {
 	// If true then usage stats will be reported
 	Enabled bool `yaml:"enabled" envconfig:"kuma_reports_enabled"`
@@ -84,8 +101,6 @@ type Config struct {
 	XdsServer *xds.XdsServerConfig `yaml:"xdsServer,omitempty"`
 	// Envoy SDS server configuration
 	SdsServer *sds.SdsServerConfig `yaml:"sdsServer,omitempty"`
-	// Dataplane Token server configuration (DEPRECATED: use adminServer)
-	DataplaneTokenServer *token_server.DataplaneTokenServerConfig `yaml:"dataplaneTokenServer,omitempty"`
 	// Monitoring Assignment Discovery Service (MADS) server configuration
 	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer,omitempty"`
 	// Admin server configuration
@@ -114,7 +129,6 @@ func (c *Config) Sanitize() {
 	c.BootstrapServer.Sanitize()
 	c.XdsServer.Sanitize()
 	c.SdsServer.Sanitize()
-	c.DataplaneTokenServer.Sanitize()
 	c.MonitoringAssignmentServer.Sanitize()
 	c.AdminServer.Sanitize()
 	c.ApiServer.Sanitize()
@@ -133,7 +147,6 @@ func DefaultConfig() Config {
 		Store:                      store.DefaultStoreConfig(),
 		XdsServer:                  xds.DefaultXdsServerConfig(),
 		SdsServer:                  sds.DefaultSdsServerConfig(),
-		DataplaneTokenServer:       token_server.DefaultDataplaneTokenServerConfig(),
 		MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
 		AdminServer:                admin_server.DefaultAdminServerConfig(),
 		ApiServer:                  api_server.DefaultApiServerConfig(),
@@ -144,6 +157,10 @@ func DefaultConfig() Config {
 		},
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
+				Enabled:           true,
+				SubscriptionLimit: 10,
+			},
+			Zone: &ZoneMetrics{
 				Enabled:           true,
 				SubscriptionLimit: 10,
 			},
@@ -183,9 +200,6 @@ func (c *Config) Validate() error {
 		if err := c.SdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "SDS Server validation failed")
 		}
-		if err := c.DataplaneTokenServer.Validate(); err != nil {
-			return errors.Wrap(err, "Dataplane Token Server validation failed")
-		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
 		}
@@ -210,9 +224,6 @@ func (c *Config) Validate() error {
 		}
 		if err := c.SdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "SDS Server validation failed")
-		}
-		if err := c.DataplaneTokenServer.Validate(); err != nil {
-			return errors.Wrap(err, "Dataplane Token Server validation failed")
 		}
 		if err := c.MonitoringAssignmentServer.Validate(); err != nil {
 			return errors.Wrap(err, "Monitoring Assignment Server validation failed")
@@ -249,6 +260,8 @@ type GeneralConfig struct {
 	// Hostname that other components should use in order to connect to the Control Plane.
 	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
 	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_general_advertised_hostname"`
+	// DNSCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
+	DNSCacheTTL time.Duration `yaml:"dnsCacheTTL" envconfig:"kuma_general_dns_cache_ttl"`
 }
 
 var _ config.Config = &GeneralConfig{}
@@ -263,5 +276,6 @@ func (g *GeneralConfig) Validate() error {
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
 		AdvertisedHostname: "localhost",
+		DNSCacheTTL:        10 * time.Second,
 	}
 }

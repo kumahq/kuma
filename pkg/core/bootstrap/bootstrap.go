@@ -2,26 +2,24 @@ package bootstrap
 
 import (
 	"context"
-
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
-	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
+	"net"
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/dns"
-
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplaneinsight"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zoneinsight"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -32,6 +30,9 @@ import (
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/metrics"
+	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
@@ -40,6 +41,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	builder := core_runtime.BuilderFor(cfg)
+	if err := initializeMetrics(builder); err != nil {
+		return nil, err
+	}
 	if err := initializeBootstrap(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -82,12 +86,14 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	leaderInfoComponent := &component.LeaderInfoComponent{}
 	builder.WithLeaderInfo(leaderInfoComponent)
 
+	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
+
 	rt, err := builder.Build()
 	if err != nil {
 		return nil, err
 	}
 
-	if err := rt.Add(&component.LeaderInfoComponent{}); err != nil {
+	if err := rt.Add(leaderInfoComponent); err != nil {
 		return nil, err
 	}
 
@@ -96,6 +102,24 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	}
 
 	return rt, nil
+}
+
+func initializeMetrics(builder *core_runtime.Builder) error {
+	zone := ""
+	switch builder.Config().Mode {
+	case config_core.Remote:
+		zone = builder.Config().Multicluster.Remote.Zone
+	case config_core.Global:
+		zone = "Global"
+	case config_core.Standalone:
+		zone = "Standalone"
+	}
+	metrics, err := metrics.NewMetrics(zone)
+	if err != nil {
+		return err
+	}
+	builder.WithMetrics(metrics)
+	return nil
 }
 
 func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
@@ -125,15 +149,19 @@ func onStartup(runtime core_runtime.Runtime) error {
 }
 
 func createDefaultSigningKey(runtime core_runtime.Runtime) error {
-	switch env := runtime.Config().Environment; env {
-	case config_core.KubernetesEnvironment:
-		// we use service account token on K8S, so there is no need for dataplane token server
-		return nil
-	case config_core.UniversalEnvironment:
-		return builtin_issuer.CreateDefaultSigningKey(runtime.ResourceManager())
-	default:
-		return errors.Errorf("unknown environment type %s", env)
+	create := false
+	switch runtime.Config().Mode {
+	case config_core.Standalone:
+		create = runtime.Config().Environment == config_core.UniversalEnvironment // Signing Key should be created only on Universal since it is not used on K8S
+	case config_core.Global:
+		create = true // Signing Key with multi-zone should be created on Global even if the Environment is K8S, because we may connect Universal Remote
+	case config_core.Remote:
+		create = false // Signing Key should be synced from Global
 	}
+	if create {
+		return builtin_issuer.CreateDefaultSigningKey(runtime.ResourceManager())
+	}
+	return nil
 }
 
 func createDefaultMesh(runtime core_runtime.Runtime) error {
@@ -195,7 +223,11 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if rs, err := plugin.NewResourceStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		builder.WithResourceStore(rs)
+		meteredStore, err := metrics_store.NewMeteredStore(rs, builder.Metrics())
+		if err != nil {
+			return err
+		}
+		builder.WithResourceStore(meteredStore)
 		return nil
 	}
 }
@@ -301,6 +333,9 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
 	customManagers[mesh.DataplaneInsightType] = dpInsightManager
 
+	zoneInsightManager := zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone)
+	customManagers[system.ZoneInsightType] = zoneInsightManager
+
 	var cipher secret_cipher.Cipher
 	switch cfg.Store.Type {
 	case store.KubernetesStore:
@@ -323,7 +358,11 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	builder.WithResourceManager(customizableManager)
 
 	if builder.Config().Store.Cache.Enabled {
-		builder.WithReadOnlyResourceManager(core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime))
+		cachedManager, err := core_manager.NewCachedManager(customizableManager, builder.Config().Store.Cache.ExpirationTime, builder.Metrics())
+		if err != nil {
+			return err
+		}
+		builder.WithReadOnlyResourceManager(cachedManager)
 	} else {
 		builder.WithReadOnlyResourceManager(customizableManager)
 	}

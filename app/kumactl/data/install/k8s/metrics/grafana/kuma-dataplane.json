@@ -454,8 +454,8 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "envoy_cluster_upstream_cx_total{envoy_cluster_name=\"ads_cluster\",dataplane=\"$dataplane\",mesh=\"$mesh\"}",
-          "legendFormat": "Connections",
+          "expr": "envoy_control_plane_connected_state{dataplane=\"$dataplane\",mesh=\"$mesh\"}",
+          "legendFormat": "Connected",
           "refId": "A"
         }
       ],
@@ -463,7 +463,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Active connections to the Control Plane",
+      "title": "Connection to the Control Plane",
       "tooltip": {
         "shared": true,
         "sort": 0,

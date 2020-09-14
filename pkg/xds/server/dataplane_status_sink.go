@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -10,7 +9,6 @@ import (
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type DataplaneInsightSink interface {
@@ -42,14 +40,25 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 
 	var lastStoredState *mesh_proto.DiscoverySubscription
 
-	flush := func() {
+	flush := func(closing bool) {
 		dataplaneId, currentState := s.accessor.GetStatus()
 		if proto.Equal(currentState, lastStoredState) {
 			return
 		}
 		copy := proto.Clone(currentState).(*mesh_proto.DiscoverySubscription)
 		if err := s.store.Upsert(dataplaneId, copy); err != nil {
-			xdsServerLog.Error(err, "failed to flush Dataplane status", "dataplaneid", dataplaneId)
+			if closing {
+				// When XDS stream is closed, Dataplane Status Tracker executes OnStreamClose which closes stop channel
+				// The problem is that close() does not wait for this sink to do it's final work
+				// In the meantime Dataplane Lifecycle executes OnStreamClose which can remove Dataplane entity (and Insights due to ownership). Therefore both scenarios can happen:
+				// 1) upsert fail because it successfully retrieved DataplaneInsight but cannot Update because by this time, Insight is gone (ResourceConflict error)
+				// 2) upsert fail because it tries to create a new insight, but there is no Dataplane so ownership returns an error
+				// We could build a synchronous mechanism that waits for Sink to be stopped before moving on to next Callbacks, but this is potentially dangerous
+				// that we could block waiting for storage instead of executing next callbacks.
+				xdsServerLog.V(1).Info("failed to flush Dataplane status on stream close. It can happen when Dataplane is deleted at the same time", "dataplaneid", dataplaneId, "err", err)
+			} else {
+				xdsServerLog.Error(err, "failed to flush Dataplane status", "dataplaneid", dataplaneId)
+			}
 		} else {
 			xdsServerLog.V(1).Info("saved Dataplane status", "dataplaneid", dataplaneId, "subscription", currentState)
 			lastStoredState = currentState
@@ -59,9 +68,9 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 	for {
 		select {
 		case <-ticker.C:
-			flush()
+			flush(false)
 		case <-stop:
-			flush()
+			flush(true)
 			return
 		}
 	}
@@ -78,20 +87,8 @@ type dataplaneInsightStore struct {
 }
 
 func (s *dataplaneInsightStore) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
-	create := false
-	dataplaneInsight := &mesh_core.DataplaneInsightResource{}
-	err := s.resManager.Get(context.Background(), dataplaneInsight, core_store.GetBy(dataplaneId))
-	if err != nil {
-		if core_store.IsResourceNotFound(err) {
-			create = true
-		} else {
-			return err
-		}
-	}
-	dataplaneInsight.Spec.UpdateSubscription(subscription)
-	if create {
-		return s.resManager.Create(context.Background(), dataplaneInsight, core_store.CreateBy(dataplaneId))
-	} else {
-		return s.resManager.Update(context.Background(), dataplaneInsight)
-	}
+	insight := &mesh_core.DataplaneInsightResource{}
+	return manager.Upsert(s.resManager, dataplaneId, insight, func(resource core_model.Resource) {
+		insight.Spec.UpdateSubscription(subscription)
+	})
 }

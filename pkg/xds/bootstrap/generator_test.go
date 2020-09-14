@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -28,6 +30,10 @@ var _ = Describe("bootstrapGenerator", func() {
 
 	BeforeEach(func() {
 		resManager = core_manager.NewResourceManager(memory.NewStore())
+		core.Now = func() time.Time {
+			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
+			return now
+		}
 	})
 
 	BeforeEach(func() {
@@ -150,6 +156,27 @@ var _ = Describe("bootstrapGenerator", func() {
 				Name:               "name.namespace",
 				AdminPort:          1234,
 				DataplaneTokenPath: "/tmp/token",
+				DataplaneResource: `
+{
+  "type": "Dataplane",
+  "mesh": "mesh",
+  "name": "name.namespace",
+  "creationTime": "1970-01-01T00:00:00Z",
+  "modificationTime": "1970-01-01T00:00:00Z",
+  "networking": {
+    "address": "127.0.0.1",
+    "inbound": [
+      {
+        "port": 22022,
+        "servicePort": 8443,
+        "tags": {
+          "kuma.io/protocol": "http2",
+          "kuma.io/service": "backend"
+        }
+      },
+    ]
+  }
+}`,
 			},
 			expectedConfigFile: "generator.custom-config.golden.yaml",
 		}),

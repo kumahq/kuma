@@ -3,6 +3,7 @@ package mesh
 import (
 	"fmt"
 	"net"
+	"regexp"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -31,9 +32,7 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 	if len(networking.GetInbound()) > 0 && networking.Gateway != nil {
 		err.AddViolationAt(path, "inbound cannot be defined both with gateway")
 	}
-	if net.ParseIP(networking.Address) == nil {
-		err.AddViolationAt(path.Field("address"), "address has to be valid IP address")
-	}
+	err.Add(validateAddress(path, networking.Address))
 	if networking.Gateway != nil {
 		result := validateGateway(networking.Gateway)
 		err.AddErrorAt(path.Field("gateway"), result)
@@ -45,6 +44,20 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 	for i, outbound := range networking.GetOutbound() {
 		result := validateOutbound(outbound)
 		err.AddErrorAt(path.Field("outbound").Index(i), result)
+	}
+	return err
+}
+
+var DNSRegex = regexp.MustCompile(`^([a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62}){1}(\.[a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62})*[\._]?$`)
+
+func validateAddress(path validators.PathBuilder, address string) validators.ValidationError {
+	var err validators.ValidationError
+	if address == "" {
+		err.AddViolationAt(path.Field("address"), "address can't be empty")
+		return err
+	}
+	if !DNSRegex.MatchString(address) {
+		err.AddViolationAt(path.Field("address"), "address has to be valid IP address or domain name")
 	}
 	return err
 }
@@ -75,7 +88,12 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 		if inbound.Address != "" {
 			err.AddViolationAt(p.Field("address"), `cannot be defined in the ingress mode`)
 		}
-		err.AddErrorAt(p.Field("address"), validateTags(inbound.Tags))
+		err.AddErrorAt(p.Field("tags"), validateTags(inbound.Tags))
+		if protocol, exist := inbound.Tags[mesh_proto.ProtocolTag]; exist {
+			if protocol != ProtocolTCP {
+				err.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), `other values than TCP are not allowed`)
+			}
+		}
 	}
 	for i, ingressInterface := range networking.GetIngress().GetAvailableServices() {
 		p := path.Field("ingress").Field("availableService").Index(i)
@@ -153,6 +171,11 @@ func validateGateway(gateway *mesh_proto.Dataplane_Networking_Gateway) validator
 	var result validators.ValidationError
 	if _, exist := gateway.Tags[mesh_proto.ServiceTag]; !exist {
 		result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ServiceTag), `tag has to exist`)
+	}
+	if protocol, exist := gateway.Tags[mesh_proto.ProtocolTag]; exist {
+		if protocol != ProtocolTCP {
+			result.AddViolationAt(validators.RootedAt("tags").Key(mesh_proto.ProtocolTag), `other values than TCP are not allowed`)
+		}
 	}
 	result.Add(validateTags(gateway.Tags))
 	return result

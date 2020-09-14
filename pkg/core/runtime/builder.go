@@ -3,10 +3,6 @@ package runtime
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/secrets/store"
-
-	"github.com/kumahq/kuma/pkg/dns"
-
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -14,10 +10,14 @@ import (
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/metrics"
 )
 
 // BuilderContext provides access to Builder's interim state.
@@ -34,6 +34,7 @@ type BuilderContext interface {
 	DNSResolver() dns.DNSResolver
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
+	Metrics() metrics.Metrics
 }
 
 var _ BuilderContext = &Builder{}
@@ -54,6 +55,8 @@ type Builder struct {
 	dns      dns.DNSResolver
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
+	lif      lookup.LookupIPFunc
+	metrics  metrics.Metrics
 	*runtimeInfo
 }
 
@@ -143,6 +146,16 @@ func (b *Builder) WithLeaderInfo(leadInfo component.LeaderInfo) *Builder {
 	return b
 }
 
+func (b *Builder) WithLookupIP(lif lookup.LookupIPFunc) *Builder {
+	b.lif = lif
+	return b
+}
+
+func (b *Builder) WithMetrics(metrics metrics.Metrics) *Builder {
+	b.metrics = metrics
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -171,6 +184,12 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.leadInfo == nil {
 		return nil, errors.Errorf("LeaderInfo has not been configured")
 	}
+	if b.lif == nil {
+		return nil, errors.Errorf("LookupIP func has not been configured")
+	}
+	if b.metrics == nil {
+		return nil, errors.Errorf("Metrics has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -185,6 +204,8 @@ func (b *Builder) Build() (Runtime, error) {
 			dns:      b.dns,
 			configm:  b.configm,
 			leadInfo: b.leadInfo,
+			lif:      b.lif,
+			metrics:  b.metrics,
 		},
 		Manager: b.cm,
 	}, nil
@@ -231,4 +252,10 @@ func (b *Builder) ConfigManager() config_manager.ConfigManager {
 }
 func (b *Builder) LeaderInfo() component.LeaderInfo {
 	return b.leadInfo
+}
+func (b *Builder) LookupIP() lookup.LookupIPFunc {
+	return b.lif
+}
+func (b *Builder) Metrics() metrics.Metrics {
+	return b.metrics
 }

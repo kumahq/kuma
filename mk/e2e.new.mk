@@ -42,7 +42,7 @@ test/e2e/kind/stop: $(K8SCLUSTERS_STOP_TARGETS)
 test/e2e/test:
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
-		$(GO_TEST) -v -timeout=30m ./test/e2e/...
+		$(GO_TEST) -v -timeout=45m ./test/e2e/...
 
 .PHONY: test/e2e
 test/e2e: build/kumactl images docker/build/universal test/e2e/kind/start
