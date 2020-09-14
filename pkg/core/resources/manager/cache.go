@@ -15,18 +15,14 @@ import (
 )
 
 // Cached version of the ReadOnlyResourceManager designed to be used only for use cases of eventual consistency.
-//
 // This cache is NOT consistent across instances of the control plane.
-// This cache is mutex free for performance with consideration that: values can be overridden by other goroutine.
-// * if cache expires and multiple goroutines tries to fetch the resource, they may fetch underlying manager multiple times.
-// * if cache expires and multiple goroutines tries to fetch the resource, they fetch underlying manager multiple times
-//   and the value returned is different, the older value may be persisted. This is ok, since this cache is designed
-//   to have low expiration time (like 1s) and having old value just extends propagation of new config for 1 more second.
 type cachedManager struct {
-	delegate  ReadOnlyResourceManager
-	cache     *cache.Cache
-	metrics   *prometheus.CounterVec
-	listMutex sync.Mutex
+	delegate ReadOnlyResourceManager
+	cache    *cache.Cache
+	metrics  *prometheus.CounterVec
+
+	mutexes  map[string]*sync.Mutex
+	mapMutex sync.Mutex // guards "mutexes" field
 }
 
 var _ ReadOnlyResourceManager = &cachedManager{}
@@ -43,6 +39,7 @@ func NewCachedManager(delegate ReadOnlyResourceManager, expirationTime time.Dura
 		delegate: delegate,
 		cache:    cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 		metrics:  metric,
+		mutexes:  map[string]*sync.Mutex{},
 	}, nil
 }
 
@@ -51,12 +48,25 @@ func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store
 	cacheKey := fmt.Sprintf("GET:%s:%s", res.GetType(), opts.HashCode())
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
-		c.metrics.WithLabelValues("get", string(res.GetType()), "miss").Inc()
-		if err := c.delegate.Get(ctx, res, fs...); err != nil {
-			return err
+		// There might be a situation when cache just expired and there are many concurrent goroutines here.
+		// We should only let one fill the cache and let the rest of them wait for it. Otherwise we will be repeating expensive work.
+		mutex := c.mutexFor(cacheKey)
+		mutex.Lock()
+		obj, found = c.cache.Get(cacheKey)
+		if !found {
+			// After many goroutines are unlocked one by one, only one should execute this branch, the rest should retrieve object from the cache
+			c.metrics.WithLabelValues("get", string(res.GetType()), "miss").Inc()
+			if err := c.delegate.Get(ctx, res, fs...); err != nil {
+				mutex.Unlock()
+				return err
+			}
+			c.cache.SetDefault(cacheKey, res)
 		}
-		c.cache.SetDefault(cacheKey, res)
-	} else {
+		mutex.Unlock()
+		c.cleanMutexFor(cacheKey) // We need to cleanup mutexes from the map, otherwise we can see the memory leak.
+	}
+
+	if found {
 		c.metrics.WithLabelValues("get", string(res.GetType()), "hit").Inc()
 		cached := obj.(model.Resource)
 		if err := res.SetSpec(cached.GetSpec()); err != nil {
@@ -72,18 +82,22 @@ func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ..
 	cacheKey := fmt.Sprintf("LIST:%s:%s", list.GetItemType(), opts.HashCode())
 	obj, found := c.cache.Get(cacheKey)
 	if !found {
-		// there might be a situation when there are many requests here. We should only let one fill the cache and let the rest of them wait.
-		// we could do better locking by having separate mutex on item type and mesh
-		c.listMutex.Lock()
-		defer c.listMutex.Unlock()
+		// There might be a situation when cache just expired and there are many concurrent goroutines here.
+		// We should only let one fill the cache and let the rest of them wait for it. Otherwise we will be repeating expensive work.
+		mutex := c.mutexFor(cacheKey)
+		mutex.Lock()
 		obj, found = c.cache.Get(cacheKey)
 		if !found {
+			// After many goroutines are unlocked one by one, only one should execute this branch, the rest should retrieve object from the cache
 			c.metrics.WithLabelValues("list", string(list.GetItemType()), "miss").Inc()
 			if err := c.delegate.List(ctx, list, fs...); err != nil {
+				mutex.Unlock()
 				return err
 			}
 			c.cache.SetDefault(cacheKey, list.GetItems())
 		}
+		mutex.Unlock()
+		c.cleanMutexFor(cacheKey) // We need to cleanup mutexes from the map, otherwise we can see the memory leak.
 	}
 
 	if found {
@@ -96,4 +110,21 @@ func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ..
 		}
 	}
 	return nil
+}
+
+func (c *cachedManager) mutexFor(key string) *sync.Mutex {
+	c.mapMutex.Lock()
+	defer c.mapMutex.Unlock()
+	mutex, exist := c.mutexes[key]
+	if !exist {
+		mutex = &sync.Mutex{}
+		c.mutexes[key] = mutex
+	}
+	return mutex
+}
+
+func (c *cachedManager) cleanMutexFor(key string) {
+	c.mapMutex.Lock()
+	delete(c.mutexes, key)
+	c.mapMutex.Unlock()
 }

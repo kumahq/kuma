@@ -30,6 +30,10 @@ func (c *countingResourcesManager) Get(ctx context.Context, res core_model.Resou
 }
 
 func (c *countingResourcesManager) List(ctx context.Context, list core_model.ResourceList, fn ...core_store.ListOptionsFunc) error {
+	opts := core_store.NewListOptions(fn...)
+	if list.GetItemType() == core_mesh.TrafficLogType && opts.Mesh == "slow" {
+		time.Sleep(10 * time.Second)
+	}
 	c.listQueries++
 	return c.store.List(ctx, list, fn...)
 }
@@ -84,9 +88,15 @@ var _ = Describe("Cached Resource Manager", func() {
 			return fetched
 		}
 
-		for i := 0; i < 100; i++ {
-			fetch()
+		var wg sync.WaitGroup
+		for i := 0; i < 1000; i++ {
+			wg.Add(1)
+			go func() {
+				fetch()
+				wg.Done()
+			}()
 		}
+		wg.Wait()
 
 		// then real manager should be called only once
 		Expect(fetch().Spec).To(Equal(res.Spec))
@@ -100,7 +110,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(countingManager.getQueries).To(Equal(2))
 
 		// and metrics are published
-		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit").Counter.GetValue()).To(Equal(100.0))
+		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit").Counter.GetValue()).To(Equal(1000.0))
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "miss").Counter.GetValue()).To(Equal(2.0))
 	})
 
@@ -114,7 +124,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		}
 
 		var wg sync.WaitGroup
-		for i := 0; i < 100; i++ {
+		for i := 0; i < 1000; i++ {
 			wg.Add(1)
 			go func() {
 				fetch()
@@ -140,6 +150,31 @@ var _ = Describe("Cached Resource Manager", func() {
 
 		// and metrics are published
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "miss").Counter.GetValue()).To(Equal(2.0))
-		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit").Counter.GetValue()).To(Equal(100.0))
+		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit").Counter.GetValue()).To(Equal(1000.0))
 	})
+
+	It("should let concurrent List() queries for different types and meshes", func(done Done) {
+		// given ongoing TrafficLog from mesh slow that takes a lot of time to complete
+		go func() {
+			fetched := core_mesh.TrafficLogResourceList{}
+			err := cachedManager.List(context.Background(), &fetched, core_store.ListByMesh("slow"))
+			Expect(err).ToNot(HaveOccurred())
+		}()
+
+		// when trying to fetch TrafficLog from different mesh that takes normal time to response
+		fetched := core_mesh.TrafficLogResourceList{}
+		err := cachedManager.List(context.Background(), &fetched, core_store.ListByMesh("default"))
+
+		// then first request does not block request for other mesh
+		Expect(err).ToNot(HaveOccurred())
+
+		// when trying to fetch different resource type
+		fetchedTp := core_mesh.TrafficPermissionResourceList{}
+		err = cachedManager.List(context.Background(), &fetchedTp, core_store.ListByMesh("default"))
+
+		// then first request does not block request for other type
+		Expect(err).ToNot(HaveOccurred())
+
+		close(done)
+	}, 5)
 })
