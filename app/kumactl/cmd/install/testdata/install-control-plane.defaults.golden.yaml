@@ -5356,6 +5356,9 @@ subjects:
 apiVersion: v1
 kind: Service
 metadata:
+  annotations:
+    prometheus.io/port: "5680"
+    prometheus.io/scrape: "true"
   name: kuma-control-plane
   namespace: kuma-system
   labels:

@@ -12,6 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/metrics"
 )
 
 const grpcMaxConcurrentStreams = 1000000
@@ -25,6 +26,7 @@ type grpcServer struct {
 	port        int
 	tlsCertFile string
 	tlsKeyFile  string
+	metrics     metrics.Metrics
 }
 
 func (s *grpcServer) NeedLeaderElection() bool {
@@ -37,8 +39,10 @@ var (
 )
 
 func (s *grpcServer) Start(stop <-chan struct{}) error {
-	var grpcOptions []grpc.ServerOption
-	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
+	grpcOptions := []grpc.ServerOption{
+		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+	}
+	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	useTLS := s.tlsCertFile != ""
 	if useTLS {
 		creds, err := credentials.NewServerTLSFromFile(s.tlsCertFile, s.tlsKeyFile)
@@ -56,6 +60,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 
 	// register services
 	envoy_discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, s.server)
+	s.metrics.RegisterGRPC(grpcServer)
 
 	errChan := make(chan error)
 	go func() {

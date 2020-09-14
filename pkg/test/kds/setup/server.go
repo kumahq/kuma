@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
@@ -25,6 +26,7 @@ type testRuntimeContext struct {
 	rom        manager.ReadOnlyResourceManager
 	cfg        kuma_cp.Config
 	components []component.Component
+	metrics    core_metrics.Metrics
 }
 
 func (t *testRuntimeContext) Config() kuma_cp.Config {
@@ -35,15 +37,22 @@ func (t *testRuntimeContext) ReadOnlyResourceManager() manager.ReadOnlyResourceM
 	return t.rom
 }
 
+func (t *testRuntimeContext) Metrics() core_metrics.Metrics {
+	return t.metrics
+}
+
 func (t *testRuntimeContext) Add(c ...component.Component) error {
 	t.components = append(t.components, c...)
 	return nil
 }
 
 func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter) *test_grpc.MockServerStream {
+	metrics, err := core_metrics.NewMetrics("Global")
+	Expect(err).ToNot(HaveOccurred())
 	rt := &testRuntimeContext{
-		rom: manager.NewResourceManager(store),
-		cfg: kuma_cp.Config{},
+		rom:     manager.NewResourceManager(store),
+		cfg:     kuma_cp.Config{},
+		metrics: metrics,
 	}
 	srv, err := kds_server.New(core.Log, rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, false)
 	Expect(err).ToNot(HaveOccurred())

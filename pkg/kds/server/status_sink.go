@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"time"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -14,7 +13,6 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type ZoneInsightSink interface {
@@ -84,20 +82,12 @@ type zoneInsightStore struct {
 }
 
 func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSubscription) error {
-	create := false
+	key := core_model.ResourceKey{
+		Mesh: core_model.DefaultMesh,
+		Name: zone,
+	}
 	zoneInsight := &system.ZoneInsightResource{}
-	err := s.resManager.Get(context.Background(), zoneInsight, core_store.GetByKey(zone, core_model.DefaultMesh))
-	if err != nil {
-		if core_store.IsResourceNotFound(err) {
-			create = true
-		} else {
-			return err
-		}
-	}
-	zoneInsight.Spec.UpdateSubscription(subscription)
-	if create {
-		return s.resManager.Create(context.Background(), zoneInsight, core_store.CreateByKey(zone, core_model.DefaultMesh))
-	} else {
-		return s.resManager.Update(context.Background(), zoneInsight)
-	}
+	return manager.Upsert(s.resManager, key, zoneInsight, func(resource core_model.Resource) {
+		zoneInsight.Spec.UpdateSubscription(subscription)
+	})
 }

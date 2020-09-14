@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -28,7 +29,9 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true)
+		metrics, err := metrics.NewMetrics("Standalone")
+		Expect(err).ToNot(HaveOccurred())
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
 		client := resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes",
@@ -92,7 +95,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	zone1Json := `
 {
  "type": "ZoneOverview",
- "mesh": "default",
  "name": "zone-1",
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",
@@ -118,7 +120,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	zone2Json := `
 {
  "type": "ZoneOverview",
- "mesh": "default",
  "name": "zone-2",
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",
@@ -144,7 +145,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	zone3Json := `
 {
  "type": "ZoneOverview",
- "mesh": "default",
  "name": "zone-3",
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",

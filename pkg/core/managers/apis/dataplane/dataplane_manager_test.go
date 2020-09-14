@@ -20,6 +20,8 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
+		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default"))
+		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		input := mesh_core.DataplaneResource{
@@ -40,7 +42,7 @@ var _ = Describe("Dataplane Manager", func() {
 		}
 
 		// when
-		err := manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
+		err = manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := mesh_core.DataplaneResource{}
@@ -56,6 +58,8 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
+		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default"))
+		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		input := mesh_core.DataplaneResource{
@@ -75,7 +79,7 @@ var _ = Describe("Dataplane Manager", func() {
 			},
 		}
 
-		err := s.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
+		err = s.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := mesh_core.DataplaneResource{}
@@ -102,6 +106,8 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
+		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default"))
+		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		input := mesh_core.DataplaneResource{
@@ -118,7 +124,7 @@ var _ = Describe("Dataplane Manager", func() {
 		}
 
 		// when
-		err := manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
+		err = manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := mesh_core.DataplaneResource{}
@@ -134,6 +140,8 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
+		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default"))
+		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		input := mesh_core.DataplaneResource{
@@ -149,7 +157,7 @@ var _ = Describe("Dataplane Manager", func() {
 			},
 		}
 
-		err := s.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
+		err = s.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := mesh_core.DataplaneResource{}

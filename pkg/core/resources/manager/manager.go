@@ -89,6 +89,24 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(time.Now()))...)
 }
 
+func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource)) error {
+	create := false
+	err := manager.Get(context.Background(), resource, store.GetBy(key))
+	if err != nil {
+		if store.IsResourceNotFound(err) {
+			create = true
+		} else {
+			return err
+		}
+	}
+	fn(resource)
+	if create {
+		return manager.Create(context.Background(), resource, store.CreateBy(key))
+	} else {
+		return manager.Update(context.Background(), resource)
+	}
+}
+
 type MeshNotFoundError struct {
 	Mesh string
 }

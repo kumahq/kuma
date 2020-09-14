@@ -611,6 +611,26 @@ Global Flags:
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
+### kumactl get zones
+
+```
+Show Zone entities.
+
+Usage:
+  kumactl get zones [flags]
+
+Flags:
+  -h, --help            help for zones
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
 ## kumactl delete
 
 ```
@@ -664,6 +684,24 @@ Flags:
       --gateway              filter gateway dataplanes
   -h, --help                 help for dataplanes
       --tag stringToString   filter by tag in format of key=value. You can provide many tags (default [])
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl inspect zones
+
+```
+Inspect Zones.
+
+Usage:
+  kumactl inspect zones [flags]
+
+Flags:
+  -h, --help   help for zones
 
 Global Flags:
       --config-file string   path to the configuration file to use

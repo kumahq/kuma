@@ -12,6 +12,7 @@ import (
 
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
 	admin_server_config "github.com/kumahq/kuma/pkg/config/admin-server"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/test"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
@@ -56,7 +57,9 @@ var _ = Describe("Admin Server", func() {
 			},
 		}
 
-		srv := admin_server.NewAdminServer(cfg, pingWs())
+		metrics, err := metrics.NewMetrics("Standalone")
+		Expect(err).ToNot(HaveOccurred())
+		srv := admin_server.NewAdminServer(cfg, metrics, pingWs())
 
 		ch := make(chan struct{})
 		go func() {

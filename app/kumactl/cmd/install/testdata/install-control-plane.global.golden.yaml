@@ -5350,6 +5350,7 @@ spec:
   type: LoadBalancer
   ports:
     - port: 5685
+      nodePort: 30685
       name: global-remote-sync
   selector:
 
@@ -5365,6 +5366,8 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
   annotations:
+    prometheus.io/port: "5680"
+    prometheus.io/scrape: "true"
 spec:
   type: ClusterIP
   ports:

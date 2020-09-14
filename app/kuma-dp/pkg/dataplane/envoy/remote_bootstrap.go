@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	net_url "net/url"
+	"strings"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	"github.com/golang/protobuf/proto"
@@ -15,6 +16,7 @@ import (
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
+	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -33,7 +35,15 @@ var (
 	DpNotFoundErr = errors.New("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection.")
 )
 
-func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Message, error) {
+func InvalidRequestErr(msg string) error {
+	return errors.Errorf("Invalid request: %s", msg)
+}
+
+func IsInvalidRequestErr(err error) bool {
+	return strings.HasPrefix(err.Error(), "Invalid request: ")
+}
+
+func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_types.Resource) (proto.Message, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
 		return nil, err
@@ -47,9 +57,12 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Messag
 	var respBytes []byte
 	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")
-		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg)
+		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg, dp)
 		if err == nil {
 			return nil
+		}
+		if IsInvalidRequestErr(err) { // there is no point in retrying invalid request
+			return err
 		}
 		switch err {
 		case DpNotFoundErr:
@@ -71,8 +84,16 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config) (proto.Messag
 	return &bootstrap, nil
 }
 
-func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config) ([]byte, error) {
+func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, dp *rest_types.Resource) ([]byte, error) {
 	url.Path = "/bootstrap"
+	var dataplaneResource string
+	if dp != nil {
+		dpJSON, err := json.Marshal(dp)
+		if err != nil {
+			return nil, err
+		}
+		dataplaneResource = string(dpJSON)
+	}
 	request := types.BootstrapRequest{
 		Mesh: cfg.Dataplane.Mesh,
 		Name: cfg.Dataplane.Name,
@@ -80,6 +101,7 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		// that is set in the control plane bootstrap params
 		AdminPort:          cfg.Dataplane.AdminPort.Lowest(),
 		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
+		DataplaneResource:  dataplaneResource,
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {
@@ -99,7 +121,7 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 			if err != nil {
 				return nil, errors.Errorf("Unable to read the response with status code: %d", resp.StatusCode)
 			}
-			return nil, errors.Errorf("Error: %s", string(bodyBytes))
+			return nil, InvalidRequestErr(string(bodyBytes))
 		}
 		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
