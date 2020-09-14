@@ -29,7 +29,7 @@ var _ = Describe("DNS server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			resolver := NewDNSResolver("mesh")
-			m, err := core_metrics.NewMetrics()
+			m, err := core_metrics.NewMetrics("Standalone")
 			metrics = m
 			Expect(err).ToNot(HaveOccurred())
 			server, err := NewDNSServer(port, resolver, metrics)

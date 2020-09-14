@@ -43,7 +43,7 @@ var _ = Describe("Bootstrap Server", func() {
 		port, err := test.GetFreePort()
 		baseUrl = "http://localhost:" + strconv.Itoa(port)
 		Expect(err).ToNot(HaveOccurred())
-		metrics, err = core_metrics.NewMetrics()
+		metrics, err = core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		server := BootstrapServer{
 			Port:      uint32(port),

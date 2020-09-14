@@ -50,7 +50,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		countingManager = &countingResourcesManager{
 			store: store,
 		}
-		m, err := core_metrics.NewMetrics()
+		m, err := core_metrics.NewMetrics("Standalone")
 		metrics = m
 		Expect(err).ToNot(HaveOccurred())
 		cachedManager, err = core_manager.NewCachedManager(countingManager, expiration, metrics)

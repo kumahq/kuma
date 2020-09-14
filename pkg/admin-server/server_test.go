@@ -57,7 +57,7 @@ var _ = Describe("Admin Server", func() {
 			},
 		}
 
-		metrics, err := metrics.NewMetrics()
+		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		srv := admin_server.NewAdminServer(cfg, metrics, pingWs())
 

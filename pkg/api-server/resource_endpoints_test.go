@@ -37,7 +37,7 @@ var _ = Describe("Resource Endpoints", func() {
 		resourceStore = memory.NewStore()
 		serverConfig := config.DefaultApiServerConfig()
 		serverConfig.Catalog.ApiServer.Url = publicApiServerUrl
-		m, err := core_metrics.NewMetrics()
+		m, err := core_metrics.NewMetrics("Standalone")
 		metrics = m
 		Expect(err).ToNot(HaveOccurred())
 		apiServer = createTestApiServer(resourceStore, serverConfig, true, metrics)

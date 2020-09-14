@@ -7,13 +7,12 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/dns/lookup"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplaneinsight"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
@@ -33,6 +32,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/metrics"
+	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
@@ -41,11 +41,9 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 	builder := core_runtime.BuilderFor(cfg)
-	metrics, err := metrics.NewMetrics()
-	if err != nil {
+	if err := initializeMetrics(builder); err != nil {
 		return nil, err
 	}
-	builder.WithMetrics(metrics)
 	if err := initializeBootstrap(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -104,6 +102,24 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	}
 
 	return rt, nil
+}
+
+func initializeMetrics(builder *core_runtime.Builder) error {
+	zone := ""
+	switch builder.Config().Mode {
+	case config_core.Remote:
+		zone = builder.Config().Multicluster.Remote.Zone
+	case config_core.Global:
+		zone = "Global"
+	case config_core.Standalone:
+		zone = "Standalone"
+	}
+	metrics, err := metrics.NewMetrics(zone)
+	if err != nil {
+		return err
+	}
+	builder.WithMetrics(metrics)
+	return nil
 }
 
 func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
@@ -207,7 +223,7 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if rs, err := plugin.NewResourceStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		meteredStore, err := metrics.NewMeteredStore(rs, builder.Metrics())
+		meteredStore, err := metrics_store.NewMeteredStore(rs, builder.Metrics())
 		if err != nil {
 			return err
 		}

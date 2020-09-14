@@ -22,7 +22,7 @@ var _ = Describe("Config WS", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		metrics, err := metrics.NewMetrics()
+		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		apiServer := createTestApiServer(resourceStore, cfg, true, metrics)
 

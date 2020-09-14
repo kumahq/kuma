@@ -27,7 +27,7 @@ var _ = Describe("GUI Server", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		metrics, err := metrics.NewMetrics()
+		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		apiServer := createTestApiServer(resourceStore, cfg, enabelGUI, metrics)
 
