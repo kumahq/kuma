@@ -6,6 +6,8 @@ metadata:
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
   annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "5680"
     {{- range $key, $value := .Values.controlPlane.service.annotations }}
       {{ $key }}: {{ $value | quote }}
     {{- end }}

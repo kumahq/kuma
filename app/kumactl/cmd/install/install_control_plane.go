@@ -26,33 +26,40 @@ var (
 )
 
 type InstallControlPlaneArgs struct {
-	Namespace                                 string `helm:"namespace"`
-	ControlPlane_image_pullPolicy             string `helm:"controlPlane.image.pullPolicy"`
-	ControlPlane_image_registry               string `helm:"controlPlane.image.registry"`
-	ControlPlane_image_repositry              string `helm:"controlPlane.image.repositry"`
-	ControlPlane_image_tag                    string `helm:"controlPlane.image.tag"`
-	ControlPlane_service_name                 string `helm:"controlPlane.service.name"`
-	ControlPlane_tls_admission_cert           string `helm:"controlPlane.tls.admission.cert"`
-	ControlPlane_tls_admission_key            string `helm:"controlPlane.tls.admission.key"`
-	ControlPlane_tls_sds_cert                 string `helm:"controlPlane.tls.sds.cert"`
-	ControlPlane_tls_sds_key                  string `helm:"controlPlane.tls.sds.key"`
-	ControlPlane_tls_kds_cert                 string `helm:"controlPlane.tls.kds.cert"`
-	ControlPlane_tls_kds_key                  string `helm:"controlPlane.tls.kds.key"`
-	ControlPlane_injectorFailurePolicy        string `helm:"controlPlane.injectorFailurePolicy"`
-	DataPlane_image_registry                  string `helm:"dataPlane.image.registry"`
-	DataPlane_image_repositry                 string `helm:"dataPlane.image.repositry"`
-	DataPlane_image_tag                       string `helm:"dataPlane.image.tag"`
-	DataPlane_initImage_registry              string `helm:"dataPlane.initImage.registry"`
-	DataPlane_initImage_repositry             string `helm:"dataPlane.initImage.repositry"`
-	DataPlane_initImage_tag                   string `helm:"dataPlane.initImage.tag"`
-	ControlPlane_kdsGlobalAddress             string `helm:"controlPlane.kdsGlobalAddress"`
-	Cni_enabled                               bool   `helm:"cni.enabled"`
-	Cni_image_registry                        string `helm:"cni.image.registry"`
-	Cni_image_repositry                       string `helm:"cni.image.repositry"`
-	Cni_image_tag                             string `helm:"cni.image.tag"`
-	ControlPlane_mode                         string `helm:"controlPlane.mode"`
-	ControlPlane_zone                         string `helm:"controlPlane.zone"`
-	ControlPlane_globalRemoteSyncService_type string `helm:"controlPlane.globalRemoteSyncService.type"`
+	Namespace                                 string           `helm:"namespace"`
+	ControlPlane_image_pullPolicy             string           `helm:"controlPlane.image.pullPolicy"`
+	ControlPlane_image_registry               string           `helm:"controlPlane.image.registry"`
+	ControlPlane_image_repositry              string           `helm:"controlPlane.image.repositry"`
+	ControlPlane_image_tag                    string           `helm:"controlPlane.image.tag"`
+	ControlPlane_service_name                 string           `helm:"controlPlane.service.name"`
+	ControlPlane_tls_admission_cert           string           `helm:"controlPlane.tls.admission.cert"`
+	ControlPlane_tls_admission_key            string           `helm:"controlPlane.tls.admission.key"`
+	ControlPlane_tls_sds_cert                 string           `helm:"controlPlane.tls.sds.cert"`
+	ControlPlane_tls_sds_key                  string           `helm:"controlPlane.tls.sds.key"`
+	ControlPlane_tls_kds_cert                 string           `helm:"controlPlane.tls.kds.cert"`
+	ControlPlane_tls_kds_key                  string           `helm:"controlPlane.tls.kds.key"`
+	ControlPlane_injectorFailurePolicy        string           `helm:"controlPlane.injectorFailurePolicy"`
+	ControlPlane_secrets                      []ImageEnvSecret `helm:"controlPlane.secrets"`
+	DataPlane_image_registry                  string           `helm:"dataPlane.image.registry"`
+	DataPlane_image_repositry                 string           `helm:"dataPlane.image.repositry"`
+	DataPlane_image_tag                       string           `helm:"dataPlane.image.tag"`
+	DataPlane_initImage_registry              string           `helm:"dataPlane.initImage.registry"`
+	DataPlane_initImage_repositry             string           `helm:"dataPlane.initImage.repositry"`
+	DataPlane_initImage_tag                   string           `helm:"dataPlane.initImage.tag"`
+	ControlPlane_kdsGlobalAddress             string           `helm:"controlPlane.kdsGlobalAddress"`
+	Cni_enabled                               bool             `helm:"cni.enabled"`
+	Cni_image_registry                        string           `helm:"cni.image.registry"`
+	Cni_image_repositry                       string           `helm:"cni.image.repositry"`
+	Cni_image_tag                             string           `helm:"cni.image.tag"`
+	ControlPlane_mode                         string           `helm:"controlPlane.mode"`
+	ControlPlane_zone                         string           `helm:"controlPlane.zone"`
+	ControlPlane_globalRemoteSyncService_type string           `helm:"controlPlane.globalRemoteSyncService.type"`
+}
+
+type ImageEnvSecret struct {
+	Env    string
+	Secret string
+	Key    string
 }
 
 var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{

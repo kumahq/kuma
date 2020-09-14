@@ -5350,7 +5350,6 @@ spec:
   type: LoadBalancer
   ports:
     - port: 5685
-      nodePort: 30685
       name: global-remote-sync
   selector:
 
