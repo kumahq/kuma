@@ -125,7 +125,7 @@ aws cloudformation deploy \
     --template-file workload.yaml \
     --parameter-overrides \
       DesiredCount=2 \
-      DPToken="<DP_TOKEN_VALUE>
+      DPToken="<DP_TOKEN_VALUE>"
 ```
 
 #### Remote
@@ -136,7 +136,7 @@ aws cloudformation deploy \
     --template-file workload.yaml \
     --parameter-overrides \
       DesiredCount=2 \
-      DPToken="<DP_TOKEN_VALUE> \
+      DPToken="<DP_TOKEN_VALUE>" \
       CPAddress="http://zone-1-controlplane.kuma.io:5681"
 ```
 
