@@ -61,6 +61,7 @@ please refer to [the Helm documentation][helm-crd].
 ## Note to Chart developers
 
 The charts are used internally in `kumactl install`, therefore the following rules apply when developing new chat features:
+ * use `make generate/kumactl/install/k8s/control-plane` to sync the Helm Chart and `kumactl install` templates
  * all templates that start with `pre-` and `post-` are omitted when processing in `kumactl install`  
 
 [kuma-url]: https://kuma.io/

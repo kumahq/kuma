@@ -5420,7 +5420,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2de279fbb62e16d56a7b67468706fc1c2eb41e16c46b969a8645a6bf037be042
-        checksum/tls-secrets: 9b229cec6a46c22b057c64e37eba43b4836900d5d9ef18ef4f008d897d09e1ca
+        checksum/tls-secrets: cd2f0b4e6c8a69f23aa0eb200f5997bac365b7576b3a9f408477de9dfade76f2
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -5561,7 +5561,7 @@ webhooks:
           - meshes
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
-    failurePolicy: Ignore
+    failurePolicy: Fail
     clientConfig:
       caBundle: QWRtaXNzaW9uQ2VydA==
       service:

@@ -38,31 +38,31 @@ metadata:
 }
 
 func renderHelmFiles(templates []data.File, args interface{}) ([]data.File, error) {
-	loadedChart, err := loadCharts(templates)
+	chart, err := loadCharts(templates)
 	if err != nil {
 		return nil, errors.Errorf("Failed to load charts: %s", err)
 	}
 
 	overrideValues := generateOverrideValues(args)
-	if err := chartutil.ProcessDependencies(loadedChart, overrideValues); err != nil {
+	if err := chartutil.ProcessDependencies(chart, overrideValues); err != nil {
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)
 	}
 
 	namespace := overrideValues["namespace"].(string)
-	options := generateReleaseOptions(loadedChart.Metadata.Name, namespace)
+	options := generateReleaseOptions(chart.Metadata.Name, namespace)
 
-	valuesToRender, err := chartutil.ToRenderValues(loadedChart, overrideValues, options, nil)
+	valuesToRender, err := chartutil.ToRenderValues(chart, overrideValues, options, nil)
 	if err != nil {
 		return nil, errors.Errorf("Failed to render values: %s", err)
 	}
 
-	files, err := engine.Render(loadedChart, valuesToRender)
+	files, err := engine.Render(chart, valuesToRender)
 	if err != nil {
 		return nil, errors.Errorf("Failed to render templates: %s", err)
 	}
 	files["namespace.yaml"] = kumaSystemNamespace(namespace)
 
-	return postRender(loadedChart, files), nil
+	return postRender(chart, files), nil
 }
 
 func loadCharts(templates []data.File) (*chart.Chart, error) {
