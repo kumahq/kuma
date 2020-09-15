@@ -36,7 +36,7 @@ type NamespaceReconciler struct {
 	DefaultMeshTemplate     mesh_proto.Mesh
 }
 
-// Reconcile is in charge for creating NetworkAttachmentDefinition if CNI enabled and namespace has label 'kuma.io/sidecar-injection: enabled'
+// Reconcile is in charge of creating NetworkAttachmentDefinition if CNI enabled and namespace has label 'kuma.io/sidecar-injection: enabled'
 func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	if !r.CNIEnabled {
 		return kube_ctrl.Result{}, nil

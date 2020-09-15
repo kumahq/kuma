@@ -101,10 +101,11 @@ var _ = Describe("Defaults Component", func() {
 	})
 
 	type testCase struct {
-		cpMode      core.CpMode
-		environment core.EnvironmentType
+		cpMode       core.CpMode
+		environment  core.EnvironmentType
+		shouldCreate bool
 	}
-	DescribeTable("should create signing key",
+	DescribeTable("create signing key",
 		func(given testCase) {
 			// given
 			store := resources_memory.NewStore()
@@ -119,48 +120,41 @@ var _ = Describe("Defaults Component", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			_, err = issuer.GetSigningKey(manager)
-			Expect(err).ToNot(HaveOccurred())
+			if given.shouldCreate {
+				Expect(err).To(BeNil())
+			} else {
+				Expect(err).To(Equal(issuer.SigningKeyNotFound))
+			}
 		},
-		Entry("when mode is global and env is universal", testCase{
-			cpMode:      core.Global,
-			environment: core.UniversalEnvironment,
+		Entry("should succeed when mode is global and env is universal", testCase{
+			cpMode:       core.Global,
+			environment:  core.UniversalEnvironment,
+			shouldCreate: true,
 		}),
-		Entry("when mode is global and env is kubernetes", testCase{
-			cpMode:      core.Global,
-			environment: core.KubernetesEnvironment,
+		Entry("should succeed when mode is global and env is kubernetes", testCase{
+			cpMode:       core.Global,
+			environment:  core.KubernetesEnvironment,
+			shouldCreate: true,
 		}),
-		Entry("when mode is standalone and env is universal", testCase{
-			cpMode:      core.Standalone,
-			environment: core.UniversalEnvironment,
+		Entry("should succeed when mode is standalone and env is universal", testCase{
+			cpMode:       core.Standalone,
+			environment:  core.UniversalEnvironment,
+			shouldCreate: true,
 		}),
-	)
-
-	DescribeTable("should not create a signing key",
-		func(given testCase) {
-			// given
-			store := resources_memory.NewStore()
-			manager := core_manager.NewResourceManager(store)
-			component := defaults.NewDefaultsComponent(&kuma_cp.Defaults{}, given.cpMode, given.environment, manager, store)
-
-			// when
-			err := component.Start(nil)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			_, err = issuer.GetSigningKey(manager)
-			Expect(err).To(Equal(issuer.SigningKeyNotFound))
-		},
-		Entry("when mode is remote and env is universal", testCase{
-			cpMode:      core.Remote,
-			environment: core.UniversalEnvironment,
+		Entry("should fail when mode is remote and env is universal", testCase{
+			cpMode:       core.Remote,
+			environment:  core.UniversalEnvironment,
+			shouldCreate: false,
 		}),
-		Entry("when mode is remote and env is kubernetes", testCase{
-			cpMode:      core.Remote,
-			environment: core.KubernetesEnvironment,
+		Entry("should fail when mode is remote and env is kubernetes", testCase{
+			cpMode:       core.Remote,
+			environment:  core.KubernetesEnvironment,
+			shouldCreate: false,
 		}),
-		Entry("when mode is standalone and env is kubernetes", testCase{
-			cpMode:      core.Standalone,
-			environment: core.KubernetesEnvironment,
+		Entry("should fail when mode is standalone and env is kubernetes", testCase{
+			cpMode:       core.Standalone,
+			environment:  core.KubernetesEnvironment,
+			shouldCreate: false,
 		}),
 	)
 

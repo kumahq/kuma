@@ -52,7 +52,7 @@ func (d *defaultsComponent) Start(_ <-chan struct{}) error {
 	// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
 	if d.config.SkipMeshCreation {
 		log.V(1).Info("skipping default Mesh creation because KUMA_DEFAULTS_SKIP_MESH_CREATION is set to true")
-	} else if err := retryOperation(d.createMeshIfNotExist); err != nil {
+	} else if err := doWithRetry(d.createMeshIfNotExist); err != nil {
 		// Retry this operation since on Kubernetes Mesh needs to be validated and set default values.
 		// This code can execute before the control plane is ready therefore hooks can fail.
 		return errors.Wrap(err, "could not create the default Mesh")
@@ -66,11 +66,8 @@ func (d *defaultsComponent) Start(_ <-chan struct{}) error {
 	return nil
 }
 
-func retryOperation(fn func() error) error {
-	backoff, err := retry.NewConstant(1 * time.Second)
-	if err != nil {
-		return errors.Wrap(err, "invalid backoff")
-	}
+func doWithRetry(fn func() error) error {
+	backoff, _ := retry.NewConstant(1 * time.Second)
 	backoff = retry.WithMaxDuration(1*time.Minute, backoff) // if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
 	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		return retry.RetryableError(fn()) // retry all errors
