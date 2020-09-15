@@ -15,7 +15,7 @@ var defaultMeshKey = core_model.ResourceKey{
 
 func (d *defaultsComponent) createMeshIfNotExist() error {
 	mesh := &mesh_core.MeshResource{}
-	err := d.resManager.Get(context.Background(), mesh, core_store.GetBy(defaultMeshKey));
+	err := d.resManager.Get(context.Background(), mesh, core_store.GetBy(defaultMeshKey))
 	if err == nil {
 		log.V(1).Info("default Mesh already exists. Skip creating default Mesh.")
 		return nil

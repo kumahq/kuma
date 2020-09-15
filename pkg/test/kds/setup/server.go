@@ -47,7 +47,7 @@ func (t *testRuntimeContext) Add(c ...component.Component) error {
 }
 
 func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter) *test_grpc.MockServerStream {
-	metrics, err := core_metrics.NewMetrics()
+	metrics, err := core_metrics.NewMetrics("Global")
 	Expect(err).ToNot(HaveOccurred())
 	rt := &testRuntimeContext{
 		rom:     manager.NewResourceManager(store),

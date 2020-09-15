@@ -66,7 +66,7 @@ var _ = Describe("Tokens Client", func() {
 				ClientCertsDir: filepath.Join("..", "..", "..", "..", "pkg", "admin-server", "testdata", "authorized-clients"),
 			},
 		}
-		metrics, err := metrics.NewMetrics()
+		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		srv := admin_server.NewAdminServer(adminCfg, metrics, server.NewWebservice(&staticTokenIssuer{}))
 

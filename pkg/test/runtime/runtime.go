@@ -50,7 +50,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 		WithResourceStore(resources_memory.NewStore()).
 		WithXdsContext(core_xds.NewXdsContext())
 
-	metrics, _ := metrics.NewMetrics()
+	metrics, _ := metrics.NewMetrics("Standalone")
 	builder.WithMetrics(metrics)
 
 	builder.WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore()))

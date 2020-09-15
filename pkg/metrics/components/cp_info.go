@@ -4,6 +4,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	metrics "github.com/kumahq/kuma/pkg/metrics/store"
 	"github.com/kumahq/kuma/pkg/version"
 )
 
@@ -19,7 +20,6 @@ func Setup(rt runtime.Runtime) error {
 			"build_date":  version.Build.BuildDate,
 			"git_commit":  version.Build.GitCommit,
 			"git_tag":     version.Build.GitTag,
-			"mode":        rt.Config().Mode,
 		},
 	}, func() float64 {
 		return 1.0
@@ -46,6 +46,17 @@ func Setup(rt runtime.Runtime) error {
 		return err
 	}
 	if err := rt.Metrics().Register(prometheus.NewProcessCollector(prometheus.ProcessCollectorOpts{})); err != nil {
+		return err
+	}
+
+	// We don't want to use cached ResourceManager because the cache is just for a couple of seconds
+	// and we will be retrieving resources every minute. There is no other place in the system for now that needs all resources from all meshes
+	// therefore it makes no sense to cache all content of the Database in the cache.
+	counter, err := metrics.NewStoreCounter(rt.ResourceManager(), rt.Metrics())
+	if err != nil {
+		return err
+	}
+	if err := rt.Add(counter); err != nil {
 		return err
 	}
 	return nil

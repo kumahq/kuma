@@ -36,7 +36,7 @@ var _ = Describe("Index Endpoints", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		metrics, err := metrics.NewMetrics()
+		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		apiServer := createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
 

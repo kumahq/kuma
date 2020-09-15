@@ -29,7 +29,7 @@ var _ = Describe("Read only Resource Endpoints", func() {
 		resourceStore = memory.NewStore()
 		cfg := config.DefaultApiServerConfig()
 		cfg.ReadOnly = true
-		metrics, err := metrics.NewMetrics()
+		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		apiServer = createTestApiServer(resourceStore, cfg, true, metrics)
 		client = resourceApiClient{

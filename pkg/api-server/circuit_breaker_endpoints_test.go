@@ -31,7 +31,7 @@ var _ = Describe("CircuitBreaker Endpoints", func() {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 			return now
 		}
-		metrics, err := metrics.NewMetrics()
+		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		resourceStore = memory.NewStore()
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
