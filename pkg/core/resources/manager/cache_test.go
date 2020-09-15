@@ -112,7 +112,11 @@ var _ = Describe("Cached Resource Manager", func() {
 		// and metrics are published
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "miss").Counter.GetValue()).To(Equal(2.0))
 		hits := test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit").Counter.GetValue()
-		hitWaits := test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit-wait").Counter.GetValue()
+		hitWaits := 0.0
+		hitWaitMetric := test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit-wait")
+		if hitWaitMetric != nil {
+			hitWaits = hitWaitMetric.Counter.GetValue()
+		}
 		Expect(hits + hitWaits).To(Equal(100.0))
 	})
 
@@ -153,7 +157,11 @@ var _ = Describe("Cached Resource Manager", func() {
 		// and metrics are published
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "miss").Counter.GetValue()).To(Equal(2.0))
 		hits := test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit").Counter.GetValue()
-		hitWaits := test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit-wait").Counter.GetValue()
+		hitWaits := 0.0
+		hitWaitMetric := test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit-wait")
+		if hitWaitMetric != nil {
+			hitWaits = hitWaitMetric.Counter.GetValue()
+		}
 		Expect(hits + hitWaits).To(Equal(100.0))
 	})
 
