@@ -13,6 +13,8 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
+	"github.com/kumahq/kuma/pkg/defaults"
+	"github.com/kumahq/kuma/pkg/diagnostics"
 	dns "github.com/kumahq/kuma/pkg/dns/components"
 	"github.com/kumahq/kuma/pkg/gc"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
@@ -120,16 +122,16 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					return err
 				}
 			case config_core.Global:
-				if err := xds_server.SetupDiagnosticsServer(rt); err != nil {
-					runLog.Error(err, "unable to set up xDS server")
-					return err
-				}
 				if err := kds_global.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up KDS Global")
 					return err
 				}
 			}
 
+			if err := diagnostics.SetupServer(rt); err != nil {
+				runLog.Error(err, "unable to set up Diagnostics server")
+				return err
+			}
 			if err := api_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up API server")
 				return err
@@ -141,6 +143,11 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 
 			if err := metrics.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Metrics")
+				return err
+			}
+
+			if err := defaults.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Defaults")
 				return err
 			}
 

@@ -128,6 +128,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multicluster.Remote.KDS.RootCAFile).To(Equal("/rootCa"))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
+
+			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -213,6 +215,8 @@ dnsServer:
   CIDR: 127.1.0.0/16
 defaults:
   skipMeshCreation: true
+diagnostics:
+  debugEndpoints: true
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -270,6 +274,7 @@ defaults:
 				"KUMA_MULTICLUSTER_REMOTE_ZONE":                                 "zone-1",
 				"KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE":                     "/rootCa",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                              "true",
+				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                              "true",
 			},
 			yamlFileConfig: "",
 		}),
