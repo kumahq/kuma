@@ -61,13 +61,16 @@ func (c *cachedManager) Get(ctx context.Context, res model.Resource, fs ...store
 				return err
 			}
 			c.cache.SetDefault(cacheKey, res)
+		} else {
+			c.metrics.WithLabelValues("get", string(res.GetType()), "hit-wait").Inc()
 		}
 		mutex.Unlock()
 		c.cleanMutexFor(cacheKey) // We need to cleanup mutexes from the map, otherwise we can see the memory leak.
+	} else {
+		c.metrics.WithLabelValues("get", string(res.GetType()), "hit").Inc()
 	}
 
 	if found {
-		c.metrics.WithLabelValues("get", string(res.GetType()), "hit").Inc()
 		cached := obj.(model.Resource)
 		if err := res.SetSpec(cached.GetSpec()); err != nil {
 			return err
@@ -95,13 +98,16 @@ func (c *cachedManager) List(ctx context.Context, list model.ResourceList, fs ..
 				return err
 			}
 			c.cache.SetDefault(cacheKey, list.GetItems())
+		} else {
+			c.metrics.WithLabelValues("list", string(list.GetItemType()), "hit-wait").Inc()
 		}
 		mutex.Unlock()
 		c.cleanMutexFor(cacheKey) // We need to cleanup mutexes from the map, otherwise we can see the memory leak.
+	} else {
+		c.metrics.WithLabelValues("list", string(list.GetItemType()), "hit").Inc()
 	}
 
 	if found {
-		c.metrics.WithLabelValues("list", string(list.GetItemType()), "hit").Inc()
 		resources := obj.([]model.Resource)
 		for _, res := range resources {
 			if err := list.AddItem(res); err != nil {

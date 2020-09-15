@@ -110,8 +110,10 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(countingManager.getQueries).To(Equal(2))
 
 		// and metrics are published
-		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit").Counter.GetValue()).To(Equal(1000.0))
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "miss").Counter.GetValue()).To(Equal(2.0))
+		hits := test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit").Counter.GetValue()
+		hitWaits := test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit-wait").Counter.GetValue()
+		Expect(hits + hitWaits).To(Equal(1000.0))
 	})
 
 	It("should cache List() queries", func() {
@@ -150,7 +152,9 @@ var _ = Describe("Cached Resource Manager", func() {
 
 		// and metrics are published
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "miss").Counter.GetValue()).To(Equal(2.0))
-		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit").Counter.GetValue()).To(Equal(1000.0))
+		hits := test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit").Counter.GetValue()
+		hitWaits := test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit-wait").Counter.GetValue()
+		Expect(hits + hitWaits).To(Equal(1000.0))
 	})
 
 	It("should let concurrent List() queries for different types and meshes", func(done Done) {
