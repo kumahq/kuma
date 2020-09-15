@@ -238,7 +238,6 @@ dnsServer:
   # The CIDR range used to allocate
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
 
-
 # Multicluster mode
 multicluster:
   global:
@@ -263,3 +262,8 @@ multicluster:
       refreshInterval: 1s # ENV: KUMA_MULTICLUSTER_REMOTE_KDS_REFRESH_INTERVAL
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
       rootCaFile: # ENV: KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE
+
+# Diagnostics configuration
+diagnostics:
+  # If true, enables https://golang.org/pkg/net/http/pprof/ debug endpoints
+  debugEndpoints: false # ENV: KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS

@@ -1,9 +1,10 @@
-package server
+package diagnostics
 
 import (
 	"context"
 	"fmt"
 	"net/http"
+	pprof "net/http/pprof"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
@@ -17,8 +18,9 @@ var (
 )
 
 type diagnosticsServer struct {
-	port    int
-	metrics metrics.Metrics
+	port           int
+	metrics        metrics.Metrics
+	debugEndpoints bool
 }
 
 func (s *diagnosticsServer) NeedLeaderElection() bool {
@@ -39,6 +41,13 @@ func (s *diagnosticsServer) Start(stop <-chan struct{}) error {
 		resp.WriteHeader(http.StatusOK)
 	})
 	mux.Handle("/metrics", promhttp.InstrumentMetricHandler(s.metrics, promhttp.HandlerFor(s.metrics, promhttp.HandlerOpts{})))
+	if s.debugEndpoints {
+		mux.HandleFunc("/debug/pprof/", pprof.Index)
+		mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+		mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+		mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+		mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	}
 
 	httpServer := &http.Server{Addr: fmt.Sprintf(":%d", s.port), Handler: mux}
 
