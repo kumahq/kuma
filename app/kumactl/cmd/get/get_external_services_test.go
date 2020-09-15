@@ -28,7 +28,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
-var _ = FDescribe("kumactl get external-services", func() {
+var _ = Describe("kumactl get external-services", func() {
 
 	var externalServices []*mesh_core.ExternalServiceResource
 	BeforeEach(func() {

@@ -319,6 +319,8 @@ function _kumactl_get {
       "circuit-breakers:Show CircuitBreakers"
       "dataplane:Show a single Dataplane resource"
       "dataplanes:Show Dataplanes"
+      "external-service:Show a single External-Service resource"
+      "external-services:Show ExternalServices"
       "fault-injection:Show a single Fault-Injection resource"
       "fault-injections:Show FaultInjections"
       "healthcheck:Show a single HealthCheck resource"
@@ -356,6 +358,12 @@ function _kumactl_get {
     ;;
   dataplanes)
     _kumactl_get_dataplanes
+    ;;
+  external-service)
+    _kumactl_get_external-service
+    ;;
+  external-services)
+    _kumactl_get_external-services
     ;;
   fault-injection)
     _kumactl_get_fault-injection
@@ -447,6 +455,24 @@ function _kumactl_get_dataplane {
 }
 
 function _kumactl_get_dataplanes {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_external-service {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_external-services {
   _arguments \
     '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
     '--size[maximum number of elements to return]:' \
