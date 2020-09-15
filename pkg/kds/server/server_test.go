@@ -61,12 +61,28 @@ var _ = Describe("KDS Server", func() {
 		ctx := context.Background()
 
 		// Just to don't forget to update this test after updating 'kds.SupportedTypes
-		Expect([]proto.Message{&kds_samples.Mesh1, &kds_samples.Ingress, &kds_samples.DataplaneInsight, &kds_samples.CircuitBreaker, &kds_samples.FaultInjection, &kds_samples.HealthCheck, &kds_samples.TrafficLog, &kds_samples.TrafficPermission, &kds_samples.TrafficRoute, &kds_samples.TrafficTrace, &kds_samples.ProxyTemplate, &kds_samples.Secret, &kds_samples.Config}).To(HaveLen(len(kds.SupportedTypes)))
+		Expect([]proto.Message{
+			&kds_samples.Mesh1,
+			&kds_samples.Ingress,
+			&kds_samples.DataplaneInsight,
+			&kds_samples.ExternalService,
+			&kds_samples.CircuitBreaker,
+			&kds_samples.FaultInjection,
+			&kds_samples.HealthCheck,
+			&kds_samples.TrafficLog,
+			&kds_samples.TrafficPermission,
+			&kds_samples.TrafficRoute,
+			&kds_samples.TrafficTrace,
+			&kds_samples.ProxyTemplate,
+			&kds_samples.Secret,
+			&kds_samples.Config}).
+			To(HaveLen(len(kds.SupportedTypes)))
 
 		vrf := kds_verifier.New().
 			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: kds_samples.Mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.DataplaneResource{Spec: kds_samples.Ingress}, store.CreateByKey("Ingress-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.DataplaneInsightResource{Spec: kds_samples.DataplaneInsight}, store.CreateByKey("insight-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.ExternalServiceResource{Spec: kds_samples.ExternalService}, store.CreateByKey("es-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.CircuitBreakerResource{Spec: kds_samples.CircuitBreaker}, store.CreateByKey("cb-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.FaultInjectionResource{Spec: kds_samples.FaultInjection}, store.CreateByKey("fi-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.HealthCheckResource{Spec: kds_samples.HealthCheck}, store.CreateByKey("hc-1", "mesh-1"))).
@@ -90,6 +106,11 @@ var _ = Describe("KDS Server", func() {
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
 				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.DataplaneInsight))
+			})).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.ExternalServiceType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
+				Expect(rs).To(HaveLen(1))
+				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.ExternalService))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.CircuitBreakerType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {

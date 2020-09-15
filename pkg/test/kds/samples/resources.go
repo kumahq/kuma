@@ -96,6 +96,18 @@ var (
 			Address: "192.168.0.1",
 		},
 	}
+	ExternalService = mesh_proto.ExternalService{
+		Networking: &mesh_proto.ExternalService_Networking{
+			Address: "192.168.0.1",
+			Inbound: []*mesh_proto.ExternalService_Networking_Inbound{{
+				Port: 1212,
+				Tags: map[string]string{
+					mesh_proto.ZoneTag:    "kuma-1",
+					mesh_proto.ServiceTag: "backend",
+				},
+			}},
+		},
+	}
 	CircuitBreaker = mesh_proto.CircuitBreaker{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
