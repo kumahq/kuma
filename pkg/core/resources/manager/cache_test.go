@@ -47,7 +47,7 @@ var _ = Describe("Cached Resource Manager", func() {
 	var countingManager *countingResourcesManager
 	var res *core_mesh.DataplaneResource
 	var metrics core_metrics.Metrics
-	expiration := 100 * time.Millisecond
+	expiration := 500 * time.Millisecond
 
 	BeforeEach(func() {
 		// given
@@ -89,7 +89,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		}
 
 		var wg sync.WaitGroup
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100; i++ {
 			wg.Add(1)
 			go func() {
 				fetch()
@@ -113,7 +113,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "miss").Counter.GetValue()).To(Equal(2.0))
 		hits := test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit").Counter.GetValue()
 		hitWaits := test_metrics.FindMetric(metrics, "store_cache", "operation", "get", "result", "hit-wait").Counter.GetValue()
-		Expect(hits + hitWaits).To(Equal(1000.0))
+		Expect(hits + hitWaits).To(Equal(100.0))
 	})
 
 	It("should cache List() queries", func() {
@@ -126,7 +126,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		}
 
 		var wg sync.WaitGroup
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100; i++ {
 			wg.Add(1)
 			go func() {
 				fetch()
@@ -154,7 +154,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "miss").Counter.GetValue()).To(Equal(2.0))
 		hits := test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit").Counter.GetValue()
 		hitWaits := test_metrics.FindMetric(metrics, "store_cache", "operation", "list", "result", "hit-wait").Counter.GetValue()
-		Expect(hits + hitWaits).To(Equal(1000.0))
+		Expect(hits + hitWaits).To(Equal(100.0))
 	})
 
 	It("should let concurrent List() queries for different types and meshes", func(done Done) {
