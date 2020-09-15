@@ -8,12 +8,12 @@ import (
 	"runtime"
 )
 
-var Templates http.FileSystem = http.Dir(TemplatesDir(kumactlSrcDir()))
+var HelmTemplates http.FileSystem = http.Dir(HelmTemplatesDir(rootSrcDir()))
 
-func kumactlSrcDir() string {
+func rootSrcDir() string {
 	_, thisFile, _, _ := runtime.Caller(1)
 
 	thisDir := filepath.Dir(thisFile)
 
-	return filepath.Join(thisDir, "..", "..", "..", "..")
+	return filepath.Join(thisDir, "..", "..", "..", "..", "..", "..")
 }

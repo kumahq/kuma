@@ -52,11 +52,9 @@ const (
 
 	kumaImageRegistry = "kuma"
 	kumaCPImageRepo   = "kuma-cp"
-	kumaCPImage       = kumaImageRegistry + "/" + kumaCPImageRepo
 	kumaDPImageRepo   = "kuma-dp"
 	kumaDPImage       = kumaImageRegistry + "/" + kumaDPImageRepo
 	kumaInitImageRepo = "kuma-init"
-	kumaInitImage     = kumaImageRegistry + "/" + kumaInitImageRepo
 
 	confPath = "/kuma/kuma-cp.conf"
 

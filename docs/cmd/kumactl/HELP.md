@@ -226,13 +226,19 @@ Flags:
       --admission-server-tls-cert string    TLS certificate for the admission web hooks implemented by the Kuma Control Plane
       --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
       --cni-enabled                         install Kuma with CNI instead of proxy init container
-      --cni-image string                    image of Kuma CNI component, if CNIEnabled equals true (default "lobkovilya/install-cni")
-      --cni-version string                  version of the CNIImage (default "0.0.1")
-      --control-plane-image string          image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io/kuma-cp")
+      --cni-registry string                 registry for the image of the Kuma CNI component (default "docker.io")
+      --cni-repository string               repository for the image of the Kuma CNI component (default "lobkovilya/install-cni")
+      --cni-version string                  version of the image of the Kuma CNI component (default "0.0.1")
+      --control-plane-registry string       registry for the image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io")
+      --control-plane-repository string     repository for the image of the Kuma Control Plane component (default "kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
-      --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")
-      --dataplane-image string              image of the Kuma Dataplane component (default "kong-docker-kuma-docker.bintray.io/kuma-dp")
-      --dataplane-init-image string         init image of the Kuma Dataplane component (default "kong-docker-kuma-docker.bintray.io/kuma-init")
+      --control-plane-version string        version of the image of the Kuma Control Plane component (default "latest")
+      --dataplane-init-registry string      registry for the init image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
+      --dataplane-init-repository string    repository for the init image of the Kuma DataPlane component (default "kuma-init")
+      --dataplane-init-version string       version of the init image of the Kuma DataPlane component (default "latest")
+      --dataplane-registry string           registry for the image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
+      --dataplane-repository string         repository for the image of the Kuma DataPlane component (default "kuma-dp")
+      --dataplane-version string            version of the image of the Kuma DataPlane component (default "latest")
   -h, --help                                help for control-plane
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")

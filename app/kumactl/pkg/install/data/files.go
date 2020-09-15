@@ -13,8 +13,9 @@ import (
 type FileList []File
 
 type File struct {
-	Data []byte
-	Name string
+	Data     []byte
+	Name     string
+	FullPath string
 }
 
 func (f File) String() string {
@@ -34,8 +35,9 @@ func ReadFiles(fs http.FileSystem) (FileList, error) {
 				return errors.Wrapf(err, "Failed to read file: %s", path)
 			}
 			file := File{
-				Data: data,
-				Name: fi.Name(),
+				Data:     data,
+				Name:     fi.Name(),
+				FullPath: path,
 			}
 			files = append(files, file)
 		}

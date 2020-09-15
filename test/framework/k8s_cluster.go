@@ -233,9 +233,9 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 // using the resources from the `kumactl install control-plane` command
 func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) error {
 	argsMap := map[string]string{
-		"--control-plane-image":  kumaCPImage,
-		"--dataplane-image":      kumaDPImage,
-		"--dataplane-init-image": kumaInitImage,
+		"--control-plane-registry":  kumaImageRegistry,
+		"--dataplane-registry":      kumaImageRegistry,
+		"--dataplane-init-registry": kumaImageRegistry,
 	}
 	switch mode {
 	case core.Remote:
