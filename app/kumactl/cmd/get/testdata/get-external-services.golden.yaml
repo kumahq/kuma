@@ -6,17 +6,9 @@ items:
   name: experiment
   networking:
     address: 127.0.0.1
-    inbound:
-    - port: 8080
-      servicePort: 80
-      tags:
-        service: mobile
-        version: v1
-    - port: 8090
-      servicePort: 90
-      tags:
-        service: metrics
-        version: v1
+  tags:
+    service: mobile
+    version: v1
   type: ExternalService
 - creationTime: 0001-01-01T00:00:00Z
   mesh: default
@@ -24,11 +16,8 @@ items:
   name: example
   networking:
     address: 127.0.0.2
-    inbound:
-    - port: 8080
-      servicePort: 80
-      tags:
-        service: web
-        version: v2
+  tags:
+    service: web
+    version: v2
   type: ExternalService
 next: null
