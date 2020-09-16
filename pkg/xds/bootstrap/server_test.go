@@ -2,6 +2,7 @@ package bootstrap
 
 import (
 	"context"
+	"crypto/tls"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -34,6 +35,10 @@ var _ = Describe("Bootstrap Server", func() {
 	var baseUrl string
 	var metrics core_metrics.Metrics
 
+	httpClient := &http.Client{
+		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
+	}
+
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
 		config = bootstrap_config.DefaultBootstrapParamsConfig()
@@ -41,12 +46,18 @@ var _ = Describe("Bootstrap Server", func() {
 		config.XdsPort = 5678
 
 		port, err := test.GetFreePort()
-		baseUrl = "http://localhost:" + strconv.Itoa(port)
+		baseUrl = "https://localhost:" + strconv.Itoa(port)
 		Expect(err).ToNot(HaveOccurred())
 		metrics, err = core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
+
 		server := BootstrapServer{
-			Port:      uint32(port),
+			Config: &bootstrap_config.BootstrapServerConfig{
+				Port:        uint32(port),
+				TlsCertFile: filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+				TlsKeyFile:  filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
+				Params:      config,
+			},
 			Generator: NewDefaultBootstrapGenerator(resManager, config, ""),
 			Metrics:   metrics,
 		}
@@ -57,7 +68,7 @@ var _ = Describe("Bootstrap Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 		}()
 		Eventually(func() bool {
-			resp, err := http.Get(baseUrl)
+			resp, err := httpClient.Get(baseUrl)
 			if err != nil {
 				return false
 			}
@@ -107,7 +118,7 @@ var _ = Describe("Bootstrap Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			resp, err := http.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(given.body))
+			resp, err := httpClient.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(given.body))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -148,7 +159,7 @@ var _ = Describe("Bootstrap Server", func() {
 		}
 		`
 
-		resp, err := http.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(json))
+		resp, err := httpClient.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(json))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
@@ -177,7 +188,7 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = http.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(`{ "mesh": "default", "name": "dp-1" }`))
+		_, err = httpClient.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(`{ "mesh": "default", "name": "dp-1" }`))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

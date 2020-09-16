@@ -16,6 +16,10 @@ type BootstrapServerConfig struct {
 	Port uint32 `yaml:"port" envconfig:"kuma_bootstrap_server_port"`
 	// Parameters of bootstrap configuration
 	Params *BootstrapParamsConfig `yaml:"params"`
+	// TlsCertFile defines a path to a file with PEM-encoded TLS cert.
+	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_bootstrap_server_tls_cert_file"`
+	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.
+	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_bootstrap_server_tls_key_file"`
 }
 
 func (b *BootstrapServerConfig) Sanitize() {
