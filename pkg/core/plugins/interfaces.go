@@ -47,12 +47,6 @@ type SecretStorePlugin interface {
 	NewSecretStore(PluginContext, PluginConfig) (secret_store.SecretStore, error)
 }
 
-// DiscoveryPlugin is responsible for discovering Dataplanes for given environment.
-type DiscoveryPlugin interface {
-	Plugin
-	StartDiscovering(PluginContext, PluginConfig) error
-}
-
 // RuntimePlugin is responsible for registering environment-specific components,
 // e.g. Kubernetes admission web hooks.
 type RuntimePlugin interface {

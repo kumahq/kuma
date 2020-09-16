@@ -60,9 +60,6 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		system.ConfigType: builder.ConfigStore(),
 	}))
 
-	if err := initializeDiscovery(cfg, builder); err != nil {
-		return nil, err
-	}
 	if err := initializeConfigManager(cfg, builder); err != nil {
 		return nil, err
 	}
@@ -237,29 +234,6 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 		builder.WithConfigStore(cs)
 		return nil
 	}
-}
-
-func initializeDiscovery(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	var pluginName core_plugins.PluginName
-	var pluginConfig core_plugins.PluginConfig
-	switch cfg.Environment {
-	case config_core.KubernetesEnvironment:
-		pluginName = core_plugins.Kubernetes
-		pluginConfig = nil
-	case config_core.UniversalEnvironment:
-		// there is no discovery mechanism for Universal. Dataplanes are applied via API
-		return nil
-	default:
-		return errors.Errorf("unknown environment type %s", cfg.Environment)
-	}
-	plugin, err := core_plugins.Plugins().Discovery(pluginName)
-	if err != nil {
-		return err
-	}
-	if err := plugin.StartDiscovering(builder, pluginConfig); err != nil {
-		return err
-	}
-	return nil
 }
 
 func initializeXds(builder *core_runtime.Builder) {

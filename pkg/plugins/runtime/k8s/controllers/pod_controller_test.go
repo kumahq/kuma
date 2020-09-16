@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/plugins/discovery/k8s/controllers"
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 
 	"github.com/kumahq/kuma/pkg/core"
 

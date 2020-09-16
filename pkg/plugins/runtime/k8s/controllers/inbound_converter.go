@@ -8,7 +8,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/discovery/k8s/util"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core.Service) ([]*mesh_proto.Dataplane_Networking_Inbound, error) {

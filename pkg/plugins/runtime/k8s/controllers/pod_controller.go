@@ -25,7 +25,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	injector_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 
-	util_k8s "github.com/kumahq/kuma/pkg/plugins/discovery/k8s/util"
+	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 const (

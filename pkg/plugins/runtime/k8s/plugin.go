@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
+
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -66,7 +68,13 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	if err := addNamespaceReconciler(mgr, rt); err != nil {
 		return err
 	}
-	return addMeshReconciler(mgr, rt)
+	if err := addMeshReconciler(mgr, rt); err != nil {
+		return err
+	}
+	if err := addPodReconciler(mgr, rt); err != nil {
+		return err
+	}
+	return nil
 }
 
 func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
@@ -95,6 +103,20 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		CaManagers:      rt.CaManagers(),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceManager: rt.ResourceManager(),
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	reconciler := &controllers.PodReconciler{
+		Client:        mgr.GetClient(),
+		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-generator"),
+		Scheme:        mgr.GetScheme(),
+		Log:           core.Log.WithName("controllers").WithName("Pod"),
+		PodConverter: controllers.PodConverter{
+			ServiceGetter: mgr.GetClient(),
+			Zone:          rt.Config().Multicluster.Remote.Zone,
+		},
 	}
 	return reconciler.SetupWithManager(mgr)
 }

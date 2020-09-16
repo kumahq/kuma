@@ -16,7 +16,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 
-	. "github.com/kumahq/kuma/pkg/plugins/discovery/k8s/controllers"
+	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
