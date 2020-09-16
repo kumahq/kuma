@@ -2,6 +2,7 @@ package dns
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -115,8 +116,10 @@ func (d *vipsAllocator) allocateVIPs(services map[string]bool) (errs error) {
 				errs = multierr.Append(errs, errors.Wrapf(err, "unable to allocate an ip for service %s", service))
 			} else {
 				viplist[service] = ip
+				serviceAlternative := strings.ReplaceAll(service, "_", "-")
+				viplist[serviceAlternative] = ip
 				change = true
-				vipsAllocatorLog.Info("Adding", "service", service, "ip", ip)
+				vipsAllocatorLog.Info("Adding", "service", service, "altname", serviceAlternative, "ip", ip)
 			}
 		}
 	}
@@ -124,7 +127,9 @@ func (d *vipsAllocator) allocateVIPs(services map[string]bool) (errs error) {
 	// ensure all entries in the domain are present in the service list, and delete them otherwise
 	for service := range viplist {
 		_, found := services[service]
-		if !found {
+		serviceAlternative := strings.ReplaceAll(service, "-", "_")
+		_, foundAlternative := services[serviceAlternative]
+		if !found && !foundAlternative {
 			ip := viplist[service]
 			change = true
 			vipsAllocatorLog.Info("Removing", "service", service, "ip", ip)
