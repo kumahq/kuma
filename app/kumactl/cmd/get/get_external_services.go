@@ -63,7 +63,7 @@ func printExternalServices(rootTime time.Time, externalServices *mesh.ExternalSe
 				return []string{
 					dataplane.Meta.GetMesh(),                                        // MESH
 					dataplane.Meta.GetName(),                                        // NAME,
-					dataplane.Spec.Tags().String(),                                  // TAGS
+					dataplane.Spec.TagSet().String(),                                // TAGS
 					table.TimeSince(dataplane.Meta.GetModificationTime(), rootTime), // AGE
 
 				}

@@ -42,24 +42,10 @@ var _ = Describe("kumactl get external-services", func() {
 				Spec: mesh_proto.ExternalService{
 					Networking: &mesh_proto.ExternalService_Networking{
 						Address: "127.0.0.1",
-						Inbound: []*mesh_proto.ExternalService_Networking_Inbound{
-							{
-								Port:        8080,
-								ServicePort: 80,
-								Tags: map[string]string{
-									"service": "mobile",
-									"version": "v1",
-								},
-							},
-							{
-								Port:        8090,
-								ServicePort: 90,
-								Tags: map[string]string{
-									"service": "metrics",
-									"version": "v1",
-								},
-							},
-						},
+					},
+					Tags: map[string]string{
+						"service": "mobile",
+						"version": "v1",
 					},
 				},
 			},
@@ -71,16 +57,10 @@ var _ = Describe("kumactl get external-services", func() {
 				Spec: mesh_proto.ExternalService{
 					Networking: &mesh_proto.ExternalService_Networking{
 						Address: "127.0.0.2",
-						Inbound: []*mesh_proto.ExternalService_Networking_Inbound{
-							{
-								Port:        8080,
-								ServicePort: 80,
-								Tags: map[string]string{
-									"service": "web",
-									"version": "v2",
-								},
-							},
-						},
+					},
+					Tags: map[string]string{
+						"service": "web",
+						"version": "v2",
 					},
 				},
 			},

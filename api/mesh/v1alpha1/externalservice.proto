@@ -4,55 +4,20 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "v1alpha1";
 
-import "mesh/v1alpha1/metrics.proto";
-
 import "validate/validate.proto";
 
-// Dataplane defines configuration of a side-car proxy.
+// ExternalService defines configuration of the externaly accessible service
 message ExternalService {
 
-  // Networking describes inbound and outbound interfaces of a dataplane.
+  // Networking describes the properties of the external service connectivity
   message Networking {
-
-    // Public IP on which the dataplane is accessible in the network.
-    // Host names and DNS are not allowed.
+    // Address of the external service
     string address = 1;
-
-    // Inbound describes a service implemented by the dataplane.
-    message Inbound {
-      // Address on which inbound listener will be exposed. Defaults to
-      // networking.address.
-      string address = 1;
-
-      // Port of the inbound interface that will forward requests to the
-      // service.
-      uint32 port = 2;
-
-      // Address of the service that requests will be forwarded to.
-      // Empty value defaults to '127.0.0.1', since Kuma DP should be deployed
-      // next to service.
-      string serviceAddress = 3;
-
-      // Port of the service that requests will be forwarded to.
-      uint32 servicePort = 4;
-
-      // Tags associated with an application this dataplane is deployed next to,
-      // e.g. service=web, version=1.0.
-      // `service` tag is mandatory.
-      map<string, string> tags = 5 [ (validate.rules).map.min_pairs = 1 ];
-    }
-
-    // Inbound describes a list of inbound interfaces of the dataplane.
-    repeated Inbound inbound = 2;
   }
 
-  // Networking describes inbound and outbound interfaces of the dataplane.
   Networking networking = 1;
 
-  // Configuration for metrics that should be collected and exposed by the
-  // dataplane.
-  //
-  // Settings defined here will override their respective defaults
-  // defined at a Mesh level.
-  MetricsBackend metrics = 2;
+  // Tags associated with the external service,
+  // e.g. kuma.io/service=web, kuma.io/protocol, version=1.0.
+  map<string, string> tags = 5 [ (validate.rules).map.min_pairs = 1 ];
 }

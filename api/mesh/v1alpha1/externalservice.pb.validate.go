@@ -54,13 +54,10 @@ func (m *ExternalService) Validate() error {
 		}
 	}
 
-	if v, ok := interface{}(m.GetMetrics()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ExternalServiceValidationError{
-				field:  "Metrics",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
+	if len(m.GetTags()) < 1 {
+		return ExternalServiceValidationError{
+			field:  "Tags",
+			reason: "value must contain at least 1 pair(s)",
 		}
 	}
 
@@ -131,21 +128,6 @@ func (m *ExternalService_Networking) Validate() error {
 
 	// no validation rules for Address
 
-	for idx, item := range m.GetInbound() {
-		_, _ = idx, item
-
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ExternalService_NetworkingValidationError{
-					field:  fmt.Sprintf("Inbound[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
 	return nil
 }
 
@@ -204,86 +186,3 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ExternalService_NetworkingValidationError{}
-
-// Validate checks the field values on ExternalService_Networking_Inbound with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, an error is returned.
-func (m *ExternalService_Networking_Inbound) Validate() error {
-	if m == nil {
-		return nil
-	}
-
-	// no validation rules for Address
-
-	// no validation rules for Port
-
-	// no validation rules for ServiceAddress
-
-	// no validation rules for ServicePort
-
-	if len(m.GetTags()) < 1 {
-		return ExternalService_Networking_InboundValidationError{
-			field:  "Tags",
-			reason: "value must contain at least 1 pair(s)",
-		}
-	}
-
-	return nil
-}
-
-// ExternalService_Networking_InboundValidationError is the validation error
-// returned by ExternalService_Networking_Inbound.Validate if the designated
-// constraints aren't met.
-type ExternalService_Networking_InboundValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ExternalService_Networking_InboundValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ExternalService_Networking_InboundValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ExternalService_Networking_InboundValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ExternalService_Networking_InboundValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ExternalService_Networking_InboundValidationError) ErrorName() string {
-	return "ExternalService_Networking_InboundValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ExternalService_Networking_InboundValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sExternalService_Networking_Inbound.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ExternalService_Networking_InboundValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ExternalService_Networking_InboundValidationError{}
