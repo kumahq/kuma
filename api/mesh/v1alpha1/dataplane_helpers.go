@@ -289,7 +289,7 @@ func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 	return set
 }
 
-func (d *Dataplane) Tags() MultiValueTagSet {
+func (d *Dataplane) TagSet() MultiValueTagSet {
 	tags := MultiValueTagSet{}
 	for _, inbound := range d.GetNetworking().GetInbound() {
 		for tag, value := range inbound.Tags {
@@ -311,7 +311,7 @@ func (d *Dataplane) Tags() MultiValueTagSet {
 }
 
 func (d *Dataplane) GetIdentifyingService() string {
-	services := d.Tags().Values(ServiceTag)
+	services := d.TagSet().Values(ServiceTag)
 	if len(services) > 0 {
 		return services[0]
 	}

@@ -284,8 +284,8 @@ type Dataplane_Networking_Inbound struct {
 	// networking.address.
 	Address string `protobuf:"bytes,5,opt,name=address,proto3" json:"address,omitempty"`
 	// Tags associated with an application this dataplane is deployed next to,
-	// e.g. service=web, version=1.0.
-	// `service` tag is mandatory.
+	// e.g. kuma.io/service=web, version=1.0.
+	// `kuma.io/service` tag is mandatory.
 	Tags                 map[string]string `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`

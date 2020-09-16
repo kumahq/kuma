@@ -227,7 +227,7 @@ func (_ OutboundProxyGenerator) generateRDS(proxy *model.Proxy, subsets []envoy_
 
 	return envoy_routes.NewRouteConfigurationBuilder().
 		Configure(envoy_routes.CommonRouteConfiguration(envoy_names.GetOutboundRouteName(serviceName))).
-		Configure(envoy_routes.TagsHeader(proxy.Dataplane.Spec.Tags())).
+		Configure(envoy_routes.TagsHeader(proxy.Dataplane.Spec.TagSet())).
 		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder().
 			Configure(envoy_routes.CommonVirtualHost(serviceName)).
 			Configure(envoy_routes.DefaultRoute(subsets...)))).
