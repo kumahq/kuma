@@ -120,11 +120,12 @@ var _ = Describe("SDS Server", func() {
 		// retrieve example DP token
 		tokenIssuer, err := tokens_builtin.NewDataplaneTokenIssuer(runtime)
 		Expect(err).ToNot(HaveOccurred())
-		dpCredential, err = tokenIssuer.Generate(tokens_issuer.DataplaneIdentity{
+		token, err := tokenIssuer.Generate(tokens_issuer.DataplaneIdentity{
 			Name: dpRes.GetMeta().GetName(),
 			Mesh: dpRes.GetMeta().GetMesh(),
 		})
 		Expect(err).ToNot(HaveOccurred())
+		dpCredential = sds_auth.Credential(token)
 
 		// start the runtime
 		Expect(server.SetupServer(runtime)).To(Succeed())

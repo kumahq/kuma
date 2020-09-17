@@ -114,6 +114,24 @@ type IngressDesc struct {
 	IP   string
 }
 
+func IngressUniversal(token string) InstallFunc {
+	return func(cluster Cluster) error {
+		uniCluster := cluster.(*UniversalCluster)
+		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, true, []string{}, []string{})
+		if err != nil {
+			return err
+		}
+		err = app.mainApp.Start()
+		if err != nil {
+			return err
+		}
+		uniCluster.apps[AppIngress] = app
+
+		dpyaml := fmt.Sprintf(IngressDataplane, kdsPort)
+		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token)
+	}
+}
+
 func Ingress(ingress *IngressDesc) InstallFunc {
 	const name = "kuma-ingress"
 	if ingress == nil {

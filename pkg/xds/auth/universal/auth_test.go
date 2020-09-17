@@ -7,16 +7,14 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/xds"
+	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/sds/auth"
-	"github.com/kumahq/kuma/pkg/sds/auth/universal"
-	"github.com/kumahq/kuma/pkg/sds/server"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/xds/auth"
+	"github.com/kumahq/kuma/pkg/xds/auth/universal"
 )
 
 var _ = Describe("Authentication flow", func() {
@@ -26,41 +24,43 @@ var _ = Describe("Authentication flow", func() {
 		return privateKey, nil
 	})
 	var authenticator auth.Authenticator
-	var resStore store.ResourceStore
+	var resStore core_store.ResourceStore
 
-	BeforeEach(func() {
-		resStore = memory.NewStore()
-		authenticator = universal.NewAuthenticator(
-			issuer,
-			server.DefaultDataplaneResolver(manager.NewResourceManager(resStore)),
-		)
-
-		dpRes := core_mesh.DataplaneResource{
-			Spec: v1alpha1.Dataplane{
-				Networking: &v1alpha1.Dataplane_Networking{
-					Address: "127.0.0.1",
-					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
-						{
-							Port:        8080,
-							ServicePort: 8081,
-							Tags: map[string]string{
-								"kuma.io/service":  "web",
-								"kuma.io/protocol": "http",
-							},
+	dpRes := core_mesh.DataplaneResource{
+		Meta: &test_model.ResourceMeta{
+			Mesh: "dp-1",
+			Name: "default",
+		},
+		Spec: mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "127.0.0.1",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port:        8080,
+						ServicePort: 8081,
+						Tags: map[string]string{
+							"kuma.io/service":  "web",
+							"kuma.io/protocol": "http",
 						},
-						{
-							Port:        8090,
-							ServicePort: 8091,
-							Tags: map[string]string{
-								"kuma.io/service":  "web-api",
-								"kuma.io/protocol": "http",
-							},
+					},
+					{
+						Port:        8090,
+						ServicePort: 8091,
+						Tags: map[string]string{
+							"kuma.io/service":  "web-api",
+							"kuma.io/protocol": "http",
 						},
 					},
 				},
 			},
-		}
-		err := resStore.Create(context.Background(), &dpRes, store.CreateByKey("dp-1", "default"))
+		},
+	}
+
+	BeforeEach(func() {
+		resStore = memory.NewStore()
+		authenticator = universal.NewAuthenticator(issuer)
+
+		err := resStore.Create(context.Background(), &dpRes, core_store.CreateByKey("dp-1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -73,15 +73,10 @@ var _ = Describe("Authentication flow", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			authIdentity, err := authenticator.Authenticate(context.Background(), xds.ProxyId{
-				Mesh: "default",
-				Name: "dp-1",
-			}, auth.Credential(credential))
+			err = authenticator.Authenticate(context.Background(), &dpRes, credential)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(authIdentity.Services[0]).To(Equal("web"))
-			Expect(authIdentity.Mesh).To(Equal("default"))
 		},
 		Entry("should auth with token bound to nothing", builtin_issuer.DataplaneIdentity{
 			Name: "",
@@ -119,11 +114,7 @@ var _ = Describe("Authentication flow", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			authId := xds.ProxyId{
-				Mesh: "default",
-				Name: "dp-1",
-			}
-			_, err = authenticator.Authenticate(context.Background(), authId, auth.Credential(token))
+			err = authenticator.Authenticate(context.Background(), &dpRes, token)
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -178,37 +169,10 @@ var _ = Describe("Authentication flow", func() {
 
 	It("should throw an error on invalid token", func() {
 		// when
-		id := xds.ProxyId{
-			Mesh: "default",
-			Name: "dp-1",
-		}
-		_, err := authenticator.Authenticate(context.Background(), id, "this-is-not-valid-jwt-token")
+		err := authenticator.Authenticate(context.Background(), &dpRes, "this-is-not-valid-jwt-token")
 
 		// then
 		Expect(err).To(MatchError("could not parse token: token contains an invalid number of segments"))
-	})
-
-	It("should throw an error when dataplane is not present in CP", func() {
-		// given
-		id := builtin_issuer.DataplaneIdentity{
-			Mesh: "default",
-			Name: "non-existent-dp",
-		}
-
-		// when
-		token, err := issuer.Generate(id)
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// when
-		_, err = authenticator.Authenticate(context.Background(), xds.ProxyId{
-			Mesh: "default",
-			Name: "non-existent-dp",
-		}, auth.Credential(token))
-
-		// then
-		Expect(err).To(MatchError(`unable to find Dataplane for proxy "default.non-existent-dp": Resource not found: type="Dataplane" name="non-existent-dp" mesh="default"`))
 	})
 
 	It("should throw an error when signing key is not found", func() {

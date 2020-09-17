@@ -28,11 +28,10 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 }
 
 func autoconfigureServersTLS(cfg *kuma_cp.Config) {
-	//if cfg.XdsServer.TlsCertFile == "" {
-	//	cfg.XdsServer.TlsCertFile = cfg.General.TlsCertFile
-	//	cfg.XdsServer.TlsKeyFile = cfg.General.TlsKeyFile
-	//}
-	// todo restore in the next PR
+	if cfg.XdsServer.TlsCertFile == "" {
+		cfg.XdsServer.TlsCertFile = cfg.General.TlsCertFile
+		cfg.XdsServer.TlsKeyFile = cfg.General.TlsKeyFile
+	}
 	if cfg.BootstrapServer.TlsCertFile == "" {
 		cfg.BootstrapServer.TlsCertFile = cfg.General.TlsCertFile
 		cfg.BootstrapServer.TlsKeyFile = cfg.General.TlsKeyFile

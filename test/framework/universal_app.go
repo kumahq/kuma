@@ -22,6 +22,7 @@ type AppMode string
 
 const (
 	AppModeCP         = "kuma-cp"
+	AppIngress        = "ingress"
 	AppModeEchoServer = "echo-server"
 	sshPort           = "22"
 
