@@ -26,13 +26,13 @@ reusable:
     master_workflow_filters: &master_workflow_filters
       filters:
         branches:
-          only: master
+          only: master, /^release-.*/
 
     # filters for the kuma-commit workflow
     commit_workflow_filters: &commit_workflow_filters
       filters:
         branches:
-          ignore: master, gh-pages
+          ignore: master, /^release-.*/, gh-pages
 
 executors:
   golang:
