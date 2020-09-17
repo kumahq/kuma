@@ -32,8 +32,7 @@ reusable:
     commit_workflow_filters: &commit_workflow_filters
       filters:
         branches:
-          # don't run on gh-pages
-          ignore: /gh-pages/
+          ignore: master, gh-pages
 
 executors:
   golang:
