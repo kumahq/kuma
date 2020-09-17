@@ -156,8 +156,10 @@ var _ = Describe("TrafficRoute", func() {
 				Items: []*mesh_core.DataplaneResource{backend, redisV1, redisV3, elasticEU, elasticUS},
 			}
 
+			externalServices := &mesh_core.ExternalServiceResourceList{}
+
 			// when
-			targets, err := GetOutboundTargets(destinations, dataplanes, "zone-1", defaultMeshWithMTLS)
+			targets, err := GetOutboundTargets(destinations, dataplanes, externalServices, "zone-1", defaultMeshWithMTLS)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -185,15 +187,16 @@ var _ = Describe("TrafficRoute", func() {
 
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
-			destinations core_xds.DestinationMap
-			dataplanes   []*mesh_core.DataplaneResource
-			mesh         *mesh_core.MeshResource
-			expected     core_xds.EndpointMap
+			destinations     core_xds.DestinationMap
+			dataplanes       []*mesh_core.DataplaneResource
+			externalServices []*mesh_core.ExternalServiceResource
+			mesh             *mesh_core.MeshResource
+			expected         core_xds.EndpointMap
 		}
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, "zone-1", given.mesh)
+				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, given.externalServices, "zone-1", given.mesh)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},

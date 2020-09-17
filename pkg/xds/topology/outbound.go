@@ -7,15 +7,21 @@ import (
 )
 
 // GetOutboundTargets resolves all endpoints reachable from a given dataplane.
-func GetOutboundTargets(destinations core_xds.DestinationMap, dataplanes *mesh_core.DataplaneResourceList, localClusterName string, mesh *mesh_core.MeshResource) (core_xds.EndpointMap, error) {
+func GetOutboundTargets(destinations core_xds.DestinationMap,
+	dataplanes *mesh_core.DataplaneResourceList,
+	externalServices *mesh_core.ExternalServiceResourceList,
+	localClusterName string, mesh *mesh_core.MeshResource) (core_xds.EndpointMap, error) {
 	if len(destinations) == 0 {
 		return nil, nil
 	}
-	return BuildEndpointMap(destinations, dataplanes.Items, localClusterName, mesh), nil
+	return BuildEndpointMap(destinations, dataplanes.Items, externalServices.Items, localClusterName, mesh), nil
 }
 
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
-func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_core.DataplaneResource, zone string, mesh *mesh_core.MeshResource) core_xds.EndpointMap {
+func BuildEndpointMap(destinations core_xds.DestinationMap,
+	dataplanes []*mesh_core.DataplaneResource,
+	externalServices []*mesh_core.ExternalServiceResource,
+	zone string, mesh *mesh_core.MeshResource) core_xds.EndpointMap {
 	if len(destinations) == 0 {
 		return nil
 	}
@@ -63,6 +69,23 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 					Weight: 1,
 				})
 			}
+		}
+
+		for _, externalService := range externalServices {
+			service := externalService.Spec.Tags[mesh_proto.ServiceTag]
+			selectors, ok := destinations[service]
+			if !ok {
+				continue
+			}
+			if !selectors.Matches(externalService.Spec.Tags) {
+				continue
+			}
+			outbound[service] = append(outbound[service], core_xds.Endpoint{
+				Target: externalService.Spec.GetHost(),
+				Port:   externalService.Spec.GetPortUInt32(),
+				Tags:   externalService.Spec.GetTags(),
+				Weight: 1,
+			})
 		}
 	}
 	return outbound

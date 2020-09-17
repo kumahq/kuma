@@ -181,7 +181,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
-				dataplanes, err := xds_topology.GetDataplanes(log, ctx, rt.ReadOnlyResourceManager(), rt.LookupIP(), dataplane.Meta.GetMesh())
+				dataplanes, externalServices, err := xds_topology.GetDataplanes(log, ctx, rt.ReadOnlyResourceManager(), rt.LookupIP(), dataplane.Meta.GetMesh())
 				if err != nil {
 					return err
 				}
@@ -211,7 +211,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, rt.Config().Multicluster.Remote.Zone, mesh)
+				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, externalServices, rt.Config().Multicluster.Remote.Zone, mesh)
 				if err != nil {
 					return err
 				}
