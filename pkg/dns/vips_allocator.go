@@ -127,14 +127,14 @@ func (d *vipsAllocator) allocateVIPs(services map[string]bool) (errs error) {
 	// ensure all entries in the domain are present in the service list, and delete them otherwise
 	for service := range viplist {
 		_, found := services[service]
-		serviceAlternative := strings.ReplaceAll(service, "-", "_")
-		_, foundAlternative := services[serviceAlternative]
-		if !found && !foundAlternative {
+		if !found && strings.Contains(service, "_"){
 			ip := viplist[service]
 			change = true
 			vipsAllocatorLog.Info("Removing", "service", service, "ip", ip)
 			_ = d.ipam.FreeIP(ip)
 			delete(viplist, service)
+			serviceAlternative := strings.ReplaceAll(service, "_", "-")
+			delete(viplist, serviceAlternative)
 		}
 	}
 
