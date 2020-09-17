@@ -94,6 +94,20 @@ func (d *vipsAllocator) synchronize() error {
 				}
 			}
 		}
+
+		externalServices := core_mesh.ExternalServiceResourceList{}
+		err = d.rm.List(context.Background(), &externalServices, store.ListByMesh(mesh.Meta.GetName()))
+		if err != nil {
+			return err
+		}
+
+		for _, es := range externalServices.Items {
+			service := es.Spec.GetService()
+			if _, exists := serviceMap[service]; exists {
+				vipsAllocatorLog.V(0).Info("Overlapping Extrnal Service name", "service", service)
+			}
+			serviceMap[service] = true
+		}
 	}
 
 	return d.allocateVIPs(serviceMap)
