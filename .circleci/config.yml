@@ -606,7 +606,7 @@ workflows:
         <<: *commit_workflow_filters
         name: minikube_v1_14
         requires:
-          - release
+          - images
         # custom parameters
         kubernetes_version: v1.14.10
         use_local_kuma_images: true
