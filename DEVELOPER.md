@@ -162,7 +162,7 @@ make run/universal/postgres
 1. Build a `kumactl`
 ```bash
 make build/kumactl
-export PATH=`pwd`/build/artifacts/kumactl:$PATH
+export PATH=`pwd`/build/artifacts-$(go env GOOS)-$(go env GOARCH)/kumactl:$PATH
 ```
 
 2. Configure a `kumactl` with running Control Plane
