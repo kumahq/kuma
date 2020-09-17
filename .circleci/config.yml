@@ -660,14 +660,6 @@ workflows:
           use_local_kuma_images: true
       - example_minikube:
           <<: *master_workflow_filters
-          name: minikube_v1_13
-          requires:
-            - images
-          # custom parameters
-          kubernetes_version: v1.13.12
-          use_local_kuma_images: true
-      - example_minikube:
-          <<: *master_workflow_filters
           name: minikube_v1_14
           requires:
             - images
@@ -746,15 +738,6 @@ workflows:
         requires:
         - release
         # custom parameters
-        # docker images for a release build must be downloaded from a public Docker registry
-        use_local_kuma_images: false
-    - example_minikube:
-        <<: *release_workflow_filters
-        name: minikube_v1_13
-        requires:
-        - release
-        # custom parameters
-        kubernetes_version: v1.13.12
         # docker images for a release build must be downloaded from a public Docker registry
         use_local_kuma_images: false
     - example_minikube:
