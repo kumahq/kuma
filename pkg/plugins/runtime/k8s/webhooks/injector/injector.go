@@ -4,8 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
+
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 
 	"github.com/pkg/errors"
 
@@ -83,6 +86,43 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, i.NewInitContainer(pod))
 	}
 
+	if err := reconcileProbes(pod); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func reconcileProbes(pod *kube_core.Pod) error {
+	probePort := 9000
+	for _, c := range pod.Spec.Containers {
+		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
+			if err := reconcileProbe(c.LivenessProbe, probePort); err != nil {
+				return err
+			}
+		}
+		if c.ReadinessProbe != nil && c.ReadinessProbe.HTTPGet != nil {
+			if err := reconcileProbe(c.ReadinessProbe, probePort); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func reconcileProbe(probe *kube_core.Probe, probePort int) error {
+	if inbound, ok := probes.KumaProbe(*probe).ToInbound(); ok {
+		// we are dealing with a probe which is already virtual,
+		// all virtual probes should be presented in the dataplane
+		if inbound.Port() == probePort {
+			return errors.Errorf("can't reconcile Pod's probes, inbound port can't be equal to %d,"+
+				" it is reserved value for insecure probes port", probePort)
+		}
+		return nil
+	}
+	virtual := probes.KumaProbe(*probe).ToVirtual()
+	probe.HTTPGet.Port = intstr.FromInt(virtual.Port())
+	probe.HTTPGet.Path = virtual.Path()
 	return nil
 }
 

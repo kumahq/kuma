@@ -307,5 +307,21 @@ var _ = Describe("Injector", func() {
                   kuma.io/sidecar-injection: enabled
                   kuma.io/mesh: mesh-name-from-ns`,
 		}),
+		Entry("14. Adjust Pod's probes", testCase{
+			num: "14",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+		}),
 	)
 })

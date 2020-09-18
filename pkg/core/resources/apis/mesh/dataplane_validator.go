@@ -59,9 +59,6 @@ func validateProbes(probes *mesh_proto.Dataplane_Probes) validators.ValidationEr
 	if probes.Port < 1 || probes.Port > 65535 {
 		err.AddViolationAt(path.Field("port"), `port has to be in range of [1, 65535]`)
 	}
-	if len(probes.Endpoints) == 0 {
-		err.AddViolationAt(path.Field("endpoints"), `endpoints list has to contain at least one element`)
-	}
 	for i, endpoint := range probes.Endpoints {
 		indexPath := path.Field("endpoints").Index(i)
 		if endpoint.InboundPort < 1 || endpoint.InboundPort > 65535 {

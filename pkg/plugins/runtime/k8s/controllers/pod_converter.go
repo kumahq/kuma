@@ -4,6 +4,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
+
 	"github.com/pkg/errors"
 
 	kube_core "k8s.io/api/core/v1"
@@ -99,6 +101,12 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 	}
 	dataplane.Metrics = metrics
 
+	probes, err := ProbesFor(pod)
+	if err != nil {
+		return nil, err
+	}
+	dataplane.Probes = probes
+
 	return dataplane, nil
 }
 
@@ -155,5 +163,40 @@ func MetricsFor(pod *kube_core.Pod) (*mesh_proto.MetricsBackend, error) {
 	return &mesh_proto.MetricsBackend{
 		Type: mesh_proto.MetricsPrometheusType,
 		Conf: &str,
+	}, nil
+}
+
+func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
+	dpProbes := &mesh_proto.Dataplane_Probes{
+		Port: probes.ProbePort,
+	}
+	for _, c := range pod.Spec.Containers {
+		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
+			if endpoint, err := ProbeFor(c.LivenessProbe); err != nil {
+				return nil, err
+			} else {
+				dpProbes.Endpoints = append(dpProbes.Endpoints, endpoint)
+			}
+		}
+		if c.ReadinessProbe != nil && c.ReadinessProbe.HTTPGet != nil {
+			if endpoint, err := ProbeFor(c.ReadinessProbe); err != nil {
+				return nil, err
+			} else {
+				dpProbes.Endpoints = append(dpProbes.Endpoints, endpoint)
+			}
+		}
+	}
+	return dpProbes, nil
+}
+
+func ProbeFor(podProbe *kube_core.Probe) (*mesh_proto.Dataplane_Probes_Endpoint, error) {
+	inbound, ok := probes.KumaProbe(*podProbe).ToInbound()
+	if !ok {
+		return nil, errors.New("can't parse Pod's probe")
+	}
+	return &mesh_proto.Dataplane_Probes_Endpoint{
+		InboundPort: uint32(inbound.Port()),
+		InboundPath: inbound.Path(),
+		Path:        probes.KumaProbe(*podProbe).Path(),
 	}, nil
 }
