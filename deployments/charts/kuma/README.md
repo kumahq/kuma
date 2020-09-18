@@ -27,8 +27,8 @@ The chart supports Helm v3+.
 | `controlPlane.globalRemoteSyncService.annotations` | Additional annotations to put on the Global-Remote Sync service                   | {}                                                       |
 | `controlPlane.defaults.skipMeshCreation`           | Whether or not to skip creating the default Mesh                                  | `true`                                                   |
 | `controlPlane.resources`                           | The K8s resources spec for Kuma CP                                                | nil, differs based on mode                               |
-| `controlPlane.tls.{admission,sds,kds}.cert`        | TLS certificate for the Admission, SDS, and KDS servers, respectively             | nil, generated and self-signed                           |
-| `controlPlane.tls.{admission,sds,kds}.key`         | TLS key for the Admission, SDS, and KDS servers, respectively                     | nil, generated and self-signed                           |
+| `controlPlane.tls.cert`                            | TLS certificate for the all Kuma servers                                          | nil, generated and self-signed                           |
+| `controlPlane.tls.key`                             | TLS key for the all Kuma servers                                                  | nil, generated and self-signed                           |
 | `controlPlane.image.pullPolicy`                    | Kuma CP ImagePullPolicy                                                           | `IfNotPresent`                                           |
 | `controlPlane.image.registry`                      | Kuma CP image registry                                                            | nil, uses global                                         |
 | `controlPlane.image.repository`                    | Kuma CP image repository                                                          | `kuma-cp`                                                |
