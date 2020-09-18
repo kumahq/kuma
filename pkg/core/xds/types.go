@@ -41,10 +41,11 @@ type DestinationMap map[ServiceName]TagSelectorSet
 
 // Endpoint holds routing-related information about a single endpoint.
 type Endpoint struct {
-	Target string
-	Port   uint32
-	Tags   map[string]string
-	Weight uint32
+	Target            string
+	Port              uint32
+	Tags              map[string]string
+	Weight            uint32
+	IsExternalService bool
 }
 
 // EndpointList is a list of Endpoints with convenience methods.

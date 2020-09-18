@@ -81,10 +81,11 @@ func BuildEndpointMap(destinations core_xds.DestinationMap,
 				continue
 			}
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
-				Target: externalService.Spec.GetHost(),
-				Port:   externalService.Spec.GetPortUInt32(),
-				Tags:   externalService.Spec.GetTags(),
-				Weight: 1,
+				Target:            externalService.Spec.GetHost(),
+				Port:              externalService.Spec.GetPortUInt32(),
+				Tags:              externalService.Spec.GetTags(),
+				Weight:            1,
+				IsExternalService: true,
 			})
 		}
 	}

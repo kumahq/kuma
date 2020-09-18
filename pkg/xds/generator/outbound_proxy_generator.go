@@ -213,11 +213,19 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 			// 0 assumes no traffic is passed there. Envoy doesn't support 0 weight, so instead of passing it to Envoy we just skip such cluster.
 			continue
 		}
-		subsets = append(subsets, envoy_common.ClusterSubset{
+
+		subset := envoy_common.ClusterSubset{
 			ClusterName: service,
 			Weight:      destination.Weight,
 			Tags:        destination.Destination,
-		})
+		}
+		for _, ep := range proxy.OutboundTargets[service] {
+			if ep.IsExternalService {
+				subset.IsExternalService = true
+				break
+			}
+		}
+		subsets = append(subsets, subset)
 	}
 	return
 }
