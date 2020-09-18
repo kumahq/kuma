@@ -243,8 +243,8 @@ Flags:
       --kds-global-address string           URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
       --mode string                         kuma cp modes: one of standalone|remote|global (default "standalone")
       --namespace string                    namespace to install Kuma Control Plane to (default "kuma-system")
-      --tls-cert string                     TLS certificate for the admission web hooks implemented by the Kuma Control Plane
-      --tls-key string                      TLS key for the admission web hooks implemented by the Kuma Control Plane
+      --tls-cert string                     TLS certificate for Kuma Control Plane servers
+      --tls-key string                      TLS key for Kuma Control Plane servers
       --use-node-port                       use NodePort instead of LoadBalancer
       --zone string                         set the Kuma zone name
 
