@@ -138,14 +138,20 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		tags := clusters.Tags(clusterName)
 		healthCheck := proxy.HealthChecks[serviceName]
 		circuitBreaker := proxy.CircuitBreakers[serviceName]
-		edsCluster, err := envoy_clusters.NewClusterBuilder().
-			Configure(envoy_clusters.EdsCluster(clusterName)).
+		edsClusterBuilder := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.LbSubset(o.lbSubsets(tags))).
 			Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, tags)).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
-			Configure(envoy_clusters.HealthCheck(healthCheck)).
-			Configure(envoy_clusters.Http2()).
-			Build()
+			Configure(envoy_clusters.HealthCheck(healthCheck))
+
+		if clusters.Get(clusterName).HasExternalService() {
+			edsClusterBuilder = edsClusterBuilder.Configure(envoy_clusters.StrictDNSCluster(clusterName, proxy.OutboundTargets[serviceName]))
+		} else {
+			edsClusterBuilder = edsClusterBuilder.
+				Configure(envoy_clusters.EdsCluster(clusterName)).
+				Configure(envoy_clusters.Http2())
+		}
+		edsCluster, err := edsClusterBuilder.Build()
 		if err != nil {
 			return nil, err
 		}
@@ -175,13 +181,15 @@ func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]strin
 func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters envoy_common.Clusters) *model.ResourceSet {
 	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
-		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
-		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])
-		loadAssignment := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints)
-		resources.Add(&model.Resource{
-			Name:     clusterName,
-			Resource: loadAssignment,
-		})
+		if !clusters.Get(clusterName).HasExternalService() {
+			serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
+			endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])
+			loadAssignment := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints)
+			resources.Add(&model.Resource{
+				Name:     clusterName,
+				Resource: loadAssignment,
+			})
+		}
 	}
 	return resources
 }
