@@ -128,6 +128,9 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
 	}
+	if err := listener.Validate(); err != nil {
+		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
+	}
 	return listener, nil
 }
 

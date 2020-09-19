@@ -100,6 +100,9 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	if err != nil {
 		return nil, err
 	}
+	if err := listener.Validate(); err != nil {
+		return nil, err
+	}
 	cluster, err := envoy_clusters.NewClusterBuilder().
 		Configure(envoy_clusters.StaticCluster(envoyAdminClusterName, adminAddress, adminPort)).
 		Build()

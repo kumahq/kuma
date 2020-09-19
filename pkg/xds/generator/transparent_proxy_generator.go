@@ -36,6 +36,10 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener: %s", outboundName)
 	}
+	if err := listener.Validate(); err != nil {
+		return nil, errors.Wrapf(err, "could not generate listener: %s", outboundName)
+	}
+
 	cluster, err := envoy_clusters.NewClusterBuilder().
 		Configure(envoy_clusters.PassThroughCluster(outboundName)).
 		Build()
@@ -60,6 +64,9 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {
+		return nil, errors.Wrapf(err, "could not generate listener: %s", inboundName)
+	}
+	if err := inboundListener.Validate(); err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener: %s", inboundName)
 	}
 

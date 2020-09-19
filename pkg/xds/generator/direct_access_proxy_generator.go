@@ -56,6 +56,9 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		if err != nil {
 			return nil, err
 		}
+		if err := listener.Validate(); err != nil {
+			return nil, err
+		}
 		resources.Add(&core_xds.Resource{
 			Name:     listener.Name,
 			Origin:   OriginDirectAccess,

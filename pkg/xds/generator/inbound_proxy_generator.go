@@ -86,6 +86,9 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
 		}
+		if err := inboundListener.Validate(); err != nil {
+			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
+		}
 		resources.Add(&model.Resource{
 			Name:     inboundListenerName,
 			Resource: inboundListener,

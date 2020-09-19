@@ -36,6 +36,9 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 	if err != nil {
 		return nil, err
 	}
+	if err := listener.Validate(); err != nil {
+		return nil, err
+	}
 	resources.Add(&model.Resource{
 		Name:     listener.Name,
 		Origin:   OriginIngress,
