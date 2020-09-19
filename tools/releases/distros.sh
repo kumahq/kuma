@@ -6,7 +6,7 @@ GOARCH=( amd64 )
 
 # first component is the distribution name, second is the system - must map to
 # valid $GOOS values
-DISTRIBUTIONS=(debian:linux ubuntu:linux rhel:linux centos:linux darwin:darwin)
+DISTRIBUTIONS=(debian:linux ubuntu:linux rhel:linux centos:linux darwin:darwin amazonlinux:linux)
 
 
 BINTRAY_ENDPOINT="https://api.bintray.com/"
