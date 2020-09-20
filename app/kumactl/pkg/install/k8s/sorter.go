@@ -3,9 +3,10 @@ package k8s
 import (
 	"log"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/releaseutil"
+
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
 
 func SortResourcesByKind(files []data.File) []data.File {
