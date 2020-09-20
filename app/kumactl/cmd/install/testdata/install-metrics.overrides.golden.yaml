@@ -57,6 +57,59 @@ spec:
   readOnlyRootFilesystem: false
 ---
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    component: "alertmanager"
+    app: prometheus
+  name: prometheus-alertmanager
+  namespace: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    component: "kube-state-metrics"
+    app: prometheus
+  name: prometheus-kube-state-metrics
+  namespace: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    component: "node-exporter"
+    app: prometheus
+  name: prometheus-node-exporter
+  namespace: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    component: "pushgateway"
+    app: prometheus
+  name: prometheus-pushgateway
+  namespace: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    component: "server"
+    app: prometheus
+  name: prometheus-server
+  namespace: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: grafana
+  name: grafana
+  namespace: kuma
+---
+apiVersion: v1
 kind: ConfigMap
 metadata:
   name: grafana
@@ -8344,59 +8397,6 @@ spec:
   resources:
     requests:
       storage: "8Gi"
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    component: "alertmanager"
-    app: prometheus
-  name: prometheus-alertmanager
-  namespace: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    component: "kube-state-metrics"
-    app: prometheus
-  name: prometheus-kube-state-metrics
-  namespace: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    component: "node-exporter"
-    app: prometheus
-  name: prometheus-node-exporter
-  namespace: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    component: "pushgateway"
-    app: prometheus
-  name: prometheus-pushgateway
-  namespace: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    component: "server"
-    app: prometheus
-  name: prometheus-server
-  namespace: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app: grafana
-  name: grafana
-  namespace: kuma
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRole
