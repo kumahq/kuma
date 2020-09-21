@@ -41,7 +41,7 @@ var _ = Describe("Global Sync", func() {
 		for i := 0; i < 2; i++ {
 			wg.Add(1)
 			remoteStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(remoteStore, wg, fmt.Sprintf("cluster-%d", i), kds.SupportedTypes, reconcile.Any)
+			serverStream := kds_setup.StartServer(remoteStore, wg, fmt.Sprintf("cluster-%d", i), fmt.Sprintf("localhost-%d", i), kds.SupportedTypes, reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
 			remoteStores = append(remoteStores, remoteStore)
 		}

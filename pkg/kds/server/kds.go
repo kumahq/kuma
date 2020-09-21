@@ -30,8 +30,8 @@ type Server interface {
 	mesh_proto.KumaDiscoveryServiceServer
 }
 
-func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks, log logr.Logger, clusterID string) Server {
-	return &server{cache: config, callbacks: callbacks, log: log, clusterID: clusterID}
+func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks, log logr.Logger, clusterID string, instanceID string) Server {
+	return &server{cache: config, callbacks: callbacks, log: log, clusterID: clusterID, instanceID: instanceID}
 }
 
 // server is a simplified version of the original XDS server at
@@ -45,7 +45,8 @@ type server struct {
 
 	log logr.Logger
 
-	clusterID string
+	clusterID 	string
+	instanceID 	string
 }
 
 type stream interface {
@@ -143,7 +144,7 @@ func (values watches) Cancel() {
 	}
 }
 
-func createResponse(resp *envoy_cache.Response, typeURL string, clusterID string) (*envoy.DiscoveryResponse, error) {
+func createResponse(resp *envoy_cache.Response, typeURL string, clusterID string, instanceID string) (*envoy.DiscoveryResponse, error) {
 	if resp == nil {
 		return nil, errors.New("missing response")
 	}
@@ -164,7 +165,7 @@ func createResponse(resp *envoy_cache.Response, typeURL string, clusterID string
 	}
 	out := &envoy.DiscoveryResponse{
 		ControlPlane: &envoy_core.ControlPlane{
-			Identifier: clusterID,
+			Identifier: instanceID,
 		},
 		VersionInfo: resp.Version,
 		Resources:   resources,
@@ -200,7 +201,7 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 
 	// sends a response by serializing to protobuf Any
 	send := func(resp envoy_cache.Response, resourceType model.ResourceType) (string, error) {
-		out, err := createResponse(&resp, string(resourceType), s.clusterID)
+		out, err := createResponse(&resp, string(resourceType), s.clusterID, s.instanceID)
 		if err != nil {
 			return "", err
 		}
@@ -511,7 +512,7 @@ func (s *server) Fetch(ctx context.Context, req *envoy.DiscoveryRequest) (*envoy
 	if err != nil {
 		return nil, err
 	}
-	out, err := createResponse(resp, req.TypeUrl, s.clusterID)
+	out, err := createResponse(resp, req.TypeUrl, s.clusterID, s.instanceID)
 	if s.callbacks != nil {
 		s.callbacks.OnFetchResponse(req, out)
 	}

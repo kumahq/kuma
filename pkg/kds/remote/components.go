@@ -44,7 +44,7 @@ var (
 func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multicluster.Remote.Zone
 	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes,
-		zone, rt.Config().Multicluster.Remote.KDS.RefreshInterval,
+		zone, rt.GetInstanceId(), rt.Config().Multicluster.Remote.KDS.RefreshInterval,
 		providedFilter(zone), false)
 	if err != nil {
 		return err

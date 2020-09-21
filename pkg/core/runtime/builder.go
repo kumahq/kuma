@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	"github.com/pkg/errors"
 
@@ -61,12 +63,14 @@ type Builder struct {
 }
 
 func BuilderFor(cfg kuma_cp.Config) *Builder {
+	hostname, _ := os.Hostname()
+	suffix := core.NewUUID()[0:4]
 	return &Builder{
 		cfg: cfg,
 		ext: context.Background(),
 		cam: core_ca.Managers{},
 		runtimeInfo: &runtimeInfo{
-			instanceId: core.NewUUID(),
+			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
 		},
 	}
 }

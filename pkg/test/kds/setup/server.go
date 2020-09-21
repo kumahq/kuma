@@ -46,7 +46,7 @@ func (t *testRuntimeContext) Add(c ...component.Component) error {
 	return nil
 }
 
-func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter) *test_grpc.MockServerStream {
+func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string, instanceID string, providedTypes []model.ResourceType, providedFilter reconcile.ResourceFilter) *test_grpc.MockServerStream {
 	metrics, err := core_metrics.NewMetrics("Global")
 	Expect(err).ToNot(HaveOccurred())
 	rt := &testRuntimeContext{
@@ -54,7 +54,7 @@ func StartServer(store store.ResourceStore, wg *sync.WaitGroup, clusterID string
 		cfg:     kuma_cp.Config{},
 		metrics: metrics,
 	}
-	srv, err := kds_server.New(core.Log, rt, providedTypes, clusterID, 100*time.Millisecond, providedFilter, false)
+	srv, err := kds_server.New(core.Log, rt, providedTypes, clusterID, instanceID, 100*time.Millisecond, providedFilter, false)
 	Expect(err).ToNot(HaveOccurred())
 	stream := test_grpc.MakeMockStream()
 	go func() {

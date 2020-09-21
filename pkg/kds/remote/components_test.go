@@ -69,7 +69,7 @@ var _ = Describe("Remote Sync", func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, global.ProvidedFilter)
+		serverStream := setup.StartServer(globalStore, wg, "global", "localhost-1234", consumedTypes, global.ProvidedFilter)
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)
