@@ -21,6 +21,9 @@ type ProbeProxyGenerator struct {
 
 func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	probes := proxy.Dataplane.Spec.Probes
+	if probes == nil {
+		return nil, nil
+	}
 
 	virtualHostBuilder := envoy_routes.NewVirtualHostBuilder().
 		Configure(envoy_routes.CommonVirtualHost("probe"))
