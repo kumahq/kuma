@@ -9,14 +9,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 )
 
-const (
-	ProbePort = 9000
-)
-
 type KumaProbe kube_core.Probe
 
-func (p KumaProbe) ToInbound() (KumaProbe, bool) {
-	if p.Port() != ProbePort {
+func (p KumaProbe) ToInbound(port uint32) (KumaProbe, bool) {
+	if p.Port() != port {
 		return KumaProbe{}, false
 	}
 	segments := strings.Split(p.Path(), "/")
@@ -37,19 +33,19 @@ func (p KumaProbe) ToInbound() (KumaProbe, bool) {
 	}, true
 }
 
-func (p KumaProbe) ToVirtual() KumaProbe {
+func (p KumaProbe) ToVirtual(port uint32) KumaProbe {
 	return KumaProbe{
 		Handler: kube_core.Handler{
 			HTTPGet: &kube_core.HTTPGetAction{
-				Port: intstr.FromInt(ProbePort),
+				Port: intstr.FromInt(int(port)),
 				Path: fmt.Sprintf("/%d%s", p.Port(), p.Path()),
 			},
 		},
 	}
 }
 
-func (p KumaProbe) Port() int {
-	return p.HTTPGet.Port.IntValue()
+func (p KumaProbe) Port() uint32 {
+	return uint32(p.HTTPGet.Port.IntValue())
 }
 
 func (p KumaProbe) Path() string {

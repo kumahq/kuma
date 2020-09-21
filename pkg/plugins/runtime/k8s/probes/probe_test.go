@@ -22,10 +22,10 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			inbound, ok := probes.KumaProbe(probe).ToInbound()
+			inbound, ok := probes.KumaProbe(probe).ToInbound(9000)
 			Expect(ok).To(BeTrue())
 			Expect(inbound.Path()).To(Equal("/c1/health/liveness"))
-			Expect(inbound.Port()).To(Equal(8080))
+			Expect(inbound.Port()).To(Equal(uint32(8080)))
 		})
 	})
 
@@ -40,9 +40,9 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			virtual := probes.KumaProbe(probe).ToVirtual()
+			virtual := probes.KumaProbe(probe).ToVirtual(9000)
 			Expect(virtual.Path()).To(Equal("/8080/c1/health/liveness"))
-			Expect(virtual.Port()).To(Equal(probes.ProbePort))
+			Expect(virtual.Port()).To(Equal(uint32(9000)))
 		})
 	})
 })
