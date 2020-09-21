@@ -146,6 +146,9 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 
 		if clusters.Get(clusterName).HasExternalService() {
 			edsClusterBuilder = edsClusterBuilder.Configure(envoy_clusters.StrictDNSCluster(clusterName, proxy.OutboundTargets[serviceName]))
+			if clusters.Get(clusterName).RequireTls() {
+				edsClusterBuilder = edsClusterBuilder.Configure(envoy_clusters.ClientSideTLS(proxy.OutboundTargets[serviceName][0].Target))
+			}
 		} else {
 			edsClusterBuilder = edsClusterBuilder.
 				Configure(envoy_clusters.EdsCluster(clusterName)).
@@ -230,6 +233,7 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 		for _, ep := range proxy.OutboundTargets[service] {
 			if ep.IsExternalService {
 				subset.IsExternalService = true
+				_, subset.RequiresTls = ep.Tags[kuma_mesh.TlsTag]
 				break
 			}
 		}

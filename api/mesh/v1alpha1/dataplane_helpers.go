@@ -20,6 +20,8 @@ const (
 	ProtocolTag = "kuma.io/protocol"
 	// InstanceTag is set only for Dataplanes that implements headless services
 	InstanceTag = "kuma.io/instance"
+	// TlsTag is used with ExternalServices to request HTTPS service
+	TlsTag = "kuma.io/tls"
 )
 
 type InboundInterface struct {
