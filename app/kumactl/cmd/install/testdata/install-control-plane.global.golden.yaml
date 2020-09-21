@@ -11,20 +11,7 @@ apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
-  name: kuma-admission-server-tls-cert
-  namespace: kuma-system
-  labels:
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-data:
-  tls.crt: Q0VSVA==
-  tls.key: S0VZ
----
-apiVersion: v1
-kind: Secret
-type: kubernetes.io/tls
-metadata:
-  name: kuma-kds-tls-cert
+  name: kuma-tls-cert
   namespace: kuma-system
   labels:
     app.kubernetes.io/name: kuma
@@ -5403,7 +5390,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 9b06e94bbdac2b3a2a0051eefea9752d25e5bf84e01c6ed14fb7189493b28acd
-        checksum/tls-secrets: 81525402f6c516cacd6aa39e252c426e5298fbf84549e2e47b37cea2fb4bb608
+        checksum/tls-secrets: 4d577e5dea880f16fb071157b25f82cceaaa8fbbeba0355cc287dd10354c74a6
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -5427,18 +5414,16 @@ spec:
               value: "kuma-system"
             - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
               value: kuma-control-plane.kuma-system
-            - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE
-              value: /var/run/secrets/kuma.io/kuma-kds/tls-cert/tls.crt
-            - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE
-              value: /var/run/secrets/kuma.io/kuma-kds/tls-cert/tls.key
-            - name: KUMA_API_SERVER_PORT
-              value: "5681"
+            - name: KUMA_GENERAL_TLS_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/tls.crt
+            - name: KUMA_GENERAL_TLS_KEY_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/tls.key
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
               value: "5443"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
-              value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
+              value: /var/run/secrets/kuma.io/tls-cert
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
@@ -5469,22 +5454,16 @@ spec:
               cpu: 500m
               memory: 256Mi
           volumeMounts:
-            - name: kuma-kds-tls-cert
-              mountPath: /var/run/secrets/kuma.io/kuma-kds/tls-cert
-              readOnly: true
-            - name: kuma-admission-server-tls-cert
-              mountPath: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
+            - name: kuma-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert
               readOnly: true
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
       volumes:
-        - name: kuma-kds-tls-cert
+        - name: kuma-tls-cert
           secret:
-            secretName: kuma-kds-tls-cert
-        - name: kuma-admission-server-tls-cert
-          secret:
-            secretName: kuma-admission-server-tls-cert
+            secretName: kuma-tls-cert
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config

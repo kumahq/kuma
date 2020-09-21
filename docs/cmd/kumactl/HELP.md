@@ -223,8 +223,6 @@ Usage:
   kumactl install control-plane [flags]
 
 Flags:
-      --admission-server-tls-cert string    TLS certificate for the admission web hooks implemented by the Kuma Control Plane
-      --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
       --cni-enabled                         install Kuma with CNI instead of proxy init container
       --cni-registry string                 registry for the image of the Kuma CNI component (default "docker.io")
       --cni-repository string               repository for the image of the Kuma CNI component (default "lobkovilya/install-cni")
@@ -243,12 +241,10 @@ Flags:
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
       --kds-global-address string           URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
-      --kds-tls-cert string                 TLS certificate for the KDS server
-      --kds-tls-key string                  TLS key for the KDS server
       --mode string                         kuma cp modes: one of standalone|remote|global (default "standalone")
       --namespace string                    namespace to install Kuma Control Plane to (default "kuma-system")
-      --sds-tls-cert string                 TLS certificate for the SDS server
-      --sds-tls-key string                  TLS key for the SDS server
+      --tls-cert string                     TLS certificate for Kuma Control Plane servers
+      --tls-key string                      TLS key for Kuma Control Plane servers
       --use-node-port                       use NodePort instead of LoadBalancer
       --zone string                         set the Kuma zone name
 

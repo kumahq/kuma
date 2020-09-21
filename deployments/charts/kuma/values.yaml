@@ -43,15 +43,8 @@ controlPlane:
 
   # TLS for various servers
   #  tls:
-  #    admission:
-  #      cert: ""
-  #      key: ""
-  #    sds:
-  #      cert: ""
-  #      key: ""
-  #    kds:
-  #      cert: ""
-  #      key: ""
+  #    cert: ""
+  #    key: ""
 
   image:
     pullPolicy: IfNotPresent

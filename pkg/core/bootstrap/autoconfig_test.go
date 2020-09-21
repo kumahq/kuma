@@ -47,7 +47,7 @@ var _ = Describe("Auto configuration", func() {
 					Url: "http://kuma.internal:1234",
 				},
 				Bootstrap: catalog.BootstrapApiConfig{
-					Url: "http://kuma.internal:3333",
+					Url: "https://kuma.internal:3333",
 				},
 				DataplaneToken: catalog.DataplaneTokenApiConfig{
 					LocalUrl:  "http://localhost:1111",
@@ -77,7 +77,7 @@ var _ = Describe("Auto configuration", func() {
 					Url: "http://kuma.internal:5681",
 				},
 				Bootstrap: catalog.BootstrapApiConfig{
-					Url: "http://kuma.internal:3333",
+					Url: "https://kuma.internal:3333",
 				},
 				DataplaneToken: catalog.DataplaneTokenApiConfig{
 					LocalUrl:  "http://localhost:1111",
@@ -105,7 +105,7 @@ var _ = Describe("Auto configuration", func() {
 					Url: "http://kuma.internal:5681",
 				},
 				Bootstrap: catalog.BootstrapApiConfig{
-					Url: "http://kuma.internal:3333",
+					Url: "https://kuma.internal:3333",
 				},
 				DataplaneToken: catalog.DataplaneTokenApiConfig{
 					LocalUrl:  "http://localhost:1111",
@@ -131,7 +131,7 @@ var _ = Describe("Auto configuration", func() {
 					Url: "http://localhost:5681",
 				},
 				Bootstrap: catalog.BootstrapApiConfig{
-					Url: "http://localhost:5682",
+					Url: "https://localhost:5682",
 				},
 				DataplaneToken: catalog.DataplaneTokenApiConfig{
 					LocalUrl:  "",

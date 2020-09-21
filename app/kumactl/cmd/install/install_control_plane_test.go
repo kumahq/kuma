@@ -116,17 +116,13 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--control-plane-version", "greatest",
 				"--control-plane-registry", "kuma-ci",
 				"--control-plane-service-name", "kuma-ctrl-plane",
-				"--admission-server-tls-cert", "AdmissionCert",
-				"--admission-server-tls-key", "AdmissionKey",
 				"--injector-failure-policy", "Crash",
 				"--dataplane-registry", "kuma-ci",
 				"--dataplane-version", "greatest",
 				"--dataplane-init-registry", "kuma-ci",
 				"--dataplane-init-version", "greatest",
-				"--sds-tls-cert", "SdsCert",
-				"--sds-tls-key", "SdsKey",
-				"--kds-tls-cert", "KdsCert",
-				"--kds-tls-key", "KdsKey",
+				"--tls-cert", "Cert",
+				"--tls-key", "Key",
 				"--mode", "remote",
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--zone", "zone-1",
@@ -195,29 +191,13 @@ var _ = Describe("kumactl install control-plane", func() {
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},
 			errorMsg:  "--kds-global-address can only be used when --mode=remote",
 		}),
-		Entry("--admission-server-tls-cert without --admission-server-tls-key", errTestCase{
-			extraArgs: []string{"--admission-server-tls-cert", "cert.pem"},
-			errorMsg:  "both --admission-server-tls-cert and --admission-server-tls-key must be provided at the same time",
+		Entry("--tls-cert without --tls-key", errTestCase{
+			extraArgs: []string{"--tls-cert", "cert.pem"},
+			errorMsg:  "both --tls-cert and --tls-key must be provided at the same time",
 		}),
-		Entry("--admission-server-tls-key without --admission-server-tls-cert", errTestCase{
-			extraArgs: []string{"--admission-server-tls-key", "key.pem"},
-			errorMsg:  "both --admission-server-tls-cert and --admission-server-tls-key must be provided at the same time",
-		}),
-		Entry("--sds-tls-cert without --sds-tls-key", errTestCase{
-			extraArgs: []string{"--sds-tls-cert", "cert.pem"},
-			errorMsg:  "both --sds-tls-cert and --sds-tls-key must be provided at the same time",
-		}),
-		Entry("--sds-tls-key without --sds-tls-cert", errTestCase{
-			extraArgs: []string{"--sds-tls-key", "key.pem"},
-			errorMsg:  "both --sds-tls-cert and --sds-tls-key must be provided at the same time",
-		}),
-		Entry("--kds-tls-cert without --kds-tls-key", errTestCase{
-			extraArgs: []string{"--kds-tls-cert", "cert.pem"},
-			errorMsg:  "both --kds-tls-cert and --kds-tls-key must be provided at the same time",
-		}),
-		Entry("--sds-tls-key without --kds-tls-cert", errTestCase{
-			extraArgs: []string{"--kds-tls-key", "key.pem"},
-			errorMsg:  "both --kds-tls-cert and --kds-tls-key must be provided at the same time",
+		Entry("--tls-key without --tls-cert", errTestCase{
+			extraArgs: []string{"--tls-key", "key.pem"},
+			errorMsg:  "both --tls-cert and --tls-key must be provided at the same time",
 		}),
 	)
 })
