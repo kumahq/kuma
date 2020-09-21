@@ -56,13 +56,18 @@ destinations:
 
 		globalCP := global.GetKuma()
 
+		echoServerToken, err := globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
+		Expect(err).ToNot(HaveOccurred())
+		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
+		Expect(err).ToNot(HaveOccurred())
+
 		// Cluster 1
 		remote_1 = clusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(EchoServerUniversal()).
-			Install(DemoClientUniversal()).
+			Install(EchoServerUniversal(echoServerToken)).
+			Install(DemoClientUniversal(demoClientToken)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_1.VerifyKuma()
@@ -73,7 +78,7 @@ destinations:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(DemoClientUniversal()).
+			Install(DemoClientUniversal(demoClientToken)).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()

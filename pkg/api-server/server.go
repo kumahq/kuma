@@ -5,25 +5,26 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-
-	"github.com/pkg/errors"
-
 	"io"
 	"net/http"
 
-	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/emicklei/go-restful"
+	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
+	"github.com/slok/go-http-metrics/middleware"
+
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime"
+	"github.com/kumahq/kuma/pkg/metrics"
+	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 )
 
 var (
@@ -60,13 +61,21 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 	srv := &http.Server{
 		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
 		Handler: container.ServeMux,
 	}
+
+	promMiddleware := middleware.New(middleware.Config{
+		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
+			Registry: metrics,
+			Prefix:   "api_server",
+		}),
+	})
+	container.Filter(util_prometheus.MetricsHandler("", promMiddleware))
 
 	cors := restful.CrossOriginResourceSharing{
 		ExposeHeaders:  []string{restful.HEADER_AccessControlAllowOrigin},
@@ -244,7 +253,7 @@ func SetupServer(rt runtime.Runtime) error {
 			}
 		}
 	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, &cfg, enableGUI)
+	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, &cfg, enableGUI, rt.Metrics())
 	if err != nil {
 		return err
 	}

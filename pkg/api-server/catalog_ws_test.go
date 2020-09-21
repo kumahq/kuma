@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
@@ -27,7 +28,9 @@ var _ = Describe("Catalog WS", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		apiServer := createTestApiServer(resourceStore, cfg, true)
+		metrics, err := metrics.NewMetrics("Standalone")
+		Expect(err).ToNot(HaveOccurred())
+		apiServer := createTestApiServer(resourceStore, cfg, true, metrics)
 
 		stop := make(chan struct{})
 		go func() {

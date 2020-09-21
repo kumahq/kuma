@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
@@ -26,7 +27,9 @@ var _ = Describe("GUI Server", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		apiServer := createTestApiServer(resourceStore, cfg, enabelGUI)
+		metrics, err := metrics.NewMetrics("Standalone")
+		Expect(err).ToNot(HaveOccurred())
+		apiServer := createTestApiServer(resourceStore, cfg, enabelGUI, metrics)
 
 		stop = make(chan struct{})
 		go func() {

@@ -19,6 +19,7 @@ import (
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -48,6 +49,9 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 		WithComponentManager(component.NewManager(leader_memory.NewAlwaysLeaderElector())).
 		WithResourceStore(resources_memory.NewStore()).
 		WithXdsContext(core_xds.NewXdsContext())
+
+	metrics, _ := metrics.NewMetrics("Standalone")
+	builder.WithMetrics(metrics)
 
 	builder.WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore()))
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))

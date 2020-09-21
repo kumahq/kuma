@@ -10,6 +10,7 @@ import (
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
@@ -28,7 +29,9 @@ var _ = Describe("Read only Resource Endpoints", func() {
 		resourceStore = memory.NewStore()
 		cfg := config.DefaultApiServerConfig()
 		cfg.ReadOnly = true
-		apiServer = createTestApiServer(resourceStore, cfg, true)
+		metrics, err := metrics.NewMetrics("Standalone")
+		Expect(err).ToNot(HaveOccurred())
+		apiServer = createTestApiServer(resourceStore, cfg, true, metrics)
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/sample-traffic-routes",

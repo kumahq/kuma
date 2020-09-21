@@ -94,7 +94,6 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		By("simulating end of ADS subscription")
 		// when
 		tracker.OnStreamClosed(streamID)
-		// then
 
 		By("ensuring ADS subscription final state")
 		// when

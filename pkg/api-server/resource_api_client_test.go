@@ -10,6 +10,7 @@ import (
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/test"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
@@ -98,7 +99,7 @@ func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, 
 	Expect(err).NotTo(HaveOccurred())
 }
 
-func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, enableGUI bool) *api_server.ApiServer {
+func createTestApiServer(store store.ResourceStore, config *config_api_server.ApiServerConfig, enableGUI bool, metrics core_metrics.Metrics) *api_server.ApiServer {
 	// we have to manually search for port and put it into config. There is no way to retrieve port of running
 	// http.Server and we need it later for the client
 	port, err := test.GetFreePort()
@@ -108,7 +109,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	resources := manager.NewResourceManager(store)
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, defs, &cfg, enableGUI)
+	apiServer, err := api_server.NewApiServer(resources, defs, &cfg, enableGUI, metrics)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

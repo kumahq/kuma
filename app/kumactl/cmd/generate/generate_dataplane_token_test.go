@@ -24,7 +24,7 @@ type staticDataplaneTokenGenerator struct {
 
 var _ tokens.DataplaneTokenClient = &staticDataplaneTokenGenerator{}
 
-func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string) (string, error) {
+func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags map[string][]string) (string, error) {
 	if s.err != nil {
 		return "", s.err
 	}

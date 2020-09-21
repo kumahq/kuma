@@ -4,7 +4,7 @@ KIND_KUBECONFIG ?= $(KIND_KUBECONFIG_DIR)/kind-kuma-config
 KIND_CLUSTER_NAME ?= kuma
 
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
-	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-image=$(KUMA_CP_DOCKER_IMAGE_NAME) --dataplane-image=$(KUMA_DP_DOCKER_IMAGE_NAME) --dataplane-init-image=$(KUMA_INIT_DOCKER_IMAGE_NAME)
+	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-registry=$(DOCKER_REGISTRY) --dataplane-registry=$(DOCKER_REGISTRY) --dataplane-init-registry=$(DOCKER_REGISTRY)
 else
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES :=
 endif

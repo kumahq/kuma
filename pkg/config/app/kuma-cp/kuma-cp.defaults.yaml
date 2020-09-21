@@ -77,29 +77,6 @@ sdsServer:
   # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
   dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
 
-# Dataplane Token server configuration (DEPRECATED: use adminServer)
-dataplaneTokenServer:
-  # If true then Dataplane Token Server and token verification is enabled
-  enabled: true
-  # Local configuration of server that is available only on localhost
-  local:
-    # Port on which the server will be exposed
-    port: 5679 # ENV: KUMA_DATAPLANE_TOKEN_SERVER_LOCAL_PORT
-  # Public configuration of server that is available on public interface
-  public:
-    # If true then Dataplane Token Server is exposed on public interface
-    enabled: false
-    # Port on which the server will be exposed. If not specified (0) then port from local configuration will be used
-    port: 0 # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT
-    # Public interface on which the server will be exposed
-    interface: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE
-    # Path to TLS certificate file
-    tlsCertFile: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE
-    # Path to TLS key file
-    tlsKeyFile: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE
-    # Directory of authorized client certificates
-    clientCertsDir: # ENV: KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR"`
-
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
@@ -261,7 +238,6 @@ dnsServer:
   # The CIDR range used to allocate
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
 
-
 # Multicluster mode
 multicluster:
   global:
@@ -286,3 +262,8 @@ multicluster:
       refreshInterval: 1s # ENV: KUMA_MULTICLUSTER_REMOTE_KDS_REFRESH_INTERVAL
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
       rootCaFile: # ENV: KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE
+
+# Diagnostics configuration
+diagnostics:
+  # If true, enables https://golang.org/pkg/net/http/pprof/ debug endpoints
+  debugEndpoints: false # ENV: KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS

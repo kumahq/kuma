@@ -4,19 +4,16 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/kumahq/kuma/pkg/config/multicluster"
-
+	"github.com/pkg/errors"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
-	"github.com/pkg/errors"
-	"google.golang.org/grpc/credentials"
-
-	"google.golang.org/grpc"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
+	"github.com/kumahq/kuma/pkg/config/multicluster"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
 const grpcMaxConcurrentStreams = 1000000
@@ -37,19 +34,26 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 type server struct {
 	config    multicluster.KdsServerConfig
 	callbacks Callbacks
+	metrics   core_metrics.Metrics
 }
 
 var (
 	_ component.Component = &server{}
 )
 
-func NewServer(callbacks Callbacks, config multicluster.KdsServerConfig) component.Component {
-	return &server{callbacks: callbacks, config: config}
+func NewServer(callbacks Callbacks, config multicluster.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
+	return &server{
+		callbacks: callbacks,
+		config:    config,
+		metrics:   metrics,
+	}
 }
 
 func (s *server) Start(stop <-chan struct{}) error {
-	var grpcOptions []grpc.ServerOption
-	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
+	grpcOptions := []grpc.ServerOption{
+		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+	}
+	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	useTLS := s.config.TlsCertFile != ""
 	if useTLS {
 		creds, err := credentials.NewServerTLSFromFile(s.config.TlsCertFile, s.config.TlsKeyFile)
@@ -67,6 +71,7 @@ func (s *server) Start(stop <-chan struct{}) error {
 
 	// register services
 	mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	s.metrics.RegisterGRPC(grpcServer)
 
 	errChan := make(chan error)
 	go func() {

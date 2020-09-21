@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	api_server_config "github.com/kumahq/kuma/pkg/config/api-server"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
@@ -21,7 +22,9 @@ var _ = Describe("Config WS", func() {
 
 		// setup
 		resourceStore := memory.NewStore()
-		apiServer := createTestApiServer(resourceStore, cfg, true)
+		metrics, err := metrics.NewMetrics("Standalone")
+		Expect(err).ToNot(HaveOccurred())
+		apiServer := createTestApiServer(resourceStore, cfg, true, metrics)
 
 		stop := make(chan struct{})
 		go func() {
@@ -76,20 +79,6 @@ var _ = Describe("Config WS", func() {
               "xdsPort": 0
             },
             "port": 5682
-          },
-          "dataplaneTokenServer": {
-            "enabled": true,
-            "local": {
-              "port": 5679
-            },
-            "public": {
-              "clientCertsDir": "",
-              "enabled": false,
-              "interface": "",
-              "port": 0,
-              "tlsCertFile": "",
-              "tlsKeyFile": ""
-            }
           },
           "adminServer": {
             "local": {
@@ -248,6 +237,9 @@ var _ = Describe("Config WS", func() {
             "grpcPort": 5678,
             "tlsCertFile": "",
             "tlsKeyFile": ""
+          },
+          "diagnostics": {
+            "debugEndpoints": false
           }
         }
 		`, port)

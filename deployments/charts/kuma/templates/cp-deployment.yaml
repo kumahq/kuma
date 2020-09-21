@@ -84,6 +84,13 @@ spec:
             - name: KUMA_MULTICLUSTER_REMOTE_ZONE
               value: {{ .Values.controlPlane.zone | quote }}
           {{- end }}
+          {{- range $element := .Values.controlPlane.secrets }}
+            - name: {{ $element.Env }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $element.Secret }}
+                  key: {{ $element.Key }}
+          {{- end }}
           args:
             - run
             - --log-level={{ .Values.controlPlane.logLevel }}

@@ -58,6 +58,11 @@ The chart supports Helm v3+.
 All Kuma CRDs are loaded via the [`crds`](crds) directory. For more detailed information on CRDs and Helm,
 please refer to [the Helm documentation][helm-crd].
 
+## Note to Chart developers
+
+The charts are used internally in `kumactl install`, therefore the following rules apply when developing new chat features:
+ * use `make generate/kumactl/install/k8s/control-plane` to sync the Helm Chart and `kumactl install` templates
+ * all templates that start with `pre-` and `post-` are omitted when processing in `kumactl install`  
 
 [kuma-url]: https://kuma.io/
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png

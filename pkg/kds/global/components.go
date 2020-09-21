@@ -79,7 +79,7 @@ func Setup(rt runtime.Runtime) (err error) {
 		}()
 		return nil
 	})
-	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().Multicluster.Global.KDS))
+	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().Multicluster.Global.KDS, rt.Metrics()))
 }
 
 // ProvidedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster

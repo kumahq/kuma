@@ -18,12 +18,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
 	"github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/test"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/runtime"
 	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -38,6 +38,7 @@ var _ = Describe("SDS Server", func() {
 	var stop chan struct{}
 	var client envoy_discovery.SecretDiscoveryServiceClient
 	var conn *grpc.ClientConn
+	var metrics core_metrics.Metrics
 
 	var resManager core_manager.ResourceManager
 
@@ -57,6 +58,7 @@ var _ = Describe("SDS Server", func() {
 
 		runtime, err := runtime.BuilderFor(cfg).Build()
 		Expect(err).ToNot(HaveOccurred())
+		metrics = runtime.Metrics()
 		resManager = runtime.ResourceManager()
 
 		// setup default mesh with active mTLS and 2 CA
@@ -110,13 +112,18 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup Auth with Dataplane Token
-		err = tokens_issuer.CreateDefaultSigningKey(runtime.ResourceManager())
+		key, err := tokens_issuer.CreateSigningKey()
+		Expect(err).ToNot(HaveOccurred())
+		err = resManager.Create(context.Background(), &key, core_store.CreateBy(tokens_issuer.SigningKeyResourceKey))
 		Expect(err).ToNot(HaveOccurred())
 
 		// retrieve example DP token
 		tokenIssuer, err := tokens_builtin.NewDataplaneTokenIssuer(runtime)
 		Expect(err).ToNot(HaveOccurred())
-		dpCredential, err = tokenIssuer.Generate(core_xds.FromResourceKey(core_model.MetaToResourceKey(dpRes.GetMeta())))
+		dpCredential, err = tokenIssuer.Generate(tokens_issuer.DataplaneIdentity{
+			Name: dpRes.GetMeta().GetName(),
+			Mesh: dpRes.GetMeta().GetMesh(),
+		})
 		Expect(err).ToNot(HaveOccurred())
 
 		// start the runtime
@@ -183,6 +190,10 @@ var _ = Describe("SDS Server", func() {
 		Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(1)))
 		expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
 		Expect(dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds).To(Equal(expirationSeconds))
+
+		// and metrics are published
+		Expect(test_metrics.FindMetric(metrics, "sds_cert_generation").GetGauge().GetValue()).To(Equal(1.0))
+		Expect(test_metrics.FindMetric(metrics, "sds_generation")).ToNot(BeNil())
 
 		close(done)
 	}, 10)
@@ -289,7 +300,7 @@ var _ = Describe("SDS Server", func() {
 		_, err = stream.Recv()
 
 		// then
-		Expect(err).To(MatchError("rpc error: code = Unknown desc = could not parse token: token contains an invalid number of segments"))
+		Expect(err).To(MatchError("rpc error: code = Unknown desc = authentication failed: could not parse token: token contains an invalid number of segments"))
 
 		close(done)
 	}, 10)

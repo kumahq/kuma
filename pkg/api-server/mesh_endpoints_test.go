@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -27,7 +28,9 @@ var _ = Describe("Resource Endpoints", func() {
 	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
-		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true)
+		metrics, err := metrics.NewMetrics("Standalone")
+		Expect(err).ToNot(HaveOccurred())
+		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
 		client = resourceApiClient{
 			apiServer.Address(),
 			"/meshes",

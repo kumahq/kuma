@@ -6,7 +6,10 @@ import (
 )
 
 func SetupServer(rt runtime.Runtime) error {
-	server := dns.NewDNSServer(rt.Config().DNSServer.Port, rt.DNSResolver())
+	server, err := dns.NewDNSServer(rt.Config().DNSServer.Port, rt.DNSResolver(), rt.Metrics())
+	if err != nil {
+		return err
+	}
 	persistence := dns.NewDNSPersistence(rt.ConfigManager())
 	vipsSync, err := dns.NewVIPsSynchronizer(rt.ReadOnlyResourceManager(), rt.DNSResolver(), persistence, rt.LeaderInfo())
 	if err != nil {

@@ -15,8 +15,10 @@ import (
 	mesh_res "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
@@ -25,6 +27,7 @@ var _ = Describe("Resource Endpoints", func() {
 	var resourceStore store.ResourceStore
 	var client resourceApiClient
 	var stop chan struct{}
+	var metrics core_metrics.Metrics
 
 	const mesh = "default"
 
@@ -34,7 +37,10 @@ var _ = Describe("Resource Endpoints", func() {
 		resourceStore = memory.NewStore()
 		serverConfig := config.DefaultApiServerConfig()
 		serverConfig.Catalog.ApiServer.Url = publicApiServerUrl
-		apiServer = createTestApiServer(resourceStore, serverConfig, true)
+		m, err := core_metrics.NewMetrics("Standalone")
+		metrics = m
+		Expect(err).ToNot(HaveOccurred())
+		apiServer = createTestApiServer(resourceStore, serverConfig, true, metrics)
 		client = resourceApiClient{
 			address: apiServer.Address(),
 			path:    "/meshes/" + mesh + "/sample-traffic-routes",
@@ -635,7 +641,7 @@ var _ = Describe("Resource Endpoints", func() {
 	})
 
 	It("should support CORS", func() {
-		// when
+		// given
 		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/sample-traffic-routes", apiServer.Address(), mesh), nil)
 		Expect(err).NotTo(HaveOccurred())
 		req.Header.Add(restful.HEADER_Origin, "test")
@@ -651,5 +657,20 @@ var _ = Describe("Resource Endpoints", func() {
 
 		// then server returns that the domain is allowed
 		Expect(value).To(Equal("test"))
+	})
+
+	It("should expose metrics", func() {
+		// given
+		req, err := http.NewRequest("GET", fmt.Sprintf("http://%s/meshes/%s/sample-traffic-routes", apiServer.Address(), mesh), nil)
+		Expect(err).NotTo(HaveOccurred())
+
+		// when
+		_, err = http.DefaultClient.Do(req)
+
+		// then
+		Expect(err).NotTo(HaveOccurred())
+		Expect(test_metrics.FindMetric(metrics, "api_server_http_request_duration_seconds")).ToNot(BeNil())
+		Expect(test_metrics.FindMetric(metrics, "api_server_http_requests_inflight")).ToNot(BeNil())
+		Expect(test_metrics.FindMetric(metrics, "api_server_http_response_size_bytes")).ToNot(BeNil())
 	})
 })

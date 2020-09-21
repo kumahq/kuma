@@ -94,15 +94,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
-			Expect(cfg.DataplaneTokenServer.Enabled).To(BeTrue())
-			Expect(cfg.DataplaneTokenServer.Local.Port).To(Equal(uint32(1111)))
-			Expect(cfg.DataplaneTokenServer.Public.Enabled).To(BeTrue())
-			Expect(cfg.DataplaneTokenServer.Public.Port).To(Equal(uint32(2222)))
-			Expect(cfg.DataplaneTokenServer.Public.Interface).To(Equal("192.168.0.1"))
-			Expect(cfg.DataplaneTokenServer.Public.TlsKeyFile).To(Equal("/tmp/key"))
-			Expect(cfg.DataplaneTokenServer.Public.TlsCertFile).To(Equal("/tmp/cert"))
-			Expect(cfg.DataplaneTokenServer.Public.ClientCertsDir).To(Equal("/tmp/certs"))
-
 			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
 
@@ -137,6 +128,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multicluster.Remote.KDS.RootCAFile).To(Equal("/rootCa"))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
+
+			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
 		},
 		Entry("from config file", testCase{
 			envVars: map[string]string{},
@@ -175,17 +168,6 @@ apiServer:
   corsAllowedDomains:
     - https://kuma
     - https://someapi
-dataplaneTokenServer:
-  enabled: true
-  local:
-    port: 1111
-  public:
-    enabled: true
-    interface: 192.168.0.1
-    port: 2222
-    tlsCertFile: /tmp/cert
-    tlsKeyFile: /tmp/key
-    clientCertsDir: /tmp/certs
 monitoringAssignmentServer:
   grpcPort: 3333
   assignmentRefreshInterval: 12s
@@ -233,6 +215,8 @@ dnsServer:
   CIDR: 127.1.0.0/16
 defaults:
   skipMeshCreation: true
+diagnostics:
+  debugEndpoints: true
 `,
 		}),
 		Entry("from env variables", testCase{
@@ -260,14 +244,6 @@ defaults:
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                              "3s",
 				"KUMA_API_SERVER_READ_ONLY":                                     "true",
 				"KUMA_API_SERVER_PORT":                                          "9090",
-				"KUMA_DATAPLANE_TOKEN_SERVER_ENABLED":                           "true",
-				"KUMA_DATAPLANE_TOKEN_SERVER_LOCAL_PORT":                        "1111",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_ENABLED":                    "true",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_INTERFACE":                  "192.168.0.1",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_PORT":                       "2222",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_KEY_FILE":               "/tmp/key",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_TLS_CERT_FILE":              "/tmp/cert",
-				"KUMA_DATAPLANE_TOKEN_SERVER_PUBLIC_CLIENT_CERTS_DIR":           "/tmp/certs",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                   "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL": "12s",
 				"KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED":                "true",
@@ -298,6 +274,7 @@ defaults:
 				"KUMA_MULTICLUSTER_REMOTE_ZONE":                                 "zone-1",
 				"KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE":                     "/rootCa",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                              "true",
+				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                              "true",
 			},
 			yamlFileConfig: "",
 		}),
