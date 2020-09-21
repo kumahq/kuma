@@ -5645,13 +5645,14 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
+      - circuitbreakers
+      - externalservices
+      - faultinjections
+      - healthchecks
       - trafficpermissions
       - trafficlogs
       - trafficroutes
       - traffictraces
-      - faultinjections
-      - circuitbreakers
-      - healthchecks
     verbs:
       - get
       - list
@@ -5813,7 +5814,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2de279fbb62e16d56a7b67468706fc1c2eb41e16c46b969a8645a6bf037be042
-        checksum/tls-secrets: cd2f0b4e6c8a69f23aa0eb200f5997bac365b7576b3a9f408477de9dfade76f2
+        checksum/tls-secrets: 45ae5f5af259d279b5d08d1f1320fe14b58bab8c0a690e210d3403ba5bfa4691
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -5970,13 +5971,14 @@ webhooks:
           - CREATE
         resources:
           - circuitbreakers
+          - externalservices
           - faultinjections
+          - healthchecks
+          - proxytemplates
           - trafficlogs
           - trafficpermissions
           - trafficroutes
           - traffictraces
-          - healthchecks
-          - proxytemplates
     sideEffects: None
   - name: kuma-injector.kuma.io
     failurePolicy: Crash
@@ -6025,15 +6027,16 @@ webhooks:
           - DELETE
         resources:
           - circuitbreakers
+          - dataplanes
+          - externalservices
           - faultinjections
+          - healthchecks
+          - meshes
+          - proxytemplates
           - trafficlogs
           - trafficpermissions
           - trafficroutes
           - traffictraces
-          - dataplanes
-          - healthchecks
-          - meshes
-          - proxytemplates
           - zones
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
