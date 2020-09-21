@@ -51,7 +51,7 @@ var (
 
 func Setup(rt runtime.Runtime) (err error) {
 	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes,
-		"global", rt.GetInstanceId(), rt.Config().Multicluster.Global.KDS.RefreshInterval,
+		rt.GetInstanceId(), rt.Config().Multicluster.Global.KDS.RefreshInterval,
 		ProvidedFilter, true)
 	if err != nil {
 		return err
