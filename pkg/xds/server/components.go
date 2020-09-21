@@ -195,7 +195,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 
 				// Generate VIP outbounds only when not Ingress and Transparent Proxying is enabled
 				if !dataplane.Spec.IsIngress() && dataplane.Spec.Networking.GetTransparentProxying() != nil {
-					err = xds_topology.PatchDataplaneWithVIPOutbounds(dataplane, dataplanes, rt.DNSResolver())
+					err = xds_topology.PatchDataplaneWithVIPOutbounds(dataplane, dataplanes, externalServices, rt.DNSResolver())
 					if err != nil {
 						return err
 					}

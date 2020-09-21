@@ -72,7 +72,7 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 		resolver.SetVIPs(vipList)
 
 		// when
-		err := topology.PatchDataplaneWithVIPOutbounds(dataplane, &dataplanes, resolver)
+		err := topology.PatchDataplaneWithVIPOutbounds(dataplane, &dataplanes, nil, resolver)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and
