@@ -73,7 +73,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 		},
 		// bootstrap server
 		&xds_bootstrap.BootstrapServer{
-			Port:      rt.Config().BootstrapServer.Port,
+			Config:    rt.Config().BootstrapServer,
 			Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params, rt.Config().XdsServer.TlsCertFile),
 			Metrics:   rt.Metrics(),
 		},

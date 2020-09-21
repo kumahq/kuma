@@ -50,7 +50,7 @@ var _ = Describe("kumactl completion", func() {
 			// when
 			actual := stdout.Bytes()
 			// then
-			Expect(len(actual)).To(Equal(len(expected)))
+			Expect(len(actual)).To(Equal(len(expected)), "run kumactl completion bash/fish/zsh, copy the output and override testdata/*.golden")
 
 			// and
 			Expect(string(actual)).To(Equal(string(expected)))

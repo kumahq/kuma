@@ -11,40 +11,14 @@ apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
-  name: kuma-admission-server-tls-cert
+  name: kuma-tls-cert
   namespace: kuma
   labels:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 data:
-  tls.crt: QWRtaXNzaW9uQ2VydA==
-  tls.key: QWRtaXNzaW9uS2V5
----
-apiVersion: v1
-kind: Secret
-type: kubernetes.io/tls
-metadata:
-  name: kuma-sds-tls-cert
-  namespace: kuma
-  labels:
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-data:
-  tls.crt: U2RzQ2VydA==
-  tls.key: U2RzS2V5
----
-apiVersion: v1
-kind: Secret
-type: kubernetes.io/tls
-metadata:
-  name: kuma-kds-tls-cert
-  namespace: kuma
-  labels:
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-data:
-  tls.crt: S2RzQ2VydA==
-  tls.key: S2RzS2V5
+  tls.crt: Q2VydA==
+  tls.key: S2V5
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -5814,7 +5788,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 2de279fbb62e16d56a7b67468706fc1c2eb41e16c46b969a8645a6bf037be042
-        checksum/tls-secrets: 45ae5f5af259d279b5d08d1f1320fe14b58bab8c0a690e210d3403ba5bfa4691
+        checksum/tls-secrets: d31bc440a71dab6a83896d1360355818c51781cfa03961517fdd4cf674b91af3
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -5838,30 +5812,18 @@ spec:
               value: "kuma"
             - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
               value: kuma-control-plane.kuma
-            - name: KUMA_SDS_SERVER_GRPC_PORT
-              value: "5677"
-            - name: KUMA_XDS_SERVER_GRPC_PORT
-              value: "5678"
-            - name: KUMA_BOOTSTRAP_SERVER_PORT
-              value: "5682"
-            - name: KUMA_SDS_SERVER_TLS_CERT_FILE
-              value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.crt
-            - name: KUMA_SDS_SERVER_TLS_KEY_FILE
-              value: /var/run/secrets/kuma.io/kuma-sds/tls-cert/tls.key
+            - name: KUMA_GENERAL_TLS_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/tls.crt
+            - name: KUMA_GENERAL_TLS_KEY_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/tls.key
             - name: KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
               value: grpcs://192.168.0.1:5685
-            - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE
-              value: /var/run/secrets/kuma.io/kuma-kds/tls-cert/tls.crt
-            - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE
-              value: /var/run/secrets/kuma.io/kuma-kds/tls-cert/tls.key
-            - name: KUMA_API_SERVER_PORT
-              value: "5681"
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
               value: "5443"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
-              value: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
+              value: /var/run/secrets/kuma.io/tls-cert
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
@@ -5900,28 +5862,16 @@ spec:
               cpu: 100m
               memory: 256Mi
           volumeMounts:
-            - name: kuma-sds-tls-cert
-              mountPath: /var/run/secrets/kuma.io/kuma-sds/tls-cert
-              readOnly: true
-            - name: kuma-kds-tls-cert
-              mountPath: /var/run/secrets/kuma.io/kuma-kds/tls-cert
-              readOnly: true
-            - name: kuma-admission-server-tls-cert
-              mountPath: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
+            - name: kuma-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert
               readOnly: true
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
       volumes:
-        - name: kuma-sds-tls-cert
+        - name: kuma-tls-cert
           secret:
-            secretName: kuma-sds-tls-cert
-        - name: kuma-kds-tls-cert
-          secret:
-            secretName: kuma-kds-tls-cert
-        - name: kuma-admission-server-tls-cert
-          secret:
-            secretName: kuma-admission-server-tls-cert
+            secretName: kuma-tls-cert
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
@@ -5938,7 +5888,7 @@ webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
+      caBundle: Q2VydA==
       service:
         namespace: kuma
         name: kuma-ctrl-plane
@@ -5957,7 +5907,7 @@ webhooks:
   - name: owner-reference.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
+      caBundle: Q2VydA==
       service:
         namespace: kuma
         name: kuma-ctrl-plane
@@ -5983,7 +5933,7 @@ webhooks:
   - name: kuma-injector.kuma.io
     failurePolicy: Crash
     clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
+      caBundle: Q2VydA==
       service:
         namespace: kuma
         name: kuma-ctrl-plane
@@ -6011,7 +5961,7 @@ webhooks:
   - name: validator.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
+      caBundle: Q2VydA==
       service:
         namespace: kuma
         name: kuma-ctrl-plane
@@ -6042,7 +5992,7 @@ webhooks:
   - name: service.validator.kuma-admission.kuma.io
     failurePolicy: Ignore
     clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
+      caBundle: Q2VydA==
       service:
         namespace: kuma
         name: kuma-ctrl-plane
@@ -6064,7 +6014,7 @@ webhooks:
         kuma.io/system-namespace: "true"
     failurePolicy: Ignore
     clientConfig:
-      caBundle: QWRtaXNzaW9uQ2VydA==
+      caBundle: Q2VydA==
       service:
         namespace: kuma
         name: kuma-ctrl-plane

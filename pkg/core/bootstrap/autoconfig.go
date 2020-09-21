@@ -3,16 +3,13 @@ package bootstrap
 import (
 	"fmt"
 	"io/ioutil"
-	"net/url"
 	"os"
-	"strings"
 
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/tls"
 )
@@ -20,19 +17,61 @@ import (
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
+	if err := autoconfigureTLS(cfg); err != nil {
+		return err
+	}
+	autoconfigureServersTLS(cfg)
 	autoconfigureAdminServer(cfg)
 	autoconfigureCatalog(cfg)
 	autoconfigBootstrapXdsParams(cfg)
-	if err := autoconfigureKds(cfg); err != nil {
-		return err
+	return nil
+}
+
+func autoconfigureServersTLS(cfg *kuma_cp.Config) {
+	//if cfg.XdsServer.TlsCertFile == "" {
+	//	cfg.XdsServer.TlsCertFile = cfg.General.TlsCertFile
+	//	cfg.XdsServer.TlsKeyFile = cfg.General.TlsKeyFile
+	//}
+	// todo restore in the next PR
+	if cfg.BootstrapServer.TlsCertFile == "" {
+		cfg.BootstrapServer.TlsCertFile = cfg.General.TlsCertFile
+		cfg.BootstrapServer.TlsKeyFile = cfg.General.TlsKeyFile
 	}
-	return autoconfigureSds(cfg)
+	if cfg.SdsServer.TlsCertFile == "" {
+		cfg.SdsServer.TlsCertFile = cfg.General.TlsCertFile
+		cfg.SdsServer.TlsKeyFile = cfg.General.TlsKeyFile
+	}
+	if cfg.Multicluster.Global.KDS.TlsCertFile == "" {
+		cfg.Multicluster.Global.KDS.TlsCertFile = cfg.General.TlsCertFile
+		cfg.Multicluster.Global.KDS.TlsKeyFile = cfg.General.TlsKeyFile
+	}
+}
+
+func autoconfigureTLS(cfg *kuma_cp.Config) error {
+	if cfg.General.TlsCertFile == "" {
+		hosts := []string{
+			cfg.General.AdvertisedHostname,
+			"localhost",
+		}
+		cert, err := tls.NewSelfSignedCert("kuma-control-plane", tls.ServerCertType, hosts...)
+		if err != nil {
+			return errors.Wrap(err, "failed to auto-generate TLS certificate")
+		}
+		crtFile, keyFile, err := saveKeyPair(cert)
+		if err != nil {
+			return errors.Wrap(err, "failed to save auto-generated TLS certificate")
+		}
+		cfg.General.TlsCertFile = crtFile
+		cfg.General.TlsKeyFile = keyFile
+		autoconfigureLog.Info("auto-generated TLS certificate for Kuma Control Plane", "crtFile", crtFile, "keyFile", keyFile)
+	}
+	return nil
 }
 
 func autoconfigureCatalog(cfg *kuma_cp.Config) {
 	bootstrapUrl := cfg.ApiServer.Catalog.Bootstrap.Url
 	if len(bootstrapUrl) == 0 {
-		bootstrapUrl = fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port)
+		bootstrapUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port)
 	}
 	madsUrl := cfg.ApiServer.Catalog.MonitoringAssignment.Url
 	if len(madsUrl) == 0 {
@@ -65,65 +104,6 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 		}
 	}
 	cfg.ApiServer.Catalog = cat
-}
-
-func autoconfigureSds(cfg *kuma_cp.Config) error {
-	// to improve UX, we want to auto-generate TLS cert for SDS if possible
-	if cfg.Environment == config_core.UniversalEnvironment {
-		if cfg.SdsServer.TlsCertFile == "" {
-			var sdsHost = ""
-			if cfg.ApiServer.Catalog.Sds.Url != "" {
-				u, err := url.Parse(cfg.ApiServer.Catalog.Sds.Url)
-				if err != nil {
-					return errors.Wrap(err, "sds url is malformed")
-				}
-				sdsHost = strings.Split(u.Host, ":")[0]
-			}
-			if len(sdsHost) == 0 {
-				sdsHost = cfg.BootstrapServer.Params.XdsHost
-			}
-			hosts := []string{
-				sdsHost,
-				"localhost",
-			}
-			// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server
-			sdsCert, err := tls.NewSelfSignedCert("kuma-sds", tls.ServerCertType, hosts...)
-			if err != nil {
-				return errors.Wrap(err, "failed to auto-generate TLS certificate for SDS server")
-			}
-			crtFile, keyFile, err := saveKeyPair(sdsCert)
-			if err != nil {
-				return errors.Wrap(err, "failed to save auto-generated TLS certificate for SDS server")
-			}
-			cfg.SdsServer.TlsCertFile = crtFile
-			cfg.SdsServer.TlsKeyFile = keyFile
-
-			autoconfigureLog.Info("auto-generated TLS certificate for SDS server", "crtFile", crtFile, "keyFile", keyFile)
-		}
-	}
-	return nil
-}
-
-func autoconfigureKds(cfg *kuma_cp.Config) error {
-	// to improve UX, we want to auto-generate TLS cert for KDS if possible
-	if cfg.Environment == config_core.UniversalEnvironment {
-		if cfg.Multicluster.Global.KDS.TlsCertFile == "" {
-			hosts := []string{}
-			kdsCert, err := tls.NewSelfSignedCert("kuma-kds", tls.ServerCertType, hosts...)
-			if err != nil {
-				return errors.Wrap(err, "failed to auto-generate TLS certificate for KDS server")
-			}
-			crtFile, keyFile, err := saveKeyPair(kdsCert)
-			if err != nil {
-				return errors.Wrap(err, "failed to save auto-generated TLS certificate for KDS server")
-			}
-			cfg.Multicluster.Global.KDS.TlsCertFile = crtFile
-			cfg.Multicluster.Global.KDS.TlsKeyFile = keyFile
-
-			autoconfigureLog.Info("auto-generated TLS certificate for KDS server", "crtFile", crtFile, "keyFile", keyFile)
-		}
-	}
-	return nil
 }
 
 func autoconfigureAdminServer(cfg *kuma_cp.Config) {

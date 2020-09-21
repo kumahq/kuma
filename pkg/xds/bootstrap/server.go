@@ -12,6 +12,7 @@ import (
 	"github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
 
+	"github.com/kumahq/kuma/pkg/config/xds/bootstrap"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -23,7 +24,7 @@ import (
 var log = core.Log.WithName("bootstrap-server")
 
 type BootstrapServer struct {
-	Port      uint32
+	Config    *bootstrap.BootstrapServerConfig
 	Generator BootstrapGenerator
 	Metrics   prometheus.Registerer
 }
@@ -46,7 +47,7 @@ func (b *BootstrapServer) Start(stop <-chan struct{}) error {
 	mux.HandleFunc("/bootstrap", b.handleBootstrapRequest)
 
 	bootstrapServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", b.Port),
+		Addr:    fmt.Sprintf(":%d", b.Config.Port),
 		Handler: std.Handler("", promMiddleware, mux),
 	}
 
@@ -54,7 +55,7 @@ func (b *BootstrapServer) Start(stop <-chan struct{}) error {
 
 	go func() {
 		defer close(errChan)
-		if err := bootstrapServer.ListenAndServe(); err != nil {
+		if err := bootstrapServer.ListenAndServeTLS(b.Config.TlsCertFile, b.Config.TlsKeyFile); err != nil {
 			if err != http.ErrServerClosed {
 				log.Error(err, "terminated with an error")
 				errChan <- err
@@ -63,7 +64,7 @@ func (b *BootstrapServer) Start(stop <-chan struct{}) error {
 		}
 		log.Info("terminated normally")
 	}()
-	log.Info("starting", "interface", "0.0.0.0", "port", b.Port)
+	log.Info("starting", "interface", "0.0.0.0", "port", b.Config.Port, "tls", true)
 
 	select {
 	case <-stop:

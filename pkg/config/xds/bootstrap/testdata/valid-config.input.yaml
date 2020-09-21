@@ -6,3 +6,5 @@ params:
   xdsHost: kuma-control-plane.internal
   xdsPort: 10101
   xdsConnectTimeout: 2s
+tlsCertFile: ""
+tlsKeyFile: ""

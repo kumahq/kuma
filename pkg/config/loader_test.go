@@ -113,6 +113,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Reports.Enabled).To(BeFalse())
 
 			Expect(cfg.General.AdvertisedHostname).To(Equal("kuma.internal"))
+			Expect(cfg.General.TlsCertFile).To(Equal("/tmp/cert"))
+			Expect(cfg.General.TlsKeyFile).To(Equal("/tmp/key"))
 
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
 			Expect(cfg.Mode).To(Equal(config_core.Remote))
@@ -194,6 +196,8 @@ reports:
   enabled: false
 general:
   advertisedHostname: kuma.internal
+  tlsKeyFile: /tmp/key
+  tlsCertFile: /tmp/cert
 guiServer:
   apiServerUrl: http://localhost:1234
 mode: remote
@@ -259,6 +263,8 @@ diagnostics:
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                 "9443",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR":             "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
 				"KUMA_GENERAL_ADVERTISED_HOSTNAME":                              "kuma.internal",
+				"KUMA_GENERAL_TLS_CERT_FILE":                                    "/tmp/cert",
+				"KUMA_GENERAL_TLS_KEY_FILE":                                     "/tmp/key",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                          "https://kuma,https://someapi",
 				"KUMA_GUI_SERVER_PORT":                                          "8888",
 				"KUMA_GUI_SERVER_API_SERVER_URL":                                "http://localhost:1234",
