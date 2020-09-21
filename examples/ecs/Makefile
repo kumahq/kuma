@@ -55,6 +55,6 @@ ecs/ssh-client/deploy:
 		--parameter-overrides \
 		  DesiredCount=1 \
 		  DPToken=${DATAPLANE_TOKEN_SSHCLIENT} \
-		  WorkloadImage=docker.io/rastasheep/ubuntu-sshd:14.04 \
+		  WorkloadImage=sickp/alpine-sshd:latest \
 		  WorkloadName=ssh-client \
 		  WorkloadProtocol=tcp
