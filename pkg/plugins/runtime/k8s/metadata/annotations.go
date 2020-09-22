@@ -71,7 +71,7 @@ func (a Annotations) GetEnabled(key string) (bool, bool, error) {
 	case AnnotationDisabled:
 		return false, true, nil
 	default:
-		return false, true, errors.Errorf("annotation %s has wrong value %s", key, value)
+		return false, true, errors.Errorf("annotation \"%s\" has wrong value \"%s\", available values are: \"enabled\", \"disabled\"", key, value)
 	}
 }
 

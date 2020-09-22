@@ -31,7 +31,6 @@ var _ = Describe("ProbeGenerator", func() {
 			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 
 			proxy := &core_xds.Proxy{
-				//Id: core_xds.ProxyId{Name: "ingress", Mesh: "default"},
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",
@@ -58,7 +57,7 @@ var _ = Describe("ProbeGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(expected))
 		},
-		Entry("", testCase{
+		Entry("base probes", testCase{
 			dataplane: `
             probes:
               port: 9000
@@ -68,6 +67,10 @@ var _ = Describe("ProbeGenerator", func() {
                 path: /8080/healthz/probe
 `,
 			expected: "01.envoy.golden.yaml",
+		}),
+		Entry("empty probes", testCase{
+			dataplane: ``,
+			expected:  "02.envoy.golden.yaml",
 		}),
 	)
 })

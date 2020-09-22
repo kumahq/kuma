@@ -4,13 +4,10 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apimachinery/pkg/util/intstr"
+	"github.com/pkg/errors"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
-
-	"github.com/pkg/errors"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -90,73 +87,10 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ic)
 	}
 
-	if err := i.reconcileProbes(pod); err != nil {
+	if err := i.overrideHTTPProbes(pod); err != nil {
 		return err
 	}
 
-	return nil
-}
-
-func (i *KumaInjector) reconcileProbes(pod *kube_core.Pod) error {
-	if ok, err := needVirtualProbes(pod, i.cfg); err != nil || !ok {
-		return err
-	}
-
-	port, err := virtualProbesPort(pod, i.cfg)
-	if err != nil {
-		return err
-	}
-
-	for _, c := range pod.Spec.Containers {
-		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
-			if err := reconcileProbe(c.LivenessProbe, port); err != nil {
-				return err
-			}
-		}
-		if c.ReadinessProbe != nil && c.ReadinessProbe.HTTPGet != nil {
-			if err := reconcileProbe(c.ReadinessProbe, port); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func needVirtualProbes(pod *kube_core.Pod, cfg runtime_k8s.Injector) (bool, error) {
-	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
-	if err != nil {
-		return false, err
-	}
-	if exist {
-		return enabled, nil
-	}
-	return cfg.VirtualProbesEnabled, nil
-}
-
-func virtualProbesPort(pod *kube_core.Pod, cfg runtime_k8s.Injector) (uint32, error) {
-	port, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation)
-	if err != nil {
-		return 0, err
-	}
-	if exist {
-		return port, nil
-	}
-	return cfg.VirtualProbesPort, nil
-}
-
-func reconcileProbe(probe *kube_core.Probe, probePort uint32) error {
-	if inbound, ok := probes.KumaProbe(*probe).ToInbound(probePort); ok {
-		// we are dealing with a probe which is already virtual,
-		// all virtual probes should be presented in the dataplane
-		if inbound.Port() == probePort {
-			return errors.Errorf("can't reconcile Pod's probes, inbound port can't be equal to %d,"+
-				" it is reserved value for insecure probes port", probePort)
-		}
-		return nil
-	}
-	virtual := probes.KumaProbe(*probe).ToVirtual(probePort)
-	probe.HTTPGet.Port = intstr.FromInt(int(virtual.Port()))
-	probe.HTTPGet.Path = virtual.Path()
 	return nil
 }
 

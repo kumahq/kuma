@@ -22,7 +22,7 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			inbound, ok := probes.KumaProbe(probe).ToInbound(9000)
+			inbound, ok := probes.KumaProbe(probe).ToReal(9000)
 			Expect(ok).To(BeTrue())
 			Expect(inbound.Path()).To(Equal("/c1/health/liveness"))
 			Expect(inbound.Port()).To(Equal(uint32(8080)))
@@ -40,9 +40,26 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			virtual := probes.KumaProbe(probe).ToVirtual(9000)
+			virtual, err := probes.KumaProbe(probe).ToVirtual(9000)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(virtual.Path()).To(Equal("/8080/c1/health/liveness"))
 			Expect(virtual.Port()).To(Equal(uint32(9000)))
+		})
+
+		It("should return an error if virtual port is equal to real", func() {
+			podProbeYaml := `
+                httpGet:
+                  path: /c1/health/liveness
+                  port: 9000
+`
+			probe := kube_core.Probe{}
+			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
+			Expect(err).ToNot(HaveOccurred())
+
+			_, err = probes.KumaProbe(probe).ToVirtual(9000)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("cannot override Pod's probes. Port for probe cannot be set " +
+				"to 9000. It is reserved for the dataplane that will serve pods without mTLS."))
 		})
 	})
 })

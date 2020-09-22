@@ -880,7 +880,10 @@ var _ = Describe("Dataplane", func() {
                  path: /8080/healthz
                - inboundPort: 99999999
                  inboundPath: healthz
-                 path: 8080/healthz`,
+                 path: 8080/healthz
+               - inboundPort: 1000
+                 inboundPath: 
+                 path: `,
 			expected: `
                 violations:
                 - field: probes.port
@@ -890,6 +893,10 @@ var _ = Describe("Dataplane", func() {
                 - field: probes.endpoints[1].inboundPath
                   message: should be a valid URL Path
                 - field: probes.endpoints[1].path
+                  message: should be a valid URL Path
+                - field: probes.endpoints[2].inboundPath
+                  message: should be a valid URL Path
+                - field: probes.endpoints[2].path
                   message: should be a valid URL Path`,
 		}),
 	)

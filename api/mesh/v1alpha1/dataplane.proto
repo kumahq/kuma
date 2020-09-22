@@ -138,5 +138,7 @@ message Dataplane {
     repeated Endpoint endpoints = 2;
   }
 
+  // Probes describes list of endpoints which will redirect traffic from
+  // insecure port to localhost path
   Probes probes = 3;
 }
