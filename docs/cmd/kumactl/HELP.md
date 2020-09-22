@@ -239,6 +239,9 @@ Flags:
       --dataplane-version string            version of the image of the Kuma DataPlane component (default "latest")
   -h, --help                                help for control-plane
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
+      --ingress-drain-time string           drain time for Envoy proxy (default "30s")
+      --ingress-enabled                     install Kuma with an Ingress deployment, using the Data Plane image
+      --ingress-use-node-port               use NodePort instead of LoadBalancer for the Ingress Service
       --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
       --kds-global-address string           URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
       --mode string                         kuma cp modes: one of standalone|remote|global (default "standalone")

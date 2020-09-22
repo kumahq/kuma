@@ -150,6 +150,14 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.remote.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources with Ingress enabled", testCase{
+			extraArgs: []string{
+				"--ingress-enabled",
+				"--ingress-drain-time", "60s",
+				"--ingress-use-node-port",
+			},
+			goldenFile: "install-control-plane.with-ingress.golden.yaml",
+		}),
 	)
 
 	type errTestCase struct {

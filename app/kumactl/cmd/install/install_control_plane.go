@@ -50,6 +50,10 @@ type InstallControlPlaneArgs struct {
 	ControlPlane_mode                         string           `helm:"controlPlane.mode"`
 	ControlPlane_zone                         string           `helm:"controlPlane.zone"`
 	ControlPlane_globalRemoteSyncService_type string           `helm:"controlPlane.globalRemoteSyncService.type"`
+	Ingress_enabled                           bool             `helm:"ingress.enabled"`
+	Ingress_mesh                              string           `helm:"ingress.mesh"`
+	Ingress_drainTime                         string           `helm:"ingress.drainTime"`
+	Ingress_service_type                      string           `helm:"ingress.service.type"`
 }
 
 type ImageEnvSecret struct {
@@ -80,6 +84,10 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	ControlPlane_mode:                         core.Standalone,
 	ControlPlane_zone:                         "",
 	ControlPlane_globalRemoteSyncService_type: "LoadBalancer",
+	Ingress_enabled:                           false,
+	Ingress_mesh:                              "default",
+	Ingress_drainTime:                         "30s",
+	Ingress_service_type:                      "LoadBalancer",
 }
 
 var InstallCpTemplateFilesFn = InstallCpTemplateFiles
@@ -87,6 +95,7 @@ var InstallCpTemplateFilesFn = InstallCpTemplateFiles
 func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	args := DefaultInstallControlPlaneArgs
 	useNodePort := false
+	ingressUseNodePort := false
 	cmd := &cobra.Command{
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
@@ -98,6 +107,10 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 
 			if useNodePort && args.ControlPlane_mode == core.Global {
 				args.ControlPlane_globalRemoteSyncService_type = "NodePort"
+			}
+
+			if ingressUseNodePort {
+				args.Ingress_service_type = "NodePort"
 			}
 
 			if err := autogenerateCerts(&args); err != nil {
@@ -149,6 +162,9 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
 	cmd.Flags().StringVar(&args.ControlPlane_zone, "zone", args.ControlPlane_zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
+	cmd.Flags().BoolVar(&args.Ingress_enabled, "ingress-enabled", args.Cni_enabled, "install Kuma with an Ingress deployment, using the Data Plane image")
+	cmd.Flags().StringVar(&args.Ingress_drainTime, "ingress-drain-time", args.Ingress_drainTime, "drain time for Envoy proxy")
+	cmd.Flags().BoolVar(&ingressUseNodePort, "ingress-use-node-port", false, "use NodePort instead of LoadBalancer for the Ingress Service")
 	return cmd
 }
 
