@@ -35,10 +35,6 @@ func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
 }
 
 func overrideHTTPProbe(probe *kube_core.Probe, virtualPort uint32) error {
-	if _, ok := probes.KumaProbe(*probe).ToReal(virtualPort); ok {
-		// we are dealing with a probe which is already virtual, no need to override it
-		return nil
-	}
 	virtual, err := probes.KumaProbe(*probe).ToVirtual(virtualPort)
 	if err != nil {
 		return err

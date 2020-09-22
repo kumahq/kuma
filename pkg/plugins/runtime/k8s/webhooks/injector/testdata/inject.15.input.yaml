@@ -17,8 +17,8 @@ spec:
       resources: {}
       readinessProbe:
         httpGet:
-          path: /3001/metrics
-          port: 19000
+          path: /metrics
+          port: 3001
         initialDelaySeconds: 3
         periodSeconds: 3
       livenessProbe:
