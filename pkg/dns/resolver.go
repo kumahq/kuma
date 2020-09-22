@@ -2,6 +2,7 @@ package dns
 
 import (
 	"sync"
+	"strings"
 
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
@@ -107,7 +108,7 @@ func (s *dnsResolver) serviceFromName(name string) (string, error) {
 		return "", errors.Errorf("wrong DNS name: %s", name)
 	}
 
-	service := split[0]
+	service := strings.Join(split[:len(split)-1], ".")
 
 	return service, nil
 }
