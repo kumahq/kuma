@@ -22,8 +22,8 @@ var _ = Describe("KumaProbe", func() {
 			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
 			Expect(err).ToNot(HaveOccurred())
 
-			inbound, ok := probes.KumaProbe(probe).ToReal(9000)
-			Expect(ok).To(BeTrue())
+			inbound, err := probes.KumaProbe(probe).ToReal(9000)
+			Expect(err).ToNot(HaveOccurred())
 			Expect(inbound.Path()).To(Equal("/c1/health/liveness"))
 			Expect(inbound.Port()).To(Equal(uint32(8080)))
 		})

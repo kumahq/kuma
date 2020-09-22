@@ -49,9 +49,9 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 }
 
 func ProbeFor(podProbe *kube_core.Probe, port uint32) (*mesh_proto.Dataplane_Probes_Endpoint, error) {
-	inbound, ok := probes.KumaProbe(*podProbe).ToReal(port)
-	if !ok {
-		return nil, errors.New("can't parse Pod's probe")
+	inbound, err := probes.KumaProbe(*podProbe).ToReal(port)
+	if err != nil {
+		return nil, err
 	}
 	return &mesh_proto.Dataplane_Probes_Endpoint{
 		InboundPort: inbound.Port(),

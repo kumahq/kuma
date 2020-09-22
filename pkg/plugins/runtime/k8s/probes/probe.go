@@ -23,18 +23,18 @@ import (
 type KumaProbe kube_core.Probe
 
 // ToReal creates Real probe assuming that 'p' is a Virtual probe. If 'p' is a Real probe,
-// then second return value is 'false'.
-func (p KumaProbe) ToReal(virtualPort uint32) (KumaProbe, bool) {
+// then method returns an error
+func (p KumaProbe) ToReal(virtualPort uint32) (KumaProbe, error) {
 	if p.Port() != virtualPort {
-		return KumaProbe{}, false
+		return KumaProbe{}, errors.New("can't parse Pod's probe")
 	}
 	segments := strings.Split(p.Path(), "/")
 	if len(segments) < 2 || segments[0] != "" {
-		return KumaProbe{}, false
+		return KumaProbe{}, errors.New("can't parse Pod's probe")
 	}
 	vport, err := strconv.ParseInt(segments[1], 10, 32)
 	if err != nil {
-		return KumaProbe{}, false
+		return KumaProbe{}, errors.New("can't parse Pod's probe")
 	}
 	return KumaProbe{
 		Handler: kube_core.Handler{
@@ -43,7 +43,7 @@ func (p KumaProbe) ToReal(virtualPort uint32) (KumaProbe, bool) {
 				Path: fmt.Sprintf("/%s", strings.Join(segments[2:], "/")),
 			},
 		},
-	}, true
+	}, nil
 }
 
 func (p KumaProbe) ToVirtual(virtualPort uint32) (KumaProbe, error) {
