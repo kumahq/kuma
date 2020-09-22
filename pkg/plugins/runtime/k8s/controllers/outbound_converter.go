@@ -71,7 +71,7 @@ func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32
 
 func ParseService(host string) (name string, namespace string, port uint32, err error) {
 	// split host into <name>_<namespace>_svc_<port>
-	segments := strings.Split(host, "_")
+	segments := strings.Split(host, ".")
 	if len(segments) != 4 {
 		return "", "", 0, errors.Errorf("service tag in unexpected format")
 	}
