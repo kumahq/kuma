@@ -80,7 +80,7 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 
 	It("communication in between apps in remote zone works", func() {
 		stdout, _, err := remoteCluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4001")
+			"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
