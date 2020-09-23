@@ -19,6 +19,9 @@ resources:
                       name: probe
                       routes:
                         - match:
+                            headers:
+                              - exactMatch: GET
+                                name: :method
                             path: /8080/healthz/probe
                           route:
                             cluster: localhost:8080

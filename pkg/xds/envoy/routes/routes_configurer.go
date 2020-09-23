@@ -6,28 +6,42 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 )
 
-func Route(matchPath, newPath, cluster string) VirtualHostBuilderOpt {
+func Route(matchPath, newPath, cluster string, allowGetOnly bool) VirtualHostBuilderOpt {
 	return VirtualHostBuilderOptFunc(func(config *VirtualHostBuilderConfig) {
 		config.Add(&RoutesConfigurer{
-			matchPath: matchPath,
-			newPath:   newPath,
-			cluster:   cluster,
+			matchPath:    matchPath,
+			newPath:      newPath,
+			cluster:      cluster,
+			allowGetOnly: allowGetOnly,
 		})
 	})
 }
 
 type RoutesConfigurer struct {
-	matchPath string
-	newPath   string
-	cluster   string
+	matchPath    string
+	newPath      string
+	cluster      string
+	allowGetOnly bool
 }
 
 func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
+	var headersMatcher []*envoy_route.HeaderMatcher
+	if c.allowGetOnly {
+		headersMatcher = []*envoy_route.HeaderMatcher{
+			{
+				Name: ":method",
+				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{
+					ExactMatch: "GET",
+				},
+			},
+		}
+	}
 	virtualHost.Routes = append(virtualHost.Routes, &envoy_route.Route{
 		Match: &envoy_route.RouteMatch{
 			PathSpecifier: &envoy_route.RouteMatch_Path{
 				Path: c.matchPath,
 			},
+			Headers: headersMatcher,
 		},
 		Action: &envoy_route.Route_Route{
 			Route: &envoy_route.RouteAction{
