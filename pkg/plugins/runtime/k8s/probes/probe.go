@@ -26,15 +26,15 @@ type KumaProbe kube_core.Probe
 // then method returns an error
 func (p KumaProbe) ToReal(virtualPort uint32) (KumaProbe, error) {
 	if p.Port() != virtualPort {
-		return KumaProbe{}, errors.New("can't parse Pod's probe")
+		return KumaProbe{}, errors.Errorf("probe's port %d should be equal to virtual port %d", p.Port(), virtualPort)
 	}
 	segments := strings.Split(p.Path(), "/")
 	if len(segments) < 2 || segments[0] != "" {
-		return KumaProbe{}, errors.New("can't parse Pod's probe")
+		return KumaProbe{}, errors.New("not enough segments in probe's path")
 	}
 	vport, err := strconv.ParseInt(segments[1], 10, 32)
 	if err != nil {
-		return KumaProbe{}, errors.New("can't parse Pod's probe")
+		return KumaProbe{}, errors.Errorf("invalid port value %s", segments[1])
 	}
 	return KumaProbe{
 		Handler: kube_core.Handler{

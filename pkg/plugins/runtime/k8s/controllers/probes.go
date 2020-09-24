@@ -51,7 +51,7 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 func ProbeFor(podProbe *kube_core.Probe, port uint32) (*mesh_proto.Dataplane_Probes_Endpoint, error) {
 	inbound, err := probes.KumaProbe(*podProbe).ToReal(port)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "unable to convert virtual probe to real")
 	}
 	return &mesh_proto.Dataplane_Probes_Endpoint{
 		InboundPort: inbound.Port(),
