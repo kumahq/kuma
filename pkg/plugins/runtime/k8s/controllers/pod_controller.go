@@ -23,7 +23,7 @@ import (
 	kube_record "k8s.io/client-go/tools/record"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	injector_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
+	metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
@@ -69,7 +69,11 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 	}
 
 	// for Pods marked with ingress annotation special type of Dataplane will be injected
-	if enabled := pod.Annotations[injector_metadata.KumaIngressAnnotation]; enabled == injector_metadata.KumaIngressEnabled {
+	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaIngressAnnotation)
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
+	if exist && enabled {
 		services, err := r.findMatchingServices(pod)
 		if err != nil {
 			return kube_ctrl.Result{}, err
@@ -78,7 +82,11 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 	}
 
 	// only Pods with injected Kuma need a Dataplane descriptor
-	if !injector_metadata.HasKumaSidecar(pod) {
+	injected, exist, err := metadata.Annotations(pod.Annotations).GetBool(metadata.KumaSidecarInjectedAnnotation)
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
+	if !exist || !injected {
 		return kube_ctrl.Result{}, nil
 	}
 

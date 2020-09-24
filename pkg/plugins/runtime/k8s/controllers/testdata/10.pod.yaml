@@ -1,0 +1,26 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    version: "0.1"
+  annotations:
+    kuma.io/virtual-probes: enabled
+    kuma.io/virtual-probes-port: 19000
+spec:
+  containers:
+    - readinessProbe:
+        httpGet:
+          path: /3001/metrics
+          port: 19000
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      livenessProbe:
+        httpGet:
+          path: /8080/metrics
+          port: 19000
+        initialDelaySeconds: 3
+        periodSeconds: 3
+
+status:
+  podIP: 192.168.0.1

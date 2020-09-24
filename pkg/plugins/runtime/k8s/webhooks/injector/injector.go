@@ -4,15 +4,15 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-
-	"github.com/pkg/errors"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
@@ -80,36 +80,43 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		if pod.Spec.InitContainers == nil {
 			pod.Spec.InitContainers = []kube_core.Container{}
 		}
-		pod.Spec.InitContainers = append(pod.Spec.InitContainers, i.NewInitContainer(pod))
+		ic, err := i.NewInitContainer(pod)
+		if err != nil {
+			return err
+		}
+		pod.Spec.InitContainers = append(pod.Spec.InitContainers, ic)
+	}
+
+	if err := i.overrideHTTPProbes(pod); err != nil {
+		return err
 	}
 
 	return nil
 }
 
 func needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
-	isEnabled := func(enabled string) (bool, error) {
-		switch enabled {
-		case metadata.KumaSidecarInjectionEnabled:
-			return true, nil
-		case metadata.KumaSidecarInjectionDisabled:
-			return false, nil
-		}
-		return false, errors.Errorf("annotation %s has wrong value", metadata.KumaSidecarInjectionAnnotation)
+	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+	if err != nil {
+		return false, err
 	}
-	if enabled, ok := pod.Annotations[metadata.KumaSidecarInjectionAnnotation]; ok {
-		return isEnabled(enabled)
+	if exist {
+		return enabled, nil
 	}
-	if enabled, ok := ns.Annotations[metadata.KumaSidecarInjectionAnnotation]; ok {
-		return isEnabled(enabled)
+	enabled, exist, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
+	if err != nil {
+		return false, err
+	}
+	if exist {
+		return enabled, nil
 	}
 	return false, nil
 }
 
 func meshName(pod *kube_core.Pod, ns *kube_core.Namespace) string {
-	if mesh, ok := pod.Annotations[metadata.KumaMeshAnnotation]; ok {
+	if mesh, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
 		return mesh
 	}
-	if mesh, ok := ns.Annotations[metadata.KumaMeshAnnotation]; ok {
+	if mesh, exist := metadata.Annotations(ns.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
 		return mesh
 	}
 	return core_model.DefaultMesh
@@ -281,9 +288,13 @@ func (i *KumaInjector) FindServiceAccountToken(pod *kube_core.Pod) *kube_core.Vo
 	return nil
 }
 
-func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container {
+func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container, error) {
 	inboundPortsToIntercept := "*"
-	if pod.GetAnnotations()[metadata.KumaGatewayAnnotation] == metadata.KumaGatewayEnabled {
+	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation)
+	if err != nil {
+		return kube_core.Container{}, err
+	}
+	if exist && enabled {
 		inboundPortsToIntercept = ""
 	}
 	return kube_core.Container{
@@ -325,19 +336,25 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 				kube_core.ResourceMemory: *kube_api.NewScaledQuantity(10, kube_api.Mega),
 			},
 		},
-	}
+	}, nil
 }
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) map[string]string {
 	annotations := map[string]string{
 		metadata.KumaMeshAnnotation:                            mesh.GetMeta().GetName(), // either user-defined value or default
-		metadata.KumaSidecarInjectedAnnotation:                 metadata.KumaSidecarInjected,
-		metadata.KumaTransparentProxyingAnnotation:             metadata.KumaTransparentProxyingEnabled,
+		metadata.KumaSidecarInjectedAnnotation:                 fmt.Sprintf("%t", true),
+		metadata.KumaTransparentProxyingAnnotation:             metadata.AnnotationEnabled,
 		metadata.KumaTransparentProxyingInboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
 		metadata.KumaTransparentProxyingOutboundPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
 	}
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
+	}
+	if _, exist, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation); !exist {
+		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationEnabled
+	}
+	if _, exist, _ := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation); !exist {
+		annotations[metadata.KumaVirtualProbesPortAnnotation] = fmt.Sprintf("%d", i.cfg.VirtualProbesPort)
 	}
 	return annotations
 }

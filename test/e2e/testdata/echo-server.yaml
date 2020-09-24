@@ -37,6 +37,12 @@ spec:
         - name: echo-server
           image: alpine
           imagePullPolicy: IfNotPresent
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 3
           ports:
             - containerPort: 80
           command:
