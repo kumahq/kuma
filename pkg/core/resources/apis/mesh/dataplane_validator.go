@@ -3,6 +3,7 @@ package mesh
 import (
 	"fmt"
 	"net"
+	"net/url"
 	"regexp"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -15,6 +16,7 @@ func (d *DataplaneResource) Validate() error {
 		err.Add(validateIngressNetworking(d.Spec.GetNetworking()))
 	} else {
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
+		err.Add(validateProbes(d.Spec.GetProbes()))
 	}
 	return err.OrNil()
 }
@@ -44,6 +46,30 @@ func validateNetworking(networking *mesh_proto.Dataplane_Networking) validators.
 	for i, outbound := range networking.GetOutbound() {
 		result := validateOutbound(outbound)
 		err.AddErrorAt(path.Field("outbound").Index(i), result)
+	}
+	return err
+}
+
+func validateProbes(probes *mesh_proto.Dataplane_Probes) validators.ValidationError {
+	if probes == nil {
+		return validators.ValidationError{}
+	}
+	var err validators.ValidationError
+	path := validators.RootedAt("probes")
+	if probes.Port < 1 || probes.Port > 65535 {
+		err.AddViolationAt(path.Field("port"), `port has to be in range of [1, 65535]`)
+	}
+	for i, endpoint := range probes.Endpoints {
+		indexPath := path.Field("endpoints").Index(i)
+		if endpoint.InboundPort < 1 || endpoint.InboundPort > 65535 {
+			err.AddViolationAt(indexPath.Field("inboundPort"), `port has to be in range of [1, 65535]`)
+		}
+		if _, URIErr := url.ParseRequestURI(endpoint.InboundPath); URIErr != nil {
+			err.AddViolationAt(indexPath.Field("inboundPath"), `should be a valid URL Path`)
+		}
+		if _, URIErr := url.ParseRequestURI(endpoint.Path); URIErr != nil {
+			err.AddViolationAt(indexPath.Field("path"), `should be a valid URL Path`)
+		}
 	}
 	return err
 }

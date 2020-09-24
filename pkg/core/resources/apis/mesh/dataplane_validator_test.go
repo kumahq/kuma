@@ -162,6 +162,28 @@ var _ = Describe("Dataplane", func() {
                     tags:
                       kuma.io/protocol: tcp`,
 		),
+		Entry("dataplane with probes", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  tags:
+                    kuma.io/service: redis
+            probes:
+              port: 9000
+              endpoints:
+               - inboundPort: 8088
+                 inboundPath: /healthz
+                 path: /8080/healthz`,
+		),
 	)
 
 	type testCase struct {
@@ -833,6 +855,49 @@ var _ = Describe("Dataplane", func() {
                   message: cannot be defined in the ingress mode
                 - field: tags["kuma.io/protocol"]
                   message: other values than TCP are not allowed`,
+		}),
+		Entry("", testCase{
+			dataplane: `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  tags:
+                    kuma.io/service: redis
+            probes:
+              port: 0
+              endpoints:
+               - inboundPort: 8088
+                 inboundPath: /healthz
+                 path: /8080/healthz
+               - inboundPort: 99999999
+                 inboundPath: healthz
+                 path: 8080/healthz
+               - inboundPort: 1000
+                 inboundPath: 
+                 path: `,
+			expected: `
+                violations:
+                - field: probes.port
+                  message: port has to be in range of [1, 65535]
+                - field: probes.endpoints[1].inboundPort
+                  message: port has to be in range of [1, 65535]
+                - field: probes.endpoints[1].inboundPath
+                  message: should be a valid URL Path
+                - field: probes.endpoints[1].path
+                  message: should be a valid URL Path
+                - field: probes.endpoints[2].inboundPath
+                  message: should be a valid URL Path
+                - field: probes.endpoints[2].path
+                  message: should be a valid URL Path`,
 		}),
 	)
 

@@ -1,0 +1,36 @@
+resources:
+  - name: probe:listener
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          portValue: 9000
+      filterChains:
+        - filters:
+            - name: envoy.http_connection_manager
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                httpFilters:
+                  - name: envoy.router
+                routeConfig:
+                  virtualHosts:
+                    - domains:
+                        - '*'
+                      name: probe
+                      routes:
+                        - match:
+                            headers:
+                              - exactMatch: GET
+                                name: :method
+                            path: /8080/healthz/probe
+                          route:
+                            cluster: localhost:8080
+                            regexRewrite:
+                              pattern:
+                                googleRe2:
+                                  maxProgramSize: 500
+                                regex: .*
+                              substitution: /healthz/probe
+                statPrefix: probe_listener
+      name: probe:listener
+      trafficDirection: INBOUND

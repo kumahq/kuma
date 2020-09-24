@@ -7,6 +7,8 @@ metadata:
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/transparent-proxying-inbound-port: "15006"
+    kuma.io/virtual-probes: enabled
+    kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   generateName: coredns-fb8b8dccf-
   labels:
@@ -29,8 +31,8 @@ spec:
     livenessProbe:
       failureThreshold: 5
       httpGet:
-        path: /health
-        port: 8080
+        path: /8080/health
+        port: 9000
         scheme: HTTP
       initialDelaySeconds: 60
       periodSeconds: 10
@@ -50,8 +52,8 @@ spec:
     readinessProbe:
       failureThreshold: 3
       httpGet:
-        path: /health
-        port: 8080
+        path: /8080/health
+        port: 9000
         scheme: HTTP
       periodSeconds: 10
       successThreshold: 1

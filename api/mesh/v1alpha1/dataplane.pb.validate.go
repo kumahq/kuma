@@ -63,6 +63,16 @@ func (m *Dataplane) Validate() error {
 		}
 	}
 
+	if v, ok := interface{}(m.GetProbes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return DataplaneValidationError{
+				field:  "Probes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -248,6 +258,88 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = Dataplane_NetworkingValidationError{}
+
+// Validate checks the field values on Dataplane_Probes with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *Dataplane_Probes) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for Port
+
+	for idx, item := range m.GetEndpoints() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return Dataplane_ProbesValidationError{
+					field:  fmt.Sprintf("Endpoints[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// Dataplane_ProbesValidationError is the validation error returned by
+// Dataplane_Probes.Validate if the designated constraints aren't met.
+type Dataplane_ProbesValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Dataplane_ProbesValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Dataplane_ProbesValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Dataplane_ProbesValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Dataplane_ProbesValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Dataplane_ProbesValidationError) ErrorName() string { return "Dataplane_ProbesValidationError" }
+
+// Error satisfies the builtin error interface
+func (e Dataplane_ProbesValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDataplane_Probes.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Dataplane_ProbesValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Dataplane_ProbesValidationError{}
 
 // Validate checks the field values on Dataplane_Networking_Ingress with the
 // rules defined in the proto definition for this message. If any rules are
@@ -760,3 +852,76 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = Dataplane_Networking_Ingress_AvailableServiceValidationError{}
+
+// Validate checks the field values on Dataplane_Probes_Endpoint with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *Dataplane_Probes_Endpoint) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	// no validation rules for InboundPort
+
+	// no validation rules for InboundPath
+
+	// no validation rules for Path
+
+	return nil
+}
+
+// Dataplane_Probes_EndpointValidationError is the validation error returned by
+// Dataplane_Probes_Endpoint.Validate if the designated constraints aren't met.
+type Dataplane_Probes_EndpointValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Dataplane_Probes_EndpointValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Dataplane_Probes_EndpointValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Dataplane_Probes_EndpointValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Dataplane_Probes_EndpointValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Dataplane_Probes_EndpointValidationError) ErrorName() string {
+	return "Dataplane_Probes_EndpointValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Dataplane_Probes_EndpointValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDataplane_Probes_Endpoint.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Dataplane_Probes_EndpointValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Dataplane_Probes_EndpointValidationError{}
