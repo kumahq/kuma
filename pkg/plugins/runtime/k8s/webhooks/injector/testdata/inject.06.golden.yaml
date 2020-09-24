@@ -8,6 +8,8 @@ metadata:
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/gateway: enabled
+    kuma.io/virtual-probes: enabled
+    kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
   labels:
     run: busybox

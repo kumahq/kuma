@@ -1,8 +1,10 @@
 package controllers
 
 import (
-	"strconv"
 	"strings"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
 	"github.com/pkg/errors"
 
@@ -12,7 +14,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	injector_metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -54,26 +55,54 @@ func (p *PodConverter) PodToIngress(dataplane *mesh_k8s.Dataplane, pod *kube_cor
 }
 
 func MeshFor(pod *kube_core.Pod) string {
-	return injector_metadata.GetMesh(pod)
+	mesh, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMeshAnnotation)
+	if !exist || mesh == "" {
+		return model.DefaultMesh
+	}
+	return mesh
 }
 
 func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
 	}
-	if injector_metadata.HasTransparentProxyingEnabled(pod) {
-		services := pod.GetAnnotations()[injector_metadata.KumaDirectAccess]
-		dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
-			RedirectPortInbound:  injector_metadata.GetTransparentProxyingInboundPort(pod),
-			RedirectPortOutbound: injector_metadata.GetTransparentProxyingOutboundPort(pod),
+	annotations := metadata.Annotations(pod.Annotations)
+
+	enabled, exist, err := annotations.GetEnabled(metadata.KumaTransparentProxyingAnnotation)
+	if err != nil {
+		return nil, err
+	}
+	if exist && enabled {
+		inboundPort, exist, err := annotations.GetUint32(metadata.KumaTransparentProxyingInboundPortAnnotation)
+		if err != nil {
+			return nil, err
 		}
-		if services != "" {
+		if !exist {
+			return nil, errors.New("transparent proxying inbound port has to be set in transparent mode")
+		}
+		outboundPort, exist, err := annotations.GetUint32(metadata.KumaTransparentProxyingOutboundPortAnnotation)
+		if err != nil {
+			return nil, err
+		}
+		if !exist {
+			return nil, errors.New("transparent proxying outbound port has to be set in transparent mode")
+		}
+		dataplane.Networking.TransparentProxying = &mesh_proto.Dataplane_Networking_TransparentProxying{
+			RedirectPortInbound:  inboundPort,
+			RedirectPortOutbound: outboundPort,
+		}
+		if services, _ := annotations.GetString(metadata.KumaDirectAccess); services != "" {
 			dataplane.Networking.TransparentProxying.DirectAccessServices = strings.Split(services, ",")
 		}
 	}
 
 	dataplane.Networking.Address = pod.Status.PodIP
-	if injector_metadata.HasGatewayEnabled(pod) {
+
+	enabled, exist, err = annotations.GetEnabled(metadata.KumaGatewayAnnotation)
+	if err != nil {
+		return nil, err
+	}
+	if exist && enabled {
 		gateway, err := GatewayFor(p.Zone, pod, services)
 		if err != nil {
 			return nil, err
@@ -98,6 +127,12 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 		return nil, err
 	}
 	dataplane.Metrics = metrics
+
+	probes, err := ProbesFor(pod)
+	if err != nil {
+		return nil, err
+	}
+	dataplane.Probes = probes
 
 	return dataplane, nil
 }
@@ -131,23 +166,18 @@ func GatewayFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Se
 }
 
 func MetricsFor(pod *kube_core.Pod) (*mesh_proto.MetricsBackend, error) {
-	path := pod.GetAnnotations()[injector_metadata.KumaMetricsPrometheusPath]
-	port := pod.GetAnnotations()[injector_metadata.KumaMetricsPrometheusPort]
-	if path == "" && port == "" {
+	path, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMetricsPrometheusPath)
+	port, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaMetricsPrometheusPort)
+	if err != nil {
+		return nil, err
+	}
+	if path == "" && !exist {
 		return nil, nil
 	}
-
 	cfg := &mesh_proto.PrometheusMetricsBackendConfig{
 		Path: path,
+		Port: port,
 	}
-	if port != "" {
-		portValue, err := strconv.ParseUint(port, 10, 32)
-		if err != nil {
-			return nil, errors.Wrapf(err, "could not parse port from %s annotation", injector_metadata.KumaMetricsPrometheusPort)
-		}
-		cfg.Port = uint32(portValue)
-	}
-
 	str, err := util_proto.ToStruct(cfg)
 	if err != nil {
 		return nil, err

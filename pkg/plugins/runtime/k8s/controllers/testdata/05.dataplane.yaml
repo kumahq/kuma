@@ -29,3 +29,5 @@ spec:
       directAccessServices:
         - test-app_playground_svc_80
         - test-app_playground_svc_443
+      redirectPortInbound: 15006
+      redirectPortOutbound: 15001
