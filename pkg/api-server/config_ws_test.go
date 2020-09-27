@@ -78,7 +78,9 @@ var _ = Describe("Config WS", func() {
               "xdsHost": "",
               "xdsPort": 0
             },
-            "port": 5682
+            "port": 5682,
+            "tlsCertFile": "",
+            "tlsKeyFile": ""
           },
           "adminServer": {
             "local": {
@@ -109,7 +111,9 @@ var _ = Describe("Config WS", func() {
           "environment": "universal",
           "general": {
             "advertisedHostname": "localhost",
-            "dnsCacheTTL": "10s"
+            "dnsCacheTTL": "10s",
+            "tlsCertFile": "",
+            "tlsKeyFile": ""
           },
           "guiServer": {
             "apiServerUrl": ""
@@ -192,7 +196,9 @@ var _ = Describe("Config WS", func() {
                     }
                   },
                   "uid": 5678
-                }
+                },
+                "virtualProbesEnabled": true,
+                "virtualProbesPort": 9000
               }
             },
             "universal": {

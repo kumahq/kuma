@@ -740,8 +740,6 @@ function _kumactl_install {
 
 function _kumactl_install_control-plane {
   _arguments \
-    '--admission-server-tls-cert[TLS certificate for the admission web hooks implemented by the Kuma Control Plane]:' \
-    '--admission-server-tls-key[TLS key for the admission web hooks implemented by the Kuma Control Plane]:' \
     '--cni-enabled[install Kuma with CNI instead of proxy init container]' \
     '--cni-registry[registry for the image of the Kuma CNI component]:' \
     '--cni-repository[repository for the image of the Kuma CNI component]:' \
@@ -759,12 +757,10 @@ function _kumactl_install_control-plane {
     '--image-pull-policy[image pull policy that applies to all components of the Kuma Control Plane]:' \
     '--injector-failure-policy[failue policy of the mutating web hook implemented by the Kuma Injector component]:' \
     '--kds-global-address[URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)]:' \
-    '--kds-tls-cert[TLS certificate for the KDS server]:' \
-    '--kds-tls-key[TLS key for the KDS server]:' \
     '--mode[kuma cp modes: one of standalone|remote|global]:' \
     '--namespace[namespace to install Kuma Control Plane to]:' \
-    '--sds-tls-cert[TLS certificate for the SDS server]:' \
-    '--sds-tls-key[TLS key for the SDS server]:' \
+    '--tls-cert[TLS certificate for Kuma Control Plane servers]:' \
+    '--tls-key[TLS key for Kuma Control Plane servers]:' \
     '--use-node-port[use NodePort instead of LoadBalancer]' \
     '--zone[set the Kuma zone name]:' \
     '--config-file[path to the configuration file to use]:' \

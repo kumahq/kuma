@@ -4,6 +4,8 @@ admissionServer:
   port: 5443
 injector:
   cniEnabled: false
+  virtualProbesEnabled: true
+  virtualProbesPort: 9000
   sidecarContainer:
     image: kuma/kuma-dp:latest
     redirectPortOutbound: 15001

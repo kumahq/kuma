@@ -32,12 +32,8 @@ type InstallControlPlaneArgs struct {
 	ControlPlane_image_repositry              string           `helm:"controlPlane.image.repositry"`
 	ControlPlane_image_tag                    string           `helm:"controlPlane.image.tag"`
 	ControlPlane_service_name                 string           `helm:"controlPlane.service.name"`
-	ControlPlane_tls_admission_cert           string           `helm:"controlPlane.tls.admission.cert"`
-	ControlPlane_tls_admission_key            string           `helm:"controlPlane.tls.admission.key"`
-	ControlPlane_tls_sds_cert                 string           `helm:"controlPlane.tls.sds.cert"`
-	ControlPlane_tls_sds_key                  string           `helm:"controlPlane.tls.sds.key"`
-	ControlPlane_tls_kds_cert                 string           `helm:"controlPlane.tls.kds.cert"`
-	ControlPlane_tls_kds_key                  string           `helm:"controlPlane.tls.kds.key"`
+	ControlPlane_tls_cert                     string           `helm:"controlPlane.tls.cert"`
+	ControlPlane_tls_key                      string           `helm:"controlPlane.tls.key"`
 	ControlPlane_injectorFailurePolicy        string           `helm:"controlPlane.injectorFailurePolicy"`
 	ControlPlane_secrets                      []ImageEnvSecret `helm:"controlPlane.secrets"`
 	DataPlane_image_registry                  string           `helm:"dataPlane.image.registry"`
@@ -69,12 +65,8 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	ControlPlane_image_repositry:              "kuma-cp",
 	ControlPlane_image_tag:                    kuma_version.Build.Version,
 	ControlPlane_service_name:                 "kuma-control-plane",
-	ControlPlane_tls_admission_cert:           "",
-	ControlPlane_tls_admission_key:            "",
-	ControlPlane_tls_sds_cert:                 "",
-	ControlPlane_tls_sds_key:                  "",
-	ControlPlane_tls_kds_cert:                 "",
-	ControlPlane_tls_kds_key:                  "",
+	ControlPlane_tls_cert:                     "",
+	ControlPlane_tls_key:                      "",
 	ControlPlane_injectorFailurePolicy:        "Ignore",
 	DataPlane_image_registry:                  "kong-docker-kuma-docker.bintray.io",
 	DataPlane_image_repositry:                 "kuma-dp",
@@ -140,12 +132,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.ControlPlane_image_repositry, "control-plane-repository", args.ControlPlane_image_repositry, "repository for the image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlane_image_tag, "control-plane-version", args.ControlPlane_image_tag, "version of the image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlane_service_name, "control-plane-service-name", args.ControlPlane_service_name, "Service name of the Kuma Control Plane")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_admission_cert, "admission-server-tls-cert", args.ControlPlane_tls_admission_cert, "TLS certificate for the admission web hooks implemented by the Kuma Control Plane")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_admission_key, "admission-server-tls-key", args.ControlPlane_tls_admission_key, "TLS key for the admission web hooks implemented by the Kuma Control Plane")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_sds_cert, "sds-tls-cert", args.ControlPlane_tls_sds_cert, "TLS certificate for the SDS server")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_sds_key, "sds-tls-key", args.ControlPlane_tls_sds_key, "TLS key for the SDS server")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_kds_cert, "kds-tls-cert", args.ControlPlane_tls_kds_cert, "TLS certificate for the KDS server")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_kds_key, "kds-tls-key", args.ControlPlane_tls_kds_key, "TLS key for the KDS server")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_cert, "tls-cert", args.ControlPlane_tls_cert, "TLS certificate for Kuma Control Plane servers")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_key, "tls-key", args.ControlPlane_tls_key, "TLS key for Kuma Control Plane servers")
 	cmd.Flags().StringVar(&args.ControlPlane_injectorFailurePolicy, "injector-failure-policy", args.ControlPlane_injectorFailurePolicy, "failue policy of the mutating web hook implemented by the Kuma Injector component")
 	cmd.Flags().StringVar(&args.DataPlane_image_registry, "dataplane-registry", args.DataPlane_image_registry, "registry for the image of the Kuma DataPlane component")
 	cmd.Flags().StringVar(&args.DataPlane_image_repositry, "dataplane-repository", args.DataPlane_image_repositry, "repository for the image of the Kuma DataPlane component")
@@ -186,59 +174,26 @@ func validateArgs(args InstallControlPlaneArgs) error {
 			return errors.Errorf("--kds-global-address should start with grpcs://")
 		}
 	}
-	if (args.ControlPlane_tls_admission_cert == "") != (args.ControlPlane_tls_admission_key == "") {
-		return errors.Errorf("both --admission-server-tls-cert and --admission-server-tls-key must be provided at the same time")
-	}
-	if (args.ControlPlane_tls_sds_cert == "") != (args.ControlPlane_tls_sds_key == "") {
-		return errors.Errorf("both --sds-tls-cert and --sds-tls-key must be provided at the same time")
-	}
-	if (args.ControlPlane_tls_kds_cert == "") != (args.ControlPlane_tls_kds_key == "") {
-		return errors.Errorf("both --kds-tls-cert and --kds-tls-key must be provided at the same time")
+	if (args.ControlPlane_tls_cert == "") != (args.ControlPlane_tls_key == "") {
+		return errors.Errorf("both --tls-cert and --tls-key must be provided at the same time")
 	}
 	return nil
 }
 
 func autogenerateCerts(args *InstallControlPlaneArgs) error {
-	if args.ControlPlane_tls_admission_cert == "" && args.ControlPlane_tls_admission_key == "" {
-		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlane_service_name, args.Namespace)
-		// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
-		admissionCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
-		}
-		args.ControlPlane_tls_admission_cert = string(admissionCert.CertPEM)
-		args.ControlPlane_tls_admission_key = string(admissionCert.KeyPEM)
-	}
-
-	if args.ControlPlane_tls_sds_cert == "" && args.ControlPlane_tls_sds_key == "" {
+	if args.ControlPlane_tls_cert == "" && args.ControlPlane_tls_key == "" {
 		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlane_service_name, args.Namespace)
 		hosts := []string{
 			fqdn,
 			fmt.Sprintf("%s.%s", args.ControlPlane_service_name, args.Namespace),
-			args.ControlPlane_service_name,
 			"localhost",
 		}
-		// notice that Envoy's SDS client (Google gRPC) does require DNS SAN in a X509 cert of an SDS server
-		sdsCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
+		cert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
 		}
-		args.ControlPlane_tls_sds_cert = string(sdsCert.CertPEM)
-		args.ControlPlane_tls_sds_key = string(sdsCert.KeyPEM)
-	}
-
-	if args.ControlPlane_tls_kds_cert == "" && args.ControlPlane_tls_kds_key == "" {
-		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlane_service_name, args.Namespace)
-		hosts := []string{
-			fqdn,
-			"localhost",
-		}
-		kdsCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
-		}
-		args.ControlPlane_tls_kds_cert = string(kdsCert.CertPEM)
-		args.ControlPlane_tls_kds_key = string(kdsCert.KeyPEM)
+		args.ControlPlane_tls_cert = string(cert.CertPEM)
+		args.ControlPlane_tls_key = string(cert.KeyPEM)
 	}
 	return nil
 }
