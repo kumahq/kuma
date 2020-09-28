@@ -70,24 +70,25 @@ func BuildEndpointMap(destinations core_xds.DestinationMap,
 				})
 			}
 		}
-
-		for _, externalService := range externalServices {
-			service := externalService.Spec.Tags[mesh_proto.ServiceTag]
-			selectors, ok := destinations[service]
-			if !ok {
-				continue
-			}
-			if !selectors.Matches(externalService.Spec.Tags) {
-				continue
-			}
-			outbound[service] = append(outbound[service], core_xds.Endpoint{
-				Target:            externalService.Spec.GetHost(),
-				Port:              externalService.Spec.GetPortUInt32(),
-				Tags:              externalService.Spec.GetTags(),
-				Weight:            1,
-				IsExternalService: true,
-			})
-		}
 	}
+
+	for _, externalService := range externalServices {
+		service := externalService.Spec.GetService()
+		selectors, ok := destinations[service]
+		if !ok {
+			continue
+		}
+		if !selectors.Matches(externalService.Spec.Tags) {
+			continue
+		}
+		outbound[service] = append(outbound[service], core_xds.Endpoint{
+			Target:            externalService.Spec.GetHost(),
+			Port:              externalService.Spec.GetPortUInt32(),
+			Tags:              externalService.Spec.GetTags(),
+			Weight:            1,
+			IsExternalService: true,
+		})
+	}
+	
 	return outbound
 }

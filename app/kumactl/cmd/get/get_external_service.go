@@ -33,7 +33,7 @@ func newGetExternalServiceCmd(pctx *getContext) *cobra.Command {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)
 				}
-				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
+				return errors.Wrapf(err, "failed to get an external service in mesh %s", currentMesh)
 			}
 			externalServices := &mesh.ExternalServiceResourceList{
 				Items: []*mesh.ExternalServiceResource{externalService},

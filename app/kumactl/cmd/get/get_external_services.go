@@ -50,7 +50,7 @@ func newGetExternalServicesCmd(pctx *listContext) *cobra.Command {
 
 func printExternalServices(rootTime time.Time, externalServices *mesh.ExternalServiceResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "TAGS", "AGE"},
+		Headers: []string{"MESH", "NAME", "TAGS", "ADDRESS", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -58,14 +58,14 @@ func printExternalServices(rootTime time.Time, externalServices *mesh.ExternalSe
 				if len(externalServices.Items) <= i {
 					return nil
 				}
-				dataplane := externalServices.Items[i]
+				externalService := externalServices.Items[i]
 
 				return []string{
-					dataplane.Meta.GetMesh(),                                        // MESH
-					dataplane.Meta.GetName(),                                        // NAME,
-					dataplane.Spec.TagSet().String(),                                // TAGS
-					table.TimeSince(dataplane.Meta.GetModificationTime(), rootTime), // AGE
-
+					externalService.Meta.GetMesh(),                                        // MESH
+					externalService.Meta.GetName(),                                        // NAME,
+					externalService.Spec.TagSet().String(),                                // TAGS
+					externalService.Spec.Networking.Address,                               // ADDRESS
+					table.TimeSince(externalService.Meta.GetModificationTime(), rootTime), // AGE
 				}
 			}
 		}(),

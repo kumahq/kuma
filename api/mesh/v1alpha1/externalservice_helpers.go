@@ -62,23 +62,13 @@ func (es *ExternalService) GetPortUInt32() uint32 {
 	return uint32(iport)
 }
 
-func (es *ExternalService) TagSet() MultiValueTagSet {
-	tags := MultiValueTagSet{}
-	for tag, value := range es.Tags {
-		_, exists := tags[tag]
-		if !exists {
-			tags[tag] = map[string]bool{}
-		}
-		tags[tag][value] = true
-	}
-
-	return tags
+func (es *ExternalService) TagSet() SingleValueTagSet {
+	return es.Tags
 }
 
 func (es *ExternalService) GetIdentifyingService() string {
-	services := es.TagSet().Values(ServiceTag)
-	if len(services) > 0 {
-		return services[0]
+	if service, ok := es.TagSet()[ServiceTag]; ok {
+		return service
 	}
 	return ServiceUnknown
 }

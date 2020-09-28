@@ -252,6 +252,15 @@ func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {
 	return rv
 }
 
+func (t SingleValueTagSet) String() string {
+	var tags []string
+	for tag, value := range t {
+		tags = append(tags, fmt.Sprintf("%s=%s", tag, value))
+	}
+	sort.Strings(tags)
+	return strings.Join(tags, " ")
+}
+
 // Set of tags that allows multiple values per key.
 type MultiValueTagSet map[string]map[string]bool
 
