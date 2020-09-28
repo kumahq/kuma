@@ -1,0 +1,323 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Description: Kuma Control Plane on ECS
+Parameters:
+  VPCStackName:
+    Type: String
+    Default: kuma-vpc
+    Description: The name of the parent Fargate networking stack that you created. Necessary
+      to locate and reference resources created by that stack.
+  Image:
+    Type: String
+    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:080-preview-2"
+    Description: The name of the kuma-cp docker image
+  IngressImage:
+    Type: String
+    Default: "kong-docker-kuma-docker.bintray.io/kuma-dp:080-preview-2"
+    Description: The name of the kuma-dp docker image
+  Zone:
+    Type: String
+    Default: "zone-1"
+    Description: The name of the remote zone
+  KumaCPGlobal:
+    Type: String
+    Default: "grpcs://global-controlplane.kuma.io:5685"
+  AllowedCidr:
+    Type: String
+    Default: '10.0.0.0/8'
+    Description: The CIDR used to restrict the kuma-cp ports access
+  IngressPort:
+    Type: String
+    Default: 10001
+
+Resources:
+
+  ###################################
+  # Service Discovery configuration #
+  ###################################
+
+  DiscoveryServiceKumaCP:
+    Type: AWS::ServiceDiscovery::Service
+    Properties:
+      Description: Discovery Service for Kuma CP
+      DnsConfig:
+        RoutingPolicy: MULTIVALUE
+        DnsRecords:
+          - TTL: 60
+            Type: A
+          - TTL: 60
+            Type: SRV
+      HealthCheckCustomConfig:
+        FailureThreshold: 1
+      Name: !Join [ "-", [ !Ref Zone, "controlplane" ] ]
+      NamespaceId:
+        Fn::ImportValue:
+          !Join [ ':', [ !Ref 'VPCStackName', 'PrivateNamespace' ] ]
+
+  KumaECSTaskExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: [ ecs-tasks.amazonaws.com ]
+            Action: [ 'sts:AssumeRole' ]
+      Path: /
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
+        - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+
+  KumaECSTaskIamRole:
+    Type: AWS::IAM::Role
+    Properties:
+      Path: /
+      AssumeRolePolicyDocument: |
+        {
+            "Statement": [{
+                "Effect": "Allow",
+                "Principal": { "Service": [ "ecs-tasks.amazonaws.com" ]},
+                "Action": [ "sts:AssumeRole" ]
+            }]
+        }
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/CloudWatchFullAccess
+        - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
+        - arn:aws:iam::aws:policy/AWSAppMeshEnvoyAccess
+
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Ref AWS::StackName
+      RetentionInDays: 7 # days
+
+  #########################
+  # Kuma CP configuration #
+  #########################
+
+  KumaCpSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to Kuma CP
+      VpcId:
+        Fn::ImportValue:
+          !Join [ ':', [ !Ref 'VPCStackName', 'VPCId' ] ]
+
+  KumaCpIngressTcp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Ingress for kuma-cp TCP
+      GroupId: !Ref KumaCpSecurityGroup
+      IpProtocol: tcp
+      CidrIp: !Ref AllowedCidr
+      FromPort: 5676
+      ToPort: 5682
+
+  KumaCpIngressSSH:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Ingress for kuma-cp SSH
+      GroupId: !Ref KumaCpSecurityGroup
+      IpProtocol: tcp
+      CidrIp: !Ref AllowedCidr
+      FromPort: 22
+      ToPort: 22
+
+  KumaCpIngressTcpFromSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Ingress for kuma-cp TCP from anywhere
+      GroupId: !Ref KumaCpSecurityGroup
+      CidrIp: '10.0.0.0/8'
+      IpProtocol: tcp
+      FromPort: 5676
+      ToPort: 5682
+
+  KumaCpIngressUdpFromSelf:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: Ingress for kuma-cp DNS
+      GroupId: !Ref KumaCpSecurityGroup
+      CidrIp: '10.0.0.0/8'
+      IpProtocol: udp
+      FromPort: 53
+      ToPort: 53
+
+  ServiceKumaCP:
+    Type: AWS::ECS::Service
+    Properties:
+      LaunchType: FARGATE
+      Cluster:
+        Fn::ImportValue:
+          !Join [ ':', [ !Ref 'VPCStackName', 'ClusterName' ] ]
+      DesiredCount: 1
+      TaskDefinition: !Ref 'TaskDefinitionKumaCP'
+      ServiceRegistries:
+        - RegistryArn: !GetAtt DiscoveryServiceKumaCP.Arn
+          Port: 5681
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - Fn::ImportValue:
+                !Join [ ':', [ !Ref 'VPCStackName', 'PublicSubnet' ] ]
+          SecurityGroups:
+            - !Ref KumaCpSecurityGroup
+            - Fn::ImportValue:
+                !Join [ ':', [ !Ref 'VPCStackName', 'FargateContainerSecurityGroup' ] ]
+
+  TaskDefinitionKumaCP:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: kuma-cp-remote-family
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref KumaECSTaskIamRole
+      ExecutionRoleArn: !Ref 'KumaECSTaskExecutionRole'
+      Cpu: 256
+      Memory: 512
+      ContainerDefinitions:
+        - Name: ssh-admin
+          Image: sickp/alpine-sshd:latest
+          PortMappings:
+            - ContainerPort: 22
+              Protocol: tcp
+        - Name: kuma-cp-remote
+          Essential: true
+          Image: !Ref Image
+          PortMappings:
+            - ContainerPort: 5676
+              Protocol: tcp
+            - ContainerPort: 5677
+              Protocol: tcp
+            - ContainerPort: 5678
+              Protocol: tcp
+            - ContainerPort: 5679
+              Protocol: tcp
+            - ContainerPort: 5680
+              Protocol: tcp
+            - ContainerPort: 5681
+              Protocol: tcp
+            - ContainerPort: 5682
+              Protocol: tcp
+            - ContainerPort: 53
+              Protocol: udp
+          User: root:root # needed for UDP port 53 binding
+          Environment:
+            - Name: KUMA_MODE
+              Value: remote
+            - Name: KUMA_MULTICLUSTER_REMOTE_ZONE
+              Value: !Ref Zone
+            - Name: KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
+              Value: !Ref KumaCPGlobal
+            - Name: KUMA_GENERAL_ADVERTISED_HOSTNAME
+              Value: !Join [ "-", [ !Ref Zone, "controlplane.kuma.io" ] ]
+            - Name: KUMA_DNS_SERVER_PORT
+              Value: 53
+            # TODO: remove this one once the token workflow is fixed
+            - Name: KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED
+              Value: "false"
+            - Name: KUMA_DATAPLANE_TOKEN_SERVER_ENABLED
+              Value: "false"
+          Command:
+            - "run"
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref AWS::StackName
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: kuma-cp
+
+
+  ############################
+  # Ingress DP configuration #
+  ############################
+
+  IngressDPSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to Kuma Ingress DP
+      VpcId:
+        Fn::ImportValue:
+          !Join [ ':', [ !Ref 'VPCStackName', 'VPCId' ] ]
+
+  IngressDPTcp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: For Ingress DP
+      GroupId: !Ref IngressDPSecurityGroup
+      IpProtocol: tcp
+      CidrIp: 0.0.0.0/0
+      FromPort: !Ref IngressPort
+      ToPort: !Ref IngressPort
+
+  ServiceIngressDP:
+    Type: AWS::ECS::Service
+    Properties:
+      LaunchType: FARGATE
+      Cluster:
+        Fn::ImportValue:
+          !Join [ ':', [ !Ref 'VPCStackName', 'ClusterName' ] ]
+      DesiredCount: 1
+      TaskDefinition: !Ref 'TaskDefinitionIngressDP'
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - Fn::ImportValue:
+                !Join [ ':', [ !Ref 'VPCStackName', 'PublicSubnet' ] ]
+          SecurityGroups: [ !Ref 'IngressDPSecurityGroup' ]
+
+  TaskDefinitionIngressDP:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: kuma-dp-ingress
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !Ref KumaECSTaskIamRole
+      ExecutionRoleArn: !Ref 'KumaECSTaskExecutionRole'
+      Cpu: 256
+      Memory: 512
+      ContainerDefinitions:
+        - Name: kuma-dp
+          Image: !Ref IngressImage
+          PortMappings:
+            - ContainerPort: !Ref IngressPort
+              Protocol: tcp
+          Essential: true
+          User: '5678'
+          Environment:
+            - Name: KUMA_DATAPLANE_RUNTIME_RESOURCE
+              Value: |
+                ---
+                type: Dataplane
+                name: dp-ingress
+                mesh: default
+                networking:
+                  address: "{{ address }}"
+                  ingress: { }
+                  inbound:
+                    - port: {{ port }}
+                      tags:
+                        kuma.io/service: ingress
+                        kuma.io/protocol: tcp
+          EntryPoint: [ "sh", "-c" ]
+          Command:
+            - !Join
+              - " "
+              - - "kuma-dp"
+                - "run"
+                - "--cp-address"
+                - !Join [ "", [ "http://", !Join [ "-", [ !Ref Zone, "controlplane" ] ], ".kuma.io:5681" ] ]
+                - "--dataplane-var"
+                - "address=`hostname -i`"
+                - "--dataplane-var"
+                - !Join [ "=", [ "port", !Ref IngressPort ] ]
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref AWS::StackName
+              awslogs-region: !Ref AWS::Region
+              awslogs-stream-prefix: kuma-dp

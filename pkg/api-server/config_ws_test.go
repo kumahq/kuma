@@ -196,7 +196,9 @@ var _ = Describe("Config WS", func() {
                     }
                   },
                   "uid": 5678
-                }
+                },
+                "virtualProbesEnabled": true,
+                "virtualProbesPort": 9000
               }
             },
             "universal": {

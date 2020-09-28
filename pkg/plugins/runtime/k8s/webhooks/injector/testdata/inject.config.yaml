@@ -31,3 +31,5 @@ sidecarContainer:
 initContainer:
   enabled: true
   image: kuma/kuma-init:latest
+virtualProbesEnabled: true
+virtualProbesPort: 9000

@@ -16,7 +16,9 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			Port: 5443,
 		},
 		Injector: Injector{
-			CNIEnabled: false,
+			CNIEnabled:           false,
+			VirtualProbesEnabled: true,
+			VirtualProbesPort:    9000,
 			SidecarContainer: SidecarContainer{
 				Image:                "kuma/kuma-dp:latest",
 				RedirectPortInbound:  15006,
@@ -85,6 +87,12 @@ type Injector struct {
 	InitContainer InitContainer `yaml:"initContainer,omitempty"`
 	// CNIEnabled if true runs kuma-cp in CNI compatible mode
 	CNIEnabled bool `yaml:"cniEnabled" envconfig:"kuma_runtime_kubernetes_injector_cni_enabled"`
+	// VirtualProbesEnabled enables automatic converting HttpGet probes to virtual. Virtual probe
+	// serves on sub-path of insecure port 'virtualProbesPort',
+	// i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
+	VirtualProbesEnabled bool `yaml:"virtualProbesEnabled" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
+	// VirtualProbesPort is an insecure port for listening virtual probes
+	VirtualProbesPort uint32 `yaml:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
 }
 
 // SidecarContainer defines configuration of the Kuma sidecar container.
