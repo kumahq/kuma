@@ -78,6 +78,26 @@ spec:
     - ALL
 ---
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: loki
+    release: loki
+  annotations:
+    {}
+  name: loki
+  namespace: kuma
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app: promtail
+    release: loki
+  name: loki-promtail
+  namespace: kuma
+---
+apiVersion: v1
 kind: Secret
 metadata:
   name: loki
@@ -360,26 +380,6 @@ data:
         - __meta_kubernetes_pod_annotation_kubernetes_io_config_mirror
         - __meta_kubernetes_pod_container_name
         target_label: __path__
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app: loki
-    release: loki
-  annotations:
-    {}
-  name: loki
-  namespace: kuma
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  labels:
-    app: promtail
-    release: loki
-  name: loki-promtail
-  namespace: kuma
 ---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1

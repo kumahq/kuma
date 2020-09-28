@@ -39,7 +39,10 @@ func newInstallLogging() *cobra.Command {
 				return errors.Wrap(err, "Failed to render template files")
 			}
 
-			sortedResources := k8s.SortResourcesByKind(renderedFiles)
+			sortedResources, err := k8s.SortResourcesByKind(renderedFiles)
+			if err != nil {
+				return errors.Wrap(err, "Failed to sort resources by kind")
+			}
 
 			singleFile := data.JoinYAML(sortedResources)
 
