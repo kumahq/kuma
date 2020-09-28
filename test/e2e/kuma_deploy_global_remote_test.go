@@ -56,9 +56,8 @@ metadata:
 		Expect(global).ToNot(BeNil())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithGlobalAddress(global.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(global.GetKDSServerAddress()))).
 			Install(KumaDNS()).
-			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
 			Install(EchoServerK8s()).
