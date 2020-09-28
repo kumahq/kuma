@@ -13,6 +13,14 @@ message ExternalService {
   message Networking {
     // Address of the external service
     string address = 1;
+
+    // TLS
+    message TLS {
+      // denotes that the external service uses TLS
+      bool enabled = 1;
+    }
+
+    TLS tls = 2;
   }
 
   Networking networking = 1;

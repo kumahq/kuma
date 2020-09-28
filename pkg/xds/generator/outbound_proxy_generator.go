@@ -184,6 +184,8 @@ func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]strin
 func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters envoy_common.Clusters) *model.ResourceSet {
 	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
+		// Endpoints for ExternalServices are specified in load assignment in DNS Cluster.
+		// We are not allowed to add endpoints with DNS names through EDS.
 		if !clusters.Get(clusterName).HasExternalService() {
 			serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
 			endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])
@@ -231,9 +233,9 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 			Tags:        destination.Destination,
 		}
 		for _, ep := range proxy.OutboundTargets[service] {
-			if ep.IsExternalService {
+			if ep.IsExternalService() {
 				subset.IsExternalService = true
-				_, subset.RequiresTls = ep.Tags[kuma_mesh.TlsTag]
+				subset.RequiresTls = ep.ExternalService.TLSEnabled
 				break
 			}
 		}

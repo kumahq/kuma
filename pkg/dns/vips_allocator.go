@@ -103,9 +103,6 @@ func (d *vipsAllocator) synchronize() error {
 
 		for _, es := range externalServices.Items {
 			service := es.Spec.GetService()
-			if _, exists := serviceMap[service]; exists {
-				vipsAllocatorLog.V(0).Info("Overlapping Extrnal Service name", "service", service)
-			}
 			serviceMap[service] = true
 		}
 	}

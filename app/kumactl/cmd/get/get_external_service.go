@@ -18,8 +18,8 @@ import (
 func newGetExternalServiceCmd(pctx *getContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "external-service NAME",
-		Short: "Show a single External-Service resource",
-		Long:  `Show a single External-Service resource.`,
+		Short: "Show a single ExternalService resource",
+		Long:  `Show a single ExternalService resource.`,
 		Args:  cobra.MinimumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			rs, err := pctx.CurrentResourceStore()

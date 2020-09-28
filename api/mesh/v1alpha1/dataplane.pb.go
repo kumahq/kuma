@@ -30,7 +30,9 @@ type Dataplane struct {
 	//
 	// Settings defined here will override their respective defaults
 	// defined at a Mesh level.
-	Metrics              *MetricsBackend   `protobuf:"bytes,2,opt,name=metrics,proto3" json:"metrics,omitempty"`
+	Metrics *MetricsBackend `protobuf:"bytes,2,opt,name=metrics,proto3" json:"metrics,omitempty"`
+	// Probes describes list of endpoints which will redirect traffic from
+	// insecure port to localhost path
 	Probes               *Dataplane_Probes `protobuf:"bytes,3,opt,name=probes,proto3" json:"probes,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`

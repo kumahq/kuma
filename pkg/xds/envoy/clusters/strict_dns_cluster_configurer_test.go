@@ -36,12 +36,14 @@ var _ = Describe("StrictDNSClusterConfigurer", func() {
 		// when
 		cluster, err := clusters.NewClusterBuilder().
 			Configure(clusters.StrictDNSCluster(clusterName, []xds.Endpoint{
-				xds.Endpoint{
-					Target:            address,
-					Port:              port,
-					Tags:              nil,
-					Weight:            100,
-					IsExternalService: true,
+				{
+					Target: address,
+					Port:   port,
+					Tags:   nil,
+					Weight: 100,
+					ExternalService: &xds.ExternalService{
+						TLSEnabled: true,
+					},
 				},
 			})).
 			Build()

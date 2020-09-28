@@ -39,13 +39,17 @@ type TagSelectorSet []mesh_proto.TagSelector
 // Policies that match on outbound connections also match by service destination name and not outbound interface for the same reason.
 type DestinationMap map[ServiceName]TagSelectorSet
 
+type ExternalService struct {
+	TLSEnabled bool
+}
+
 // Endpoint holds routing-related information about a single endpoint.
 type Endpoint struct {
-	Target            string
-	Port              uint32
-	Tags              map[string]string
-	Weight            uint32
-	IsExternalService bool
+	Target          string
+	Port            uint32
+	Tags            map[string]string
+	Weight          uint32
+	ExternalService *ExternalService
 }
 
 // EndpointList is a list of Endpoints with convenience methods.
@@ -101,6 +105,10 @@ func (s TagSelectorSet) Matches(tags map[string]string) bool {
 		}
 	}
 	return false
+}
+
+func (e Endpoint) IsExternalService() bool {
+	return e.ExternalService != nil
 }
 
 func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
