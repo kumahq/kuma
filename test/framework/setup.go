@@ -112,7 +112,6 @@ type IngressDesc struct {
 	IP   string
 }
 
-
 func DemoClientK8s() InstallFunc {
 	const name = "demo-client"
 	return Combine(

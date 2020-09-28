@@ -243,8 +243,8 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 	}
 
 	if opts.ingress {
-		argsMap["--ingress-enabled"]=""
-		argsMap["--ingress-use-node-port"]=""
+		argsMap["--ingress-enabled"] = ""
+		argsMap["--ingress-use-node-port"] = ""
 	}
 
 	for opt, value := range opts.ctlOpts {
