@@ -1,0 +1,143 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  annotations:
+    kuma.io/mesh: default
+    kuma.io/sidecar-injected: "true"
+    kuma.io/transparent-proxying: enabled
+    kuma.io/transparent-proxying-inbound-port: "15006"
+    kuma.io/transparent-proxying-outbound-port: "15001"
+    kuma.io/virtual-probes: enabled
+    kuma.io/virtual-probes-port: "19000"
+  creationTimestamp: null
+  labels:
+    run: busybox
+  name: busybox
+spec:
+  containers:
+    - image: busybox
+      livenessProbe:
+        httpGet:
+          path: /8080/metrics
+          port: 19000
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      name: busybox
+      readinessProbe:
+        httpGet:
+          path: /3001/metrics
+          port: 19000
+        initialDelaySeconds: 3
+        periodSeconds: 3
+      resources: {}
+      volumeMounts:
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: default-token-w7dxf
+          readOnly: true
+    - args:
+        - run
+        - --log-level=info
+      env:
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.name
+        - name: POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: metadata.namespace
+        - name: INSTANCE_IP
+          valueFrom:
+            fieldRef:
+              apiVersion: v1
+              fieldPath: status.podIP
+        - name: KUMA_CONTROL_PLANE_API_SERVER_URL
+          value: http://kuma-control-plane.kuma-system:5681
+        - name: KUMA_DATAPLANE_MESH
+          value: default
+        - name: KUMA_DATAPLANE_NAME
+          value: $(POD_NAME).$(POD_NAMESPACE)
+        - name: KUMA_DATAPLANE_ADMIN_PORT
+          value: "9901"
+        - name: KUMA_DATAPLANE_DRAIN_TIME
+          value: 31s
+        - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+          value: /var/run/secrets/kubernetes.io/serviceaccount/token
+      image: kuma/kuma-sidecar:latest
+      imagePullPolicy: IfNotPresent
+      livenessProbe:
+        exec:
+          command:
+            - wget
+            - -qO-
+            - http://127.0.0.1:9901
+        failureThreshold: 212
+        initialDelaySeconds: 260
+        periodSeconds: 25
+        successThreshold: 1
+        timeoutSeconds: 23
+      name: kuma-sidecar
+      readinessProbe:
+        exec:
+          command:
+            - wget
+            - -qO-
+            - http://127.0.0.1:9901
+        failureThreshold: 112
+        initialDelaySeconds: 11
+        periodSeconds: 15
+        successThreshold: 11
+        timeoutSeconds: 13
+      resources:
+        limits:
+          cpu: 1100m
+          memory: 1512Mi
+        requests:
+          cpu: 150m
+          memory: 164Mi
+      securityContext:
+        runAsGroup: 5678
+        runAsUser: 5678
+      volumeMounts:
+        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+          name: default-token-w7dxf
+          readOnly: true
+  initContainers:
+    - args:
+        - -p
+        - "15001"
+        - -z
+        - "15006"
+        - -u
+        - "5678"
+        - -g
+        - "5678"
+        - -m
+        - REDIRECT
+        - -i
+        - '*'
+        - -b
+        - '*'
+      image: kuma/kuma-init:latest
+      imagePullPolicy: IfNotPresent
+      name: kuma-init
+      resources:
+        limits:
+          cpu: 100m
+          memory: 50M
+        requests:
+          cpu: 10m
+          memory: 10M
+      securityContext:
+        capabilities:
+          add:
+            - NET_ADMIN
+        runAsGroup: 0
+        runAsUser: 0
+  volumes:
+    - name: default-token-w7dxf
+      secret:
+        secretName: default-token-w7dxf
+status: {}

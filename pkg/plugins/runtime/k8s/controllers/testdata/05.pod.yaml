@@ -7,6 +7,8 @@ metadata:
   annotations:
     kuma.io/direct-access-services: "test-app_playground_svc_80,test-app_playground_svc_443"
     kuma.io/transparent-proxying: "enabled"
+    kuma.io/transparent-proxying-inbound-port: 15006
+    kuma.io/transparent-proxying-outbound-port: 15001
 spec:
   containers:
     - ports:

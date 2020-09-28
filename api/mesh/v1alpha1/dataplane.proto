@@ -125,4 +125,20 @@ message Dataplane {
   // Settings defined here will override their respective defaults
   // defined at a Mesh level.
   MetricsBackend metrics = 2;
+
+  message Probes {
+    uint32 port = 1;
+
+    message Endpoint {
+      uint32 inbound_port = 1;
+      string inbound_path = 2;
+      string path = 3;
+    }
+
+    repeated Endpoint endpoints = 2;
+  }
+
+  // Probes describes list of endpoints which will redirect traffic from
+  // insecure port to localhost path
+  Probes probes = 3;
 }

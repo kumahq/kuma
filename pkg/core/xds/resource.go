@@ -142,6 +142,9 @@ func (s *ResourceSet) typeName(resource ResourcePayload) string {
 }
 
 func (s *ResourceSet) List() ResourceList {
+	if s == nil {
+		return nil
+	}
 	list := ResourceList{}
 	list = append(list, s.ListOf(envoy_resource.EndpointType)...)
 	list = append(list, s.ListOf(envoy_resource.ClusterType)...)

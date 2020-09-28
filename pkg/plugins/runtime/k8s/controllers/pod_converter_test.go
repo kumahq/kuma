@@ -209,10 +209,15 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "08.services-for-pod.yaml",
 			dataplane:      "08.dataplane.yaml",
 		}),
-		Entry("09.Pod with Kuma Ingress", testCase{
+		Entry("09. Pod with Kuma Ingress", testCase{
 			pod:            "09.pod.yaml",
 			servicesForPod: "09.services-for-pod.yaml",
 			dataplane:      "09.dataplane.yaml",
+		}),
+		Entry("10. Pod probes", testCase{
+			pod:            "10.pod.yaml",
+			servicesForPod: "10.services-for-pod.yaml",
+			dataplane:      "10.dataplane.yaml",
 		}),
 	)
 
