@@ -8,6 +8,15 @@ metadata:
     kuma.io/system-namespace: "true"
 ---
 apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kuma-control-plane
+  namespace: kuma
+  labels:
+    app.kubernetes.io/name: kuma
+    app.kubernetes.io/instance: kuma
+---
+apiVersion: v1
 kind: Secret
 type: kubernetes.io/tls
 metadata:
@@ -33,15 +42,6 @@ data:
     # use this file to override default configuration of `kuma-cp`
     #
     # see conf/kuma-cp.conf.yml for available settings
----
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: kuma-control-plane
-  namespace: kuma
-  labels:
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
