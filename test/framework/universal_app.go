@@ -70,6 +70,9 @@ networking:
   - port: 4001
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
+  - port: 4002
+    tags:
+      kuma.io/service: external-service
 `
 )
 
