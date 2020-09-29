@@ -1,14 +1,12 @@
 package framework
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
-	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -112,49 +110,6 @@ func EchoServerUniversal(token string) InstallFunc {
 type IngressDesc struct {
 	Port int32
 	IP   string
-}
-
-func Ingress(ingress *IngressDesc) InstallFunc {
-	const name = "kuma-ingress"
-	if ingress == nil {
-		ingress = &IngressDesc{}
-	}
-	return func(c Cluster) error {
-		yaml, err := c.GetKumactlOptions().KumactlInstallIngress()
-		if err != nil {
-			return err
-		}
-		return Combine(
-			YamlK8s(yaml),
-			WaitService(kumaNamespace, name),
-			WaitNumPods(1, name),
-			WaitPodsAvailable(kumaNamespace, name),
-			func(cluster Cluster) error {
-				ctx := context.Background()
-				cs, err := k8s.GetKubernetesClientFromOptionsE(c.GetTesting(), c.GetKubectlOptions())
-				if err != nil {
-					return err
-				}
-				ingressSvc, err := cs.CoreV1().Services(kumaNamespace).Get(ctx, name, kube_meta.GetOptions{})
-				if err != nil {
-					return nil
-				}
-				ingress.Port = ingressSvc.Spec.Ports[0].NodePort
-
-				nodes, err := cs.CoreV1().Nodes().List(ctx, kube_meta.ListOptions{})
-				if err != nil {
-					return err
-				}
-				// assume that we have single node cluster
-				for _, addr := range nodes.Items[0].Status.Addresses {
-					if addr.Type == kube_core.NodeInternalIP {
-						ingress.IP = addr.Address
-					}
-				}
-				return nil
-			},
-		)(c)
-	}
 }
 
 func DemoClientK8s() InstallFunc {

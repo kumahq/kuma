@@ -241,6 +241,12 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 	case core.Remote:
 		argsMap["--kds-global-address"] = opts.globalAddress
 	}
+
+	if opts.ingress {
+		argsMap["--ingress-enabled"] = ""
+		argsMap["--ingress-use-node-port"] = ""
+	}
+
 	for opt, value := range opts.ctlOpts {
 		argsMap[opt] = value
 	}

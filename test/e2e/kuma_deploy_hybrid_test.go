@@ -94,9 +94,8 @@ metadata:
 		remote_1 = k8sClusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(KumaDNS()).
-			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
 			Setup(remote_1)
@@ -108,9 +107,8 @@ metadata:
 		remote_2 = k8sClusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(KumaDNS()).
-			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(EchoServerK8s()).
 			Install(DemoClientK8s()).
