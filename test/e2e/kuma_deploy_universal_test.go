@@ -60,6 +60,8 @@ destinations:
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
 		Expect(err).ToNot(HaveOccurred())
+		ingressToken, err := globalCP.GenerateDpToken("ingress")
+		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 1
 		remote_1 = clusters.GetCluster(Kuma2)
@@ -68,6 +70,7 @@ destinations:
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(EchoServerUniversal(echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_1.VerifyKuma()
@@ -79,6 +82,7 @@ destinations:
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal(demoClientToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()
@@ -119,15 +123,24 @@ destinations:
 	})
 
 	It("Should deploy two apps", func() {
-		stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4001")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		retry.DoWithRetry(remote_1.GetTesting(), "curl local service",
+			DefaultRetries, DefaultTimeout,
+			func() (string, error) {
+				stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
+					"curl", "-v", "-m", "3", "localhost:4001")
+				if err != nil {
+					return "should retry", err
+				}
+				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
+					return "Accessing service successful", nil
+				}
+				return "should retry", errors.Errorf("should retry")
+			})
 
 		retry.DoWithRetry(remote_2.GetTesting(), "curl remote service",
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				stdout, _, err = remote_2.ExecWithRetries("", "", "demo-client",
+				stdout, _, err := remote_2.ExecWithRetries("", "", "demo-client",
 					"curl", "-v", "-m", "3", "localhost:4001")
 				if err != nil {
 					return "should retry", err

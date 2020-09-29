@@ -107,7 +107,7 @@ spec:
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				_, _, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-					"curl", "-v", "-m", "3", "echo-server")
+					"curl", "-v", "-m", "3", "--fail", "echo-server")
 				if err != nil {
 					return "", err
 				}

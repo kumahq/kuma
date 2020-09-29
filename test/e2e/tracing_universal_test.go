@@ -77,7 +77,7 @@ selectors:
 
 		retry.DoWithRetry(cluster.GetTesting(), "check traced services", DefaultRetries, DefaultTimeout, func() (string, error) {
 			// when client sends requests to server
-			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "localhost:4001")
+			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "localhost:4001")
 			if err != nil {
 				return "", err
 			}
