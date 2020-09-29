@@ -5,9 +5,12 @@ import (
 	"time"
 
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	kube_auth "k8s.io/api/authentication/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
@@ -18,8 +21,13 @@ import (
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
+	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	"github.com/kumahq/kuma/pkg/xds/auth"
+	k8s_auth "github.com/kumahq/kuma/pkg/xds/auth/k8s"
+	universal_auth "github.com/kumahq/kuma/pkg/xds/auth/universal"
 	xds_bootstrap "github.com/kumahq/kuma/pkg/xds/bootstrap"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
@@ -34,6 +42,12 @@ var (
 
 func SetupServer(rt core_runtime.Runtime) error {
 	reconciler := DefaultReconciler(rt)
+
+	authenticator, err := DefaultAuthenticator(rt)
+	if err != nil {
+		return err
+	}
+	authCallbacks := auth.NewCallbacks(rt.ResourceManager(), authenticator)
 
 	metadataTracker := NewDataplaneMetadataTracker()
 	lifecycle := NewDataplaneLifecycle(rt.ResourceManager())
@@ -55,6 +69,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	}
 	callbacks := util_xds.CallbacksChain{
 		statsCallbacks,
+		authCallbacks,
 		syncTracker,
 		metadataTracker,
 		lifecycle,
@@ -78,6 +93,39 @@ func SetupServer(rt core_runtime.Runtime) error {
 			Metrics:   rt.Metrics(),
 		},
 	)
+}
+
+func NewKubeAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
+	mgr, ok := k8s_runtime.FromManagerContext(rt.Extensions())
+	if !ok {
+		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
+	}
+	if err := kube_auth.AddToScheme(mgr.GetScheme()); err != nil {
+		return nil, errors.Wrapf(err, "could not add %q to scheme", kube_auth.SchemeGroupVersion)
+	}
+	return k8s_auth.New(mgr.GetClient()), nil
+}
+
+func NewUniversalAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
+	if !rt.Config().AdminServer.Apis.DataplaneToken.Enabled {
+		return universal_auth.NewNoopAuthenticator(), nil
+	}
+	issuer, err := builtin.NewDataplaneTokenIssuer(rt)
+	if err != nil {
+		return nil, err
+	}
+	return universal_auth.NewAuthenticator(issuer), nil
+}
+
+func DefaultAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
+	switch env := rt.Config().Environment; env {
+	case config_core.KubernetesEnvironment:
+		return NewKubeAuthenticator(rt)
+	case config_core.UniversalEnvironment:
+		return NewUniversalAuthenticator(rt)
+	default:
+		return nil, errors.Errorf("unable to choose SDS authenticator for environment type %q", env)
+	}
 }
 
 func DefaultReconciler(rt core_runtime.Runtime) SnapshotReconciler {

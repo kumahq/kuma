@@ -10,6 +10,9 @@ import (
 	"strings"
 
 	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
+	// import only limited proto definitions from Go Control Plane to save kuma-dp size
+	_ "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
+	_ "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"

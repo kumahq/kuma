@@ -61,7 +61,7 @@ var _ = Describe("CallbacksChain", func() {
 	})
 
 	Describe("OnStreamOpen", func() {
-		It("should be called sequentially and aggregate errors", func() {
+		It("should be called sequentially and return after first error", func() {
 			// given
 			ctx := context.Background()
 			streamID := int64(1)
@@ -75,10 +75,9 @@ var _ = Describe("CallbacksChain", func() {
 			// then
 			Expect(calls).To(Equal([]methodCall{
 				methodCall{"1st", "OnStreamOpen()", []interface{}{ctx, streamID, typ}},
-				methodCall{"2nd", "OnStreamOpen()", []interface{}{ctx, streamID, typ}},
 			}))
 			// and
-			Expect(err).To(MatchError("1st: OnStreamOpen(); 2nd: OnStreamOpen()"))
+			Expect(err).To(MatchError("1st: OnStreamOpen()"))
 		})
 	})
 	Describe("OnStreamClose", func() {
@@ -99,7 +98,7 @@ var _ = Describe("CallbacksChain", func() {
 		})
 	})
 	Describe("OnStreamRequest", func() {
-		It("should be called sequentially and aggregate errors", func() {
+		It("should be called sequentially and return after first error", func() {
 			// given
 			streamID := int64(1)
 			req := &envoy.DiscoveryRequest{}
@@ -113,10 +112,9 @@ var _ = Describe("CallbacksChain", func() {
 			// then
 			Expect(calls).To(Equal([]methodCall{
 				{"1st", "OnStreamRequest()", []interface{}{streamID, req}},
-				{"2nd", "OnStreamRequest()", []interface{}{streamID, req}},
 			}))
 			// and
-			Expect(err).To(MatchError("1st: OnStreamRequest(); 2nd: OnStreamRequest()"))
+			Expect(err).To(MatchError("1st: OnStreamRequest()"))
 		})
 	})
 	Describe("OnStreamResponse", func() {

@@ -43,6 +43,8 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
 		Expect(err).ToNot(HaveOccurred())
+		ingressToken, err := globalCP.GenerateDpToken("ingress")
+		Expect(err).ToNot(HaveOccurred())
 
 		// Remote
 		remoteCluster = universalClusters.GetCluster(Kuma3)
@@ -50,6 +52,7 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(EchoServerUniversal(echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remoteCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = remoteCluster.VerifyKuma()
@@ -77,7 +80,7 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 
 	It("communication in between apps in remote zone works", func() {
 		stdout, _, err := remoteCluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4001")
+			"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 

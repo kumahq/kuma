@@ -16,7 +16,6 @@ import (
 	admin_server_config "github.com/kumahq/kuma/pkg/config/admin-server"
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/sds/auth"
 	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server"
@@ -27,11 +26,11 @@ type staticTokenIssuer struct {
 
 var _ issuer.DataplaneTokenIssuer = &staticTokenIssuer{}
 
-func (s *staticTokenIssuer) Generate(identity issuer.DataplaneIdentity) (auth.Credential, error) {
-	return auth.Credential(fmt.Sprintf("token-for-%s-%s", identity.Name, identity.Mesh)), nil
+func (s *staticTokenIssuer) Generate(identity issuer.DataplaneIdentity) (issuer.Token, error) {
+	return fmt.Sprintf("token-for-%s-%s", identity.Name, identity.Mesh), nil
 }
 
-func (s *staticTokenIssuer) Validate(credential auth.Credential) (issuer.DataplaneIdentity, error) {
+func (s *staticTokenIssuer) Validate(token issuer.Token) (issuer.DataplaneIdentity, error) {
 	return issuer.DataplaneIdentity{}, errors.New("not implemented")
 }
 

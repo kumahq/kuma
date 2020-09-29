@@ -90,15 +90,6 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 
 	c.apps[AppModeCP] = app
 
-	switch mode {
-	case core.Remote:
-		dpyaml := fmt.Sprintf(IngressDataplane, kdsPort)
-		err = c.CreateDP(app, "ingress", app.ip, dpyaml, "XYZ") // todo token is static now, Ingress does not access SDS so the token does not matter for now
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 

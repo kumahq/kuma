@@ -46,7 +46,7 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, proxyId core_
 }
 
 func (u *universalAuthenticator) reviewToken(dataplane *mesh.DataplaneResource, credential sds_auth.Credential) error {
-	dpIdentity, err := u.issuer.Validate(credential)
+	dpIdentity, err := u.issuer.Validate(builtin_issuer.Token(credential))
 	if err != nil {
 		return err
 	}
