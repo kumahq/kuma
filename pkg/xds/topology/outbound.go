@@ -81,15 +81,22 @@ func BuildEndpointMap(destinations core_xds.DestinationMap,
 		if !selectors.Matches(externalService.Spec.Tags) {
 			continue
 		}
-		outbound[service] = append(outbound[service], core_xds.Endpoint{
-			Target: externalService.Spec.GetHost(),
-			Port:   externalService.Spec.GetPortUInt32(),
-			Tags:   externalService.Spec.GetTags(),
-			Weight: 1,
-			ExternalService: &core_xds.ExternalService{
-				TLSEnabled: externalService.Spec.Networking.Tls.Enabled,
-			},
-		})
+		tlsEnabled := false
+
+		if externalService.Spec.Networking != nil {
+			if externalService.Spec.Networking.Tls != nil {
+				tlsEnabled = externalService.Spec.Networking.Tls.Enabled
+			}
+			outbound[service] = append(outbound[service], core_xds.Endpoint{
+				Target: externalService.Spec.GetHost(),
+				Port:   externalService.Spec.GetPortUInt32(),
+				Tags:   externalService.Spec.GetTags(),
+				Weight: 1,
+				ExternalService: &core_xds.ExternalService{
+					TLSEnabled: tlsEnabled,
+				},
+			})
+		}
 	}
 
 	return outbound
