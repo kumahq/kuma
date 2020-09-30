@@ -750,6 +750,7 @@ function _kumactl_install_control-plane {
     '--dataplane-registry[registry for the image of the Kuma DataPlane component]:' \
     '--dataplane-repository[repository for the image of the Kuma DataPlane component]:' \
     '--dataplane-version[version of the image of the Kuma DataPlane component]:' \
+    '--env-var[environment variables that will be passed to the control plane]:' \
     '--image-pull-policy[image pull policy that applies to all components of the Kuma Control Plane]:' \
     '--ingress-drain-time[drain time for Envoy proxy]:' \
     '--ingress-enabled[install Kuma with an Ingress deployment, using the Data Plane image]' \

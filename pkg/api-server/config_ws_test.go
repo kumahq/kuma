@@ -197,6 +197,10 @@ var _ = Describe("Config WS", func() {
                   },
                   "uid": 5678
                 },
+                "sidecarTraffic": {
+                  "excludeInboundPorts": [],
+                  "excludeOutboundPorts": []
+                },
                 "virtualProbesEnabled": true,
                 "virtualProbesPort": 9000
               }

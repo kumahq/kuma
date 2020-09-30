@@ -119,10 +119,22 @@ func generateOverrideValues(args interface{}) map[string]interface{} {
 			}
 			root = root[n].(map[string]interface{})
 		}
-		root[splitTag[tagCount-1]] = value
+		root[splitTag[tagCount-1]] = adjustType(value)
 	}
 
 	return overrideValues
+}
+
+// If the parameter value is map it has to be of a type map[string]interface{} therefore we need to convert it
+func adjustType(value interface{}) interface{} {
+	if m, ok := value.(map[string]string); ok {
+		result := map[string]interface{}{}
+		for k, v := range m {
+			result[k] = v
+		}
+		return result
+	}
+	return value
 }
 
 func generateReleaseOptions(name, namespace string) chartutil.ReleaseOptions {

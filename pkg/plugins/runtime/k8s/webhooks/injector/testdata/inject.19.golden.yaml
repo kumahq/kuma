@@ -4,12 +4,13 @@ metadata:
   annotations:
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
-    kuma.io/sidecar-injection: enabled
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
+    traffic.kuma.io/exclude-inbound-ports: ""
+    traffic.kuma.io/exclude-outbound-ports: ""
   creationTimestamp: null
   labels:
     run: busybox
@@ -90,10 +91,17 @@ spec:
       runAsGroup: 5678
       runAsUser: 5678
     volumeMounts:
-    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-      name: default-token-w7dxf
+    - name: default-token-w7dxf
       readOnly: true
+      mountPath: "/var/run/secrets/kubernetes.io/serviceaccount"
   initContainers:
+  - command:
+    - sh
+    - -c
+    - sleep 5
+    image: busybox
+    name: init
+    resources: {}
   - args:
     - -p
     - "15001"
