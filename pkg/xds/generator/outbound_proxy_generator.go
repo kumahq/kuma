@@ -140,7 +140,6 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		circuitBreaker := proxy.CircuitBreakers[serviceName]
 		edsClusterBuilder := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.LbSubset(o.lbSubsets(tags))).
-			Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, tags)).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 			Configure(envoy_clusters.HealthCheck(healthCheck))
 
@@ -152,6 +151,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		} else {
 			edsClusterBuilder = edsClusterBuilder.
 				Configure(envoy_clusters.EdsCluster(clusterName)).
+				Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, tags)).
 				Configure(envoy_clusters.Http2())
 		}
 		edsCluster, err := edsClusterBuilder.Build()
