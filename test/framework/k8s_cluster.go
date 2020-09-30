@@ -611,6 +611,14 @@ func (c *K8sCluster) DeployApp(namespace, appname, token string) error {
 	return nil
 }
 
+func (c *K8sCluster) DeployExternalApp(namespace, appname string) error {
+	panic("Not implemented")
+}
+
+func (c *K8sCluster) GetExternalAppAddress(namespace, appname string) (string, error) {
+	panic("Not implemented")
+}
+
 func (c *K8sCluster) DeleteApp(namespace, appname string) error {
 	err := k8s.KubectlDeleteE(c.GetTesting(),
 		c.GetKubectlOptions(namespace),

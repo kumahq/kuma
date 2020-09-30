@@ -2,16 +2,18 @@ package e2e_test
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"strings"
+
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var _ = Describe("Test Universal deployment", func() {
+var _ = FDescribe("Test Universal deployment", func() {
 
 	meshDefaulMtlsOn := `
 type: Mesh
@@ -58,9 +60,7 @@ tags:
   kuma.io/service: external-service
   kuma.io/protocol: http
 networking:
-  address: httpbin.org:443
-  tls:
-    enabled: true
+  address: %s
 `
 	var cluster Cluster
 
@@ -84,6 +84,7 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
+			Install(ExternalServiceUniversal()).
 			Install(DemoClientUniversal(demoClientToken)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -91,7 +92,13 @@ networking:
 		err = YamlUniversal(meshDefaulMtlsOn)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlUniversal(externalService)(cluster)
+		err = YamlUniversal(trafficPermissionAll)(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		externalServiceAddres, err := cluster.GetExternalAppAddress("", AppModeEchoServer)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = YamlUniversal(fmt.Sprintf(externalService, externalServiceAddres+":80"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -103,17 +110,14 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("access httpbin.org", func() {
-		err := YamlUniversal(trafficPermissionAll)(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
+	It("access external-service", func() {
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "localhost:4002")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 
-	It("disable access to httpbin.org", func() {
+	It("disable access to external-service", func() {
 		err := YamlUniversal(fmt.Sprintf(trafficRoute, "100"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 

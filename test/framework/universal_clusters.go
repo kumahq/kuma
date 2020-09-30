@@ -143,6 +143,14 @@ func (cs *UniversalClusters) DeployApp(namespace, appname, token string) error {
 	return nil
 }
 
+func (cs *UniversalClusters) DeployExternalApp(namespace, appname string) error {
+	panic("Not implemented")
+}
+
+func (cs *UniversalClusters) GetExternalAppAddress(namespace, appname string) (string, error) {
+	panic("Not implemented")
+}
+
 func (cs *UniversalClusters) DeleteApp(namespace, appname string) error {
 	for name, c := range cs.clusters {
 		if err := c.DeleteApp(namespace, appname); err != nil {

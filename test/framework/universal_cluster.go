@@ -179,6 +179,39 @@ func (c *UniversalCluster) DeployApp(namespace, appname, token string) error {
 	return nil
 }
 
+func (c *UniversalCluster) DeployExternalApp(namespace, appname string) error {
+	var args []string
+	switch appname {
+	case AppModeEchoServer:
+		args = []string{"nc", "-lk", "-p", "80", "-e", "echo", "-e", "\"HTTP/1.1 200 OK\n\n Echo\n\""}
+	default:
+		return errors.Errorf("not supported app type %s", appname)
+	}
+
+	app, err := NewExernalService(c.t, args)
+	if err != nil {
+		return err
+	}
+
+	err = app.mainApp.Start()
+	if err != nil {
+		return err
+	}
+
+	c.apps["external-"+appname] = app
+
+	return nil
+}
+
+func (c *UniversalCluster) GetExternalAppAddress(namespace, appname string) (string, error) {
+	app, ok := c.apps["external-"+appname]
+	if !ok {
+		return "", errors.Errorf("App %s not found for deletion", appname)
+	}
+
+	return app.ip, nil
+}
+
 func (c *UniversalCluster) DeleteApp(namespace, appname string) error {
 	app, ok := c.apps[appname]
 	if !ok {

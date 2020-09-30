@@ -168,6 +168,14 @@ func (cs *K8sClusters) DeployApp(namespace, appname, token string) error {
 	return nil
 }
 
+func (cs *K8sClusters) DeployExternalApp(namespace, appname string) error {
+	panic("Not implemented")
+}
+
+func (cs *K8sClusters) GetExternalAppAddress(namespace, appname string) (string, error) {
+	panic("Not implemented")
+}
+
 func (cs *K8sClusters) DeleteApp(namespace, appname string) error {
 	for name, c := range cs.clusters {
 		if err := c.DeleteApp(namespace, appname); err != nil {

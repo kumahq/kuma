@@ -146,6 +146,12 @@ func DemoClientUniversal(token string) InstallFunc {
 	}
 }
 
+func ExternalServiceUniversal() InstallFunc {
+	return func(cluster Cluster) error {
+		return cluster.DeployExternalApp("", AppModeEchoServer)
+	}
+}
+
 func Combine(fs ...InstallFunc) InstallFunc {
 	return func(cluster Cluster) error {
 		for _, f := range fs {
