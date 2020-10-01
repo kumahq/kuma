@@ -93,7 +93,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	switch mode {
 	case core.Remote:
 		dpyaml := fmt.Sprintf(IngressDataplane, app.ip, kdsPort)
-		err = c.CreateDP(app, "ingress", dpyaml)
+		err = c.CreateDP(app, "ingress", dpyaml, "XYZ") // todo token is static now, Ingress does not access SDS so the token does not matter for now
 		if err != nil {
 			return err
 		}
@@ -142,23 +142,7 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml string) error {
-	// apply the dataplane
-	err := c.controlplane.kumactl.KumactlApplyFromString(dpyaml)
-	if err != nil {
-		return err
-	}
-
-	// generate the token on the CP node
-	sshApp := NewSshApp(c.verbose, c.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
-		"-H", "\"Content-Type: application/json\"",
-		"--data", "'{\"name\": \"dp-" + appname + "\", \"mesh\": \"default\"}'",
-		"http://localhost:5679/tokens"})
-	if err := sshApp.Run(); err != nil {
-		return err
-	}
-
-	token := sshApp.Out()
+func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml, token string) error {
 
 	cpAddress := "http://" + c.apps[AppModeCP].ip + ":5681"
 	app.CreateDP(token, cpAddress, appname)
@@ -166,7 +150,7 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml string) e
 	return app.dpApp.Start()
 }
 
-func (c *UniversalCluster) DeployApp(namespace, appname string) error {
+func (c *UniversalCluster) DeployApp(namespace, appname, token string) error {
 	var args []string
 	switch appname {
 	case AppModeEchoServer:
@@ -196,7 +180,7 @@ func (c *UniversalCluster) DeployApp(namespace, appname string) error {
 		dpyaml = fmt.Sprintf(DemoClientDataplane, "dp-"+appname, ip, "13000", "3000", "80", "8080")
 	}
 
-	err = c.CreateDP(app, appname, dpyaml)
+	err = c.CreateDP(app, appname, dpyaml, token)
 	if err != nil {
 		return err
 	}

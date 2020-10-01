@@ -127,15 +127,19 @@ func onStartup(runtime core_runtime.Runtime) error {
 }
 
 func createDefaultSigningKey(runtime core_runtime.Runtime) error {
-	switch env := runtime.Config().Environment; env {
-	case config_core.KubernetesEnvironment:
-		// we use service account token on K8S, so there is no need for dataplane token server
-		return nil
-	case config_core.UniversalEnvironment:
-		return builtin_issuer.CreateDefaultSigningKey(runtime.ResourceManager())
-	default:
-		return errors.Errorf("unknown environment type %s", env)
+	create := false
+	switch runtime.Config().Mode {
+	case config_core.Standalone:
+		create = runtime.Config().Environment == config_core.UniversalEnvironment // Signing Key should be created only on Universal since it is not used on K8S
+	case config_core.Global:
+		create = true // Signing Key with multi-zone should be created on Global even if the Environment is K8S, because we may connect Universal Remote
+	case config_core.Remote:
+		create = false // Signing Key should be synced from Global
 	}
+	if create {
+		return builtin_issuer.CreateDefaultSigningKey(runtime.ResourceManager())
+	}
+	return nil
 }
 
 func createDefaultMesh(runtime core_runtime.Runtime) error {
