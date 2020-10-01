@@ -3,6 +3,8 @@ package controllers
 import (
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/dns"
+
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
@@ -26,9 +28,9 @@ type PodConverter struct {
 	Zone          string
 }
 
-func (p *PodConverter) PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane) error {
+func (p *PodConverter) PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane, vips dns.VIPList) error {
 	dataplane.Mesh = MeshFor(pod)
-	dataplaneProto, err := p.DataplaneFor(pod, services, others)
+	dataplaneProto, err := p.DataplaneFor(pod, services, others, vips)
 	if err != nil {
 		return err
 	}
@@ -62,7 +64,7 @@ func MeshFor(pod *kube_core.Pod) string {
 	return mesh
 }
 
-func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane) (*mesh_proto.Dataplane, error) {
+func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane, vips dns.VIPList) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
 	}
@@ -116,7 +118,7 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 		dataplane.Networking.Inbound = ifaces
 	}
 
-	ofaces, err := p.OutboundInterfacesFor(pod, others)
+	ofaces, err := p.OutboundInterfacesFor(pod, others, vips)
 	if err != nil {
 		return nil, err
 	}

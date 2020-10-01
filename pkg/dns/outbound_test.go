@@ -1,21 +1,19 @@
-package topology_test
+package dns_test
 
 import (
 	"fmt"
 	"strconv"
 
-	"github.com/kumahq/kuma/pkg/dns"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/dns"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/xds/topology"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
+var _ = Describe("VIPOutbounds", func() {
 
 	It("should update outbounds", func() {
 		dataplane := &core_mesh.DataplaneResource{
@@ -37,9 +35,6 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 				},
 			},
 		}
-
-		// setup
-		resolver := dns.NewDNSResolver("mesh")
 
 		// given
 		dataplanes := core_mesh.DataplaneResourceList{}
@@ -69,20 +64,14 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 				},
 			})
 		}
-		resolver.SetVIPs(vipList)
 
 		// when
-		err := topology.PatchDataplaneWithVIPOutbounds(dataplane, &dataplanes, resolver)
-		// then
-		Expect(err).ToNot(HaveOccurred())
+		outbounds := dns.VIPOutbounds(dataplane.Meta.GetName(), dataplanes.Items, vipList)
 		// and
-		Expect(len(dataplane.Spec.Networking.Outbound)).To(Equal(4))
+		Expect(outbounds).To(HaveLen(4))
 		// and
-		Expect(dataplane.Spec.Networking.Outbound[3].GetService()).To(Equal("service-5"))
+		Expect(outbounds[3].GetTags()[mesh_proto.ServiceTag]).To(Equal("service-5"))
 		// and
-		Expect(dataplane.Spec.Networking.Outbound[3].GetTags()[mesh_proto.ServiceTag]).To(Equal("service-5"))
-		// and
-		Expect(dataplane.Spec.Networking.Outbound[3].Port).To(Equal(topology.VIPListenPort))
+		Expect(outbounds[3].Port).To(Equal(dns.VIPListenPort))
 	})
-
 })

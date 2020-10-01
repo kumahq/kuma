@@ -3,9 +3,9 @@ package controllers
 import (
 	"sort"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 type Endpoint struct {
@@ -25,18 +25,13 @@ func (e EndpointsByService) Services() []string {
 	return list
 }
 
-func endpointsByService(dataplanes []*mesh_k8s.Dataplane) EndpointsByService {
+func endpointsByService(dataplanes []*core_mesh.DataplaneResource) EndpointsByService {
 	result := EndpointsByService{}
 	for _, other := range dataplanes {
-		dataplane := &mesh_proto.Dataplane{}
-		if err := util_proto.FromMap(other.Spec, dataplane); err != nil {
-			converterLog.Error(err, "failed to parse Dataplane", "dataplane", other.Spec)
-			continue // one invalid Dataplane definition should not break the entire mesh
-		}
-		if dataplane.Networking.Ingress != nil {
+		if other.Spec.IsIngress() {
 			continue
 		}
-		for _, inbound := range dataplane.Networking.GetInbound() {
+		for _, inbound := range other.Spec.Networking.GetInbound() {
 			svc, ok := inbound.GetTags()[mesh_proto.ServiceTag]
 			if !ok {
 				continue
@@ -48,7 +43,7 @@ func endpointsByService(dataplanes []*mesh_k8s.Dataplane) EndpointsByService {
 			if inbound.Address != "" {
 				endpoint.Address = inbound.Address
 			} else {
-				endpoint.Address = dataplane.Networking.Address
+				endpoint.Address = other.Spec.Networking.Address
 			}
 			result[svc] = append(result[svc], endpoint)
 		}

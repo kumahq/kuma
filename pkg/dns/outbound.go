@@ -1,29 +1,29 @@
-package topology
+package dns
 
 import (
 	"sort"
 
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/dns"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 const VIPListenPort = uint32(80)
 
-func PatchDataplaneWithVIPOutbounds(dataplane *mesh_core.DataplaneResource,
-	dataplanes *mesh_core.DataplaneResourceList, resolver dns.DNSResolver) (errs error) {
+func VIPOutbounds(name string, dataplanes []*core_mesh.DataplaneResource, vips VIPList) []*mesh_proto.Dataplane_Networking_Outbound {
 	serviceVIPMap := map[string]string{}
 	services := []string{}
-	for _, dp := range dataplanes.Items {
-		if dp.Meta.GetName() == dataplane.Meta.GetName() {
+	for _, dataplane := range dataplanes {
+		if dataplane.Meta.GetName() == name {
 			continue
 		}
 
-		if dp.Spec.IsIngress() {
-			for _, service := range dp.Spec.Networking.Ingress.AvailableServices {
+		if dataplane.Spec.IsIngress() {
+			for _, service := range dataplane.Spec.Networking.Ingress.AvailableServices {
 				inService := service.Tags[mesh_proto.ServiceTag]
 				if _, found := serviceVIPMap[inService]; !found {
-					vip, err := resolver.ForwardLookup(inService)
+					vip, err := ForwardLookup(vips, inService)
 					if err == nil {
 						serviceVIPMap[inService] = vip
 						services = append(services, inService)
@@ -31,10 +31,10 @@ func PatchDataplaneWithVIPOutbounds(dataplane *mesh_core.DataplaneResource,
 				}
 			}
 		} else {
-			for _, inbound := range dp.Spec.Networking.Inbound {
+			for _, inbound := range dataplane.Spec.Networking.Inbound {
 				inService := inbound.GetTags()[mesh_proto.ServiceTag]
 				if _, found := serviceVIPMap[inService]; !found {
-					vip, err := resolver.ForwardLookup(inService)
+					vip, err := ForwardLookup(vips, inService)
 					if err == nil {
 						serviceVIPMap[inService] = vip
 						services = append(services, inService)
@@ -45,18 +45,25 @@ func PatchDataplaneWithVIPOutbounds(dataplane *mesh_core.DataplaneResource,
 	}
 
 	sort.Strings(services)
-
+	outbounds := []*mesh_proto.Dataplane_Networking_Outbound{}
 	for _, service := range services {
-		dataplane.Spec.Networking.Outbound = append(dataplane.Spec.Networking.Outbound,
+		outbounds = append(outbounds,
 			&mesh_proto.Dataplane_Networking_Outbound{
 				Address: serviceVIPMap[service],
 				Port:    VIPListenPort,
-				Service: service,
 				Tags: map[string]string{
 					mesh_proto.ServiceTag: service,
 				},
 			})
 	}
 
-	return
+	return outbounds
+}
+
+func ForwardLookup(vips VIPList, service string) (string, error) {
+	ip, found := vips[service]
+	if !found {
+		return "", errors.Errorf("service [%s] not found", service)
+	}
+	return ip, nil
 }

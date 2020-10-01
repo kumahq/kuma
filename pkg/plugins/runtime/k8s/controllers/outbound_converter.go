@@ -5,6 +5,10 @@ import (
 	"strconv"
 	"strings"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -13,9 +17,19 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_k8s.Dataplane) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
+func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_k8s.Dataplane, vips dns.VIPList) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
-	endpoints := endpointsByService(others)
+	dataplanes := []*core_mesh.DataplaneResource{}
+	for _, other := range others {
+		dp := &core_mesh.DataplaneResource{}
+		if err := k8s.DefaultConverter().ToCoreResource(other, dp); err != nil {
+			converterLog.Error(err, "failed to parse Dataplane", "dataplane", other.Spec)
+			continue // one invalid Dataplane definition should not break the entire mesh
+		}
+		dataplanes = append(dataplanes, dp)
+	}
+
+	endpoints := endpointsByService(dataplanes)
 	for _, serviceTag := range endpoints.Services() {
 		service, port, err := p.k8sService(serviceTag)
 		if err != nil {
@@ -48,6 +62,8 @@ func (p *PodConverter) OutboundInterfacesFor(pod *kube_core.Pod, others []*mesh_
 			})
 		}
 	}
+
+	outbounds = append(outbounds, dns.VIPOutbounds(pod.Name, dataplanes, vips)...)
 	return outbounds, nil
 }
 
