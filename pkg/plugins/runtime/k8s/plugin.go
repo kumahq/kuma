@@ -6,8 +6,6 @@ import (
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	"github.com/kumahq/kuma/pkg/core/secrets/manager"
 
 	"github.com/pkg/errors"
@@ -71,13 +69,10 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 
 func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	reconciler := &k8s_controllers.NamespaceReconciler{
-		Client:                  mgr.GetClient(),
-		Log:                     core.Log.WithName("controllers").WithName("Namespace"),
-		SystemNamespace:         rt.Config().Store.Kubernetes.SystemNamespace,
-		CNIEnabled:              rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
-		ResourceManager:         rt.ResourceManager(),
-		SkipDefaultMeshCreation: rt.Config().Defaults.SkipMeshCreation,
-		DefaultMeshTemplate:     v1alpha1.Mesh{},
+		Client:          mgr.GetClient(),
+		Log:             core.Log.WithName("controllers").WithName("Namespace"),
+		CNIEnabled:      rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
+		ResourceManager: rt.ResourceManager(),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
