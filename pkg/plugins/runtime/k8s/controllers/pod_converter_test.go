@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/kumahq/kuma/pkg/dns"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
@@ -150,7 +152,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(dataplane, pod, services, otherDataplanes)
+			err = converter.PodToDataplane(dataplane, pod, services, otherDataplanes, dns.VIPList{})
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -243,7 +245,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(dataplane, pod, services, nil)
+				err = converter.PodToDataplane(dataplane, pod, services, nil, dns.VIPList{})
 
 				// then
 				Expect(err).To(HaveOccurred())
