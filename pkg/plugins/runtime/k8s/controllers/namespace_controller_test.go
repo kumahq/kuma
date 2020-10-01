@@ -16,10 +16,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
-
 	v1 "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 )
 
 var _ = Describe("NamespaceReconciler", func() {
@@ -89,7 +87,7 @@ var _ = Describe("NamespaceReconciler", func() {
 		nad := &v1.NetworkAttachmentDefinition{
 			ObjectMeta: kube_meta.ObjectMeta{
 				Namespace: "non-system-ns-without-sidecar-injection",
-				Name:      metadata.KumaCNI,
+				Name:      "kuma-cni",
 			},
 		}
 		err := kubeClient.Create(context.Background(), nad)

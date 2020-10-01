@@ -106,6 +106,7 @@ rules:
     - list
     - watch
     - create
+    - delete
 {{- end }}
 # validate k8s token before issueing mTLS cert
 - apiGroups:
