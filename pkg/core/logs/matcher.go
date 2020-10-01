@@ -33,7 +33,11 @@ func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.Dat
 	if err := m.ResourceManager.List(ctx, logs, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve traffic logs")
 	}
-	return BuildTrafficLogMap(dataplane, nil, logs.Items), nil
+	mesh := mesh_core.MeshResource{}
+	if err := m.ResourceManager.Get(ctx, &mesh, store.GetByKey(dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetMesh())); err != nil {
+		return nil, err
+	}
+	return BuildTrafficLogMap(dataplane, &mesh, logs.Items), nil
 }
 
 func BuildTrafficLogMap(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource, logs []*mesh_core.TrafficLogResource) core_xds.LogMap {
