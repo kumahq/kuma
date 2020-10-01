@@ -143,7 +143,6 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml, token string) error {
-
 	cpAddress := "http://" + c.apps[AppModeCP].ip + ":5681"
 	app.CreateDP(token, cpAddress, appname)
 
