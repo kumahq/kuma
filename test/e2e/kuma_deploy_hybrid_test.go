@@ -89,14 +89,15 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
 		Expect(err).ToNot(HaveOccurred())
+		ingressToken, err := globalCP.GenerateDpToken("ingress")
+		Expect(err).ToNot(HaveOccurred())
 
 		// K8s Cluster 1
 		remote_1 = k8sClusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(KumaDNS()).
-			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
 			Setup(remote_1)
@@ -108,9 +109,8 @@ metadata:
 		remote_2 = k8sClusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(KumaDNS()).
-			Install(Ingress(nil)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(EchoServerK8s()).
 			Install(DemoClientK8s()).
@@ -126,6 +126,7 @@ metadata:
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(EchoServerUniversal(echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remote_3)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_3.VerifyKuma()
@@ -137,6 +138,7 @@ metadata:
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
 			Install(DemoClientUniversal(demoClientToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remote_4)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_4.VerifyKuma()
@@ -217,7 +219,7 @@ metadata:
 
 		// k8s access remote k8s service
 		_, stderr, err := remote_1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_80.mesh")
+			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
@@ -236,21 +238,21 @@ metadata:
 
 		// k8s access remote universal service
 		_, stderr, err = remote_2.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_8080.mesh")
+			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// Remote 3
 		// universal access remote k8s service
 		stdout, _, err := remote_3.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4000")
+			"curl", "-v", "-m", "3", "--fail", "localhost:4000")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// Remote 4
 		// universal access remote universal service
 		stdout, _, err = remote_4.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4001")
+			"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
@@ -260,7 +262,7 @@ metadata:
 		// universal access remote universal service
 		Eventually(func() (string, error) {
 			stdout, _, err := remote_4.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "localhost:4001")
+				"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 			return stdout, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
@@ -274,7 +276,7 @@ metadata:
 		// universal access remote k8s service
 		Eventually(func() (string, error) {
 			stdout, _, err := remote_3.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "localhost:4000")
+				"curl", "-v", "-m", "3", "--fail", "localhost:4000")
 			return stdout, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 

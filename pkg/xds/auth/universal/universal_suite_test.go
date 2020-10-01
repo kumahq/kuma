@@ -1,4 +1,4 @@
-package ingress
+package universal_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestIngress(t *testing.T) {
+func TestUniversal(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Ingress Suite")
+	RunSpecs(t, "Sds Auth Universal Suite")
 }

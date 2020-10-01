@@ -5,8 +5,9 @@ import (
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/sds/auth"
 )
+
+type Token = string
 
 type DataplaneIdentity struct {
 	Name string
@@ -18,8 +19,8 @@ type DataplaneIdentity struct {
 // Issued token can be bound by name, mesh or tags so you can pick your level of security.
 // See pkg/sds/auth/universal/authenticator.go to check algorithm for authentication
 type DataplaneTokenIssuer interface {
-	Generate(identity DataplaneIdentity) (auth.Credential, error)
-	Validate(credential auth.Credential) (DataplaneIdentity, error)
+	Generate(identity DataplaneIdentity) (Token, error)
+	Validate(token Token) (DataplaneIdentity, error)
 }
 
 type claims struct {
@@ -52,7 +53,7 @@ func (i *jwtTokenIssuer) signingKey() ([]byte, error) {
 	return signingKey, nil
 }
 
-func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (auth.Credential, error) {
+func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (Token, error) {
 	signingKey, err := i.signingKey()
 	if err != nil {
 		return "", err
@@ -75,10 +76,10 @@ func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (auth.Credential, 
 	if err != nil {
 		return "", errors.Wrap(err, "could not sign a token")
 	}
-	return auth.Credential(tokenString), nil
+	return tokenString, nil
 }
 
-func (i *jwtTokenIssuer) Validate(credential auth.Credential) (DataplaneIdentity, error) {
+func (i *jwtTokenIssuer) Validate(rawToken Token) (DataplaneIdentity, error) {
 	signingKey, err := i.signingKey()
 	if err != nil {
 		return DataplaneIdentity{}, err
@@ -86,7 +87,7 @@ func (i *jwtTokenIssuer) Validate(credential auth.Credential) (DataplaneIdentity
 
 	c := &claims{}
 
-	token, err := jwt.ParseWithClaims(string(credential), c, func(*jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(rawToken, c, func(*jwt.Token) (interface{}, error) {
 		return signingKey, nil
 	})
 	if err != nil {

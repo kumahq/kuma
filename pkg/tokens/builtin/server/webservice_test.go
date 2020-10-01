@@ -15,7 +15,6 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/sds/auth"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
@@ -27,11 +26,11 @@ type staticTokenIssuer struct {
 
 var _ issuer.DataplaneTokenIssuer = &staticTokenIssuer{}
 
-func (s *staticTokenIssuer) Generate(identity issuer.DataplaneIdentity) (auth.Credential, error) {
-	return auth.Credential(s.resp), nil
+func (s *staticTokenIssuer) Generate(identity issuer.DataplaneIdentity) (issuer.Token, error) {
+	return s.resp, nil
 }
 
-func (s *staticTokenIssuer) Validate(credential auth.Credential) (issuer.DataplaneIdentity, error) {
+func (s *staticTokenIssuer) Validate(token issuer.Token) (issuer.DataplaneIdentity, error) {
 	return issuer.DataplaneIdentity{}, errors.New("not implemented")
 }
 

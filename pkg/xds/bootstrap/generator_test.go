@@ -75,7 +75,7 @@ var _ = Describe("bootstrapGenerator", func() {
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator := NewDefaultBootstrapGenerator(resManager, given.config(), "")
+			generator := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"))
 
 			// when
 			bootstrapConfig, err := generator.Generate(context.Background(), given.request)

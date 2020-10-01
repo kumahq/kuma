@@ -241,6 +241,12 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 	case core.Remote:
 		argsMap["--kds-global-address"] = opts.globalAddress
 	}
+
+	if opts.ingress {
+		argsMap["--ingress-enabled"] = ""
+		argsMap["--ingress-use-node-port"] = ""
+	}
+
 	for opt, value := range opts.ctlOpts {
 		argsMap[opt] = value
 	}
@@ -476,6 +482,15 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
 	}
 
 	if err := c.DeleteNamespace(kumaNamespace); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
+	// HELM does not remove CRDs therefore we need to do it manually.
+	// It's important to remove CRDs to get rid of all "instances" of CRDs like default Mesh etc.
+	crdsYAML, err := k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "crds", "-o", "yaml")
+	if err != nil {
+		errs = multierr.Append(errs, err)
+	} else if err := k8s.KubectlDeleteFromStringE(c.t, c.GetKubectlOptions(), crdsYAML); err != nil {
 		errs = multierr.Append(errs, err)
 	}
 

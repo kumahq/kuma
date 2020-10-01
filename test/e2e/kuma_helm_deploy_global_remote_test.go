@@ -145,52 +145,12 @@ metadata:
 			}
 		}
 		Expect(found).To(BeTrue())
-	})
 
-	It("should deploy Remote and Global on 2 clusters and sync dataplanes", func() {
-		// given
-		namespace := func(namespace string) string {
-			return fmt.Sprintf(`
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: %s
-`, namespace)
-		}
-		dp := func(cluster, namespace, name string) string {
-			return fmt.Sprintf(`
-apiVersion: kuma.io/v1alpha1
-kind: Dataplane
-mesh: default
-metadata:
-  name: %s
-  namespace: %s
-spec:
-  networking:
-    address: 192.168.0.1
-    inbound:
-      - port: 12343
-        tags:
-          kuma.io/service: backend
-          kuma.io/zone: %s
-    outbound:
-      - port: 1212
-        tags:
-          kuma.io/service: web
-`, name, namespace, cluster)
-		}
-
-		// when
-		err := YamlK8s(namespace("custom-ns"))(c2)
-		Expect(err).ToNot(HaveOccurred())
-		err = YamlK8s(dp("kuma-2-remote", "custom-ns", "dp-1"))(c2)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then
+		// and dataplanes are synced to global
 		Eventually(func() string {
 			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2-remote.dp-1.custom-ns"))
+		}, "5s", "500ms").Should(ContainSubstring("kuma-2-remote.demo-client"))
 	})
 })

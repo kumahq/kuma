@@ -5,8 +5,6 @@ import (
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
-
-	"go.uber.org/multierr"
 )
 
 type CallbacksChain []envoy_xds.Callbacks
@@ -15,11 +13,13 @@ var _ envoy_xds.Callbacks = CallbacksChain{}
 
 // OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (chain CallbacksChain) OnStreamOpen(ctx context.Context, streamID int64, typ string) (errs error) {
+func (chain CallbacksChain) OnStreamOpen(ctx context.Context, streamID int64, typ string) error {
 	for _, cb := range chain {
-		errs = multierr.Append(errs, cb.OnStreamOpen(ctx, streamID, typ))
+		if err := cb.OnStreamOpen(ctx, streamID, typ); err != nil {
+			return err
+		}
 	}
-	return
+	return nil
 }
 
 // OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
@@ -32,11 +32,13 @@ func (chain CallbacksChain) OnStreamClosed(streamID int64) {
 
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (chain CallbacksChain) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequest) (errs error) {
+func (chain CallbacksChain) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequest) error {
 	for _, cb := range chain {
-		errs = multierr.Append(errs, cb.OnStreamRequest(streamID, req))
+		if err := cb.OnStreamRequest(streamID, req); err != nil {
+			return err
+		}
 	}
-	return
+	return nil
 }
 
 // OnStreamResponse is called immediately prior to sending a response on a stream.
@@ -49,11 +51,13 @@ func (chain CallbacksChain) OnStreamResponse(streamID int64, req *envoy.Discover
 
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
 // request and respond with an error.
-func (chain CallbacksChain) OnFetchRequest(ctx context.Context, req *envoy.DiscoveryRequest) (errs error) {
+func (chain CallbacksChain) OnFetchRequest(ctx context.Context, req *envoy.DiscoveryRequest) error {
 	for _, cb := range chain {
-		errs = multierr.Append(errs, cb.OnFetchRequest(ctx, req))
+		if err := cb.OnFetchRequest(ctx, req); err != nil {
+			return err
+		}
 	}
-	return
+	return nil
 }
 
 // OnFetchRequest is called for each Fetch request. Returning an error will end processing of the

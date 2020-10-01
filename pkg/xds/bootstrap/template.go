@@ -58,43 +58,29 @@ dynamic_resources:
   cds_config: {ads: {}}
   ads_config:
     api_type: GRPC
+    timeout: {{ .XdsConnectTimeout }}
     grpc_services:
-    - envoy_grpc:
-        cluster_name: ads_cluster
-
+    - googleGrpc:
+{{ if .DataplaneTokenPath }}
+        callCredentials:
+        - fromPlugin:
+            name: envoy.grpc_credentials.file_based_metadata
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+              secretData:
+                filename: {{ .DataplaneTokenPath }}
+        credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
+{{ end }}
+{{ if .CertBytes}}
+        channelCredentials:
+          sslCredentials:
+            rootCerts:
+              inlineBytes: {{ .CertBytes }}
+{{ end }}
+        statPrefix: ads
+        targetUri: {{ .XdsHost }}:{{ .XdsPort }}
 static_resources:
   clusters:
-  - name: ads_cluster
-    connect_timeout: {{ .XdsConnectTimeout }}
-    type: STRICT_DNS
-    lb_policy: ROUND_ROBIN
-    http2_protocol_options: {}
-    upstream_connection_options:
-      # configure a TCP keep-alive to detect and reconnect to the admin
-      # server in the event of a TCP socket half open connection
-      tcp_keepalive: {}
-    load_assignment:
-      cluster_name: ads_cluster
-      endpoints:
-      - lb_endpoints:
-        - endpoint:
-            address:
-              socket_address:
-                address: {{ .XdsHost }}
-                port_value: {{ .XdsPort }}
-{{ if .CertBytes }}
-    transport_socket:
-      name: envoy.transport_sockets.tls
-      typed_config:
-        "@type": type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
-        sni: {{ .XdsHost }}
-        common_tls_context:
-          tls_params:
-            tls_minimum_protocol_version: TLSv1_2
-          validation_context:
-            trusted_ca:
-              inline_bytes: "{{ .CertBytes }}"
-{{ end }}
   - name: access_log_sink
     connect_timeout: {{ .XdsConnectTimeout }}
     type: STATIC
