@@ -13,7 +13,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var _ = FDescribe("Test Universal deployment", func() {
+var _ = Describe("Test Universal deployment", func() {
 
 	meshDefaulMtlsOn := `
 type: Mesh
@@ -110,14 +110,14 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("access external-service", func() {
+	It("Should access external-service", func() {
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "localhost:4002")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 
-	It("disable access to external-service", func() {
+	It("Should route to external-service", func() {
 		err := YamlUniversal(fmt.Sprintf(trafficRoute, "100"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 

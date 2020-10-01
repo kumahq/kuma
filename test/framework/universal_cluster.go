@@ -143,9 +143,9 @@ func (c *UniversalCluster) DeployApp(namespace, appname, token string) error {
 	var args []string
 	switch appname {
 	case AppModeEchoServer:
-		args = []string{"nc", "-lk", "-p", "80", "-e", "echo", "-e", "\"HTTP/1.1 200 OK\n\n Echo\n\""}
+		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
 	case AppModeDemoClient:
-		args = []string{"nc", "-lvk", "-p", "3000"}
+		args = []string{"ncat", "-lvk", "-p", "3000"}
 	default:
 		return errors.Errorf("not supported app type %s", appname)
 	}
@@ -183,7 +183,7 @@ func (c *UniversalCluster) DeployExternalApp(namespace, appname string) error {
 	var args []string
 	switch appname {
 	case AppModeEchoServer:
-		args = []string{"nc", "-lk", "-p", "80", "-e", "echo", "-e", "\"HTTP/1.1 200 OK\n\n Echo\n\""}
+		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
 	default:
 		return errors.Errorf("not supported app type %s", appname)
 	}
