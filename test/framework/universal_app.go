@@ -21,10 +21,11 @@ import (
 type AppMode string
 
 const (
-	AppModeCP         = "kuma-cp"
-	AppIngress        = "ingress"
-	AppModeEchoServer = "echo-server"
-	sshPort           = "22"
+	AppModeCP              = "kuma-cp"
+	AppIngress             = "ingress"
+	AppModeEchoServer      = "echo-server"
+	AppModeHttpsEchoServer = "https-echo-server"
+	sshPort                = "22"
 
 	IngressDataplane = `
 type: Dataplane
@@ -70,7 +71,7 @@ networking:
   - port: 4001
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
-  - port: 4002
+  - port: 5000
     tags:
       kuma.io/service: external-service
 `

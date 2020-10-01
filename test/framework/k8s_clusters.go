@@ -168,11 +168,11 @@ func (cs *K8sClusters) DeployApp(namespace, appname, token string) error {
 	return nil
 }
 
-func (cs *K8sClusters) DeployExternalApp(namespace, appname string) error {
+func (cs *K8sClusters) DeployExternalApp(namespace, appname, id string) error {
 	panic("Not implemented")
 }
 
-func (cs *K8sClusters) GetExternalAppAddress(namespace, appname string) (string, error) {
+func (cs *K8sClusters) GetExternalAppAddress(namespace, appname, id string) (string, error) {
 	panic("Not implemented")
 }
 

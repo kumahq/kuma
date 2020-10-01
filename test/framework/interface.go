@@ -105,11 +105,11 @@ type Cluster interface {
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
 	DeployApp(namespace, appname, token string) error
-	DeployExternalApp(namespace, appname string) error
+	DeployExternalApp(namespace, appname, id string) error
 	DeleteApp(namespace, appname string) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
 	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
-	GetExternalAppAddress(namespace, appname string) (string, error)
+	GetExternalAppAddress(namespace, appname, id string) (string, error)
 
 	// Testing
 	GetTesting() testing.TestingT

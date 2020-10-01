@@ -143,11 +143,11 @@ func (cs *UniversalClusters) DeployApp(namespace, appname, token string) error {
 	return nil
 }
 
-func (cs *UniversalClusters) DeployExternalApp(namespace, appname string) error {
+func (cs *UniversalClusters) DeployExternalApp(namespace, appname, id string) error {
 	panic("Not implemented")
 }
 
-func (cs *UniversalClusters) GetExternalAppAddress(namespace, appname string) (string, error) {
+func (cs *UniversalClusters) GetExternalAppAddress(namespace, appname, id string) (string, error) {
 	panic("Not implemented")
 }
 

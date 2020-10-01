@@ -146,9 +146,13 @@ func DemoClientUniversal(token string) InstallFunc {
 	}
 }
 
-func ExternalServiceUniversal() InstallFunc {
+func ExternalServiceUniversal(id string, https bool) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployExternalApp("", AppModeEchoServer)
+		if https {
+			return cluster.DeployExternalApp("", AppModeHttpsEchoServer, id)
+		} else {
+			return cluster.DeployExternalApp("", AppModeEchoServer, id)
+		}
 	}
 }
 

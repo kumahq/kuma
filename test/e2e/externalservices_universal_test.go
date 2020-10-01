@@ -2,9 +2,7 @@ package e2e_test
 
 import (
 	"fmt"
-	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -47,21 +45,28 @@ destinations:
 - match:
    kuma.io/service: external-service
 conf:
-  - weight: %s
+  - weight: 1
     destination:
       kuma.io/service: external-service
+      id: "%s"
 `
 
 	externalService := `
 type: ExternalService
 mesh: default
-name: httpbin
+name: external-service-%s
 tags:
   kuma.io/service: external-service
   kuma.io/protocol: http
+  id: "%s"
 networking:
   address: %s
+  tls:
+    enabled: %s
 `
+	es1 := "1"
+	es2 := "2"
+
 	var cluster Cluster
 
 	BeforeEach(func() {
@@ -84,7 +89,8 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(ExternalServiceUniversal()).
+			Install(ExternalServiceUniversal(es1, false)).
+			Install(ExternalServiceUniversal(es2, true)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -95,10 +101,22 @@ networking:
 		err = YamlUniversal(trafficPermissionAll)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		externalServiceAddres, err := cluster.GetExternalAppAddress("", AppModeEchoServer)
+		externalServiceAddres, err := cluster.GetExternalAppAddress("", AppModeEchoServer, es1)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlUniversal(fmt.Sprintf(externalService, externalServiceAddres+":80"))(cluster)
+		err = YamlUniversal(fmt.Sprintf(externalService,
+			es1, es1,
+			externalServiceAddres+":80",
+			"false"))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		externalServiceAddres, err = cluster.GetExternalAppAddress("", AppModeHttpsEchoServer, es2)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = YamlUniversal(fmt.Sprintf(externalService,
+			es2, es2,
+			externalServiceAddres+":443",
+			"true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -110,38 +128,26 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("Should access external-service", func() {
+	It("Should route to external-service", func() {
+		err := YamlUniversal(fmt.Sprintf(trafficRoute, es1))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4002")
+			"curl", "-v", "-m", "3", "localhost:5000")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 	})
 
-	It("Should route to external-service", func() {
-		err := YamlUniversal(fmt.Sprintf(trafficRoute, "100"))(cluster)
+	It("Should route to external-service over tls", func() {
+		err := YamlUniversal(fmt.Sprintf(trafficRoute, es2))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:4002")
+			"curl", "-v", "-m", "3", "http://localhost:5000")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-
-		err = YamlUniversal(fmt.Sprintf(trafficRoute, "0"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		retry.DoWithRetry(cluster.GetTesting(), "check service is still accessible", 10, DefaultTimeout, func() (string, error) {
-			stdout, _, err = cluster.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "localhost:4002")
-			if err != nil {
-				return "", err
-			}
-
-			if strings.Contains(stdout, "HTTP/1.1 200 OK") {
-				return "", nil
-			}
-
-			return "", fmt.Errorf("External service still accessible [%s]", stdout)
-		})
+		Expect(stdout).To(ContainSubstring("HTTPS"))
 	})
 
 })

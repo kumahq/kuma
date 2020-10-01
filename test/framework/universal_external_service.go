@@ -12,7 +12,7 @@ const (
 	externalServiceLowPort = 10204
 )
 
-func NewExernalService(t testing.TestingT, args []string) (*UniversalApp, error) {
+func NewExernalService(t testing.TestingT, clusterName string, mode AppMode, args []string) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:            t,
 		ports:        map[string]string{},
@@ -23,7 +23,7 @@ func NewExernalService(t testing.TestingT, args []string) (*UniversalApp, error)
 	app.allocatePublicPortsFor("22", "80")
 
 	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--name", "external_service")
+	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
 	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
 
