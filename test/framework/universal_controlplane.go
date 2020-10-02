@@ -60,7 +60,7 @@ func (c *UniversalControlPlane) GenerateDpToken(service string) (string, error) 
 	sshApp := NewSshApp(c.verbose, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
 		"--fail", "--show-error",
 		"-H", "\"Content-Type: application/json\"",
-		"--data", fmt.Sprintf(`'{"mesh": "default", "tags": {"kuma.io/service":["%s"]}}'`, service),
+		"--data", fmt.Sprintf(`'{"name": "dp-%s", "mesh": "default"}'`, service),
 		"http://localhost:5679/tokens"})
 	if err := sshApp.Run(); err != nil {
 		return "", err

@@ -39,9 +39,9 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 		Expect(err).ToNot(HaveOccurred())
 		globalCP := globalCluster.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
+		echoServerToken, err := globalCP.GenerateDpToken(AppModeEchoServer)
 		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
+		demoClientToken, err := globalCP.GenerateDpToken(AppModeDemoClient)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Remote

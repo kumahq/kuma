@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gruntwork-io/terratest/modules/retry"
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/go-errors/errors"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -56,9 +57,9 @@ destinations:
 
 		globalCP := global.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
+		echoServerToken, err := globalCP.GenerateDpToken(AppModeEchoServer)
 		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
+		demoClientToken, err := globalCP.GenerateDpToken(AppModeDemoClient)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 1

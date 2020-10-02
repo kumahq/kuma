@@ -143,6 +143,12 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, dpyaml, token string) error {
+	// apply the dataplane
+	err := c.controlplane.kumactl.KumactlApplyFromString(dpyaml)
+	if err != nil {
+		return err
+	}
+
 	cpAddress := "http://" + c.apps[AppModeCP].ip + ":5681"
 	app.CreateDP(token, cpAddress, appname)
 

@@ -250,7 +250,7 @@ func (c *K8sControlPlane) GenerateDpToken(service string) (string, error) {
 		c.t,
 		"POST",
 		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAdminPort),
-		[]byte(fmt.Sprintf(`{"mesh": "default", "tags": {"kuma.io/service": ["%s"]}}`, service)),
+		[]byte(fmt.Sprintf(`{"name": "dp-%s", "mesh": "default"}`, service)),
 		map[string]string{"content-type": "application/json"},
 		200,
 		DefaultRetries,

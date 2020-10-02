@@ -52,9 +52,9 @@ selectors:
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("echo-server_kuma-test_svc_8080")
+		echoServerToken, err := cluster.GetKuma().GenerateDpToken(AppModeEchoServer)
 		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("demo-client")
+		demoClientToken, err := cluster.GetKuma().GenerateDpToken(AppModeDemoClient)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = EchoServerUniversal(echoServerToken)(cluster)

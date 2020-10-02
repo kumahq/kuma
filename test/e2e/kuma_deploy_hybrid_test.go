@@ -85,9 +85,9 @@ metadata:
 
 		globalCP := global.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
+		echoServerToken, err := globalCP.GenerateDpToken(AppModeEchoServer)
 		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
+		demoClientToken, err := globalCP.GenerateDpToken(AppModeDemoClient)
 		Expect(err).ToNot(HaveOccurred())
 
 		// K8s Cluster 1
