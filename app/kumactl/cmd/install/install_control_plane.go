@@ -46,6 +46,7 @@ type InstallControlPlaneArgs struct {
 	KumaCpMode              string
 	Zone                    string
 	GlobalRemotePortType    string
+	ControlPlane_envVars    map[string]string `helm:"controlPlane.envVars"`
 }
 
 type ImageEnvSecret struct {
@@ -72,6 +73,7 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	KumaCpMode:              core.Standalone,
 	Zone:                    "",
 	GlobalRemotePortType:    "LoadBalancer",
+	ControlPlane_envVars:    map[string]string{},
 }
 
 var InstallCpTemplateFilesFn = InstallCpTemplateFiles
@@ -139,6 +141,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.KumaCpMode, "mode", args.KumaCpMode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
 	cmd.Flags().StringVar(&args.Zone, "zone", args.Zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
+	cmd.Flags().StringToStringVar(&args.ControlPlane_envVars, "env-var", args.ControlPlane_envVars, "environment variables that will be passed to the control plane")
 	return cmd
 }
 

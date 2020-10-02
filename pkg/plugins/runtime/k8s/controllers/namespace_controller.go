@@ -13,7 +13,6 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_controllerutil "sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	k8scnicncfio "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
 	network_v1 "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector/metadata"
@@ -24,8 +23,7 @@ type NamespaceReconciler struct {
 	kube_client.Client
 	Log logr.Logger
 
-	CNIEnabled      bool
-	ResourceManager core_manager.ResourceManager
+	CNIEnabled bool
 }
 
 // Reconcile is in charge of creating NetworkAttachmentDefinition if CNI enabled and namespace has label 'kuma.io/sidecar-injection: enabled'

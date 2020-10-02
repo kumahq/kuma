@@ -153,46 +153,85 @@ runtime:
     # Admission WebHook Server configuration
     admissionServer:
       # Address the Admission WebHook Server should be listening on
-      address:
+      address: # ENV: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS
       # Port the Admission WebHook Server should be listening on
-      port: 5443
+      port: 5443 # ENV: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
       # Directory with a TLS cert and private key for the Admission WebHook Server.
       # TLS certificate file must be named `tls.crt`.
       # TLS key file must be named `tls.key`.
-      certDir:
+      certDir: # ENV: kuma_runtime_kubernetes_admission_server_cert_dir
+    # Injector defines configuration of a Kuma Sidecar Injector.
     injector:
-      cniEnabled: false
+      # if true runs kuma-cp in CNI compatible mode
+      cniEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
+      # SidecarContainer defines configuration of the Kuma sidecar container.
       sidecarContainer:
-        image: kuma/kuma-dp:latest
-        redirectPortInbound: 15006
-        redirectPortOutbound: 15001
-        uid: 5678
-        gid: 5678
-        adminPort: 9901
-        drainTime: 30s
-
+        # Image name.
+        image: kuma/kuma-dp:latest # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
+        # Redirect port for inbound traffic.
+        redirectPortInbound: 15006 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND
+        # Redirect port for outbound traffic.
+        redirectPortOutbound: 15001 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_OUTBOUND
+        # User ID.
+        uid: 5678 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_UID
+        # Group ID.
+        gid: 5678 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_GUI
+        # Admin port.
+        adminPort: 9901 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT
+        # Drain time for listeners.
+        drainTime: 30s # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_DRAIN_TIME
+        # Readiness probe.
         readinessProbe:
-          initialDelaySeconds: 1
-          timeoutSeconds:      3
-          periodSeconds:       5
-          successThreshold:    1
-          failureThreshold:    12
+          # Number of seconds after the container has started before readiness probes are initiated.
+          initialDelaySeconds: 1 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS
+          # Number of seconds after which the probe times out.
+          timeoutSeconds: 3 # ENV : KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_TIMEOUT_SECONDS
+          # Number of seconds after which the probe times out.
+          periodSeconds: 5 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_PERIOD_SECONDS
+          # Minimum consecutive successes for the probe to be considered successful after having failed.
+          successThreshold: 1 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_SUCCESS_THRESHOLD
+          # Minimum consecutive failures for the probe to be considered failed after having succeeded.
+          failureThreshold: 12 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_FAILURE_THRESHOLD
+        # Liveness probe.
         livenessProbe:
-          initialDelaySeconds: 60
-          timeoutSeconds:      3
-          periodSeconds:       5
-          failureThreshold:    12
+          # Number of seconds after the container has started before liveness probes are initiated.
+          initialDelaySeconds: 60 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_INITIAL_DELAY_SECONDS
+          # Number of seconds after which the probe times out.
+          timeoutSeconds: 3 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_TIMEOUT_SECONDS
+          # How often (in seconds) to perform the probe.
+          periodSeconds: 5 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_PERIOD_SECONDS
+          # Minimum consecutive failures for the probe to be considered failed after having succeeded.
+          failureThreshold: 12 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_LIVENESS_PROBE_FAILURE_THRESHOLD
+        # Compute resource requirements.
         resources:
+          # Minimum amount of compute resources required.
           requests:
-            cpu: 50m
-            memory: 64Mi
+            # CPU, in cores. (500m = .5 cores)
+            cpu: 50m # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_CPU
+            # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+            memory: 64Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_REQUESTS_MEMORY
+          # Maximum amount of compute resources allowed.
           limits:
-            cpu: 1000m
-            memory: 512Mi
+            # CPU, in cores. (500m = .5 cores)
+            cpu: 1000m # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
+            # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
+            memory: 512Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
+      # InitContainer defines configuration of the Kuma init container
       initContainer:
-        image: kuma/kuma-init:latest
+        # Image name.
+        image: kuma/kuma-init:latest # ENV: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+      # Configuration for a traffic that is intercepted by sidecar
+      sidecarTraffic:
+        # List of inbound ports that will be excluded from interception.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ports annotation is specified on Pod.
+        excludeInboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS
+        # List of outbound ports that will be excluded from interception.
+        # This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
+        excludeOutboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
+  # Universal-specific configuration
   universal:
-    dataplaneCleanupAge: 72h0m0s
+    # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
+    dataplaneCleanupAge: 72h0m0s # ENV: KUMA_RUNTIME_UNIVERSAL_DATAPLANE_CLEANUP_AGE
 
 # Default Kuma entities configuration
 defaults:

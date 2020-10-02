@@ -188,6 +188,10 @@ var _ = Describe("Config WS", func() {
                     }
                   },
                   "uid": 5678
+                },
+                "sidecarTraffic": {
+                  "excludeInboundPorts": [],
+                  "excludeOutboundPorts": []
                 }
               }
             },

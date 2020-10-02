@@ -3,6 +3,7 @@ package injector
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -286,6 +287,8 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 	if pod.GetAnnotations()[metadata.KumaGatewayAnnotation] == metadata.KumaGatewayEnabled {
 		inboundPortsToIntercept = ""
 	}
+	excludeInboundPorts := pod.Annotations[metadata.KumaTrafficExcludeInboundPorts]
+	excludeOutboundPorts := pod.Annotations[metadata.KumaTrafficExcludeOutboundPorts]
 	return kube_core.Container{
 		Name:            KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
@@ -299,6 +302,10 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) kube_core.Container 
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
 			"-g",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.GID),
+			"-d",
+			excludeInboundPorts,
+			"-o",
+			excludeOutboundPorts,
 			"-m",
 			"REDIRECT",
 			"-i",
@@ -339,5 +346,23 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
+	if val, exist := pod.Annotations[metadata.KumaTrafficExcludeInboundPorts]; exist {
+		annotations[metadata.KumaTrafficExcludeInboundPorts] = val
+	} else if len(i.cfg.SidecarTraffic.ExcludeInboundPorts) > 0 {
+		annotations[metadata.KumaTrafficExcludeInboundPorts] = portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeInboundPorts)
+	}
+	if val, exist := pod.Annotations[metadata.KumaTrafficExcludeOutboundPorts]; exist {
+		annotations[metadata.KumaTrafficExcludeOutboundPorts] = val
+	} else if len(i.cfg.SidecarTraffic.ExcludeOutboundPorts) > 0 {
+		annotations[metadata.KumaTrafficExcludeOutboundPorts] = portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts)
+	}
 	return annotations
+}
+
+func portsToAnnotationValue(ports []uint32) string {
+	stringPorts := make([]string, len(ports))
+	for i, port := range ports {
+		stringPorts[i] = fmt.Sprintf("%d", port)
+	}
+	return strings.Join(stringPorts, ",")
 }

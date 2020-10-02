@@ -169,6 +169,10 @@ spec:
         - name: KUMA_MULTICLUSTER_REMOTE_ZONE
           value: {{ .Zone }}
 {{- end }}
+{{- range $key, $value := .ControlPlane_envVars }}
+        - name: {{ $key | upper }}
+          value: {{ $value | quote }}
+{{- end }}
 {{- range $element := .ControlPlaneSecrets }}
         - name: {{ $element.Env }}
           valueFrom:

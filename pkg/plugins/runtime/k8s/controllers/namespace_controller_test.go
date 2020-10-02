@@ -14,8 +14,6 @@ import (
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	v1 "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 )
@@ -24,12 +22,8 @@ var _ = Describe("NamespaceReconciler", func() {
 
 	var kubeClient kube_client.Client
 	var reconciler kube_reconcile.Reconciler
-	var resManager manager.ResourceManager
 
 	BeforeEach(func() {
-		resStore := memory.NewStore()
-		resManager = manager.NewResourceManager(resStore)
-
 		kubeClient = kube_client_fake.NewFakeClientWithScheme(
 			k8sClientScheme,
 			&kube_core.Namespace{
@@ -50,10 +44,9 @@ var _ = Describe("NamespaceReconciler", func() {
 		)
 
 		reconciler = &controllers.NamespaceReconciler{
-			Client:          kubeClient,
-			CNIEnabled:      true,
-			Log:             core.Log.WithName("test"),
-			ResourceManager: resManager,
+			Client:     kubeClient,
+			CNIEnabled: true,
+			Log:        core.Log.WithName("test"),
 		}
 	})
 

@@ -69,10 +69,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 
 func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	reconciler := &k8s_controllers.NamespaceReconciler{
-		Client:          mgr.GetClient(),
-		Log:             core.Log.WithName("controllers").WithName("Namespace"),
-		CNIEnabled:      rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
-		ResourceManager: rt.ResourceManager(),
+		Client:     mgr.GetClient(),
+		Log:        core.Log.WithName("controllers").WithName("Namespace"),
+		CNIEnabled: rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
