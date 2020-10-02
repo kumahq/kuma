@@ -9,8 +9,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	kube_auth "k8s.io/api/authentication/v1"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/faultinjections"
+	"github.com/kumahq/kuma/pkg/core/logs"
+	"github.com/kumahq/kuma/pkg/core/permissions"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -160,6 +164,9 @@ func DefaultIngressReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 }
 
 func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressReconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
+	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
+	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
+	faultInjectionMatcher := faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
 	if err != nil {
 		return nil, err
@@ -179,6 +186,8 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	if err := rt.Metrics().Register(xdsGenerationsErrors); err != nil {
 		return nil, err
 	}
+	meshSnapshotCache := NewMeshSnapshotCache(rt.ReadOnlyResourceManager(),
+		rt.Config().Store.Cache.ExpirationTime, meshResources, rt.LookupIP())
 	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
 		prevHash := ""
@@ -193,9 +202,9 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				}()
 
 				ctx := context.Background()
+				dataplane := &mesh_core.DataplaneResource{}
 				proxyID := xds.FromResourceKey(key)
 
-				dataplane := &mesh_core.DataplaneResource{}
 				if err := rt.ReadOnlyResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
 					if core_store.IsResourceNotFound(err) {
 						return reconciler.Clear(&proxyID)
@@ -231,31 +240,99 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return ingressReconciler.Reconcile(envoyCtx, &proxy)
 				}
 
-				snapshot, err := GetMeshSnapshot(ctx, dataplane.GetMeta().GetMesh(), rt.ReadOnlyResourceManager(), meshResources, rt.LookupIP())
-				if err != nil {
+				mesh := &mesh_core.MeshResource{}
+				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
 
-				snapshotHash := snapshot.Hash()
+				snapshotHash, err := meshSnapshotCache.GetHash(ctx, dataplane.GetMeta().GetMesh())
+				if err != nil {
+					return err
+				}
 				if prevHash != "" && snapshotHash == prevHash {
-					log.V(1).Info("snapshot hashes are equal, no need to reconcile", "hash", prevHash)
+					log.V(1).Info("snapshot hashes are equal, no need to reconcile")
 					return nil
 				}
 				prevHash = snapshotHash
-				log.V(1).Info("snapshot hash updated, reconcile", "hash", prevHash)
+				log.V(1).Info("snapshot hash updated, reconcile")
 
-				envoyCtx := xds_context.Context{
-					ControlPlane: envoyCpCtx,
-					Mesh: xds_context.MeshContext{
-						Resource:   snapshot.Mesh,
-						Dataplanes: snapshot.Resources[mesh_core.DataplaneType].(*mesh_core.DataplaneResourceList),
-					},
-				}
-				proxy, err := ToDataplaneProxy(dataplane, metadataTracker.Metadata(streamId), snapshot, rt.Config().Multicluster.Remote.Zone)
+				dataplanes, err := xds_topology.GetDataplanes(log, ctx, rt.ReadOnlyResourceManager(), rt.LookupIP(), dataplane.Meta.GetMesh())
 				if err != nil {
 					return err
 				}
-				return reconciler.Reconcile(envoyCtx, proxy)
+				envoyCtx := xds_context.Context{
+					ControlPlane: envoyCpCtx,
+					Mesh: xds_context.MeshContext{
+						Resource:   mesh,
+						Dataplanes: dataplanes,
+					},
+				}
+
+				// pick a single the most specific route for each outbound interface
+				routes, err := xds_topology.GetRoutes(ctx, dataplane, rt.ReadOnlyResourceManager())
+				if err != nil {
+					return err
+				}
+
+				// create creates a map of selectors to match other dataplanes reachable via given routes
+				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
+
+				// resolve all endpoints that match given selectors
+				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, rt.Config().Multicluster.Remote.Zone, mesh)
+				if err != nil {
+					return err
+				}
+
+				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
+				if err != nil {
+					return err
+				}
+
+				circuitBreakers, err := xds_topology.GetCircuitBreakers(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
+				if err != nil {
+					return err
+				}
+
+				trafficTrace, err := xds_topology.GetTrafficTrace(ctx, dataplane, rt.ReadOnlyResourceManager())
+				if err != nil {
+					return err
+				}
+				var tracingBackend *mesh_proto.TracingBackend
+				if trafficTrace != nil {
+					tracingBackend = mesh.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
+				}
+
+				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane, mesh)
+				if err != nil {
+					return err
+				}
+
+				matchedLogs, err := logsMatcher.Match(ctx, dataplane)
+				if err != nil {
+					return err
+				}
+
+				faultInjection, err := faultInjectionMatcher.Match(ctx, dataplane, mesh)
+				if err != nil {
+					return err
+				}
+
+				proxy := xds.Proxy{
+					Id:                 proxyID,
+					Dataplane:          dataplane,
+					TrafficPermissions: matchedPermissions,
+					TrafficRoutes:      routes,
+					OutboundSelectors:  destinations,
+					OutboundTargets:    outbound,
+					HealthChecks:       healthChecks,
+					CircuitBreakers:    circuitBreakers,
+					Logs:               matchedLogs,
+					TrafficTrace:       trafficTrace,
+					TracingBackend:     tracingBackend,
+					Metadata:           metadataTracker.Metadata(streamId),
+					FaultInjections:    faultInjection,
+				}
+				return reconciler.Reconcile(envoyCtx, &proxy)
 			},
 			OnError: func(err error) {
 				xdsGenerationsErrors.Inc()

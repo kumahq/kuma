@@ -6,6 +6,10 @@ import (
 	"encoding/hex"
 	"sort"
 	"strings"
+	"sync"
+	"time"
+
+	"github.com/patrickmn/go-cache"
 
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -15,6 +19,68 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
+
+type MeshSnapshotCache struct {
+	cache  *cache.Cache
+	rm     manager.ReadOnlyResourceManager
+	types  []core_model.ResourceType
+	ipFunc lookup.LookupIPFunc
+
+	mutexes  map[string]*sync.Mutex
+	mapMutex sync.Mutex // guards "mutexes" field
+}
+
+func NewMeshSnapshotCache(rm manager.ReadOnlyResourceManager, expirationTime time.Duration, types []core_model.ResourceType, ipFunc lookup.LookupIPFunc) *MeshSnapshotCache {
+	return &MeshSnapshotCache{
+		rm:      rm,
+		types:   types,
+		ipFunc:  ipFunc,
+		mutexes: map[string]*sync.Mutex{},
+		cache:   cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
+	}
+}
+
+func (c *MeshSnapshotCache) GetHash(ctx context.Context, mesh string) (string, error) {
+	if hash, found := c.cache.Get(mesh); !found {
+		mutex := c.mutexFor(mesh)
+		mutex.Lock()
+		if hash, found = c.cache.Get(mesh); !found {
+			snapshot, err := GetMeshSnapshot(ctx, mesh, c.rm, c.types, c.ipFunc)
+			if err != nil {
+				mutex.Unlock()
+				return "", err
+			}
+			hash := snapshot.Hash()
+			c.cache.SetDefault(mesh, hash)
+			mutex.Unlock()
+			c.cleanMutexFor(mesh) // We need to cleanup mutexes from the map, otherwise we can see the memory leak.
+			return hash, nil
+		} else {
+			mutex.Unlock()
+			c.cleanMutexFor(mesh)
+			return hash.(string), nil
+		}
+	} else {
+		return hash.(string), nil
+	}
+}
+
+func (c *MeshSnapshotCache) mutexFor(key string) *sync.Mutex {
+	c.mapMutex.Lock()
+	defer c.mapMutex.Unlock()
+	mutex, exist := c.mutexes[key]
+	if !exist {
+		mutex = &sync.Mutex{}
+		c.mutexes[key] = mutex
+	}
+	return mutex
+}
+
+func (c *MeshSnapshotCache) cleanMutexFor(key string) {
+	c.mapMutex.Lock()
+	delete(c.mutexes, key)
+	c.mapMutex.Unlock()
+}
 
 type MeshSnapshot struct {
 	Mesh      *core_mesh.MeshResource
