@@ -11,7 +11,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var _ = Describe("Test Universal deployment", func() {
+var _ = Describe("Test ExternalServices on Universal", func() {
 
 	meshDefaulMtlsOn := `
 type: Mesh
@@ -133,7 +133,7 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "localhost:5000")
+			"curl", "-v", "-m", "3", "--fail", "localhost:5000")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
@@ -144,7 +144,7 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "http://localhost:5000")
+			"curl", "-v", "-m", "3", "--fail", "http://localhost:5000")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("HTTPS"))

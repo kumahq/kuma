@@ -65,10 +65,3 @@ func (es *ExternalService) GetPortUInt32() uint32 {
 func (es *ExternalService) TagSet() SingleValueTagSet {
 	return es.Tags
 }
-
-func (es *ExternalService) GetIdentifyingService() string {
-	if service, ok := es.TagSet()[ServiceTag]; ok {
-		return service
-	}
-	return ServiceUnknown
-}

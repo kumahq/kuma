@@ -29,7 +29,11 @@ func (es *ExternalServiceResource) Validate() error {
 func validateExternalServiceNetworking(networking *mesh_proto.ExternalService_Networking) validators.ValidationError {
 	var err validators.ValidationError
 	path := validators.RootedAt("networking")
-	err.Add(validateExtarnalServiceAddress(path, networking.Address))
+	if networking == nil {
+		err.AddViolation("networking", "should have networking")
+	} else {
+		err.Add(validateExtarnalServiceAddress(path, networking.Address))
+	}
 	return err
 }
 

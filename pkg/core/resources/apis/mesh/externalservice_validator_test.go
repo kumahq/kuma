@@ -85,6 +85,19 @@ var _ = Describe("ExternalService", func() {
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
 		},
+		Entry("no networking", testCase{
+			dataplane: `
+                type: ExternalService
+                name: es-1
+                mesh: default
+                tags:
+                  kuma.io/service: backend
+                  version: "1"`,
+			expected: `
+                violations:
+                - field: networking
+                  message: should have networking`,
+		}),
 		Entry("networking.address: empty", testCase{
 			dataplane: `
                 type: ExternalService
@@ -114,6 +127,27 @@ var _ = Describe("ExternalService", func() {
                 violations:
                 - field: networking.address
                   message:  address has to be valid IP address or domain name`,
+		}),
+		Entry("networking.address: invalid format using scheme", testCase{
+			dataplane: `
+                type: ExternalService
+                name: es-1
+                mesh: default
+                networking:
+                  address: http://example.com:8080
+                tags:
+                  kuma.io/service: backend
+                  version: "1"`,
+			expected: `
+                violations:
+                - field: networking.address
+                  message: unable to parse address
+                - field: networking.address
+                  message: address has to be valid IP address or domain name
+                - field: networking.address
+                  message: unable to parse port in address
+                - field: networking.address
+                  message: port has to be in range of [1, 65535]`,
 		}),
 		Entry("networking: port out of range", testCase{
 			dataplane: `

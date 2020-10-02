@@ -36,9 +36,6 @@ func (c *clientSideTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 			TypedConfig: pbst,
 		},
 	}
-	if err != nil {
-		return err
-	}
 	cluster.TransportSocket = transportSocket
 
 	return nil
