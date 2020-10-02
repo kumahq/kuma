@@ -40,7 +40,6 @@ var (
 	xdsServerLog  = core.Log.WithName("xds-server")
 	meshResources = []core_model.ResourceType{
 		mesh_core.DataplaneType,
-		mesh_core.DataplaneInsightType,
 		mesh_core.CircuitBreakerType,
 		mesh_core.FaultInjectionType,
 		mesh_core.HealthCheckType,
@@ -240,21 +239,21 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return ingressReconciler.Reconcile(envoyCtx, &proxy)
 				}
 
-				mesh := &mesh_core.MeshResource{}
-				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
-					return err
-				}
-
 				snapshotHash, err := meshSnapshotCache.GetHash(ctx, dataplane.GetMeta().GetMesh())
 				if err != nil {
 					return err
 				}
 				if prevHash != "" && snapshotHash == prevHash {
-					log.V(1).Info("snapshot hashes are equal, no need to reconcile")
+					log.V(1).Info("snapshot hashes are equal, no need to reconcile", "prev", prevHash)
 					return nil
 				}
+				log.V(1).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)
 				prevHash = snapshotHash
-				log.V(1).Info("snapshot hash updated, reconcile")
+
+				mesh := &mesh_core.MeshResource{}
+				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
+					return err
+				}
 
 				dataplanes, err := xds_topology.GetDataplanes(log, ctx, rt.ReadOnlyResourceManager(), rt.LookupIP(), dataplane.Meta.GetMesh())
 				if err != nil {

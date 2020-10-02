@@ -2,8 +2,6 @@ package server
 
 import (
 	"context"
-	"crypto/md5"
-	"encoding/hex"
 	"sort"
 	"strings"
 	"sync"
@@ -143,8 +141,7 @@ func hashResources(rs ...core_model.Resource) string {
 		hashes = append(hashes, hashResource(r))
 	}
 	sort.Strings(hashes)
-	hash := md5.Sum([]byte(strings.Join(hashes, ",")))
-	return hex.EncodeToString(hash[:])
+	return strings.Join(hashes, ",")
 }
 
 func hashResource(r core_model.Resource) string {

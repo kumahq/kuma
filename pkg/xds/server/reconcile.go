@@ -1,8 +1,6 @@
 package server
 
 import (
-	"github.com/golang/protobuf/proto"
-
 	"github.com/kumahq/kuma/pkg/core"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -71,23 +69,8 @@ func (r *reconciler) autoVersion(old envoy_cache.Snapshot, new envoy_cache.Snaps
 }
 
 func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {
-	new.Version = old.Version
-	if !equalSnapshots(old.Items, new.Items) {
-		new.Version = newUUID()
-	}
+	new.Version = newUUID()
 	return new
-}
-
-func equalSnapshots(old, new map[string]envoy_types.Resource) bool {
-	if len(new) != len(old) {
-		return false
-	}
-	for key, newValue := range new {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue, oldValue) {
-			return false
-		}
-	}
-	return true
 }
 
 type snapshotGenerator interface {
