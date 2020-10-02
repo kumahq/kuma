@@ -50,6 +50,8 @@ controlPlane:
     pullPolicy: IfNotPresent
     repository: "kuma-cp"
   # secrets: {}
+
+  envVars: {}
 cni:
   enabled: false
   logLevel: info
