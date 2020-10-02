@@ -9,10 +9,13 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
 var _ = Describe("Test ExternalServices on Universal", func() {
 
+	httpServer := "http-server"
+	httpsServer := "https-server"
 	meshDefaulMtlsOn := `
 type: Mesh
 name: default
@@ -89,8 +92,8 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(ExternalServiceUniversal(es1, false)).
-			Install(ExternalServiceUniversal(es2, true)).
+			Install(externalservice.Install(httpServer, externalservice.UniversalAppEchoServer)).
+			Install(externalservice.Install(httpsServer, externalservice.UniversalAppHttpsEchoServer)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -101,21 +104,21 @@ networking:
 		err = YamlUniversal(trafficPermissionAll)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		externalServiceAddres, err := cluster.GetExternalAppAddress("", AppModeEchoServer, es1)
+		externalServiceAddress := externalservice.From(cluster, httpServer).GetExternalAppAddress()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(fmt.Sprintf(externalService,
 			es1, es1,
-			externalServiceAddres+":80",
+			externalServiceAddress+":80",
 			"false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		externalServiceAddres, err = cluster.GetExternalAppAddress("", AppModeHttpsEchoServer, es2)
+		externalServiceAddress = externalservice.From(cluster, httpsServer).GetExternalAppAddress()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(fmt.Sprintf(externalService,
 			es2, es2,
-			externalServiceAddres+":443",
+			externalServiceAddress+":443",
 			"true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

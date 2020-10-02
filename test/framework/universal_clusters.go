@@ -34,6 +34,10 @@ func NewUniversalClusters(clusterNames []string, verbose bool) (Clusters, error)
 	}, nil
 }
 
+func (cs *UniversalClusters) Name() string {
+	panic("not implemented")
+}
+
 func (cs *UniversalClusters) DismissCluster() error {
 	for name, c := range cs.clusters {
 		if err := c.DismissCluster(); err != nil {
@@ -141,14 +145,6 @@ func (cs *UniversalClusters) DeployApp(namespace, appname, token string) error {
 	}
 
 	return nil
-}
-
-func (cs *UniversalClusters) DeployExternalApp(namespace, appname, id string) error {
-	panic("Not implemented")
-}
-
-func (cs *UniversalClusters) GetExternalAppAddress(namespace, appname, id string) (string, error) {
-	panic("Not implemented")
 }
 
 func (cs *UniversalClusters) DeleteApp(namespace, appname string) error {

@@ -13,10 +13,6 @@ import (
 	"go.uber.org/multierr"
 )
 
-const (
-	kumaUniversalImage = "kuma-universal"
-)
-
 type UniversalCluster struct {
 	t            testing.TestingT
 	name         string
@@ -34,6 +30,10 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		verbose:     verbose,
 		deployments: map[string]Deployment{},
 	}
+}
+
+func (c *UniversalCluster) Name() string {
+	return c.name
 }
 
 func (c *UniversalCluster) DismissCluster() (errs error) {
@@ -177,41 +177,6 @@ func (c *UniversalCluster) DeployApp(namespace, appname, token string) error {
 	c.apps[appname] = app
 
 	return nil
-}
-
-func (c *UniversalCluster) DeployExternalApp(namespace, appname, id string) error {
-	var args []string
-	switch appname {
-	case AppModeEchoServer:
-		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
-	case AppModeHttpsEchoServer:
-		args = []string{"ncat", "-lk", "-p", "443", "--ssl", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"}
-	default:
-		return errors.Errorf("not supported app type %s", appname)
-	}
-
-	app, err := NewExernalService(c.t, c.name, AppMode(appname), args)
-	if err != nil {
-		return err
-	}
-
-	err = app.mainApp.Start()
-	if err != nil {
-		return err
-	}
-
-	c.apps["external-"+appname+"-"+id] = app
-
-	return nil
-}
-
-func (c *UniversalCluster) GetExternalAppAddress(namespace, appname, id string) (string, error) {
-	app, ok := c.apps["external-"+appname+"-"+id]
-	if !ok {
-		return "", errors.Errorf("App %s not found for address", appname)
-	}
-
-	return app.ip, nil
 }
 
 func (c *UniversalCluster) DeleteApp(namespace, appname string) error {

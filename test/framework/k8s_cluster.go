@@ -67,6 +67,10 @@ func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, erro
 	return cluster, nil
 }
 
+func (c *K8sCluster) Name() string {
+	return c.name
+}
+
 func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
 	options := c.GetKubectlOptions(namespace)
 
@@ -609,14 +613,6 @@ func (c *K8sCluster) DeployApp(namespace, appname, token string) error {
 		1, DefaultRetries, DefaultTimeout)
 
 	return nil
-}
-
-func (c *K8sCluster) DeployExternalApp(namespace, appname, id string) error {
-	panic("Not implemented")
-}
-
-func (c *K8sCluster) GetExternalAppAddress(namespace, appname, id string) (string, error) {
-	panic("Not implemented")
 }
 
 func (c *K8sCluster) DeleteApp(namespace, appname string) error {

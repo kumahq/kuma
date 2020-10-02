@@ -88,6 +88,7 @@ type Deployment interface {
 
 type Cluster interface {
 	// Cluster
+	Name() string
 	DismissCluster() error
 	// Generic
 	DeployKuma(mode string, opts ...DeployOptionsFunc) error
@@ -105,11 +106,9 @@ type Cluster interface {
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
 	DeployApp(namespace, appname, token string) error
-	DeployExternalApp(namespace, appname, id string) error
 	DeleteApp(namespace, appname string) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
 	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
-	GetExternalAppAddress(namespace, appname, id string) (string, error)
 
 	// Testing
 	GetTesting() testing.TestingT

@@ -51,6 +51,10 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	}, nil
 }
 
+func (cs *K8sClusters) Name() string {
+	panic("not implemented")
+}
+
 func (cs *K8sClusters) DismissCluster() error {
 	for name, c := range cs.clusters {
 		if err := c.DismissCluster(); err != nil {
@@ -166,14 +170,6 @@ func (cs *K8sClusters) DeployApp(namespace, appname, token string) error {
 	}
 
 	return nil
-}
-
-func (cs *K8sClusters) DeployExternalApp(namespace, appname, id string) error {
-	panic("Not implemented")
-}
-
-func (cs *K8sClusters) GetExternalAppAddress(namespace, appname, id string) (string, error) {
-	panic("Not implemented")
 }
 
 func (cs *K8sClusters) DeleteApp(namespace, appname string) error {
