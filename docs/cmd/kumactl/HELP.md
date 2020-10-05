@@ -227,7 +227,7 @@ Flags:
       --admission-server-tls-key string     TLS key for the admission web hooks implemented by the Kuma Control Plane
       --cni-enabled                         install Kuma with CNI instead of proxy init container
       --cni-image string                    image of Kuma CNI component, if CNIEnabled equals true (default "lobkovilya/install-cni")
-      --cni-version string                  version of the CNIImage (default "0.0.1")
+      --cni-version string                  version of the CNIImage (default "0.0.2")
       --control-plane-image string          image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io/kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
       --control-plane-version string        version shared by all components of the Kuma Control Plane (default "latest")
