@@ -68,7 +68,7 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	SdsTlsCert:              "",
 	SdsTlsKey:               "",
 	CNIImage:                "lobkovilya/install-cni",
-	CNIVersion:              "0.0.1",
+	CNIVersion:              "0.0.2",
 	KumaCpMode:              core.Standalone,
 	Zone:                    "",
 	GlobalRemotePortType:    "LoadBalancer",
