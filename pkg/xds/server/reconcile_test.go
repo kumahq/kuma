@@ -75,11 +75,10 @@ var _ = Describe("Reconcile", func() {
 			},
 		}
 
-		It("should generate a Snaphot per Envoy Node", func() {
+		It("should generate a Snapshot per Envoy Node", func() {
 			// given
 			snapshots := make(chan envoy_cache.Snapshot, 3)
 			snapshots <- snapshot               // initial Dataplane configuration
-			snapshots <- snapshot               // same Dataplane configuration
 			snapshots <- envoy_cache.Snapshot{} // new Dataplane configuration
 
 			// setup
@@ -115,25 +114,6 @@ var _ = Describe("Reconcile", func() {
 			By("verifying that snapshot versions were auto-generated")
 			// when
 			snapshot, err := xdsContext.Cache().GetSnapshot("demo.example")
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			Expect(snapshot).ToNot(BeZero())
-			// and
-			Expect(snapshot.Resources[envoy_types.Listener].Version).To(Equal("v1"))
-			Expect(snapshot.Resources[envoy_types.Route].Version).To(Equal("v2"))
-			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal("v3"))
-			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal("v4"))
-			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal("v5"))
-
-			By("simulating discovery event (Dataplane watchdog triggers refresh)")
-			// when
-			err = r.Reconcile(xds_context.Context{}, proxy)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-
-			By("verifying that snapshot versions remain the same")
-			// when
-			snapshot, err = xdsContext.Cache().GetSnapshot("demo.example")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(snapshot).ToNot(BeZero())
