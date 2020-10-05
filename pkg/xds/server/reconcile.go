@@ -1,6 +1,8 @@
 package server
 
 import (
+	"github.com/golang/protobuf/proto"
+
 	"github.com/kumahq/kuma/pkg/core"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -45,20 +47,47 @@ func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) erro
 	if err := snapshot.Consistent(); err != nil {
 		reconcileLog.Error(err, "inconsistent snapshot", "snapshot", snapshot, "proxy", proxy)
 	}
-	snapshot = r.autoVersion(snapshot)
+	// to avoid assigning a new version every time,
+	// compare with the previous snapshot and reuse its version whenever possible,
+	// fallback to UUID otherwise
+	previous, err := r.cacher.Get(node)
+	if err != nil {
+		previous = envoy_cache.Snapshot{}
+	}
+	snapshot = r.autoVersion(previous, snapshot)
 	if err := r.cacher.Cache(node, snapshot); err != nil {
 		reconcileLog.Error(err, "failed to store snapshot", "snapshot", snapshot, "proxy", proxy)
 	}
 	return nil
 }
 
-func (r *reconciler) autoVersion(new envoy_cache.Snapshot) envoy_cache.Snapshot {
-	new.Resources[envoy_types.Listener].Version = newUUID()
-	new.Resources[envoy_types.Route].Version = newUUID()
-	new.Resources[envoy_types.Cluster].Version = newUUID()
-	new.Resources[envoy_types.Endpoint].Version = newUUID()
-	new.Resources[envoy_types.Secret].Version = newUUID()
+func (r *reconciler) autoVersion(old envoy_cache.Snapshot, new envoy_cache.Snapshot) envoy_cache.Snapshot {
+	new.Resources[envoy_types.Listener] = reuseVersion(old.Resources[envoy_types.Listener], new.Resources[envoy_types.Listener])
+	new.Resources[envoy_types.Route] = reuseVersion(old.Resources[envoy_types.Route], new.Resources[envoy_types.Route])
+	new.Resources[envoy_types.Cluster] = reuseVersion(old.Resources[envoy_types.Cluster], new.Resources[envoy_types.Cluster])
+	new.Resources[envoy_types.Endpoint] = reuseVersion(old.Resources[envoy_types.Endpoint], new.Resources[envoy_types.Endpoint])
+	new.Resources[envoy_types.Secret] = reuseVersion(old.Resources[envoy_types.Secret], new.Resources[envoy_types.Secret])
 	return new
+}
+
+func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {
+	new.Version = old.Version
+	if !equalSnapshots(old.Items, new.Items) {
+		new.Version = newUUID()
+	}
+	return new
+}
+
+func equalSnapshots(old, new map[string]envoy_types.Resource) bool {
+	if len(new) != len(old) {
+		return false
+	}
+	for key, newValue := range new {
+		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue, oldValue) {
+			return false
+		}
+	}
+	return true
 }
 
 type snapshotGenerator interface {
