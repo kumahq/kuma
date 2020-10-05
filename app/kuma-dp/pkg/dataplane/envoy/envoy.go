@@ -24,11 +24,6 @@ var (
 	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 )
 
-var (
-	// overridable by unit tests
-	newConfigFile = GenerateBootstrapFile
-)
-
 type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource) (proto.Message, error)
 
 type Opts struct {
@@ -107,7 +102,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 	}
-	configFile, err := newConfigFile(e.opts.Config.DataplaneRuntime, bootstrapConfig)
+	configFile, err := GenerateBootstrapFile(e.opts.Config.DataplaneRuntime, bootstrapConfig)
 	if err != nil {
 		return err
 	}

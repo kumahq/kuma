@@ -8,6 +8,8 @@ controlPlane:
     retry:
       backoff: 1s
       maxDuration: 30s
+  caCert: ""
+  caCertFile: ""
 dataplane:
   mesh: default
   drainTime: 30s

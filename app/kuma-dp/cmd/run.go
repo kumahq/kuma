@@ -120,6 +120,14 @@ func newRunCmd() *cobra.Command {
 				cfg.DataplaneRuntime.TokenPath = path
 			}
 
+			if cfg.ControlPlane.CaCert == "" && cfg.ControlPlane.CaCertFile != "" {
+				cert, err := ioutil.ReadFile(cfg.ControlPlane.CaCertFile)
+				if err != nil {
+					return errors.Wrapf(err, "could not read certificate file %s", cfg.ControlPlane.CaCertFile)
+				}
+				cfg.ControlPlane.CaCert = string(cert)
+			}
+
 			dataplane, err := envoy.New(envoy.Opts{
 				Catalog:   *catalog,
 				Config:    cfg,
@@ -152,6 +160,7 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().Var(&cfg.Dataplane.AdminPort, "admin-port", `Port (or range of ports to choose from) for Envoy Admin API to listen on. Empty value indicates that Envoy Admin API should not be exposed over TCP. Format: "9901 | 9901-9999 | 9901- | -9901"`)
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.ApiServer.URL, "cp-address", cfg.ControlPlane.ApiServer.URL, "URL of the Control Plane API Server")
+	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCert, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.TokenPath, "dataplane-token-file", cfg.DataplaneRuntime.TokenPath, "Path to a file with dataplane token (use 'kumactl generate dataplane-token' to get one)")
