@@ -558,9 +558,9 @@ jobs:
     - run:
         name: Push Docker
         command: ./tools/releases/docker.sh --push --version $CIRCLE_TAG
-    - run:
-        name: Package Helm Charts
-        command: ./tools/releases/helm.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
+#    - run:
+#        name: Package Helm Charts
+#        command: ./tools/releases/helm.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
 #    - run:
 #        name: Release Helm Charts
 #        command: ./tools/releases/helm.sh --release --version $CIRCLE_TAG --sha $CIRCLE_SHA1

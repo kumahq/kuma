@@ -77,20 +77,6 @@ var _ = Describe("Config WS", func() {
             },
             "port": 5682
           },
-          "dataplaneTokenServer": {
-            "enabled": true,
-            "local": {
-              "port": 5679
-            },
-            "public": {
-              "clientCertsDir": "",
-              "enabled": false,
-              "interface": "",
-              "port": 0,
-              "tlsCertFile": "",
-              "tlsKeyFile": ""
-            }
-          },
           "adminServer": {
             "local": {
               "port": 5679
@@ -126,6 +112,10 @@ var _ = Describe("Config WS", func() {
           },
           "metrics": {
             "dataplane": {
+              "enabled": true,
+              "subscriptionLimit": 10
+            },
+            "zone": {
               "enabled": true,
               "subscriptionLimit": 10
             }
@@ -198,8 +188,15 @@ var _ = Describe("Config WS", func() {
                     }
                   },
                   "uid": 5678
+                },
+                "sidecarTraffic": {
+                  "excludeInboundPorts": [],
+                  "excludeOutboundPorts": []
                 }
               }
+            },
+            "universal": {
+              "dataplaneCleanupAge": "72h0m0s"
             }
           },
           "sdsServer": {

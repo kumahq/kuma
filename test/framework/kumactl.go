@@ -114,9 +114,6 @@ func storeConfigToTempFile(name string, configData string) (string, error) {
 func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, error) {
 	cmd := []string{
 		"install", "control-plane",
-		"--control-plane-image", kumaCPImage,
-		"--dataplane-image", kumaDPImage,
-		"--dataplane-init-image", kumaInitImage,
 	}
 
 	cmd = append(cmd, "--mode", mode)

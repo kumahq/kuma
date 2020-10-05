@@ -19,17 +19,35 @@ type claims struct {
 	jwt.StandardClaims
 }
 
-func NewDataplaneTokenIssuer(privateKey []byte) DataplaneTokenIssuer {
-	return &jwtTokenIssuer{privateKey}
+type SigningKeyAccessor func() ([]byte, error)
+
+func NewDataplaneTokenIssuer(signingKeyAccessor SigningKeyAccessor) DataplaneTokenIssuer {
+	return &jwtTokenIssuer{signingKeyAccessor}
 }
 
 var _ DataplaneTokenIssuer = &jwtTokenIssuer{}
 
 type jwtTokenIssuer struct {
-	privateKey []byte
+	signingKeyAccessor SigningKeyAccessor
+}
+
+func (i *jwtTokenIssuer) signingKey() ([]byte, error) {
+	signingKey, err := i.signingKeyAccessor()
+	if err != nil {
+		return nil, err
+	}
+	if len(signingKey) == 0 {
+		return nil, SigningKeyNotFound
+	}
+	return signingKey, nil
 }
 
 func (i *jwtTokenIssuer) Generate(proxyId xds.ProxyId) (auth.Credential, error) {
+	signingKey, err := i.signingKey()
+	if err != nil {
+		return "", err
+	}
+
 	c := claims{
 		Name:           proxyId.Name,
 		Mesh:           proxyId.Mesh,
@@ -37,7 +55,7 @@ func (i *jwtTokenIssuer) Generate(proxyId xds.ProxyId) (auth.Credential, error) 
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, c)
-	tokenString, err := token.SignedString(i.privateKey)
+	tokenString, err := token.SignedString(signingKey)
 	if err != nil {
 		return "", errors.Wrap(err, "could not sign a token")
 	}
@@ -45,10 +63,15 @@ func (i *jwtTokenIssuer) Generate(proxyId xds.ProxyId) (auth.Credential, error) 
 }
 
 func (i *jwtTokenIssuer) Validate(credential auth.Credential) (xds.ProxyId, error) {
+	signingKey, err := i.signingKey()
+	if err != nil {
+		return xds.ProxyId{}, err
+	}
+
 	c := &claims{}
 
 	token, err := jwt.ParseWithClaims(string(credential), c, func(*jwt.Token) (interface{}, error) {
-		return i.privateKey, nil
+		return signingKey, nil
 	})
 	if err != nil {
 		return xds.ProxyId{}, errors.Wrap(err, "could not parse token")

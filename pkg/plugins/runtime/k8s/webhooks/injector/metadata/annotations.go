@@ -41,6 +41,9 @@ const (
 	KumaMetricsPrometheusPort = "prometheus.metrics.kuma.io/port"
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
 
+	KumaTrafficExcludeInboundPorts  = "traffic.kuma.io/exclude-inbound-ports"
+	KumaTrafficExcludeOutboundPorts = "traffic.kuma.io/exclude-outbound-ports"
+
 	CNCFNetworkAnnotation = "k8s.v1.cni.cncf.io/networks"
 	KumaCNI               = "kuma-cni"
 )

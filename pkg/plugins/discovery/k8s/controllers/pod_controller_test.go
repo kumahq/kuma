@@ -49,6 +49,9 @@ var _ = Describe("PodReconciler", func() {
 					Annotations: map[string]string{
 						"kuma.io/sidecar-injected": "true",
 					},
+					Labels: map[string]string{
+						"app": "sample",
+					},
 				},
 			},
 			&kube_core.Pod{
@@ -58,6 +61,9 @@ var _ = Describe("PodReconciler", func() {
 					Annotations: map[string]string{
 						"kuma.io/mesh":             "poc",
 						"kuma.io/sidecar-injected": "true",
+					},
+					Labels: map[string]string{
+						"app": "sample",
 					},
 				},
 				Spec: kube_core.PodSpec{
@@ -104,6 +110,9 @@ var _ = Describe("PodReconciler", func() {
 								StrVal: "metrics",
 							},
 						},
+					},
+					Selector: map[string]string{
+						"app": "sample",
 					},
 				},
 			})
@@ -254,10 +263,12 @@ var _ = Describe("PodReconciler", func() {
             inbound:
             - port: 8080
               tags:
+                app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
             - port: 6060
               tags:
+                app: sample
                 kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
 `))
@@ -324,10 +335,12 @@ var _ = Describe("PodReconciler", func() {
             inbound:
             - port: 8080
               tags:
+                app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
             - port: 6060
               tags:
+                app: sample
                 kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
 `))

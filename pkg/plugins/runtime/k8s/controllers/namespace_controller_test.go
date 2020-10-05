@@ -14,33 +14,23 @@ import (
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
-
 	v1 "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io/v1"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 )
 
 var _ = Describe("NamespaceReconciler", func() {
 
 	var kubeClient kube_client.Client
 	var reconciler kube_reconcile.Reconciler
-	var resManager manager.ResourceManager
 
 	BeforeEach(func() {
-		resStore := memory.NewStore()
-		resManager = manager.NewResourceManager(resStore)
-
 		kubeClient = kube_client_fake.NewFakeClientWithScheme(
 			k8sClientScheme,
 			&kube_core.Namespace{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Name:      "non-system-ns-with-sidecar-injection",
 					Namespace: "non-system-ns-with-sidecar-injection",
-					Labels: map[string]string{
+					Annotations: map[string]string{
 						"kuma.io/sidecar-injection": "enabled",
 					},
 				},
@@ -51,167 +41,94 @@ var _ = Describe("NamespaceReconciler", func() {
 					Namespace: "non-system-ns-without-sidecar-injection",
 				},
 			},
-			&kube_core.Namespace{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Name:      "kuma-system",
-					Namespace: "kuma-system",
-				},
-			},
 		)
+
+		reconciler = &controllers.NamespaceReconciler{
+			Client:     kubeClient,
+			CNIEnabled: true,
+			Log:        core.Log.WithName("test"),
+		}
 	})
 
-	When("SkipDefaultMeshCreation is not set", func() {
-		BeforeEach(func() {
+	It("should create NetworkAttachmentDefinition", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{
+				Namespace: "non-system-ns-with-sidecar-injection",
+				Name:      "non-system-ns-with-sidecar-injection",
+			},
+		}
 
-			reconciler = &controllers.NamespaceReconciler{
-				Client:          kubeClient,
-				SystemNamespace: "kuma-system",
-				CNIEnabled:      true,
-				Log:             core.Log.WithName("test"),
-				ResourceManager: resManager,
-			}
-		})
+		// when
+		result, err := reconciler.Reconcile(req)
 
-		It("should create NetworkAttachmentDefinition", func() {
-			// given
-			req := kube_ctrl.Request{
-				NamespacedName: kube_types.NamespacedName{
-					Namespace: "non-system-ns-with-sidecar-injection",
-					Name:      "non-system-ns-with-sidecar-injection",
-				},
-			}
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
 
-			// when
-			result, err := reconciler.Reconcile(req)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(result).To(BeZero())
-
-			// when
-			nads := &v1.NetworkAttachmentDefinitionList{}
-			err = kubeClient.List(context.Background(), nads)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(nads.Items).To(HaveLen(1))
-			Expect(nads.Items[0].Namespace).To(Equal("non-system-ns-with-sidecar-injection"))
-			Expect(nads.Items[0].Name).To(Equal("kuma-cni"))
-		})
-
-		It("should ignore system namespace", func() {
-			// given
-			req := kube_ctrl.Request{
-				NamespacedName: kube_types.NamespacedName{
-					Namespace: "kuma-system",
-					Name:      "kuma-system",
-				},
-			}
-
-			// when
-			result, err := reconciler.Reconcile(req)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(result).To(BeZero())
-
-			// when
-			nads := &v1.NetworkAttachmentDefinitionList{}
-			err = kubeClient.List(context.Background(), nads)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(nads.Items).To(HaveLen(0))
-		})
-
-		It("should create the default mesh for the system namespace", func() {
-			// given
-			req := kube_ctrl.Request{
-				NamespacedName: kube_types.NamespacedName{
-					Namespace: "kuma-system",
-					Name:      "kuma-system",
-				},
-			}
-
-			// when
-			result, err := reconciler.Reconcile(req)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(result).To(BeZero())
-
-			// when
-			mesh := &mesh_core.MeshResource{}
-			exists, err := core_mesh.FetchDefaultMeshIfExists(resManager, mesh)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(exists).To(BeTrue())
-			Expect(mesh.GetMeta().GetName()).To(Equal(core_model.DefaultMesh))
-		})
-
-		It("should ignore namespace namespaces without label", func() {
-			// given
-			req := kube_ctrl.Request{
-				NamespacedName: kube_types.NamespacedName{
-					Namespace: "non-system-ns-without-sidecar-injection",
-					Name:      "non-system-ns-without-sidecar-injection",
-				},
-			}
-
-			// when
-			result, err := reconciler.Reconcile(req)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(result).To(BeZero())
-
-			// when
-			nads := &v1.NetworkAttachmentDefinitionList{}
-			err = kubeClient.List(context.Background(), nads)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(nads.Items).To(HaveLen(0))
-		})
+		// and NetworkAttachmentDefinition is created
+		nads := &v1.NetworkAttachmentDefinitionList{}
+		err = kubeClient.List(context.Background(), nads)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nads.Items).To(HaveLen(1))
+		Expect(nads.Items[0].Namespace).To(Equal("non-system-ns-with-sidecar-injection"))
+		Expect(nads.Items[0].Name).To(Equal("kuma-cni"))
 	})
 
-	When("SkipDefaultMeshCreation is set", func() {
-		BeforeEach(func() {
+	It("should delete NetworkAttachmentDefinition when injection annotation is no longer on the namespace", func() {
+		// setup NetworkAttachmentDefinition in the namespace
+		nad := &v1.NetworkAttachmentDefinition{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "non-system-ns-without-sidecar-injection",
+				Name:      "kuma-cni",
+			},
+		}
+		err := kubeClient.Create(context.Background(), nad)
+		Expect(err).ToNot(HaveOccurred())
 
-			reconciler = &controllers.NamespaceReconciler{
-				Client:                  kubeClient,
-				SystemNamespace:         "kuma-system",
-				SkipDefaultMeshCreation: true,
-				CNIEnabled:              true,
-				Log:                     core.Log.WithName("test"),
-				ResourceManager:         resManager,
-			}
-		})
+		// given namespace without kuma.io/sidecar-injection annotation
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{
+				Namespace: "non-system-ns-without-sidecar-injection",
+				Name:      "non-system-ns-without-sidecar-injection",
+			},
+		}
 
-		It("should skip creating default mesh", func() {
-			// given
-			req := kube_ctrl.Request{
-				NamespacedName: kube_types.NamespacedName{
-					Namespace: "non-system-ns-with-sidecar-injection",
-					Name:      "non-system-ns-with-sidecar-injection",
-				},
-			}
+		// when
+		result, err := reconciler.Reconcile(req)
 
-			// when
-			result, err := reconciler.Reconcile(req)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(result).To(BeZero())
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
 
-			// when
-			mesh := &mesh_core.MeshResource{}
-			exists, err := core_mesh.FetchDefaultMeshIfExists(resManager, mesh)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(exists).To(BeFalse())
-		})
+		// and NetworkAttachmentDefinition is deleted
+		nads := &v1.NetworkAttachmentDefinitionList{}
+		err = kubeClient.List(context.Background(), nads)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nads.Items).To(HaveLen(0))
 	})
+
+	It("should ignore namespace namespaces without label", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{
+				Namespace: "non-system-ns-without-sidecar-injection",
+				Name:      "non-system-ns-without-sidecar-injection",
+			},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
+
+		// and NetworkAttachmentDefinition is not created
+		nads := &v1.NetworkAttachmentDefinitionList{}
+		err = kubeClient.List(context.Background(), nads)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nads.Items).To(HaveLen(0))
+	})
+
 })

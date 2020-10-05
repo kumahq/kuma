@@ -85,6 +85,11 @@ metadata:
 
 		globalCP := global.GetKuma()
 
+		echoServerToken, err := globalCP.GenerateDpToken(AppModeEchoServer)
+		Expect(err).ToNot(HaveOccurred())
+		demoClientToken, err := globalCP.GenerateDpToken(AppModeDemoClient)
+		Expect(err).ToNot(HaveOccurred())
+
 		// K8s Cluster 1
 		remote_1 = k8sClusters.GetCluster(Kuma1)
 
@@ -119,8 +124,8 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(EchoServerUniversal()).
-			Install(DemoClientUniversal()).
+			Install(EchoServerUniversal(echoServerToken)).
+			Install(DemoClientUniversal(demoClientToken)).
 			Setup(remote_3)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_3.VerifyKuma()
@@ -131,7 +136,7 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(DemoClientUniversal()).
+			Install(DemoClientUniversal(demoClientToken)).
 			Setup(remote_4)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_4.VerifyKuma()

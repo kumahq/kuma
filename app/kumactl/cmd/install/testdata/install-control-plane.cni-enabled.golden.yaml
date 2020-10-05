@@ -5233,6 +5233,8 @@ rules:
       - dataplanes
       - dataplaneinsights
       - meshes
+      - zones
+      - zoneinsights
     verbs:
       - get
       - list
@@ -5302,6 +5304,7 @@ rules:
       - list
       - watch
       - create
+      - delete
   - apiGroups:
       - authentication.k8s.io
     resources:
@@ -5719,9 +5722,10 @@ webhooks:
           - healthchecks
           - meshes
           - proxytemplates
+          - zones
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
-    failurePolicy: Fail
+    failurePolicy: Ignore
     clientConfig:
       caBundle: Q0VSVA==
       service:

@@ -151,14 +151,69 @@ var _ = Describe("kumactl install control-plane", func() {
 			goldenFile: "install-control-plane.remote.golden.yaml",
 		}),
 	)
-	It("should fail to install control plane when `kumactl install control-plane run with unknown mode`", func() {
-		// given
-		rootCmd := cmd.DefaultRootCmd()
-		rootCmd.SetArgs([]string{"install", "control-plane", "--mode", "test"})
-		//when
-		err := rootCmd.Execute()
-		// then
-		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("invalid mode. Available modes: standalone, remote, global"))
-	})
+
+	type errTestCase struct {
+		extraArgs []string
+		errorMsg  string
+	}
+	DescribeTable("should fail to install control plane",
+		func(given errTestCase) {
+			// given
+			rootCmd := cmd.DefaultRootCmd()
+			rootCmd.SetArgs(append([]string{"install", "control-plane"}, given.extraArgs...))
+			rootCmd.SetOut(stdout)
+			rootCmd.SetErr(stderr)
+
+			//when
+			err := rootCmd.Execute()
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(given.errorMsg))
+		},
+		Entry("--mode is unknown", errTestCase{
+			extraArgs: []string{"--mode", "test"},
+			errorMsg:  "invalid mode. Available modes: standalone, remote, global",
+		}),
+		Entry("--kds-global-address is missing when installing remote", errTestCase{
+			extraArgs: []string{"--mode", "remote", "--zone", "zone-1"},
+			errorMsg:  "--kds-global-address is mandatory with `remote` mode",
+		}),
+		Entry("--kds-global-address is not valid URL", errTestCase{
+			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "remote", "--zone", "zone-1"},
+			errorMsg:  "--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port",
+		}),
+		Entry("--kds-global-address has no grpcs scheme", errTestCase{
+			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234", "--mode", "remote", "--zone", "zone-1"},
+			errorMsg:  "--kds-global-address should start with grpcs://",
+		}),
+		Entry("--kds-global-address is used with standalone", errTestCase{
+			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},
+			errorMsg:  "--kds-global-address can only be used when --mode=remote",
+		}),
+		Entry("--admission-server-tls-cert without --admission-server-tls-key", errTestCase{
+			extraArgs: []string{"--admission-server-tls-cert", "cert.pem"},
+			errorMsg:  "both --admission-server-tls-cert and --admission-server-tls-key must be provided at the same time",
+		}),
+		Entry("--admission-server-tls-key without --admission-server-tls-cert", errTestCase{
+			extraArgs: []string{"--admission-server-tls-key", "key.pem"},
+			errorMsg:  "both --admission-server-tls-cert and --admission-server-tls-key must be provided at the same time",
+		}),
+		Entry("--sds-tls-cert without --sds-tls-key", errTestCase{
+			extraArgs: []string{"--sds-tls-cert", "cert.pem"},
+			errorMsg:  "both --sds-tls-cert and --sds-tls-key must be provided at the same time",
+		}),
+		Entry("--sds-tls-key without --sds-tls-cert", errTestCase{
+			extraArgs: []string{"--sds-tls-key", "key.pem"},
+			errorMsg:  "both --sds-tls-cert and --sds-tls-key must be provided at the same time",
+		}),
+		Entry("--kds-tls-cert without --kds-tls-key", errTestCase{
+			extraArgs: []string{"--kds-tls-cert", "cert.pem"},
+			errorMsg:  "both --kds-tls-cert and --kds-tls-key must be provided at the same time",
+		}),
+		Entry("--sds-tls-key without --kds-tls-cert", errTestCase{
+			extraArgs: []string{"--kds-tls-key", "key.pem"},
+			errorMsg:  "both --kds-tls-cert and --kds-tls-key must be provided at the same time",
+		}),
+	)
 })

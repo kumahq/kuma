@@ -46,12 +46,20 @@ selectors:
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone)).
-			Install(EchoServerUniversal()).
-			Install(DemoClientUniversal()).
 			Install(tracing.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = cluster.VerifyKuma()
+		Expect(err).ToNot(HaveOccurred())
+
+		echoServerToken, err := cluster.GetKuma().GenerateDpToken(AppModeEchoServer)
+		Expect(err).ToNot(HaveOccurred())
+		demoClientToken, err := cluster.GetKuma().GenerateDpToken(AppModeDemoClient)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = EchoServerUniversal(echoServerToken)(cluster)
+		Expect(err).ToNot(HaveOccurred())
+		err = DemoClientUniversal(demoClientToken)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

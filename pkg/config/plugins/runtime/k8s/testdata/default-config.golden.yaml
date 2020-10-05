@@ -33,3 +33,6 @@ injector:
         memory: 512Mi
   initContainer:
     image: kuma/kuma-init:latest
+  sidecarTraffic:
+    excludeInboundPorts: []
+    excludeOutboundPorts: []

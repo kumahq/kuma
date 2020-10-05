@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/gruntwork-io/terratest/modules/retry"
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/config/core"
 
-	"github.com/go-errors/errors"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -56,13 +57,18 @@ destinations:
 
 		globalCP := global.GetKuma()
 
+		echoServerToken, err := globalCP.GenerateDpToken(AppModeEchoServer)
+		Expect(err).ToNot(HaveOccurred())
+		demoClientToken, err := globalCP.GenerateDpToken(AppModeDemoClient)
+		Expect(err).ToNot(HaveOccurred())
+
 		// Cluster 1
 		remote_1 = clusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(EchoServerUniversal()).
-			Install(DemoClientUniversal()).
+			Install(EchoServerUniversal(echoServerToken)).
+			Install(DemoClientUniversal(demoClientToken)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_1.VerifyKuma()
@@ -73,7 +79,7 @@ destinations:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(DemoClientUniversal()).
+			Install(DemoClientUniversal(demoClientToken)).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()
