@@ -18,7 +18,7 @@ The process to release a Kuma version is as follows:
 
 ### Patch releases
 
-After the initial release there may be a need for a patch release `A.B.1`, `A.B.2` and so on. These typically include only fixes to critical issues, but there might be exceptions where features are backported from master. I most cases the patch releases follow a lighter weight release procedure, without `rc` versions and a testing/verification cycle focused on the chanaged/fixed functionalities.  
+After the initial release there may be a need for a patch release `A.B.1`, `A.B.2` and so on. These typically include only fixes to critical issues, but there might be exceptions where features are backported from master. In most cases the patch releases follow a lighter weight release procedure, without `rc` versions and a testing/verification cycle focused on the changed/fixed functionalities.  
 
 # Release Checklist
 
