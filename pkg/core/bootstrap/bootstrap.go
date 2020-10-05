@@ -84,7 +84,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	if err := rt.Add(&component.LeaderInfoComponent{}); err != nil {
+	if err := rt.Add(leaderInfoComponent); err != nil {
 		return nil, err
 	}
 
