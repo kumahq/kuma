@@ -2,16 +2,16 @@ package externalservice
 
 import (
 	"fmt"
+	"path/filepath"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"path/filepath"
 
 	"github.com/kumahq/kuma/test/framework"
 )
 
 type k8SDeployment struct {
 	ip   string
-	port uint32
 	name string
 	args []string
 }

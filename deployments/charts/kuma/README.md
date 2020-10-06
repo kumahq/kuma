@@ -33,12 +33,13 @@ The chart supports Helm v3+.
 | `controlPlane.image.registry`                      | Kuma CP image registry                                                            | nil, uses global                                         |
 | `controlPlane.image.repository`                    | Kuma CP image repository                                                          | `kuma-cp`                                                |
 | `controlPlane.image.tag`                           | Kuma CP image tag                                                                 | nil, uses global                                         |
+| `controlPlane.envVars`                             | Additional environment variables that will be passed to the control plane         | {}                                                       |
 | `cni.enabled`                                      | Install Kuma with CNI instead of proxy init container                             | `false`                                                  |
 | `cni.logLevel`                                     | CNI log level: one of off\|info\|debug                                            | `info`                                                   |
 | `cni.nodeSelector`                                 | Node Selector for the CNI pods                                                    | `{ kubernetes.io/os: linux, kubernetes.io/arch: amd64 }` |
 | `cni.image.registry`                               | CNI image registry                                                                | `docker.io`                                              |
 | `cni.image.repository`                             | CNI image repository                                                              | `lobkovilya/install-cni`                                 |
-| `cni.image.tag`                                    | The CNI image tag                                                                 | `0.0.1`                                                  |
+| `cni.image.tag`                                    | The CNI image tag                                                                 | `0.0.2`                                                  |
 | `dataPlane.image.registry`                         | The Kuma DP image registry                                                        | nil, uses global                                         |
 | `dataPlane.image.repository`                       | The Kuma DP image repository                                                      | `kuma-cp`                                                |
 | `dataPlane.image.tag`                              | The Kuma DP image tag                                                             | nil, uses global                                         |

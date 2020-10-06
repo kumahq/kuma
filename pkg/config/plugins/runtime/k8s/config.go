@@ -55,6 +55,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			InitContainer: InitContainer{
 				Image: "kuma/kuma-init:latest",
 			},
+			SidecarTraffic: SidecarTraffic{
+				ExcludeInboundPorts:  []uint32{},
+				ExcludeOutboundPorts: []uint32{},
+			},
 		},
 	}
 }
@@ -91,8 +95,19 @@ type Injector struct {
 	// serves on sub-path of insecure port 'virtualProbesPort',
 	// i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
 	VirtualProbesEnabled bool `yaml:"virtualProbesEnabled" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
-	// VirtualProbesPort is an insecure port for listening virtual probes
+	// VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
 	VirtualProbesPort uint32 `yaml:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
+	// Cnfiguration for a traffic that is intercepted by sidecar
+	SidecarTraffic SidecarTraffic `yaml:"sidecarTraffic"`
+}
+
+type SidecarTraffic struct {
+	// List of inbound ports that will be excluded from interception.
+	// This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ports annotation is specified on Pod.
+	ExcludeInboundPorts []uint32 `yaml:"excludeInboundPorts" envconfig:"kuma_runtime_kubernetes_sidecar_traffic_exclude_inbound_ports"`
+	// List of outbound ports that will be excluded from interception.
+	// This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
+	ExcludeOutboundPorts []uint32 `yaml:"excludeOutboundPorts" envconfig:"kuma_runtime_kubernetes_sidecar_traffic_exclude_outbound_ports"`
 }
 
 // SidecarContainer defines configuration of the Kuma sidecar container.
@@ -121,9 +136,9 @@ type SidecarContainer struct {
 
 // SidecarReadinessProbe defines periodic probe of container service readiness.
 type SidecarReadinessProbe struct {
-	// Number of seconds after the container has started before liveness probes are initiated.
+	// Number of seconds after the container has started before readiness probes are initiated.
 	InitialDelaySeconds int32 `yaml:"initialDelaySeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_initial_delay_seconds"`
-	// How often (in seconds) to perform the probe.
+	// Number of seconds after which the probe times out.
 	TimeoutSeconds int32 `yaml:"timeoutSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_timeout_seconds"`
 	// Number of seconds after which the probe times out.
 	PeriodSeconds int32 `yaml:"periodSeconds,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_readiness_probe_period_seconds"`

@@ -41,6 +41,9 @@ const (
 
 	// KumaMetricsPrometheusPath to override `Mesh`-wide default path
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
+
+	KumaTrafficExcludeInboundPorts  = "traffic.kuma.io/exclude-inbound-ports"
+	KumaTrafficExcludeOutboundPorts = "traffic.kuma.io/exclude-outbound-ports"
 )
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.

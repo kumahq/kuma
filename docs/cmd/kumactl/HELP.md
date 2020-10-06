@@ -225,7 +225,7 @@ Flags:
       --cni-enabled                         install Kuma with CNI instead of proxy init container
       --cni-registry string                 registry for the image of the Kuma CNI component (default "docker.io")
       --cni-repository string               repository for the image of the Kuma CNI component (default "lobkovilya/install-cni")
-      --cni-version string                  version of the image of the Kuma CNI component (default "0.0.1")
+      --cni-version string                  version of the image of the Kuma CNI component (default "0.0.2")
       --control-plane-registry string       registry for the image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io")
       --control-plane-repository string     repository for the image of the Kuma Control Plane component (default "kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
@@ -236,6 +236,7 @@ Flags:
       --dataplane-registry string           registry for the image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
       --dataplane-repository string         repository for the image of the Kuma DataPlane component (default "kuma-dp")
       --dataplane-version string            version of the image of the Kuma DataPlane component (default "latest")
+      --env-var stringToString              environment variables that will be passed to the control plane (default [])
   -h, --help                                help for control-plane
       --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
       --ingress-drain-time string           drain time for Envoy proxy (default "30s")

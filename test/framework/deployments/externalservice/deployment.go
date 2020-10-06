@@ -1,6 +1,7 @@
 package externalservice
 
 import (
+	"github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework"
@@ -41,7 +42,9 @@ func Install(name string, args []string) framework.InstallFunc {
 			return errors.New("invalid cluster")
 		}
 
-		deployment.Init(cluster, name, args)
+		err := deployment.Init(cluster, name, args)
+		gomega.Expect(err).ToNot(gomega.HaveOccurred())
+
 		return cluster.Deploy(deployment)
 	}
 }
