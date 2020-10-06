@@ -25,6 +25,10 @@ spec:
         app: kuma-control-plane
     spec:
       serviceAccountName: {{ include "kuma.name" . }}-control-plane
+      {{- with .Values.controlPlane.nodeSelector }}
+      nodeSelector:
+        {{ toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: control-plane
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}

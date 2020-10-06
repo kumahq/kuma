@@ -16,6 +16,7 @@ The chart supports Helm v3+.
 | `controlPlane.mode`                                | Kuma CP modes: one of standalone\|remote\|global                                  | `standalone`                         |
 | `controlPlane.zone`                                | Kuma zone name                                                                    | nil                                  |
 | `controlPlane.kdsGlobalAddress`                    | URL of Global Kuma CP                                                             |                                      |
+| `controlPlane.nodeSelector`                        | Node Selector for the Kuma Control Plane pods                                     | `{ kubernetes.io/os: linux, kubernetes.io/arch: amd64 }` |
 | `controlPlane.injectorFailurePolicy`               | Failure policy of the mutating webhook implemented by the Kuma Injector component | `Ignore`                             |
 | `controlPlane.service.name`                        | Service name of the Kuma Control Plane                                            | nil                                  |
 | `controlPlane.service.type`                        | Service type of the Kuma Control Plane                                            | ClusterIP                            |
@@ -35,6 +36,7 @@ The chart supports Helm v3+.
 | `controlPlane.envVars`                             | Additional environment variables that will be passed to the control plane         | {}                                   | 
 | `cni.enabled`                                      | Install Kuma with CNI instead of proxy init container                             | `false`                              |
 | `cni.logLevel`                                     | CNI log level: one of off\|info\|debug                                            | `info`                               |
+| `cni.nodeSelector`                                 | Node Selector for the CNI pods                                                    | `{ kubernetes.io/os: linux, kubernetes.io/arch: amd64 }` |
 | `cni.image.registry`                               | CNI image registry                                                                | `docker.io`                          |
 | `cni.image.repository`                             | CNI image repository                                                              | `lobkovilya/install-cni`             |
 | `cni.image.tag`                                    | The CNI image tag                                                                 | `0.0.2`                              |

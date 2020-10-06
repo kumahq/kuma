@@ -26,8 +26,10 @@ spec:
         scheduler.alpha.kubernetes.io/critical-pod: ''
         checksum/config: {{ include (print $.Template.BasePath "/cni-configmap.yaml") . | sha256sum }}
     spec:
+      {{- with .Values.cni.nodeSelector }}
       nodeSelector:
-        beta.kubernetes.io/os: linux
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
       hostNetwork: true
       tolerations:
         # Make sure kuma-cni-node gets scheduled on all nodes.
