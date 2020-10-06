@@ -16,10 +16,10 @@ import (
 )
 
 // GetDataplanes returns list of Dataplane in provided Mesh and Ingresses (which are cluster-scoped, not mesh-scoped)
-func GetDataplanes(log logr.Logger, ctx context.Context, rm manager.ReadOnlyResourceManager, lookupIPFunc lookup.LookupIPFunc, mesh string) (*core_mesh.DataplaneResourceList, *core_mesh.ExternalServiceResourceList, error) {
+func GetDataplanes(log logr.Logger, ctx context.Context, rm manager.ReadOnlyResourceManager, lookupIPFunc lookup.LookupIPFunc, mesh string) (*core_mesh.DataplaneResourceList, error) {
 	dataplanes := &core_mesh.DataplaneResourceList{}
 	if err := rm.List(ctx, dataplanes); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	dataplanes.Items = ResolveAddresses(log, lookupIPFunc, dataplanes.Items)
 	filteredDataplanes := &core_mesh.DataplaneResourceList{}
@@ -29,12 +29,17 @@ func GetDataplanes(log logr.Logger, ctx context.Context, rm manager.ReadOnlyReso
 		}
 	}
 
+	return filteredDataplanes, nil
+}
+
+// GetExternalServices returns list of ExternalServices in provided Mesh
+func GetExternalServices(log logr.Logger, ctx context.Context, rm manager.ReadOnlyResourceManager, mesh string) (*core_mesh.ExternalServiceResourceList, error) {
 	externalServices := &core_mesh.ExternalServiceResourceList{}
 	if err := rm.List(ctx, externalServices, store.ListByMesh(mesh)); err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
-	return filteredDataplanes, externalServices, nil
+	return externalServices, nil
 }
 
 // ResolveAddress resolves 'dataplane.networking.address' if it has DNS name in it. This is a crucial feature for

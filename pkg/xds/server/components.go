@@ -229,7 +229,11 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
-				dataplanes, externalServices, err := xds_topology.GetDataplanes(log, ctx, rt.ReadOnlyResourceManager(), rt.LookupIP(), dataplane.Meta.GetMesh())
+				dataplanes, err := xds_topology.GetDataplanes(log, ctx, rt.ReadOnlyResourceManager(), rt.LookupIP(), dataplane.Meta.GetMesh())
+				if err != nil {
+					return err
+				}
+				externalServices, err := xds_topology.GetExternalServices(log, ctx, rt.ReadOnlyResourceManager(), dataplane.Meta.GetMesh())
 				if err != nil {
 					return err
 				}
