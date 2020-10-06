@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -115,6 +116,40 @@ var _ = Describe("Remote Bootstrap", func() {
 			}()),
 	)
 
+	It("should retry when DP is not found", func() {
+		// given
+		mux := http.NewServeMux()
+		server := httptest.NewServer(mux)
+		defer server.Close()
+		i := 0
+		mux.HandleFunc("/bootstrap", func(writer http.ResponseWriter, req *http.Request) {
+			defer GinkgoRecover()
+			if i < 2 {
+				writer.WriteHeader(404)
+				i++
+			} else {
+				response, err := ioutil.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
+				Expect(err).ToNot(HaveOccurred())
+				_, err = writer.Write(response)
+				Expect(err).ToNot(HaveOccurred())
+			}
+		})
+		port, err := strconv.Atoi(strings.Split(server.Listener.Addr().String(), ":")[1])
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
+
+		// when
+		cfg := kuma_dp.DefaultConfig()
+		cfg.ControlPlane.BootstrapServer.Retry.Backoff = 10 * time.Millisecond
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(cfg).ToNot(BeNil())
+	})
+
 	It("should return error when DP is not found", func() {
 		// given
 		mux := http.NewServeMux()
@@ -131,9 +166,12 @@ var _ = Describe("Remote Bootstrap", func() {
 		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
 
 		// when
-		_, err = generator(fmt.Sprintf("http://localhost:%d", port), kuma_dp.DefaultConfig())
+		config := kuma_dp.DefaultConfig()
+		config.ControlPlane.BootstrapServer.Retry.Backoff = 10 * time.Millisecond
+		config.ControlPlane.BootstrapServer.Retry.MaxDuration = 100 * time.Millisecond
+		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config)
 
 		// then
-		Expect(err).To(MatchError("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))
+		Expect(err).To(MatchError("retryable: Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))
 	})
 })

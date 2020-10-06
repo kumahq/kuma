@@ -100,6 +100,7 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 }
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
+	runLog.Info("generating bootstrap configuration")
 	bootstrapConfig, err := e.opts.Generator(e.opts.Catalog.Apis.Bootstrap.Url, e.opts.Config)
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
@@ -108,6 +109,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	runLog.Info("bootstrap configuration saved to a file", "file", configFile)
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
