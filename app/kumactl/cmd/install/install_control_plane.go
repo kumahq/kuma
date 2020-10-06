@@ -82,7 +82,7 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	DataPlane_initImage_tag:                   kuma_version.Build.Version,
 	Cni_image_registry:                        "docker.io",
 	Cni_image_repository:                      "lobkovilya/install-cni",
-	Cni_image_tag:                             "0.0.1",
+	Cni_image_tag:                             "0.0.2",
 	ControlPlane_mode:                         core.Standalone,
 	ControlPlane_zone:                         "",
 	ControlPlane_globalRemoteSyncService_type: "LoadBalancer",
