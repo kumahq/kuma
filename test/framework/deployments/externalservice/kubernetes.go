@@ -1,15 +1,13 @@
 package externalservice
 
 import (
+	"fmt"
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"path/filepath"
 
-	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/test/framework"
 )
-
-const tracingNamespace = "kuma-tracing"
 
 type k8SDeployment struct {
 	ip   string
@@ -20,81 +18,71 @@ type k8SDeployment struct {
 
 var _ Deployment = &k8SDeployment{}
 
+const externalServiceNamespace = DeploymentName + "namespace"
+
 func (k *k8SDeployment) Name() string {
-	return DeploymentName
+	return DeploymentName + k.name
 }
 
 func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
-	kumactl, _ := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
-	yaml, err := kumactl.KumactlInstallTracing()
-	if err != nil {
-		return err
-	}
-	err = k8s.KubectlApplyFromStringE(cluster.GetTesting(),
-		cluster.GetKubectlOptions(),
-		yaml)
+	err := framework.YamlPathK8s(filepath.Join("testdata", fmt.Sprintf("%s.yaml", k.Name())))(cluster)
 	if err != nil {
 		return err
 	}
 
 	k8s.WaitUntilNumPodsCreated(cluster.GetTesting(),
-		cluster.GetKubectlOptions(tracingNamespace),
+		cluster.GetKubectlOptions(externalServiceNamespace),
 		metav1.ListOptions{
-			LabelSelector: "app=jaeger",
+			LabelSelector: "app=" + k.Name(),
 		},
 		1,
 		framework.DefaultRetries,
 		framework.DefaultTimeout)
 
-	pods := k8s.ListPods(cluster.GetTesting(),
-		cluster.GetKubectlOptions(tracingNamespace),
-		metav1.ListOptions{
-			LabelSelector: "app=jaeger",
-		},
-	)
-	if len(pods) != 1 {
-		return errors.Errorf("counting Jaeger pods. Got: %d. Expected: 1", len(pods))
-	}
-
-	k8s.WaitUntilPodAvailable(cluster.GetTesting(),
-		cluster.GetKubectlOptions(tracingNamespace),
-		pods[0].Name,
-		framework.DefaultRetries,
-		framework.DefaultTimeout)
-
-	port, err := test.FindFreePort("")
+	err = framework.WaitPodsAvailable(externalServiceNamespace, k.Name())(cluster)
 	if err != nil {
 		return err
 	}
-	k.port = port
 
-	cluster.(*framework.K8sCluster).PortForwardPod(tracingNamespace, pods[0].Name, port, 16686)
+	k.ip = k.Name() + "." + externalServiceNamespace
+
 	return nil
 }
 
 func (k *k8SDeployment) Delete(cluster framework.Cluster) error {
-	kumactl, _ := framework.NewKumactlOptions(cluster.GetTesting(), cluster.GetKuma().GetName(), true)
-	yaml, err := kumactl.KumactlInstallTracing()
+	err := k8s.KubectlDeleteE(cluster.GetTesting(),
+		cluster.GetKubectlOptions(externalServiceNamespace),
+		filepath.Join("testdata", fmt.Sprintf("%s.yaml", k.Name())))
 	if err != nil {
 		return err
 	}
-
-	err = k8s.KubectlDeleteFromStringE(cluster.GetTesting(),
-		cluster.GetKubectlOptions(),
-		yaml)
-	if err != nil {
-		return err
-	}
-	cluster.(*framework.K8sCluster).WaitNamespaceDelete(tracingNamespace)
 	return nil
 }
 
-func (k *k8SDeployment) Init(name string, args []string) error {
+func (k *k8SDeployment) Init(cluster framework.Cluster, name string, args []string) error {
 	k.name = name
 	k.args = args
+
+	err := framework.Namespace(externalServiceNamespace)(cluster)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }
 
 func (k *k8SDeployment) GetExternalAppAddress() string {
 	return k.ip
+}
+
+func (k *k8SDeployment) Cleanup(cluster framework.Cluster) error {
+	err := k8s.DeleteNamespaceE(cluster.GetTesting(),
+		cluster.GetKubectlOptions(externalServiceNamespace),
+		externalServiceNamespace)
+	if err != nil {
+		return err
+	}
+
+	cluster.(*framework.K8sCluster).WaitNamespaceDelete(externalServiceNamespace)
+	return nil
 }

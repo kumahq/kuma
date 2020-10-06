@@ -7,8 +7,9 @@ import (
 )
 
 type ExternalService interface {
-	Init(name string, args []string) error
+	Init(cluster framework.Cluster, name string, args []string) error
 	GetExternalAppAddress() string
+	Cleanup(cluster framework.Cluster) error
 }
 
 type Deployment interface {
@@ -16,10 +17,11 @@ type Deployment interface {
 	ExternalService
 }
 
-const DeploymentName = "externalservice-"
-
-var UniversalAppEchoServer = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
-var UniversalAppHttpsEchoServer = []string{"ncat", "-lk", "-p", "443", "--ssl", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"}
+const (
+	DeploymentName = "externalservice-"
+	HttpServer     = "http-server"
+	HttpsServer    = "https-server"
+)
 
 func From(cluster framework.Cluster, name string) ExternalService {
 	return cluster.Deployment(DeploymentName + name).(ExternalService)
@@ -39,7 +41,7 @@ func Install(name string, args []string) framework.InstallFunc {
 			return errors.New("invalid cluster")
 		}
 
-		deployment.Init(name, args)
+		deployment.Init(cluster, name, args)
 		return cluster.Deploy(deployment)
 	}
 }

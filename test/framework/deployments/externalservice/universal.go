@@ -25,6 +25,9 @@ type universalDeployment struct {
 
 var _ Deployment = &universalDeployment{}
 
+var UniversalAppEchoServer = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
+var UniversalAppHttpsEchoServer = []string{"ncat", "-lk", "-p", "443", "--ssl", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"}
+
 func (u *universalDeployment) Name() string {
 	return DeploymentName + u.name
 }
@@ -105,7 +108,7 @@ func (u *universalDeployment) Delete(cluster framework.Cluster) error {
 	return nil
 }
 
-func (u *universalDeployment) Init(name string, args []string) error {
+func (u *universalDeployment) Init(cluster framework.Cluster, name string, args []string) error {
 	u.name = name
 	u.args = args
 	return nil
@@ -113,4 +116,9 @@ func (u *universalDeployment) Init(name string, args []string) error {
 
 func (u *universalDeployment) GetExternalAppAddress() string {
 	return u.ip
+}
+
+func (u *universalDeployment) Cleanup(cluster framework.Cluster) error {
+	// nothing to cleanup
+	return nil
 }

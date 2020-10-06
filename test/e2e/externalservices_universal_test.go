@@ -2,7 +2,6 @@ package e2e_test
 
 import (
 	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -14,8 +13,6 @@ import (
 
 var _ = Describe("Test ExternalServices on Universal", func() {
 
-	httpServer := "http-server"
-	httpsServer := "https-server"
 	meshDefaulMtlsOn := `
 type: Mesh
 name: default
@@ -92,8 +89,8 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(externalservice.Install(httpServer, externalservice.UniversalAppEchoServer)).
-			Install(externalservice.Install(httpsServer, externalservice.UniversalAppHttpsEchoServer)).
+			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
+			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -104,7 +101,7 @@ networking:
 		err = YamlUniversal(trafficPermissionAll)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		externalServiceAddress := externalservice.From(cluster, httpServer).GetExternalAppAddress()
+		externalServiceAddress := externalservice.From(cluster, externalservice.HttpServer).GetExternalAppAddress()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(fmt.Sprintf(externalService,
@@ -113,7 +110,7 @@ networking:
 			"false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		externalServiceAddress = externalservice.From(cluster, httpsServer).GetExternalAppAddress()
+		externalServiceAddress = externalservice.From(cluster, externalservice.HttpsServer).GetExternalAppAddress()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(fmt.Sprintf(externalService,
@@ -128,6 +125,9 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = cluster.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
+
+		err = externalservice.From(cluster, externalservice.HttpServer).Cleanup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
