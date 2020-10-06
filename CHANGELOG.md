@@ -1,5 +1,40 @@
 # CHANGELOG
 
+## [0.7.2]
+
+* feat: fix CNI with the latest changes and bump the CNI image to 0.0.2 [#1049](https://github.com//kumahq/kuma/pull/1049) [#1043](https://github.com//kumahq/kuma/pull/1043) 
+ 👍contributed by @jakubdyszkiewicz
+* feat: exclude traffic interceptions on port using annotations [#1046](https://github.com//kumahq/kuma/pull/1046) 
+ 👍contributed by @jakubdyszkiewicz
+* feat: central place for creating defaults [#1017](https://github.com//kumahq/kuma/pull/1017) 
+ 👍contributed by @jakubdyszkiewicz
+* fix: metric to DP-CP connection should rely on control_plane.connected_state [#1009](https://github.com//kumahq/kuma/pull/1009) 
+ 👍contributed by @jakubdyszkiewicz
+* fix: use not deprecated value to disable auth on universal [#1008](https://github.com//kumahq/kuma/pull/1008) 
+ 👍contributed by @jakubdyszkiewicz
+* fix: signing token in multizone [#1007](https://github.com//kumahq/kuma/pull/1007) 
+ 👍contributed by @jakubdyszkiewicz
+* Generate inbound/outbound for HTTP/2 [#998](https://github.com//kumahq/kuma/pull/998) 
+ 👍contributed by @nickolaev
+* feat: cleanup dataplanes after 3d of the offline state [#987](https://github.com//kumahq/kuma/pull/987) 
+ 👍contributed by @lobkovilya
+* feat: validate zone location apply [#986](https://github.com//kumahq/kuma/pull/986) 
+ 👍contributed by @jakubdyszkiewicz
+* feat: change failpolicy of service hook to ignore [#983](https://github.com//kumahq/kuma/pull/983) 
+ 👍contributed by @jakubdyszkiewicz
+* fix: direct access for ingress [#985](https://github.com//kumahq/kuma/pull/985) 
+ 👍contributed by @lobkovilya
+* feat: retry connection to the CP and for fetching bootstrap [#982](https://github.com//kumahq/kuma/pull/982) 
+ 👍contributed by @jakubdyszkiewicz
+* fix: ignore services without selectors [#978](https://github.com//kumahq/kuma/pull/978) 
+ 👍contributed by @jakubdyszkiewicz
+* feat: parametrize kuma deploy [#973](https://github.com//kumahq/kuma/pull/973) 
+ 👍contributed by @jakubdyszkiewicz
+* fix: zone insights manager and limits [#976](https://github.com//kumahq/kuma/pull/976) 
+ 👍contributed by @nickolaev
+* feat: validate zone and global addresses [#967](https://github.com//kumahq/kuma/pull/967) 
+ 👍contributed by @jakubdyszkiewicz
+
 ## [0.7.1]
 > Released on  2020/08/12
 
@@ -101,7 +136,7 @@ Changes:
  
 * chore: skip Ingress endpoint if mTLS is off [#925](https://github.com//kumahq/kuma/pull/925) 
 
-*  fix(kuma-cp): Add the permissions to create and patch events [#884](https://github.com//kumahq/kuma/pull/884) 
+*  fix: Add the permissions to create and patch events [#884](https://github.com//kumahq/kuma/pull/884) 
  👍contributed by @andrew-teirney
 
 *  feat(kumactl) add install loki for log aggregation [#820](https://github.com//kumahq/kuma/pull/820) 
