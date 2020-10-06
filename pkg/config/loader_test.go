@@ -111,6 +111,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.CertDir).To(Equal("/var/run/secrets/kuma.io/kuma-admission-server/tls-cert"))
 
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeInboundPorts).To(Equal([]uint32{1234, 5678}))
+			Expect(cfg.Runtime.Kubernetes.Injector.CaCertFile).To(Equal("/tmp/ca.crt"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeOutboundPorts).To(Equal([]uint32{4321, 8765}))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
@@ -196,6 +197,7 @@ runtime:
       port: 9443
       certDir: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
     injector:
+      caCertFile: /tmp/ca.crt
       sidecarTraffic:
         excludeInboundPorts:
         - 1234
@@ -275,6 +277,7 @@ diagnostics:
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR":              "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
 				"KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS":  "1234,5678",
 				"KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS": "4321,8765",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE":                  "/tmp/ca.crt",
 				"KUMA_GENERAL_ADVERTISED_HOSTNAME":                               "kuma.internal",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                     "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                      "/tmp/key",

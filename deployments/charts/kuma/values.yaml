@@ -45,6 +45,7 @@ controlPlane:
   #  tls:
   #    cert: ""
   #    key: ""
+  #    caCert: ""
 
   image:
     pullPolicy: IfNotPresent

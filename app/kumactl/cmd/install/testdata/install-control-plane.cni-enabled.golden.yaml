@@ -39,6 +39,7 @@ metadata:
 data:
   tls.crt: Q0VSVA==
   tls.key: S0VZ
+  ca.crt: Q0VSVA==
 ---
 kind: ConfigMap
 apiVersion: v1
@@ -5951,7 +5952,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 8db352a0efe11201b4c69a2f5d2c28a0255246c13c7f617b579fed223107288a
-        checksum/tls-secrets: 009f498973d6c4d186d1aa736faa8499b23d94f8e277dcbb8f2560d353626b0a
+        checksum/tls-secrets: 1f1c49efe8beb36938260e188d86c1a5cc153344c76ab39e8aedad866140a256
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -5991,6 +5992,8 @@ spec:
               value: "kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1"
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
             - name: KUMA_MODE

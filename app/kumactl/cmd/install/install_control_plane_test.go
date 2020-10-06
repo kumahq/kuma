@@ -122,6 +122,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--dataplane-init-registry", "kuma-ci",
 				"--dataplane-init-version", "greatest",
 				"--tls-cert", "Cert",
+				"--tls-ca-cert", "CaCert",
 				"--tls-key", "Key",
 				"--mode", "remote",
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
@@ -201,11 +202,15 @@ var _ = Describe("kumactl install control-plane", func() {
 		}),
 		Entry("--tls-cert without --tls-key", errTestCase{
 			extraArgs: []string{"--tls-cert", "cert.pem"},
-			errorMsg:  "both --tls-cert and --tls-key must be provided at the same time",
+			errorMsg:  "--tls-cert, --tls-key and --tls-ca-cert must be provided at the same time",
 		}),
 		Entry("--tls-key without --tls-cert", errTestCase{
 			extraArgs: []string{"--tls-key", "key.pem"},
-			errorMsg:  "both --tls-cert and --tls-key must be provided at the same time",
+			errorMsg:  "--tls-cert, --tls-key and --tls-ca-cert must be provided at the same time",
+		}),
+		Entry("--tls-key, --tls-cert without --tls-ca-cert", errTestCase{
+			extraArgs: []string{"--tls-key", "key.pem", "--tls-cert", "cert.pem"},
+			errorMsg:  "--tls-cert, --tls-key and --tls-ca-cert must be provided at the same time",
 		}),
 	)
 })

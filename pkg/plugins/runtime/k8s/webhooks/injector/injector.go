@@ -3,6 +3,7 @@ package injector
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -31,13 +32,22 @@ const (
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 )
 
-func New(cfg runtime_k8s.Injector, controlPlaneUrl string, client kube_client.Client) *KumaInjector {
+func New(cfg runtime_k8s.Injector, controlPlaneUrl string, client kube_client.Client) (*KumaInjector, error) {
+	var caCert string
+	if cfg.CaCertFile != "" {
+		bytes, err := ioutil.ReadFile(cfg.CaCertFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not read provided CA cert file %s", cfg.CaCertFile)
+		}
+		caCert = string(bytes)
+	}
 	return &KumaInjector{
 		cfg:             cfg,
 		controlPlaneUrl: controlPlaneUrl,
 		client:          client,
 		converter:       k8s_resources.DefaultConverter(),
-	}
+		caCert:          caCert,
+	}, nil
 }
 
 type KumaInjector struct {
@@ -45,6 +55,7 @@ type KumaInjector struct {
 	controlPlaneUrl string
 	client          kube_client.Client
 	converter       k8s_resources.Converter
+	caCert          string
 }
 
 func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
@@ -211,6 +222,10 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 			{
 				Name:  "KUMA_DATAPLANE_RUNTIME_TOKEN_PATH",
 				Value: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+			},
+			{
+				Name:  "KUMA_CONTROL_PLANE_CA_CERT",
+				Value: i.caCert,
 			},
 		},
 		SecurityContext: &kube_core.SecurityContext{

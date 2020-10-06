@@ -38,3 +38,4 @@ injector:
   sidecarTraffic:
     excludeInboundPorts: []
     excludeOutboundPorts: []
+  caCertFile: ""

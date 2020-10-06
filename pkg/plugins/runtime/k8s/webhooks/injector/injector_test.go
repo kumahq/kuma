@@ -43,7 +43,9 @@ var _ = Describe("Injector", func() {
 
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
-			injector := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient)
+			cfg.CaCertFile = filepath.Join("..", "..", "..", "..", "..", "..", "test", "certs", "server-cert.pem")
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient)
+			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
 			decoder := serializer.NewCodecFactory(k8sClientScheme).UniversalDeserializer()

@@ -5,7 +5,6 @@ import (
 	"net/url"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
-
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 
 	"github.com/pkg/errors"
@@ -32,6 +31,7 @@ type InstallControlPlaneArgs struct {
 	ControlPlane_image_tag                    string            `helm:"controlPlane.image.tag"`
 	ControlPlane_service_name                 string            `helm:"controlPlane.service.name"`
 	ControlPlane_tls_cert                     string            `helm:"controlPlane.tls.cert"`
+	ControlPlane_tls_ca_cert                  string            `helm:"controlPlane.tls.caCert"`
 	ControlPlane_tls_key                      string            `helm:"controlPlane.tls.key"`
 	ControlPlane_injectorFailurePolicy        string            `helm:"controlPlane.injectorFailurePolicy"`
 	ControlPlane_secrets                      []ImageEnvSecret  `helm:"controlPlane.secrets"`
@@ -69,6 +69,7 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	ControlPlane_image_repository:             "kuma-cp",
 	ControlPlane_image_tag:                    kuma_version.Build.Version,
 	ControlPlane_service_name:                 "kuma-control-plane",
+	ControlPlane_tls_ca_cert:                  "",
 	ControlPlane_tls_cert:                     "",
 	ControlPlane_tls_key:                      "",
 	ControlPlane_envVars:                      map[string]string{},
@@ -150,6 +151,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.ControlPlane_image_tag, "control-plane-version", args.ControlPlane_image_tag, "version of the image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlane_service_name, "control-plane-service-name", args.ControlPlane_service_name, "Service name of the Kuma Control Plane")
 	cmd.Flags().StringVar(&args.ControlPlane_tls_cert, "tls-cert", args.ControlPlane_tls_cert, "TLS certificate for Kuma Control Plane servers")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_ca_cert, "tls-ca-cert", args.ControlPlane_tls_ca_cert, "CA certificate that was used to generate TLS certificate for Kuma Control Plane servers")
 	cmd.Flags().StringVar(&args.ControlPlane_tls_key, "tls-key", args.ControlPlane_tls_key, "TLS key for Kuma Control Plane servers")
 	cmd.Flags().StringVar(&args.ControlPlane_injectorFailurePolicy, "injector-failure-policy", args.ControlPlane_injectorFailurePolicy, "failue policy of the mutating web hook implemented by the Kuma Injector component")
 	cmd.Flags().StringToStringVar(&args.ControlPlane_envVars, "env-var", args.ControlPlane_envVars, "environment variables that will be passed to the control plane")
@@ -195,14 +197,24 @@ func validateArgs(args InstallControlPlaneArgs) error {
 			return errors.Errorf("--kds-global-address should start with grpcs://")
 		}
 	}
-	if (args.ControlPlane_tls_cert == "") != (args.ControlPlane_tls_key == "") {
-		return errors.Errorf("both --tls-cert and --tls-key must be provided at the same time")
+	tlsArgs := 0
+	if args.ControlPlane_tls_cert != "" {
+		tlsArgs++
+	}
+	if args.ControlPlane_tls_key != "" {
+		tlsArgs++
+	}
+	if args.ControlPlane_tls_ca_cert != "" {
+		tlsArgs++
+	}
+	if tlsArgs != 0 && tlsArgs != 3 { // either all of them have to be provided or none
+		return errors.Errorf("--tls-cert, --tls-key and --tls-ca-cert must be provided at the same time")
 	}
 	return nil
 }
 
 func autogenerateCerts(args *InstallControlPlaneArgs) error {
-	if args.ControlPlane_tls_cert == "" && args.ControlPlane_tls_key == "" {
+	if args.ControlPlane_tls_cert == "" && args.ControlPlane_tls_key == "" && args.ControlPlane_tls_ca_cert == "" {
 		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlane_service_name, args.Namespace)
 		hosts := []string{
 			fqdn,
@@ -215,6 +227,7 @@ func autogenerateCerts(args *InstallControlPlaneArgs) error {
 		}
 		args.ControlPlane_tls_cert = string(cert.CertPEM)
 		args.ControlPlane_tls_key = string(cert.KeyPEM)
+		args.ControlPlane_tls_ca_cert = string(cert.CertPEM) // generated cert is a CA
 	}
 	return nil
 }

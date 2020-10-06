@@ -202,7 +202,8 @@ var _ = Describe("Config WS", func() {
                   "excludeOutboundPorts": []
                 },
                 "virtualProbesEnabled": true,
-                "virtualProbesPort": 9000
+                "virtualProbesPort": 9000,
+                "caCertFile": ""
               }
             },
             "universal": {
