@@ -63,6 +63,12 @@ func (k *k8SDeployment) Init(cluster framework.Cluster, name string, args []stri
 	k.name = name
 	k.args = args
 
+	if _, err := k8s.GetNamespaceE(cluster.GetTesting(),
+		cluster.GetKubectlOptions(externalServiceNamespace),
+		externalServiceNamespace); err == nil {
+		// the namespace already exists
+		return nil
+	}
 	err := framework.Namespace(externalServiceNamespace)(cluster)
 	if err != nil {
 		return err

@@ -184,10 +184,10 @@ metadata:
 
 		clientPod := pods[0]
 
-		stdout, _, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 	})
 
@@ -195,10 +195,22 @@ metadata:
 		err := YamlK8s(fmt.Sprintf(trafficRoute, es2))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+		pods, err := k8s.ListPodsE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(TestNamespace),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
+			},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(pods).To(HaveLen(1))
+
+		clientPod := pods[0]
+
+		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("HTTPS"))
 	})
 
