@@ -14,6 +14,7 @@ import (
 
 var config struct {
 	gitHubRepo string
+	branch     string
 	startTag   string
 	endTag     string
 }
@@ -30,9 +31,11 @@ var rootCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// Clones the given repository, creating the remote, the local branches
 		// and fetching the objects, everything in memory:
-		Info("Clone %s", config.gitHubRepo)
+		Info("Clone %s branch %s", config.gitHubRepo, plumbing.ReferenceName(config.branch))
 		r, err := git.Clone(memory.NewStorage(), nil, &git.CloneOptions{
-			URL: config.gitHubRepo,
+			URL:           config.gitHubRepo,
+			ReferenceName: plumbing.ReferenceName(config.branch),
+			SingleBranch:  false,
 		})
 		CheckIfError(err)
 
@@ -49,12 +52,22 @@ var rootCmd = &cobra.Command{
 
 		Info("Retrieve commit history")
 		// ... retrieves the commit history
-		cIter, err := r.Log(&git.LogOptions{})
+		refHash := plumbing.Hash{}
+		startRef, err := r.Reference(plumbing.ReferenceName(config.startTag), false)
+		if err != nil {
+			Info("error", err)
+		} else {
+			refHash = startRef.Hash()
+		}
+		cIter, err := r.Log(&git.LogOptions{
+			From:  refHash,
+			Order: git.LogOrderCommitterTime,
+		})
 		CheckIfError(err)
 
 		Info("Filter the commits by tag")
 		generator := NewGenerator(config.startTag, config.endTag)
-		currentTag := "master"
+		currentTag := config.branch
 		err = cIter.ForEach(func(c *object.Commit) error {
 			if tag, found := tagMap[c.Hash.String()]; found {
 				currentTag = tag
@@ -81,6 +94,7 @@ func Execute() {
 
 func init() {
 	rootCmd.Flags().StringVar(&config.gitHubRepo, "repo", "https://github.com/kumahq/kuma.git", "The GitHub repo to process")
+	rootCmd.Flags().StringVar(&config.branch, "branch", "master", "The branch to process")
 	rootCmd.Flags().StringVar(&config.startTag, "start", "", "The start hash or tag")
 	rootCmd.Flags().StringVar(&config.endTag, "end", "", "The end hash or tag")
 }

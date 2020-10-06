@@ -122,7 +122,6 @@ func (cm *manager) startLeaderComponents(stop <-chan struct{}, errCh chan error)
 			closeLeaderCh()
 		},
 	})
-	log.Info("Starting leader election")
 	go cm.leaderElector.Start(stop)
 	go func() {
 		<-stop
