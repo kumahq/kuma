@@ -94,6 +94,14 @@ kind/deploy/kuma: build/kumactl kind/load
     	echo "Waiting for the cluster to come up" && sleep 1; \
     done
 
+.PHONY: kind/deploy/helm
+kind/deploy/helm: #kind/load
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete namespace $(KUMA_NAMESPACE) | true
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(KUMA_NAMESPACE)
+	KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) --set global.image.registry="$(DOCKER_REGISTRY)",cni.enabled=true kuma ./deployments/charts/kuma
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
+
 .PHONY: kind/deploy/kuma/global
 kind/deploy/kuma/global: KUMA_MODE=global
 kind/deploy/kuma/global: kind/deploy/kuma
