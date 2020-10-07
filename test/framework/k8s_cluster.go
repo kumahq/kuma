@@ -247,6 +247,10 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 		argsMap["--ingress-use-node-port"] = ""
 	}
 
+	if opts.cni {
+		argsMap["--cni-enabled"] = ""
+	}
+
 	for opt, value := range opts.ctlOpts {
 		argsMap[opt] = value
 	}

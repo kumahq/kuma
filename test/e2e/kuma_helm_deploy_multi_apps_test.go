@@ -47,6 +47,7 @@ metadata:
 		deployOptsFuncs = []DeployOptionsFunc{
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
+			WithHelmOpt("cni.enabled", "true"),
 		}
 
 		err = NewClusterSetup().

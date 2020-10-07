@@ -96,7 +96,7 @@ metadata:
 		remote_1 = k8sClusters.GetCluster(Kuma1)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(globalCP.GetKDSServerAddress()), WithCNI())).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
