@@ -1,5 +1,50 @@
 # CHANGELOG
 
+## [1.0.0-rc1]
+> Released on  2020/10/07
+
+Changes:
+* fix: CNI relies on annotations [#1043](https://github.com//kumahq/kuma/pull/1043) 
+* feat: auth on XDS [#1040](https://github.com//kumahq/kuma/pull/1040)
+* feat: merge install ingress into install control-plane [#1038](https://github.com//kumahq/kuma/pull/1038) 
+ 👍contributed by @austince
+* feat: Support probes with mTLS enabled [#1036](https://github.com//kumahq/kuma/pull/1036) 
+* feat: autoconfigure single cert for all services [#1032](https://github.com//kumahq/kuma/pull/1032)
+* feat: cache with better performance and debug endpoints [#1018](https://github.com//kumahq/kuma/pull/1018) 
+* feat: Kuma CP metrics [#993](https://github.com//kumahq/kuma/pull/993) [#1014](https://github.com//kumahq/kuma/pull/1014)
+* fix: signing token in multizone [#1007](https://github.com//kumahq/kuma/pull/1007) 
+* feat: dataplane token bound to a service [#1004](https://github.com//kumahq/kuma/pull/1004) 
+* feat: new dataplane lifecycle [#999](https://github.com//kumahq/kuma/pull/999) 
+* feat: specify nodeSelectors for CP and CNI pods [#990](https://github.com//kumahq/kuma/pull/990) 
+ 👍contributed by @austince
+* feat: Protocol tag for gateway & ingress [#984](https://github.com//kumahq/kuma/pull/984) 
+* feat: domain name support in dataplane.networking.address [#965](https://github.com//kumahq/kuma/pull/965) 
+* feat: examples for ECS Universal deployments [#1003](https://github.com//kumahq/kuma/pull/1003) 
+* fix: drop k8s 1.13 support [#1026](https://github.com//kumahq/kuma/pull/1026)
+⚠️ warning: breaking change
+* chore: migrate to golang 1.15 [#981](https://github.com//kumahq/kuma/pull/981) 
+* Fixed Developer.md for make build/kumactl [#1027](https://github.com//kumahq/kuma/pull/1027) 
+ 👍contributed by @nikita15p
+
+## [0.7.2]
+
+* feat: fix CNI with the latest changes and bump the CNI image to 0.0.2 [#1049](https://github.com//kumahq/kuma/pull/1049) [#1043](https://github.com//kumahq/kuma/pull/1043) 
+* feat: exclude traffic interceptions on port using annotations [#1046](https://github.com//kumahq/kuma/pull/1046) 
+* feat: central place for creating defaults [#1017](https://github.com//kumahq/kuma/pull/1017) 
+* fix: metric to DP-CP connection should rely on control_plane.connected_state [#1009](https://github.com//kumahq/kuma/pull/1009) 
+* fix: use not deprecated value to disable auth on universal [#1008](https://github.com//kumahq/kuma/pull/1008) 
+* fix: signing token in multizone [#1007](https://github.com//kumahq/kuma/pull/1007) 
+* Generate inbound/outbound for HTTP/2 [#998](https://github.com//kumahq/kuma/pull/998) 
+* feat: cleanup dataplanes after 3d of the offline state [#987](https://github.com//kumahq/kuma/pull/987) 
+* feat: validate zone location apply [#986](https://github.com//kumahq/kuma/pull/986) 
+* feat: change failpolicy of service hook to ignore [#983](https://github.com//kumahq/kuma/pull/983) 
+* fix: direct access for ingress [#985](https://github.com//kumahq/kuma/pull/985) 
+* feat: retry connection to the CP and for fetching bootstrap [#982](https://github.com//kumahq/kuma/pull/982) 
+* fix: ignore services without selectors [#978](https://github.com//kumahq/kuma/pull/978) 
+* feat: parametrize kuma deploy [#973](https://github.com//kumahq/kuma/pull/973) 
+* fix: zone insights manager and limits [#976](https://github.com//kumahq/kuma/pull/976) 
+* feat: validate zone and global addresses [#967](https://github.com//kumahq/kuma/pull/967) 
+
 ## [0.7.1]
 > Released on  2020/08/12
 
@@ -101,7 +146,7 @@ Changes:
  
 * chore: skip Ingress endpoint if mTLS is off [#925](https://github.com//kumahq/kuma/pull/925) 
 
-*  fix(kuma-cp): Add the permissions to create and patch events [#884](https://github.com//kumahq/kuma/pull/884) 
+*  fix: Add the permissions to create and patch events [#884](https://github.com//kumahq/kuma/pull/884) 
  👍contributed by @andrew-teirney
 
 *  feat(kumactl) add install loki for log aggregation [#820](https://github.com//kumahq/kuma/pull/820) 

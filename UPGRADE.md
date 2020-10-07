@@ -6,6 +6,14 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `1.0.0-rc1`
+
+This release introduces a new dataplane lifecyle, which is mostly relevant to Universal deployments.
+
+### Suggested Upgrade Path on Universal
+
+Refer to the official documentation for details on how to use the new Dataplane creating lifecycle, including the new token generation and DP resource templating.
+
 ## Upgrade to `0.7.0`
 Support for `kuma.io/sidecar-injection` annotation. On Kubernetes change the namespace resources that host Kuma mesh services with the aforementioned annotation and delete the label. 
 
