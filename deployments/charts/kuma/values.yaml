@@ -54,6 +54,7 @@ controlPlane:
   envVars: {}
 cni:
   enabled: false
+  chained: false
   logLevel: info
 
   nodeSelector:

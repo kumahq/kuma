@@ -64,7 +64,7 @@ spec:
               value: /etc/cni/multus/net.d
             # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
             - name: CHAINED_CNI_PLUGIN
-              value: "false"
+              value: "{{ .Values.cni.chained }}"
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir

@@ -35,6 +35,7 @@ The chart supports Helm v3+.
 | `controlPlane.image.tag`                           | Kuma CP image tag                                                                 | nil, uses global                                         |
 | `controlPlane.envVars`                             | Additional environment variables that will be passed to the control plane         | {}                                                       |
 | `cni.enabled`                                      | Install Kuma with CNI instead of proxy init container                             | `false`                                                  |
+| `cni.chained`                                      | Install CNI in chained mode                                                       | `false`                                                  |
 | `cni.logLevel`                                     | CNI log level: one of off\|info\|debug                                            | `info`                                                   |
 | `cni.nodeSelector`                                 | Node Selector for the CNI pods                                                    | `{ kubernetes.io/os: linux, kubernetes.io/arch: amd64 }` |
 | `cni.image.registry`                               | CNI image registry                                                                | `docker.io`                                              |

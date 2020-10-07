@@ -44,6 +44,7 @@ type InstallControlPlaneArgs struct {
 	DataPlane_initImage_tag                   string            `helm:"dataPlane.initImage.tag"`
 	ControlPlane_kdsGlobalAddress             string            `helm:"controlPlane.kdsGlobalAddress"`
 	Cni_enabled                               bool              `helm:"cni.enabled"`
+	Cni_chained                               bool              `helm:"cni.chained"`
 	Cni_image_registry                        string            `helm:"cni.image.registry"`
 	Cni_image_repository                      string            `helm:"cni.image.repository"`
 	Cni_image_tag                             string            `helm:"cni.image.tag"`
@@ -79,6 +80,8 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	DataPlane_initImage_registry:              "kong-docker-kuma-docker.bintray.io",
 	DataPlane_initImage_repository:            "kuma-init",
 	DataPlane_initImage_tag:                   kuma_version.Build.Version,
+	Cni_enabled:                               false,
+	Cni_chained:                               false,
 	Cni_image_registry:                        "docker.io",
 	Cni_image_repository:                      "lobkovilya/install-cni",
 	Cni_image_tag:                             "0.0.2",
