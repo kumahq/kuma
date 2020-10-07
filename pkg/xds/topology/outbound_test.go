@@ -142,26 +142,13 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}
-			destinations := core_xds.DestinationMap{
-				"redis": []mesh_proto.TagSelector{
-					{"kuma.io/service": "redis", "version": "v1"},
-					{"kuma.io/service": "redis", "version": "v2"},
-				},
-				"elastic": []mesh_proto.TagSelector{
-					{"kuma.io/service": "elastic", "region": "us"},
-					{"kuma.io/service": "elastic", "region": "au"},
-				},
-			}
 			dataplanes := &mesh_core.DataplaneResourceList{
 				Items: []*mesh_core.DataplaneResource{backend, redisV1, redisV3, elasticEU, elasticUS},
 			}
 
 			// when
-			targets, err := GetOutboundTargets(destinations, dataplanes, "zone-1", defaultMeshWithMTLS)
+			targets := BuildEndpointMap(dataplanes.Items, "zone-1", defaultMeshWithMTLS)
 
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
 			Expect(targets).To(HaveLen(2))
 			// and
 			Expect(targets).To(HaveKeyWithValue("redis", []core_xds.Endpoint{
@@ -193,7 +180,7 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.destinations, given.dataplanes, "zone-1", given.mesh)
+				endpoints := BuildEndpointMap(given.dataplanes, "zone-1", given.mesh)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},

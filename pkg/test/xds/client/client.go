@@ -3,8 +3,13 @@ package client
 import (
 	"context"
 	"crypto/tls"
+	"encoding/json"
 	"fmt"
 	"net/url"
+
+	structpb "github.com/golang/protobuf/ptypes/struct"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/rpc/status"
@@ -72,12 +77,22 @@ func (c *Client) Close() error {
 	return c.conn.Close()
 }
 
-func (s *Stream) Request(clientId string, typ string) error {
+func (s *Stream) Request(clientId string, typ string, dp *rest.Resource) error {
+	dpJSON, err := json.Marshal(dp)
+	if err != nil {
+		return err
+	}
+	md := &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"dataplane.resource": {Kind: &structpb.Value_StringValue{StringValue: string(dpJSON)}},
+		},
+	}
 	return s.stream.Send(&envoy.DiscoveryRequest{
 		VersionInfo:   "",
 		ResponseNonce: "",
 		Node: &envoy_core.Node{
-			Id: clientId,
+			Id:       clientId,
+			Metadata: md,
 		},
 		ResourceNames: []string{},
 		TypeUrl:       typ,

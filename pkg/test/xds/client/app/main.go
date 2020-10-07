@@ -7,6 +7,9 @@ import (
 	"os"
 	"time"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	"go.uber.org/multierr"
@@ -74,12 +77,49 @@ func newRunCmd() *cobra.Command {
 			log.Info("going to start xDS clients (Envoy simulators)", "total", len(config.Nodes))
 
 			errCh := make(chan error, 1)
-
-			for i, node := range config.Nodes {
+			for i := 0; i < 1000; i++ {
+				//for i, node := range config.Nodes {
+				node := &Node{
+					ID: fmt.Sprintf("default.dataplane-%d", i),
+				}
 				nodeLog := log.WithName("envoy-simulator").WithValues("idx", i, "ID", node.ID)
 				nodeLog.Info("creating an xDS client ...")
 
-				go func(i int, node Node) {
+				go func(i int) {
+					//go func(i int, node Node) {
+					dp := &rest.Resource{
+						Meta: rest.ResourceMeta{Mesh: "default", Name: fmt.Sprintf("dataplane-%d", i), Type: "Dataplane"},
+						Spec: &v1alpha1.Dataplane{
+							Networking: &v1alpha1.Dataplane_Networking{
+								Address: "127.0.0.1",
+								Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
+									{Port: uint32(8080), Tags: map[string]string{"kuma.io/service": "service-0"}},
+									{Port: uint32(8081), Tags: map[string]string{"kuma.io/service": "service-1"}},
+									{Port: uint32(8082), Tags: map[string]string{"kuma.io/service": "service-2"}},
+									{Port: uint32(8083), Tags: map[string]string{"kuma.io/service": "service-3"}},
+									{Port: uint32(8084), Tags: map[string]string{"kuma.io/service": "service-4"}},
+									{Port: uint32(8085), Tags: map[string]string{"kuma.io/service": "service-5"}},
+									{Port: uint32(8086), Tags: map[string]string{"kuma.io/service": "service-6"}},
+									{Port: uint32(8087), Tags: map[string]string{"kuma.io/service": "service-7"}},
+									{Port: uint32(8088), Tags: map[string]string{"kuma.io/service": "service-8"}},
+									{Port: uint32(8089), Tags: map[string]string{"kuma.io/service": "service-9"}},
+								},
+								Outbound: []*v1alpha1.Dataplane_Networking_Outbound{
+									{Address: "127.0.0.1", Port: 11000, Tags: map[string]string{"kuma.io/service": "service-0"}},
+									{Address: "127.0.0.1", Port: 11001, Tags: map[string]string{"kuma.io/service": "service-1"}},
+									{Address: "127.0.0.1", Port: 11002, Tags: map[string]string{"kuma.io/service": "service-2"}},
+									{Address: "127.0.0.1", Port: 11003, Tags: map[string]string{"kuma.io/service": "service-3"}},
+									{Address: "127.0.0.1", Port: 11004, Tags: map[string]string{"kuma.io/service": "service-4"}},
+									{Address: "127.0.0.1", Port: 11005, Tags: map[string]string{"kuma.io/service": "service-5"}},
+									{Address: "127.0.0.1", Port: 11006, Tags: map[string]string{"kuma.io/service": "service-6"}},
+									{Address: "127.0.0.1", Port: 11007, Tags: map[string]string{"kuma.io/service": "service-7"}},
+									{Address: "127.0.0.1", Port: 11008, Tags: map[string]string{"kuma.io/service": "service-8"}},
+									{Address: "127.0.0.1", Port: 11009, Tags: map[string]string{"kuma.io/service": "service-9"}},
+								},
+							},
+						},
+					}
+
 					// add some jitter
 					delay := time.Duration(int64(float64(args.rampUpPeriod.Nanoseconds()) * rand.Float64()))
 					// wait
@@ -111,19 +151,19 @@ func newRunCmd() *cobra.Command {
 						}()
 
 						nodeLog.Info("requesting Listeners")
-						e := stream.Request(node.ID, envoy_resource.ListenerType)
+						e := stream.Request(node.ID, envoy_resource.ListenerType, dp)
 						if e != nil {
 							return errors.Wrapf(e, "failed to request %q", envoy_resource.ListenerType)
 						}
 
 						nodeLog.Info("requesting Clusters")
-						e = stream.Request(node.ID, envoy_resource.ClusterType)
+						e = stream.Request(node.ID, envoy_resource.ClusterType, dp)
 						if e != nil {
 							return errors.Wrapf(e, "failed to request %q", envoy_resource.ClusterType)
 						}
 
 						nodeLog.Info("requesting Endpoints")
-						e = stream.Request(node.ID, envoy_resource.EndpointType)
+						e = stream.Request(node.ID, envoy_resource.EndpointType, dp)
 						if e != nil {
 							return errors.Wrapf(e, "failed to request %q", envoy_resource.EndpointType)
 						}
@@ -142,7 +182,7 @@ func newRunCmd() *cobra.Command {
 							nodeLog.Info("ACKed discovery response", "type", resp.TypeUrl, "version", resp.VersionInfo, "nonce", resp.Nonce)
 						}
 					}()
-				}(i, node)
+				}(i)
 			}
 
 			err = <-errCh

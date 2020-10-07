@@ -4,6 +4,9 @@ import (
 	"context"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/xds/cache/cla"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
+
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -185,8 +188,10 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	if err := rt.Metrics().Register(xdsGenerationsErrors); err != nil {
 		return nil, err
 	}
-	meshSnapshotCache := NewMeshSnapshotCache(rt.ReadOnlyResourceManager(),
+	meshSnapshotCache := mesh.NewCache(rt.ReadOnlyResourceManager(),
 		rt.Config().Store.Cache.ExpirationTime, meshResources, rt.LookupIP())
+	claCache := cla.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Multicluster.Remote.Zone,
+		rt.Config().Store.Cache.ExpirationTime, rt.LookupIP())
 	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
 		prevHash := ""
@@ -277,10 +282,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, rt.Config().Multicluster.Remote.Zone, mesh)
-				if err != nil {
-					return err
-				}
+				outbound := xds_topology.BuildEndpointMap(dataplanes.Items, rt.Config().Multicluster.Remote.Zone, mesh)
 
 				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
 				if err != nil {
@@ -330,6 +332,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					TracingBackend:     tracingBackend,
 					Metadata:           metadataTracker.Metadata(streamId),
 					FaultInjections:    faultInjection,
+					CLACache:           claCache,
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},
