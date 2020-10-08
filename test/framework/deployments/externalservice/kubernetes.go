@@ -54,8 +54,6 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
-	k8s.GetPodE(cluster.GetTesting(), cluster.GetKubectlOptions(externalServiceNamespace), "")
-
 	k.ip = k.Name() + "." + externalServiceNamespace
 
 	return nil

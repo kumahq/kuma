@@ -2,9 +2,10 @@ package framework
 
 import (
 	"fmt"
-	"github.com/go-errors/errors"
 	"path/filepath"
 	"time"
+
+	"github.com/go-errors/errors"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
@@ -101,7 +102,7 @@ func WaitPodsNotAvailable(namespace, app string) InstallFunc {
 		}
 
 		for _, p := range pods {
-			retry.DoWithRetryE(
+			_, _ = retry.DoWithRetryE(
 				c.GetTesting(),
 				"Wait pod deletion",
 				DefaultRetries,
