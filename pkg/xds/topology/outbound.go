@@ -10,22 +10,22 @@ import (
 func BuildEndpointMap(dataplanes []*mesh_core.DataplaneResource, zone string, mesh *mesh_core.MeshResource) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
-		if dataplane.Spec.IsIngress() && mesh.MTLSEnabled() {
-			if dataplane.Spec.IsRemoteIngress(zone) {
-				for _, ingress := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
-					if ingress.Mesh != mesh.GetMeta().GetName() {
-						continue
-					}
-					service := ingress.Tags[mesh_proto.ServiceTag]
-					outbound[service] = append(outbound[service], core_xds.Endpoint{
-						Target: dataplane.Spec.Networking.Address,
-						Port:   dataplane.Spec.Networking.Inbound[0].Port,
-						Tags:   ingress.Tags,
-						Weight: ingress.Instances,
-					})
+		if dataplane.Spec.IsIngress() && dataplane.Spec.IsRemoteIngress(zone) && mesh.MTLSEnabled() {
+			for _, ingress := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
+				if ingress.Mesh != mesh.GetMeta().GetName() {
+					continue
 				}
+				service := ingress.Tags[mesh_proto.ServiceTag]
+				outbound[service] = append(outbound[service], core_xds.Endpoint{
+					Target: dataplane.Spec.Networking.Address,
+					Port:   dataplane.Spec.Networking.Inbound[0].Port,
+					Tags:   ingress.Tags,
+					Weight: ingress.Instances,
+				})
 			}
-		} else {
+			return outbound
+		}
+		if !dataplane.Spec.IsIngress() {
 			for _, inbound := range dataplane.Spec.Networking.GetInbound() {
 				service := inbound.Tags[mesh_proto.ServiceTag]
 				iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
