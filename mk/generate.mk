@@ -43,11 +43,6 @@ generate/kumactl/install/k8s/control-plane:
 	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/control-plane/...
 
 # Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
-.PHONY: generate/kumactl/install/k8s/kuma-cni
-generate/kumactl/install/k8s/kuma-cni:
-	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/kuma-cni/...
-
-# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
 .PHONY: generate/kumactl/install/k8s/metrics
 generate/kumactl/install/k8s/metrics:
 	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/metrics/...

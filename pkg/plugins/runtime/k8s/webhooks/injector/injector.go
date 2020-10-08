@@ -223,7 +223,7 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 					Command: []string{
 						"wget",
 						"-qO-",
-						fmt.Sprintf("http://127.0.0.1:%d", i.cfg.SidecarContainer.AdminPort),
+						fmt.Sprintf("http://127.0.0.1:%d/ready", i.cfg.SidecarContainer.AdminPort),
 					},
 				},
 			},
@@ -239,7 +239,7 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 					Command: []string{
 						"wget",
 						"-qO-",
-						fmt.Sprintf("http://127.0.0.1:%d", i.cfg.SidecarContainer.AdminPort),
+						fmt.Sprintf("http://127.0.0.1:%d/ready", i.cfg.SidecarContainer.AdminPort),
 					},
 				},
 			},
