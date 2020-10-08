@@ -33,7 +33,7 @@ func newGetTrafficRouteCmd(pctx *getContext) *cobra.Command {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)
 				}
-				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
+				return errors.Wrapf(err, "failed to get a traffic route in mesh %s", currentMesh)
 			}
 			trafficRoutes := &mesh.TrafficRouteResourceList{
 				Items: []*mesh.TrafficRouteResource{trafficRoute},

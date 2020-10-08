@@ -178,3 +178,9 @@ func ServiceSpiffeIDMatcher(mesh string, service string) *envoy_type_matcher.Str
 		},
 	}
 }
+
+func CreateUpstreamTlsContextNoMetadata(sni string) (*envoy_auth.UpstreamTlsContext, error) {
+	return &envoy_auth.UpstreamTlsContext{
+		Sni: sni,
+	}, nil
+}

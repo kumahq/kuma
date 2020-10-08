@@ -361,6 +361,8 @@ Available Commands:
   circuit-breakers    Show CircuitBreakers
   dataplane           Show a single Dataplane resource
   dataplanes          Show Dataplanes
+  external-service    Show a single ExternalService resource
+  external-services   Show ExternalServices
   fault-injection     Show a single Fault-Injection resource
   fault-injections    Show FaultInjections
   healthcheck         Show a single HealthCheck resource

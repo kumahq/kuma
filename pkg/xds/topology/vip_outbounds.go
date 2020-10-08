@@ -11,7 +11,9 @@ import (
 const VIPListenPort = uint32(80)
 
 func PatchDataplaneWithVIPOutbounds(dataplane *mesh_core.DataplaneResource,
-	dataplanes *mesh_core.DataplaneResourceList, resolver dns.DNSResolver) (errs error) {
+	dataplanes *mesh_core.DataplaneResourceList,
+	externalServices *mesh_core.ExternalServiceResourceList,
+	resolver dns.DNSResolver) (errs error) {
 	serviceVIPMap := map[string]string{}
 	services := []string{}
 	for _, dp := range dataplanes.Items {
@@ -40,6 +42,17 @@ func PatchDataplaneWithVIPOutbounds(dataplane *mesh_core.DataplaneResource,
 						services = append(services, inService)
 					}
 				}
+			}
+		}
+	}
+
+	for _, externalService := range externalServices.Items {
+		inService := externalService.Spec.Tags[mesh_proto.ServiceTag]
+		if _, found := serviceVIPMap[inService]; !found {
+			vip, err := resolver.ForwardLookup(inService)
+			if err == nil {
+				serviceVIPMap[inService] = vip
+				services = append(services, inService)
 			}
 		}
 	}

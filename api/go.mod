@@ -13,4 +13,9 @@ require (
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
 	google.golang.org/genproto v0.0.0-20190819201941-24fa4b261c55
 	google.golang.org/grpc v1.30.0
+// When running `make generate` in this folder, one can get into errors of missing proto dependecies
+// To solve the issue, uncomment the section below and run `go mod download`
+//github.com/cncf/udpa latest
+//github.com/envoyproxy/data-plane-api latest
+//github.com/googleapis/googleapis latest
 )
