@@ -29,7 +29,7 @@ metadata:
 `, namespace)
 	}
 
-	var c1 Cluster
+	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
@@ -38,7 +38,7 @@ metadata:
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
-		c1 = clusters.GetCluster(Kuma1)
+		cluster = clusters.GetCluster(Kuma1)
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
@@ -56,21 +56,21 @@ metadata:
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
 			Install(EchoServerK8s()).
-			Setup(c1)
+			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
 		// tear down apps
-		Expect(c1.DeleteNamespace(TestNamespace)).To(Succeed())
+		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		// tear down Kuma
-		Expect(c1.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 	})
 
 	It("Should deploy two apps", func() {
 		pods, err := k8s.ListPodsE(
-			c1.GetTesting(),
-			c1.GetKubectlOptions(TestNamespace),
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(TestNamespace),
 			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
 			},
@@ -81,14 +81,14 @@ metadata:
 		clientPod := pods[0]
 
 		Eventually(func() (string, error) {
-			_, stderr, err := c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-				"curl", "-v", "-m", "3", "echo-server")
+			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "echo-server")
 			return stderr, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
 		Eventually(func() (string, error) {
-			_, stderr, err := c1.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-				"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_80.mesh")
+			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_80.mesh")
 			return stderr, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 	})
