@@ -79,7 +79,7 @@ message Networking {
   // Outbound describes the common mesh outbound settings
   message Outbound {
     // Control the passthrough cluster
-    bool passthrough = 1 [ default = true ];
+    google.protobuf.BoolValue passthrough = 1;
   }
 
   // Outbounf settings

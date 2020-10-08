@@ -1096,7 +1096,15 @@ func (m *Networking_Outbound) Validate() error {
 		return nil
 	}
 
-	// no validation rules for Passthrough
+	if v, ok := interface{}(m.GetPassthrough()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return Networking_OutboundValidationError{
+				field:  "Passthrough",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	return nil
 }
