@@ -163,9 +163,6 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		cluster.(*K8sCluster).WaitNamespaceDelete(TestNamespace)
-
-		err = externalservice.From(cluster, externalservice.HttpServer).Cleanup(cluster)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("Should route to external-service", func() {

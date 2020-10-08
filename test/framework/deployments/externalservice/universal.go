@@ -108,17 +108,6 @@ func (u *universalDeployment) Delete(cluster framework.Cluster) error {
 	return nil
 }
 
-func (u *universalDeployment) Init(cluster framework.Cluster, name string, args []string) error {
-	u.name = name
-	u.args = args
-	return nil
-}
-
 func (u *universalDeployment) GetExternalAppAddress() string {
 	return u.ip
-}
-
-func (u *universalDeployment) Cleanup(cluster framework.Cluster) error {
-	// nothing to cleanup
-	return nil
 }

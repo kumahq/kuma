@@ -25,6 +25,16 @@ func (k *k8SDeployment) Name() string {
 }
 
 func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
+	if _, err := k8s.GetNamespaceE(cluster.GetTesting(),
+		cluster.GetKubectlOptions(externalServiceNamespace),
+		externalServiceNamespace); err != nil {
+		// create the namespace
+		err := framework.Namespace(externalServiceNamespace)(cluster)
+		if err != nil {
+			return err
+		}
+	}
+
 	err := framework.YamlPathK8s(filepath.Join("testdata", fmt.Sprintf("%s.yaml", k.Name())))(cluster)
 	if err != nil {
 		return err
@@ -44,6 +54,8 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
+	k8s.GetPodE(cluster.GetTesting(), cluster.GetKubectlOptions(externalServiceNamespace), "")
+
 	k.ip = k.Name() + "." + externalServiceNamespace
 
 	return nil
@@ -56,22 +68,22 @@ func (k *k8SDeployment) Delete(cluster framework.Cluster) error {
 	if err != nil {
 		return err
 	}
-	return nil
-}
 
-func (k *k8SDeployment) Init(cluster framework.Cluster, name string, args []string) error {
-	k.name = name
-	k.args = args
+	framework.WaitPodsNotAvailable(externalServiceNamespace, k.Name())
 
-	if _, err := k8s.GetNamespaceE(cluster.GetTesting(),
-		cluster.GetKubectlOptions(externalServiceNamespace),
-		externalServiceNamespace); err == nil {
-		// the namespace already exists
-		return nil
-	}
-	err := framework.Namespace(externalServiceNamespace)(cluster)
+	pods, err := k8s.ListPodsE(cluster.GetTesting(), cluster.GetKubectlOptions(externalServiceNamespace), metav1.ListOptions{})
 	if err != nil {
 		return err
+	}
+
+	if len(pods) == 0 {
+		err := k8s.DeleteNamespaceE(cluster.GetTesting(),
+			cluster.GetKubectlOptions(externalServiceNamespace),
+			externalServiceNamespace)
+		if err != nil {
+			return err
+		}
+		cluster.(*framework.K8sCluster).WaitNamespaceDelete(externalServiceNamespace)
 	}
 
 	return nil
@@ -79,16 +91,4 @@ func (k *k8SDeployment) Init(cluster framework.Cluster, name string, args []stri
 
 func (k *k8SDeployment) GetExternalAppAddress() string {
 	return k.ip
-}
-
-func (k *k8SDeployment) Cleanup(cluster framework.Cluster) error {
-	err := k8s.DeleteNamespaceE(cluster.GetTesting(),
-		cluster.GetKubectlOptions(externalServiceNamespace),
-		externalServiceNamespace)
-	if err != nil {
-		return err
-	}
-
-	cluster.(*framework.K8sCluster).WaitNamespaceDelete(externalServiceNamespace)
-	return nil
 }

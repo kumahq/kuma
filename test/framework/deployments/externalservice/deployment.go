@@ -1,16 +1,13 @@
 package externalservice
 
 import (
-	"github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework"
 )
 
 type ExternalService interface {
-	Init(cluster framework.Cluster, name string, args []string) error
 	GetExternalAppAddress() string
-	Cleanup(cluster framework.Cluster) error
 }
 
 type Deployment interface {
@@ -33,17 +30,19 @@ func Install(name string, args []string) framework.InstallFunc {
 		var deployment Deployment
 		switch cluster.(type) {
 		case *framework.K8sCluster:
-			deployment = &k8SDeployment{}
+			deployment = &k8SDeployment{
+				name: name,
+				args: args,
+			}
 		case *framework.UniversalCluster:
 			deployment = &universalDeployment{
+				name:  name,
+				args:  args,
 				ports: map[string]string{},
 			}
 		default:
 			return errors.New("invalid cluster")
 		}
-
-		err := deployment.Init(cluster, name, args)
-		gomega.Expect(err).ToNot(gomega.HaveOccurred())
 
 		return cluster.Deploy(deployment)
 	}

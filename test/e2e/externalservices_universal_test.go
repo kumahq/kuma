@@ -127,9 +127,6 @@ networking:
 
 		err = cluster.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
-
-		err = externalservice.From(cluster, externalservice.HttpServer).Cleanup(cluster)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("Should route to external-service", func() {
