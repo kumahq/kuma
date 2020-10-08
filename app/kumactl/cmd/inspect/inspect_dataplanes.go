@@ -103,7 +103,7 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 				return []string{
 					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
-					dataplane.Tags().String(),            // TAGS
+					dataplane.TagSet().String(),          // TAGS
 					onlineStatus,                         // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO

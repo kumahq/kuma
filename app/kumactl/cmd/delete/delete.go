@@ -32,6 +32,8 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				resourceType = mesh.MeshType
 			case "dataplane":
 				resourceType = mesh.DataplaneType
+			case "externalservice":
+				resourceType = mesh.ExternalServiceType
 			case "healthcheck":
 				resourceType = mesh.HealthCheckType
 			case "proxytemplate":

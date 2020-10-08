@@ -33,7 +33,7 @@ func newGetProxyTemplateCmd(pctx *getContext) *cobra.Command {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)
 				}
-				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
+				return errors.Wrapf(err, "failed to get a proxy template in mesh %s", currentMesh)
 			}
 			proxyTemplates := &mesh.ProxyTemplateResourceList{
 				Items: []*mesh.ProxyTemplateResource{proxyTemplate},

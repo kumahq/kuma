@@ -140,7 +140,7 @@ func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_
 
 func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (envoy_cache.Snapshot, error) {
 	requestor := sds_auth.Identity{
-		Services: dataplane.Spec.Tags().Values(mesh_proto.ServiceTag),
+		Services: dataplane.Spec.TagSet().Values(mesh_proto.ServiceTag),
 		Mesh:     dataplane.GetMeta().GetMesh(),
 	}
 	identitySecret, err := d.identityProvider.Get(context.Background(), IdentityCertResource, requestor)

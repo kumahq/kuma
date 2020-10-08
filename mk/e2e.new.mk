@@ -13,6 +13,7 @@ test/e2e/kind/start/cluster/$1:
 		make kind/start
 	KIND_CLUSTER_NAME=$1 \
 		make kind/load/images
+	@kind load docker-image $(KUMA_UNIVERSAL_DOCKER_IMAGE) --name=$1
 
 .PHONY: test/e2e/kind/stop/cluster/$1
 test/e2e/kind/stop/cluster/$1:

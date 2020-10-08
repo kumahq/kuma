@@ -51,6 +51,10 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	}, nil
 }
 
+func (cs *K8sClusters) Name() string {
+	panic("not implemented")
+}
+
 func (cs *K8sClusters) DismissCluster() error {
 	for name, c := range cs.clusters {
 		if err := c.DismissCluster(); err != nil {

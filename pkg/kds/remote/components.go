@@ -28,6 +28,7 @@ var (
 	consumedTypes = []model.ResourceType{
 		mesh.MeshType,
 		mesh.DataplaneType,
+		mesh.ExternalServiceType,
 		mesh.CircuitBreakerType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,

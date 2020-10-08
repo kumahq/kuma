@@ -17,6 +17,8 @@ const (
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
 
+	KumaUniversalImage = "kuma-universal"
+
 	kdsPort = 30685
 
 	ZoneTemplateK8s = `
