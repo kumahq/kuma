@@ -294,6 +294,60 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Meta.GetMesh()).To(Equal("meshinit"))
 	})
 
+	It("should apply multiple resources of same type", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-multiple-resource-same-type.yaml")},
+		)
+
+		// when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		resource := mesh.DataplaneResourceList{}
+		err = store.List(context.Background(), &resource, core_store.ListByMesh("default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(resource.Items[0].Meta.GetName()).To(Equal("sample1"))
+		Expect(resource.Items[1].Meta.GetName()).To(Equal("sample2"))
+	})
+
+	It("should apply multiple resources of different type", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-multiple-resource-different-type.yaml")},
+		)
+
+		// when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		dataplaneResource := mesh.DataplaneResource{}
+		err = store.Get(context.Background(), &dataplaneResource, core_store.GetByKey("sample1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(dataplaneResource.Meta.GetName()).To(Equal("sample1"))
+		Expect(dataplaneResource.Meta.GetMesh()).To(Equal("default"))
+
+		// when
+		secret := system.SecretResource{}
+		err = store.Get(context.Background(), &secret, core_store.GetByKey("sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		Expect(secret.Meta.GetName()).To(Equal("sample"))
+		Expect(secret.Meta.GetMesh()).To(Equal("default"))
+
+	})
+
 	It("should return kuma api server error", func() {
 		// setup
 		rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
