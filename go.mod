@@ -51,7 +51,9 @@ require (
 	k8s.io/api v0.18.9
 	k8s.io/apimachinery v0.18.9
 	k8s.io/client-go v10.0.0+incompatible
-	sigs.k8s.io/controller-runtime v0.6.3
+	// migrating to v0.6.2 fails integration tests with:
+	// failed to convert core list model of type SampleTrafficRoute into k8s counterpart
+	sigs.k8s.io/controller-runtime v0.6.1
 	sigs.k8s.io/testing_frameworks v0.1.1
 )
 
