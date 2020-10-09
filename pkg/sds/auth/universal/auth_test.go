@@ -168,7 +168,7 @@ var _ = Describe("Authentication flow", func() {
 				Tags: map[string]map[string]bool{
 					"kuma.io/service": {
 						"web": true,
-						//"web-api": true valid token should have also web-api
+						// "web-api": true valid token should have also web-api
 					},
 				},
 			},

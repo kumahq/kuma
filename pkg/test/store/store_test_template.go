@@ -152,7 +152,7 @@ func ExecuteStoreTests(
 			}
 		})
 
-		//todo(jakubdyszkiewicz) write tests for optimistic locking
+		// todo(jakubdyszkiewicz) write tests for optimistic locking
 	})
 
 	Describe("Delete()", func() {

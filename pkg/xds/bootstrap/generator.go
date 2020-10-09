@@ -146,7 +146,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 }
 
 func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_mesh.DataplaneResource) error {
-	//The admin port in kuma-dp is always bound to 127.0.0.1
+	// The admin port in kuma-dp is always bound to 127.0.0.1
 	if dataplane.UsesInboundInterface(core_mesh.IPv4Loopback, adminPort) {
 		return errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", adminPort)
 	}
