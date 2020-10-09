@@ -30,7 +30,7 @@ require (
 	github.com/miekg/dns v1.1.29
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/ginkgo v1.12.1
-	github.com/onsi/gomega v1.9.0
+	github.com/onsi/gomega v1.10.1
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
@@ -52,10 +52,10 @@ require (
 	gopkg.in/fsnotify.v1 v1.4.9 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.3.4
-	k8s.io/api v0.18.8
-	k8s.io/apimachinery v0.18.8
+	k8s.io/api v0.18.9
+	k8s.io/apimachinery v0.18.9
 	k8s.io/client-go v10.0.0+incompatible
-	sigs.k8s.io/controller-runtime v0.6.0
+	sigs.k8s.io/controller-runtime v0.6.3
 	sigs.k8s.io/testing_frameworks v0.1.1
 )
 
@@ -68,5 +68,5 @@ replace (
 	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
 	github.com/spiffe/spire/proto/spire => github.com/spiffe/spire/proto/spire v0.10.0
 	gopkg.in/fsnotify.v1 => gopkg.in/fsnotify.v1 v1.4.7
-	k8s.io/client-go => k8s.io/client-go v0.18.8
+	k8s.io/client-go => k8s.io/client-go v0.18.9
 )
