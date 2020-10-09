@@ -3,11 +3,13 @@ package e2e_test
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	v1 "k8s.io/api/core/v1"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 
@@ -28,6 +30,9 @@ spec:
     backends:
       - name: ca-1
         type: builtin
+  networking:
+    outbound:
+      passthrough: %s
 `
 
 	trafficPermissionAll := `
@@ -99,6 +104,7 @@ metadata:
 	}
 
 	var cluster Cluster
+	var clientPod *v1.Pod
 
 	BeforeEach(func() {
 		clusters, err := NewK8sClusters(
@@ -125,7 +131,7 @@ metadata:
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlK8s(meshDefaulMtlsOn)(cluster)
+		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlK8s(trafficPermissionAll)(cluster)
@@ -148,6 +154,18 @@ metadata:
 			externalServiceAddress,
 			"true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
+
+		pods, err := k8s.ListPodsE(
+			cluster.GetTesting(),
+			cluster.GetKubectlOptions(TestNamespace),
+			metav1.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
+			},
+		)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(pods).To(HaveLen(1))
+
+		clientPod = &pods[0]
 	})
 
 	AfterEach(func() {
@@ -169,18 +187,6 @@ metadata:
 		err := YamlK8s(fmt.Sprintf(trafficRoute, es1))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		clientPod := pods[0]
-
 		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh")
 		Expect(err).ToNot(HaveOccurred())
@@ -192,23 +198,33 @@ metadata:
 		err := YamlK8s(fmt.Sprintf(trafficRoute, es2))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		pods, err := k8s.ListPodsE(
-			cluster.GetTesting(),
-			cluster.GetKubectlOptions(TestNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
-			},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-
-		clientPod := pods[0]
-
 		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("HTTPS"))
+	})
+
+	It("Should disable passthrough", func() {
+
+		_, err := retry.DoWithRetryE(cluster.GetTesting(), "passthrough access to service", 5, DefaultTimeout, func() (string, error) {
+			_, _, err := cluster.Exec("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace")
+			if err != nil {
+				return "", err
+			}
+
+			return "", nil
+		})
+		Expect(err).To(HaveOccurred())
+
+		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true"))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 
 })
