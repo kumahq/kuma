@@ -37,6 +37,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	listCtx := &listContext{getContext: ctx}
 	cmd.AddCommand(withPaginationArgs(newGetMeshesCmd(listCtx), listCtx))
 	cmd.AddCommand(withPaginationArgs(newGetDataplanesCmd(listCtx), listCtx))
+	cmd.AddCommand(withPaginationArgs(newGetExternalServicesCmd(listCtx), listCtx))
 	cmd.AddCommand(withPaginationArgs(newGetHealthChecksCmd(listCtx), listCtx))
 	cmd.AddCommand(withPaginationArgs(newGetProxyTemplatesCmd(listCtx), listCtx))
 	cmd.AddCommand(withPaginationArgs(newGetTrafficPermissionsCmd(listCtx), listCtx))
@@ -50,6 +51,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 
 	cmd.AddCommand(newGetMeshCmd(ctx))
 	cmd.AddCommand(newGetDataplaneCmd(ctx))
+	cmd.AddCommand(newGetExternalServiceCmd(ctx))
 	cmd.AddCommand(newGetHealthCheckCmd(ctx))
 	cmd.AddCommand(newGetProxyTemplateCmd(ctx))
 	cmd.AddCommand(newGetTrafficLogCmd(ctx))

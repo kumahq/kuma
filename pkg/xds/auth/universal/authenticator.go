@@ -42,7 +42,7 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *co
 	if dpIdentity.Mesh != "" && dataplane.Meta.GetMesh() != dpIdentity.Mesh {
 		return errors.Errorf("proxy mesh from requestor: %s is different than in token: %s", dataplane.Meta.GetMesh(), dpIdentity.Mesh)
 	}
-	if err := validateTags(dpIdentity.Tags, dataplane.Spec.Tags()); err != nil {
+	if err := validateTags(dpIdentity.Tags, dataplane.Spec.TagSet()); err != nil {
 		return err
 	}
 	return nil

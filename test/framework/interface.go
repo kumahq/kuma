@@ -95,6 +95,7 @@ type Deployment interface {
 
 type Cluster interface {
 	// Cluster
+	Name() string
 	DismissCluster() error
 	// Generic
 	DeployKuma(mode string, opts ...DeployOptionsFunc) error

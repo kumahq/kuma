@@ -138,14 +138,23 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		tags := clusters.Tags(clusterName)
 		healthCheck := proxy.HealthChecks[serviceName]
 		circuitBreaker := proxy.CircuitBreakers[serviceName]
-		edsCluster, err := envoy_clusters.NewClusterBuilder().
-			Configure(envoy_clusters.EdsCluster(clusterName)).
+		edsClusterBuilder := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.LbSubset(o.lbSubsets(tags))).
-			Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, tags)).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
-			Configure(envoy_clusters.HealthCheck(healthCheck)).
-			Configure(envoy_clusters.Http2()).
-			Build()
+			Configure(envoy_clusters.HealthCheck(healthCheck))
+
+		if clusters.Get(clusterName).HasExternalService() {
+			edsClusterBuilder = edsClusterBuilder.Configure(envoy_clusters.StrictDNSCluster(clusterName, proxy.OutboundTargets[serviceName]))
+			if clusters.Get(clusterName).RequireTLS() {
+				edsClusterBuilder = edsClusterBuilder.Configure(envoy_clusters.ClientSideTLS(proxy.OutboundTargets[serviceName][0].Target))
+			}
+		} else {
+			edsClusterBuilder = edsClusterBuilder.
+				Configure(envoy_clusters.EdsCluster(clusterName)).
+				Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, tags)).
+				Configure(envoy_clusters.Http2())
+		}
+		edsCluster, err := edsClusterBuilder.Build()
 		if err != nil {
 			return nil, err
 		}
@@ -175,13 +184,17 @@ func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]strin
 func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters envoy_common.Clusters) *model.ResourceSet {
 	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
-		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
-		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])
-		loadAssignment := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints)
-		resources.Add(&model.Resource{
-			Name:     clusterName,
-			Resource: loadAssignment,
-		})
+		// Endpoints for ExternalServices are specified in load assignment in DNS Cluster.
+		// We are not allowed to add endpoints with DNS names through EDS.
+		if !clusters.Get(clusterName).HasExternalService() {
+			serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
+			endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])
+			loadAssignment := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints)
+			resources.Add(&model.Resource{
+				Name:     clusterName,
+				Resource: loadAssignment,
+			})
+		}
 	}
 	return resources
 }
@@ -213,11 +226,25 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 			// 0 assumes no traffic is passed there. Envoy doesn't support 0 weight, so instead of passing it to Envoy we just skip such cluster.
 			continue
 		}
-		subsets = append(subsets, envoy_common.ClusterSubset{
+
+		subset := envoy_common.ClusterSubset{
 			ClusterName: service,
 			Weight:      destination.Weight,
 			Tags:        destination.Destination,
-		})
+		}
+
+		// We assume that all the targets are either ExternalServices or not
+		// therefore we check only the first one
+		endpoints := proxy.OutboundTargets[service]
+		if len(endpoints) > 0 {
+			ep := endpoints[0]
+			if ep.IsExternalService() {
+				subset.IsExternalService = true
+				subset.RequiresTLS = ep.ExternalService.TLSEnabled
+			}
+		}
+
+		subsets = append(subsets, subset)
 	}
 	return
 }
@@ -227,7 +254,7 @@ func (_ OutboundProxyGenerator) generateRDS(proxy *model.Proxy, subsets []envoy_
 
 	return envoy_routes.NewRouteConfigurationBuilder().
 		Configure(envoy_routes.CommonRouteConfiguration(envoy_names.GetOutboundRouteName(serviceName))).
-		Configure(envoy_routes.TagsHeader(proxy.Dataplane.Spec.Tags())).
+		Configure(envoy_routes.TagsHeader(proxy.Dataplane.Spec.TagSet())).
 		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder().
 			Configure(envoy_routes.CommonVirtualHost(serviceName)).
 			Configure(envoy_routes.DefaultRoute(subsets...)))).

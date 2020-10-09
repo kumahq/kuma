@@ -157,7 +157,7 @@ func (_ MonitoringAssignmentsGenerator) addressLabel(dataplane *mesh_core.Datapl
 func (g MonitoringAssignmentsGenerator) dataplaneLabels(dataplane *mesh_core.DataplaneResource, endpoint *mesh_proto.PrometheusMetricsBackendConfig) map[string]string {
 	labels := map[string]string{}
 	// first, we copy user-defined tags
-	tags := dataplane.Spec.Tags()
+	tags := dataplane.Spec.TagSet()
 	for _, key := range tags.Keys() {
 		values := tags.Values(key)
 		value := ""
