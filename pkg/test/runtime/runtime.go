@@ -55,7 +55,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 
 	builder.WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore()))
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
-	//builder.WithSecretManager(newSecretManager(builder))
+	// builder.WithSecretManager(newSecretManager(builder))
 
 	rm := newResourceManager(builder)
 	builder.WithResourceManager(rm).
