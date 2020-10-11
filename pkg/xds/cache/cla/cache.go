@@ -5,6 +5,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
+	"github.com/kumahq/kuma/pkg/metrics"
+
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/patrickmn/go-cache"
 
@@ -22,32 +26,53 @@ var (
 	claCacheLog = core.Log.WithName("cla-cache")
 )
 
+// Cache is needed to share and cache ClusterLoadAssignments among goroutines
+// which reconcile Dataplane's state. In scope of one mesh ClusterLoadAssignment
+// will be the same for each service so no need to reconcile for each dataplane.
 type Cache struct {
 	cache   *cache.Cache
 	rm      manager.ReadOnlyResourceManager
 	ipFunc  lookup.LookupIPFunc
 	zone    string
 	onceMap *once.Map
+	metrics *prometheus.GaugeVec
 }
 
-func NewCache(rm manager.ReadOnlyResourceManager, zone string, expirationTime time.Duration, ipFunc lookup.LookupIPFunc) *Cache {
+func NewCache(
+	rm manager.ReadOnlyResourceManager,
+	zone string, expirationTime time.Duration,
+	ipFunc lookup.LookupIPFunc,
+	metrics metrics.Metrics,
+) (*Cache, error) {
+	metric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "cla_cache",
+		Help: "Summary of CLA Cache",
+	}, []string{"operation", "result"})
+	if err := metrics.Register(metric); err != nil {
+		return nil, err
+	}
 	return &Cache{
 		cache:   cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 		rm:      rm,
 		zone:    zone,
 		ipFunc:  ipFunc,
 		onceMap: once.NewMap(),
-	}
+		metrics: metric,
+	}, nil
 }
 
 func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
 	key := fmt.Sprintf("%s:%s", meshName, service)
 	value, found := c.cache.Get(key)
 	if found {
+		c.metrics.WithLabelValues("get", "hit").Inc()
 		return value.(*envoy_api_v2.ClusterLoadAssignment), nil
 	}
 	o := c.onceMap.Get(key)
+	c.metrics.WithLabelValues("get", "hit-wait").Inc()
 	o.Do(func() (interface{}, error) {
+		c.metrics.WithLabelValues("get", "hit-wait").Dec()
+		c.metrics.WithLabelValues("get", "miss").Inc()
 		dataplanes, err := topology.GetDataplanes(claCacheLog, ctx, c.rm, c.ipFunc, meshName)
 		if err != nil {
 			return nil, err

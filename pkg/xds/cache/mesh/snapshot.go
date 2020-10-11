@@ -14,6 +14,10 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
+// meshSnapshot represents all resources that belong to Mesh and allows to calculate hash.
+// Calculating and comparing hashes is much faster than call 'equal' for xDS resources. So
+// meshSnapshot reduces costs on reconciling Envoy config when resources in the store are
+// not changing
 type meshSnapshot struct {
 	mesh      *core_mesh.MeshResource
 	resources map[core_model.ResourceType]core_model.ResourceList
@@ -80,6 +84,10 @@ func hashResources(rs ...core_model.Resource) string {
 
 func hashResource(r core_model.Resource) string {
 	switch v := r.(type) {
+	// In case of hashing Dataplane we are also adding '.Spec.Networking.Address' into hash.
+	// The address could be a domain name and right now we resolve it right after fetching
+	// of Dataplane resource. Since DNS Records might be updated and address could be changed
+	// after resolving. That's why it is important to include address into hash.
 	case *core_mesh.DataplaneResource:
 		return strings.Join(
 			[]string{string(v.GetType()),

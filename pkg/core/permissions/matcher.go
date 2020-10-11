@@ -29,7 +29,8 @@ func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *mesh_c
 func BuildTrafficPermissionMap(
 	dataplane *mesh_core.DataplaneResource,
 	mesh *mesh_core.MeshResource,
-	trafficPermissions []*mesh_core.TrafficPermissionResource) (core_xds.TrafficPermissionMap, error) {
+	trafficPermissions []*mesh_core.TrafficPermissionResource,
+) (core_xds.TrafficPermissionMap, error) {
 	policies := make([]policy.ConnectionPolicy, len(trafficPermissions))
 	for i, permission := range trafficPermissions {
 		policies[i] = permission

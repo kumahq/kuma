@@ -188,10 +188,16 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	if err := rt.Metrics().Register(xdsGenerationsErrors); err != nil {
 		return nil, err
 	}
-	meshSnapshotCache := mesh.NewCache(rt.ReadOnlyResourceManager(),
-		rt.Config().Store.Cache.ExpirationTime, meshResources, rt.LookupIP())
-	claCache := cla.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Multicluster.Remote.Zone,
-		rt.Config().Store.Cache.ExpirationTime, rt.LookupIP())
+	meshSnapshotCache, err := mesh.NewCache(rt.ReadOnlyResourceManager(),
+		rt.Config().Store.Cache.ExpirationTime, meshResources, rt.LookupIP(), rt.Metrics())
+	if err != nil {
+		return nil, err
+	}
+	claCache, err := cla.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Multicluster.Remote.Zone,
+		rt.Config().Store.Cache.ExpirationTime, rt.LookupIP(), rt.Metrics())
+	if err != nil {
+		return nil, err
+	}
 	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
 		prevHash := ""
@@ -249,7 +255,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 				if prevHash != "" && snapshotHash == prevHash {
-					log.V(1).Info("snapshot hashes are equal, no need to reconcile", "prev", prevHash)
 					return nil
 				}
 				log.V(1).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)

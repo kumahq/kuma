@@ -22,7 +22,7 @@ func init() {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
-	rt.DNSResolver().SetHandler(func(list dns.VIPList) {
+	rt.DNSResolver().SetVIPsChangedHandler(func(list dns.VIPList) {
 		if err := UpdateOutbounds(context.Background(), rt.ResourceManager(), list); err != nil {
 			log.Error(err, "failed to update VIP outbounds")
 		}

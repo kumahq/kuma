@@ -111,7 +111,6 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		if err = json.Unmarshal([]byte(vipconfig.Data["config"]), &vips); err != nil {
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not unmarshal")
 		}
-		r.Log.V(1).Info("successfully fetch VIPs", "vips", vips)
 	}
 
 	if err := r.createOrUpdateDataplane(pod, services, others, vips); err != nil {

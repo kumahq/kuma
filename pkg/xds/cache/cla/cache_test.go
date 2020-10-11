@@ -3,11 +3,14 @@ package cla_test
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"net"
 	"path/filepath"
+	"sync"
 	"time"
+
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -41,52 +44,58 @@ func (c *countingResourcesManager) List(ctx context.Context, list core_model.Res
 
 var _ = Describe("ClusterLoadAssignment Cache", func() {
 	var s core_store.ResourceStore
-	var countingRm *countingResourcesManager
+	var countingManager *countingResourcesManager
 	var claCache *cla.Cache
+	var metrics core_metrics.Metrics
+
 	expiration := 500 * time.Millisecond
 
 	BeforeEach(func() {
 		s = memory.NewStore()
-		countingRm = &countingResourcesManager{store: s}
-		claCache = cla.NewCache(countingRm, "", expiration, func(s string) ([]net.IP, error) {
+		countingManager = &countingResourcesManager{store: s}
+		var err error
+
+		metrics, err = core_metrics.NewMetrics("Standalone")
+		Expect(err).ToNot(HaveOccurred())
+
+		claCache, err = cla.NewCache(countingManager, "", expiration, func(s string) ([]net.IP, error) {
 			return []net.IP{net.ParseIP(s)}, nil
-		})
+		}, metrics)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	BeforeEach(func() {
-		for i := 0; i < 1; i++ {
-			mesh := fmt.Sprintf("mesh-%d", i)
-			err := s.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey(mesh, mesh))
-			Expect(err).ToNot(HaveOccurred())
+		mesh := "mesh-0"
+		err := s.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey(mesh, mesh))
+		Expect(err).ToNot(HaveOccurred())
 
-			err = s.Create(context.Background(), &core_mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
-					Address: "192.168.0.1",
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-						Port: 1010, ServicePort: 2020, Tags: map[string]string{"kuma.io/service": "backend"},
-					}},
+		err = s.Create(context.Background(), &core_mesh.DataplaneResource{
+			Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.168.0.1",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+					Port: 1010, ServicePort: 2020, Tags: map[string]string{"kuma.io/service": "backend"},
 				}},
-			}, core_store.CreateByKey("dp1", mesh))
-			Expect(err).ToNot(HaveOccurred())
+			}},
+		}, core_store.CreateByKey("dp1", mesh))
+		Expect(err).ToNot(HaveOccurred())
 
-			err = s.Create(context.Background(), &core_mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
-					Address: "192.168.0.2",
-					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
-						Port: 1011, ServicePort: 2021, Tags: map[string]string{"kuma.io/service": "backend"},
-					}},
+		err = s.Create(context.Background(), &core_mesh.DataplaneResource{
+			Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.168.0.2",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+					Port: 1011, ServicePort: 2021, Tags: map[string]string{"kuma.io/service": "backend"},
 				}},
-			}, core_store.CreateByKey("dp2", mesh))
-			Expect(err).ToNot(HaveOccurred())
-		}
+			}},
+		}, core_store.CreateByKey("dp2", mesh))
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should cache Get() queries", func() {
 		By("getting CLA for the first time")
 		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "backend")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(countingRm.getQueries).To(Equal(1))
-		Expect(countingRm.listQueries).To(Equal(1))
+		Expect(countingManager.getQueries).To(Equal(1))
+		Expect(countingManager.listQueries).To(Equal(1))
 
 		expected, err := ioutil.ReadFile(filepath.Join("testdata", "cla.get.0.json"))
 		Expect(err).ToNot(HaveOccurred())
@@ -98,8 +107,8 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		By("getting cached CLA")
 		_, err = claCache.GetCLA(context.Background(), "mesh-0", "backend")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(countingRm.getQueries).To(Equal(1))
-		Expect(countingRm.listQueries).To(Equal(1))
+		Expect(countingManager.getQueries).To(Equal(1))
+		Expect(countingManager.listQueries).To(Equal(1))
 
 		By("updating Dataplane in store and waiting until cache invalidation")
 		dp := &core_mesh.DataplaneResource{}
@@ -113,13 +122,42 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "backend")
 		Expect(err).ToNot(HaveOccurred())
-		Expect(countingRm.getQueries).To(Equal(2))
-		Expect(countingRm.listQueries).To(Equal(2))
+		Expect(countingManager.getQueries).To(Equal(2))
+		Expect(countingManager.listQueries).To(Equal(2))
 
 		expected, err = ioutil.ReadFile(filepath.Join("testdata", "cla.get.1.json"))
 		Expect(err).ToNot(HaveOccurred())
 		js, err = json.Marshal(cla)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(js).To(MatchJSON(expected))
+	})
+
+	It("should cache concurrent Get() requests", func() {
+		var wg sync.WaitGroup
+		for i := 0; i < 1000; i++ {
+			wg.Add(1)
+			go func() {
+				cla, err := claCache.GetCLA(context.Background(), "mesh-0", "backend")
+				Expect(err).ToNot(HaveOccurred())
+
+				marshalled, err := json.Marshal(cla) // to imitate Read access to 'cla'
+				Expect(err).ToNot(HaveOccurred())
+				Expect(len(marshalled) > 0).To(BeTrue())
+				wg.Done()
+			}()
+		}
+		wg.Wait()
+
+		Expect(countingManager.getQueries).To(Equal(1))
+		Expect(test_metrics.FindMetric(metrics, "cla_cache", "operation", "get", "result", "miss").Gauge.GetValue()).To(Equal(1.0))
+		hitWaits := 0.0
+		if hw := test_metrics.FindMetric(metrics, "cla_cache", "operation", "get", "result", "hit-wait"); hw != nil {
+			hitWaits = hw.Gauge.GetValue()
+		}
+		hits := 0.0
+		if h := test_metrics.FindMetric(metrics, "cla_cache", "operation", "get", "result", "hit"); h != nil {
+			hits = h.Gauge.GetValue()
+		}
+		Expect(hitWaits + hits + 1).To(Equal(1000.0))
 	})
 })

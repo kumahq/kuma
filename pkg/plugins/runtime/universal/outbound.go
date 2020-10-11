@@ -13,6 +13,7 @@ func UpdateOutbounds(ctx context.Context, rm manager.ResourceManager, vips dns.V
 	if err := rm.List(ctx, dpList); err != nil {
 		return err
 	}
+	dpsUpdated := 0
 	for _, dp := range dpList.Items {
 		if dp.Spec.Networking.GetTransparentProxying() == nil {
 			continue
@@ -22,7 +23,9 @@ func UpdateOutbounds(ctx context.Context, rm manager.ResourceManager, vips dns.V
 			log.Error(err, "failed to update VIP outbounds", "dataplane", dp.GetMeta())
 			continue
 		}
-		log.V(0).Info("outbounds updated", "dataplane", dp)
+		dpsUpdated++
+		log.V(1).Info("outbounds updated", "dataplane", dp)
 	}
+	log.Info("outbounds updated due to VIP changes", "dpsUpdated", dpsUpdated)
 	return nil
 }
