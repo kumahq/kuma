@@ -206,7 +206,7 @@ metadata:
 	})
 
 	It("should disable passthrough", func() {
-		// given Mesh wih passthrough enabled
+		// given Mesh with passthrough enabled
 		err := YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
