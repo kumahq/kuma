@@ -14,7 +14,7 @@ import (
 type DataplaneResolver func(context.Context, core_xds.ProxyId) (*core_mesh.DataplaneResource, error)
 
 func GetDataplaneIdentity(dataplane *core_mesh.DataplaneResource) (sds_auth.Identity, error) {
-	services := dataplane.Spec.Tags().Values(mesh_proto.ServiceTag)
+	services := dataplane.Spec.TagSet().Values(mesh_proto.ServiceTag)
 	if len(services) == 0 {
 		return sds_auth.Identity{}, errors.Errorf("Dataplane has no services associated with it")
 	}

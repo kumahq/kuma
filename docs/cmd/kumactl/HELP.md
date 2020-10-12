@@ -225,7 +225,7 @@ Flags:
       --cni-enabled                         install Kuma with CNI instead of proxy init container
       --cni-registry string                 registry for the image of the Kuma CNI component (default "docker.io")
       --cni-repository string               repository for the image of the Kuma CNI component (default "lobkovilya/install-cni")
-      --cni-version string                  version of the image of the Kuma CNI component (default "0.0.1")
+      --cni-version string                  version of the image of the Kuma CNI component (default "0.0.2")
       --control-plane-registry string       registry for the image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io")
       --control-plane-repository string     repository for the image of the Kuma Control Plane component (default "kuma-cp")
       --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
@@ -361,6 +361,8 @@ Available Commands:
   circuit-breakers    Show CircuitBreakers
   dataplane           Show a single Dataplane resource
   dataplanes          Show Dataplanes
+  external-service    Show a single ExternalService resource
+  external-services   Show ExternalServices
   fault-injection     Show a single Fault-Injection resource
   fault-injections    Show FaultInjections
   healthcheck         Show a single HealthCheck resource

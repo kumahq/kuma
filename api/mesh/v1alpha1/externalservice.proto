@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "v1alpha1";
+
+import "validate/validate.proto";
+
+// ExternalService defines configuration of the externaly accessible service
+message ExternalService {
+
+  // Networking describes the properties of the external service connectivity
+  message Networking {
+    // Address of the external service
+    string address = 1;
+
+    // TLS
+    message TLS {
+      // denotes that the external service uses TLS
+      bool enabled = 1;
+    }
+
+    TLS tls = 2;
+  }
+
+  Networking networking = 1;
+
+  // Tags associated with the external service,
+  // e.g. kuma.io/service=web, kuma.io/protocol, version=1.0.
+  map<string, string> tags = 3 [ (validate.rules).map.min_pairs = 1 ];
+}

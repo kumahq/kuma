@@ -14,7 +14,6 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
-	kumacni "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/tls"
@@ -82,7 +81,7 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	DataPlane_initImage_tag:                   kuma_version.Build.Version,
 	Cni_image_registry:                        "docker.io",
 	Cni_image_repository:                      "lobkovilya/install-cni",
-	Cni_image_tag:                             "0.0.1",
+	Cni_image_tag:                             "0.0.2",
 	ControlPlane_mode:                         core.Standalone,
 	ControlPlane_zone:                         "",
 	ControlPlane_globalRemoteSyncService_type: "LoadBalancer",
@@ -225,12 +224,6 @@ func InstallCpTemplateFiles(args InstallControlPlaneArgs) (data.FileList, error)
 	if err != nil {
 		return nil, err
 	}
-	if args.Cni_enabled {
-		templateCNI, err := data.ReadFiles(kumacni.Templates)
-		if err != nil {
-			return nil, err
-		}
-		templateFiles = append(templateFiles, templateCNI...)
-	}
+
 	return templateFiles, nil
 }

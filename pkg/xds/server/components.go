@@ -233,6 +233,10 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				if err != nil {
 					return err
 				}
+				externalServices, err := xds_topology.GetExternalServices(log, ctx, rt.ReadOnlyResourceManager(), dataplane.Meta.GetMesh())
+				if err != nil {
+					return err
+				}
 				envoyCtx := xds_context.Context{
 					ControlPlane: envoyCpCtx,
 					Mesh: xds_context.MeshContext{
@@ -243,7 +247,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 
 				// Generate VIP outbounds only when not Ingress and Transparent Proxying is enabled
 				if !dataplane.Spec.IsIngress() && dataplane.Spec.Networking.GetTransparentProxying() != nil {
-					err = xds_topology.PatchDataplaneWithVIPOutbounds(dataplane, dataplanes, rt.DNSResolver())
+					err = xds_topology.PatchDataplaneWithVIPOutbounds(dataplane, dataplanes, externalServices, rt.DNSResolver())
 					if err != nil {
 						return err
 					}
@@ -259,7 +263,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, rt.Config().Multicluster.Remote.Zone, mesh)
+				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, externalServices, rt.Config().Multicluster.Remote.Zone, mesh)
 				if err != nil {
 					return err
 				}

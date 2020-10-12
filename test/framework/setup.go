@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/go-errors/errors"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -86,6 +88,36 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 			if err != nil {
 				return err
 			}
+		}
+		return nil
+	}
+}
+
+func WaitPodsNotAvailable(namespace, app string) InstallFunc {
+	return func(c Cluster) error {
+		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
+			kube_meta.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
+		if err != nil {
+			return err
+		}
+
+		for _, p := range pods {
+			_, _ = retry.DoWithRetryE(
+				c.GetTesting(),
+				"Wait pod deletion",
+				DefaultRetries,
+				DefaultTimeout,
+				func() (string, error) {
+					pod, err := k8s.GetPodE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName())
+					if err == nil {
+						return "", err
+					}
+					if !k8s.IsPodAvailable(pod) {
+						return "Pod is not available", nil
+					}
+					return "", errors.Errorf("Pod is still available")
+				},
+			)
 		}
 		return nil
 	}
