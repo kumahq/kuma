@@ -117,7 +117,7 @@ kind/deploy/example-app:
 
 .PHONY: run/k8s
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
-	@KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(MAKE) crd/upgrade -C pkg/plugins/resources/k8s/native
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
