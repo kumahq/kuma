@@ -42,7 +42,7 @@ import (
 )
 
 var (
-	xdsServerLog = core.Log.WithName("xds-server")
+	xdsServerLog  = core.Log.WithName("xds-server")
 	meshResources = meshResourceTypes(map[core_model.ResourceType]bool{
 		core_mesh.DataplaneInsightType:  true,
 		core_mesh.DataplaneOverviewType: true,
