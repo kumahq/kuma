@@ -267,7 +267,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				if prevHash != "" && snapshotHash == prevHash {
 					return nil
 				}
-				log.V(0).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)
+				log.V(1).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)
 				prevHash = snapshotHash
 
 				mesh := &core_mesh.MeshResource{}
