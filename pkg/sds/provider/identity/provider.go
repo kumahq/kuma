@@ -9,7 +9,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
 	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
 )
 
@@ -29,7 +28,7 @@ func (s *identityCertProvider) RequiresIdentity() bool {
 	return true
 }
 
-func (s *identityCertProvider) Get(ctx context.Context, name string, requestor sds_auth.Identity) (sds_provider.Secret, error) {
+func (s *identityCertProvider) Get(ctx context.Context, name string, requestor sds_provider.Identity) (sds_provider.Secret, error) {
 	meshName := requestor.Mesh
 
 	meshRes := &core_mesh.MeshResource{}

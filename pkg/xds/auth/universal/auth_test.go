@@ -82,9 +82,9 @@ var _ = Describe("Authentication flow", func() {
 	})
 
 	type testCase struct {
-		id      builtin_issuer.DataplaneIdentity
-		dpRes   *core_mesh.DataplaneResource
-		err     string
+		id    builtin_issuer.DataplaneIdentity
+		dpRes *core_mesh.DataplaneResource
+		err   string
 	}
 	DescribeTable("should correctly authenticate dataplane",
 		func(given testCase) {
@@ -95,7 +95,7 @@ var _ = Describe("Authentication flow", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = authenticator.Authenticate(context.Background(), given.dpRes, auth.Credential(credential))
+			err = authenticator.Authenticate(context.Background(), given.dpRes, credential)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -162,7 +162,7 @@ var _ = Describe("Authentication flow", func() {
 				Name: "dp-2",
 			},
 			dpRes: &dpRes,
-			err: "proxy name from requestor: dp-1 is different than in token: dp-2",
+			err:   "proxy name from requestor: dp-1 is different than in token: dp-2",
 		}),
 		Entry("on token with different mesh", testCase{
 			id: builtin_issuer.DataplaneIdentity{
@@ -170,7 +170,7 @@ var _ = Describe("Authentication flow", func() {
 				Name: "dp-1",
 			},
 			dpRes: &dpRes,
-			err: "proxy mesh from requestor: default is different than in token: demo",
+			err:   "proxy mesh from requestor: default is different than in token: demo",
 		}),
 		Entry("on token with different tags", testCase{
 			id: builtin_issuer.DataplaneIdentity{
@@ -181,7 +181,7 @@ var _ = Describe("Authentication flow", func() {
 				},
 			},
 			dpRes: &dpRes,
-			err: `which is not allowed with this token. Allowed values in token are ["backend"]`,
+			err:   `which is not allowed with this token. Allowed values in token are ["backend"]`,
 		}),
 		Entry("on token with tag that is absent in dataplane", testCase{
 			id: builtin_issuer.DataplaneIdentity{
@@ -192,7 +192,7 @@ var _ = Describe("Authentication flow", func() {
 				},
 			},
 			dpRes: &dpRes,
-			err: `dataplane has no tag "kuma.io/zone" required by the token`,
+			err:   `dataplane has no tag "kuma.io/zone" required by the token`,
 		}),
 		Entry("on token with missing one tag value", testCase{
 			id: builtin_issuer.DataplaneIdentity{
@@ -204,27 +204,26 @@ var _ = Describe("Authentication flow", func() {
 				},
 			},
 			dpRes: &dpRes,
-			err: `which is not allowed with this token. Allowed values in token are ["web"]`, // web and web-api order is not stable
+			err:   `which is not allowed with this token. Allowed values in token are ["web"]`, // web and web-api order is not stable
 		}),
 		Entry("regular dataplane and ingress type", testCase{
 			id: builtin_issuer.DataplaneIdentity{
 				Type: builtin_issuer.DpTypeIngress,
 			},
 			dpRes: &dpRes,
-			err: `dataplane is of type Dataplane but token allows only for the "ingress" type`,
+			err:   `dataplane is of type Dataplane but token allows only for the "ingress" type`,
 		}),
 		Entry("ingress dataplane and dataplane type", testCase{
 			id: builtin_issuer.DataplaneIdentity{
 				Type: builtin_issuer.DpTypeDataplane,
 			},
 			dpRes: &ingressDp,
-			err: `dataplane is of type Ingress but token allows only for the "dataplane" type`,
+			err:   `dataplane is of type Ingress but token allows only for the "dataplane" type`,
 		}),
 		Entry("ingress dataplane and dataplane type (but not explicitly specified)", testCase{
-			id: builtin_issuer.DataplaneIdentity{
-			},
+			id:    builtin_issuer.DataplaneIdentity{},
 			dpRes: &ingressDp,
-			err: `dataplane is of type Ingress but token allows only for the "dataplane" type`,
+			err:   `dataplane is of type Ingress but token allows only for the "dataplane" type`,
 		}),
 	)
 
