@@ -112,7 +112,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 	DescribeTable("should return error message if doesn't exist",
 		func(resource string) {
-			//given
+			// given
 			rootCmd.SetArgs([]string{
 				"get", resource, "unknown-resource"})
 

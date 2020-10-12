@@ -2,10 +2,9 @@ package dns_test
 
 import (
 	"fmt"
-	"strconv"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"strconv"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -38,6 +37,7 @@ var _ = Describe("VIPOutbounds", func() {
 
 		// given
 		dataplanes := core_mesh.DataplaneResourceList{}
+		externalServices := &core_mesh.ExternalServiceResourceList{}
 		vipList := dns.VIPList{}
 		for i := 1; i <= 5; i++ {
 			service := "service-" + strconv.Itoa(i)
@@ -66,7 +66,7 @@ var _ = Describe("VIPOutbounds", func() {
 		}
 
 		// when
-		outbounds := dns.VIPOutbounds(dataplane.Meta.GetName(), dataplanes.Items, vipList)
+		outbounds := dns.VIPOutbounds(dataplane.Meta.GetName(), dataplanes.Items, vipList, externalServices.Items)
 		// and
 		Expect(outbounds).To(HaveLen(4))
 		// and

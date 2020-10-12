@@ -72,7 +72,7 @@ spec:
           command:
             - wget
             - -qO-
-            - http://127.0.0.1:9901
+            - http://127.0.0.1:9901/ready
         failureThreshold: 212
         initialDelaySeconds: 260
         periodSeconds: 25
@@ -84,7 +84,7 @@ spec:
           command:
             - wget
             - -qO-
-            - http://127.0.0.1:9901
+            - http://127.0.0.1:9901/ready
         failureThreshold: 112
         initialDelaySeconds: 11
         periodSeconds: 15
@@ -114,6 +114,10 @@ spec:
         - "5678"
         - -g
         - "5678"
+        - -d
+        - ""
+        - -o
+        - ""
         - -m
         - REDIRECT
         - -i

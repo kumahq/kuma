@@ -172,7 +172,7 @@ var _ = Describe("kumactl install control-plane", func() {
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
 
-			//when
+			// when
 			err := rootCmd.Execute()
 
 			// then

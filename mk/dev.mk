@@ -1,12 +1,12 @@
 PROTOC_VERSION := 3.6.1
 PROTOC_PGV_VERSION := v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 GOLANG_PROTOBUF_VERSION := v1.3.2
-GOLANGCI_LINT_VERSION := v1.27.0
+GOLANGCI_LINT_VERSION := v1.31.0
 GINKGO_VERSION := v1.12.0
 
-CI_KUBEBUILDER_VERSION ?= 2.0.0
-CI_MINIKUBE_VERSION ?= v1.9.2
-CI_KUBECTL_VERSION ?= v1.18.2
+CI_KUBEBUILDER_VERSION ?= 2.3.1
+CI_MINIKUBE_VERSION ?= v1.13.1
+CI_KUBECTL_VERSION ?= v1.18.9
 CI_TOOLS_IMAGE ?= circleci/golang:1.15.2
 
 CI_TOOLS_DIR ?= $(HOME)/bin
@@ -182,10 +182,11 @@ dev/install/goimports: ## Bootstrap: Install goimports
 dev/install/helm3: ## Bootstrap: Install Helm 3
 	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
+GEN_CHANGELOG_START_TAG ?= 0.7.2
+GEN_CHANGELOG_BRANCH ?= master
 GEN_CHANGELOG_MD ?= changelog.generated.md
-GEN_CHANGELOG_START_TAG ?= 0.6.0
 .PHONY: changelog
 changelog:
 	@cd tools/releases/changelog/ && \
-	go run ./... --start $(GEN_CHANGELOG_START_TAG) > ../../../$(GEN_CHANGELOG_MD)
+	go run ./... --branch refs/heads/$(GEN_CHANGELOG_BRANCH) --start refs/heads/$(GEN_CHANGELOG_START_TAG) > ../../../$(GEN_CHANGELOG_MD)
 	@echo "The generated changelog is in $(GEN_CHANGELOG_MD)"

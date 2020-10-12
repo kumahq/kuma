@@ -13,10 +13,6 @@ import (
 	"go.uber.org/multierr"
 )
 
-const (
-	kumaUniversalImage = "kuma-universal"
-)
-
 type UniversalCluster struct {
 	t            testing.TestingT
 	name         string
@@ -34,6 +30,10 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		verbose:     verbose,
 		deployments: map[string]Deployment{},
 	}
+}
+
+func (c *UniversalCluster) Name() string {
+	return c.name
 }
 
 func (c *UniversalCluster) DismissCluster() (errs error) {
@@ -143,9 +143,9 @@ func (c *UniversalCluster) DeployApp(namespace, appname, token string) error {
 	var args []string
 	switch appname {
 	case AppModeEchoServer:
-		args = []string{"nc", "-lk", "-p", "80", "-e", "echo", "-e", "\"HTTP/1.1 200 OK\n\n Echo\n\""}
+		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
 	case AppModeDemoClient:
-		args = []string{"nc", "-lvk", "-p", "3000"}
+		args = []string{"ncat", "-lvk", "-p", "3000"}
 	default:
 		return errors.Errorf("not supported app type %s", appname)
 	}

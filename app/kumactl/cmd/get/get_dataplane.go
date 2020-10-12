@@ -33,7 +33,7 @@ func newGetDataplaneCmd(pctx *getContext) *cobra.Command {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)
 				}
-				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
+				return errors.Wrapf(err, "failed to get a dataplane in mesh %s", currentMesh)
 			}
 			dataplanes := mesh.DataplaneResourceList{
 				Items: []*mesh.DataplaneResource{dataplane},

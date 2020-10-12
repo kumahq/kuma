@@ -77,10 +77,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 
 func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	reconciler := &k8s_controllers.NamespaceReconciler{
-		Client:          mgr.GetClient(),
-		Log:             core.Log.WithName("controllers").WithName("Namespace"),
-		CNIEnabled:      rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
-		ResourceManager: rt.ResourceManager(),
+		Client:     mgr.GetClient(),
+		Log:        core.Log.WithName("controllers").WithName("Namespace"),
+		CNIEnabled: rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -137,7 +136,7 @@ func addDefaulter(mgr kube_ctrl.Manager, gvk kube_schema.GroupVersionKind, facto
 }
 
 func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
-	return fmt.Sprintf("/default-%s-%s-%s", strings.Replace(gvk.Group, ".", "-", -1), gvk.Version, strings.ToLower(gvk.Kind))
+	return fmt.Sprintf("/default-%s-%s-%s", strings.ReplaceAll(gvk.Group, ".", "-"), gvk.Version, strings.ToLower(gvk.Kind))
 }
 
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {

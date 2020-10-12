@@ -28,9 +28,16 @@ type PodConverter struct {
 	Zone          string
 }
 
-func (p *PodConverter) PodToDataplane(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane, vips dns.VIPList) error {
+func (p *PodConverter) PodToDataplane(
+	dataplane *mesh_k8s.Dataplane,
+	pod *kube_core.Pod,
+	services []*kube_core.Service,
+	externalServices []*mesh_k8s.ExternalService,
+	others []*mesh_k8s.Dataplane,
+	vips dns.VIPList,
+) error {
 	dataplane.Mesh = MeshFor(pod)
-	dataplaneProto, err := p.DataplaneFor(pod, services, others, vips)
+	dataplaneProto, err := p.DataplaneFor(pod, services, externalServices, others, vips)
 	if err != nil {
 		return err
 	}
@@ -64,7 +71,13 @@ func MeshFor(pod *kube_core.Pod) string {
 	return mesh
 }
 
-func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane, vips dns.VIPList) (*mesh_proto.Dataplane, error) {
+func (p *PodConverter) DataplaneFor(
+	pod *kube_core.Pod,
+	services []*kube_core.Service,
+	externalServices []*mesh_k8s.ExternalService,
+	others []*mesh_k8s.Dataplane,
+	vips dns.VIPList,
+) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
 	}
@@ -118,7 +131,7 @@ func (p *PodConverter) DataplaneFor(pod *kube_core.Pod, services []*kube_core.Se
 		dataplane.Networking.Inbound = ifaces
 	}
 
-	ofaces, err := p.OutboundInterfacesFor(pod, others, vips)
+	ofaces, err := p.OutboundInterfacesFor(pod, others, externalServices, vips)
 	if err != nil {
 		return nil, err
 	}

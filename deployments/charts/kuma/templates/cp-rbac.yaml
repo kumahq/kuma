@@ -70,13 +70,14 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
+      - circuitbreakers
+      - externalservices
+      - faultinjections
+      - healthchecks
       - trafficpermissions
       - trafficlogs
       - trafficroutes
       - traffictraces
-      - faultinjections
-      - circuitbreakers
-      - healthchecks
     verbs:
       - get
       - list

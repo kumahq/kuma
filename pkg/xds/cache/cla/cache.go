@@ -81,7 +81,11 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_ap
 		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, meshName)); err != nil {
 			return nil, err
 		}
-		endpointMap := topology.BuildEndpointMap(dataplanes.Items, c.zone, mesh)
+		externalServices := &core_mesh.ExternalServiceResourceList{}
+		if err := c.rm.List(ctx, externalServices, core_store.ListByMesh(meshName)); err != nil {
+			return nil, err
+		}
+		endpointMap := topology.BuildEndpointMap(dataplanes.Items, c.zone, mesh, externalServices.Items)
 		cla := endpoints.CreateClusterLoadAssignment(service, endpointMap[service])
 		c.cache.SetDefault(key, cla)
 		c.onceMap.Delete(key)

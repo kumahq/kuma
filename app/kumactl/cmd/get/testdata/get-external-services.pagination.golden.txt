@@ -1,0 +1,4 @@
+MESH      NAME         TAGS                        ADDRESS     AGE
+default   experiment   service=mobile version=v1   127.0.0.1   292y
+
+Rerun command with --offset=1 argument to retrieve more resources

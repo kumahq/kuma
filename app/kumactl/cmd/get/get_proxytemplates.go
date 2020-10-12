@@ -63,7 +63,7 @@ func printProxyTemplates(rootTime time.Time, proxyTemplates *mesh_core.ProxyTemp
 				return []string{
 					proxyTemplate.GetMeta().GetMesh(),                                        // MESH
 					proxyTemplate.GetMeta().GetName(),                                        // NAME
-					table.TimeSince(proxyTemplate.GetMeta().GetModificationTime(), rootTime), //AGE
+					table.TimeSince(proxyTemplate.GetMeta().GetModificationTime(), rootTime), // AGE
 				}
 			}
 		}(),

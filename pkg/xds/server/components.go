@@ -269,6 +269,10 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				if err != nil {
 					return err
 				}
+				externalServices := &mesh_core.ExternalServiceResourceList{}
+				if err := rt.ReadOnlyResourceManager().List(ctx, externalServices, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
+					return err
+				}
 				envoyCtx := xds_context.Context{
 					ControlPlane: envoyCpCtx,
 					Mesh: xds_context.MeshContext{
@@ -287,7 +291,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound := xds_topology.BuildEndpointMap(dataplanes.Items, rt.Config().Multicluster.Remote.Zone, mesh)
+				outbound := xds_topology.BuildEndpointMap(dataplanes.Items, rt.Config().Multicluster.Remote.Zone, mesh, externalServices.Items)
 
 				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
 				if err != nil {

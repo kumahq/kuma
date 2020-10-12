@@ -50,6 +50,8 @@ controlPlane:
     pullPolicy: IfNotPresent
     repository: "kuma-cp"
   # secrets: {}
+
+  envVars: {}
 cni:
   enabled: false
   logLevel: info
@@ -61,7 +63,7 @@ cni:
   image:
     registry: "docker.io"
     repository: "lobkovilya/install-cni"
-    tag: "0.0.1"
+    tag: "0.0.2"
 
 # Configuration for the kuma dataplane sidecar
 dataPlane:

@@ -2,30 +2,40 @@ package universal
 
 import (
 	"context"
-
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns"
 )
 
 func UpdateOutbounds(ctx context.Context, rm manager.ResourceManager, vips dns.VIPList) error {
-	dpList := &mesh.DataplaneResourceList{}
-	if err := rm.List(ctx, dpList); err != nil {
+	meshes := &mesh.MeshResourceList{}
+	if err := rm.List(ctx, meshes); err != nil {
 		return err
 	}
-	dpsUpdated := 0
-	for _, dp := range dpList.Items {
-		if dp.Spec.Networking.GetTransparentProxying() == nil {
-			continue
+	for _, m := range meshes.Items {
+		dpList := &mesh.DataplaneResourceList{}
+		if err := rm.List(ctx, dpList, store.ListByMesh(m.Meta.GetName())); err != nil {
+			return err
 		}
-		dp.Spec.Networking.Outbound = dns.VIPOutbounds(dp.Meta.GetName(), dpList.Items, vips)
-		if err := rm.Update(ctx, dp); err != nil {
-			log.Error(err, "failed to update VIP outbounds", "dataplane", dp.GetMeta())
-			continue
+		externalServices := &mesh.ExternalServiceResourceList{}
+		if err := rm.List(ctx, externalServices, store.ListByMesh(m.Meta.GetName())); err != nil {
+			return err
 		}
-		dpsUpdated++
-		log.V(1).Info("outbounds updated", "dataplane", dp)
+		dpsUpdated := 0
+		for _, dp := range dpList.Items {
+			if dp.Spec.Networking.GetTransparentProxying() == nil {
+				continue
+			}
+			dp.Spec.Networking.Outbound = dns.VIPOutbounds(dp.Meta.GetName(), dpList.Items, vips, externalServices.Items)
+			if err := rm.Update(ctx, dp); err != nil {
+				log.Error(err, "failed to update VIP outbounds", "dataplane", dp.GetMeta())
+				continue
+			}
+			dpsUpdated++
+			log.V(1).Info("outbounds updated", "mesh", m.Meta.GetName(), "dataplane", dp)
+		}
+		log.Info("outbounds updated due to VIP changes", "mesh", m.Meta.GetName(), "dpsUpdated", dpsUpdated)
 	}
-	log.Info("outbounds updated due to VIP changes", "dpsUpdated", dpsUpdated)
 	return nil
 }

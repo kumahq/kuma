@@ -63,7 +63,7 @@ func printTrafficLogs(rootTime time.Time, trafficLogging *mesh.TrafficLogResourc
 				return []string{
 					trafficLogging.GetMeta().GetMesh(),                                        // MESH
 					trafficLogging.GetMeta().GetName(),                                        // NAME
-					table.TimeSince(trafficLogging.GetMeta().GetModificationTime(), rootTime), //AGE
+					table.TimeSince(trafficLogging.GetMeta().GetModificationTime(), rootTime), // AGE
 				}
 			}
 		}(),

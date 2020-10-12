@@ -20,13 +20,14 @@ func GetDataplanes(log logr.Logger, ctx context.Context, rm manager.ReadOnlyReso
 		return nil, err
 	}
 	dataplanes.Items = ResolveAddresses(log, lookupIPFunc, dataplanes.Items)
-	rv := &core_mesh.DataplaneResourceList{}
+	filteredDataplanes := &core_mesh.DataplaneResourceList{}
 	for _, d := range dataplanes.Items {
 		if d.GetMeta().GetMesh() == mesh || d.Spec.IsIngress() {
-			_ = rv.AddItem(d)
+			_ = filteredDataplanes.AddItem(d)
 		}
 	}
-	return rv, nil
+
+	return filteredDataplanes, nil
 }
 
 // ResolveAddress resolves 'dataplane.networking.address' if it has DNS name in it. This is a crucial feature for

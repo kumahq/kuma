@@ -98,6 +98,11 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, err
 	}
 
+	externalServices, err := r.findExternalServices(pod)
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
+
 	others, err := r.findOtherDataplanes(pod)
 	if err != nil {
 		return kube_ctrl.Result{}, err
@@ -113,7 +118,7 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		}
 	}
 
-	if err := r.createOrUpdateDataplane(pod, services, others, vips); err != nil {
+	if err := r.createOrUpdateDataplane(pod, services, externalServices, others, vips); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
@@ -135,6 +140,28 @@ func (r *PodReconciler) findMatchingServices(pod *kube_core.Pod) ([]*kube_core.S
 	matchingServices := util_k8s.FindServices(allServices, util_k8s.AnySelector(), util_k8s.MatchServiceThatSelectsPod(pod))
 
 	return matchingServices, nil
+}
+
+func (r *PodReconciler) findExternalServices(pod *kube_core.Pod) ([]*mesh_k8s.ExternalService, error) {
+	ctx := context.Background()
+
+	// List all ExternalServices
+	allExternalServices := &mesh_k8s.ExternalServiceList{}
+	if err := r.List(ctx, allExternalServices); err != nil {
+		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
+		log.Error(err, "unable to list ExternalServices")
+		return nil, err
+	}
+
+	mesh := MeshFor(pod)
+	meshedExternalServices := []*mesh_k8s.ExternalService{}
+	for i := range allExternalServices.Items {
+		es := allExternalServices.Items[i]
+		if es.Mesh == mesh {
+			meshedExternalServices = append(meshedExternalServices, &es)
+		}
+	}
+	return meshedExternalServices, nil
 }
 
 func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dataplane, error) {
@@ -161,7 +188,13 @@ func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dat
 	return otherDataplanes, nil
 }
 
-func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*kube_core.Service, others []*mesh_k8s.Dataplane, vips dns.VIPList) error {
+func (r *PodReconciler) createOrUpdateDataplane(
+	pod *kube_core.Pod,
+	services []*kube_core.Service,
+	externalServices []*mesh_k8s.ExternalService,
+	others []*mesh_k8s.Dataplane,
+	vips dns.VIPList,
+) error {
 	ctx := context.Background()
 
 	dataplane := &mesh_k8s.Dataplane{
@@ -171,7 +204,7 @@ func (r *PodReconciler) createOrUpdateDataplane(pod *kube_core.Pod, services []*
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, others, vips); err != nil {
+		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, externalServices, others, vips); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {

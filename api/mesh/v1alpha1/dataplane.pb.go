@@ -30,7 +30,9 @@ type Dataplane struct {
 	//
 	// Settings defined here will override their respective defaults
 	// defined at a Mesh level.
-	Metrics              *MetricsBackend   `protobuf:"bytes,2,opt,name=metrics,proto3" json:"metrics,omitempty"`
+	Metrics *MetricsBackend `protobuf:"bytes,2,opt,name=metrics,proto3" json:"metrics,omitempty"`
+	// Probes describes list of endpoints which will redirect traffic from
+	// insecure port to localhost path
 	Probes               *Dataplane_Probes `protobuf:"bytes,3,opt,name=probes,proto3" json:"probes,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
@@ -292,8 +294,8 @@ type Dataplane_Networking_Inbound struct {
 	// networking.address.
 	Address string `protobuf:"bytes,5,opt,name=address,proto3" json:"address,omitempty"`
 	// Tags associated with an application this dataplane is deployed next to,
-	// e.g. service=web, version=1.0.
-	// `service` tag is mandatory.
+	// e.g. kuma.io/service=web, version=1.0.
+	// `kuma.io/service` tag is mandatory.
 	Tags                 map[string]string `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`

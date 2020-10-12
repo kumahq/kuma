@@ -11,7 +11,12 @@ import (
 
 const VIPListenPort = uint32(80)
 
-func VIPOutbounds(name string, dataplanes []*core_mesh.DataplaneResource, vips VIPList) []*mesh_proto.Dataplane_Networking_Outbound {
+func VIPOutbounds(
+	name string,
+	dataplanes []*core_mesh.DataplaneResource,
+	vips VIPList,
+	externalServices []*core_mesh.ExternalServiceResource,
+) []*mesh_proto.Dataplane_Networking_Outbound {
 	serviceVIPMap := map[string]string{}
 	services := []string{}
 	for _, dataplane := range dataplanes {
@@ -40,6 +45,17 @@ func VIPOutbounds(name string, dataplanes []*core_mesh.DataplaneResource, vips V
 						services = append(services, inService)
 					}
 				}
+			}
+		}
+	}
+
+	for _, externalService := range externalServices {
+		inService := externalService.Spec.Tags[mesh_proto.ServiceTag]
+		if _, found := serviceVIPMap[inService]; !found {
+			vip, err := ForwardLookup(vips, inService)
+			if err == nil {
+				serviceVIPMap[inService] = vip
+				services = append(services, inService)
 			}
 		}
 	}

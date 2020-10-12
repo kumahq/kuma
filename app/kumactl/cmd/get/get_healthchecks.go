@@ -63,7 +63,7 @@ func printHealthChecks(rootTime time.Time, healthChecks *mesh_core.HealthCheckRe
 				return []string{
 					healthCheck.Meta.GetMesh(),                                        // MESH
 					healthCheck.Meta.GetName(),                                        // NAME
-					table.TimeSince(healthCheck.Meta.GetModificationTime(), rootTime), //AGE
+					table.TimeSince(healthCheck.Meta.GetModificationTime(), rootTime), // AGE
 				}
 			}
 		}(),

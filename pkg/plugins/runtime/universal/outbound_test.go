@@ -83,6 +83,37 @@ var _ = Describe("UpdateOutbound", func() {
 			Expect(dp1.Spec.Networking.Outbound[0].Address).To(Equal("240.0.0.2"))
 		})
 
+		It("should not update dataplane outbounds when new service is added to another mesh", func() {
+			// when
+			err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("another-mesh", "another-mesh"))
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			err = rm.Create(context.Background(), &mesh.DataplaneResource{
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port: 8081,
+								Tags: map[string]string{
+									"kuma.io/service": "service-2",
+								},
+							},
+						},
+					},
+				},
+			}, store.CreateByKey("dp-2", "another-mesh"))
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			err = universal.UpdateOutbounds(context.Background(), rm, vips)
+			Expect(err).ToNot(HaveOccurred())
+			// then
+			dp1 := &mesh.DataplaneResource{}
+			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(0))
+		})
+
 		Context("outbounds already updated", func() {
 			BeforeEach(func() {
 				err := rm.Create(context.Background(), &mesh.DataplaneResource{

@@ -7,7 +7,12 @@ import (
 )
 
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
-func BuildEndpointMap(dataplanes []*mesh_core.DataplaneResource, zone string, mesh *mesh_core.MeshResource) core_xds.EndpointMap {
+func BuildEndpointMap(
+	dataplanes []*mesh_core.DataplaneResource,
+	zone string,
+	mesh *mesh_core.MeshResource,
+	externalServices []*mesh_core.ExternalServiceResource,
+) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
 		if dataplane.Spec.IsIngress() && dataplane.Spec.IsRemoteIngress(zone) && mesh.MTLSEnabled() {
@@ -40,5 +45,25 @@ func BuildEndpointMap(dataplanes []*mesh_core.DataplaneResource, zone string, me
 			}
 		}
 	}
+
+	for _, externalService := range externalServices {
+		service := externalService.Spec.GetService()
+
+		tlsEnabled := false
+		if externalService.Spec.Networking.Tls != nil {
+			tlsEnabled = externalService.Spec.Networking.Tls.Enabled
+		}
+
+		outbound[service] = append(outbound[service], core_xds.Endpoint{
+			Target: externalService.Spec.GetHost(),
+			Port:   externalService.Spec.GetPortUInt32(),
+			Tags:   externalService.Spec.GetTags(),
+			Weight: 1,
+			ExternalService: &core_xds.ExternalService{
+				TLSEnabled: tlsEnabled,
+			},
+		})
+	}
+
 	return outbound
 }

@@ -14,7 +14,6 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
-	kumacni "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/kuma-cni"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/tls"
@@ -26,34 +25,35 @@ var (
 )
 
 type InstallControlPlaneArgs struct {
-	Namespace                                 string           `helm:"namespace"`
-	ControlPlane_image_pullPolicy             string           `helm:"controlPlane.image.pullPolicy"`
-	ControlPlane_image_registry               string           `helm:"controlPlane.image.registry"`
-	ControlPlane_image_repository             string           `helm:"controlPlane.image.repository"`
-	ControlPlane_image_tag                    string           `helm:"controlPlane.image.tag"`
-	ControlPlane_service_name                 string           `helm:"controlPlane.service.name"`
-	ControlPlane_tls_cert                     string           `helm:"controlPlane.tls.cert"`
-	ControlPlane_tls_key                      string           `helm:"controlPlane.tls.key"`
-	ControlPlane_injectorFailurePolicy        string           `helm:"controlPlane.injectorFailurePolicy"`
-	ControlPlane_secrets                      []ImageEnvSecret `helm:"controlPlane.secrets"`
-	DataPlane_image_registry                  string           `helm:"dataPlane.image.registry"`
-	DataPlane_image_repository                string           `helm:"dataPlane.image.repository"`
-	DataPlane_image_tag                       string           `helm:"dataPlane.image.tag"`
-	DataPlane_initImage_registry              string           `helm:"dataPlane.initImage.registry"`
-	DataPlane_initImage_repository            string           `helm:"dataPlane.initImage.repository"`
-	DataPlane_initImage_tag                   string           `helm:"dataPlane.initImage.tag"`
-	ControlPlane_kdsGlobalAddress             string           `helm:"controlPlane.kdsGlobalAddress"`
-	Cni_enabled                               bool             `helm:"cni.enabled"`
-	Cni_image_registry                        string           `helm:"cni.image.registry"`
-	Cni_image_repository                      string           `helm:"cni.image.repository"`
-	Cni_image_tag                             string           `helm:"cni.image.tag"`
-	ControlPlane_mode                         string           `helm:"controlPlane.mode"`
-	ControlPlane_zone                         string           `helm:"controlPlane.zone"`
-	ControlPlane_globalRemoteSyncService_type string           `helm:"controlPlane.globalRemoteSyncService.type"`
-	Ingress_enabled                           bool             `helm:"ingress.enabled"`
-	Ingress_mesh                              string           `helm:"ingress.mesh"`
-	Ingress_drainTime                         string           `helm:"ingress.drainTime"`
-	Ingress_service_type                      string           `helm:"ingress.service.type"`
+	Namespace                                 string            `helm:"namespace"`
+	ControlPlane_image_pullPolicy             string            `helm:"controlPlane.image.pullPolicy"`
+	ControlPlane_image_registry               string            `helm:"controlPlane.image.registry"`
+	ControlPlane_image_repository             string            `helm:"controlPlane.image.repository"`
+	ControlPlane_image_tag                    string            `helm:"controlPlane.image.tag"`
+	ControlPlane_service_name                 string            `helm:"controlPlane.service.name"`
+	ControlPlane_tls_cert                     string            `helm:"controlPlane.tls.cert"`
+	ControlPlane_tls_key                      string            `helm:"controlPlane.tls.key"`
+	ControlPlane_injectorFailurePolicy        string            `helm:"controlPlane.injectorFailurePolicy"`
+	ControlPlane_secrets                      []ImageEnvSecret  `helm:"controlPlane.secrets"`
+	ControlPlane_envVars                      map[string]string `helm:"controlPlane.envVars"`
+	DataPlane_image_registry                  string            `helm:"dataPlane.image.registry"`
+	DataPlane_image_repository                string            `helm:"dataPlane.image.repository"`
+	DataPlane_image_tag                       string            `helm:"dataPlane.image.tag"`
+	DataPlane_initImage_registry              string            `helm:"dataPlane.initImage.registry"`
+	DataPlane_initImage_repository            string            `helm:"dataPlane.initImage.repository"`
+	DataPlane_initImage_tag                   string            `helm:"dataPlane.initImage.tag"`
+	ControlPlane_kdsGlobalAddress             string            `helm:"controlPlane.kdsGlobalAddress"`
+	Cni_enabled                               bool              `helm:"cni.enabled"`
+	Cni_image_registry                        string            `helm:"cni.image.registry"`
+	Cni_image_repository                      string            `helm:"cni.image.repository"`
+	Cni_image_tag                             string            `helm:"cni.image.tag"`
+	ControlPlane_mode                         string            `helm:"controlPlane.mode"`
+	ControlPlane_zone                         string            `helm:"controlPlane.zone"`
+	ControlPlane_globalRemoteSyncService_type string            `helm:"controlPlane.globalRemoteSyncService.type"`
+	Ingress_enabled                           bool              `helm:"ingress.enabled"`
+	Ingress_mesh                              string            `helm:"ingress.mesh"`
+	Ingress_drainTime                         string            `helm:"ingress.drainTime"`
+	Ingress_service_type                      string            `helm:"ingress.service.type"`
 }
 
 type ImageEnvSecret struct {
@@ -71,6 +71,7 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	ControlPlane_service_name:                 "kuma-control-plane",
 	ControlPlane_tls_cert:                     "",
 	ControlPlane_tls_key:                      "",
+	ControlPlane_envVars:                      map[string]string{},
 	ControlPlane_injectorFailurePolicy:        "Ignore",
 	DataPlane_image_registry:                  "kong-docker-kuma-docker.bintray.io",
 	DataPlane_image_repository:                "kuma-dp",
@@ -80,7 +81,7 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	DataPlane_initImage_tag:                   kuma_version.Build.Version,
 	Cni_image_registry:                        "docker.io",
 	Cni_image_repository:                      "lobkovilya/install-cni",
-	Cni_image_tag:                             "0.0.1",
+	Cni_image_tag:                             "0.0.2",
 	ControlPlane_mode:                         core.Standalone,
 	ControlPlane_zone:                         "",
 	ControlPlane_globalRemoteSyncService_type: "LoadBalancer",
@@ -151,6 +152,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.ControlPlane_tls_cert, "tls-cert", args.ControlPlane_tls_cert, "TLS certificate for Kuma Control Plane servers")
 	cmd.Flags().StringVar(&args.ControlPlane_tls_key, "tls-key", args.ControlPlane_tls_key, "TLS key for Kuma Control Plane servers")
 	cmd.Flags().StringVar(&args.ControlPlane_injectorFailurePolicy, "injector-failure-policy", args.ControlPlane_injectorFailurePolicy, "failue policy of the mutating web hook implemented by the Kuma Injector component")
+	cmd.Flags().StringToStringVar(&args.ControlPlane_envVars, "env-var", args.ControlPlane_envVars, "environment variables that will be passed to the control plane")
 	cmd.Flags().StringVar(&args.DataPlane_image_registry, "dataplane-registry", args.DataPlane_image_registry, "registry for the image of the Kuma DataPlane component")
 	cmd.Flags().StringVar(&args.DataPlane_image_repository, "dataplane-repository", args.DataPlane_image_repository, "repository for the image of the Kuma DataPlane component")
 	cmd.Flags().StringVar(&args.DataPlane_image_tag, "dataplane-version", args.DataPlane_image_tag, "version of the image of the Kuma DataPlane component")
@@ -222,12 +224,6 @@ func InstallCpTemplateFiles(args InstallControlPlaneArgs) (data.FileList, error)
 	if err != nil {
 		return nil, err
 	}
-	if args.Cni_enabled {
-		templateCNI, err := data.ReadFiles(kumacni.Templates)
-		if err != nil {
-			return nil, err
-		}
-		templateFiles = append(templateFiles, templateCNI...)
-	}
+
 	return templateFiles, nil
 }

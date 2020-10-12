@@ -60,6 +60,7 @@ type watches struct {
 	meshes             chan envoy_cache.Response
 	ingresses          chan envoy_cache.Response
 	dataplaneInsights  chan envoy_cache.Response
+	externalServices   chan envoy_cache.Response
 	circuitBreakers    chan envoy_cache.Response
 	faultInjections    chan envoy_cache.Response
 	healthChecks       chan envoy_cache.Response
@@ -74,6 +75,7 @@ type watches struct {
 	meshesCancel             func()
 	ingressesCancel          func()
 	dataplaneInsightsCancel  func()
+	externalServicesCancel   func()
 	circuitBreakersCancel    func()
 	faultInjectionsCancel    func()
 	healthChecksCancel       func()
@@ -88,6 +90,7 @@ type watches struct {
 	meshesNonce             string
 	ingressesNonce          string
 	dataplaneInsightsNonce  string
+	externalServiceNonce    string
 	circuitBreakersNonce    string
 	faultInjectionsNonce    string
 	healthChecksNonce       string
@@ -256,6 +259,16 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 			}
 			values.dataplaneInsightsNonce = nonce
 
+		case resp, more := <-values.externalServices:
+			if !more {
+				return status.Errorf(codes.Unavailable, "externalServices watch failed")
+			}
+			nonce, err := send(resp, mesh_core.ExternalServiceType)
+			if err != nil {
+				return err
+			}
+			values.externalServiceNonce = nonce
+
 		case resp, more := <-values.circuitBreakers:
 			if !more {
 				return status.Errorf(codes.Unavailable, "circuitBreakers watch failed")
@@ -404,6 +417,11 @@ func (s *server) process(stream stream, reqCh <-chan *envoy.DiscoveryRequest) (e
 					values.dataplaneInsightsCancel()
 				}
 				values.dataplaneInsights, values.dataplaneInsightsCancel = s.cache.CreateWatch(*req)
+			case requestResourceType == mesh_core.ExternalServiceType && (values.externalServiceNonce == "" || values.externalServiceNonce == nonce):
+				if values.externalServicesCancel != nil {
+					values.externalServicesCancel()
+				}
+				values.externalServices, values.externalServicesCancel = s.cache.CreateWatch(*req)
 			case requestResourceType == mesh_core.CircuitBreakerType && (values.circuitBreakersNonce == "" || values.circuitBreakersNonce == nonce):
 				if values.circuitBreakersCancel != nil {
 					values.circuitBreakersCancel()

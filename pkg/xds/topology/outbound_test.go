@@ -146,8 +146,10 @@ var _ = Describe("TrafficRoute", func() {
 				Items: []*mesh_core.DataplaneResource{backend, redisV1, redisV3, elasticEU, elasticUS},
 			}
 
+			externalServices := &mesh_core.ExternalServiceResourceList{}
+
 			// when
-			targets := BuildEndpointMap(dataplanes.Items, "zone-1", defaultMeshWithMTLS)
+			targets := BuildEndpointMap(dataplanes.Items, "zone-1", defaultMeshWithMTLS, externalServices.Items)
 
 			Expect(targets).To(HaveLen(4))
 			// and
@@ -212,14 +214,15 @@ var _ = Describe("TrafficRoute", func() {
 
 	Describe("BuildEndpointMap()", func() {
 		type testCase struct {
-			dataplanes []*mesh_core.DataplaneResource
-			mesh       *mesh_core.MeshResource
-			expected   core_xds.EndpointMap
+			dataplanes       []*mesh_core.DataplaneResource
+			externalServices []*mesh_core.ExternalServiceResource
+			mesh             *mesh_core.MeshResource
+			expected         core_xds.EndpointMap
 		}
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.dataplanes, "zone-1", given.mesh)
+				endpoints := BuildEndpointMap(given.dataplanes, "zone-1", given.mesh, given.externalServices)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},
@@ -413,6 +416,91 @@ var _ = Describe("TrafficRoute", func() {
 							Port:   6379,
 							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v1"},
 							Weight: 1,
+						},
+					},
+				},
+			}),
+			Entry("external service no TLS", testCase{
+				dataplanes: []*mesh_core.DataplaneResource{},
+				externalServices: []*mesh_core.ExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: mesh_proto.ExternalService{
+							Networking: &mesh_proto.ExternalService_Networking{
+								Address: "httpbin.org:80",
+								Tls:     nil,
+							},
+							Tags: map[string]string{"kuma.io/service": "redis"},
+						},
+					},
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{
+							Target:          "httpbin.org",
+							Port:            80,
+							Tags:            map[string]string{"kuma.io/service": "redis"},
+							Weight:          1,
+							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
+						},
+					},
+				},
+			}),
+			Entry("external service with TLS disabled", testCase{
+				dataplanes: []*mesh_core.DataplaneResource{},
+				externalServices: []*mesh_core.ExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: mesh_proto.ExternalService{
+							Networking: &mesh_proto.ExternalService_Networking{
+								Address: "httpbin.org:80",
+								Tls: &mesh_proto.ExternalService_Networking_TLS{
+									Enabled: false,
+								},
+							},
+							Tags: map[string]string{"kuma.io/service": "redis"},
+						},
+					},
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{
+							Target:          "httpbin.org",
+							Port:            80,
+							Tags:            map[string]string{"kuma.io/service": "redis"},
+							Weight:          1,
+							ExternalService: &core_xds.ExternalService{TLSEnabled: false},
+						},
+					},
+				},
+			}),
+			Entry("external service with TLS enabled", testCase{
+				dataplanes: []*mesh_core.DataplaneResource{},
+				externalServices: []*mesh_core.ExternalServiceResource{
+					{
+						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
+						Spec: mesh_proto.ExternalService{
+							Networking: &mesh_proto.ExternalService_Networking{
+								Address: "httpbin.org:80",
+								Tls: &mesh_proto.ExternalService_Networking_TLS{
+									Enabled: true,
+								},
+							},
+							Tags: map[string]string{"kuma.io/service": "redis"},
+						},
+					},
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{
+							Target:          "httpbin.org",
+							Port:            80,
+							Tags:            map[string]string{"kuma.io/service": "redis"},
+							Weight:          1,
+							ExternalService: &core_xds.ExternalService{TLSEnabled: true},
 						},
 					},
 				},
