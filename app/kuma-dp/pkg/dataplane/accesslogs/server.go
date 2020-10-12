@@ -87,6 +87,7 @@ func (s *accessLogServer) StreamAccessLogs(stream envoy_accesslog.AccessLogServi
 
 func (s *accessLogServer) Start(stop <-chan struct{}) error {
 	envoy_accesslog.RegisterAccessLogServiceServer(s.server, s)
+
 	lis, err := net.Listen("unix", s.address)
 	if err != nil {
 		return err
