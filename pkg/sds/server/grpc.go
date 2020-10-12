@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"net"
 
+	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
+
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 
-	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
 	sds_config "github.com/kumahq/kuma/pkg/config/sds"
@@ -52,14 +53,14 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	}
 	grpcServer := grpc.NewServer(grpcOptions...)
 
+	// register services
+	envoy_discovery.RegisterSecretDiscoveryServiceServer(grpcServer, s.server)
+	s.metrics.RegisterGRPC(grpcServer)
+
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
 	if err != nil {
 		return err
 	}
-
-	// register services
-	envoy_discovery.RegisterSecretDiscoveryServiceServer(grpcServer, s.server)
-	s.metrics.RegisterGRPC(grpcServer)
 
 	errChan := make(chan error)
 	go func() {

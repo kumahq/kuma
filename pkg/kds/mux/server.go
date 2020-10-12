@@ -64,14 +64,14 @@ func (s *server) Start(stop <-chan struct{}) error {
 	}
 	grpcServer := grpc.NewServer(grpcOptions...)
 
+	// register services
+	mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
+	s.metrics.RegisterGRPC(grpcServer)
+
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
 	if err != nil {
 		return err
 	}
-
-	// register services
-	mesh_proto.RegisterMultiplexServiceServer(grpcServer, s)
-	s.metrics.RegisterGRPC(grpcServer)
 
 	errChan := make(chan error)
 	go func() {
