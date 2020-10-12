@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 
@@ -18,7 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	"github.com/kumahq/kuma/pkg/core/permissions"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -40,19 +42,27 @@ import (
 )
 
 var (
-	xdsServerLog  = core.Log.WithName("xds-server")
-	meshResources = []core_model.ResourceType{
-		mesh_core.DataplaneType,
-		mesh_core.CircuitBreakerType,
-		mesh_core.FaultInjectionType,
-		mesh_core.HealthCheckType,
-		mesh_core.TrafficLogType,
-		mesh_core.TrafficPermissionType,
-		mesh_core.TrafficRouteType,
-		mesh_core.TrafficTraceType,
-		mesh_core.ProxyTemplateType,
-	}
+	xdsServerLog = core.Log.WithName("xds-server")
+	meshResources = meshResourceTypes(map[core_model.ResourceType]bool{
+		core_mesh.DataplaneInsightType:  true,
+		core_mesh.DataplaneOverviewType: true,
+		core_system.ConfigType:          true,
+	})
 )
+
+func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.ResourceType {
+	types := []core_model.ResourceType{}
+	for _, typ := range registry.Global().ListTypes() {
+		r, err := registry.Global().NewObject(typ)
+		if err != nil {
+			panic(err)
+		}
+		if r.Scope() == core_model.ScopeMesh && !exclude[typ] {
+			types = append(types, typ)
+		}
+	}
+	return types
+}
 
 func SetupServer(rt core_runtime.Runtime) error {
 	reconciler := DefaultReconciler(rt)
@@ -212,7 +222,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				}()
 
 				ctx := context.Background()
-				dataplane := &mesh_core.DataplaneResource{}
+				dataplane := &core_mesh.DataplaneResource{}
 				proxyID := xds.FromResourceKey(key)
 
 				if err := rt.ReadOnlyResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
@@ -228,7 +238,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 
 				if dataplane.Spec.IsIngress() {
 					// update Ingress
-					allMeshDataplanes := &mesh_core.DataplaneResourceList{}
+					allMeshDataplanes := &core_mesh.DataplaneResourceList{}
 					if err := rt.ReadOnlyResourceManager().List(ctx, allMeshDataplanes); err != nil {
 						return err
 					}
@@ -257,10 +267,10 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				if prevHash != "" && snapshotHash == prevHash {
 					return nil
 				}
-				log.V(1).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)
+				log.V(0).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)
 				prevHash = snapshotHash
 
-				mesh := &mesh_core.MeshResource{}
+				mesh := &core_mesh.MeshResource{}
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
@@ -269,7 +279,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				if err != nil {
 					return err
 				}
-				externalServices := &mesh_core.ExternalServiceResourceList{}
+				externalServices := &core_mesh.ExternalServiceResourceList{}
 				if err := rt.ReadOnlyResourceManager().List(ctx, externalServices, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
 					return err
 				}
