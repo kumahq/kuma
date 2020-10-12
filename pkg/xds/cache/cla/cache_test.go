@@ -95,7 +95,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "backend")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
-		Expect(countingManager.listQueries).To(Equal(1))
+		Expect(countingManager.listQueries).To(Equal(2))
 
 		expected, err := ioutil.ReadFile(filepath.Join("testdata", "cla.get.0.json"))
 		Expect(err).ToNot(HaveOccurred())
@@ -108,7 +108,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		_, err = claCache.GetCLA(context.Background(), "mesh-0", "backend")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
-		Expect(countingManager.listQueries).To(Equal(1))
+		Expect(countingManager.listQueries).To(Equal(2))
 
 		By("updating Dataplane in store and waiting until cache invalidation")
 		dp := &core_mesh.DataplaneResource{}
@@ -123,7 +123,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "backend")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(2))
-		Expect(countingManager.listQueries).To(Equal(2))
+		Expect(countingManager.listQueries).To(Equal(4))
 
 		expected, err = ioutil.ReadFile(filepath.Join("testdata", "cla.get.1.json"))
 		Expect(err).ToNot(HaveOccurred())
