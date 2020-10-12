@@ -183,7 +183,7 @@ metadata:
 		cluster.(*K8sCluster).WaitNamespaceDelete(TestNamespace)
 	})
 
-	It("Should route to external-service", func() {
+	It("should route to external-service", func() {
 		err := YamlK8s(fmt.Sprintf(trafficRoute, es1))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -194,7 +194,7 @@ metadata:
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 	})
 
-	It("Should route to external-service over tls", func() {
+	It("should route to external-service over tls", func() {
 		err := YamlK8s(fmt.Sprintf(trafficRoute, es2))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -205,9 +205,23 @@ metadata:
 		Expect(stdout).To(ContainSubstring("HTTPS"))
 	})
 
-	It("Should disable passthrough", func() {
+	It("should disable passthrough", func() {
+		// given Mesh wih passthrough enabled
+		err := YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true"))(cluster)
+		Expect(err).ToNot(HaveOccurred())
 
-		_, err := retry.DoWithRetryE(cluster.GetTesting(), "passthrough access to service", 5, DefaultTimeout, func() (string, error) {
+		// then communication outside of the Mesh works
+		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+
+		// when passthrough is disabled on the Mesh
+		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then accessing the external service is no logne possible
+		_, err = retry.DoWithRetryE(cluster.GetTesting(), "passthrough access to service", 5, DefaultTimeout, func() (string, error) {
 			_, _, err := cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace")
 			if err != nil {
@@ -217,14 +231,6 @@ metadata:
 			return "", nil
 		})
 		Expect(err).To(HaveOccurred())
-
-		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 
 })
