@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/dns/components"
-
 	"github.com/spf13/cobra"
 
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
@@ -17,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
+	"github.com/kumahq/kuma/pkg/dns/components"
 	"github.com/kumahq/kuma/pkg/gc"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"

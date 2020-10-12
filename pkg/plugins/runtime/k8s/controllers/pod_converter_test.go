@@ -152,7 +152,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(dataplane, pod, services, otherDataplanes, dns.VIPList{})
+			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, dns.VIPList{})
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -245,7 +245,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(dataplane, pod, services, nil, dns.VIPList{})
+				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, dns.VIPList{})
 
 				// then
 				Expect(err).To(HaveOccurred())
