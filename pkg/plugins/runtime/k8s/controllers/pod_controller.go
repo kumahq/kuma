@@ -311,6 +311,9 @@ type ConfigMapToPodsMapper struct {
 }
 
 func (m *ConfigMapToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
+	if obj.Meta.GetName() != dns.ConfigKey || obj.Meta.GetNamespace() != "kuma-system" {
+		return nil
+	}
 	pods := &kube_core.PodList{}
 	if err := m.Client.List(context.Background(), pods); err != nil {
 		m.Log.WithValues("service", obj.Meta).Error(err, "failed to fetch Pods")

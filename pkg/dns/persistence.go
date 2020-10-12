@@ -21,12 +21,12 @@ func NewDNSPersistence(manager config_manager.ConfigManager) *DNSPersistence {
 	}
 }
 
-const dnsConfigKey = "kuma-dns-vips"
+const ConfigKey = "kuma-dns-vips"
 
 func (p *DNSPersistence) Get() (VIPList, error) {
 	viplist := VIPList{}
 	resource := &config_model.ConfigResource{}
-	err := p.manager.Get(context.Background(), resource, store.GetByKey(dnsConfigKey, ""))
+	err := p.manager.Get(context.Background(), resource, store.GetByKey(ConfigKey, ""))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
 			return viplist, nil
@@ -44,10 +44,10 @@ func (p *DNSPersistence) Get() (VIPList, error) {
 
 func (p *DNSPersistence) Set(viplist VIPList) error {
 	resource := &config_model.ConfigResource{}
-	err := p.manager.Get(context.Background(), resource, store.GetByKey(dnsConfigKey, ""))
+	err := p.manager.Get(context.Background(), resource, store.GetByKey(ConfigKey, ""))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
-			if err := p.manager.Create(context.Background(), resource, store.CreateByKey(dnsConfigKey, "")); err != nil {
+			if err := p.manager.Create(context.Background(), resource, store.CreateByKey(ConfigKey, "")); err != nil {
 				return errors.Wrap(err, "could not create config")
 			}
 		} else {
