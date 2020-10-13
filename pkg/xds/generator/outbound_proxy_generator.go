@@ -148,13 +148,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 			if clusters.Get(clusterName).RequireTLS() {
 				edsClusterBuilder = edsClusterBuilder.Configure(envoy_clusters.ClientSideTLS(proxy.OutboundTargets[serviceName][0].Target))
 			}
-			protocol := o.inferProtocol(proxy, []envoy_common.ClusterSubset{
-				{
-					ClusterName: clusterName,
-					Weight:      0,
-					Tags:        clusters.Tags(clusterName)[0],
-				},
-			})
+			protocol := o.inferProtocol(proxy, clusters.Get(clusterName).Subsets())
 			switch protocol {
 			case mesh_core.ProtocolHTTP2, mesh_core.ProtocolGRPC:
 				edsClusterBuilder = edsClusterBuilder.Configure(envoy_clusters.Http2())
