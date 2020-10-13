@@ -28,7 +28,7 @@ func BuildEndpointMap(
 					Weight: ingress.Instances,
 				})
 			}
-			return outbound
+			continue
 		}
 		if !dataplane.Spec.IsIngress() {
 			for _, inbound := range dataplane.Spec.Networking.GetInbound() {
