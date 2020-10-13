@@ -153,6 +153,28 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							}},
 						},
 					},
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 18080,
+					}: &mesh_core.TrafficRouteResource{
+						Spec: mesh_proto.TrafficRoute{
+							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+								Weight:      1,
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "es", "kuma.io/protocol": "http"},
+							}},
+						},
+					},
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 18080,
+					}: &mesh_core.TrafficRouteResource{
+						Spec: mesh_proto.TrafficRoute{
+							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
+								Weight:      1,
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
+							}},
+						},
+					},
 				},
 				OutboundSelectors: model.DestinationMap{
 					"api-http": model.TagSelectorSet{
@@ -174,6 +196,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						{"kuma.io/service": "db", "role": "master"},
 						{"kuma.io/service": "db", "role": "replica"},
 						{"kuma.io/service": "db", "role": "canary"},
+					},
+					"es": model.TagSelectorSet{
+						{"kuma.io/service": "es", "kuma.io/protocol": "http"},
+						{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
 					},
 				},
 				OutboundTargets: model.EndpointMap{
@@ -240,6 +266,24 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							Port:   5432,
 							Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
 							Weight: 1,
+						},
+					},
+					"es": []model.Endpoint{
+						{
+							Target:          "10.0.0.1",
+							Port:            10001,
+							Tags:            map[string]string{"kuma.io/service": "es", "kuma.io/protocol": "http"},
+							Weight:          1,
+							ExternalService: &model.ExternalService{TLSEnabled: false},
+						},
+					},
+					"es2": []model.Endpoint{
+						{
+							Target:          "10.0.0.2",
+							Port:            10002,
+							Tags:            map[string]string{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
+							Weight:          1,
+							ExternalService: &model.ExternalService{TLSEnabled: false},
 						},
 					},
 				},
@@ -353,6 +397,44 @@ var _ = Describe("OutboundProxyGenerator", func() {
                 redirectPortInbound: 15006
 `,
 			expected: "04.envoy.golden.yaml",
+		}),
+		FEntry("05. transparent_proxying=true, mtls=true, outbound=1 with ExternalService", testCase{
+			ctx: mtlsCtx,
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              inbound:
+              - port: 8080
+                tags:
+                  kuma.io/service: web
+              outbound:
+              - port: 18080
+                tags:
+                  kuma.io/service: es
+              transparentProxying:
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
+`,
+			expected: "05.envoy.golden.yaml",
+		}),
+		FEntry("06. transparent_proxying=true, mtls=true, outbound=1 with ExternalService http2", testCase{
+			ctx: mtlsCtx,
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              inbound:
+              - port: 8080
+                tags:
+                  kuma.io/service: web
+              outbound:
+              - port: 18080
+                tags:
+                  kuma.io/service: es2
+              transparentProxying:
+                redirectPortOutbound: 15001
+                redirectPortInbound: 15006
+`,
+			expected: "06.envoy.golden.yaml",
 		}),
 	)
 
