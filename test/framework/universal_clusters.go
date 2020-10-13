@@ -34,6 +34,10 @@ func NewUniversalClusters(clusterNames []string, verbose bool) (Clusters, error)
 	}, nil
 }
 
+func (cs *UniversalClusters) Name() string {
+	panic("not implemented")
+}
+
 func (cs *UniversalClusters) DismissCluster() error {
 	for name, c := range cs.clusters {
 		if err := c.DismissCluster(); err != nil {

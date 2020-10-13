@@ -74,7 +74,7 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Meta.GetMesh()).To(Equal("default"))
 		// and
 		Expect(resource.Spec.Networking.Address).To(Equal("2.2.2.2"))
-		//and
+		// and
 		Expect(resource.Spec.Networking.Inbound).To(HaveLen(1))
 		Expect(resource.Spec.Networking.Inbound[0].Address).To(Equal("1.1.1.1"))
 		Expect(resource.Spec.Networking.Inbound[0].Port).To(Equal(uint32(80)))

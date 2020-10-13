@@ -111,6 +111,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 			ServiceGetter: mgr.GetClient(),
 			Zone:          rt.Config().Multicluster.Remote.Zone,
 		},
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -136,7 +137,7 @@ func addDefaulter(mgr kube_ctrl.Manager, gvk kube_schema.GroupVersionKind, facto
 }
 
 func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
-	return fmt.Sprintf("/default-%s-%s-%s", strings.Replace(gvk.Group, ".", "-", -1), gvk.Version, strings.ToLower(gvk.Kind))
+	return fmt.Sprintf("/default-%s-%s-%s", strings.ReplaceAll(gvk.Group, ".", "-"), gvk.Version, strings.ToLower(gvk.Kind))
 }
 
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {

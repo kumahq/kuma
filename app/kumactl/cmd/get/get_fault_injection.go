@@ -33,7 +33,7 @@ func newGetFaultInjectionCmd(pctx *getContext) *cobra.Command {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)
 				}
-				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
+				return errors.Wrapf(err, "failed to get fault an injection in mesh %s", currentMesh)
 			}
 			faultInjections := &mesh.FaultInjectionResourceList{
 				Items: []*mesh.FaultInjectionResource{faultInjection},

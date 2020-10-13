@@ -17,6 +17,7 @@ var (
 		mesh.MeshType,
 		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
+		mesh.ExternalServiceType,
 		mesh.CircuitBreakerType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,

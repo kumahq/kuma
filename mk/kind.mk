@@ -21,8 +21,8 @@ define KIND_EXAMPLE_DATAPLANE_NAME
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
 endef
 
-CI_KIND_VERSION ?= v0.8.1
-CI_KUBERNETES_VERSION ?= v1.18.2@sha256:7b27a6d0f2517ff88ba444025beae41491b016bc6af573ba467b70c5e8e0d85f
+CI_KIND_VERSION ?= v0.9.0
+CI_KUBERNETES_VERSION ?= v1.18.8@sha256:f4bcc97a0ad6e7abaf3f643d890add7efe6ee4ab90baeb374b4f41a4c95567eb
 
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 
@@ -117,7 +117,7 @@ kind/deploy/example-app:
 
 .PHONY: run/k8s
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
-	@KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(MAKE) crd/upgrade -C pkg/plugins/resources/k8s/native
 	KUBECONFIG=$(KIND_KUBECONFIG) \
 	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
 	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \

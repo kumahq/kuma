@@ -43,6 +43,7 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 
 		// given
 		dataplanes := core_mesh.DataplaneResourceList{}
+		externalServices := core_mesh.ExternalServiceResourceList{}
 		vipList := dns.VIPList{}
 		for i := 1; i <= 5; i++ {
 			service := "service-" + strconv.Itoa(i)
@@ -72,7 +73,7 @@ var _ = Describe("PatchDataplaneWithVIPOutbounds", func() {
 		resolver.SetVIPs(vipList)
 
 		// when
-		err := topology.PatchDataplaneWithVIPOutbounds(dataplane, &dataplanes, resolver)
+		err := topology.PatchDataplaneWithVIPOutbounds(dataplane, &dataplanes, &externalServices, resolver)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		// and

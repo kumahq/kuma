@@ -9,9 +9,11 @@ import (
 )
 
 type ClusterSubset struct {
-	ClusterName string
-	Weight      uint32
-	Tags        Tags
+	ClusterName       string
+	Weight            uint32
+	Tags              Tags
+	IsExternalService bool
+	RequiresTLS       bool
 }
 
 type Tags map[string]string
@@ -82,7 +84,39 @@ func DistinctTags(tags []Tags) []Tags {
 	return result
 }
 
-type Clusters map[string][]ClusterSubset
+type Cluster struct {
+	subsets            []ClusterSubset
+	hasExternalService bool
+	requireTLS         bool
+}
+
+func (c *Cluster) Add(subset ClusterSubset) {
+	c.subsets = append(c.subsets, subset)
+	if subset.IsExternalService {
+		c.hasExternalService = true
+	}
+	if subset.RequiresTLS {
+		c.requireTLS = true
+	}
+}
+
+func (c *Cluster) Tags() []Tags {
+	var result []Tags
+	for _, info := range c.subsets {
+		result = append(result, info.Tags)
+	}
+	return result
+}
+
+func (c *Cluster) HasExternalService() bool {
+	return c.hasExternalService
+}
+
+func (c *Cluster) RequireTLS() bool {
+	return c.requireTLS
+}
+
+type Clusters map[string]*Cluster
 
 func (c Clusters) ClusterNames() []string {
 	var keys []string
@@ -95,14 +129,17 @@ func (c Clusters) ClusterNames() []string {
 
 func (c Clusters) Add(infos ...ClusterSubset) {
 	for _, info := range infos {
-		c[info.ClusterName] = append(c[info.ClusterName], info)
+		if c[info.ClusterName] == nil {
+			c[info.ClusterName] = &Cluster{}
+		}
+		c[info.ClusterName].Add(info)
 	}
 }
 
+func (c Clusters) Get(name string) *Cluster {
+	return c[name]
+}
+
 func (c Clusters) Tags(name string) []Tags {
-	var result []Tags
-	for _, info := range c[name] {
-		result = append(result, info.Tags)
-	}
-	return result
+	return c[name].Tags()
 }

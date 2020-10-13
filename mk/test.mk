@@ -50,7 +50,7 @@ test/k8s: test/module
 
 .PHONY: test/module
 test/module:
-	GO_TEST='${GO_TEST}' GO_TEST_OPTS='${GO_TEST_OPTS}' COVERAGE_PROFILE='${COVERAGE_PROFILE}' make test -C ${MODULE}
+	GO_TEST='${GO_TEST}' GO_TEST_OPTS='${GO_TEST_OPTS}' COVERAGE_PROFILE='${COVERAGE_PROFILE}' $(MAKE) test -C ${MODULE}
 
 .PHONY: test/kuma-cp
 test/kuma-cp: PKG_LIST=./app/kuma-cp/... ./pkg/config/app/kuma-cp/...

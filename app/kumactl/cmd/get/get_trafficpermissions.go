@@ -63,7 +63,7 @@ func printTrafficPermissions(rootTime time.Time, trafficPermissions *mesh.Traffi
 				return []string{
 					trafficPermission.GetMeta().GetMesh(),                                        // MESH
 					trafficPermission.GetMeta().GetName(),                                        // NAME
-					table.TimeSince(trafficPermission.GetMeta().GetModificationTime(), rootTime), //AGE
+					table.TimeSince(trafficPermission.GetMeta().GetModificationTime(), rootTime), // AGE
 				}
 			}
 		}(),

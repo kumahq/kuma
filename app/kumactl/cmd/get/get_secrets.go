@@ -64,7 +64,7 @@ func printSecrets(rootTime time.Time, secrets []*system.SecretResource, out io.W
 				return []string{
 					secret.Meta.GetMesh(), // MESH
 					secret.Meta.GetName(), // NAME
-					table.TimeSince(secret.Meta.GetModificationTime(), rootTime), //AGE
+					table.TimeSince(secret.Meta.GetModificationTime(), rootTime), // AGE
 				}
 			}
 		}(),
