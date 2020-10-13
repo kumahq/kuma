@@ -97,7 +97,7 @@ type Injector struct {
 	VirtualProbesEnabled bool `yaml:"virtualProbesEnabled" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
 	// VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
 	VirtualProbesPort uint32 `yaml:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
-	// Configuration for a traffic that is intercepted by sidecar
+	// SidecarTraffic for a traffic that is intercepted by sidecar
 	SidecarTraffic SidecarTraffic `yaml:"sidecarTraffic"`
 	// CaCertFile is CA certificate which will be used to verify a connection to the control plane
 	CaCertFile string `yaml:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
