@@ -44,9 +44,10 @@ const (
 type PodReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder
-	Scheme       *kube_runtime.Scheme
-	Log          logr.Logger
-	PodConverter PodConverter
+	Scheme          *kube_runtime.Scheme
+	Log             logr.Logger
+	PodConverter    PodConverter
+	SystemNamespace string
 }
 
 func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -74,6 +75,9 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, err
 	}
 	if exist && enabled {
+		if pod.Namespace != r.SystemNamespace {
+			return kube_ctrl.Result{}, errors.Errorf("Ingress can only be deployed in system namespace %q", r.SystemNamespace)
+		}
 		services, err := r.findMatchingServices(pod)
 		if err != nil {
 			return kube_ctrl.Result{}, err
