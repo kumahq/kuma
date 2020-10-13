@@ -53,14 +53,14 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	}
 	grpcServer := grpc.NewServer(grpcOptions...)
 
+	// register services
+	envoy_discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, s.server)
+	s.metrics.RegisterGRPC(grpcServer)
+
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.port))
 	if err != nil {
 		return err
 	}
-
-	// register services
-	envoy_discovery.RegisterAggregatedDiscoveryServiceServer(grpcServer, s.server)
-	s.metrics.RegisterGRPC(grpcServer)
 
 	errChan := make(chan error)
 	go func() {
