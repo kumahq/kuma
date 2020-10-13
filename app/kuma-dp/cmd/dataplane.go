@@ -3,8 +3,6 @@ package cmd
 import (
 	"io/ioutil"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -49,10 +47,6 @@ func readDataplaneResource(cmd *cobra.Command, cfg *kuma_dp.Config) (*rest.Resou
 	}
 	if err := core_mesh.ValidateMeta(res.Meta.GetName(), res.Meta.GetMesh(), model.ScopeMesh); err.HasViolations() {
 		return nil, &err
-	}
-
-	if res.Spec.(*v1alpha1.Dataplane).Networking.TransparentProxying != nil && len(res.Spec.(*v1alpha1.Dataplane).Networking.Outbound) != 0 {
-		return nil, errors.New("dataplanes with TransparentProxying shouldn't have predefined Outbound interfaces")
 	}
 
 	return res, nil
