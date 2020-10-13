@@ -1,0 +1,14 @@
+apiVersion: kind.x-k8s.io/v1alpha4
+kind: Cluster
+networking:
+  podSubnet: "10.240.0.0/16"
+  serviceSubnet: "10.0.0.0/16"
+  disableDefaultCNI: true
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
