@@ -220,7 +220,7 @@ metadata:
 		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then accessing the external service is no logne possible
+		// then accessing the external service is no longer possible
 		_, err = retry.DoWithRetryE(cluster.GetTesting(), "passthrough access to service", 5, DefaultTimeout, func() (string, error) {
 			_, _, err := cluster.Exec("", "", "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace")

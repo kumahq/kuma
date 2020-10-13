@@ -312,9 +312,9 @@ func (m *CertificateAuthorityBackend_DpCert_Rotation) GetExpiration() string {
 	return ""
 }
 
-// Networking defines he networking configuration of the mesh
+// Networking defines the networking configuration of the mesh
 type Networking struct {
-	// Outbounf settings
+	// Outbound settings
 	Outbound             *Networking_Outbound `protobuf:"bytes,1,opt,name=outbound,proto3" json:"outbound,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`

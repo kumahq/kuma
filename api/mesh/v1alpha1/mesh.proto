@@ -73,7 +73,7 @@ message CertificateAuthorityBackend {
   google.protobuf.Struct conf = 4;
 }
 
-// Networking defines he networking configuration of the mesh
+// Networking defines the networking configuration of the mesh
 message Networking {
 
   // Outbound describes the common mesh outbound settings
@@ -82,7 +82,7 @@ message Networking {
     google.protobuf.BoolValue passthrough = 1;
   }
 
-  // Outbounf settings
+  // Outbound settings
   Outbound outbound = 1;
 }
 
