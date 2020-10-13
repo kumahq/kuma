@@ -84,6 +84,60 @@ var _ = Describe("PodReconciler", func() {
 					PodIP: "192.168.0.1",
 				},
 			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "pod-ingress",
+					Annotations: map[string]string{
+						"kuma.io/sidecar-injected": "true",
+						"kuma.io/ingress":          "enabled",
+					},
+					Labels: map[string]string{
+						"app": "ingress",
+					},
+				},
+				Status: kube_core.PodStatus{
+					PodIP: "192.168.0.1",
+				},
+			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "kuma-system",
+					Name:      "pod-ingress",
+					Annotations: map[string]string{
+						"kuma.io/sidecar-injected": "true",
+						"kuma.io/ingress":          "enabled",
+					},
+					Labels: map[string]string{
+						"app": "ingress",
+					},
+				},
+				Status: kube_core.PodStatus{
+					PodIP: "192.168.0.1",
+				},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace:   "kuma-system",
+					Name:        "ingress",
+					Annotations: map[string]string{},
+				},
+				Spec: kube_core.ServiceSpec{
+					ClusterIP: "192.168.0.1",
+					Ports: []kube_core.ServicePort{
+						{
+							Port: 80,
+							TargetPort: kube_intstr.IntOrString{
+								Type:   kube_intstr.Int,
+								IntVal: 8080,
+							},
+						},
+					},
+					Selector: map[string]string{
+						"app": "ingress",
+					},
+				},
+			},
 			&kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
@@ -118,10 +172,11 @@ var _ = Describe("PodReconciler", func() {
 			})
 
 		reconciler = &PodReconciler{
-			Client:        kubeClient,
-			EventRecorder: kube_record.NewFakeRecorder(10),
-			Scheme:        k8sClientScheme,
-			Log:           core.Log.WithName("test"),
+			Client:          kubeClient,
+			EventRecorder:   kube_record.NewFakeRecorder(10),
+			Scheme:          k8sClientScheme,
+			Log:             core.Log.WithName("test"),
+			SystemNamespace: "kuma-system",
 		}
 	})
 
@@ -168,6 +223,33 @@ var _ = Describe("PodReconciler", func() {
 		Expect(err).ToNot(HaveOccurred())
 		// and
 		Expect(dataplanes.Items).To(HaveLen(0))
+	})
+
+	It("should not reconcile Ingress with namespace other than system", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-ingress"},
+		}
+
+		// when
+		_, err := reconciler.Reconcile(req)
+
+		// then
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal(`Ingress can only be deployed in system namespace "kuma-system"`))
+	})
+
+	It("should reconcile Ingress with system namespace", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "kuma-system", Name: "pod-ingress"},
+		}
+
+		// when
+		_, err := reconciler.Reconcile(req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should ignore Pods without Kuma sidecar", func() {
