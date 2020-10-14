@@ -49,19 +49,18 @@ const (
 
 	maxClusters = 3
 
-	kumaNamespace   = "kuma-system"
-	kumaServiceName = "kuma-control-plane"
-
-	kumaImageRegistry = "kuma"
-	kumaCPImageRepo   = "kuma-cp"
-	kumaDPImageRepo   = "kuma-dp"
-	kumaInitImageRepo = "kuma-init"
-
 	confPath = "/kuma/kuma-cp.conf"
-
-	helmChartPath = "../../deployments/charts/kuma"
 
 	kumaCPAPIPort        = 5681
 	kumaCPAdminPort      = 5679
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 )
+
+var HelmChartPath = "../../deployments/charts/kuma"
+var KumaNamespace = "kuma-system"
+var KumaServiceName = "kuma-control-plane"
+
+var KumaImageRegistry = "kuma"
+var KumaCPImageRepo = "kuma-cp"
+var KumaDPImageRepo = "kuma-dp"
+var KumaInitImageRepo = "kuma-init"
