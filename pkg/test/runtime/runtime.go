@@ -19,6 +19,7 @@ import (
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
@@ -64,6 +65,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 	builder.WithLookupIP(net.LookupIP)
+	builder.WithDpServer(dp_server.NewDpServer(*cfg.DpServer, metrics))
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)

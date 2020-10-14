@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -57,6 +58,7 @@ type Builder struct {
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
+	dps      *dp_server.DpServer
 	*runtimeInfo
 }
 
@@ -156,6 +158,11 @@ func (b *Builder) WithMetrics(metrics metrics.Metrics) *Builder {
 	return b
 }
 
+func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
+	b.dps = dps
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -190,6 +197,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.metrics == nil {
 		return nil, errors.Errorf("Metrics has not been configured")
 	}
+	if b.dps == nil {
+		return nil, errors.Errorf("DpServer has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -206,6 +216,7 @@ func (b *Builder) Build() (Runtime, error) {
 			leadInfo: b.leadInfo,
 			lif:      b.lif,
 			metrics:  b.metrics,
+			dps:      b.dps,
 		},
 		Manager: b.cm,
 	}, nil

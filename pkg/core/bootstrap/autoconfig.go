@@ -28,21 +28,13 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 }
 
 func autoconfigureServersTLS(cfg *kuma_cp.Config) {
-	if cfg.XdsServer.TlsCertFile == "" {
-		cfg.XdsServer.TlsCertFile = cfg.General.TlsCertFile
-		cfg.XdsServer.TlsKeyFile = cfg.General.TlsKeyFile
-	}
-	if cfg.BootstrapServer.TlsCertFile == "" {
-		cfg.BootstrapServer.TlsCertFile = cfg.General.TlsCertFile
-		cfg.BootstrapServer.TlsKeyFile = cfg.General.TlsKeyFile
-	}
-	if cfg.SdsServer.TlsCertFile == "" {
-		cfg.SdsServer.TlsCertFile = cfg.General.TlsCertFile
-		cfg.SdsServer.TlsKeyFile = cfg.General.TlsKeyFile
-	}
 	if cfg.Multicluster.Global.KDS.TlsCertFile == "" {
 		cfg.Multicluster.Global.KDS.TlsCertFile = cfg.General.TlsCertFile
 		cfg.Multicluster.Global.KDS.TlsKeyFile = cfg.General.TlsKeyFile
+	}
+	if cfg.DpServer.TlsCertFile == "" {
+		cfg.DpServer.TlsCertFile = cfg.General.TlsCertFile
+		cfg.DpServer.TlsKeyFile = cfg.General.TlsKeyFile
 	}
 }
 
@@ -70,7 +62,7 @@ func autoconfigureTLS(cfg *kuma_cp.Config) error {
 func autoconfigureCatalog(cfg *kuma_cp.Config) {
 	bootstrapUrl := cfg.ApiServer.Catalog.Bootstrap.Url
 	if len(bootstrapUrl) == 0 {
-		bootstrapUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.BootstrapServer.Port)
+		bootstrapUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.DpServer.Port)
 	}
 	madsUrl := cfg.ApiServer.Catalog.MonitoringAssignment.Url
 	if len(madsUrl) == 0 {
@@ -116,7 +108,7 @@ func autoconfigBootstrapXdsParams(cfg *kuma_cp.Config) {
 		cfg.BootstrapServer.Params.XdsHost = cfg.General.AdvertisedHostname
 	}
 	if cfg.BootstrapServer.Params.XdsPort == 0 {
-		cfg.BootstrapServer.Params.XdsPort = uint32(cfg.XdsServer.GrpcPort)
+		cfg.BootstrapServer.Params.XdsPort = uint32(cfg.DpServer.Port)
 	}
 }
 

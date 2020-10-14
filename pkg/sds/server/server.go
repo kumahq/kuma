@@ -5,6 +5,7 @@ import (
 	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
@@ -73,11 +74,9 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	srv := envoy_server.NewServer(context.Background(), cache, callbacks)
 
-	return rt.Add(&grpcServer{
-		server:  srv,
-		config:  *rt.Config().SdsServer,
-		metrics: rt.Metrics(),
-	})
+	sdsServerLog.Info("registering Secret Discovery Service in Dataplane Server")
+	envoy_discovery.RegisterSecretDiscoveryServiceServer(rt.DpServer().GRPCServer(), srv)
+	return nil
 }
 
 func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_server.Callbacks, error) {

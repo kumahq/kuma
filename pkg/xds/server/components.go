@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 
+	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -101,22 +102,15 @@ func SetupServer(rt core_runtime.Runtime) error {
 	}
 
 	srv := NewServer(rt.XDS().Cache(), callbacks)
-	return rt.Add(
-		// xDS gRPC API
-		&grpcServer{
-			server:      srv,
-			port:        rt.Config().XdsServer.GrpcPort,
-			tlsCertFile: rt.Config().XdsServer.TlsCertFile,
-			tlsKeyFile:  rt.Config().XdsServer.TlsKeyFile,
-			metrics:     rt.Metrics(),
-		},
-		// bootstrap server
-		&xds_bootstrap.BootstrapServer{
-			Config:    rt.Config().BootstrapServer,
-			Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params, rt.Config().XdsServer.TlsCertFile),
-			Metrics:   rt.Metrics(),
-		},
-	)
+
+	bootstrapHandler := xds_bootstrap.BootstrapHandler{
+		Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params, rt.Config().DpServer.TlsCertFile),
+	}
+	xdsServerLog.Info("registering Bootstrap in Dataplane Server")
+	rt.DpServer().RegisterHTTPEndpoint("/bootstrap", bootstrapHandler.Handle)
+	xdsServerLog.Info("registering Aggregated Discovery Service in Dataplane Server")
+	envoy_service_discovery_v2.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GRPCServer(), srv)
+	return nil
 }
 
 func NewKubeAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {

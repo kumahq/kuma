@@ -96,6 +96,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up GC")
 					return err
 				}
+				if err := rt.Add(rt.DpServer()); err != nil {
+					runLog.Error(err, "unable to set up DP Server")
+					return err
+				}
 			case config_core.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
@@ -119,6 +123,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := gc.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up GC")
+					return err
+				}
+				if err := rt.Add(rt.DpServer()); err != nil {
+					runLog.Error(err, "unable to set up DP Server")
 					return err
 				}
 			case config_core.Global:
