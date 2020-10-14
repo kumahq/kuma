@@ -48,6 +48,8 @@ metadata:
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
 			WithHelmOpt("cni.enabled", "true"),
+			WithHelmOpt("cni.chained", "true"),
+			WithHelmOpt("cni.netDir", "/etc/cni/net.d"),
 		}
 
 		err = NewClusterSetup().

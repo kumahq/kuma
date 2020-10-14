@@ -55,6 +55,7 @@ controlPlane:
 cni:
   enabled: false
   chained: false
+  netDir: /etc/cni/multus/net.d
   logLevel: info
 
   nodeSelector:

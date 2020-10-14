@@ -39,10 +39,8 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 		(kind create cluster \
 			--name "$(KIND_CLUSTER_NAME)" \
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
-			--config=./test/kind/single-node.yaml \
 			--kubeconfig $(KIND_KUBECONFIG) \
 			--quiet --wait 120s && \
-		curl https://docs.projectcalico.org/manifests/calico.yaml | KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f - && \
 		KUBECONFIG=$(KIND_KUBECONFIG) kubectl scale deployment --replicas 1 coredns --namespace kube-system && \
 		until \
 			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \

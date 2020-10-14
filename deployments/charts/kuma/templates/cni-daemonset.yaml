@@ -61,7 +61,7 @@ spec:
                   name: {{ include "kuma.name" . }}-cni-config
                   key: cni_network_config
             - name: CNI_NET_DIR
-              value: /etc/cni/multus/net.d
+              value: "{{ .Values.cni.netDir }}"
             # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
             - name: CHAINED_CNI_PLUGIN
               value: "{{ .Values.cni.chained }}"
