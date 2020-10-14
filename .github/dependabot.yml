@@ -3,12 +3,18 @@ updates:
   - package-ecosystem: gomod
     directory: /
     schedule:
-      interval: daily
+      interval: weekly
     labels:
       - "dependencies"
   - package-ecosystem: gomod
     directory: /tools/releases/changelog
     schedule:
-      interval: daily
+      interval: weekly
+    labels:
+      - "dependencies"
+  - package-ecosystem: docker
+    directory: /tools/releases/dockerfiles
+    schedule:
+      interval: weekly
     labels:
       - "dependencies"
