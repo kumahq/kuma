@@ -31,3 +31,6 @@ sidecarContainer:
 initContainer:
   enabled: true
   image: kuma/kuma-init:latest
+exceptions:
+  labels:
+    "openshift.io/deployer-pod-for.name": "*"
