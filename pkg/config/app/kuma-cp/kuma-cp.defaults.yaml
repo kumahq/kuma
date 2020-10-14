@@ -51,6 +51,10 @@ store:
 bootstrapServer:
   # Port of Server that provides bootstrap configuration for dataplanes
   port: 5682 # ENV: KUMA_BOOTSTRAP_SERVER_PORT
+  # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
+  tlsCertFile: # ENV: KUMA_BOOTSTRAP_SERVER_TLS_CERT_FILE
+  # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
+  tlsKeyFile: # ENV: KUMA_BOOTSTRAP_SERVER_TLS_KEY_FILE
   # Parameters of bootstrap configuration
   params:
     # Address of Envoy Admin
