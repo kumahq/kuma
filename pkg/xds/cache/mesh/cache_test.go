@@ -174,7 +174,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 
 	It("should cache concurrent Get() requests", func() {
 		var wg sync.WaitGroup
-		for i := 0; i < 1000; i++ {
+		for i := 0; i < 100; i++ {
 			wg.Add(1)
 			go func() {
 				s, err := meshCache.GetHash(context.Background(), "mesh-0")
@@ -195,6 +195,6 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		if h := test_metrics.FindMetric(metrics, "mesh_cache", "operation", "get", "result", "hit"); h != nil {
 			hits = h.Gauge.GetValue()
 		}
-		Expect(hitWaits + hits + 1).To(Equal(1000.0))
+		Expect(hitWaits + hits + 1).To(Equal(100.0))
 	})
 })
