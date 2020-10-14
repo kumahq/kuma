@@ -182,8 +182,13 @@ func validateArgs(args InstallControlPlaneArgs) error {
 func autogenerateCerts(args *InstallControlPlaneArgs) error {
 	if args.AdmissionServerTlsCert == "" && args.AdmissionServerTlsKey == "" {
 		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlaneServiceName, args.Namespace)
-		// notice that Kubernetes doesn't requires DNS SAN in a X509 cert of a WebHook
-		admissionCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType)
+		hosts := []string{
+			fqdn,
+			fmt.Sprintf("%s.%s", args.ControlPlaneServiceName, args.Namespace),
+			args.ControlPlaneServiceName,
+			"localhost",
+		}
+		admissionCert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
 		if err != nil {
 			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
 		}
