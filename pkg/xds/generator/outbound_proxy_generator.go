@@ -1,12 +1,12 @@
 package generator
 
 import (
+	"context"
 	"strings"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
 	"github.com/kumahq/kuma/pkg/core/validators"
-	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 
@@ -82,7 +82,10 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	}
 	resources.AddSet(cdsResources)
 
-	edsResources := g.generateEDS(proxy, clusters)
+	edsResources, err := g.generateEDS(ctx, proxy, clusters)
+	if err != nil {
+		return nil, err
+	}
 	resources.AddSet(edsResources)
 
 	return resources, nil
@@ -180,22 +183,24 @@ func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]strin
 	return result
 }
 
-func (_ OutboundProxyGenerator) generateEDS(proxy *model.Proxy, clusters envoy_common.Clusters) *model.ResourceSet {
+func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
 		// Endpoints for ExternalServices are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !clusters.Get(clusterName).HasExternalService() {
 			serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
-			endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])
-			loadAssignment := envoy_endpoints.CreateClusterLoadAssignment(clusterName, endpoints)
+			loadAssignment, err := proxy.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetMesh(), serviceName)
+			if err != nil {
+				return nil, err
+			}
 			resources.Add(&model.Resource{
 				Name:     clusterName,
 				Resource: loadAssignment,
 			})
 		}
 	}
-	return resources
+	return resources, nil
 }
 
 // inferProtocol infers protocol for the destination listener. It will only return HTTP when all endpoints are tagged with HTTP.

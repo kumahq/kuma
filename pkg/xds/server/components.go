@@ -4,6 +4,11 @@ import (
 	"context"
 	"time"
 
+	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/xds/cache/cla"
+	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
+
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -15,7 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	"github.com/kumahq/kuma/pkg/core/permissions"
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -37,8 +42,27 @@ import (
 )
 
 var (
-	xdsServerLog = core.Log.WithName("xds-server")
+	xdsServerLog  = core.Log.WithName("xds-server")
+	meshResources = meshResourceTypes(map[core_model.ResourceType]bool{
+		core_mesh.DataplaneInsightType:  true,
+		core_mesh.DataplaneOverviewType: true,
+		core_system.ConfigType:          true,
+	})
 )
+
+func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.ResourceType {
+	types := []core_model.ResourceType{}
+	for _, typ := range registry.Global().ListTypes() {
+		r, err := registry.Global().NewObject(typ)
+		if err != nil {
+			panic(err)
+		}
+		if r.Scope() == core_model.ScopeMesh && !exclude[typ] {
+			types = append(types, typ)
+		}
+	}
+	return types
+}
 
 func SetupServer(rt core_runtime.Runtime) error {
 	reconciler := DefaultReconciler(rt)
@@ -174,8 +198,19 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	if err := rt.Metrics().Register(xdsGenerationsErrors); err != nil {
 		return nil, err
 	}
+	meshSnapshotCache, err := mesh.NewCache(rt.ReadOnlyResourceManager(),
+		rt.Config().Store.Cache.ExpirationTime, meshResources, rt.LookupIP(), rt.Metrics())
+	if err != nil {
+		return nil, err
+	}
+	claCache, err := cla.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Multicluster.Remote.Zone,
+		rt.Config().Store.Cache.ExpirationTime, rt.LookupIP(), rt.Metrics())
+	if err != nil {
+		return nil, err
+	}
 	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
+		prevHash := ""
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(rt.Config().XdsServer.DataplaneConfigurationRefreshInterval)
@@ -187,7 +222,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				}()
 
 				ctx := context.Background()
-				dataplane := &mesh_core.DataplaneResource{}
+				dataplane := &core_mesh.DataplaneResource{}
 				proxyID := xds.FromResourceKey(key)
 
 				if err := rt.ReadOnlyResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
@@ -203,7 +238,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 
 				if dataplane.Spec.IsIngress() {
 					// update Ingress
-					allMeshDataplanes := &mesh_core.DataplaneResourceList{}
+					allMeshDataplanes := &core_mesh.DataplaneResourceList{}
 					if err := rt.ReadOnlyResourceManager().List(ctx, allMeshDataplanes); err != nil {
 						return err
 					}
@@ -225,16 +260,27 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return ingressReconciler.Reconcile(envoyCtx, &proxy)
 				}
 
-				mesh := &mesh_core.MeshResource{}
+				snapshotHash, err := meshSnapshotCache.GetHash(ctx, dataplane.GetMeta().GetMesh())
+				if err != nil {
+					return err
+				}
+				if prevHash != "" && snapshotHash == prevHash {
+					return nil
+				}
+				log.V(1).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)
+				prevHash = snapshotHash
+
+				mesh := &core_mesh.MeshResource{}
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
 					return err
 				}
+
 				dataplanes, err := xds_topology.GetDataplanes(log, ctx, rt.ReadOnlyResourceManager(), rt.LookupIP(), dataplane.Meta.GetMesh())
 				if err != nil {
 					return err
 				}
-				externalServices, err := xds_topology.GetExternalServices(log, ctx, rt.ReadOnlyResourceManager(), dataplane.Meta.GetMesh())
-				if err != nil {
+				externalServices := &core_mesh.ExternalServiceResourceList{}
+				if err := rt.ReadOnlyResourceManager().List(ctx, externalServices, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
 					return err
 				}
 				envoyCtx := xds_context.Context{
@@ -243,14 +289,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 						Resource:   mesh,
 						Dataplanes: dataplanes,
 					},
-				}
-
-				// Generate VIP outbounds only when not Ingress and Transparent Proxying is enabled
-				if !dataplane.Spec.IsIngress() && dataplane.Spec.Networking.GetTransparentProxying() != nil {
-					err = xds_topology.PatchDataplaneWithVIPOutbounds(dataplane, dataplanes, externalServices, rt.DNSResolver())
-					if err != nil {
-						return err
-					}
 				}
 
 				// pick a single the most specific route for each outbound interface
@@ -263,10 +301,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound, err := xds_topology.GetOutboundTargets(destinations, dataplanes, externalServices, rt.Config().Multicluster.Remote.Zone, mesh)
-				if err != nil {
-					return err
-				}
+				outbound := xds_topology.BuildEndpointMap(dataplanes.Items, rt.Config().Multicluster.Remote.Zone, mesh, externalServices.Items)
 
 				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
 				if err != nil {
@@ -316,6 +351,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					TracingBackend:     tracingBackend,
 					Metadata:           metadataTracker.Metadata(streamId),
 					FaultInjections:    faultInjection,
+					CLACache:           claCache,
 				}
 				return reconciler.Reconcile(envoyCtx, &proxy)
 			},

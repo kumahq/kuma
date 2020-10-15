@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
 
@@ -20,7 +19,6 @@ type (
 	}
 
 	vipsSynchronizer struct {
-		rm          manager.ReadOnlyResourceManager
 		resolver    DNSResolver
 		persistence *DNSPersistence
 		leadInfo    component.LeaderInfo
@@ -32,9 +30,8 @@ const (
 	tickInterval = 500 * time.Millisecond
 )
 
-func NewVIPsSynchronizer(rm manager.ReadOnlyResourceManager, resolver DNSResolver, persistence *DNSPersistence, leadInfo component.LeaderInfo) (VIPsSynchronizer, error) {
+func NewVIPsSynchronizer(resolver DNSResolver, persistence *DNSPersistence, leadInfo component.LeaderInfo) (VIPsSynchronizer, error) {
 	return &vipsSynchronizer{
-		rm:          rm,
 		resolver:    resolver,
 		persistence: persistence,
 		leadInfo:    leadInfo,

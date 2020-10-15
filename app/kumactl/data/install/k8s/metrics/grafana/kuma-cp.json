@@ -20,7 +20,7 @@
       "type": "grafana",
       "id": "grafana",
       "name": "Grafana",
-      "version": "7.1.4"
+      "version": "7.1.1"
     },
     {
       "type": "panel",
@@ -58,7 +58,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1600160094475,
+  "iteration": 1602670472791,
   "links": [],
   "panels": [
     {
@@ -132,7 +132,7 @@
         "showThresholdLabels": false,
         "showThresholdMarkers": false
       },
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "targets": [
         {
           "expr": "sum(cp_info{instance=~\"$instance\"} OR on() vector(0))",
@@ -181,7 +181,7 @@
       "options": {
         "showHeader": true
       },
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "targets": [
         {
           "expr": "cp_info{instance=~\"$instance\"}",
@@ -267,7 +267,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -376,7 +376,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -517,7 +517,7 @@
       "linewidth": 2,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -613,7 +613,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -719,7 +719,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -779,13 +779,237 @@
       }
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Cache protects ClusterLoadAssignments resources by sharing them between many goroutines which reconcile Dataplanes.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 70,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "percentage": true,
+      "pluginVersion": "7.1.1",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(cla_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Hit",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(cla_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Hit Wait",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(cla_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Miss",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Endpoints cache performance",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:645",
+          "decimals": null,
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:646",
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Mesh Cache protects hashes calculated periodically for each Mesh in order to avoid the excessive generation of xDS resources.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 71,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "percentage": true,
+      "pluginVersion": "7.1.1",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(mesh_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Hit",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(mesh_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Hit Wait",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(mesh_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Miss",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Mesh resources hash cache performance",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:645",
+          "decimals": null,
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:646",
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
       "collapsed": false,
       "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 25
       },
       "id": 5,
       "panels": [],
@@ -810,7 +1034,7 @@
         "h": 9,
         "w": 16,
         "x": 0,
-        "y": 19
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 2,
@@ -830,7 +1054,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -909,7 +1133,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 19
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 9,
@@ -926,7 +1150,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1009,7 +1233,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 35
       },
       "id": 54,
       "panels": [],
@@ -1034,7 +1258,7 @@
         "h": 9,
         "w": 16,
         "x": 0,
-        "y": 29
+        "y": 36
       },
       "hiddenSeries": false,
       "id": 55,
@@ -1054,7 +1278,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1133,7 +1357,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 29
+        "y": 36
       },
       "hiddenSeries": false,
       "id": 56,
@@ -1150,7 +1374,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1233,7 +1457,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 45
       },
       "id": 22,
       "panels": [],
@@ -1259,7 +1483,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 39
+        "y": 46
       },
       "hiddenSeries": false,
       "id": 52,
@@ -1276,7 +1500,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1399,7 +1623,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 39
+        "y": 46
       },
       "hiddenSeries": false,
       "id": 50,
@@ -1416,7 +1640,7 @@
       "linewidth": 2,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1494,7 +1718,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 39
+        "y": 46
       },
       "hiddenSeries": false,
       "id": 42,
@@ -1512,7 +1736,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1601,7 +1825,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 39
+        "y": 46
       },
       "hiddenSeries": false,
       "id": 19,
@@ -1618,7 +1842,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1684,7 +1908,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 54
       },
       "id": 26,
       "panels": [],
@@ -1710,7 +1934,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 48
+        "y": 55
       },
       "hiddenSeries": false,
       "id": 61,
@@ -1729,7 +1953,7 @@
       "linewidth": 2,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1807,7 +2031,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 48
+        "y": 55
       },
       "hiddenSeries": false,
       "id": 66,
@@ -1826,7 +2050,7 @@
       "linewidth": 2,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -1904,7 +2128,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 56
+        "y": 63
       },
       "hiddenSeries": false,
       "id": 57,
@@ -1921,7 +2145,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2046,7 +2270,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 56
+        "y": 63
       },
       "hiddenSeries": false,
       "id": 58,
@@ -2063,7 +2287,7 @@
       "linewidth": 2,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2141,7 +2365,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 56
+        "y": 63
       },
       "hiddenSeries": false,
       "id": 59,
@@ -2159,7 +2383,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2248,7 +2472,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 56
+        "y": 63
       },
       "hiddenSeries": false,
       "id": 60,
@@ -2265,7 +2489,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2343,7 +2567,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 64
+        "y": 71
       },
       "hiddenSeries": false,
       "id": 62,
@@ -2360,7 +2584,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2485,7 +2709,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 64
+        "y": 71
       },
       "hiddenSeries": false,
       "id": 63,
@@ -2502,7 +2726,7 @@
       "linewidth": 2,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2580,7 +2804,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 64
+        "y": 71
       },
       "hiddenSeries": false,
       "id": 64,
@@ -2598,7 +2822,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2687,7 +2911,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 64
+        "y": 71
       },
       "hiddenSeries": false,
       "id": 65,
@@ -2704,7 +2928,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2770,7 +2994,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 72
+        "y": 79
       },
       "id": 7,
       "panels": [],
@@ -2795,7 +3019,7 @@
         "h": 9,
         "w": 16,
         "x": 0,
-        "y": 73
+        "y": 80
       },
       "hiddenSeries": false,
       "id": 8,
@@ -2814,7 +3038,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2893,7 +3117,7 @@
         "h": 9,
         "w": 8,
         "x": 16,
-        "y": 73
+        "y": 80
       },
       "hiddenSeries": false,
       "id": 3,
@@ -2910,7 +3134,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -2975,7 +3199,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 82
+        "y": 89
       },
       "id": 46,
       "panels": [],
@@ -3000,7 +3224,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 83
+        "y": 90
       },
       "hiddenSeries": false,
       "id": 48,
@@ -3017,7 +3241,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -3094,7 +3318,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 83
+        "y": 90
       },
       "hiddenSeries": false,
       "id": 49,
@@ -3111,7 +3335,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -3185,7 +3409,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 91
+        "y": 98
       },
       "id": 11,
       "panels": [],
@@ -3211,7 +3435,7 @@
         "h": 9,
         "w": 7,
         "x": 0,
-        "y": 92
+        "y": 99
       },
       "hiddenSeries": false,
       "id": 12,
@@ -3228,7 +3452,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -3307,7 +3531,7 @@
         "h": 9,
         "w": 5,
         "x": 7,
-        "y": 92
+        "y": 99
       },
       "hiddenSeries": false,
       "id": 14,
@@ -3328,7 +3552,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": true,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -3419,7 +3643,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 92
+        "y": 99
       },
       "hiddenSeries": false,
       "id": 13,
@@ -3440,7 +3664,7 @@
       "linewidth": 2,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -3505,7 +3729,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 101
+        "y": 108
       },
       "id": 35,
       "panels": [],
@@ -3530,7 +3754,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 102
+        "y": 109
       },
       "hiddenSeries": false,
       "id": 30,
@@ -3547,7 +3771,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -3624,7 +3848,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 102
+        "y": 109
       },
       "hiddenSeries": false,
       "id": 31,
@@ -3641,7 +3865,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -3718,7 +3942,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 102
+        "y": 109
       },
       "hiddenSeries": false,
       "id": 33,
@@ -3735,7 +3959,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -3812,7 +4036,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 102
+        "y": 109
       },
       "hiddenSeries": false,
       "id": 32,
@@ -3829,7 +4053,7 @@
       "linewidth": 1,
       "nullPointMode": "null",
       "percentage": false,
-      "pluginVersion": "7.1.4",
+      "pluginVersion": "7.1.1",
       "pointradius": 2,
       "points": false,
       "renderer": "flot",
@@ -3962,5 +4186,5 @@
   "timezone": "",
   "title": "Kuma CP",
   "uid": "z6C1v-NGk",
-  "version": 7
+  "version": 1
 }

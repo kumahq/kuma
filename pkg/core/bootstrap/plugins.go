@@ -17,6 +17,7 @@ import (
 	_ "github.com/kumahq/kuma/pkg/plugins/config/universal"
 
 	_ "github.com/kumahq/kuma/pkg/plugins/runtime/k8s"
+	_ "github.com/kumahq/kuma/pkg/plugins/runtime/universal"
 
 	_ "github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	_ "github.com/kumahq/kuma/pkg/plugins/ca/provided"
