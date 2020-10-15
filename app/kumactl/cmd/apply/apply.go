@@ -98,30 +98,30 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 					return err.OrNil()
 				}
 				resources = append(resources, res)
+			}
+			for _, resource := range resources {
 				if ctx.args.dryRun {
 					p, err := printers.NewGenericPrinter(output.YAMLFormat)
 					if err != nil {
 						return err
 					}
-					if err := p.Print(rest_types.From.Resource(res), cmd.OutOrStdout()); err != nil {
+					if err := p.Print(rest_types.From.Resource(resource), cmd.OutOrStdout()); err != nil {
 						return err
 					}
-					return nil
-				}
-			}
-			for _, resource := range resources {
-				var rs store.ResourceStore
-				if resource.GetType() == system.SecretType { // Secret is exposed via Admin Server. It will be merged into API Server eventually.
-					rs, err = pctx.CurrentAdminResourceStore()
 				} else {
-					rs, err = pctx.CurrentResourceStore()
-				}
-				if err != nil {
-					return err
-				}
+					var rs store.ResourceStore
+					if resource.GetType() == system.SecretType { // Secret is exposed via Admin Server. It will be merged into API Server eventually.
+						rs, err = pctx.CurrentAdminResourceStore()
+					} else {
+						rs, err = pctx.CurrentResourceStore()
+					}
+					if err != nil {
+						return err
+					}
 
-				if err := upsert(rs, resource); err != nil {
-					return err
+					if err := upsert(rs, resource); err != nil {
+						return err
+					}
 				}
 			}
 			return nil

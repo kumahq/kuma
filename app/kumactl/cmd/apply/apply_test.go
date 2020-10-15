@@ -306,12 +306,11 @@ var _ = Describe("kumactl apply", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		// when
+		// and
 		resource := mesh.DataplaneResourceList{}
 		err = store.List(context.Background(), &resource, core_store.ListByMesh("default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		// then
 		Expect(resource.Items[0].Meta.GetName()).To(Equal("sample1"))
 		Expect(resource.Items[1].Meta.GetName()).To(Equal("sample2"))
 	})
@@ -328,21 +327,18 @@ var _ = Describe("kumactl apply", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		// when
+		// and
 		dataplaneResource := mesh.DataplaneResource{}
 		err = store.Get(context.Background(), &dataplaneResource, core_store.GetByKey("sample1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		// then
 		Expect(dataplaneResource.Meta.GetName()).To(Equal("sample1"))
 		Expect(dataplaneResource.Meta.GetMesh()).To(Equal("default"))
 
-		// when
 		secret := system.SecretResource{}
 		err = store.Get(context.Background(), &secret, core_store.GetByKey("sample", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		// then
 		Expect(secret.Meta.GetName()).To(Equal("sample"))
 		Expect(secret.Meta.GetMesh()).To(Equal("default"))
 
