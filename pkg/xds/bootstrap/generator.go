@@ -83,7 +83,7 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 		// this part of validation works only for Universal scenarios with TransparentProxying
 		if dp.Spec.Networking.TransparentProxying != nil && len(dp.Spec.Networking.Outbound) != 0 {
 			var err validators.ValidationError
-			err.AddViolation("outbound", "should be empty since dataplane in Transparent Proxying mode")
+			err.AddViolation("outbound", "should be empty since dataplane is in Transparent Proxying mode")
 			return nil, err.OrNil()
 		}
 		if err := b.validateMeshExist(ctx, dp.Meta.GetMesh()); err != nil {

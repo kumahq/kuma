@@ -3,6 +3,7 @@ package universal_test
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -14,15 +15,25 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/universal"
 )
 
+type countingManager struct {
+	core_manager.ResourceManager
+	updated int
+}
+
+func (c *countingManager) Update(ctx context.Context, resource model.Resource, optionsFunc ...store.UpdateOptionsFunc) error {
+	c.updated++
+	return c.ResourceManager.Update(ctx, resource, optionsFunc...)
+}
+
 var _ = Describe("UpdateOutbound", func() {
-	var rm core_manager.ResourceManager
+	var rm *countingManager
 	vips := map[string]string{
 		"service-1": "240.0.0.1",
 		"service-2": "240.0.0.2",
 	}
 
 	BeforeEach(func() {
-		rm = core_manager.NewResourceManager(memory.NewStore())
+		rm = &countingManager{ResourceManager: core_manager.NewResourceManager(memory.NewStore())}
 
 		err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default"))
 		Expect(err).ToNot(HaveOccurred())
@@ -135,6 +146,15 @@ var _ = Describe("UpdateOutbound", func() {
 
 				err = universal.UpdateOutbounds(context.Background(), rm, vips)
 				Expect(err).ToNot(HaveOccurred())
+			})
+
+			It("should not update outbounds if they are not changed", func() {
+				Expect(rm.updated).To(Equal(1))
+
+				err := universal.UpdateOutbounds(context.Background(), rm, vips)
+				Expect(err).ToNot(HaveOccurred())
+
+				Expect(rm.updated).To(Equal(1))
 			})
 
 			It("should delete outbounds when service is deleted", func() {

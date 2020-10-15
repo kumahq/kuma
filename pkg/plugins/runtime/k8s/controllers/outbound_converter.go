@@ -38,7 +38,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 		res := &core_mesh.ExternalServiceResource{}
 		if err := k8s.DefaultConverter().ToCoreResource(es, res); err != nil {
 			converterLog.Error(err, "failed to parse ExternalService", "externalService", es.Spec)
-			continue // one invalid Dataplane definition should not break the entire mesh
+			continue // one invalid ExternalService definition should not break the entire mesh
 		}
 		externalServicesRes = append(externalServicesRes, res)
 	}

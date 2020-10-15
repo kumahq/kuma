@@ -2,6 +2,7 @@ package universal
 
 import (
 	"context"
+	"reflect"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -28,7 +29,11 @@ func UpdateOutbounds(ctx context.Context, rm manager.ResourceManager, vips dns.V
 			if dp.Spec.Networking.GetTransparentProxying() == nil {
 				continue
 			}
-			dp.Spec.Networking.Outbound = dns.VIPOutbounds(dp.Meta.GetName(), dpList.Items, vips, externalServices.Items)
+			newOutbounds := dns.VIPOutbounds(dp.Meta.GetName(), dpList.Items, vips, externalServices.Items)
+			if reflect.DeepEqual(newOutbounds, dp.Spec.Networking.Outbound) {
+				continue
+			}
+			dp.Spec.Networking.Outbound = newOutbounds
 			if err := rm.Update(ctx, dp); err != nil {
 				log.Error(err, "failed to update VIP outbounds", "dataplane", dp.GetMeta())
 				continue
