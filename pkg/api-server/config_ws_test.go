@@ -192,6 +192,12 @@ var _ = Describe("Config WS", func() {
                 "sidecarTraffic": {
                   "excludeInboundPorts": [],
                   "excludeOutboundPorts": []
+                },
+                "exceptions": {
+                  "labels": {
+                    "openshift.io/build.name": "*",
+                    "openshift.io/deployer-pod-for.name": "*"
+                  }
                 }
               }
             },

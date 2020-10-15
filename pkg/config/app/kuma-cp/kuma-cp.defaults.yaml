@@ -164,6 +164,12 @@ runtime:
     injector:
       # if true runs kuma-cp in CNI compatible mode
       cniEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
+      # list of exceptions for Kuma injection
+      exceptions:
+        # a map of labels for exception. If pod matches label with given value Kuma won't be injected. Specify '*' to match any value.
+        labels:
+          openshift.io/build.name: "*"
+          openshift.io/deployer-pod-for.name: "*"
       # SidecarContainer defines configuration of the Kuma sidecar container.
       sidecarContainer:
         # Image name.
@@ -274,7 +280,6 @@ dnsServer:
   port: 5653 # ENV: KUMA_DNS_SERVER_PORT
   # The CIDR range used to allocate
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
-
 
 # Multicluster mode
 multicluster:
