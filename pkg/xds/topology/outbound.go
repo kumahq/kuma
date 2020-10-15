@@ -87,10 +87,15 @@ func BuildEndpointMap(destinations core_xds.DestinationMap,
 			tlsEnabled = externalService.Spec.Networking.Tls.Enabled
 		}
 
+		tags := externalService.Spec.GetTags()
+		if tlsEnabled {
+			tags[mesh_proto.ServiceTag+"_tls"] = "enabled"
+		}
+
 		outbound[service] = append(outbound[service], core_xds.Endpoint{
 			Target: externalService.Spec.GetHost(),
 			Port:   externalService.Spec.GetPortUInt32(),
-			Tags:   externalService.Spec.GetTags(),
+			Tags:   tags,
 			Weight: 1,
 			ExternalService: &core_xds.ExternalService{
 				TLSEnabled: tlsEnabled,
