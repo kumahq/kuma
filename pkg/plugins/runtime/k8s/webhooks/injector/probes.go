@@ -10,7 +10,9 @@ import (
 )
 
 func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
+	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
 	if ok, err := needVirtualProbes(pod, i.cfg); err != nil || !ok {
+		log.V(1).Info("skip adding virtual probes")
 		return err
 	}
 
@@ -21,11 +23,13 @@ func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
 
 	for _, c := range pod.Spec.Containers {
 		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
+			log.V(1).Info("overriding liveness probe", "container", c.Name)
 			if err := overrideHTTPProbe(c.LivenessProbe, port); err != nil {
 				return err
 			}
 		}
 		if c.ReadinessProbe != nil && c.ReadinessProbe.HTTPGet != nil {
+			log.V(1).Info("overriding readiness probe", "container", c.Name)
 			if err := overrideHTTPProbe(c.ReadinessProbe, port); err != nil {
 				return err
 			}

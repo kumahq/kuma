@@ -83,6 +83,16 @@ func (m *Mesh) Validate() error {
 		}
 	}
 
+	if v, ok := interface{}(m.GetNetworking()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MeshValidationError{
+				field:  "Networking",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -231,6 +241,80 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CertificateAuthorityBackendValidationError{}
+
+// Validate checks the field values on Networking with the rules defined in the
+// proto definition for this message. If any rules are violated, an error is returned.
+func (m *Networking) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if v, ok := interface{}(m.GetOutbound()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return NetworkingValidationError{
+				field:  "Outbound",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// NetworkingValidationError is the validation error returned by
+// Networking.Validate if the designated constraints aren't met.
+type NetworkingValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e NetworkingValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e NetworkingValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e NetworkingValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e NetworkingValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e NetworkingValidationError) ErrorName() string { return "NetworkingValidationError" }
+
+// Error satisfies the builtin error interface
+func (e NetworkingValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sNetworking.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = NetworkingValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = NetworkingValidationError{}
 
 // Validate checks the field values on Tracing with the rules defined in the
 // proto definition for this message. If any rules are violated, an error is returned.
@@ -1003,3 +1087,80 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = CertificateAuthorityBackend_DpCert_RotationValidationError{}
+
+// Validate checks the field values on Networking_Outbound with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *Networking_Outbound) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if v, ok := interface{}(m.GetPassthrough()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return Networking_OutboundValidationError{
+				field:  "Passthrough",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	return nil
+}
+
+// Networking_OutboundValidationError is the validation error returned by
+// Networking_Outbound.Validate if the designated constraints aren't met.
+type Networking_OutboundValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e Networking_OutboundValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e Networking_OutboundValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e Networking_OutboundValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e Networking_OutboundValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e Networking_OutboundValidationError) ErrorName() string {
+	return "Networking_OutboundValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e Networking_OutboundValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sNetworking_Outbound.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = Networking_OutboundValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = Networking_OutboundValidationError{}
