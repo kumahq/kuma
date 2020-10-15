@@ -113,6 +113,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 			ServiceGetter: mgr.GetClient(),
 			Zone:          rt.Config().Multicluster.Remote.Zone,
 		},
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	return reconciler.SetupWithManager(mgr)
 }

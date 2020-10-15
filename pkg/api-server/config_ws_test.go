@@ -203,6 +203,12 @@ var _ = Describe("Config WS", func() {
                 },
                 "virtualProbesEnabled": true,
                 "virtualProbesPort": 9000,
+                "exceptions": {
+                  "labels": {
+                    "openshift.io/build.name": "*",
+                    "openshift.io/deployer-pod-for.name": "*"
+                  }
+                },
                 "caCertFile": ""
               }
             },

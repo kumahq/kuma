@@ -39,3 +39,7 @@ injector:
     excludeInboundPorts: []
     excludeOutboundPorts: []
   caCertFile: ""
+  exceptions:
+    labels:
+      openshift.io/build.name: "*"
+      openshift.io/deployer-pod-for.name: "*"

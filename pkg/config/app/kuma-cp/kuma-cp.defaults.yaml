@@ -51,6 +51,10 @@ store:
 bootstrapServer:
   # Port of Server that provides bootstrap configuration for dataplanes
   port: 5682 # ENV: KUMA_BOOTSTRAP_SERVER_PORT
+  # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
+  tlsCertFile: # ENV: KUMA_BOOTSTRAP_SERVER_TLS_CERT_FILE
+  # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
+  tlsKeyFile: # ENV: KUMA_BOOTSTRAP_SERVER_TLS_KEY_FILE
   # Parameters of bootstrap configuration
   params:
     # Address of Envoy Admin
@@ -164,6 +168,12 @@ runtime:
     injector:
       # if true runs kuma-cp in CNI compatible mode
       cniEnabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
+      # list of exceptions for Kuma injection
+      exceptions:
+        # a map of labels for exception. If pod matches label with given value Kuma won't be injected. Specify '*' to match any value.
+        labels:
+          openshift.io/build.name: "*"
+          openshift.io/deployer-pod-for.name: "*"
       # VirtualProbesEnabled enables automatic converting HttpGet probes to virtual. Virtual probe
       #	serves on sub-path of insecure port 'virtualProbesPort',
       #	i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
