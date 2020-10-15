@@ -67,21 +67,21 @@ function release {
 
 
   # Then build and upload the index file to github pages
-  git clone --single-branch --branch "${GH_PAGES_BRANCH}" git@github.com:kumahq/${GH_REPO}.git
+  git clone --single-branch --branch "${GH_PAGES_BRANCH}" git@github.com:${GH_OWNER}/${GH_REPO}.git
 
   cr index \
     --owner "${GH_OWNER}" \
     --git-repo "${GH_REPO}" \
     --charts-repo "${CHARTS_REPO_URL}" \
     --package-path "${CHARTS_PACKAGE_PATH}" \
-    --index-path "charts/${CHARTS_INDEX_FILE}"
+    --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
 
-  pushd charts
+  pushd ${GH_REPO}
   git add "${CHARTS_INDEX_FILE}"
   git commit -m "ci(helm) publish charts for version ${KUMA_VERSION}@${KUMA_COMMIT}"
   git push
   popd
-  rm -rf charts
+  rm -rf ${GH_REPO}
 }
 
 
