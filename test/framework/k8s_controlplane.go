@@ -87,7 +87,7 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
 	}
 
-	c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
+	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
 	c.portFwd.localAPIPort = apiPort
 
 	// Admin
@@ -96,7 +96,7 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
 	}
 
-	c.cluster.PortForwardPod(kumaNamespace, kumacpPodName, adminPort, kumaCPAdminPort)
+	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, adminPort, kumaCPAdminPort)
 	c.portFwd.localAdminPort = adminPort
 
 	return nil
@@ -104,9 +104,9 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 
 func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
 	return k8s.ListPods(c.t,
-		c.GetKubectlOptions(kumaNamespace),
+		c.GetKubectlOptions(KumaNamespace),
 		metav1.ListOptions{
-			LabelSelector: "app=" + kumaServiceName,
+			LabelSelector: "app=" + KumaServiceName,
 		},
 	)
 }
@@ -221,7 +221,7 @@ func (c *K8sControlPlane) GetIngressAddress() string {
 	if err != nil {
 		return "invalid"
 	}
-	ingressSvc, err := cs.CoreV1().Services(kumaNamespace).Get(ctx, "kuma-ingress", metav1.GetOptions{})
+	ingressSvc, err := cs.CoreV1().Services(KumaNamespace).Get(ctx, "kuma-ingress", metav1.GetOptions{})
 	if err != nil {
 		return "invalid"
 	}

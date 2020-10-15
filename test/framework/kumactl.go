@@ -153,7 +153,7 @@ func (o *KumactlOptions) KumactlInstallTracing() (string, error) {
 func (o *KumactlOptions) KumactlInstallIngress() (string, error) {
 	args := []string{
 		"install", "ingress",
-		"--image", kumaDPImage,
+		"--image", KumaDPImage,
 		"--use-node-port",
 	}
 	return o.RunKumactlAndGetOutput(args...)
