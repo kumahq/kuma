@@ -2,13 +2,13 @@
 
 set -e
 
-CHARTS_REPO_URL="https://kumahq.github.io/charts"
+[ -z "$GH_OWNER" ] && GH_OWNER="kumahq"
+[ -z "$GH_REPO" ] && GH_REPO="charts"
+CHARTS_REPO_URL="https://$GH_OWNER.github.io/$GH_REPO"
 CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
 GH_PAGES_BRANCH="gh-pages"
-GH_OWNER="kumahq"
-GH_REPO="charts"
 
 function msg_green {
   builtin echo -en "\033[1;32m"
