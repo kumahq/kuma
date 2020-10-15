@@ -70,6 +70,91 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			dataplane := mesh_proto.Dataplane{}
 			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
 
+			outboundTargets := model.EndpointMap{
+				"api-http": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: http`
+					{
+						Target: "192.168.0.4",
+						Port:   8084,
+						Tags:   map[string]string{"kuma.io/service": "api-http", "kuma.io/protocol": "http", "region": "us"},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.5",
+						Port:   8085,
+						Tags:   map[string]string{"kuma.io/service": "api-http", "kuma.io/protocol": "http", "region": "eu"},
+						Weight: 1,
+					},
+				},
+				"api-tcp": []model.Endpoint{ // notice that not every endpoint has a `kuma.io/protocol: http` tag
+					{
+						Target: "192.168.0.6",
+						Port:   8086,
+						Tags:   map[string]string{"kuma.io/service": "api-tcp", "kuma.io/protocol": "http", "region": "us"},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.7",
+						Port:   8087,
+						Tags:   map[string]string{"kuma.io/service": "api-tcp", "region": "eu"},
+						Weight: 1,
+					},
+				},
+				"api-http2": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: http2`
+					{
+						Target: "192.168.0.4",
+						Port:   8088,
+						Tags:   map[string]string{"kuma.io/service": "api-http2", "kuma.io/protocol": "http2"},
+						Weight: 1,
+					},
+				},
+				"api-grpc": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: grpc`
+					{
+						Target: "192.168.0.4",
+						Port:   8089,
+						Tags:   map[string]string{"kuma.io/service": "api-grpc", "kuma.io/protocol": "grpc"},
+						Weight: 1,
+					},
+				},
+				"backend": []model.Endpoint{ // notice that not every endpoint has a tag `kuma.io/protocol: http`
+					{
+						Target: "192.168.0.1",
+						Port:   8081,
+						Tags:   map[string]string{"kuma.io/service": "backend", "region": "us"},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.2",
+						Port:   8082,
+						Weight: 1,
+					},
+				},
+				"db": []model.Endpoint{
+					{
+						Target: "192.168.0.3",
+						Port:   5432,
+						Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
+						Weight: 1,
+					},
+				},
+				"es": []model.Endpoint{
+					{
+						Target:          "10.0.0.1",
+						Port:            10001,
+						Tags:            map[string]string{"kuma.io/service": "es", "kuma.io/protocol": "http"},
+						Weight:          1,
+						ExternalService: &model.ExternalService{TLSEnabled: false},
+					},
+				},
+				"es2": []model.Endpoint{
+					{
+						Target:          "10.0.0.2",
+						Port:            10002,
+						Tags:            map[string]string{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
+						Weight:          1,
+						ExternalService: &model.ExternalService{TLSEnabled: false},
+					},
+				},
+			}
 			proxy := &model.Proxy{
 				Id: model.ProxyId{Name: "side-car", Mesh: "default"},
 				Dataplane: &mesh_core.DataplaneResource{
@@ -204,91 +289,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
 					},
 				},
-				OutboundTargets: model.EndpointMap{
-					"api-http": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: http`
-						{
-							Target: "192.168.0.4",
-							Port:   8084,
-							Tags:   map[string]string{"kuma.io/service": "api-http", "kuma.io/protocol": "http", "region": "us"},
-							Weight: 1,
-						},
-						{
-							Target: "192.168.0.5",
-							Port:   8085,
-							Tags:   map[string]string{"kuma.io/service": "api-http", "kuma.io/protocol": "http", "region": "eu"},
-							Weight: 1,
-						},
-					},
-					"api-tcp": []model.Endpoint{ // notice that not every endpoint has a `kuma.io/protocol: http` tag
-						{
-							Target: "192.168.0.6",
-							Port:   8086,
-							Tags:   map[string]string{"kuma.io/service": "api-tcp", "kuma.io/protocol": "http", "region": "us"},
-							Weight: 1,
-						},
-						{
-							Target: "192.168.0.7",
-							Port:   8087,
-							Tags:   map[string]string{"kuma.io/service": "api-tcp", "region": "eu"},
-							Weight: 1,
-						},
-					},
-					"api-http2": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: http2`
-						{
-							Target: "192.168.0.4",
-							Port:   8088,
-							Tags:   map[string]string{"kuma.io/service": "api-http2", "kuma.io/protocol": "http2"},
-							Weight: 1,
-						},
-					},
-					"api-grpc": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: grpc`
-						{
-							Target: "192.168.0.4",
-							Port:   8089,
-							Tags:   map[string]string{"kuma.io/service": "api-grpc", "kuma.io/protocol": "grpc"},
-							Weight: 1,
-						},
-					},
-					"backend": []model.Endpoint{ // notice that not every endpoint has a tag `kuma.io/protocol: http`
-						{
-							Target: "192.168.0.1",
-							Port:   8081,
-							Tags:   map[string]string{"kuma.io/service": "backend", "region": "us"},
-							Weight: 1,
-						},
-						{
-							Target: "192.168.0.2",
-							Port:   8082,
-							Weight: 1,
-						},
-					},
-					"db": []model.Endpoint{
-						{
-							Target: "192.168.0.3",
-							Port:   5432,
-							Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
-							Weight: 1,
-						},
-					},
-					"es": []model.Endpoint{
-						{
-							Target:          "10.0.0.1",
-							Port:            10001,
-							Tags:            map[string]string{"kuma.io/service": "es", "kuma.io/protocol": "http"},
-							Weight:          1,
-							ExternalService: &model.ExternalService{TLSEnabled: false},
-						},
-					},
-					"es2": []model.Endpoint{
-						{
-							Target:          "10.0.0.2",
-							Port:            10002,
-							Tags:            map[string]string{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
-							Weight:          1,
-							ExternalService: &model.ExternalService{TLSEnabled: false},
-						},
-					},
-				},
+				OutboundTargets: outboundTargets,
 				Logs: model.LogMap{
 					"api-http": &mesh_proto.LoggingBackend{
 						Name: "file",
@@ -317,6 +318,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						},
 					},
 				},
+				CLACache: &dummyCLACache{outboundTargets: outboundTargets},
 			}
 
 			// when
@@ -454,6 +456,23 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		dataplane := mesh_proto.Dataplane{}
 		Expect(util_proto.FromYAML([]byte(dp), &dataplane)).To(Succeed())
 
+		outboundTargets := model.EndpointMap{
+			"backend.kuma-system": []model.Endpoint{
+				{
+					Target: "192.168.0.1",
+					Port:   8082,
+					Weight: 1,
+				},
+			},
+			"db.kuma-system": []model.Endpoint{
+				{
+					Target: "192.168.0.2",
+					Port:   5432,
+					Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
+					Weight: 1,
+				},
+			},
+		}
 		proxy := &model.Proxy{
 			Id: model.ProxyId{Name: "side-car", Mesh: "default"},
 			Dataplane: &mesh_core.DataplaneResource{
@@ -494,24 +513,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					{"kuma.io/service": "db", "version": "3.2.0"},
 				},
 			},
-			OutboundTargets: model.EndpointMap{
-				"backend.kuma-system": []model.Endpoint{
-					{
-						Target: "192.168.0.1",
-						Port:   8082,
-						Weight: 1,
-					},
-				},
-				"db.kuma-system": []model.Endpoint{
-					{
-						Target: "192.168.0.2",
-						Port:   5432,
-						Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
-						Weight: 1,
-					},
-				},
-			},
-			Metadata: &model.DataplaneMetadata{},
+			OutboundTargets: outboundTargets,
+			Metadata:        &model.DataplaneMetadata{},
+			CLACache:        &dummyCLACache{outboundTargets: outboundTargets},
 		}
 
 		// when

@@ -1,8 +1,11 @@
 package xds
 
 import (
+	"context"
 	"fmt"
 	"strings"
+
+	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
 	"github.com/pkg/errors"
 
@@ -73,6 +76,9 @@ type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjectio
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResource
 
+type CLACache interface {
+	GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error)
+}
 type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
@@ -87,6 +93,7 @@ type Proxy struct {
 	TracingBackend     *mesh_proto.TracingBackend
 	Metadata           *DataplaneMetadata
 	FaultInjections    FaultInjectionMap
+	CLACache           CLACache
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
