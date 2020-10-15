@@ -8,6 +8,7 @@ import (
 	"github.com/pkg/errors"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -31,6 +32,8 @@ const (
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 )
 
+var log = core.Log.WithName("injector")
+
 func New(cfg runtime_k8s.Injector, controlPlaneUrl string, client kube_client.Client) *KumaInjector {
 	return &KumaInjector{
 		cfg:             cfg,
@@ -52,11 +55,13 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve namespace for pod")
 	}
-	if inject, err := needInject(pod, ns); err != nil {
+	if inject, err := i.needInject(pod, ns); err != nil {
 		return err
 	} else if !inject {
+		log.V(1).Info("skip injecting Kuma", "name", pod.Name, "namespace", pod.Namespace)
 		return nil
 	}
+	log.Info("injecting Kuma", "name", pod.Name, "namespace", pod.Namespace)
 	// sidecar container
 	if pod.Spec.Containers == nil {
 		pod.Spec.Containers = []kube_core.Container{}
@@ -95,12 +100,20 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	return nil
 }
 
-func needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
+func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
+	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
+	if i.isInjectionException(pod) {
+		log.V(1).Info("pod fulfills exception requirements")
+		return false, nil
+	}
 	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return false, err
 	}
 	if exist {
+		if !enabled {
+			log.V(1).Info("pod has kuma.io/sidecar-injection: disabled annotation")
+		}
 		return enabled, nil
 	}
 	enabled, exist, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
@@ -108,9 +121,22 @@ func needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
 		return false, err
 	}
 	if exist {
+		if !enabled {
+			log.V(1).Info("namespace has kuma.io/sidecar-injection: disabled annotation")
+		}
 		return enabled, nil
 	}
 	return false, nil
+}
+
+func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
+	for key, value := range i.cfg.Exceptions.Labels {
+		podValue, exist := pod.Labels[key]
+		if exist && (value == "*" || value == podValue) {
+			return true
+		}
+	}
+	return false
 }
 
 func meshName(pod *kube_core.Pod, ns *kube_core.Namespace) string {

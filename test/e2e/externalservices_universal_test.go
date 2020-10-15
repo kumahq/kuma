@@ -129,7 +129,7 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("Should route to external-service", func() {
+	It("should route to external-service", func() {
 		err := YamlUniversal(fmt.Sprintf(trafficRoute, es1))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -140,7 +140,7 @@ networking:
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 	})
 
-	It("Should route to external-service over tls", func() {
+	It("should route to external-service over tls", func() {
 		err := YamlUniversal(fmt.Sprintf(trafficRoute, es2))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
