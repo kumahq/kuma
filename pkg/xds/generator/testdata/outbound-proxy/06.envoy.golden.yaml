@@ -50,13 +50,13 @@ resources:
                   filterMetadata:
                     envoy.lb:
                       kuma.io/protocol: http2
-  - name: outbound:127.0.0.1:18080
+  - name: outbound:127.0.0.1:18082
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
       address:
         socketAddress:
           address: 127.0.0.1
-          portValue: 18080
+          portValue: 18082
       deprecatedV1:
         bindToPort: false
       filterChains:
@@ -71,5 +71,5 @@ resources:
                     ads: {}
                   routeConfigName: outbound:es2
                 statPrefix: es2
-      name: outbound:127.0.0.1:18080
+      name: outbound:127.0.0.1:18082
       trafficDirection: OUTBOUND

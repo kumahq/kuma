@@ -155,7 +155,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 18080,
+						DataplanePort: 18081,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
@@ -166,7 +166,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					mesh_proto.OutboundInterface{
 						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 18080,
+						DataplanePort: 18082,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
 							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
@@ -199,6 +199,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					"es": model.TagSelectorSet{
 						{"kuma.io/service": "es", "kuma.io/protocol": "http"},
+					},
+					"es2": model.TagSelectorSet{
 						{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
 					},
 				},
@@ -398,7 +400,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 `,
 			expected: "04.envoy.golden.yaml",
 		}),
-		FEntry("05. transparent_proxying=true, mtls=true, outbound=1 with ExternalService", testCase{
+		Entry("05. transparent_proxying=true, mtls=true, outbound=1 with ExternalService", testCase{
 			ctx: mtlsCtx,
 			dataplane: `
             networking:
@@ -408,7 +410,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
                 tags:
                   kuma.io/service: web
               outbound:
-              - port: 18080
+              - port: 18081
                 tags:
                   kuma.io/service: es
               transparentProxying:
@@ -417,7 +419,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 `,
 			expected: "05.envoy.golden.yaml",
 		}),
-		FEntry("06. transparent_proxying=true, mtls=true, outbound=1 with ExternalService http2", testCase{
+		Entry("06. transparent_proxying=true, mtls=true, outbound=1 with ExternalService http2", testCase{
 			ctx: mtlsCtx,
 			dataplane: `
             networking:
@@ -427,7 +429,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
                 tags:
                   kuma.io/service: web
               outbound:
-              - port: 18080
+              - port: 18082
                 tags:
                   kuma.io/service: es2
               transparentProxying:
