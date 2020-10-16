@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
-var _ = Describe("Test ExternalServices on Universal", func() {
+var _ = XDescribe("Test ExternalServices on Universal", func() {
 
 	meshDefaulMtlsOn := `
 type: Mesh
