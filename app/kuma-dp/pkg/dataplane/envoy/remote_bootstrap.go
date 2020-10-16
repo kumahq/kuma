@@ -66,7 +66,7 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 				},
 			}
 		} else {
-			log.Info("Connecting to HTTPS Bootstrap server without CA verification. Consider passing CA via --ca-cert-file or KUMA_CONTROL_PLANE_CA_CERT.")
+			log.Info(`[WARNING] The data plane proxy cannot verify the identity of the control plane because you are not setting the "--ca-cert-file" argument or setting the KUMA_CONTROL_PLANE_CA_CERT environment variable.`)
 		}
 	}
 
