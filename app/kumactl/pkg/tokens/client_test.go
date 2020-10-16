@@ -89,12 +89,12 @@ var _ = Describe("Tokens Client", func() {
 
 			// wait for server
 			Eventually(func() error {
-				_, err := client.Generate("example", "default", nil)
+				_, err := client.Generate("example", "default", nil, "dataplane")
 				return err
 			}, "5s", "100ms").ShouldNot(HaveOccurred())
 
 			// when
-			token, err := client.Generate("example", "default", nil)
+			token, err := client.Generate("example", "default", nil, "dataplane")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -129,7 +129,7 @@ var _ = Describe("Tokens Client", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		_, err = client.Generate("example", "default", nil)
+		_, err = client.Generate("example", "default", nil, "dataplane")
 
 		// then
 		Expect(err).To(MatchError("unexpected status code 500. Expected 200"))

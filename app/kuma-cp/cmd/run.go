@@ -15,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
-	dns "github.com/kumahq/kuma/pkg/dns/components"
+	"github.com/kumahq/kuma/pkg/dns/components"
 	"github.com/kumahq/kuma/pkg/gc"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
@@ -88,7 +88,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
-				if err := dns.SetupServer(rt); err != nil {
+				if err := components.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up DNS server")
 					return err
 				}
@@ -113,7 +113,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up KDS Remote")
 					return err
 				}
-				if err := dns.SetupServer(rt); err != nil {
+				if err := components.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up DNS server")
 					return err
 				}

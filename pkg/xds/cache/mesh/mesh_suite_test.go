@@ -1,4 +1,4 @@
-package universal_test
+package mesh_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestUniversal(t *testing.T) {
+func TestMeshSnapshot(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Sds Auth Universal Suite")
+	RunSpecs(t, "MeshSnapshot Suite")
 }

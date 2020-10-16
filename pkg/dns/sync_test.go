@@ -40,7 +40,7 @@ var _ = Describe("DNS sync", func() {
 		}()
 
 		dnsResolverFollower = dns.NewDNSResolver("mesh")
-		vipsSynchronizer, err := dns.NewVIPsSynchronizer(resManager, dnsResolverFollower, persistence, neverLeaderInfo{})
+		vipsSynchronizer, err := dns.NewVIPsSynchronizer(dnsResolverFollower, persistence, neverLeaderInfo{})
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			Expect(vipsSynchronizer.Start(stop)).ToNot(HaveOccurred())

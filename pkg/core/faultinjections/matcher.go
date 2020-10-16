@@ -24,9 +24,12 @@ func (f *FaultInjectionMatcher) Match(ctx context.Context, dataplane *mesh_core.
 	if err := f.ResourceManager.List(ctx, faultInjections, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve fault injections")
 	}
+	return BuildFaultInjectionMap(dataplane, mesh, faultInjections.Items)
+}
 
-	policies := make([]policy.ConnectionPolicy, len(faultInjections.Items))
-	for i, faultInjection := range faultInjections.Items {
+func BuildFaultInjectionMap(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource, faultInjections []*mesh_core.FaultInjectionResource) (core_xds.FaultInjectionMap, error) {
+	policies := make([]policy.ConnectionPolicy, len(faultInjections))
+	for i, faultInjection := range faultInjections {
 		policies[i] = faultInjection
 	}
 

@@ -45,6 +45,7 @@ func (d *dataplaneTokenWebService) handleIdentityRequest(request *restful.Reques
 	token, err := d.issuer.Generate(issuer.DataplaneIdentity{
 		Mesh: idReq.Mesh,
 		Name: idReq.Name,
+		Type: idReq.Type,
 		Tags: mesh_proto.MultiValueTagSetFrom(idReq.Tags),
 	})
 	if err != nil {

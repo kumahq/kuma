@@ -17,6 +17,8 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
+	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
 )
 
@@ -31,11 +33,11 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	caProvider := DefaultMeshCaProvider(rt)
 	identityProvider := DefaultIdentityCertProvider(rt)
-	authenticator, err := DefaultAuthenticator(rt)
+	authenticator, err := xds_server.DefaultAuthenticator(rt)
 	if err != nil {
 		return err
 	}
-	authCallbacks := newAuthCallbacks(authenticator)
+	authCallbacks := xds_auth.NewCallbacks(rt.ResourceManager(), authenticator)
 
 	reconciler := DataplaneReconciler{
 		resManager:         rt.ResourceManager(),

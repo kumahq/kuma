@@ -3,8 +3,6 @@ package topology
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-
 	"github.com/go-logr/logr"
 
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
@@ -30,16 +28,6 @@ func GetDataplanes(log logr.Logger, ctx context.Context, rm manager.ReadOnlyReso
 	}
 
 	return filteredDataplanes, nil
-}
-
-// GetExternalServices returns list of ExternalServices in provided Mesh
-func GetExternalServices(log logr.Logger, ctx context.Context, rm manager.ReadOnlyResourceManager, mesh string) (*core_mesh.ExternalServiceResourceList, error) {
-	externalServices := &core_mesh.ExternalServiceResourceList{}
-	if err := rm.List(ctx, externalServices, store.ListByMesh(mesh)); err != nil {
-		return nil, err
-	}
-
-	return externalServices, nil
 }
 
 // ResolveAddress resolves 'dataplane.networking.address' if it has DNS name in it. This is a crucial feature for

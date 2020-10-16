@@ -43,7 +43,7 @@ func NewDataplaneTokenClient(address string, config *kumactl_config.Context_Admi
 }
 
 type DataplaneTokenClient interface {
-	Generate(name string, mesh string, tags map[string][]string) (string, error)
+	Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error)
 }
 
 type httpDataplaneTokenClient struct {
@@ -52,11 +52,12 @@ type httpDataplaneTokenClient struct {
 
 var _ DataplaneTokenClient = &httpDataplaneTokenClient{}
 
-func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string) (string, error) {
+func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error) {
 	tokenReq := &types.DataplaneTokenRequest{
 		Name: name,
 		Mesh: mesh,
 		Tags: tags,
+		Type: dpType,
 	}
 	reqBytes, err := json.Marshal(tokenReq)
 	if err != nil {

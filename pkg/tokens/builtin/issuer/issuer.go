@@ -9,10 +9,18 @@ import (
 
 type Token = string
 
+type DpType = string
+
+const (
+	DpTypeDataplane = "dataplane"
+	DpTypeIngress   = "ingress"
+)
+
 type DataplaneIdentity struct {
 	Name string
 	Mesh string
 	Tags mesh_proto.MultiValueTagSet
+	Type DpType
 }
 
 // DataplaneTokenIssuer issues Dataplane Tokens used then for proving identity of the dataplanes.
@@ -27,6 +35,7 @@ type claims struct {
 	Name string
 	Mesh string
 	Tags map[string][]string
+	Type string
 	jwt.StandardClaims
 }
 
@@ -68,6 +77,7 @@ func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (Token, error) {
 		Name:           identity.Name,
 		Mesh:           identity.Mesh,
 		Tags:           tags,
+		Type:           identity.Type,
 		StandardClaims: jwt.StandardClaims{},
 	}
 
@@ -101,6 +111,7 @@ func (i *jwtTokenIssuer) Validate(rawToken Token) (DataplaneIdentity, error) {
 		Mesh: c.Mesh,
 		Name: c.Name,
 		Tags: mesh_proto.MultiValueTagSetFrom(c.Tags),
+		Type: c.Type,
 	}
 	return id, nil
 }
