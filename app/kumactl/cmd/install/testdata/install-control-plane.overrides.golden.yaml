@@ -28,6 +28,7 @@ metadata:
 data:
   tls.crt: Q2VydA==
   tls.key: S2V5
+  ca.crt: Q2FDZXJ0
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -5789,7 +5790,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 79c6abf3975b192e1eb85e3a8fe81594c498b635e153e75001f67b70cbec21a5
-        checksum/tls-secrets: 7dfa9c7e97b82c668cc4638628d8b4883c68aa650506ce265bf83f3f9980b17c
+        checksum/tls-secrets: 3c2efd53ae9390192e22a7b917990b60e04c036c3fc55d0dbdf9a0945c67a97a
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -5831,6 +5832,8 @@ spec:
               value: "kuma-ci/kuma-dp:greatest"
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "kuma-ci/kuma-init:greatest"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
             - name: KUMA_MODE
@@ -5889,7 +5892,7 @@ webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: Q2VydA==
+      caBundle: Q2FDZXJ0
       service:
         namespace: kuma
         name: kuma-ctrl-plane
@@ -5908,7 +5911,7 @@ webhooks:
   - name: owner-reference.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: Q2VydA==
+      caBundle: Q2FDZXJ0
       service:
         namespace: kuma
         name: kuma-ctrl-plane
@@ -5934,7 +5937,7 @@ webhooks:
   - name: kuma-injector.kuma.io
     failurePolicy: Crash
     clientConfig:
-      caBundle: Q2VydA==
+      caBundle: Q2FDZXJ0
       service:
         namespace: kuma
         name: kuma-ctrl-plane
@@ -5962,7 +5965,7 @@ webhooks:
   - name: validator.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: Q2VydA==
+      caBundle: Q2FDZXJ0
       service:
         namespace: kuma
         name: kuma-ctrl-plane
@@ -5993,7 +5996,7 @@ webhooks:
   - name: service.validator.kuma-admission.kuma.io
     failurePolicy: Ignore
     clientConfig:
-      caBundle: Q2VydA==
+      caBundle: Q2FDZXJ0
       service:
         namespace: kuma
         name: kuma-ctrl-plane
@@ -6015,7 +6018,7 @@ webhooks:
         kuma.io/system-namespace: "true"
     failurePolicy: Ignore
     clientConfig:
-      caBundle: Q2VydA==
+      caBundle: Q2FDZXJ0
       service:
         namespace: kuma
         name: kuma-ctrl-plane

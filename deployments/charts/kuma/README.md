@@ -29,6 +29,7 @@ The chart supports Helm v3+.
 | `controlPlane.resources`                           | The K8s resources spec for Kuma CP                                                | nil, differs based on mode                               |
 | `controlPlane.tls.cert`                            | TLS certificate for the all Kuma servers                                          | nil, generated and self-signed                           |
 | `controlPlane.tls.key`                             | TLS key for the all Kuma servers                                                  | nil, generated and self-signed                           |
+| `controlPlane.tls.caCert`                          | CA certificate that was used to generate TLS certificate for Kuma CP servers      | nil, generated and self-signed                           |
 | `controlPlane.image.pullPolicy`                    | Kuma CP ImagePullPolicy                                                           | `IfNotPresent`                                           |
 | `controlPlane.image.registry`                      | Kuma CP image registry                                                            | nil, uses global                                         |
 | `controlPlane.image.repository`                    | Kuma CP image repository                                                          | `kuma-cp`                                                |

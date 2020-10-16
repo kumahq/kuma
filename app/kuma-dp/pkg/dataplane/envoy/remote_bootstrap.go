@@ -3,6 +3,8 @@ package envoy
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
@@ -50,6 +52,22 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
 		return nil, err
+	}
+
+	if bootstrapUrl.Scheme == "https" {
+		if cfg.ControlPlane.CaCert != "" {
+			certPool := x509.NewCertPool()
+			if ok := certPool.AppendCertsFromPEM([]byte(cfg.ControlPlane.CaCert)); !ok {
+				return nil, errors.New("could not add certificate")
+			}
+			b.client.Transport = &http.Transport{
+				TLSClientConfig: &tls.Config{
+					RootCAs: certPool,
+				},
+			}
+		} else {
+			log.Info(`[WARNING] The data plane proxy cannot verify the identity of the control plane because you are not setting the "--ca-cert-file" argument or setting the KUMA_CONTROL_PLANE_CA_CERT environment variable.`)
+		}
 	}
 
 	backoff, err := retry.NewConstant(cfg.ControlPlane.BootstrapServer.Retry.Backoff)

@@ -38,6 +38,7 @@ injector:
   sidecarTraffic:
     excludeInboundPorts: []
     excludeOutboundPorts: []
+  caCertFile: ""
   exceptions:
     labels:
       openshift.io/build.name: "*"

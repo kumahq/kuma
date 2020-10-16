@@ -57,7 +57,9 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	addMutators(mgr, rt)
+	if err := addMutators(mgr, rt); err != nil {
+		return err
+	}
 
 	return addDefaulters(mgr)
 }
@@ -167,13 +169,16 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	return nil
 }
 
-func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) {
+func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	if rt.Config().Mode != config_core.Global {
-		kumaInjector := injector.New(
+		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
 			rt.Config().ApiServer.Catalog.ApiServer.Url,
 			mgr.GetClient(),
 		)
+		if err != nil {
+			return err
+		}
 		mgr.GetWebhookServer().Register("/inject-sidecar", k8s_webhooks.PodMutatingWebhook(kumaInjector.InjectKuma))
 	}
 
@@ -185,4 +190,5 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) {
 		Scheme:       mgr.GetScheme(),
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
+	return nil
 }
