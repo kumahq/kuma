@@ -85,40 +85,49 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 					}
 				}
 			}
-
-			configBytes, err := processConfigTemplate(string(b), ctx.args.vars)
-			if err != nil {
-				return errors.Wrap(err, "error compiling config from template")
-			}
-
-			res, err := parseResource(configBytes)
-			if err != nil {
-				return errors.Wrap(err, "YAML contains invalid resource")
-			}
-
-			if ctx.args.dryRun {
-				p, err := printers.NewGenericPrinter(output.YAMLFormat)
+			var resources []model.Resource
+			rawResources := strings.Split(string(b), "---")
+			for _, rawResource := range rawResources {
+				if len(rawResource) == 0 {
+					continue
+				}
+				bytes, err := processConfigTemplate(rawResource, ctx.args.vars)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "error compiling config from template")
 				}
-				if err := p.Print(rest_types.From.Resource(res), cmd.OutOrStdout()); err != nil {
-					return err
+				res, err := parseResource(bytes)
+				if err != nil {
+					return errors.Wrap(err, "YAML contains invalid resource")
 				}
-				return nil
+				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh()); err.HasViolations() {
+					return err.OrNil()
+				}
+				resources = append(resources, res)
 			}
+			for _, resource := range resources {
+				if ctx.args.dryRun {
+					p, err := printers.NewGenericPrinter(output.YAMLFormat)
+					if err != nil {
+						return err
+					}
+					if err := p.Print(rest_types.From.Resource(resource), cmd.OutOrStdout()); err != nil {
+						return err
+					}
+				} else {
+					var rs store.ResourceStore
+					if resource.GetType() == system.SecretType { // Secret is exposed via Admin Server. It will be merged into API Server eventually.
+						rs, err = pctx.CurrentAdminResourceStore()
+					} else {
+						rs, err = pctx.CurrentResourceStore()
+					}
+					if err != nil {
+						return err
+					}
 
-			var rs store.ResourceStore
-			if res.GetType() == system.SecretType { // Secret is exposed via Admin Server. It will be merged into API Server eventually.
-				rs, err = pctx.CurrentAdminResourceStore()
-			} else {
-				rs, err = pctx.CurrentResourceStore()
-			}
-			if err != nil {
-				return err
-			}
-
-			if err := upsert(rs, res); err != nil {
-				return err
+					if err := upsert(rs, resource); err != nil {
+						return err
+					}
+				}
 			}
 			return nil
 		},
