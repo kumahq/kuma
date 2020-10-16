@@ -20,13 +20,13 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
 	"github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/runtime"
 	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -34,7 +34,7 @@ import (
 
 var _ = Describe("SDS Server", func() {
 
-	var dpCredential sds_auth.Credential
+	var dpCredential tokens_issuer.Token
 	var stop chan struct{}
 	var client envoy_discovery.SecretDiscoveryServiceClient
 	var conn *grpc.ClientConn
@@ -120,12 +120,11 @@ var _ = Describe("SDS Server", func() {
 		// retrieve example DP token
 		tokenIssuer, err := tokens_builtin.NewDataplaneTokenIssuer(runtime)
 		Expect(err).ToNot(HaveOccurred())
-		token, err := tokenIssuer.Generate(tokens_issuer.DataplaneIdentity{
+		dpCredential, err = tokenIssuer.Generate(tokens_issuer.DataplaneIdentity{
 			Name: dpRes.GetMeta().GetName(),
 			Mesh: dpRes.GetMeta().GetMesh(),
 		})
 		Expect(err).ToNot(HaveOccurred())
-		dpCredential = sds_auth.Credential(token)
 
 		// start the runtime
 		Expect(server.SetupServer(runtime)).To(Succeed())
@@ -157,14 +156,14 @@ var _ = Describe("SDS Server", func() {
 			Node: &envoy_api_core.Node{
 				Id: "default.backend-01",
 			},
-			ResourceNames: []string{server.MeshCaResource, server.IdentityCertResource},
+			ResourceNames: []string{envoy.MeshCaResource, envoy.IdentityCertResource},
 			TypeUrl:       envoy_resource.SecretType,
 		}
 	}
 
 	It("should return CA and Identity cert when DP is authorized", func(done Done) {
 		// given
-		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", string(dpCredential))
+		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", dpCredential)
 		stream, err := client.StreamSecrets(ctx)
 		defer func() {
 			if stream != nil {
@@ -206,7 +205,7 @@ var _ = Describe("SDS Server", func() {
 
 		BeforeEach(func(done Done) {
 			// given
-			ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", string(dpCredential))
+			ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", dpCredential)
 			s, err := client.StreamSecrets(ctx)
 			stream = s
 			Expect(err).ToNot(HaveOccurred())
