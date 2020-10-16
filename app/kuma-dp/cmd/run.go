@@ -64,17 +64,6 @@ func newRunCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			if catalog.Apis.DataplaneToken.Enabled() {
-				if cfg.DataplaneRuntime.TokenPath == "" && cfg.DataplaneRuntime.Token == "" {
-					return errors.New("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. " +
-						"Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
-				}
-				if cfg.DataplaneRuntime.TokenPath != "" {
-					if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
-						return err
-					}
-				}
-			}
 
 			dp, err := readDataplaneResource(cmd, &cfg)
 			if err != nil {
@@ -111,6 +100,11 @@ func newRunCmd() *cobra.Command {
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			if cfg.DataplaneRuntime.TokenPath != "" {
+				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
+					return err
+				}
+			}
 			if cfg.DataplaneRuntime.Token != "" {
 				path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
 				if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0600); err != nil {
