@@ -14,6 +14,7 @@ type generateDataplaneTokenContext struct {
 
 	args struct {
 		dataplane string
+		dpType    string
 		tags      map[string]string
 	}
 }
@@ -31,6 +32,9 @@ $ kumactl generate dataplane-token --mesh demo --dataplane demo-01
 Generate token bound by mesh
 $ kumactl generate dataplane-token --mesh demo
 
+Generate Ingress token
+$ kumactl generate dataplane-token --type ingress
+
 Generate token bound by tag
 $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 `,
@@ -44,7 +48,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 			for k, v := range ctx.args.tags {
 				tags[k] = strings.Split(v, ",")
 			}
-			token, err := client.Generate(ctx.args.dataplane, pctx.Args.Mesh, tags)
+			token, err := client.Generate(ctx.args.dataplane, pctx.Args.Mesh, tags, ctx.args.dpType)
 			if err != nil {
 				return errors.Wrap(err, "failed to generate a dataplane token")
 			}
@@ -53,6 +57,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 		},
 	}
 	cmd.Flags().StringVar(&ctx.args.dataplane, "dataplane", "", "name of the Dataplane")
+	cmd.Flags().StringVar(&ctx.args.dpType, "type", "", `type of the Dataplane ("dataplane", "ingress")`)
 	cmd.Flags().StringToStringVar(&ctx.args.tags, "tag", nil, "required tag values for dataplane (split values by comma to provide multiple values)")
 	return cmd
 }

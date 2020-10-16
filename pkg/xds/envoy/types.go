@@ -107,6 +107,10 @@ func (c *Cluster) HasExternalService() bool {
 	return c.hasExternalService
 }
 
+func (c *Cluster) Subsets() []ClusterSubset {
+	return c.subsets
+}
+
 type Clusters map[string]*Cluster
 
 func (c Clusters) ClusterNames() []string {

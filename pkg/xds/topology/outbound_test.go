@@ -488,7 +488,7 @@ var _ = Describe("TrafficRoute", func() {
 									Enabled: true,
 								},
 							},
-							Tags: map[string]string{"kuma.io/service": "redis", "kuma.io/service_tls": "enabled",},
+							Tags: map[string]string{"kuma.io/service": "redis", "kuma.io/service_tls": "enabled"},
 						},
 					},
 				},
