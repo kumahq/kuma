@@ -6,9 +6,11 @@ import (
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
@@ -24,11 +26,11 @@ type staticDataplaneTokenGenerator struct {
 
 var _ tokens.DataplaneTokenClient = &staticDataplaneTokenGenerator{}
 
-func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags map[string][]string) (string, error) {
+func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error) {
 	if s.err != nil {
 		return "", s.err
 	}
-	return fmt.Sprintf("token-for-%s-%s", name, mesh), nil
+	return fmt.Sprintf("token-for-%s-%s-%s-%s", name, mesh, mesh_proto.MultiValueTagSetFrom(tags).String(), dpType), nil
 }
 
 var _ = Describe("kumactl generate dataplane-token", func() {
@@ -64,29 +66,31 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		rootCmd.SetOut(buf)
 	})
 
-	It("should generate a token", func() {
-		// when
-		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--dataplane=example", "--mesh=demo"})
-		err := rootCmd.Execute()
+	type testCase struct {
+		args   []string
+		result string
+	}
+	DescribeTable("should generate token",
+		func(given testCase) {
+			// when
+			rootCmd.SetArgs(given.args)
+			err := rootCmd.Execute()
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
+			// then
+			Expect(err).ToNot(HaveOccurred())
 
-		// and
-		Expect(buf.String()).To(Equal("token-for-example-demo"))
-	})
-
-	It("should generate a token for default mesh when it is not specified", func() {
-		// when
-		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--dataplane=example"})
-		err := rootCmd.Execute()
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// and
-		Expect(buf.String()).To(Equal("token-for-example-default"))
-	})
+			// and
+			Expect(buf.String()).To(Equal(given.result))
+		},
+		Entry("for default mesh when it is not specified", testCase{
+			args:   []string{"generate", "dataplane-token", "--dataplane=example"},
+			result: "token-for-example-default--",
+		}),
+		Entry("for all arguments", testCase{
+			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--dataplane=example", "--type=dataplane", "--tag", "kuma.io/service=web"},
+			result: "token-for-example-demo-kuma.io/service=web-dataplane",
+		}),
+	)
 
 	It("should write error when generating token fails", func() {
 		// setup

@@ -1,4 +1,4 @@
-package common_test
+package cla_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestCommon(t *testing.T) {
+func TestCLA(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Sds Auth Common Suite")
+	RunSpecs(t, "CLA Suite")
 }

@@ -11,7 +11,7 @@ func SetupServer(rt runtime.Runtime) error {
 		return err
 	}
 	persistence := dns.NewDNSPersistence(rt.ConfigManager())
-	vipsSync, err := dns.NewVIPsSynchronizer(rt.ReadOnlyResourceManager(), rt.DNSResolver(), persistence, rt.LeaderInfo())
+	vipsSync, err := dns.NewVIPsSynchronizer(rt.DNSResolver(), persistence, rt.LeaderInfo())
 	if err != nil {
 		return err
 	}

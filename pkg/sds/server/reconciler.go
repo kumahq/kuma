@@ -26,8 +26,8 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
 	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 // DataplaneReconciler keeps the state of the Cache for SDS consistent
@@ -139,19 +139,19 @@ func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_
 }
 
 func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (envoy_cache.Snapshot, error) {
-	requestor := sds_auth.Identity{
+	requestor := sds_provider.Identity{
 		Services: dataplane.Spec.TagSet().Values(mesh_proto.ServiceTag),
 		Mesh:     dataplane.GetMeta().GetMesh(),
 	}
-	identitySecret, err := d.identityProvider.Get(context.Background(), IdentityCertResource, requestor)
+	identitySecret, err := d.identityProvider.Get(context.Background(), envoy.IdentityCertResource, requestor)
 	if err != nil {
 		return envoy_cache.Snapshot{}, errors.Wrap(err, "could not get Dataplane cert pair")
 	}
 
-	requestor = sds_auth.Identity{
+	requestor = sds_provider.Identity{
 		Mesh: dataplane.GetMeta().GetMesh(),
 	}
-	caSecret, err := d.meshCaProvider.Get(context.Background(), MeshCaResource, requestor)
+	caSecret, err := d.meshCaProvider.Get(context.Background(), envoy.MeshCaResource, requestor)
 	if err != nil {
 		return envoy_cache.Snapshot{}, errors.Wrap(err, "could not get mesh CA cert")
 	}
@@ -161,14 +161,14 @@ func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneRes
 		Resources: [envoy_types.UnknownType]envoy_cache.Resources{},
 	}
 	snap.Resources[envoy_types.Secret] = envoy_cache.NewResources(version, []envoy_types.Resource{
-		identitySecret.ToResource(IdentityCertResource),
-		caSecret.ToResource(MeshCaResource),
+		identitySecret.ToResource(envoy.IdentityCertResource),
+		caSecret.ToResource(envoy.MeshCaResource),
 	})
 	return snap, nil
 }
 
 func (d *DataplaneReconciler) updateInsights(dataplaneId core_model.ResourceKey, snapshot envoy_cache.Snapshot) error {
-	secret := snapshot.Resources[envoy_types.Secret].Items[IdentityCertResource].(*envoy_auth.Secret)
+	secret := snapshot.Resources[envoy_types.Secret].Items[envoy.IdentityCertResource].(*envoy_auth.Secret)
 	certPEM := secret.GetTlsCertificate().CertificateChain.GetInlineBytes()
 	block, _ := pem.Decode(certPEM)
 	cert, err := x509.ParseCertificate(block.Bytes)

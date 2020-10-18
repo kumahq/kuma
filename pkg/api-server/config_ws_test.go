@@ -208,7 +208,8 @@ var _ = Describe("Config WS", func() {
                     "openshift.io/build.name": "*",
                     "openshift.io/deployer-pod-for.name": "*"
                   }
-                }
+                },
+                "caCertFile": ""
               }
             },
             "universal": {

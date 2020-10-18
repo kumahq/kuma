@@ -23,8 +23,16 @@ func (m *TrafficPermissionsMatcher) Match(ctx context.Context, dataplane *mesh_c
 		return nil, errors.Wrap(err, "could not retrieve traffic permissions")
 	}
 
-	policies := make([]policy.ConnectionPolicy, len(permissions.Items))
-	for i, permission := range permissions.Items {
+	return BuildTrafficPermissionMap(dataplane, mesh, permissions.Items)
+}
+
+func BuildTrafficPermissionMap(
+	dataplane *mesh_core.DataplaneResource,
+	mesh *mesh_core.MeshResource,
+	trafficPermissions []*mesh_core.TrafficPermissionResource,
+) (core_xds.TrafficPermissionMap, error) {
+	policies := make([]policy.ConnectionPolicy, len(trafficPermissions))
+	for i, permission := range trafficPermissions {
 		policies[i] = permission
 	}
 

@@ -51,6 +51,10 @@ store:
 bootstrapServer:
   # Port of Server that provides bootstrap configuration for dataplanes
   port: 5682 # ENV: KUMA_BOOTSTRAP_SERVER_PORT
+  # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
+  tlsCertFile: # ENV: KUMA_BOOTSTRAP_SERVER_TLS_CERT_FILE
+  # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
+  tlsKeyFile: # ENV: KUMA_BOOTSTRAP_SERVER_TLS_KEY_FILE
   # Parameters of bootstrap configuration
   params:
     # Address of Envoy Admin
@@ -176,6 +180,8 @@ runtime:
       virtualProbesEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED
       # VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
       virtualProbesPort: 9000 # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED
+      # CaCertFile is CA certificate which will be used to verify a connection to the control plane.
+      caCertFile:  # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
       # SidecarContainer defines configuration of the Kuma sidecar container.
       sidecarContainer:
         # Image name.

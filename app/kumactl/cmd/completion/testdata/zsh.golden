@@ -284,6 +284,7 @@ function _kumactl_generate_dataplane-token {
   _arguments \
     '--dataplane[name of the Dataplane]:' \
     '--tag[required tag values for dataplane (split values by comma to provide multiple values)]:' \
+    '--type[type of the Dataplane ("dataplane", "ingress")]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
@@ -785,6 +786,7 @@ function _kumactl_install_control-plane {
     '--kds-global-address[URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)]:' \
     '--mode[kuma cp modes: one of standalone|remote|global]:' \
     '--namespace[namespace to install Kuma Control Plane to]:' \
+    '--tls-ca-cert[CA certificate that was used to generate TLS certificate for Kuma Control Plane servers]:' \
     '--tls-cert[TLS certificate for Kuma Control Plane servers]:' \
     '--tls-key[TLS key for Kuma Control Plane servers]:' \
     '--use-node-port[use NodePort instead of LoadBalancer]' \

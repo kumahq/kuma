@@ -116,6 +116,10 @@ func (c *Cluster) RequireTLS() bool {
 	return c.requireTLS
 }
 
+func (c *Cluster) Subsets() []ClusterSubset {
+	return c.subsets
+}
+
 type Clusters map[string]*Cluster
 
 func (c Clusters) ClusterNames() []string {
