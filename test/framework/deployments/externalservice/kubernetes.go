@@ -61,7 +61,7 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 
 func (k *k8SDeployment) Delete(cluster framework.Cluster) error {
 	// Forcefully delete the namespace, no matter if there are other pods
-	// this is to ensure that all the relevan resources are cleaned up
+	// this is to ensure that all the relevant resources are cleaned up.
 	// We do ignore the error here, because any subsequent invocation of
 	// this code will essentially fail.
 	_ = k8s.DeleteNamespaceE(cluster.GetTesting(),
