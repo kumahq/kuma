@@ -56,7 +56,7 @@ func BuildEndpointMap(
 
 		tags := externalService.Spec.GetTags()
 		if tlsEnabled {
-			tags[mesh_proto.ServiceTag+"_tls"] = "enabled"
+			tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
 		}
 
 		outbound[service] = append(outbound[service], core_xds.Endpoint{

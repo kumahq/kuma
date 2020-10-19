@@ -60,13 +60,10 @@ func (k *k8SDeployment) Deploy(cluster framework.Cluster) error {
 }
 
 func (k *k8SDeployment) Delete(cluster framework.Cluster) error {
-	_ = k8s.KubectlDeleteE(cluster.GetTesting(),
-		cluster.GetKubectlOptions(externalServiceNamespace),
-		filepath.Join("testdata", fmt.Sprintf("%s.yaml", k.Name())))
-
-	framework.WaitPodsNotAvailable(externalServiceNamespace, k.Name())
-
-	// forcefully delete the namespace, no matter if there are other pods
+	// Forcefully delete the namespace, no matter if there are other pods
+	// this is to ensure that all the relevan resources are cleaned up
+	// We do ignore the error here, because any subsequent invocation of
+	// this code will essentially fail.
 	_ = k8s.DeleteNamespaceE(cluster.GetTesting(),
 		cluster.GetKubectlOptions(externalServiceNamespace),
 		externalServiceNamespace)
