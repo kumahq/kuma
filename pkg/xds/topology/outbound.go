@@ -54,10 +54,15 @@ func BuildEndpointMap(
 			tlsEnabled = externalService.Spec.Networking.Tls.Enabled
 		}
 
+		tags := externalService.Spec.GetTags()
+		if tlsEnabled {
+			tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
+		}
+
 		outbound[service] = append(outbound[service], core_xds.Endpoint{
 			Target: externalService.Spec.GetHost(),
 			Port:   externalService.Spec.GetPortUInt32(),
-			Tags:   externalService.Spec.GetTags(),
+			Tags:   tags,
 			Weight: 1,
 			ExternalService: &core_xds.ExternalService{
 				TLSEnabled: tlsEnabled,

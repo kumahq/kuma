@@ -13,7 +13,6 @@ type ClusterSubset struct {
 	Weight            uint32
 	Tags              Tags
 	IsExternalService bool
-	RequiresTLS       bool
 }
 
 type Tags map[string]string
@@ -87,16 +86,12 @@ func DistinctTags(tags []Tags) []Tags {
 type Cluster struct {
 	subsets            []ClusterSubset
 	hasExternalService bool
-	requireTLS         bool
 }
 
 func (c *Cluster) Add(subset ClusterSubset) {
 	c.subsets = append(c.subsets, subset)
 	if subset.IsExternalService {
 		c.hasExternalService = true
-	}
-	if subset.RequiresTLS {
-		c.requireTLS = true
 	}
 }
 
@@ -110,10 +105,6 @@ func (c *Cluster) Tags() []Tags {
 
 func (c *Cluster) HasExternalService() bool {
 	return c.hasExternalService
-}
-
-func (c *Cluster) RequireTLS() bool {
-	return c.requireTLS
 }
 
 func (c *Cluster) Subsets() []ClusterSubset {
