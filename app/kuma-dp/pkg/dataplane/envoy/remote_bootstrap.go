@@ -134,14 +134,17 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
-		if resp.StatusCode == http.StatusNotFound {
+		bodyBytes, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, errors.Wrapf(err, "Unable to read the response with status code: %d. Make sure you are using https URL", resp.StatusCode)
+		}
+		if resp.StatusCode == http.StatusNotFound && len(bodyBytes) == 0 {
 			return nil, DpNotFoundErr
 		}
+		if resp.StatusCode == http.StatusNotFound && string(bodyBytes) == "404: Page Not Found" { // response body of Go HTTP Server when hit for invalid endpoint
+			return nil, errors.New("There is no /bootstrap endpoint for provided CP address. Double check if the address passed to the CP has a DP Server port (5678 by default), not HTTP API (5681 by default)")
+		}
 		if resp.StatusCode == http.StatusUnprocessableEntity {
-			bodyBytes, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
-				return nil, errors.Errorf("Unable to read the response with status code: %d", resp.StatusCode)
-			}
 			return nil, InvalidRequestErr(string(bodyBytes))
 		}
 		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
