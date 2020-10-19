@@ -173,7 +173,7 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	if rt.Config().Mode != config_core.Global {
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
-			rt.Config().ApiServer.Catalog.ApiServer.Url,
+			rt.Config().ApiServer.Catalog.Bootstrap.Url,
 			mgr.GetClient(),
 		)
 		if err != nil {

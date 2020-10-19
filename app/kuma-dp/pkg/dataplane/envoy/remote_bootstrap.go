@@ -70,11 +70,11 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 		}
 	}
 
-	backoff, err := retry.NewConstant(cfg.ControlPlane.BootstrapServer.Retry.Backoff)
+	backoff, err := retry.NewConstant(cfg.ControlPlane.Retry.Backoff)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create retry backoff")
 	}
-	backoff = retry.WithMaxDuration(cfg.ControlPlane.BootstrapServer.Retry.MaxDuration, backoff)
+	backoff = retry.WithMaxDuration(cfg.ControlPlane.Retry.MaxDuration, backoff)
 	var respBytes []byte
 	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")
@@ -87,9 +87,9 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 		}
 		switch err {
 		case DpNotFoundErr:
-			log.Info("Dataplane entity is not yet found in the Control Plane. If you are running on Kubernetes, CP is most likely still in the process of converting Pod to Dataplane. Retrying.", "backoff", cfg.ControlPlane.ApiServer.Retry.Backoff)
+			log.Info("Dataplane entity is not yet found in the Control Plane. If you are running on Kubernetes, CP is most likely still in the process of converting Pod to Dataplane. Retrying.", "backoff", cfg.ControlPlane.Retry.Backoff)
 		default:
-			log.Info("could not fetch bootstrap configuration. Retrying.", "backoff", cfg.ControlPlane.BootstrapServer.Retry.Backoff, "err", err.Error())
+			log.Info("could not fetch bootstrap configuration. Retrying.", "backoff", cfg.ControlPlane.Retry.Backoff, "err", err.Error())
 		}
 		return retry.RetryableError(err)
 	})

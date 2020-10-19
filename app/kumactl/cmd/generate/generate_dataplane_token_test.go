@@ -107,28 +107,4 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		Expect(buf.String()).To(Equal("Error: failed to generate a dataplane token: could not connect to API\n"))
 	})
 
-	It("should throw an error when dataplane token server is disabled", func() {
-		// setup
-		ctx.Runtime.NewCatalogClient = func(s string) (catalog_client.CatalogClient, error) {
-			return &test_catalog.StaticCatalogClient{
-				Resp: catalog.Catalog{
-					Apis: catalog.Apis{
-						DataplaneToken: catalog.DataplaneTokenApi{
-							LocalUrl: "", // disabled dataplane token server
-						},
-					},
-				},
-			}, nil
-		}
-
-		// when
-		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--dataplane=example"})
-		err := rootCmd.Execute()
-
-		// then
-		Expect(err).To(HaveOccurred())
-
-		// and
-		Expect(buf.String()).To(Equal("Error: failed to create dataplane token client: Enable the server to be able to generate tokens.\n"))
-	})
 })
