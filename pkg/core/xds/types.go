@@ -44,6 +44,9 @@ type DestinationMap map[ServiceName]TagSelectorSet
 
 type ExternalService struct {
 	TLSEnabled bool
+	CaCert     []byte
+	ClientCert []byte
+	ClientKey  []byte
 }
 
 // Endpoint holds routing-related information about a single endpoint.

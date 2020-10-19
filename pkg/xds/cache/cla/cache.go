@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/datasource"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -32,6 +34,7 @@ var (
 type Cache struct {
 	cache   *cache.Cache
 	rm      manager.ReadOnlyResourceManager
+	dsl     datasource.Loader
 	ipFunc  lookup.LookupIPFunc
 	zone    string
 	onceMap *once.Map
@@ -40,6 +43,7 @@ type Cache struct {
 
 func NewCache(
 	rm manager.ReadOnlyResourceManager,
+	dsl datasource.Loader,
 	zone string, expirationTime time.Duration,
 	ipFunc lookup.LookupIPFunc,
 	metrics metrics.Metrics,
@@ -54,6 +58,7 @@ func NewCache(
 	return &Cache{
 		cache:   cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 		rm:      rm,
+		dsl:     dsl,
 		zone:    zone,
 		ipFunc:  ipFunc,
 		onceMap: once.NewMap(),
@@ -85,7 +90,7 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_ap
 		if err := c.rm.List(ctx, externalServices, core_store.ListByMesh(meshName)); err != nil {
 			return nil, err
 		}
-		endpointMap := topology.BuildEndpointMap(dataplanes.Items, c.zone, mesh, externalServices.Items)
+		endpointMap := topology.BuildEndpointMap(mesh, c.zone, dataplanes.Items, externalServices.Items, c.dsl)
 		cla := endpoints.CreateClusterLoadAssignment(service, endpointMap[service])
 		c.cache.SetDefault(key, cla)
 		c.onceMap.Delete(key)

@@ -207,6 +207,36 @@ func (m *ExternalService_Networking_TLS) Validate() error {
 
 	// no validation rules for Enabled
 
+	if v, ok := interface{}(m.GetCaCert()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExternalService_Networking_TLSValidationError{
+				field:  "CaCert",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetClientCert()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExternalService_Networking_TLSValidationError{
+				field:  "ClientCert",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if v, ok := interface{}(m.GetClinetKey()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ExternalService_Networking_TLSValidationError{
+				field:  "ClinetKey",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	return nil
 }
 

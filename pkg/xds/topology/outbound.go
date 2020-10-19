@@ -1,17 +1,24 @@
 package topology
 
 import (
+	"context"
+
+	"github.com/pkg/errors"
+	"github.com/prometheus/common/log"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
 func BuildEndpointMap(
-	dataplanes []*mesh_core.DataplaneResource,
-	zone string,
 	mesh *mesh_core.MeshResource,
+	zone string,
+	dataplanes []*mesh_core.DataplaneResource,
 	externalServices []*mesh_core.ExternalServiceResource,
+	loader datasource.Loader,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
@@ -49,21 +56,50 @@ func BuildEndpointMap(
 	for _, externalService := range externalServices {
 		service := externalService.Spec.GetService()
 
-		tlsEnabled := false
-		if externalService.Spec.Networking.Tls != nil {
-			tlsEnabled = externalService.Spec.Networking.Tls.Enabled
+		externalServiceEndpoint, err := buildExternalServiceEndpoint(externalService, mesh.Meta.GetMesh(), loader)
+		if err != nil {
+			log.Info("Unable to create ExternalService endpoint", err)
+			continue
 		}
-
-		outbound[service] = append(outbound[service], core_xds.Endpoint{
-			Target: externalService.Spec.GetHost(),
-			Port:   externalService.Spec.GetPortUInt32(),
-			Tags:   externalService.Spec.GetTags(),
-			Weight: 1,
-			ExternalService: &core_xds.ExternalService{
-				TLSEnabled: tlsEnabled,
-			},
-		})
+		outbound[service] = append(outbound[service], *externalServiceEndpoint)
 	}
 
 	return outbound
+}
+
+func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceResource, mesh string, loader datasource.Loader) (*core_xds.Endpoint, error) {
+	tlsEnabled := false
+	var caCert, clientCert, clientKey []byte = nil, nil, nil
+
+	if externalService.Spec.Networking.Tls != nil {
+		tlsEnabled = externalService.Spec.Networking.Tls.Enabled
+		if externalService.Spec.Networking.Tls.CaCert != nil {
+			var err error
+			caCert, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.CaCert)
+			if err != nil {
+				return nil, errors.Wrap(err, "Error getting CA certificate")
+			}
+			clientCert, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.CaCert)
+			if err != nil {
+				return nil, errors.Wrap(err, "Error getting client certificate")
+			}
+			clientKey, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.CaCert)
+			if err != nil {
+				return nil, errors.Wrap(err, "Error getting client key")
+			}
+		}
+	}
+
+	return &core_xds.Endpoint{
+		Target: externalService.Spec.GetHost(),
+		Port:   externalService.Spec.GetPortUInt32(),
+		Tags:   externalService.Spec.GetTags(),
+		Weight: 1,
+		ExternalService: &core_xds.ExternalService{
+			TLSEnabled: tlsEnabled,
+			CaCert:     caCert,
+			ClientCert: clientCert,
+			ClientKey:  clientKey,
+		},
+	}, nil
 }
