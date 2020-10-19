@@ -7,7 +7,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/protobuf v1.4.2
-	github.com/onsi/ginkgo v1.12.1
+	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.1
 	github.com/pkg/errors v0.9.1
 	google.golang.org/genproto v0.0.0-20200108215221-bd8f9a0ef82f
