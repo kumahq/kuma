@@ -66,6 +66,7 @@ func (k *k8SDeployment) Delete(cluster framework.Cluster) error {
 
 	framework.WaitPodsNotAvailable(externalServiceNamespace, k.Name())
 
+	// forcefully delete the namespace, no matter if there are other pods
 	_ = k8s.DeleteNamespaceE(cluster.GetTesting(),
 		cluster.GetKubectlOptions(externalServiceNamespace),
 		externalServiceNamespace)
