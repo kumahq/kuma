@@ -70,9 +70,16 @@ func BuildEndpointMap(
 func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceResource, mesh string, loader datasource.Loader) (*core_xds.Endpoint, error) {
 	tlsEnabled := false
 	var caCert, clientCert, clientKey []byte = nil, nil, nil
+	var tags map[string]string
 
 	if externalService.Spec.Networking.Tls != nil {
 		tlsEnabled = externalService.Spec.Networking.Tls.Enabled
+
+		tags = externalService.Spec.GetTags()
+		if tlsEnabled {
+			tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
+		}
+
 		if externalService.Spec.Networking.Tls.CaCert != nil {
 			var err error
 			caCert, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.CaCert)
@@ -93,7 +100,7 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 	return &core_xds.Endpoint{
 		Target: externalService.Spec.GetHost(),
 		Port:   externalService.Spec.GetPortUInt32(),
-		Tags:   externalService.Spec.GetTags(),
+		Tags:   tags,
 		Weight: 1,
 		ExternalService: &core_xds.ExternalService{
 			TLSEnabled: tlsEnabled,

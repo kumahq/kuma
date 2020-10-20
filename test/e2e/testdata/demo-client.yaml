@@ -43,6 +43,6 @@ spec:
             - -p
             - "3000"
           resources:
-            requests:
-              cpu: 100m
-              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 128Mi
