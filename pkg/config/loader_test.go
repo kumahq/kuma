@@ -88,21 +88,11 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.TLS.KeyPath).To(Equal("/path/to/key"))
 			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
 
-			Expect(cfg.ApiServer.Port).To(Equal(9090))
 			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
 			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
-
-			Expect(cfg.AdminServer.Apis.DataplaneToken.Enabled).To(BeTrue())
-			Expect(cfg.AdminServer.Local.Port).To(Equal(uint32(1111)))
-			Expect(cfg.AdminServer.Public.Enabled).To(BeTrue())
-			Expect(cfg.AdminServer.Public.Port).To(Equal(uint32(2222)))
-			Expect(cfg.AdminServer.Public.Interface).To(Equal("192.168.0.1"))
-			Expect(cfg.AdminServer.Public.TlsKeyFile).To(Equal("/tmp/key"))
-			Expect(cfg.AdminServer.Public.TlsCertFile).To(Equal("/tmp/cert"))
-			Expect(cfg.AdminServer.Public.ClientCertsDir).To(Equal("/tmp/certs"))
 
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -173,19 +163,6 @@ apiServer:
 monitoringAssignmentServer:
   grpcPort: 3333
   assignmentRefreshInterval: 12s
-adminServer:
-  local:
-    port: 1111
-  public:
-    enabled: true
-    interface: 192.168.0.1
-    port: 2222
-    tlsCertFile: /tmp/cert
-    tlsKeyFile: /tmp/key
-    clientCertsDir: /tmp/certs
-  apis:
-    dataplaneToken:
-      enabled: true
 runtime:
   kubernetes:
     admissionServer:
@@ -257,14 +234,6 @@ diagnostics:
 				"KUMA_API_SERVER_PORT":                                           "9090",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                    "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":  "12s",
-				"KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED":                 "true",
-				"KUMA_ADMIN_SERVER_LOCAL_PORT":                                   "1111",
-				"KUMA_ADMIN_SERVER_PUBLIC_ENABLED":                               "true",
-				"KUMA_ADMIN_SERVER_PUBLIC_INTERFACE":                             "192.168.0.1",
-				"KUMA_ADMIN_SERVER_PUBLIC_PORT":                                  "2222",
-				"KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE":                          "/tmp/key",
-				"KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE":                         "/tmp/cert",
-				"KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR":                      "/tmp/certs",
 				"KUMA_REPORTS_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":               "127.0.0.2",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                  "9443",

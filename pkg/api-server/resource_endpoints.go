@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/kumahq/kuma/pkg/api-server/auth"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/emicklei/go-restful"
@@ -46,8 +47,16 @@ type resourceEndpoints struct {
 	definitions.ResourceWsDefinition
 }
 
+func (r *resourceEndpoints) auth() restful.FilterFunction {
+	if r.ResourceWsDefinition.Admin {
+		return auth.AdminAuth
+	}
+	return auth.NoAuth
+}
+
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource).
+		Filter(r.auth()).
 		Doc(fmt.Sprintf("Get a %s", r.Name)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
 		Returns(200, "OK", nil).
@@ -72,6 +81,7 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 
 func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix).To(r.listResources).
+		Filter(r.auth()).
 		Doc(fmt.Sprintf("List of %s", r.Name)).
 		Param(ws.PathParameter("size", "size of page").DataType("int")).
 		Param(ws.PathParameter("offset", "offset of page to list").DataType("string")).
@@ -106,6 +116,7 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
+		Filter(r.auth()).
 		Doc(fmt.Sprintf("Updates a %s", r.Name)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
 		Returns(200, "OK", nil).
@@ -176,6 +187,7 @@ func (r *resourceEndpoints) createOrUpdateResourceReadOnly(request *restful.Requ
 
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
+		Filter(r.auth()).
 		Doc(fmt.Sprintf("Deletes a %s", r.Name)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
 		Returns(200, "OK", nil))

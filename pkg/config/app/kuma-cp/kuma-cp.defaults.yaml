@@ -76,33 +76,6 @@ monitoringAssignmentServer:
   # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
 
-# Admin server configuration
-adminServer:
-  # Local configuration of server that is available only on localhost
-  local:
-    # Port on which the server will be exposed
-    port: 5679 # ENV: KUMA_ADMIN_SERVER_LOCAL_PORT
-  # Public configuration of server that is available on public interface
-  public:
-    # If true then Admin Server is exposed on public interface
-    enabled: false
-    # Port on which the server will be exposed. If not specified (0) then port from local configuration will be used
-    port: 0 # ENV: KUMA_ADMIN_SERVER_PUBLIC_PORT
-    # Public interface on which the server will be exposed
-    interface: # ENV: KUMA_ADMIN_SERVER_PUBLIC_INTERFACE
-    # Path to TLS certificate file
-    tlsCertFile: # ENV: KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE
-    # Path to TLS key file
-    tlsKeyFile: # ENV: KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE
-    # Directory of authorized client certificates
-    clientCertsDir: # ENV: KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR"
-  # Admin Server APIs configuration
-  apis:
-    # Dataplane Token API configuration
-    dataplaneToken:
-      # If true then Dataplane Token and token verification is enabled
-      enabled: true # ENV: KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED
-
 # Envoy XDS server configuration
 xdsServer:
   # Port of Diagnostic Server for checking health and readiness of the Control Plane
@@ -114,8 +87,18 @@ xdsServer:
 
 # API Server configuration
 apiServer:
-  # Port of the API Server
-  port: 5681 # ENV: KUMA_API_SERVER_PORT
+  http:
+    enabled: true
+    interface: 0.0.0.0
+    # Port of the API Server
+    port: 5681 # ENV: KUMA_API_SERVER_PORT
+  https:
+    enabled: true
+    interface: 0.0.0.0
+    port: 5679
+    tlsCertFile: ""
+    tlsKeyFile: ""
+    clientCertsDir: ""
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp

@@ -21,7 +21,6 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 		return err
 	}
 	autoconfigureServersTLS(cfg)
-	autoconfigureAdminServer(cfg)
 	autoconfigureCatalog(cfg)
 	autoconfigBootstrapXdsParams(cfg)
 	return nil
@@ -35,6 +34,10 @@ func autoconfigureServersTLS(cfg *kuma_cp.Config) {
 	if cfg.DpServer.TlsCertFile == "" {
 		cfg.DpServer.TlsCertFile = cfg.General.TlsCertFile
 		cfg.DpServer.TlsKeyFile = cfg.General.TlsKeyFile
+	}
+	if cfg.ApiServer.HTTPS.TlsCertFile == "" {
+		cfg.ApiServer.HTTPS.TlsCertFile = cfg.General.TlsCertFile
+		cfg.ApiServer.HTTPS.TlsKeyFile = cfg.General.TlsKeyFile
 	}
 }
 
@@ -68,39 +71,25 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 	if len(madsUrl) == 0 {
 		madsUrl = fmt.Sprintf("grpc://%s:%d", cfg.General.AdvertisedHostname, cfg.MonitoringAssignmentServer.GrpcPort)
 	}
+	// fixme fill the parameter of dp token server
 	cat := &catalog.CatalogConfig{
 		ApiServer: catalog.ApiServerConfig{
-			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.ApiServer.Port),
+			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.ApiServer.HTTP.Port),
 		},
 		Bootstrap: catalog.BootstrapApiConfig{
 			Url: bootstrapUrl,
 		},
-		Admin: catalog.AdminApiConfig{
-			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port),
-		},
 		MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
 			Url: madsUrl,
+		},
+		DataplaneToken: catalog.DataplaneTokenApiConfig{
+			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.ApiServer.HTTP.Port),
 		},
 		Sds: catalog.SdsApiConfig{
 			Url: cfg.ApiServer.Catalog.Sds.Url,
 		},
 	}
-	if cfg.AdminServer.Public.Enabled {
-		cat.Admin.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.AdminServer.Public.Port)
-	}
-	if cfg.AdminServer.Apis.DataplaneToken.Enabled {
-		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port)
-		if cfg.AdminServer.Public.Enabled {
-			cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.AdminServer.Public.Port)
-		}
-	}
 	cfg.ApiServer.Catalog = cat
-}
-
-func autoconfigureAdminServer(cfg *kuma_cp.Config) {
-	if cfg.AdminServer.Public.Enabled && cfg.AdminServer.Public.Port == 0 {
-		cfg.AdminServer.Public.Port = cfg.AdminServer.Local.Port
-	}
 }
 
 func autoconfigBootstrapXdsParams(cfg *kuma_cp.Config) {

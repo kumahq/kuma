@@ -66,13 +66,7 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				currentMesh = "default"
 			}
 
-			var rs store.ResourceStore
-			var err error
-			if resourceType == system.SecretType { // Secret is exposed via Admin Server. It will be merged into API Server eventually.
-				rs, err = pctx.CurrentAdminResourceStore()
-			} else {
-				rs, err = pctx.CurrentResourceStore()
-			}
+			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
 			}

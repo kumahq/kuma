@@ -121,10 +121,11 @@ func NewKubeAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
 }
 
 func NewUniversalAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
-	if !rt.Config().AdminServer.Apis.DataplaneToken.Enabled {
-		return universal_auth.NewNoopAuthenticator(), nil
-	}
-	issuer, err := builtin.NewDataplaneTokenIssuer(rt)
+	//if !rt.Config().AdminServer.Apis.DataplaneToken.Enabled {
+	//	return universal_auth.NewNoopAuthenticator(), nil
+	//}
+	// fixme introduce auth parameter
+	issuer, err := builtin.NewDataplaneTokenIssuer(rt.ReadOnlyResourceManager())
 	if err != nil {
 		return nil, err
 	}

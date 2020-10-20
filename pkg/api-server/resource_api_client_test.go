@@ -104,7 +104,8 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	// http.Server and we need it later for the client
 	port, err := test.GetFreePort()
 	Expect(err).NotTo(HaveOccurred())
-	config.Port = port
+	config.HTTP.Port = port
+	config.HTTPS.Enabled = false
 	defs := append(definitions.All, SampleTrafficRouteWsDefinition)
 	resources := manager.NewResourceManager(store)
 	cfg := kuma_cp.DefaultConfig()

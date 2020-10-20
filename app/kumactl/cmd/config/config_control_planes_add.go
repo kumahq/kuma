@@ -11,11 +11,12 @@ import (
 
 func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	args := struct {
-		name            string
-		apiServerURL    string
-		overwrite       bool
-		adminClientCert string
-		adminClientKey  string
+		name           string
+		apiServerURL   string
+		overwrite      bool
+		clientCertFile string
+		clientKeyFile  string
+		caCertFile     string
 	}{}
 	cmd := &cobra.Command{
 		Use:   "add",
@@ -26,7 +27,10 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 				Name: args.name,
 				Coordinates: &config_proto.ControlPlaneCoordinates{
 					ApiServer: &config_proto.ControlPlaneCoordinates_ApiServer{
-						Url: args.apiServerURL,
+						Url:            args.apiServerURL,
+						CaCertFile:     args.caCertFile,
+						ClientCertFile: args.clientCertFile,
+						ClientKeyFile:  args.clientKeyFile,
 					},
 				},
 			}
@@ -44,12 +48,6 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 			ctx := &config_proto.Context{
 				Name:         cp.Name,
 				ControlPlane: cp.Name,
-				Credentials: &config_proto.Context_Credentials{
-					AdminApi: &config_proto.Context_AdminApiCredentials{
-						ClientCert: args.adminClientCert,
-						ClientKey:  args.adminClientKey,
-					},
-				},
 			}
 			if err := ctx.Validate(); err != nil {
 				return errors.Wrapf(err, "Context configuration is not valid")
@@ -72,7 +70,8 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	cmd.Flags().StringVar(&args.apiServerURL, "address", "", "URL of the Control Plane API Server (required)")
 	_ = cmd.MarkFlagRequired("address")
 	cmd.Flags().BoolVar(&args.overwrite, "overwrite", false, "overwrite existing Control Plane with the same reference name")
-	cmd.Flags().StringVar(&args.adminClientCert, "admin-client-cert", "", "Path to certificate of a client that is authorized to use Admin Server")
-	cmd.Flags().StringVar(&args.adminClientKey, "admin-client-key", "", "Path to certificate key of a client that is authorized to use Admin Server")
+	cmd.Flags().StringVar(&args.clientCertFile, "client-cert-file", "", "path to certificate of a client that is authorized to use the Admin operations of the Control Plane")
+	cmd.Flags().StringVar(&args.clientKeyFile, "client-key-file", "", "path to certificate key of a client that is authorized to use the Admin operations of the Control Plane")
+	cmd.Flags().StringVar(&args.caCertFile, "ca-cert-file", "", "path to the certificate authority which will be used to verify the Control Plane certificate")
 	return cmd
 }

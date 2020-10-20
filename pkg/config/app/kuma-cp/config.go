@@ -6,7 +6,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
-	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -104,8 +103,6 @@ type Config struct {
 	SdsServer *sds.SdsServerConfig `yaml:"sdsServer,omitempty"`
 	// Monitoring Assignment Discovery Service (MADS) server configuration
 	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer,omitempty"`
-	// Admin server configuration
-	AdminServer *admin_server.AdminServerConfig `yaml:"adminServer,omitempty"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer,omitempty"`
 	// Environment-specific configuration
@@ -135,7 +132,6 @@ func (c *Config) Sanitize() {
 	c.XdsServer.Sanitize()
 	c.SdsServer.Sanitize()
 	c.MonitoringAssignmentServer.Sanitize()
-	c.AdminServer.Sanitize()
 	c.ApiServer.Sanitize()
 	c.Runtime.Sanitize()
 	c.Metrics.Sanitize()
@@ -154,7 +150,6 @@ func DefaultConfig() Config {
 		XdsServer:                  xds.DefaultXdsServerConfig(),
 		SdsServer:                  sds.DefaultSdsServerConfig(),
 		MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
-		AdminServer:                admin_server.DefaultAdminServerConfig(),
 		ApiServer:                  api_server.DefaultApiServerConfig(),
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
@@ -245,9 +240,6 @@ func (c *Config) Validate() error {
 		if err := c.Metrics.Validate(); err != nil {
 			return errors.Wrap(err, "Metrics validation failed")
 		}
-	}
-	if err := c.AdminServer.Validate(); err != nil {
-		return errors.Wrap(err, "Admin Server validation failed")
 	}
 	if err := c.Store.Validate(); err != nil {
 		return errors.Wrap(err, "Store validation failed")

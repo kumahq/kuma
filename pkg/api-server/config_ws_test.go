@@ -66,7 +66,19 @@ var _ = Describe("Config WS", func() {
             "corsAllowedDomains": [
               ".*"
             ],
-            "port": %s,
+            "http": {
+              "enabled": true,
+              "interface": "0.0.0.0",
+              "port": %s
+            },
+            "https": {
+              "enabled": false,
+              "interface": "0.0.0.0",
+              "port": 5679,
+              "tlsCertFile": "",
+              "tlsKeyFile": "",
+              "clientCertsDir": ""
+            },
             "readOnly": false
           },
           "bootstrapServer": {
@@ -77,24 +89,6 @@ var _ = Describe("Config WS", func() {
               "xdsConnectTimeout": "1s",
               "xdsHost": "",
               "xdsPort": 0
-            }
-          },
-          "adminServer": {
-            "local": {
-              "port": 5679
-            },
-            "public": {
-              "clientCertsDir": "",
-              "enabled": false,
-              "interface": "",
-              "port": 0,
-              "tlsCertFile": "",
-              "tlsKeyFile": ""
-            },
-            "apis": {
-              "dataplaneToken": {
-                "enabled": true
-              }
             }
           },
           "defaults": {

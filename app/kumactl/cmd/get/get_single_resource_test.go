@@ -51,9 +51,6 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
 				},
-				NewAdminResourceStore: func(string, *config_proto.Context_AdminApiCredentials) (core_store.ResourceStore, error) {
-					return store, nil
-				},
 				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
 					return &test_catalog.StaticCatalogClient{
 						Resp: catalog.Catalog{
