@@ -26,14 +26,17 @@ type clientSideTLSConfigurer struct {
 func (c *clientSideTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	for _, ep := range c.endpoints {
 		if ep.ExternalService.TLSEnabled {
-			tlsContext, err := envoy.CreateUpstreamTlsContextNoMetadata(ep.Target)
+			ca, cert, key := externalServiceTlsCerts(ep.ExternalService)
+			tlsContext, err := envoy.CreateUpstreamTlsContextNoMetadata(ca, cert, key, ep.Target)
 			if err != nil {
 				return err
 			}
+
 			pbst, err := proto.MarshalAnyDeterministic(tlsContext)
 			if err != nil {
 				return err
 			}
+
 			transportSocket := &envoy_core.TransportSocket{
 				Name: envoy_wellknown.TransportSocketTls,
 				ConfigType: &envoy_core.TransportSocket_TypedConfig{
@@ -52,4 +55,29 @@ func (c *clientSideTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	}
 
 	return nil
+}
+
+func externalServiceTlsCerts(es *xds.ExternalService) (ca, cert, key *envoy_core.DataSource) {
+	if es.CaCert != nil {
+		ca = &envoy_core.DataSource{
+			Specifier: &envoy_core.DataSource_InlineBytes{
+				InlineBytes: es.CaCert,
+			},
+		}
+	}
+	if es.ClientCert != nil {
+		cert = &envoy_core.DataSource{
+			Specifier: &envoy_core.DataSource_InlineBytes{
+				InlineBytes: es.ClientCert,
+			},
+		}
+	}
+	if es.ClientKey != nil {
+		key = &envoy_core.DataSource{
+			Specifier: &envoy_core.DataSource_InlineBytes{
+				InlineBytes: es.ClientKey,
+			},
+		}
+	}
+	return
 }
