@@ -184,20 +184,34 @@ func ServiceSpiffeIDMatcher(mesh string, service string) *envoy_type_matcher.Str
 }
 
 func CreateUpstreamTlsContextNoMetadata(ca, cert, key *envoy_core.DataSource, sni string) (*envoy_auth.UpstreamTlsContext, error) {
+	var validationContextType *envoy_auth.CommonTlsContext_ValidationContext
+	if ca != nil {
+		validationContextType = &envoy_auth.CommonTlsContext_ValidationContext{
+			ValidationContext: &envoy_auth.CertificateValidationContext{
+				TrustedCa: ca,
+			},
+		}
+	}
+
+	var tlsCertificates []*envoy_auth.TlsCertificate
+	if cert != nil && key != nil {
+		tlsCertificates = []*envoy_auth.TlsCertificate{
+			{
+				CertificateChain: cert,
+				PrivateKey:       key,
+			},
+		}
+	}
+
+	var commonTlsContext *envoy_auth.CommonTlsContext
+	if validationContextType != nil || tlsCertificates != nil {
+		commonTlsContext = &envoy_auth.CommonTlsContext{
+			TlsCertificates:       tlsCertificates,
+			ValidationContextType: validationContextType,
+		}
+	}
 	return &envoy_auth.UpstreamTlsContext{
-		CommonTlsContext: &envoy_auth.CommonTlsContext{
-			TlsCertificates: []*envoy_auth.TlsCertificate{
-				{
-					CertificateChain: cert,
-					PrivateKey:       key,
-				},
-			},
-			ValidationContextType: &envoy_auth.CommonTlsContext_ValidationContext{
-				ValidationContext: &envoy_auth.CertificateValidationContext{
-					TrustedCa: ca,
-				},
-			},
-		},
-		Sni: sni,
+		CommonTlsContext: commonTlsContext,
+		Sni:              sni,
 	}, nil
 }

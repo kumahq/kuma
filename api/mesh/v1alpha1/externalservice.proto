@@ -28,7 +28,7 @@ message ExternalService {
       kuma.system.v1alpha1.DataSource client_cert = 3;
 
       // Data source for the authentication
-      kuma.system.v1alpha1.DataSource clinet_key = 4;
+      kuma.system.v1alpha1.DataSource client_key = 4;
     }
 
     TLS tls = 2;

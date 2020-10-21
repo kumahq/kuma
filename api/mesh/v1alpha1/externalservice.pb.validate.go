@@ -227,10 +227,10 @@ func (m *ExternalService_Networking_TLS) Validate() error {
 		}
 	}
 
-	if v, ok := interface{}(m.GetClinetKey()).(interface{ Validate() error }); ok {
+	if v, ok := interface{}(m.GetClientKey()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ExternalService_Networking_TLSValidationError{
-				field:  "ClinetKey",
+				field:  "ClientKey",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

@@ -70,27 +70,31 @@ func BuildEndpointMap(
 func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceResource, mesh string, loader datasource.Loader) (*core_xds.Endpoint, error) {
 	tlsEnabled := false
 	var caCert, clientCert, clientKey []byte = nil, nil, nil
-	var tags map[string]string
 
+	tags := externalService.Spec.GetTags()
 	if externalService.Spec.Networking.Tls != nil {
+		var err error
 		tlsEnabled = externalService.Spec.Networking.Tls.Enabled
-
-		tags = externalService.Spec.GetTags()
 		if tlsEnabled {
 			tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
 		}
 
 		if externalService.Spec.Networking.Tls.CaCert != nil {
-			var err error
 			caCert, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.CaCert)
 			if err != nil {
 				return nil, errors.Wrap(err, "Error getting CA certificate")
 			}
-			clientCert, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.CaCert)
+		}
+
+		if externalService.Spec.Networking.Tls.ClientCert != nil {
+			clientCert, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.ClientCert)
 			if err != nil {
 				return nil, errors.Wrap(err, "Error getting client certificate")
 			}
-			clientKey, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.CaCert)
+		}
+
+		if externalService.Spec.Networking.Tls.ClientKey != nil {
+			clientKey, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.ClientKey)
 			if err != nil {
 				return nil, errors.Wrap(err, "Error getting client key")
 			}
