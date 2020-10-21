@@ -222,7 +222,9 @@ Usage:
   kumactl install control-plane [flags]
 
 Flags:
+      --cni-bin-dir string                  set the CNI binary directory (default "/var/lib/cni/bin")
       --cni-chained                         enable chained CNI installation
+      --cni-conf-name string                set the CNI configuration name (default "kuma-cni.conf")
       --cni-enabled                         install Kuma with CNI instead of proxy init container
       --cni-net-dir string                  set the CNI install directory (default "/etc/cni/multus/net.d")
       --cni-registry string                 registry for the image of the Kuma CNI component (default "docker.io")

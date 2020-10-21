@@ -5,13 +5,14 @@ import (
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"github.com/gruntwork-io/terratest/modules/random"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/kumahq/kuma/test/framework"
 )
@@ -47,14 +48,16 @@ metadata:
 		deployOptsFuncs = []DeployOptionsFunc{
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
-			WithHelmOpt("cni.enabled", "true"),
-			WithHelmOpt("cni.chained", "true"),
-			WithHelmOpt("cni.netDir", "/etc/cni/net.d"),
+			WithCNI(),
 		}
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(KumaDNS()).
+			Setup(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = NewClusterSetup().
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
 			Install(EchoServerK8s()).

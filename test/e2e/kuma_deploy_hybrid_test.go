@@ -65,12 +65,12 @@ metadata:
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters(
 			[]string{Kuma1, Kuma2},
-			Verbose)
+			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		universalClusters, err := NewUniversalClusters(
 			[]string{Kuma3, Kuma4, Kuma5},
-			Verbose)
+			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Global
