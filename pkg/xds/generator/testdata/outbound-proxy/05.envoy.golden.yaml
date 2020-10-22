@@ -27,28 +27,6 @@ resources:
                       kuma.io/protocol: http
       name: es
       type: STRICT_DNS
-  - name: outbound:es
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
-      name: outbound:es
-      requestHeadersToAdd:
-        - header:
-            key: x-kuma-tags
-            value: '&kuma.io/service=web&'
-      validateClusters: true
-      virtualHosts:
-        - domains:
-            - '*'
-          name: es
-          routes:
-            - match:
-                prefix: /
-              route:
-                cluster: es
-                metadataMatch:
-                  filterMetadata:
-                    envoy.lb:
-                      kuma.io/protocol: http
   - name: outbound:127.0.0.1:18081
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -65,10 +43,26 @@ resources:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
                   - name: envoy.router
-                rds:
-                  configSource:
-                    ads: {}
-                  routeConfigName: outbound:es
+                routeConfig:
+                  name: outbound:es
+                  validateClusters: false
+                  requestHeadersToAdd:
+                    - header:
+                        key: x-kuma-tags
+                        value: '&kuma.io/service=web&'
+                  virtualHosts:
+                    - domains:
+                        - '*'
+                      name: es
+                      routes:
+                        - match:
+                            prefix: /
+                          route:
+                            cluster: es
+                            metadataMatch:
+                              filterMetadata:
+                                envoy.lb:
+                                  kuma.io/protocol: http
                 statPrefix: es
       name: outbound:127.0.0.1:18081
       trafficDirection: OUTBOUND
