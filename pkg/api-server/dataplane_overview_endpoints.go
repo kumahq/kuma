@@ -99,12 +99,9 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 	}
 
 	tags := parseTags(request.QueryParameters("tag"))
-	if request.QueryParameter("gateway") == "true" {
-		overviews.RetainGatewayDataplanes()
-	}
-	if request.QueryParameter("ingress") == "true" {
-		overviews.RetainIngressDataplanes()
-	}
+	overviews.RetainGatewayDataplanes(request.QueryParameter("gateway"))
+	overviews.RetainIngressDataplanes(request.QueryParameter("ingress"))
+
 	overviews.RetainMatchingTags(tags)
 	// pagination is not supported yet so we need to override pagination total items after retaining dataplanes
 	overviews.GetPagination().SetTotal(uint32(len(overviews.Items)))
