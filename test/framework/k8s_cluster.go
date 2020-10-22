@@ -236,6 +236,17 @@ func (c *K8sCluster) GetPodLogs(pod v1.Pod) (string, error) {
 // deployKumaViaKubectl uses kubectl to install kuma
 // using the resources from the `kumactl install control-plane` command
 func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) error {
+	yaml, err := c.yamlForKumaViaKubectl(mode, opts)
+	if err != nil {
+		return err
+	}
+
+	return k8s.KubectlApplyFromStringE(c.t,
+		c.GetKubectlOptions(),
+		yaml)
+}
+
+func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (string, error) {
 	argsMap := map[string]string{
 		"--control-plane-registry":  KumaImageRegistry,
 		"--dataplane-registry":      KumaImageRegistry,
@@ -267,14 +278,8 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 	for k, v := range argsMap {
 		args = append(args, k, v)
 	}
-	yaml, err := c.controlplane.InstallCP(args...)
-	if err != nil {
-		return err
-	}
 
-	return k8s.KubectlApplyFromStringE(c.t,
-		c.GetKubectlOptions(),
-		yaml)
+	return c.controlplane.InstallCP(args...)
 }
 
 // deployKumaViaHelm uses Helm to install kuma
@@ -510,21 +515,7 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
 }
 
 func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
-	argsMap := map[string]string{}
-	switch c.controlplane.mode {
-	case core.Remote:
-		// kumactl remote deployment will fail if GlobalAddress is not specified
-		argsMap["--kds-global-address"] = "grpcs://0.0.0.0:5685"
-	}
-	for opt, value := range opts.ctlOpts {
-		argsMap[opt] = value
-	}
-
-	var args []string
-	for k, v := range argsMap {
-		args = append(args, k, v)
-	}
-	yaml, err := c.controlplane.InstallCP(args...)
+	yaml, err := c.yamlForKumaViaKubectl(c.controlplane.mode, opts)
 	if err != nil {
 		return err
 	}

@@ -70,6 +70,8 @@ metadata:
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		// tear down Kuma
 		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		// tear down cluster
+		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("Should deploy two apps", func() {
