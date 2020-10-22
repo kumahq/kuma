@@ -64,9 +64,9 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                   - name: envoy.router
                   routeConfig:
                     name: inbound:backend
+                    validateClusters: false
                     requestHeadersToRemove:
                     - x-kuma-tags
-                    validateClusters: true
                     virtualHosts:
                     - domains:
                       - '*'
