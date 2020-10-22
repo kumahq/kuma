@@ -500,5 +500,9 @@ networking:
 `,
 			err: "YAML contains invalid resource: json: cannot unmarshal number into Go value of type []json.RawMessage",
 		}),
+		Entry("no resource", testCase{
+			resource: ``,
+			err:      "no resource(s) passed to apply",
+		}),
 	)
 })

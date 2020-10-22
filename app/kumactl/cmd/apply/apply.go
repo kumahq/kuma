@@ -3,6 +3,7 @@ package apply
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -82,6 +83,9 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 						return errors.Wrap(err, "error while reading provided file")
 					}
 				}
+			}
+			if len(b) == 0 {
+				return fmt.Errorf("no resource(s) passed to apply")
 			}
 			var resources []model.Resource
 			rawResources := strings.Split(string(b), "---")
