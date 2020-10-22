@@ -4,12 +4,12 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
+	"k8s.io/client-go/rest"
+	"sigs.k8s.io/controller-runtime/pkg/cache"
 
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
-	kube_rest "k8s.io/client-go/rest"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
-	kube_cache "sigs.k8s.io/controller-runtime/pkg/cache"
-	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
@@ -29,11 +29,8 @@ func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig)
 		kube_ctrl.GetConfigOrDie(),
 		kube_ctrl.Options{
 			Scheme: scheme,
-			NewClient: func(_ kube_cache.Cache, config *kube_rest.Config, options kube_client.Options) (kube_client.Client, error) {
-				// Use client without cache for two reasons
-				// 1) K8S Cached client does not support chunking (pagination)
-				// 2) We maintain our cache in Kuma so we don't want to have duplicated entries in the memory
-				return kube_client.New(config, options)
+			NewCache: func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
+				return kuma_kube_cache.New(config, opts)
 			},
 			// Admission WebHook Server
 			Host:                    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
