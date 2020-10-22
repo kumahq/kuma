@@ -346,24 +346,6 @@ resources:
                               targetUri: kuma-system:5677
               sni: db{mesh=mesh1,role=replica}
       type: EDS
-  - name: outbound:api-http
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
-      name: outbound:api-http
-      requestHeadersToAdd:
-        - header:
-            key: x-kuma-tags
-            value: '&kuma.io/service=web&'
-      validateClusters: true
-      virtualHosts:
-        - domains:
-            - '*'
-          name: api-http
-          routes:
-            - match:
-                prefix: /
-              route:
-                cluster: api-http
   - name: outbound:127.0.0.1:18080
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -406,10 +388,22 @@ resources:
                       path: /var/log
                 httpFilters:
                   - name: envoy.router
-                rds:
-                  configSource:
-                    ads: {}
-                  routeConfigName: outbound:api-http
+                routeConfig:
+                  name: outbound:api-http
+                  validateClusters: false
+                  requestHeadersToAdd:
+                    - header:
+                        key: x-kuma-tags
+                        value: '&kuma.io/service=web&'
+                  virtualHosts:
+                    - domains:
+                        - '*'
+                      name: api-http
+                      routes:
+                        - match:
+                            prefix: /
+                          route:
+                            cluster: api-http
                 statPrefix: api-http
       name: outbound:127.0.0.1:40001
       trafficDirection: OUTBOUND

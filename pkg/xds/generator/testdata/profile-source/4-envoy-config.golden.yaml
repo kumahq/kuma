@@ -204,7 +204,6 @@ resources:
                   name: inbound:backend
                   requestHeadersToRemove:
                     - x-kuma-tags
-                  validateClusters: true
                   virtualHosts:
                     - domains:
                         - '*'
