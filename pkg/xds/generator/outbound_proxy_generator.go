@@ -6,11 +6,10 @@ import (
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core/validators"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
-
-	"github.com/pkg/errors"
 
 	kuma_mesh "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -57,22 +56,6 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			Origin:   OriginOutbound,
 			Resource: listener,
 		})
-
-		// Generate route, routes are only applicable to the HTTP, HTTP/2 and GRPC protocols
-		switch protocol {
-		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
-			fallthrough
-		case mesh_core.ProtocolGRPC:
-			route, err := g.generateRDS(proxy, subsets, outbound)
-			if err != nil {
-				return nil, err
-			}
-			resources.Add(&model.Resource{
-				Name:     route.Name,
-				Origin:   OriginOutbound,
-				Resource: route,
-			})
-		}
 	}
 
 	// Generate clusters. It cannot be generated on the fly with outbound loop because we need to know all subsets of the cluster for every service.
@@ -105,14 +88,14 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
 				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
-				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName))).
+				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet())).
 				Configure(envoy_listeners.GrpcStats())
 		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
 				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
-				Configure(envoy_listeners.HttpOutboundRoute(envoy_names.GetOutboundRouteName(serviceName)))
+				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet()))
 		case mesh_core.ProtocolTCP:
 			fallthrough
 		default:
@@ -147,10 +130,9 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 			Configure(envoy_clusters.HealthCheck(healthCheck))
 
 		if clusters.Get(clusterName).HasExternalService() {
-			edsClusterBuilder = edsClusterBuilder.Configure(envoy_clusters.StrictDNSCluster(clusterName, proxy.OutboundTargets[serviceName]))
-			if clusters.Get(clusterName).RequireTLS() {
-				edsClusterBuilder = edsClusterBuilder.Configure(envoy_clusters.ClientSideTLS(proxy.OutboundTargets[serviceName][0].Target))
-			}
+			edsClusterBuilder = edsClusterBuilder.
+				Configure(envoy_clusters.StrictDNSCluster(clusterName, proxy.OutboundTargets[serviceName])).
+				Configure(envoy_clusters.ClientSideTLS(proxy.OutboundTargets[serviceName]))
 			protocol := o.inferProtocol(proxy, clusters.Get(clusterName).Subsets())
 			switch protocol {
 			case mesh_core.ProtocolHTTP2, mesh_core.ProtocolGRPC:
@@ -251,23 +233,10 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 			ep := endpoints[0]
 			if ep.IsExternalService() {
 				subset.IsExternalService = true
-				subset.RequiresTLS = ep.ExternalService.TLSEnabled
 			}
 		}
 
 		subsets = append(subsets, subset)
 	}
 	return
-}
-
-func (_ OutboundProxyGenerator) generateRDS(proxy *model.Proxy, subsets []envoy_common.ClusterSubset, outbound *kuma_mesh.Dataplane_Networking_Outbound) (*envoy_api_v2.RouteConfiguration, error) {
-	serviceName := outbound.GetTagsIncludingLegacy()[kuma_mesh.ServiceTag]
-
-	return envoy_routes.NewRouteConfigurationBuilder().
-		Configure(envoy_routes.CommonRouteConfiguration(envoy_names.GetOutboundRouteName(serviceName))).
-		Configure(envoy_routes.TagsHeader(proxy.Dataplane.Spec.TagSet())).
-		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder().
-			Configure(envoy_routes.CommonVirtualHost(serviceName)).
-			Configure(envoy_routes.DefaultRoute(subsets...)))).
-		Build()
 }

@@ -498,7 +498,7 @@ var _ = Describe("TrafficRoute", func() {
 						{
 							Target:          "httpbin.org",
 							Port:            80,
-							Tags:            map[string]string{"kuma.io/service": "redis"},
+							Tags:            map[string]string{"kuma.io/service": "redis", "kuma.io/external-service-name": ""},
 							Weight:          1,
 							ExternalService: &core_xds.ExternalService{TLSEnabled: true},
 						},

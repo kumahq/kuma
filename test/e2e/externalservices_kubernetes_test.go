@@ -17,7 +17,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
-var _ = XDescribe("Test ExternalServices on Kubernetes", func() {
+var _ = Describe("Test ExternalServices on Kubernetes", func() {
 
 	meshDefaulMtlsOn := `
 apiVersion: kuma.io/v1alpha1
@@ -119,16 +119,12 @@ metadata:
 			Install(Kuma(core.Standalone)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
+			Install(DemoClientK8s()).
+			Install(externalservice.Install(externalservice.HttpServer, []string{})).
+			Install(externalservice.Install(externalservice.HttpsServer, []string{})).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = cluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(externalservice.Install(externalservice.HttpServer, []string{})).
-			Install(externalservice.Install(externalservice.HttpsServer, []string{})).
-			Install(DemoClientK8s()).
-			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)

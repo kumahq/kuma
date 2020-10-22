@@ -54,6 +54,6 @@ spec:
             - --sh-exec
             - '/usr/bin/printf "HTTP/1.1 200 OK\n\n Echo\n"'
           resources:
-            requests:
-              cpu: 100m
-              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 128Mi
