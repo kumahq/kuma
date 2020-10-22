@@ -21,7 +21,7 @@ type CommonRouteConfigurationConfigurer struct {
 func (c CommonRouteConfigurationConfigurer) Configure(routeConfiguration *v2.RouteConfiguration) error {
 	routeConfiguration.Name = c.name
 	routeConfiguration.ValidateClusters = &wrappers.BoolValue{
-		Value: true,
+		Value: false,
 	}
 	return nil
 }

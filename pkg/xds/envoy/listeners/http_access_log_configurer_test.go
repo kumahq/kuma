@@ -62,7 +62,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder().
 					Configure(HttpConnectionManager(given.statsName)).
-					Configure(HttpOutboundRoute(given.routeName)).
 					Configure(HttpAccessLog(mesh, TrafficDirectionOutbound, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
@@ -94,10 +93,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                   httpFilters:
                   - name: envoy.router
-                  rds:
-                    configSource:
-                      ads: {}
-                    routeConfigName: outbound:backend
                   statPrefix: backend
             trafficDirection: OUTBOUND
 `,
@@ -136,10 +131,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                       path: /tmp/log
                   httpFilters:
                   - name: envoy.router
-                  rds:
-                    configSource:
-                      ads: {}
-                    routeConfigName: outbound:backend
                   statPrefix: backend
             trafficDirection: OUTBOUND
 `,
@@ -194,10 +185,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 
                   httpFilters:
                   - name: envoy.router
-                  rds:
-                    configSource:
-                      ads: {}
-                    routeConfigName: outbound:backend
                   statPrefix: backend
             trafficDirection: OUTBOUND
 `,
