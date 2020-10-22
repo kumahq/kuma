@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [0.7.3]
+* chore: generate static outbound routes [#1098](https://github.com/kumahq/kuma/pull/1098/)
+* feat: apply multiple resources [#1057](https://github.com/kumahq/kuma/pull/1057/)
+ 👍contributed by @tharun208 [#1078](https://github.com/kumahq/kuma/pull/1078)
+* chore: generate cert with SAN for the newest K8S
+* feat: specify nodeSelectors for CP and CNI pods [#990](https://github.com/kumahq/kuma/pull/990/)
+ 👍contributed by @austince
+* feat: exclude injection from pods that match labels [#1072](https://github.com/kumahq/kuma/pull/1072/)
+* chore: use /ready endpoint for sidecar health-check [#1055](https://github.com/kumahq/kuma/pull/1055/)
+ 👍contributed by @tharun208
+
 ## [0.7.2]
 
 * feat: fix CNI with the latest changes and bump the CNI image to 0.0.2 [#1049](https://github.com//kumahq/kuma/pull/1049) [#1043](https://github.com//kumahq/kuma/pull/1043) 

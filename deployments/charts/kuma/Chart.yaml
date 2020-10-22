@@ -2,8 +2,8 @@ apiVersion: v2
 name: kuma
 description: A Helm chart for the Kuma Control Plane
 type: application
-version: 0.3.1
-appVersion: 0.7.2
+version: 0.3.2
+appVersion: 0.7.3
 home: https://github.com/kumahq/kuma
 icon: https://kuma.io/images/brand/kuma-logo-new.svg
 keywords:
