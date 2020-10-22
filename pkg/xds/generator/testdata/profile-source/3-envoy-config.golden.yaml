@@ -180,9 +180,9 @@ resources:
                   - name: envoy.router
                 routeConfig:
                   name: inbound:backend
+                  validateClusters: false
                   requestHeadersToRemove:
                     - x-kuma-tags
-                  validateClusters: true
                   virtualHosts:
                     - domains:
                         - '*'
@@ -250,6 +250,7 @@ resources:
                 httpFilters:
                   - name: envoy.router
                 routeConfig:
+                  validateClusters: false
                   virtualHosts:
                     - domains:
                         - '*'
@@ -273,6 +274,7 @@ resources:
                 httpFilters:
                   - name: envoy.router
                 routeConfig:
+                  validateClusters: false
                   virtualHosts:
                     - domains:
                         - '*'
