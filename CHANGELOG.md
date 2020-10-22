@@ -3,8 +3,8 @@
 ## [0.7.3]
 * chore: generate static outbound routes [#1098](https://github.com/kumahq/kuma/pull/1098/)
 * feat: apply multiple resources [#1057](https://github.com/kumahq/kuma/pull/1057/)
- 👍contributed by @tharun208 [#1078](https://github.com/kumahq/kuma/pull/1078)
-* chore: generate cert with SAN for the newest K8S
+ 👍contributed by @tharun208
+* chore: generate cert with SAN for the newest K8S [#1078](https://github.com/kumahq/kuma/pull/1078)
 * feat: specify nodeSelectors for CP and CNI pods [#990](https://github.com/kumahq/kuma/pull/990/)
  👍contributed by @austince
 * feat: exclude injection from pods that match labels [#1072](https://github.com/kumahq/kuma/pull/1072/)
