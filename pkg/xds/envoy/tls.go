@@ -183,12 +183,19 @@ func ServiceSpiffeIDMatcher(mesh string, service string) *envoy_type_matcher.Str
 	}
 }
 
-func CreateUpstreamTlsContextNoMetadata(ca, cert, key *envoy_core.DataSource, sni string) (*envoy_auth.UpstreamTlsContext, error) {
+func UpstreamTlsContextOutsideMesh(ca, cert, key *envoy_core.DataSource, hostname string) (*envoy_auth.UpstreamTlsContext, error) {
 	var validationContextType *envoy_auth.CommonTlsContext_ValidationContext
-	if ca != nil {
+	if ca != nil || len(hostname) > 0 {
 		validationContextType = &envoy_auth.CommonTlsContext_ValidationContext{
 			ValidationContext: &envoy_auth.CertificateValidationContext{
 				TrustedCa: ca,
+				MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{
+					{
+						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+							Exact: hostname,
+						},
+					},
+				},
 			},
 		}
 	}
@@ -210,8 +217,8 @@ func CreateUpstreamTlsContextNoMetadata(ca, cert, key *envoy_core.DataSource, sn
 			ValidationContextType: validationContextType,
 		}
 	}
+
 	return &envoy_auth.UpstreamTlsContext{
 		CommonTlsContext: commonTlsContext,
-		Sni:              sni,
 	}, nil
 }

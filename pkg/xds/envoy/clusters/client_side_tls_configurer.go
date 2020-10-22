@@ -27,7 +27,7 @@ func (c *clientSideTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	for _, ep := range c.endpoints {
 		if ep.ExternalService.TLSEnabled {
 			ca, cert, key := externalServiceTlsCerts(ep.ExternalService)
-			tlsContext, err := envoy.CreateUpstreamTlsContextNoMetadata(ca, cert, key, ep.Target)
+			tlsContext, err := envoy.UpstreamTlsContextOutsideMesh(ca, cert, key, ep.Target)
 			if err != nil {
 				return err
 			}

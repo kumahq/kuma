@@ -3,8 +3,9 @@ package topology
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/core"
+
 	"github.com/pkg/errors"
-	"github.com/prometheus/common/log"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -58,7 +59,7 @@ func BuildEndpointMap(
 
 		externalServiceEndpoint, err := buildExternalServiceEndpoint(externalService, mesh.Meta.GetMesh(), loader)
 		if err != nil {
-			log.Info("Unable to create ExternalService endpoint", err)
+			core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
 			continue
 		}
 		outbound[service] = append(outbound[service], *externalServiceEndpoint)

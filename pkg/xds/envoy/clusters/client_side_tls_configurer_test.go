@@ -61,7 +61,10 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             name: envoy.transport_sockets.tls
             typedConfig:
               '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
-              sni: httpbin.org
+              commonTlsContext:
+                validationContext:
+                  matchSubjectAltNames:
+                  - exact: httpbin.org
         type: EDS
 `}),
 	)
