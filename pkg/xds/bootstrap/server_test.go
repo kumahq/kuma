@@ -1,4 +1,4 @@
-package bootstrap
+package bootstrap_test
 
 import (
 	"context"
@@ -10,21 +10,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	dp_server_cfg "github.com/kumahq/kuma/pkg/config/dp-server"
 	bootstrap_config "github.com/kumahq/kuma/pkg/config/xds/bootstrap"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap"
 )
 
 var _ = Describe("Bootstrap Server", func() {
@@ -51,20 +53,22 @@ var _ = Describe("Bootstrap Server", func() {
 		metrics, err = core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 
-		server := BootstrapServer{
-			Config: &bootstrap_config.BootstrapServerConfig{
-				Port:        uint32(port),
-				TlsCertFile: filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
-				TlsKeyFile:  filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
-				Params:      config,
-			},
-			Generator: NewDefaultBootstrapGenerator(resManager, config, ""),
-			Metrics:   metrics,
+		dpServerCfg := dp_server_cfg.DpServerConfig{
+			Port:        port,
+			TlsCertFile: filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+			TlsKeyFile:  filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
 		}
+		dpServer := dp_server.NewDpServer(dpServerCfg, metrics)
+
+		bootstrapHandler := bootstrap.BootstrapHandler{
+			Generator: bootstrap.NewDefaultBootstrapGenerator(resManager, config, ""),
+		}
+		dpServer.HTTPMux().HandleFunc("/bootstrap", bootstrapHandler.Handle)
+
 		stop = make(chan struct{})
 		go func() {
 			defer GinkgoRecover()
-			err := server.Start(stop)
+			err := dpServer.Start(stop)
 			Expect(err).ToNot(HaveOccurred())
 		}()
 		Eventually(func() bool {
@@ -192,8 +196,8 @@ var _ = Describe("Bootstrap Server", func() {
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(test_metrics.FindMetric(metrics, "bootstrap_server_http_request_duration_seconds", "handler", "/bootstrap")).ToNot(BeNil())
-		Expect(test_metrics.FindMetric(metrics, "bootstrap_server_http_requests_inflight", "handler", "/bootstrap")).ToNot(BeNil())
-		Expect(test_metrics.FindMetric(metrics, "bootstrap_server_http_response_size_bytes", "handler", "/bootstrap")).ToNot(BeNil())
+		Expect(test_metrics.FindMetric(metrics, "dp_server_http_request_duration_seconds", "handler", "/bootstrap")).ToNot(BeNil())
+		Expect(test_metrics.FindMetric(metrics, "dp_server_http_requests_inflight", "handler", "/bootstrap")).ToNot(BeNil())
+		Expect(test_metrics.FindMetric(metrics, "dp_server_http_response_size_bytes", "handler", "/bootstrap")).ToNot(BeNil())
 	})
 })
