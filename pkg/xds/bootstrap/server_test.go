@@ -61,7 +61,7 @@ var _ = Describe("Bootstrap Server", func() {
 		dpServer := dp_server.NewDpServer(dpServerCfg, metrics)
 
 		bootstrapHandler := bootstrap.BootstrapHandler{
-			Generator: bootstrap.NewDefaultBootstrapGenerator(resManager, config, ""),
+			Generator: bootstrap.NewDefaultBootstrapGenerator(resManager, config, "", true),
 		}
 		dpServer.HTTPMux().HandleFunc("/bootstrap", bootstrapHandler.Handle)
 
@@ -139,12 +139,12 @@ var _ = Describe("Bootstrap Server", func() {
 		},
 		Entry("minimal data provided (universal)", testCase{
 			dataplaneName:      "dp-1",
-			body:               `{ "mesh": "default", "name": "dp-1" }`,
+			body:               `{ "mesh": "default", "name": "dp-1", "dataplaneTokenPath": "/tmp/token" }`,
 			expectedConfigFile: "bootstrap.universal.golden.yaml",
 		}),
 		Entry("minimal data provided (k8s)", testCase{
 			dataplaneName:      "dp-1.default",
-			body:               `{ "mesh": "default", "name": "dp-1.default" }`,
+			body:               `{ "mesh": "default", "name": "dp-1.default", "dataplaneTokenPath": "/tmp/token" }`,
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
@@ -159,7 +159,8 @@ var _ = Describe("Bootstrap Server", func() {
 		json := `
 		{
 			"mesh": "default",
-			"name": "dp-1.default"
+			"name": "dp-1.default",
+			"dataplaneTokenPath": "/tmp/token"
 		}
 		`
 
@@ -168,6 +169,46 @@ var _ = Describe("Bootstrap Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Body.Close()).To(Succeed())
 		Expect(resp.StatusCode).To(Equal(404))
+	})
+
+	It("should return 422 for the lack of the dataplane token", func() {
+		// given
+		res := mesh.DataplaneResource{
+			Spec: mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "8.8.8.8",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:        443,
+							ServicePort: 8443,
+							Tags: map[string]string{
+								"kuma.io/service": "backend",
+							},
+						},
+					},
+				},
+			},
+		}
+		err := resManager.Create(context.Background(), &res, store.CreateByKey("dp-1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		json := `
+		{
+			"mesh": "default",
+			"name": "dp-1"
+		}
+		`
+
+		resp, err := httpClient.Post(baseUrl+"/bootstrap", "application/json", strings.NewReader(json))
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		bytes, err := ioutil.ReadAll(resp.Body)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(resp.Body.Close()).To(Succeed())
+		Expect(resp.StatusCode).To(Equal(422))
+		Expect(string(bytes)).To(Equal("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP"))
+
 	})
 
 	It("should publish metrics", func() {

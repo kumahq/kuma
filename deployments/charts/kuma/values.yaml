@@ -55,6 +55,10 @@ controlPlane:
   envVars: {}
 cni:
   enabled: false
+  chained: false
+  netDir: /etc/cni/multus/net.d
+  binDir: /var/lib/cni/bin
+  confName: kuma-cni.conf
   logLevel: info
 
   nodeSelector:

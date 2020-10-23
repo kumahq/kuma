@@ -37,6 +37,7 @@ destinations:
    kuma.io/service: "*"
 `
 	var global, remote_1, remote_2 Cluster
+	var optsGlobal, optsRemote1, optsRemote2 []DeployOptionsFunc
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -46,9 +47,10 @@ destinations:
 
 		// Global
 		global = clusters.GetCluster(Kuma1)
+		optsGlobal = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Global)).
+			Install(Kuma(core.Global, optsGlobal...)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -65,9 +67,12 @@ destinations:
 
 		// Cluster 1
 		remote_1 = clusters.GetCluster(Kuma2)
+		optsRemote1 = []DeployOptionsFunc{
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, optsRemote1...)).
 			Install(EchoServerUniversal(echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
@@ -78,9 +83,12 @@ destinations:
 
 		// Cluster 2
 		remote_2 = clusters.GetCluster(Kuma3)
+		optsRemote2 = []DeployOptionsFunc{
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, optsRemote2...)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
 			Setup(remote_2)
@@ -107,11 +115,11 @@ destinations:
 	})
 
 	AfterEach(func() {
-		err := remote_1.DeleteKuma()
+		err := remote_1.DeleteKuma(optsRemote1...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_2.DeleteKuma()
+		err = remote_2.DeleteKuma(optsRemote2...)
 		Expect(err).ToNot(HaveOccurred())
-		err = global.DeleteKuma()
+		err = global.DeleteKuma(optsGlobal...)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = remote_1.DismissCluster()

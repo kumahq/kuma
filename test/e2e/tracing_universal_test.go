@@ -40,12 +40,14 @@ selectors:
 `
 
 	var cluster Cluster
+	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
+		deployOptsFuncs = []DeployOptionsFunc{}
 
 		err := NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(tracing.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -64,7 +66,7 @@ selectors:
 	})
 
 	AfterEach(func() {
-		Expect(cluster.DeleteKuma()).To(Succeed())
+		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
