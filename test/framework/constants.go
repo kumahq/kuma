@@ -54,6 +54,9 @@ const (
 	kumaCPAPIPort        = 5681
 	kumaCPAdminPort      = 5679
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
+
+	cniApp       = "kuma-cni"
+	cniNamespace = "kube-system"
 )
 
 var HelmChartPath = "../../deployments/charts/kuma"

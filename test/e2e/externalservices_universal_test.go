@@ -69,6 +69,7 @@ networking:
 	es2 := "2"
 
 	var cluster Cluster
+	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -78,9 +79,10 @@ networking:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma1)
+		deployOptsFuncs = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = cluster.VerifyKuma()
@@ -122,7 +124,7 @@ networking:
 	})
 
 	AfterEach(func() {
-		err := cluster.DeleteKuma()
+		err := cluster.DeleteKuma(deployOptsFuncs...)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = cluster.DismissCluster()

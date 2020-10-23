@@ -60,14 +60,16 @@ spec:
 `
 
 	var cluster Cluster
+	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
 		c, err := NewK8SCluster(NewTestingT(), Kuma1, Silent)
 		Expect(err).ToNot(HaveOccurred())
 		cluster = c
+		deployOptsFuncs = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
@@ -78,9 +80,9 @@ spec:
 	})
 
 	AfterEach(func() {
-		Expect(cluster.DismissCluster()).To(Succeed())
-		Expect(cluster.DeleteKuma()).To(Succeed())
+		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 		Expect(k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))).To(Succeed())
+		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
 	It("should emit traces to jaeger", func() {
