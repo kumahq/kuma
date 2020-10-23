@@ -22,10 +22,11 @@ func BuildEndpointMap(
 				}
 				service := ingress.Tags[mesh_proto.ServiceTag]
 				outbound[service] = append(outbound[service], core_xds.Endpoint{
-					Target: dataplane.Spec.Networking.Address,
-					Port:   dataplane.Spec.Networking.Inbound[0].Port,
-					Tags:   ingress.Tags,
-					Weight: ingress.Instances,
+					Target:   dataplane.Spec.Networking.Address,
+					Port:     dataplane.Spec.Networking.Inbound[0].Port,
+					Tags:     ingress.Tags,
+					Weight:   ingress.Instances,
+					Locality: localityFromTags(ingress.Tags),
 				})
 			}
 			continue
@@ -37,10 +38,11 @@ func BuildEndpointMap(
 				// TODO(yskopets): do we need to dedup?
 				// TODO(yskopets): sort ?
 				outbound[service] = append(outbound[service], core_xds.Endpoint{
-					Target: iface.DataplaneIP,
-					Port:   iface.DataplanePort,
-					Tags:   inbound.Tags,
-					Weight: 1,
+					Target:   iface.DataplaneIP,
+					Port:     iface.DataplanePort,
+					Tags:     inbound.Tags,
+					Weight:   1,
+					Locality: localityFromTags(inbound.Tags),
 				})
 			}
 		}
@@ -56,7 +58,7 @@ func BuildEndpointMap(
 
 		tags := externalService.Spec.GetTags()
 		if tlsEnabled {
-			tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
+			tags[mesh_proto.ExternalServiceTag] = externalService.Meta.GetName()
 		}
 
 		outbound[service] = append(outbound[service], core_xds.Endpoint{
@@ -67,8 +69,25 @@ func BuildEndpointMap(
 			ExternalService: &core_xds.ExternalService{
 				TLSEnabled: tlsEnabled,
 			},
+			Locality: localityFromTags(tags),
 		})
 	}
 
 	return outbound
+}
+
+func localityFromTags(tags map[string]string) *core_xds.Locality {
+	region, regionPresent := tags[mesh_proto.RegionTag]
+	zone, zonePresent := tags[mesh_proto.ZoneTag]
+	subZone, subZonePresent := tags[mesh_proto.SubZoneTag]
+
+	if !regionPresent && !zonePresent && !subZonePresent {
+		return nil
+	}
+
+	return &core_xds.Locality{
+		Region:  region,
+		Zone:    zone,
+		SubZone: subZone,
+	}
 }

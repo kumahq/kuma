@@ -14,12 +14,18 @@ const (
 	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"
 	// Mandatory tag that has a reserved meaning in Kuma.
-	ZoneTag = "kuma.io/zone"
+	RegionTag  = "kuma.io/region"
+	ZoneTag    = "kuma.io/zone"
+	SubZoneTag = "kuma.io/sub-zone"
+
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "kuma.io/protocol"
 	// InstanceTag is set only for Dataplanes that implements headless services
 	InstanceTag = "kuma.io/instance"
+
+	// External service tag
+	ExternalServiceTag = "kuma.io/external-service-name"
 )
 
 type InboundInterface struct {
