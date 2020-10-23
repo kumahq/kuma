@@ -77,10 +77,7 @@ var _ = Describe("Config WS", func() {
               "xdsConnectTimeout": "1s",
               "xdsHost": "",
               "xdsPort": 0
-            },
-            "port": 5682,
-            "tlsCertFile": "",
-            "tlsKeyFile": ""
+            }
           },
           "adminServer": {
             "local": {
@@ -217,10 +214,12 @@ var _ = Describe("Config WS", func() {
             }
           },
           "sdsServer": {
-            "grpcPort": 5677,
-            "tlsCertFile": "",
-            "tlsKeyFile": "",
             "dataplaneConfigurationRefreshInterval": "1s"
+          },
+          "dpServer": {
+            "port": 5678,
+            "tlsCertFile": "",
+            "tlsKeyFile": ""
           },
           "store": {
             "kubernetes": {
@@ -250,10 +249,7 @@ var _ = Describe("Config WS", func() {
           "xdsServer": {
             "dataplaneConfigurationRefreshInterval": "1s",
             "dataplaneStatusFlushInterval": "1s",
-            "diagnosticsPort": 5680,
-            "grpcPort": 5678,
-            "tlsCertFile": "",
-            "tlsKeyFile": ""
+            "diagnosticsPort": 5680
           },
           "diagnostics": {
             "debugEndpoints": false

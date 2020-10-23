@@ -63,10 +63,8 @@ var _ = Describe("Config loader", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			Expect(cfg.XdsServer.GrpcPort).To(Equal(5000))
 			Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
 
-			Expect(cfg.BootstrapServer.Port).To(Equal(uint32(5004)))
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
@@ -160,10 +158,8 @@ store:
     enabled: false
     expirationTime: 3s
 xdsServer:
-  grpcPort: 5000
   diagnosticsPort: 5003
 bootstrapServer:
-  port: 5004
   params:
     adminPort: 1234
     xdsHost: kuma-control-plane
@@ -238,9 +234,7 @@ diagnostics:
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
-				"KUMA_XDS_SERVER_GRPC_PORT":                                      "5000",
 				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":                               "5003",
-				"KUMA_BOOTSTRAP_SERVER_PORT":                                     "5004",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                        "1234",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                          "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                          "4321",

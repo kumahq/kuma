@@ -49,12 +49,6 @@ store:
 
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
-  # Port of Server that provides bootstrap configuration for dataplanes
-  port: 5682 # ENV: KUMA_BOOTSTRAP_SERVER_PORT
-  # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
-  tlsCertFile: # ENV: KUMA_BOOTSTRAP_SERVER_TLS_CERT_FILE
-  # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
-  tlsKeyFile: # ENV: KUMA_BOOTSTRAP_SERVER_TLS_KEY_FILE
   # Parameters of bootstrap configuration
   params:
     # Address of Envoy Admin
@@ -72,12 +66,6 @@ bootstrapServer:
 
 # Envoy SDS server configuration
 sdsServer:
-  # Port of GRPC server that Envoy connects to
-  grpcPort: 5677 # ENV: KUMA_SDS_SERVER_GRPC_PORT
-  # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
-  tlsCertFile: # ENV: KUMA_SDS_SERVER_TLS_CERT_FILE
-  # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
-  tlsKeyFile: # ENV: KUMA_SDS_SERVER_TLS_KEY_FILE
   # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
   dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
 
@@ -117,18 +105,12 @@ adminServer:
 
 # Envoy XDS server configuration
 xdsServer:
-  # Port of GRPC server that Envoy connects to
-  grpcPort: 5678 # ENV: KUMA_XDS_SERVER_GRPC_PORT
   # Port of Diagnostic Server for checking health and readiness of the Control Plane
   diagnosticsPort: 5680 # ENV: KUMA_XDS_SERVER_DIAGNOSTICS_PORT
   # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
   dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
   # Interval for flushing status of Dataplanes connected to the Control Plane
   dataplaneStatusFlushInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
-  # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
-  tlsCertFile: # ENV: KUMA_XDS_SERVER_TLS_CERT_FILE
-  # TlsKeyFile defines a path to a file with PEM-encoded TLS key.
-  tlsKeyFile: # ENV: KUMA_XDS_SERVER_TLS_KEY_FILE
 
 # API Server configuration
 apiServer:
@@ -279,7 +261,11 @@ general:
   # Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
   advertisedHostname: localhost # ENV: KUMA_GENERAL_ADVERTISED_HOSTNAME
   # dnsCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
-  dnsCacheTTL: 10s
+  dnsCacheTTL: 10s # ENV: KUMA_GENERAL_DNS_CACHE_TTL
+  # TlsCertFile defines a path to a file with PEM-encoded TLS cert that will be used across all the Kuma Servers.
+  tlsCertFile: # ENV: KUMA_GENERAL_TLS_CERT_FILE
+  # TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.
+  tlsKeyFile: # ENV: KUMA_GENERAL_TLS_KEY_FILE
 
 # Web GUI Server configuration
 guiServer:
@@ -324,3 +310,12 @@ multicluster:
 diagnostics:
   # If true, enables https://golang.org/pkg/net/http/pprof/ debug endpoints
   debugEndpoints: false # ENV: KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS
+
+# Dataplane Server configuration that servers API like Bootstrap/XDS/SDS for the Dataplane.
+dpServer:
+  # Port of the DP Server
+  port: 5678 # ENV: KUMA_DP_SERVER_PORT
+  # TlsCertFile defines a path to a file with PEM-encoded TLS cert. If empty, autoconfigured from general.tlsCertFile
+  tlsCertFile: # ENV: KUMA_DP_SERVER_TLS_CERT_FILE
+  # TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
+  tlsKeyFile: # ENV: KUMA_DP_SERVER_TLS_KEY_FILE

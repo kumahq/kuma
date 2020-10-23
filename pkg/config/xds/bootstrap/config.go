@@ -12,14 +12,8 @@ import (
 var _ config.Config = &BootstrapServerConfig{}
 
 type BootstrapServerConfig struct {
-	// Port of Server that provides bootstrap configuration for dataplanes
-	Port uint32 `yaml:"port" envconfig:"kuma_bootstrap_server_port"`
 	// Parameters of bootstrap configuration
 	Params *BootstrapParamsConfig `yaml:"params"`
-	// TlsCertFile defines a path to a file with PEM-encoded TLS cert.
-	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_bootstrap_server_tls_cert_file"`
-	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.
-	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_bootstrap_server_tls_key_file"`
 }
 
 func (b *BootstrapServerConfig) Sanitize() {
@@ -27,9 +21,6 @@ func (b *BootstrapServerConfig) Sanitize() {
 }
 
 func (b *BootstrapServerConfig) Validate() error {
-	if b.Port > 65535 {
-		return errors.New("Port must be in the range [0, 65535]")
-	}
 	if err := b.Params.Validate(); err != nil {
 		return errors.Wrap(err, "Params validation failed")
 	}
@@ -38,7 +29,6 @@ func (b *BootstrapServerConfig) Validate() error {
 
 func DefaultBootstrapServerConfig() *BootstrapServerConfig {
 	return &BootstrapServerConfig{
-		Port:   5682,
 		Params: DefaultBootstrapParamsConfig(),
 	}
 }
