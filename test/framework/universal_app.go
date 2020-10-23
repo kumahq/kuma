@@ -233,7 +233,7 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 }
 
 func (s *UniversalApp) getIP() (string, error) {
-	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "hosts", s.container[:12]})
+	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "ahosts", s.container[:12]})
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
 		return "invalid", errors.Wrapf(err, "getent failed with %s", string(bytes))
