@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/clusterid"
 	"github.com/spf13/cobra"
 
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
@@ -96,6 +97,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up GC")
 					return err
 				}
+				if err := clusterid.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up clusterID")
+					return err
+				}
 			case config_core.Remote:
 				if err := sds_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up SDS server")
@@ -124,6 +129,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			case config_core.Global:
 				if err := kds_global.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up KDS Global")
+					return err
+				}
+				if err := clusterid.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up clusterID")
 					return err
 				}
 			}
