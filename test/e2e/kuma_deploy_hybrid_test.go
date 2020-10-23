@@ -61,23 +61,25 @@ metadata:
 	}
 
 	var global, remote_1, remote_2, remote_3, remote_4 Cluster
+	var optsGlobal, optsRemote1, optsRemote2, optsRemote3, optsRemote4 []DeployOptionsFunc
 
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters(
 			[]string{Kuma1, Kuma2},
-			Verbose)
+			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		universalClusters, err := NewUniversalClusters(
 			[]string{Kuma3, Kuma4, Kuma5},
-			Verbose)
+			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Global
 		global = universalClusters.GetCluster(Kuma5)
+		optsGlobal = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Global)).
+			Install(Kuma(core.Global, optsGlobal...)).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -94,9 +96,14 @@ metadata:
 
 		// K8s Cluster 1
 		remote_1 = k8sClusters.GetCluster(Kuma1)
+		optsRemote1 = []DeployOptionsFunc{
+			WithIngress(),
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			WithCNI(),
+		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, optsRemote1...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
@@ -107,9 +114,13 @@ metadata:
 
 		// K8s Cluster 2
 		remote_2 = k8sClusters.GetCluster(Kuma2)
+		optsRemote2 = []DeployOptionsFunc{
+			WithIngress(),
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, optsRemote2...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(EchoServerK8s()).
@@ -121,9 +132,12 @@ metadata:
 
 		// Universal Cluster 3
 		remote_3 = universalClusters.GetCluster(Kuma3)
+		optsRemote3 = []DeployOptionsFunc{
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, optsRemote3...)).
 			Install(EchoServerUniversal(echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
@@ -134,9 +148,12 @@ metadata:
 
 		// Universal Cluster 4
 		remote_4 = universalClusters.GetCluster(Kuma4)
+		optsRemote4 = []DeployOptionsFunc{
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, optsRemote4...)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
 			Setup(remote_4)
@@ -182,16 +199,16 @@ metadata:
 
 	AfterEach(func() {
 		_ = k8s.KubectlDeleteFromStringE(remote_1.GetTesting(), remote_1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
-		err := remote_1.DeleteKuma()
+		err := remote_1.DeleteKuma(optsRemote1...)
 		Expect(err).ToNot(HaveOccurred())
 		_ = k8s.KubectlDeleteFromStringE(remote_2.GetTesting(), remote_2.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
-		err = remote_2.DeleteKuma()
+		err = remote_2.DeleteKuma(optsRemote2...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_3.DeleteKuma()
+		err = remote_3.DeleteKuma(optsRemote3...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_4.DeleteKuma()
+		err = remote_4.DeleteKuma(optsRemote4...)
 		Expect(err).ToNot(HaveOccurred())
-		err = global.DeleteKuma()
+		err = global.DeleteKuma(optsGlobal...)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = remote_3.DismissCluster()

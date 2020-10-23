@@ -24,6 +24,7 @@ type deployOptions struct {
 	helmOpts         map[string]string
 	ctlOpts          map[string]string
 	ingress          bool
+	cni              bool
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -58,6 +59,12 @@ func WithHelmOpt(name, value string) DeployOptionsFunc {
 func WithIngress() DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.ingress = true
+	}
+}
+
+func WithCNI() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.cni = true
 	}
 }
 
