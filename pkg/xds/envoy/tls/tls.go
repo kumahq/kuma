@@ -194,21 +194,26 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key *envoy_core.DataSource, hostnam
 		}
 	}
 
-	return &envoy_auth.UpstreamTlsContext{
-		CommonTlsContext: &envoy_auth.CommonTlsContext{
-			TlsCertificates: tlsCertificates,
-			ValidationContextType: &envoy_auth.CommonTlsContext_ValidationContext{
-				ValidationContext: &envoy_auth.CertificateValidationContext{
-					TrustedCa: ca,
-					MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{
-						{
-							MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-								Exact: hostname,
-							},
+	var validationContextType *envoy_auth.CommonTlsContext_ValidationContext
+	if ca != nil {
+		validationContextType = &envoy_auth.CommonTlsContext_ValidationContext{
+			ValidationContext: &envoy_auth.CertificateValidationContext{
+				TrustedCa: ca,
+				MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{
+					{
+						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+							Exact: hostname,
 						},
 					},
 				},
 			},
+		}
+	}
+
+	return &envoy_auth.UpstreamTlsContext{
+		CommonTlsContext: &envoy_auth.CommonTlsContext{
+			TlsCertificates:       tlsCertificates,
+			ValidationContextType: validationContextType,
 		},
 	}, nil
 }
