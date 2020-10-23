@@ -51,7 +51,7 @@ func (c *Config) Sanitize() {
 
 // ControlPlane defines coordinates of the Control Plane.
 type ControlPlane struct {
-	// Address defines the address of Control Plane DP server.
+	// URL defines the address of Control Plane DP server.
 	URL string `yaml:"url,omitempty" envconfig:"kuma_control_plane_url"`
 	// Retry settings for Control Plane communication
 	Retry CpRetry `yaml:"retry,omitempty"`
