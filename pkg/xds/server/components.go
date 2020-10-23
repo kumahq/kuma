@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"google.golang.org/grpc"
+
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
@@ -34,7 +36,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/auth"
 	k8s_auth "github.com/kumahq/kuma/pkg/xds/auth/k8s"
 	universal_auth "github.com/kumahq/kuma/pkg/xds/auth/universal"
-	xds_bootstrap "github.com/kumahq/kuma/pkg/xds/bootstrap"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
@@ -65,7 +66,7 @@ func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.Re
 	return types
 }
 
-func SetupServer(rt core_runtime.Runtime) error {
+func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 	reconciler := DefaultReconciler(rt)
 
 	authenticator, err := DefaultAuthenticator(rt)
@@ -103,13 +104,8 @@ func SetupServer(rt core_runtime.Runtime) error {
 
 	srv := NewServer(rt.XDS().Cache(), callbacks)
 
-	bootstrapHandler := xds_bootstrap.BootstrapHandler{
-		Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params, rt.Config().DpServer.TlsCertFile),
-	}
-	xdsServerLog.Info("registering Bootstrap in Dataplane Server")
-	rt.DpServer().RegisterHTTPEndpoint("/bootstrap", bootstrapHandler.Handle)
 	xdsServerLog.Info("registering Aggregated Discovery Service in Dataplane Server")
-	envoy_service_discovery_v2.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GRPCServer(), srv)
+	envoy_service_discovery_v2.RegisterAggregatedDiscoveryServiceServer(server, srv)
 	return nil
 }
 

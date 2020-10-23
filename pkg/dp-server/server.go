@@ -52,14 +52,6 @@ func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics) *DpSe
 	}
 }
 
-func (d *DpServer) RegisterHTTPEndpoint(pattern string, handlerFunc http.HandlerFunc) {
-	d.httpMux.Handle(pattern, handlerFunc)
-}
-
-func (d *DpServer) GRPCServer() *grpc.Server {
-	return d.grpcServer
-}
-
 func (d *DpServer) Start(stop <-chan struct{}) error {
 	server := &http.Server{
 		Addr:    fmt.Sprintf(":%d", d.config.Port),
@@ -102,4 +94,8 @@ func (d *DpServer) handle(writer http.ResponseWriter, request *http.Request) {
 		// for example ADS bi-directional stream counts as one really long request
 		std.Handler("", d.promMiddleware, d.httpMux).ServeHTTP(writer, request)
 	}
+}
+
+func (d *DpServer) HTTPMux() *http.ServeMux {
+	return d.httpMux
 }

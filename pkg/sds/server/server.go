@@ -10,6 +10,7 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
 	"github.com/prometheus/client_golang/prometheus"
+	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -27,7 +28,7 @@ var (
 	sdsServerLog = core.Log.WithName("sds-server")
 )
 
-func SetupServer(rt core_runtime.Runtime) error {
+func RegisterSDS(rt core_runtime.Runtime, server *grpc.Server) error {
 	hasher := hasher{sdsServerLog}
 	logger := util_xds.NewLogger(sdsServerLog)
 	cache := envoy_cache.NewSnapshotCache(false, hasher, logger)
@@ -75,7 +76,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	srv := envoy_server.NewServer(context.Background(), cache, callbacks)
 
 	sdsServerLog.Info("registering Secret Discovery Service in Dataplane Server")
-	envoy_discovery.RegisterSecretDiscoveryServiceServer(rt.DpServer().GRPCServer(), srv)
+	envoy_discovery.RegisterSecretDiscoveryServiceServer(server, srv)
 	return nil
 }
 

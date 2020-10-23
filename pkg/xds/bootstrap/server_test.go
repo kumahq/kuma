@@ -1,4 +1,4 @@
-package bootstrap
+package bootstrap_test
 
 import (
 	"context"
@@ -26,6 +26,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap"
 )
 
 var _ = Describe("Bootstrap Server", func() {
@@ -59,10 +60,10 @@ var _ = Describe("Bootstrap Server", func() {
 		}
 		dpServer := dp_server.NewDpServer(dpServerCfg, metrics)
 
-		handler := BootstrapHandler{
-			Generator: NewDefaultBootstrapGenerator(resManager, config, ""),
+		bootstrapHandler := bootstrap.BootstrapHandler{
+			Generator: bootstrap.NewDefaultBootstrapGenerator(resManager, config, ""),
 		}
-		dpServer.RegisterHTTPEndpoint("/bootstrap", handler.Handle)
+		dpServer.HTTPMux().HandleFunc("/bootstrap", bootstrapHandler.Handle)
 
 		stop = make(chan struct{})
 		go func() {

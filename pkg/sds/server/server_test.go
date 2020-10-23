@@ -21,8 +21,8 @@ import (
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/runtime"
@@ -131,8 +131,7 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// start the runtime
-		Expect(server.SetupServer(runtime)).To(Succeed())
-		Expect(runtime.Add(runtime.DpServer())).To(Succeed())
+		Expect(dp_server.SetupServer(runtime)).To(Succeed())
 		stop = make(chan struct{})
 		go func() {
 			defer GinkgoRecover()
