@@ -671,7 +671,7 @@ func (c *K8sCluster) WaitApp(name, namespace string) error {
 		},
 	)
 	if len(pods) < 1 {
-		return errors.Errorf("Kuma CP pods: %d", len(pods))
+		return errors.Errorf("%s pods: %d", name, len(pods))
 	}
 
 	k8s.WaitUntilPodAvailable(c.t,
