@@ -128,8 +128,6 @@ kind/deploy/example-app:
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
 	@KUBECONFIG=$(KIND_KUBECONFIG) $(MAKE) crd/upgrade -C pkg/plugins/resources/k8s/native
 	KUBECONFIG=$(KIND_KUBECONFIG) \
-	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
-	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
 	KUMA_ENVIRONMENT=kubernetes \
 	KUMA_STORE_TYPE=kubernetes \
 	KUMA_SDS_SERVER_TLS_CERT_FILE=app/kuma-cp/cmd/testdata/tls.crt \
