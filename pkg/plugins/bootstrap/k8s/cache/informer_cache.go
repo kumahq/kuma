@@ -22,7 +22,6 @@ import (
 	"reflect"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache/internal"
 	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,6 +30,8 @@ import (
 	k8s_cache "sigs.k8s.io/controller-runtime/pkg/cache"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
+
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache/internal"
 )
 
 var (
@@ -71,7 +72,6 @@ func (ip *informerCache) Get(ctx context.Context, key client.ObjectKey, out runt
 
 // List implements Reader
 func (ip *informerCache) List(ctx context.Context, out runtime.Object, opts ...client.ListOption) error {
-
 	gvk, cacheTypeObj, err := ip.objectTypeForListObject(out)
 	if err != nil {
 		return err

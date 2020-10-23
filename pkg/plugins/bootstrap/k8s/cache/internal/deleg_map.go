@@ -46,8 +46,8 @@ func NewInformersMap(config *rest.Config,
 	scheme *runtime.Scheme,
 	mapper meta.RESTMapper,
 	resync time.Duration,
-	namespace string) *InformersMap {
-
+	namespace string,
+) *InformersMap {
 	return &InformersMap{
 		structured:   newStructuredInformersMap(config, scheme, mapper, resync, namespace),
 		unstructured: newUnstructuredInformersMap(config, scheme, mapper, resync, namespace),

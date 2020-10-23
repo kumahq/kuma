@@ -12,3 +12,10 @@ include mk/run.mk
 include mk/kind.mk
 include mk/e2e.mk
 include mk/e2e.new.mk
+
+tag=1.0.0-rc1-36-g6bea2fb2
+push:
+	docker push lobkovilya/kuma-cp:$(tag)
+	docker push lobkovilya/kuma-dp:$(tag)
+	docker push lobkovilya/kuma-init:$(tag)
+	docker push lobkovilya/kuma-prometheus-sd:$(tag)

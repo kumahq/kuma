@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/clusterid"
 	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/pkg/clusterid"
 
 	admin_server "github.com/kumahq/kuma/pkg/admin-server"
 	api_server "github.com/kumahq/kuma/pkg/api-server"

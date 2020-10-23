@@ -4,8 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/patrickmn/go-cache"
+
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"

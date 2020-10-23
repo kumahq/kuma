@@ -3,12 +3,13 @@ package clusterid
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/pkg/errors"
 )
 
 func Setup(rt core_runtime.Runtime) error {

@@ -1,16 +1,14 @@
 package k8s
 
 import (
+	kube_runtime "k8s.io/apimachinery/pkg/runtime"
+	kube_ctrl "sigs.k8s.io/controller-runtime"
+	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
+
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
-	"k8s.io/client-go/rest"
-	"sigs.k8s.io/controller-runtime/pkg/cache"
-
-	kube_runtime "k8s.io/apimachinery/pkg/runtime"
-	kube_ctrl "sigs.k8s.io/controller-runtime"
-	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
 	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
 )
@@ -28,10 +26,8 @@ func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig)
 	mgr, err := kube_ctrl.NewManager(
 		kube_ctrl.GetConfigOrDie(),
 		kube_ctrl.Options{
-			Scheme: scheme,
-			NewCache: func(config *rest.Config, opts cache.Options) (cache.Cache, error) {
-				return kuma_kube_cache.New(config, opts)
-			},
+			Scheme:   scheme,
+			NewCache: kuma_kube_cache.New,
 			// Admission WebHook Server
 			Host:                    b.Config().Runtime.Kubernetes.AdmissionServer.Address,
 			Port:                    int(b.Config().Runtime.Kubernetes.AdmissionServer.Port),

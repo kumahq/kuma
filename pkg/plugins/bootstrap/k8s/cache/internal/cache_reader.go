@@ -93,8 +93,8 @@ func (c *CacheReader) List(_ context.Context, out runtime.Object, opts ...client
 
 	listOpts := client.ListOptions{}
 	listOpts.ApplyOptions(opts)
-
-	if listOpts.FieldSelector != nil {
+	switch {
+	case listOpts.FieldSelector != nil:
 		// TODO(directxman12): support more complicated field selectors by
 		// combining multiple indices, GetIndexers, etc
 		field, val, requiresExact := requiresExactMatch(listOpts.FieldSelector)
@@ -105,9 +105,9 @@ func (c *CacheReader) List(_ context.Context, out runtime.Object, opts ...client
 		// namespaced index key.  Otherwise, ask for the non-namespaced variant by using the fake "all namespaces"
 		// namespace.
 		objs, err = c.indexer.ByIndex(FieldIndexName(field), KeyToNamespacedKey(listOpts.Namespace, val))
-	} else if listOpts.Namespace != "" {
+	case listOpts.Namespace != "":
 		objs, err = c.indexer.ByIndex(cache.NamespaceIndex, listOpts.Namespace)
-	} else {
+	default:
 		objs = c.indexer.List()
 	}
 	if err != nil {
