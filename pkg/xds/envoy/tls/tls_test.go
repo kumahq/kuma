@@ -1,16 +1,16 @@
-package envoy_test
+package tls_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	. "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -30,7 +30,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			metadata := &core_xds.DataplaneMetadata{}
 
 			// when
-			snippet, err := CreateDownstreamTlsContext(ctx, metadata)
+			snippet, err := tls.CreateDownstreamTlsContext(ctx, metadata)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -75,7 +75,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := CreateDownstreamTlsContext(ctx, given.metadata)
+				snippet, err := tls.CreateDownstreamTlsContext(ctx, given.metadata)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when
@@ -233,7 +233,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			metadata := &core_xds.DataplaneMetadata{}
 
 			// when
-			snippet, err := CreateUpstreamTlsContext(ctx, metadata, "backend", "backend")
+			snippet, err := tls.CreateUpstreamTlsContext(ctx, metadata, "backend", "backend")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -279,7 +279,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 				}
 
 				// when
-				snippet, err := CreateUpstreamTlsContext(ctx, given.metadata, given.upstreamService, "")
+				snippet, err := tls.CreateUpstreamTlsContext(ctx, given.metadata, given.upstreamService, "")
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// when

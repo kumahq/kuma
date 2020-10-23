@@ -6,6 +6,8 @@ import (
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -27,7 +29,7 @@ func (c *clientSideTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	for _, ep := range c.endpoints {
 		if ep.ExternalService.TLSEnabled {
 			ca, cert, key := externalServiceTlsCerts(ep.ExternalService)
-			tlsContext, err := envoy.UpstreamTlsContextOutsideMesh(ca, cert, key, ep.Target)
+			tlsContext, err := tls.UpstreamTlsContextOutsideMesh(ca, cert, key, ep.Target)
 			if err != nil {
 				return err
 			}

@@ -1,4 +1,4 @@
-package envoy
+package tls
 
 import (
 	"fmt"
@@ -184,22 +184,6 @@ func ServiceSpiffeIDMatcher(mesh string, service string) *envoy_type_matcher.Str
 }
 
 func UpstreamTlsContextOutsideMesh(ca, cert, key *envoy_core.DataSource, hostname string) (*envoy_auth.UpstreamTlsContext, error) {
-	var validationContextType *envoy_auth.CommonTlsContext_ValidationContext
-	if ca != nil || len(hostname) > 0 {
-		validationContextType = &envoy_auth.CommonTlsContext_ValidationContext{
-			ValidationContext: &envoy_auth.CertificateValidationContext{
-				TrustedCa: ca,
-				MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{
-					{
-						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-							Exact: hostname,
-						},
-					},
-				},
-			},
-		}
-	}
-
 	var tlsCertificates []*envoy_auth.TlsCertificate
 	if cert != nil && key != nil {
 		tlsCertificates = []*envoy_auth.TlsCertificate{
@@ -210,15 +194,21 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key *envoy_core.DataSource, hostnam
 		}
 	}
 
-	var commonTlsContext *envoy_auth.CommonTlsContext
-	if validationContextType != nil || tlsCertificates != nil {
-		commonTlsContext = &envoy_auth.CommonTlsContext{
-			TlsCertificates:       tlsCertificates,
-			ValidationContextType: validationContextType,
-		}
-	}
-
 	return &envoy_auth.UpstreamTlsContext{
-		CommonTlsContext: commonTlsContext,
+		CommonTlsContext: &envoy_auth.CommonTlsContext{
+			TlsCertificates: tlsCertificates,
+			ValidationContextType: &envoy_auth.CommonTlsContext_ValidationContext{
+				ValidationContext: &envoy_auth.CertificateValidationContext{
+					TrustedCa: ca,
+					MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{
+						{
+							MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+								Exact: hostname,
+							},
+						},
+					},
+				},
+			},
+		},
 	}, nil
 }
