@@ -27,6 +27,8 @@ reusable:
       filters:
         branches:
           only: master
+        tags:
+          ignore: /.*/ # we don't want to run master worklow on commits with tag because use_local_kuma_images has to be false for all the jobs to pass
 
     # filters for the kuma-commit workflow
     commit_workflow_filters: &commit_workflow_filters
