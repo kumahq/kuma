@@ -3,6 +3,14 @@ dynamicResources:
     apiType: GRPC
     grpcServices:
       - googleGrpc:
+          callCredentials:
+            - fromPlugin:
+                name: envoy.grpc_credentials.file_based_metadata
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+                  secretData:
+                    filename: /tmp/token
+          credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
           statPrefix: ads
           targetUri: 127.0.0.1:5678
   cdsConfig:
@@ -12,6 +20,8 @@ dynamicResources:
 node:
   cluster: backend
   id: default.dp-1
+  metadata:
+    dataplaneTokenPath: /tmp/token
 staticResources:
   clusters:
     - connectTimeout: 1s
