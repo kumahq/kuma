@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 )

@@ -6,8 +6,9 @@ import (
 	"io/ioutil"
 	"strings"
 
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/pkg/errors"
+
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/core"

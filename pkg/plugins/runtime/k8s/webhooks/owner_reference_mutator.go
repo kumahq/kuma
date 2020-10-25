@@ -5,8 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"

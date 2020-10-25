@@ -5,12 +5,13 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/patrickmn/go-cache"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/patrickmn/go-cache"
 )
 
 var _ k8s_extensions.Converter = &cachingConverter{}

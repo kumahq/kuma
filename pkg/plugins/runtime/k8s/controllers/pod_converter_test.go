@@ -148,8 +148,8 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter: serviceGetter,
-				Zone:          "zone-1",
+				ServiceGetter:     serviceGetter,
+				Zone:              "zone-1",
 				ResourceConverter: &k8s.SimpleConverter{KubeFactory: &k8s.SimpleKubeFactory{KubeTypes: registry.Global()}},
 			}
 

@@ -1,11 +1,8 @@
 package k8s_test
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/patrickmn/go-cache"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -33,7 +30,6 @@ var _ = Describe("KubernetesStore template", func() {
 				KubeFactory: &k8s.SimpleKubeFactory{
 					KubeTypes: kubeTypes,
 				},
-				Cache: cache.New(30*time.Second, 25*time.Second),
 			},
 			Scheme: k8sClientScheme,
 		}

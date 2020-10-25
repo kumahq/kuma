@@ -5,8 +5,8 @@ import (
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_runtime "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 var _ core_plugins.ResourceStorePlugin = &plugin{}

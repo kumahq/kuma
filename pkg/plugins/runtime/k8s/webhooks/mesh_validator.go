@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"k8s.io/api/admission/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 
 	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"

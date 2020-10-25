@@ -2,9 +2,6 @@ package webhooks_test
 
 import (
 	"context"
-	"time"
-
-	"github.com/patrickmn/go-cache"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 
@@ -37,7 +34,6 @@ var _ = Describe("Validation", func() {
 			KubeFactory: &k8s_resources.SimpleKubeFactory{
 				KubeTypes: k8s_registry.Global(),
 			},
-			Cache: cache.New(30*time.Second, 25*time.Second),
 		}
 	})
 

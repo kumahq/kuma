@@ -4,8 +4,9 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/pkg/errors"
+
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"

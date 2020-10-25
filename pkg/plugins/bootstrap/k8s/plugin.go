@@ -3,10 +3,11 @@ package k8s
 import (
 	"time"
 
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"

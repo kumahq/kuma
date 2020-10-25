@@ -3,9 +3,10 @@ package k8s
 import (
 	"context"
 
+	kube_ctrl "sigs.k8s.io/controller-runtime"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
-	kube_ctrl "sigs.k8s.io/controller-runtime"
 )
 
 type managerKey struct{}

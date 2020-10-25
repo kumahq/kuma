@@ -3,9 +3,7 @@ package k8s_test
 import (
 	"context"
 	"fmt"
-	"time"
 
-	"github.com/patrickmn/go-cache"
 	kube_core "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/uuid"
@@ -94,7 +92,6 @@ var _ = Describe("KubernetesStore", func() {
 				KubeFactory: &k8s.SimpleKubeFactory{
 					KubeTypes: kubeTypes,
 				},
-				Cache: cache.New(30*time.Second, 25*time.Second),
 			},
 			Scheme: k8sClientScheme,
 		}
