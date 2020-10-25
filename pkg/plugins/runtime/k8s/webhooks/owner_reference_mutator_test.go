@@ -29,9 +29,13 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			Client:       k8sClient,
 			CoreRegistry: core_registry.Global(),
 			K8sRegistry:  k8s_registry.Global(),
-			Converter:    k8s.DefaultConverter(),
-			Decoder:      decoder,
-			Scheme:       scheme,
+			Converter: &k8s.SimpleConverter{
+				KubeFactory: &k8s.SimpleKubeFactory{
+					KubeTypes: k8s_registry.Global(),
+				},
+			},
+			Decoder: decoder,
+			Scheme:  scheme,
 		}
 	}
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -14,7 +15,6 @@ import (
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -24,7 +24,7 @@ type OwnerReferenceMutator struct {
 	Client       kube_client.Client
 	CoreRegistry core_registry.TypeRegistry
 	K8sRegistry  k8s_registry.TypeRegistry
-	Converter    k8s_resources.Converter
+	Converter    k8s_extensions.Converter
 	Decoder      *admission.Decoder
 	Scheme       *kube_runtime.Scheme
 }

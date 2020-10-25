@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"k8s.io/api/admission/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -19,12 +20,11 @@ import (
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode) AdmissionValidator {
+func NewValidatingWebhook(converter k8s_extensions.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode) AdmissionValidator {
 	return &validatingHandler{
 		coreRegistry: coreRegistry,
 		k8sRegistry:  k8sRegistry,
@@ -36,7 +36,7 @@ func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_r
 type validatingHandler struct {
 	coreRegistry core_registry.TypeRegistry
 	k8sRegistry  k8s_registry.TypeRegistry
-	converter    k8s_resources.Converter
+	converter    k8s_extensions.Converter
 	decoder      *admission.Decoder
 	mode         core.CpMode
 }

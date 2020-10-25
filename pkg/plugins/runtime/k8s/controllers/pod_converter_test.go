@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 
 	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
@@ -148,6 +150,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 			converter := PodConverter{
 				ServiceGetter: serviceGetter,
 				Zone:          "zone-1",
+				ResourceConverter: &k8s.SimpleConverter{KubeFactory: &k8s.SimpleKubeFactory{KubeTypes: registry.Global()}},
 			}
 
 			// when

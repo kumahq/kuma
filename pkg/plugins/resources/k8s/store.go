@@ -2,14 +2,10 @@ package k8s
 
 import (
 	"context"
-	"fmt"
 	"strconv"
-	"strings"
-	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/patrickmn/go-cache"
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/pkg/errors"
 	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,21 +21,20 @@ import (
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ store.ResourceStore = &KubernetesStore{}
 
 type KubernetesStore struct {
 	Client    kube_client.Client
-	Converter Converter
+	Converter k8s_extensions.Converter
 	Scheme    *kube_runtime.Scheme
 }
 
-func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme) (store.ResourceStore, error) {
+func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_extensions.Converter) (store.ResourceStore, error) {
 	return &KubernetesStore{
 		Client:    client,
-		Converter: DefaultConverter(),
+		Converter: converter,
 		Scheme:    scheme,
 	}, nil
 }
@@ -290,93 +285,4 @@ func (f *SimpleKubeFactory) NewObject(r core_model.Resource) (k8s_model.Kubernet
 
 func (f *SimpleKubeFactory) NewList(rl core_model.ResourceList) (k8s_model.KubernetesList, error) {
 	return f.KubeTypes.NewList(rl.NewItem().GetSpec())
-}
-
-type ConverterPredicate = func(core_model.Resource) bool
-type Converter interface {
-	ToKubernetesObject(core_model.Resource) (k8s_model.KubernetesObject, error)
-	ToKubernetesList(core_model.ResourceList) (k8s_model.KubernetesList, error)
-	ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error
-	ToCoreList(obj k8s_model.KubernetesList, out core_model.ResourceList, predicate ConverterPredicate) error
-}
-
-var once sync.Once
-var sc Converter
-
-const expirationTime = 5 * time.Minute
-
-func DefaultConverter() Converter {
-	once.Do(func() {
-		sc = &SimpleConverter{
-			KubeFactory: &SimpleKubeFactory{
-				KubeTypes: k8s_registry.Global(),
-			},
-			Cache: cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
-		}
-	})
-	return sc
-}
-
-var _ Converter = &SimpleConverter{}
-
-type SimpleConverter struct {
-	KubeFactory KubeFactory
-	Cache       *cache.Cache
-}
-
-func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (k8s_model.KubernetesObject, error) {
-	obj, err := c.KubeFactory.NewObject(r)
-	if err != nil {
-		return nil, err
-	}
-	spec, err := util_proto.ToMap(r.GetSpec())
-	if err != nil {
-		return nil, err
-	}
-	obj.SetSpec(spec)
-	if r.GetMeta() != nil {
-		if adapter, ok := r.GetMeta().(*KubernetesMetaAdapter); ok {
-			obj.SetMesh(adapter.Mesh)
-			obj.SetObjectMeta(&adapter.ObjectMeta)
-		} else {
-			return nil, fmt.Errorf("meta has unexpected type: %#v", r.GetMeta())
-		}
-	}
-	return obj, nil
-}
-
-func (c *SimpleConverter) ToKubernetesList(rl core_model.ResourceList) (k8s_model.KubernetesList, error) {
-	return c.KubeFactory.NewList(rl)
-}
-
-func (c *SimpleConverter) ToCoreResource(obj k8s_model.KubernetesObject, out core_model.Resource) error {
-	out.SetMeta(&KubernetesMetaAdapter{*obj.GetObjectMeta(), obj.GetMesh()})
-	key := strings.Join([]string{
-		obj.GetNamespace(),
-		obj.GetName(),
-		obj.GetMesh(),
-		obj.GetResourceVersion(),
-		proto.MessageName(out.GetSpec()),
-	}, ":")
-	if v, ok := c.Cache.Get(key); ok {
-		return out.SetSpec(v.(core_model.ResourceSpec))
-	}
-	if err := util_proto.FromMap(obj.GetSpec(), out.GetSpec()); err != nil {
-		return err
-	}
-	c.Cache.SetDefault(key, out.GetSpec())
-	return nil
-}
-
-func (c *SimpleConverter) ToCoreList(in k8s_model.KubernetesList, out core_model.ResourceList, predicate ConverterPredicate) error {
-	for _, o := range in.GetItems() {
-		r := out.NewItem()
-		if err := c.ToCoreResource(o, r); err != nil {
-			return err
-		}
-		if predicate(r) {
-			_ = out.AddItem(r)
-		}
-	}
-	return nil
 }

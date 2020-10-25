@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"net/http"
 
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 )
 
 type Defaulter interface {
@@ -16,7 +16,7 @@ type Defaulter interface {
 	Default() error
 }
 
-func DefaultingWebhookFor(factory func() core_model.Resource, converter k8s_resources.Converter) *admission.Webhook {
+func DefaultingWebhookFor(factory func() core_model.Resource, converter k8s_extensions.Converter) *admission.Webhook {
 	return &admission.Webhook{
 		Handler: &defaultingHandler{
 			factory:   factory,
@@ -27,7 +27,7 @@ func DefaultingWebhookFor(factory func() core_model.Resource, converter k8s_reso
 
 type defaultingHandler struct {
 	factory   func() core_model.Resource
-	converter k8s_resources.Converter
+	converter k8s_extensions.Converter
 	decoder   *admission.Decoder
 }
 

@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"strings"
 
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/pkg/errors"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
@@ -13,7 +14,6 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
@@ -35,7 +35,12 @@ const (
 
 var log = core.Log.WithName("injector")
 
-func New(cfg runtime_k8s.Injector, controlPlaneUrl string, client kube_client.Client) (*KumaInjector, error) {
+func New(
+	cfg runtime_k8s.Injector,
+	controlPlaneUrl string,
+	client kube_client.Client,
+	converter k8s_extensions.Converter,
+) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
 		bytes, err := ioutil.ReadFile(cfg.CaCertFile)
@@ -48,7 +53,7 @@ func New(cfg runtime_k8s.Injector, controlPlaneUrl string, client kube_client.Cl
 		cfg:             cfg,
 		controlPlaneUrl: controlPlaneUrl,
 		client:          client,
-		converter:       k8s_resources.DefaultConverter(),
+		converter:       converter,
 		caCert:          caCert,
 	}, nil
 }
@@ -57,7 +62,7 @@ type KumaInjector struct {
 	cfg             runtime_k8s.Injector
 	controlPlaneUrl string
 	client          kube_client.Client
-	converter       k8s_resources.Converter
+	converter       k8s_extensions.Converter
 	caCert          string
 }
 

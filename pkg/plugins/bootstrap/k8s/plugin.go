@@ -1,6 +1,9 @@
 package k8s
 
 import (
+	"time"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
@@ -10,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
 
-	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}
@@ -41,7 +44,9 @@ func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig)
 		return err
 	}
 	b.WithComponentManager(&kubeComponentManager{mgr})
-	b.WithExtensions(k8s_runtime.NewManagerContext(b.Extensions(), mgr))
+	b.WithExtensions(k8s_extensions.NewManagerContext(b.Extensions(), mgr))
+	b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewCachingConverter(5*time.Minute)))
+
 	return nil
 }
 
