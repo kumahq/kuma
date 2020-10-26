@@ -302,3 +302,5 @@ dpServer:
   tlsCertFile: # ENV: KUMA_DP_SERVER_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
   tlsKeyFile: # ENV: KUMA_DP_SERVER_TLS_KEY_FILE
+  auth:
+    type: ""

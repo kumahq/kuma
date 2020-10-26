@@ -213,7 +213,10 @@ var _ = Describe("Config WS", func() {
           "dpServer": {
             "port": 5678,
             "tlsCertFile": "",
-            "tlsKeyFile": ""
+            "tlsKeyFile": "",
+            "auth": {
+              "type": ""
+            }
           },
           "store": {
             "kubernetes": {

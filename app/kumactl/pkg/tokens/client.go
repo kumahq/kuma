@@ -28,10 +28,6 @@ func NewDataplaneTokenClient(config *kumactl_config.ControlPlaneCoordinates_ApiS
 		Timeout: timeout,
 	}
 	if baseURL.Scheme == "https" {
-		if !config.HasCerts() {
-			return nil, errors.New("certificates has to be configured to use https destination")
-		}
-
 		if err := util_http.ConfigureTls(httpClient, config.CaCertFile, config.ClientCertFile, config.ClientKeyFile); err != nil {
 			return nil, errors.Wrap(err, "could not configure tls for dataplane token client")
 		}

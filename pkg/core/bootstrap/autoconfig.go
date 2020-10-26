@@ -8,8 +8,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/tls"
 )
@@ -17,6 +18,7 @@ import (
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
+	autoconfigureDpServerAuth(cfg)
 	if err := autoconfigureTLS(cfg); err != nil {
 		return err
 	}
@@ -24,6 +26,17 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 	autoconfigureCatalog(cfg)
 	autoconfigBootstrapXdsParams(cfg)
 	return nil
+}
+
+func autoconfigureDpServerAuth(cfg *kuma_cp.Config) {
+	if cfg.DpServer.Auth.Type == "" {
+		switch cfg.Environment {
+		case config_core.KubernetesEnvironment:
+			cfg.DpServer.Auth.Type = dp_server.DpServerAuthServiceAccountToken
+		case config_core.UniversalEnvironment:
+			cfg.DpServer.Auth.Type = dp_server.DpServerAuthDpToken
+		}
+	}
 }
 
 func autoconfigureServersTLS(cfg *kuma_cp.Config) {
@@ -71,7 +84,6 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 	if len(madsUrl) == 0 {
 		madsUrl = fmt.Sprintf("grpc://%s:%d", cfg.General.AdvertisedHostname, cfg.MonitoringAssignmentServer.GrpcPort)
 	}
-	// fixme fill the parameter of dp token server
 	cat := &catalog.CatalogConfig{
 		ApiServer: catalog.ApiServerConfig{
 			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.ApiServer.HTTP.Port),
@@ -82,12 +94,12 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 		MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
 			Url: madsUrl,
 		},
-		DataplaneToken: catalog.DataplaneTokenApiConfig{
-			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.ApiServer.HTTP.Port),
-		},
 		Sds: catalog.SdsApiConfig{
 			Url: cfg.ApiServer.Catalog.Sds.Url,
 		},
+	}
+	if cfg.DpServer.Auth.Type == dp_server.DpServerAuthDpToken {
+		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.ApiServer.HTTP.Port)
 	}
 	cfg.ApiServer.Catalog = cat
 }

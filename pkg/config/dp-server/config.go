@@ -16,6 +16,20 @@ type DpServerConfig struct {
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_dp_server_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_dp_server_tls_key_file"`
+	// Auth defines an authentication configuration for the DP Server
+	Auth DpServerAuthConfig `yaml:"auth"`
+}
+
+type DpServerAuthType string
+
+const (
+	DpServerAuthServiceAccountToken = "serviceAccountToken"
+	DpServerAuthDpToken             = "dpToken"
+	DpServerAuthNone                = "none"
+)
+
+type DpServerAuthConfig struct {
+	Type string `yaml:"type" envconfig:"kuma_dp_server_auth_type"`
 }
 
 func (a *DpServerConfig) Sanitize() {
@@ -31,5 +45,8 @@ func (a *DpServerConfig) Validate() error {
 func DefaultDpServerConfig() *DpServerConfig {
 	return &DpServerConfig{
 		Port: 5678,
+		Auth: DpServerAuthConfig{
+			Type: "", // autoconfigured from the environment
+		},
 	}
 }
