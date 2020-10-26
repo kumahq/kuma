@@ -3,11 +3,11 @@ package catalog
 // Not yet exposed via YAML and env vars on purpose
 type CatalogConfig struct {
 	ApiServer            ApiServerConfig               `yaml:"-"`
-	Bootstrap            BootstrapApiConfig            `yaml:"bootstrap"`
-	DataplaneToken       DataplaneTokenApiConfig       `yaml:"-"` // DEPRECATED: remove in next major version of Kuma
+	Bootstrap            BootstrapApiConfig            `yaml:"bootstrap"` // DEPRECATED: remove in next major version of Kuma
+	DataplaneToken       DataplaneTokenApiConfig       `yaml:"-"`         // DEPRECATED: remove in next major version of Kuma
 	Admin                AdminApiConfig                `yaml:"-"`
 	MonitoringAssignment MonitoringAssignmentApiConfig `yaml:"monitoringAssignment"`
-	Sds                  SdsApiConfig                  `yaml:"sds"`
+	Sds                  SdsApiConfig                  `yaml:"sds"` // DEPRECATED: remove in next major version of Kuma
 }
 
 type ApiServerConfig struct {

@@ -161,15 +161,6 @@ func (rc *RootContext) catalog() (catalog.Catalog, error) {
 }
 
 func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {
-	// todo(jakubdyszkiewicz) check enable/disable by checking cp config
-	components, err := rc.catalog()
-	if err != nil {
-		return nil, err
-	}
-	if !components.Apis.DataplaneToken.Enabled() {
-		return nil, errors.New("Enable the server to be able to generate tokens.")
-	}
-
 	ctx, err := rc.CurrentContext()
 	if err != nil {
 		return nil, err
@@ -203,7 +194,7 @@ func (rc *RootContext) adminServerUrl() (string, error) {
 		if err := validateRemoteAdminServerSettings(ctx, components); err != nil {
 			return "", err
 		}
-		return components.Apis.DataplaneToken.PublicUrl, nil
+		return components.Apis.Admin.PublicUrl, nil
 	}
 }
 

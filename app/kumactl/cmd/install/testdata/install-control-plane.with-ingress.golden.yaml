@@ -5941,8 +5941,10 @@ spec:
               valueFrom:
                 fieldRef:
                   fieldPath: metadata.namespace
-            - name: KUMA_CONTROL_PLANE_API_SERVER_URL
-              value: "http://kuma-control-plane.kuma-system:5681"
+            - name: KUMA_CONTROL_PLANE_URL
+              value: "https://kuma-control-plane.kuma-system:5678"
+            - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
             - name: KUMA_DATAPLANE_MESH
               value: default
             - name: KUMA_DATAPLANE_NAME
@@ -5987,6 +5989,14 @@ spec:
             limits:
               cpu: 1000m
               memory: 512Mi
+          volumeMounts:
+            - mountPath: /var/run/secrets/kuma.io/tls-cert
+              name: kuma-tls-cert
+              readOnly: true
+      volumes:
+        - name: kuma-tls-cert
+          secret:
+            secretName: kuma-tls-cert
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration

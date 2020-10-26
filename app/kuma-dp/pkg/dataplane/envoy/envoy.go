@@ -14,7 +14,6 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/catalog"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -27,7 +26,6 @@ var (
 type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource) (proto.Message, error)
 
 type Opts struct {
-	Catalog   catalog.Catalog
 	Config    kuma_dp.Config
 	Generator BootstrapConfigFactoryFunc
 	Dataplane *rest.Resource
@@ -98,7 +96,7 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
 	runLog.Info("generating bootstrap configuration")
-	bootstrapConfig, err := e.opts.Generator(e.opts.Catalog.Apis.Bootstrap.Url, e.opts.Config, e.opts.Dataplane)
+	bootstrapConfig, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, e.opts.Dataplane)
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 	}

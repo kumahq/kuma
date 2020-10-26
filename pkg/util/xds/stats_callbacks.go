@@ -39,6 +39,8 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string) (envoy_xds.
 		Name: dsType + "_streams_active",
 		Help: "Number of active connections between a server and a client",
 	}, func() float64 {
+		stats.RLock()
+		defer stats.RUnlock()
 		return float64(stats.StreamsActive)
 	})
 	if err := metrics.Register(streamsActive); err != nil {
