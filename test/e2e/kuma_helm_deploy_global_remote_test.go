@@ -40,13 +40,13 @@ metadata:
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, remote ControlPlane
-	var deployOptsFuncs []DeployOptionsFunc
+	var optsGlobal, optsRemote []DeployOptionsFunc
 
 	BeforeEach(func() {
 		var err error
 		clusters, err = NewK8sClusters(
 			[]string{Kuma1, Kuma2},
-			Verbose)
+			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		c1 = clusters.GetCluster(Kuma1)
@@ -56,23 +56,28 @@ metadata:
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
-		deployOptsFuncs = []DeployOptionsFunc{
+		optsGlobal = []DeployOptionsFunc{
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
 		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Global, deployOptsFuncs...)).
+			Install(Kuma(core.Global, optsGlobal...)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 
 		global = c1.GetKuma()
 		Expect(global).ToNot(BeNil())
 
-		deployOptsFuncs = append(deployOptsFuncs, WithGlobalAddress(global.GetKDSServerAddress()), WithHelmOpt("ingress.enabled", "true"))
+		optsRemote = []DeployOptionsFunc{
+			WithInstallationMode(HelmInstallationMode),
+			WithHelmReleaseName(releaseName),
+			WithGlobalAddress(global.GetKDSServerAddress()),
+			WithHelmOpt("ingress.enabled", "true"),
+		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, deployOptsFuncs...)).
+			Install(Kuma(core.Remote, optsRemote...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
@@ -115,7 +120,10 @@ metadata:
 		// tear down apps
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		// tear down Kuma
-		Expect(clusters.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(c1.DeleteKuma(optsGlobal...)).To(Succeed())
+		Expect(c2.DeleteKuma(optsRemote...)).To(Succeed())
+		// tear down clusters
+		Expect(clusters.DismissCluster()).To(Succeed())
 	})
 
 	It("Should deploy Remote and Global on 2 clusters", func() {

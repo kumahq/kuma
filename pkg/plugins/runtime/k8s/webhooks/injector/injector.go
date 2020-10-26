@@ -230,7 +230,7 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 				},
 			},
 			{
-				Name:  "KUMA_CONTROL_PLANE_API_SERVER_URL",
+				Name:  "KUMA_CONTROL_PLANE_URL",
 				Value: i.controlPlaneUrl,
 			},
 			{

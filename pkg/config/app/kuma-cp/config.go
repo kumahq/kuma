@@ -5,17 +5,17 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/diagnostics"
-	"github.com/kumahq/kuma/pkg/config/multicluster"
-
 	"github.com/kumahq/kuma/pkg/config"
 	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/config/diagnostics"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
+	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 	"github.com/kumahq/kuma/pkg/config/mads"
+	"github.com/kumahq/kuma/pkg/config/multicluster"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
 	"github.com/kumahq/kuma/pkg/config/sds"
 	"github.com/kumahq/kuma/pkg/config/xds"
@@ -124,6 +124,8 @@ type Config struct {
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
 	// Diagnostics configuration
 	Diagnostics *diagnostics.DiagnosticsConfig `yaml:"diagnostics,omitempty"`
+	// Dataplane Server configuration
+	DpServer *dp_server.DpServerConfig `yaml:"dpServer"`
 }
 
 func (c *Config) Sanitize() {
@@ -177,6 +179,7 @@ func DefaultConfig() Config {
 		DNSServer:    dns_server.DefaultDNSServerConfig(),
 		Multicluster: multicluster.DefaultMulticlusterConfig(),
 		Diagnostics:  diagnostics.DefaultDiagnosticsConfig(),
+		DpServer:     dp_server.DefaultDpServerConfig(),
 	}
 }
 

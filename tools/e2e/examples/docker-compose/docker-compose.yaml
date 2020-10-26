@@ -144,7 +144,7 @@ services:
     - run
     - --log-level=info
     environment:
-    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
+    - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-app
     - KUMA_DATAPLANE_ADMIN_PORT=9901
@@ -219,7 +219,7 @@ services:
     - run
     - --log-level=info
     environment:
-    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
+    - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-client
     - KUMA_DATAPLANE_ADMIN_PORT=9901
@@ -299,7 +299,7 @@ services:
     volumes:
     - token-example-web:/var/kuma.io/kuma-dp/kuma-example-web
     environment:
-    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
+    - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-web
     - KUMA_DATAPLANE_ADMIN_PORT=9901
@@ -365,7 +365,7 @@ services:
     volumes:
     - token-example-backend-v1:/var/kuma.io/kuma-dp/kuma-example-backend-v1
     environment:
-    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
+    - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-backend-v1
     - KUMA_DATAPLANE_ADMIN_PORT=9901
@@ -431,7 +431,7 @@ services:
     volumes:
     - token-example-backend-v2:/var/kuma.io/kuma-dp/kuma-example-backend-v2
     environment:
-    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
+    - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-backend-v2
     - KUMA_DATAPLANE_ADMIN_PORT=9901

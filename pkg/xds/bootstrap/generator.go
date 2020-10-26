@@ -32,21 +32,29 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	config *bootstrap_config.BootstrapParamsConfig,
-	cacertFile string) BootstrapGenerator {
+	cacertFile string,
+	dpAuthEnabled bool,
+) BootstrapGenerator {
 	return &bootstrapGenerator{
-		resManager:  resManager,
-		config:      config,
-		xdsCertFile: cacertFile,
+		resManager:    resManager,
+		config:        config,
+		xdsCertFile:   cacertFile,
+		dpAuthEnabled: dpAuthEnabled,
 	}
 }
 
 type bootstrapGenerator struct {
-	resManager  core_manager.ResourceManager
-	config      *bootstrap_config.BootstrapParamsConfig
-	xdsCertFile string
+	resManager    core_manager.ResourceManager
+	config        *bootstrap_config.BootstrapParamsConfig
+	dpAuthEnabled bool
+	xdsCertFile   string
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
+	if err := b.validateRequest(request); err != nil {
+		return nil, err
+	}
+
 	proxyId, err := core_xds.BuildProxyId(request.Mesh, request.Name)
 	if err != nil {
 		return nil, err
@@ -62,6 +70,15 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, err
 	}
 	return bootstrapCfg, nil
+}
+
+var DpTokenRequired = errors.New("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
+
+func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
+	if b.dpAuthEnabled && request.DataplaneTokenPath == "" {
+		return DpTokenRequired
+	}
+	return nil
 }
 
 // dataplaneFor returns dataplane for two flows

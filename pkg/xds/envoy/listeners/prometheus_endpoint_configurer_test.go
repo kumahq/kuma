@@ -59,6 +59,7 @@ var _ = Describe("PrometheusEndpointConfigurer", func() {
                   httpFilters:
                   - name: envoy.router
                   routeConfig:
+                    validateClusters: false
                     virtualHosts:
                     - domains:
                       - '*'

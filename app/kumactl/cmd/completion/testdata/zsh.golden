@@ -763,7 +763,11 @@ function _kumactl_install {
 
 function _kumactl_install_control-plane {
   _arguments \
+    '--cni-bin-dir[set the CNI binary directory]:' \
+    '--cni-chained[enable chained CNI installation]' \
+    '--cni-conf-name[set the CNI configuration name]:' \
     '--cni-enabled[install Kuma with CNI instead of proxy init container]' \
+    '--cni-net-dir[set the CNI install directory]:' \
     '--cni-registry[registry for the image of the Kuma CNI component]:' \
     '--cni-repository[repository for the image of the Kuma CNI component]:' \
     '--cni-version[version of the image of the Kuma CNI component]:' \

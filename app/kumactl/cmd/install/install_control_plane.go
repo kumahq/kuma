@@ -44,6 +44,10 @@ type InstallControlPlaneArgs struct {
 	DataPlane_initImage_tag                   string            `helm:"dataPlane.initImage.tag"`
 	ControlPlane_kdsGlobalAddress             string            `helm:"controlPlane.kdsGlobalAddress"`
 	Cni_enabled                               bool              `helm:"cni.enabled"`
+	Cni_chained                               bool              `helm:"cni.chained"`
+	Cni_net_dir                               string            `helm:"cni.netDir"`
+	Cni_bin_dir                               string            `helm:"cni.binDir"`
+	Cni_conf_name                             string            `helm:"cni.confName"`
 	Cni_image_registry                        string            `helm:"cni.image.registry"`
 	Cni_image_repository                      string            `helm:"cni.image.repository"`
 	Cni_image_tag                             string            `helm:"cni.image.tag"`
@@ -80,6 +84,11 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	DataPlane_initImage_registry:              "kong-docker-kuma-docker.bintray.io",
 	DataPlane_initImage_repository:            "kuma-init",
 	DataPlane_initImage_tag:                   kuma_version.Build.Version,
+	Cni_enabled:                               false,
+	Cni_chained:                               false,
+	Cni_net_dir:                               "/etc/cni/multus/net.d",
+	Cni_bin_dir:                               "/var/lib/cni/bin",
+	Cni_conf_name:                             "kuma-cni.conf",
 	Cni_image_registry:                        "docker.io",
 	Cni_image_repository:                      "lobkovilya/install-cni",
 	Cni_image_tag:                             "0.0.2",
@@ -163,6 +172,10 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.DataPlane_initImage_tag, "dataplane-init-version", args.DataPlane_initImage_tag, "version of the init image of the Kuma DataPlane component")
 	cmd.Flags().StringVar(&args.ControlPlane_kdsGlobalAddress, "kds-global-address", args.ControlPlane_kdsGlobalAddress, "URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)")
 	cmd.Flags().BoolVar(&args.Cni_enabled, "cni-enabled", args.Cni_enabled, "install Kuma with CNI instead of proxy init container")
+	cmd.Flags().BoolVar(&args.Cni_chained, "cni-chained", args.Cni_chained, "enable chained CNI installation")
+	cmd.Flags().StringVar(&args.Cni_net_dir, "cni-net-dir", args.Cni_net_dir, "set the CNI install directory")
+	cmd.Flags().StringVar(&args.Cni_bin_dir, "cni-bin-dir", args.Cni_bin_dir, "set the CNI binary directory")
+	cmd.Flags().StringVar(&args.Cni_conf_name, "cni-conf-name", args.Cni_conf_name, "set the CNI configuration name")
 	cmd.Flags().StringVar(&args.Cni_image_registry, "cni-registry", args.Cni_image_registry, "registry for the image of the Kuma CNI component")
 	cmd.Flags().StringVar(&args.Cni_image_repository, "cni-repository", args.Cni_image_repository, "repository for the image of the Kuma CNI component")
 	cmd.Flags().StringVar(&args.Cni_image_tag, "cni-version", args.Cni_image_tag, "version of the image of the Kuma CNI component")

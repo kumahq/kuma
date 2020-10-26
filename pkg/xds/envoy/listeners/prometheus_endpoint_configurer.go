@@ -6,6 +6,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -55,6 +56,9 @@ func (c *PrometheusEndpointConfigurer) Configure(filterChain *envoy_listener.Fil
 						},
 					}},
 				}},
+				ValidateClusters: &wrappers.BoolValue{
+					Value: false,
+				},
 			},
 		},
 	}

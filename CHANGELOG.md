@@ -1,5 +1,17 @@
 # CHANGELOG
 
+## [0.7.3]
+> Released on  2020/10/22
+* chore: generate static outbound routes [#1098](https://github.com/kumahq/kuma/pull/1098/)
+* feat: apply multiple resources [#1057](https://github.com/kumahq/kuma/pull/1057/)
+ 👍contributed by @tharun208
+* chore: generate cert with SAN for the newest K8S [#1078](https://github.com/kumahq/kuma/pull/1078)
+* feat: specify nodeSelectors for CP and CNI pods [#990](https://github.com/kumahq/kuma/pull/990/)
+ 👍contributed by @austince
+* feat: exclude injection from pods that match labels [#1072](https://github.com/kumahq/kuma/pull/1072/)
+* chore: use /ready endpoint for sidecar health-check [#1055](https://github.com/kumahq/kuma/pull/1055/)
+ 👍contributed by @tharun208
+
 ## [1.0.0-rc1]
 > Released on  2020/10/07
 

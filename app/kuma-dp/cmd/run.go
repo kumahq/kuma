@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"context"
 	"crypto/tls"
 	"io/ioutil"
 	"net/http"
@@ -10,13 +9,11 @@ import (
 	"time"
 
 	"github.com/pkg/errors"
-	"github.com/sethvargo/go-retry"
 	"github.com/spf13/cobra"
 
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/kumahq/kuma/pkg/catalog"
 	"github.com/kumahq/kuma/pkg/catalog/client"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -60,22 +57,6 @@ func newRunCmd() *cobra.Command {
 				return err
 			}
 
-			catalog, err := fetchCatalog(cfg)
-			if err != nil {
-				return err
-			}
-			if catalog.Apis.DataplaneToken.Enabled() {
-				if cfg.DataplaneRuntime.TokenPath == "" && cfg.DataplaneRuntime.Token == "" {
-					return errors.New("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. " +
-						"Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
-				}
-				if cfg.DataplaneRuntime.TokenPath != "" {
-					if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
-						return err
-					}
-				}
-			}
-
 			dp, err := readDataplaneResource(cmd, &cfg)
 			if err != nil {
 				runLog.Error(err, "unable to read provided dataplane")
@@ -111,6 +92,11 @@ func newRunCmd() *cobra.Command {
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
 
+			if cfg.DataplaneRuntime.TokenPath != "" {
+				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
+					return err
+				}
+			}
 			if cfg.DataplaneRuntime.Token != "" {
 				path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
 				if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0600); err != nil {
@@ -129,7 +115,6 @@ func newRunCmd() *cobra.Command {
 			}
 
 			dataplane, err := envoy.New(envoy.Opts{
-				Catalog:   *catalog,
 				Config:    cfg,
 				Generator: bootstrapGenerator,
 				Dataplane: dp,
@@ -159,7 +144,7 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
 	cmd.PersistentFlags().Var(&cfg.Dataplane.AdminPort, "admin-port", `Port (or range of ports to choose from) for Envoy Admin API to listen on. Empty value indicates that Envoy Admin API should not be exposed over TCP. Format: "9901 | 9901-9999 | 9901- | -9901"`)
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
-	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.ApiServer.URL, "cp-address", cfg.ControlPlane.ApiServer.URL, "URL of the Control Plane API Server")
+	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane API Server")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCert, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
@@ -176,35 +161,4 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	return ioutil.WriteFile(filename, data, perm)
-}
-
-// fetchCatalog tries to fetch Kuma CP catalog several times
-// The main reason for introducing retries here is situation when DP is deployed in the same time as CP (ex. Ingress for Remote CP)
-func fetchCatalog(cfg kuma_dp.Config) (*catalog.Catalog, error) {
-	runLog.Info("connecting to the Control Plane API for Bootstrap API location")
-	catalogClient, err := catalogClientFactory(cfg.ControlPlane.ApiServer.URL)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create catalog client")
-	}
-
-	backoff, err := retry.NewConstant(cfg.ControlPlane.ApiServer.Retry.Backoff)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create retry backoff")
-	}
-	backoff = retry.WithMaxDuration(cfg.ControlPlane.ApiServer.Retry.MaxDuration, backoff)
-	var c catalog.Catalog
-	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
-		c, err = catalogClient.Catalog()
-		if err != nil {
-			runLog.Info("could not connect to the Control Plane API. Retrying.", "backoff", cfg.ControlPlane.ApiServer.Retry.Backoff, "err", err.Error())
-			return retry.RetryableError(err)
-		}
-		return nil
-	})
-
-	if err != nil {
-		return nil, errors.Wrap(err, "could not retrieve catalog")
-	}
-	runLog.Info("connection successful", "catalog", c)
-	return &c, nil
 }

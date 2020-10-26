@@ -26,8 +26,8 @@ type MeshContext struct {
 
 func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, error) {
 	var cert []byte
-	if config.SdsServer.TlsCertFile != "" {
-		c, err := ioutil.ReadFile(config.SdsServer.TlsCertFile)
+	if config.DpServer.TlsCertFile != "" {
+		c, err := ioutil.ReadFile(config.DpServer.TlsCertFile)
 		if err != nil {
 			return nil, err
 		}
@@ -42,7 +42,7 @@ func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, erro
 		sdsLocation = u.Host
 	}
 	if len(sdsLocation) == 0 {
-		sdsLocation = fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.SdsServer.GrpcPort)
+		sdsLocation = fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.DpServer.Port)
 	}
 
 	return &ControlPlaneContext{

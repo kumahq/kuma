@@ -169,7 +169,7 @@ var _ = Describe("Remote Bootstrap", func() {
 
 		// when
 		cfg := kuma_dp.DefaultConfig()
-		cfg.ControlPlane.BootstrapServer.Retry.Backoff = 10 * time.Millisecond
+		cfg.ControlPlane.Retry.Backoff = 10 * time.Millisecond
 		_, err = generator(fmt.Sprintf("http://localhost:%d", port), cfg, &rest.Resource{
 			Meta: rest.ResourceMeta{
 				Type: "Dataplane",
@@ -200,8 +200,8 @@ var _ = Describe("Remote Bootstrap", func() {
 
 		// when
 		config := kuma_dp.DefaultConfig()
-		config.ControlPlane.BootstrapServer.Retry.Backoff = 10 * time.Millisecond
-		config.ControlPlane.BootstrapServer.Retry.MaxDuration = 100 * time.Millisecond
+		config.ControlPlane.Retry.Backoff = 10 * time.Millisecond
+		config.ControlPlane.Retry.MaxDuration = 100 * time.Millisecond
 		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config, &rest.Resource{
 			Meta: rest.ResourceMeta{Mesh: "default", Name: "dp-1"},
 		})

@@ -38,7 +38,7 @@ var _ = Describe("Auto configuration", func() {
 				cfg.AdminServer.Public.Enabled = true
 				cfg.AdminServer.Public.Interface = "192.168.0.1"
 				cfg.AdminServer.Public.Port = 2222
-				cfg.BootstrapServer.Port = 3333
+				cfg.DpServer.Port = 3333
 				cfg.ApiServer.Port = 1234
 				return cfg
 			},
@@ -69,7 +69,7 @@ var _ = Describe("Auto configuration", func() {
 				cfg.AdminServer.Local.Port = 1111
 				cfg.AdminServer.Public.Enabled = true
 				cfg.AdminServer.Public.Interface = "192.168.0.1"
-				cfg.BootstrapServer.Port = 3333
+				cfg.DpServer.Port = 3333
 				return cfg
 			},
 			expectedCatalogConfig: catalog.CatalogConfig{
@@ -97,7 +97,7 @@ var _ = Describe("Auto configuration", func() {
 				cfg := kuma_cp.DefaultConfig()
 				cfg.General.AdvertisedHostname = "kuma.internal"
 				cfg.AdminServer.Local.Port = 1111
-				cfg.BootstrapServer.Port = 3333
+				cfg.DpServer.Port = 3333
 				return cfg
 			},
 			expectedCatalogConfig: catalog.CatalogConfig{
@@ -131,7 +131,7 @@ var _ = Describe("Auto configuration", func() {
 					Url: "http://localhost:5681",
 				},
 				Bootstrap: catalog.BootstrapApiConfig{
-					Url: "https://localhost:5682",
+					Url: "https://localhost:5678",
 				},
 				DataplaneToken: catalog.DataplaneTokenApiConfig{
 					LocalUrl:  "",
@@ -154,7 +154,7 @@ var _ = Describe("Auto configuration", func() {
 				cfg.AdminServer.Public.Enabled = true
 				cfg.AdminServer.Public.Interface = "192.168.0.1"
 				cfg.AdminServer.Public.Port = 2222
-				cfg.BootstrapServer.Port = 3333
+				cfg.DpServer.Port = 3333
 				cfg.ApiServer.Catalog.Bootstrap.Url = "https://bootstrap.kuma.com:1234"
 				cfg.ApiServer.Catalog.MonitoringAssignment.Url = "grpcs://mads.kuma.com:1234"
 				return cfg
@@ -202,7 +202,7 @@ var _ = Describe("Auto configuration", func() {
 		// given
 		cfg := kuma_cp.DefaultConfig()
 		cfg.General.AdvertisedHostname = "kuma.internal"
-		cfg.XdsServer.GrpcPort = 1234
+		cfg.DpServer.Port = 1234
 
 		// when
 		err := autoconfigure(&cfg)

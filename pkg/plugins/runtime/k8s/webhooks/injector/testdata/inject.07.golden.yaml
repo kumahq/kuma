@@ -41,7 +41,7 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
-    - name: KUMA_CONTROL_PLANE_API_SERVER_URL
+    - name: KUMA_CONTROL_PLANE_URL
       value: http://kuma-control-plane.kuma-system:5681
     - name: KUMA_DATAPLANE_MESH
       value: default

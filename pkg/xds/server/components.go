@@ -4,11 +4,14 @@ import (
 	"context"
 	"time"
 
+	"google.golang.org/grpc"
+
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 
+	envoy_service_discovery_v2 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
@@ -33,7 +36,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/auth"
 	k8s_auth "github.com/kumahq/kuma/pkg/xds/auth/k8s"
 	universal_auth "github.com/kumahq/kuma/pkg/xds/auth/universal"
-	xds_bootstrap "github.com/kumahq/kuma/pkg/xds/bootstrap"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
@@ -64,7 +66,7 @@ func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.Re
 	return types
 }
 
-func SetupServer(rt core_runtime.Runtime) error {
+func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 	reconciler := DefaultReconciler(rt)
 
 	authenticator, err := DefaultAuthenticator(rt)
@@ -101,22 +103,10 @@ func SetupServer(rt core_runtime.Runtime) error {
 	}
 
 	srv := NewServer(rt.XDS().Cache(), callbacks)
-	return rt.Add(
-		// xDS gRPC API
-		&grpcServer{
-			server:      srv,
-			port:        rt.Config().XdsServer.GrpcPort,
-			tlsCertFile: rt.Config().XdsServer.TlsCertFile,
-			tlsKeyFile:  rt.Config().XdsServer.TlsKeyFile,
-			metrics:     rt.Metrics(),
-		},
-		// bootstrap server
-		&xds_bootstrap.BootstrapServer{
-			Config:    rt.Config().BootstrapServer,
-			Generator: xds_bootstrap.NewDefaultBootstrapGenerator(rt.ResourceManager(), rt.Config().BootstrapServer.Params, rt.Config().XdsServer.TlsCertFile),
-			Metrics:   rt.Metrics(),
-		},
-	)
+
+	xdsServerLog.Info("registering Aggregated Discovery Service in Dataplane Server")
+	envoy_service_discovery_v2.RegisterAggregatedDiscoveryServiceServer(server, srv)
+	return nil
 }
 
 func NewKubeAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
