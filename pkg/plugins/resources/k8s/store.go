@@ -2,6 +2,7 @@ package k8s
 
 import (
 	"context"
+	"sort"
 	"strconv"
 	"time"
 
@@ -191,6 +192,8 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	}
 	total := len(fullList.GetItems())
 	if opts.PageSize > 0 {
+		items := fullList.GetItems()
+		sort.Sort(core_model.ByMeta(items))
 		offset := 0
 		if opts.PageOffset != "" {
 			if o, err := strconv.Atoi(opts.PageOffset); err != nil {
@@ -207,7 +210,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 				return y
 			}
 		}
-		for _, item := range fullList.GetItems()[offset:min(offset+opts.PageSize, total)] {
+		for _, item := range items[offset:min(offset+opts.PageSize, total)] {
 			_ = rs.AddItem(item)
 		}
 		nextOffset := ""
