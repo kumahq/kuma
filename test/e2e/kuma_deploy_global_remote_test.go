@@ -36,27 +36,33 @@ metadata:
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, remote ControlPlane
+	var optsGlobal, optsRemote []DeployOptionsFunc
 
 	BeforeEach(func() {
 		var err error
 		clusters, err = NewK8sClusters(
 			[]string{Kuma1, Kuma2},
-			Verbose)
+			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		c1 = clusters.GetCluster(Kuma1)
-		c2 = clusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Global)).
+			Install(Kuma(core.Global, optsGlobal...)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 
 		global = c1.GetKuma()
 		Expect(global).ToNot(BeNil())
 
+		c2 = clusters.GetCluster(Kuma2)
+		optsRemote = []DeployOptionsFunc{
+			WithIngress(),
+			WithGlobalAddress(global.GetKDSServerAddress()),
+		}
+
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(global.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, optsRemote...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
@@ -99,7 +105,10 @@ metadata:
 		err := c2.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.DeleteKuma()
+		err = c1.DeleteKuma(optsGlobal...)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = c2.DeleteKuma(optsRemote...)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

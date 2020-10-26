@@ -105,6 +105,7 @@ metadata:
 
 	var cluster Cluster
 	var clientPod *v1.Pod
+	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
 		clusters, err := NewK8sClusters(
@@ -114,9 +115,10 @@ metadata:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma1)
+		deployOptsFuncs = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
@@ -165,7 +167,7 @@ metadata:
 	})
 
 	AfterEach(func() {
-		err := cluster.DeleteKuma()
+		err := cluster.DeleteKuma(deployOptsFuncs...)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = cluster.DismissCluster()

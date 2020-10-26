@@ -53,7 +53,7 @@ spec:
           env:
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
-              value: "kuma-cni.conf"
+              value: "{{ .Values.cni.confName }}"
             # The CNI network config to install on each node.
             - name: CNI_NETWORK_CONFIG
               valueFrom:
@@ -61,10 +61,10 @@ spec:
                   name: {{ include "kuma.name" . }}-cni-config
                   key: cni_network_config
             - name: CNI_NET_DIR
-              value: /etc/cni/multus/net.d
+              value: "{{ .Values.cni.netDir }}"
             # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
             - name: CHAINED_CNI_PLUGIN
-              value: "false"
+              value: "{{ .Values.cni.chained }}"
           volumeMounts:
             - mountPath: /host/opt/cni/bin
               name: cni-bin-dir
@@ -74,8 +74,8 @@ spec:
         # Used to install CNI.
         - name: cni-bin-dir
           hostPath:
-            path: /var/lib/cni/bin
+            path: {{ .Values.cni.binDir }}
         - name: cni-net-dir
           hostPath:
-            path: /etc/cni/multus/net.d
+            path: {{ .Values.cni.netDir }}
   {{- end }}

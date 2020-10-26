@@ -3,6 +3,7 @@ package server_test
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sync/atomic"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -19,8 +21,8 @@ import (
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	"github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/runtime"
@@ -54,7 +56,9 @@ var _ = Describe("SDS Server", func() {
 		cfg.SdsServer.DataplaneConfigurationRefreshInterval = 100 * time.Millisecond
 		port, err := test.GetFreePort()
 		Expect(err).ToNot(HaveOccurred())
-		cfg.SdsServer.GrpcPort = port
+		cfg.DpServer.Port = port
+		cfg.DpServer.TlsCertFile = filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem")
+		cfg.DpServer.TlsKeyFile = filepath.Join("..", "..", "..", "test", "certs", "server-key.pem")
 
 		runtime, err := runtime.BuilderFor(cfg).Build()
 		Expect(err).ToNot(HaveOccurred())
@@ -127,7 +131,7 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// start the runtime
-		Expect(server.SetupServer(runtime)).To(Succeed())
+		Expect(dp_server.SetupServer(runtime)).To(Succeed())
 		stop = make(chan struct{})
 		go func() {
 			defer GinkgoRecover()
@@ -137,9 +141,17 @@ var _ = Describe("SDS Server", func() {
 
 		// wait for SDS server
 		Eventually(func() error {
-			c, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
+			creds, err := credentials.NewClientTLSFromFile(filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), "")
+			if err != nil {
+				return err
+			}
+			c, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithTransportCredentials(creds))
+			if err != nil {
+				return err
+			}
 			conn = c
 			client = envoy_discovery.NewSecretDiscoveryServiceClient(conn)
+			_, err = client.StreamSecrets(context.Background()) // dial is not enough, we need to double check if we can start to stream secrets
 			return err
 		}).ShouldNot(HaveOccurred())
 	})

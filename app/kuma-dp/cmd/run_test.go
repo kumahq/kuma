@@ -332,28 +332,6 @@ var _ = Describe("run", func() {
 		}),
 	)
 
-	It("should fail when dataplane token server is enabled but token is not provided", func() {
-		// setup
-		catalogClientFactory = catalogDataplaneTokenServerEnabledFn
-
-		// given
-		cmd := newRootCmd()
-		cmd.SetArgs([]string{
-			"run",
-			"--cp-address", "http://localhost:1234",
-			"--name", "example",
-			"--admin-port", fmt.Sprintf("%d", port),
-			"--binary-path", filepath.Join("testdata", "envoy-mock.sleep.sh"),
-		})
-
-		// when
-		err := cmd.Execute()
-
-		// then
-		Expect(err).To(HaveOccurred())
-		Expect(err).To(MatchError("Kuma CP is configured with Dataplane Token Server therefore the Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP"))
-	})
-
 	It("should fail when there are no free ports in the port range chosen for Envoy Admin API", func() {
 
 		By("simulating another Envoy instance that already uses this port")
