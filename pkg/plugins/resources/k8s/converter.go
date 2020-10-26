@@ -6,6 +6,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -13,6 +14,14 @@ var _ k8s_extensions.Converter = &SimpleConverter{}
 
 type SimpleConverter struct {
 	KubeFactory KubeFactory
+}
+
+func NewSimpleConverter() k8s_extensions.Converter {
+	return &SimpleConverter{
+		KubeFactory: &SimpleKubeFactory{
+			KubeTypes: registry.Global(),
+		},
+	}
 }
 
 func (c *SimpleConverter) ToKubernetesObject(r core_model.Resource) (k8s_model.KubernetesObject, error) {

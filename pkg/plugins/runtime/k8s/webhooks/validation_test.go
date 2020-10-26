@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -27,14 +28,10 @@ import (
 
 var _ = Describe("Validation", func() {
 
-	var converter *k8s_resources.SimpleConverter
+	var converter k8s_extensions.Converter
 
 	BeforeEach(func() {
-		converter = &k8s_resources.SimpleConverter{
-			KubeFactory: &k8s_resources.SimpleKubeFactory{
-				KubeTypes: k8s_registry.Global(),
-			},
-		}
+		converter = k8s_resources.NewSimpleConverter()
 	})
 
 	type testCase struct {

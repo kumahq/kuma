@@ -41,6 +41,11 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 		obj.GetResourceVersion(),
 		proto.MessageName(out.GetSpec()),
 	}, ":")
+	if obj.GetResourceVersion() == "" {
+		// an absent of the ResourceVersion means we decode 'obj' from webhook request,
+		// all webhooks use SimpleConverter, so this is not supposed to happen
+		return util_proto.FromMap(obj.GetSpec(), out.GetSpec())
+	}
 	if v, ok := c.cache.Get(key); ok {
 		return out.SetSpec(v.(core_model.ResourceSpec))
 	}

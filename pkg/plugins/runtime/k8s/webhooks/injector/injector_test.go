@@ -10,11 +10,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
-
 	"github.com/kumahq/kuma/pkg/config"
 	conf "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	inject "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
 
@@ -47,11 +45,7 @@ var _ = Describe("Injector", func() {
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = filepath.Join("..", "..", "..", "..", "..", "..", "test", "certs", "server-cert.pem")
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, &k8s.SimpleConverter{
-				KubeFactory: &k8s.SimpleKubeFactory{
-					KubeTypes: registry.Global(),
-				},
-			})
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter())
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
