@@ -1,11 +1,7 @@
 package topology
 
 import (
-	"context"
-
 	"github.com/kumahq/kuma/pkg/core"
-
-	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -69,49 +65,23 @@ func BuildEndpointMap(
 }
 
 func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceResource, mesh string, loader datasource.Loader) (*core_xds.Endpoint, error) {
-	tlsEnabled := false
-	var caCert, clientCert, clientKey []byte = nil, nil, nil
+	es := &core_xds.ExternalService{
+		TLSEnabled: externalService.Spec.GetNetworking().GetTls().GetEnabled(),
+		CaCert:     externalService.Spec.GetNetworking().GetTls().GetCaCert().ConvertToEnvoy(),
+		ClientCert: externalService.Spec.GetNetworking().GetTls().GetClientCert().ConvertToEnvoy(),
+		ClientKey:  externalService.Spec.GetNetworking().GetTls().GetClientKey().ConvertToEnvoy(),
+	}
 
 	tags := externalService.Spec.GetTags()
-	if externalService.Spec.Networking.Tls != nil {
-		var err error
-		tlsEnabled = externalService.Spec.Networking.Tls.Enabled
-		if tlsEnabled {
-			tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
-		}
-
-		if externalService.Spec.Networking.Tls.CaCert != nil {
-			caCert, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.CaCert)
-			if err != nil {
-				return nil, errors.Wrap(err, "Error getting CA certificate")
-			}
-		}
-
-		if externalService.Spec.Networking.Tls.ClientCert != nil {
-			clientCert, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.ClientCert)
-			if err != nil {
-				return nil, errors.Wrap(err, "Error getting client certificate")
-			}
-		}
-
-		if externalService.Spec.Networking.Tls.ClientKey != nil {
-			clientKey, err = loader.Load(context.Background(), mesh, externalService.Spec.Networking.Tls.ClientKey)
-			if err != nil {
-				return nil, errors.Wrap(err, "Error getting client key")
-			}
-		}
+	if es.TLSEnabled {
+		tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
 	}
 
 	return &core_xds.Endpoint{
-		Target: externalService.Spec.GetHost(),
-		Port:   externalService.Spec.GetPortUInt32(),
-		Tags:   tags,
-		Weight: 1,
-		ExternalService: &core_xds.ExternalService{
-			TLSEnabled: tlsEnabled,
-			CaCert:     caCert,
-			ClientCert: clientCert,
-			ClientKey:  clientKey,
-		},
+		Target:          externalService.Spec.GetHost(),
+		Port:            externalService.Spec.GetPortUInt32(),
+		Tags:            tags,
+		Weight:          1,
+		ExternalService: es,
 	}, nil
 }

@@ -64,6 +64,7 @@ networking:
   address: %s
   tls:
     enabled: %s
+    ca: /cert/server-cert.pem
 `
 	es1 := "1"
 	es2 := "2"

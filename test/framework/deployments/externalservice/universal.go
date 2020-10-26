@@ -26,7 +26,10 @@ type universalDeployment struct {
 var _ Deployment = &universalDeployment{}
 
 var UniversalAppEchoServer = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
-var UniversalAppHttpsEchoServer = []string{"ncat", "-lk", "-p", "443", "--ssl", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"}
+var UniversalAppHttpsEchoServer = []string{"ncat",
+	"-lk", "-p", "443",
+	"--ssl", "--ssl-cert", "/cert/server-cert.pem", "--ssl-key", "/cert/server-key.pem",
+	"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"}
 
 func (u *universalDeployment) Name() string {
 	return DeploymentName + u.name
