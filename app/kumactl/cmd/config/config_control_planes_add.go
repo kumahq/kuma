@@ -28,7 +28,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 		Short: "Add a Control Plane",
 		Long:  `Add a Control Plane.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := Validate(args); err != nil {
+			if err := validateArgs(args); err != nil {
 				return err
 			}
 
@@ -85,7 +85,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	return cmd
 }
 
-func Validate(args controlPlaneAddArgs) error {
+func validateArgs(args controlPlaneAddArgs) error {
 	url, err := net_url.ParseRequestURI(args.apiServerURL)
 	if err != nil {
 		return errors.Wrap(err, "API Server URL is invalid")
