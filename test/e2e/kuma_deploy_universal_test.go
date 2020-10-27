@@ -38,6 +38,7 @@ destinations:
 `
 	var global, remote_1, remote_2 Cluster
 	var optsGlobal, optsRemote1, optsRemote2 []DeployOptionsFunc
+	var echoServerToken string
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -58,7 +59,7 @@ destinations:
 
 		globalCP := global.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
+		echoServerToken, err = globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
 		Expect(err).ToNot(HaveOccurred())
@@ -73,7 +74,6 @@ destinations:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote1...)).
-			Install(EchoServerUniversal(echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
 			Setup(remote_1)
@@ -130,12 +130,15 @@ destinations:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("Should deploy two apps", func() {
+	It("Should access service locally and remotely", func() {
+		err := EchoServerUniversal("universal1", echoServerToken)(remote_1)
+		Expect(err).ToNot(HaveOccurred())
+
 		retry.DoWithRetry(remote_1.GetTesting(), "curl local service",
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "localhost:4001")
+					"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 				if err != nil {
 					return "should retry", err
 				}
@@ -149,7 +152,7 @@ destinations:
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				stdout, _, err := remote_2.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "localhost:4001")
+					"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 				if err != nil {
 					return "should retry", err
 				}
@@ -158,5 +161,52 @@ destinations:
 				}
 				return "should retry", errors.Errorf("should retry")
 			})
+	})
+
+	const iterations = 50
+
+	It("Should distribute requests cross zones", func() {
+		err := EchoServerUniversal("universal1", echoServerToken)(remote_1)
+		Expect(err).ToNot(HaveOccurred())
+		err = EchoServerUniversal("universal2", echoServerToken)(remote_2)
+		Expect(err).ToNot(HaveOccurred())
+
+		responses := 0
+		for i := 0; i < iterations; i++ {
+			stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Expect(stdout).To(ContainSubstring("universal"))
+
+			if strings.Contains(stdout, "universal1") {
+				responses++
+			}
+		}
+
+		Expect(responses > 10).To(BeTrue())
+		Expect(responses < iterations-10).To(BeTrue())
+	})
+
+	It("Should use locality aware load balancing", func() {
+		err := EchoServerUniversal("universal1", echoServerToken, WithLocality(true))(remote_1)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = EchoServerUniversal("universal2", echoServerToken, WithLocality(true))(remote_2)
+		Expect(err).ToNot(HaveOccurred())
+
+		responses := 0
+		for i := 0; i < iterations; i++ {
+			stdout, _, err := remote_2.ExecWithRetries("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Expect(stdout).To(ContainSubstring("universal"))
+
+			if strings.Contains(stdout, "universal2") {
+				responses++
+			}
+		}
+		Expect(responses).To(Equal(iterations))
 	})
 })

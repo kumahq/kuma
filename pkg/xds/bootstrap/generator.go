@@ -34,12 +34,14 @@ func NewDefaultBootstrapGenerator(
 	config *bootstrap_config.BootstrapParamsConfig,
 	cacertFile string,
 	dpAuthEnabled bool,
+	zone string,
 ) BootstrapGenerator {
 	return &bootstrapGenerator{
 		resManager:    resManager,
 		config:        config,
 		xdsCertFile:   cacertFile,
 		dpAuthEnabled: dpAuthEnabled,
+		zone:          zone,
 	}
 }
 
@@ -48,6 +50,7 @@ type bootstrapGenerator struct {
 	config        *bootstrap_config.BootstrapParamsConfig
 	dpAuthEnabled bool
 	xdsCertFile   string
+	zone          string
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
@@ -141,7 +144,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		return nil, err
 	}
 
-	var certBytes string = ""
+	var certBytes = ""
 	if b.xdsCertFile != "" {
 		cert, err := ioutil.ReadFile(b.xdsCertFile)
 		if err != nil {
@@ -153,6 +156,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	params := configParameters{
 		Id:                 proxyId.String(),
 		Service:            service,
+		Zone:               b.zone,
 		AdminAddress:       b.config.AdminAddress,
 		AdminPort:          adminPort,
 		AdminAccessLogPath: b.config.AdminAccessLogPath,

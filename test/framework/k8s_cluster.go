@@ -583,7 +583,11 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *K8sCluster) DeployApp(namespace, appname, token string) error {
+func (c *K8sCluster) DeployApp(fs ...DeployOptionsFunc) error {
+	opts := newDeployOpt(fs...)
+	namespace := opts.namespace
+	appname := opts.appname
+
 	retry.DoWithRetry(c.GetTesting(), "apply "+appname+" svc", DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			err := k8s.KubectlApplyE(c.GetTesting(),

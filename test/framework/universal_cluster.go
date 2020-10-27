@@ -139,11 +139,21 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, toke
 	return app.dpApp.Start()
 }
 
-func (c *UniversalCluster) DeployApp(namespace, appname, token string) error {
+func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
+	opts := newDeployOpt(fs...)
+	appname := opts.appname
+	token := opts.token
+	id := opts.id
+
+	locality := "disable"
+	if opts.locality {
+		locality = "enable"
+	}
+
 	var args []string
 	switch appname {
 	case AppModeEchoServer:
-		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
+		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo " + id + "\n\"'"}
 	case AppModeDemoClient:
 		args = []string{"ncat", "-lvk", "-p", "3000"}
 	default:
@@ -164,7 +174,7 @@ func (c *UniversalCluster) DeployApp(namespace, appname, token string) error {
 	dpyaml := ""
 	switch appname {
 	case AppModeEchoServer:
-		dpyaml = fmt.Sprintf(EchoServerDataplane, "8080", "80", "8080")
+		dpyaml = fmt.Sprintf(EchoServerDataplane, "8080", "80", "8080", locality)
 	case AppModeDemoClient:
 		dpyaml = fmt.Sprintf(DemoClientDataplane, "13000", "3000", "80", "8080")
 	}

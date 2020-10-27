@@ -71,12 +71,15 @@ var _ = Describe("bootstrapGenerator", func() {
 		config             func() *bootstrap_config.BootstrapParamsConfig
 		dpAuthEnabled      bool
 		request            types.BootstrapRequest
+		zone               string
 		expectedConfigFile string
 	}
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled)
+			generator := NewDefaultBootstrapGenerator(resManager, given.config(),
+				filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
+				given.dpAuthEnabled, given.zone)
 
 			// when
 			bootstrapConfig, err := generator.Generate(context.Background(), given.request)
@@ -230,7 +233,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		params.XdsHost = "127.0.0.1"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params, "", false)
+		generator := NewDefaultBootstrapGenerator(resManager, params, "", false, "")
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
 			Name:      "name-1.namespace",
@@ -294,7 +297,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		params.XdsHost = "127.0.0.1"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params, "", false)
+		generator := NewDefaultBootstrapGenerator(resManager, params, "", false, "")
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
 			Name:      "name-3.namespace",

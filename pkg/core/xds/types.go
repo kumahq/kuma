@@ -47,9 +47,10 @@ type ExternalService struct {
 }
 
 type Locality struct {
-	Region  string
-	Zone    string
-	SubZone string
+	Region   string
+	Zone     string
+	SubZone  string
+	Priority uint32
 }
 
 // Endpoint holds routing-related information about a single endpoint.

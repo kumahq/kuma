@@ -13,10 +13,12 @@ const (
 	// Mandatory tag that has a reserved meaning in Kuma.
 	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"
-	// Mandatory tag that has a reserved meaning in Kuma.
-	RegionTag  = "kuma.io/region"
-	ZoneTag    = "kuma.io/zone"
-	SubZoneTag = "kuma.io/sub-zone"
+
+	// Locality related tags
+	RegionTag   = "kuma.io/region"
+	ZoneTag     = "kuma.io/zone"
+	SubZoneTag  = "kuma.io/sub-zone"
+	LocalityTag = "kuma.io/locality" // optionally set to `disable`
 
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.

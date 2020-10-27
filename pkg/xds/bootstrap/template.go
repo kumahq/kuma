@@ -5,6 +5,7 @@ import "time"
 type configParameters struct {
 	Id                 string
 	Service            string
+	Zone               string
 	AdminAddress       string
 	AdminPort          uint32
 	AdminAccessLogPath string
@@ -21,6 +22,10 @@ const configTemplate string = `
 node:
   id: {{.Id}}
   cluster: {{.Service}}
+  locality:
+{{if .Zone}}
+    zone: {{.Zone}}
+{{end}}
   metadata:
 {{if .DataplaneTokenPath}}
     dataplaneTokenPath: {{.DataplaneTokenPath}}

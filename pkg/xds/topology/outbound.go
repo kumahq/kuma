@@ -6,6 +6,11 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
+const (
+	priorityLocal  = 0
+	priorityRemote = 1
+)
+
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
 func BuildEndpointMap(
 	dataplanes []*mesh_core.DataplaneResource,
@@ -26,7 +31,7 @@ func BuildEndpointMap(
 					Port:     dataplane.Spec.Networking.Inbound[0].Port,
 					Tags:     ingress.Tags,
 					Weight:   ingress.Instances,
-					Locality: localityFromTags(ingress.Tags),
+					Locality: localityFromTags(priorityRemote, ingress.Tags),
 				})
 			}
 			continue
@@ -42,7 +47,7 @@ func BuildEndpointMap(
 					Port:     iface.DataplanePort,
 					Tags:     inbound.Tags,
 					Weight:   1,
-					Locality: localityFromTags(inbound.Tags),
+					Locality: localityFromTags(priorityLocal, inbound.Tags),
 				})
 			}
 		}
@@ -69,14 +74,20 @@ func BuildEndpointMap(
 			ExternalService: &core_xds.ExternalService{
 				TLSEnabled: tlsEnabled,
 			},
-			Locality: localityFromTags(tags),
+			Locality: localityFromTags(priorityRemote, tags),
 		})
 	}
 
 	return outbound
 }
 
-func localityFromTags(tags map[string]string) *core_xds.Locality {
+func localityFromTags(priority uint32, tags map[string]string) *core_xds.Locality {
+	locality, localityOK := tags[mesh_proto.LocalityTag]
+
+	if localityOK && locality == "disable" {
+		return nil
+	}
+
 	region, regionPresent := tags[mesh_proto.RegionTag]
 	zone, zonePresent := tags[mesh_proto.ZoneTag]
 	subZone, subZonePresent := tags[mesh_proto.SubZoneTag]
@@ -86,8 +97,9 @@ func localityFromTags(tags map[string]string) *core_xds.Locality {
 	}
 
 	return &core_xds.Locality{
-		Region:  region,
-		Zone:    zone,
-		SubZone: subZone,
+		Region:   region,
+		Zone:     zone,
+		SubZone:  subZone,
+		Priority: priority,
 	}
 }

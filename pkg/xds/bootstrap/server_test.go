@@ -61,7 +61,7 @@ var _ = Describe("Bootstrap Server", func() {
 		dpServer := dp_server.NewDpServer(dpServerCfg, metrics)
 
 		bootstrapHandler := bootstrap.BootstrapHandler{
-			Generator: bootstrap.NewDefaultBootstrapGenerator(resManager, config, "", true),
+			Generator: bootstrap.NewDefaultBootstrapGenerator(resManager, config, "", true, ""),
 		}
 		dpServer.HTTPMux().HandleFunc("/bootstrap", bootstrapHandler.Handle)
 

@@ -13,6 +13,7 @@ func RegisterBootstrap(rt core_runtime.Runtime, mux *http.ServeMux) {
 			rt.Config().BootstrapServer.Params,
 			rt.Config().DpServer.TlsCertFile,
 			rt.Config().AdminServer.Apis.DataplaneToken.Enabled,
+			rt.Config().Multicluster.Remote.Zone,
 		),
 	}
 	log.Info("registering Bootstrap in Dataplane Server")

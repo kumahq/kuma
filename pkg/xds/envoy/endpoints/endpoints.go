@@ -76,17 +76,21 @@ func (l LocalityLbEndpointsMap) Get(ep core_xds.Endpoint) *envoy_endpoint.Locali
 	key := ep.LocalityString()
 	if _, ok := l[key]; !ok {
 		var locality *envoy_core.Locality
+		priority := uint32(0)
 		if ep.HasLocality() {
 			locality = &envoy_core.Locality{
 				Region:  ep.Locality.Region,
 				Zone:    ep.Locality.Zone,
 				SubZone: ep.Locality.SubZone,
 			}
+			priority = ep.Locality.Priority
 		}
 
 		l[key] = &envoy_endpoint.LocalityLbEndpoints{
 			LbEndpoints: make([]*envoy_endpoint.LbEndpoint, 0),
 			Locality:    locality,
+			//LoadBalancingWeight:
+			Priority: priority,
 		}
 	}
 
