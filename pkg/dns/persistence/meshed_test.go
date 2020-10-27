@@ -49,7 +49,6 @@ func (t *testConfigManager) List(ctx context.Context, list *system.ConfigResourc
 
 var _ = Describe("Meshed Persistence", func() {
 	var p persistence.MeshedWriter
-	//var cm manager.ConfigManager
 
 	BeforeEach(func() {
 		p = persistence.NewMeshedPersistence(&testConfigManager{
