@@ -94,7 +94,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.HTTP.Port).To(Equal(uint32(15681)))
 			Expect(cfg.ApiServer.HTTPS.Enabled).To(Equal(false))
 			Expect(cfg.ApiServer.HTTPS.Interface).To(Equal("192.168.0.2"))
-			Expect(cfg.ApiServer.HTTPS.Port).To(Equal(uint32(15679)))
+			Expect(cfg.ApiServer.HTTPS.Port).To(Equal(uint32(15682)))
 			Expect(cfg.ApiServer.HTTPS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.ApiServer.HTTPS.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.ApiServer.Auth.AllowFromLocalhost).To(Equal(false))
@@ -172,7 +172,7 @@ apiServer:
   https:
     enabled: false # ENV: KUMA_API_SERVER_HTTPS_ENABLED
     interface: 192.168.0.2 # ENV: KUMA_API_SERVER_HTTPS_INTERFACE
-    port: 15679 # ENV: KUMA_API_SERVER_HTTPS_PORT
+    port: 15682 # ENV: KUMA_API_SERVER_HTTPS_PORT
     tlsCertFile: "/cert" # ENV: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
     tlsKeyFile: "/key" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
   auth:
@@ -257,7 +257,7 @@ diagnostics:
 				"KUMA_API_SERVER_HTTP_INTERFACE":                                 "192.168.0.1",
 				"KUMA_API_SERVER_HTTP_ENABLED":                                   "false",
 				"KUMA_API_SERVER_HTTPS_ENABLED":                                  "false",
-				"KUMA_API_SERVER_HTTPS_PORT":                                     "15679",
+				"KUMA_API_SERVER_HTTPS_PORT":                                     "15682",
 				"KUMA_API_SERVER_HTTPS_INTERFACE":                                "192.168.0.2",
 				"KUMA_API_SERVER_HTTPS_TLS_CERT_FILE":                            "/cert",
 				"KUMA_API_SERVER_HTTPS_TLS_KEY_FILE":                             "/key",

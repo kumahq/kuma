@@ -22,18 +22,14 @@ services:
     - KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR=/certs/client
     expose:
     - "5678"
-    - "5679"
     - "5680"
     - "5681"
     - "5682"
-    - "5684"
     ports:
     - "5678:5678"
-    - "5679:5679"
     - "5680:5680"
     - "5681:5681"
     - "5682:5682"
-    - "5684:5684"
     networks:
       kuma-example:
         aliases:

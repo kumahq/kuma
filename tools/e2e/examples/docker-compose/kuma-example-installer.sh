@@ -52,7 +52,7 @@ function create_dataplane {
 # Arguments
 #
 
-KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5679
+KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5682
 
 KUMA_EXAMPLE_APP_HOSTNAME=kuma-example-app
 KUMA_EXAMPLE_APP_PUBLIC_PORT=8000

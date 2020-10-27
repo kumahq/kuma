@@ -102,7 +102,7 @@ apiServer:
     # Network interface on which HTTPS API Server will be exposed
     interface: 0.0.0.0 # ENV: KUMA_API_SERVER_HTTPS_INTERFACE
     # Port of the HTTPS API Server
-    port: 5679 # ENV: KUMA_API_SERVER_HTTPS_PORT
+    port: 5682 # ENV: KUMA_API_SERVER_HTTPS_PORT
     # Path to TLS certificate file. Autoconfigured from KUMA_GENERAL_TLS_CERT_FILE if empty
     tlsCertFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
     # Path to TLS key file. Autoconfigured from KUMA_GENERAL_TLS_KEY_FILE if empty

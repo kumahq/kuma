@@ -189,11 +189,7 @@ Resources:
           PortMappings:
             - ContainerPort: 5676
               Protocol: tcp
-            - ContainerPort: 5677
-              Protocol: tcp
             - ContainerPort: 5678
-              Protocol: tcp
-            - ContainerPort: 5679
               Protocol: tcp
             - ContainerPort: 5680
               Protocol: tcp

@@ -106,7 +106,7 @@ func DefaultApiServerConfig() *ApiServerConfig {
 		HTTPS: ApiServerHTTPSConfig{
 			Enabled:     true,
 			Interface:   "0.0.0.0",
-			Port:        5679,
+			Port:        5682,
 			TlsCertFile: "", // autoconfigured
 			TlsKeyFile:  "", // autoconfigured
 		},
