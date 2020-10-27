@@ -7,8 +7,6 @@ import (
 
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
-
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -25,7 +23,6 @@ type OwnerReferenceMutator struct {
 	Client       kube_client.Client
 	CoreRegistry core_registry.TypeRegistry
 	K8sRegistry  k8s_registry.TypeRegistry
-	Converter    k8s_extensions.Converter
 	Decoder      *admission.Decoder
 	Scheme       *kube_runtime.Scheme
 }

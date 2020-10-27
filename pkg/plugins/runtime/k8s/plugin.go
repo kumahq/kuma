@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -57,15 +58,18 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	if err := addValidators(mgr, rt, converter); err != nil {
+	// Mutators and Validators convert resources from Request (not from the Store)
+	// these resources doesn't have ResourceVersion, we can't cache them
+	simpleConverter := k8s.NewSimpleConverter()
+	if err := addValidators(mgr, rt, simpleConverter); err != nil {
 		return err
 	}
 
-	if err := addMutators(mgr, rt, converter); err != nil {
+	if err := addMutators(mgr, rt, simpleConverter); err != nil {
 		return err
 	}
 
-	if err := addDefaulters(mgr, converter); err != nil {
+	if err := addDefaulters(mgr, simpleConverter); err != nil {
 		return err
 	}
 
@@ -201,7 +205,6 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_e
 		Client:       mgr.GetClient(),
 		CoreRegistry: core_registry.Global(),
 		K8sRegistry:  k8s_registry.Global(),
-		Converter:    converter,
 		Scheme:       mgr.GetScheme(),
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})
