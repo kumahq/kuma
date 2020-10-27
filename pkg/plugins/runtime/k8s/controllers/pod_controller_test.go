@@ -4,9 +4,10 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/kumahq/kuma/pkg/dns/persistence"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/dns/persistence"
 
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 
