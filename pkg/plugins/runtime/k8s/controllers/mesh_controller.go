@@ -5,9 +5,10 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/pkg/errors"
+
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	"github.com/pkg/errors"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
