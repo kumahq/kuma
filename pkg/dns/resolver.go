@@ -5,14 +5,15 @@ import (
 
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/dns/persistence"
 )
 
-type VIPList map[string]string
-type VIPsChangedHandler func(list VIPList)
+type VIPsChangedHandler func(list persistence.VIPList)
 
 type DNSResolver interface {
 	GetDomain() string
-	SetVIPs(list VIPList)
+	SetVIPs(list persistence.VIPList)
 	SetVIPsChangedHandler(handler VIPsChangedHandler)
 
 	ForwardLookup(service string) (string, error)
@@ -23,7 +24,7 @@ type DNSResolver interface {
 type dnsResolver struct {
 	sync.RWMutex
 	domain  string
-	viplist VIPList
+	viplist persistence.VIPList
 	handler VIPsChangedHandler
 }
 
@@ -39,7 +40,7 @@ func (d *dnsResolver) GetDomain() string {
 	return d.domain
 }
 
-func (s *dnsResolver) SetVIPs(list VIPList) {
+func (s *dnsResolver) SetVIPs(list persistence.VIPList) {
 	s.Lock()
 	defer s.Unlock()
 	s.viplist = list

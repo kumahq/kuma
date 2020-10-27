@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
+	"github.com/kumahq/kuma/pkg/dns/persistence"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -26,13 +28,13 @@ type (
 	vipsAllocator struct {
 		rm          manager.ReadOnlyResourceManager
 		ipam        IPAM
-		persistence *DNSPersistence
+		persistence persistence.GlobalWriter
 		resolver    DNSResolver
 		newTicker   func() *time.Ticker
 	}
 )
 
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, persistence *DNSPersistence, ipam IPAM, resolver DNSResolver) (VIPsAllocator, error) {
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, persistence persistence.GlobalWriter, ipam IPAM, resolver DNSResolver) (VIPsAllocator, error) {
 	return &vipsAllocator{
 		rm:          rm,
 		persistence: persistence,

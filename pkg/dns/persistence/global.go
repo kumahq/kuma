@@ -1,4 +1,4 @@
-package dns
+package persistence
 
 import (
 	"context"
@@ -11,22 +11,22 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-type DNSPersistence struct {
+const ConfigKey = "kuma-dns-vips"
+
+type global struct {
 	manager config_manager.ConfigManager
 }
 
-func NewDNSPersistence(manager config_manager.ConfigManager) *DNSPersistence {
-	return &DNSPersistence{
+func NewGlobalPersistence(manager config_manager.ConfigManager) GlobalWriter {
+	return &global{
 		manager: manager,
 	}
 }
 
-const ConfigKey = "kuma-dns-vips"
-
-func (p *DNSPersistence) Get() (VIPList, error) {
+func (g *global) Get() (VIPList, error) {
 	viplist := VIPList{}
 	resource := &config_model.ConfigResource{}
-	err := p.manager.Get(context.Background(), resource, store.GetByKey(ConfigKey, ""))
+	err := g.manager.Get(context.Background(), resource, store.GetByKey(ConfigKey, ""))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
 			return viplist, nil
@@ -42,12 +42,12 @@ func (p *DNSPersistence) Get() (VIPList, error) {
 	return viplist, nil
 }
 
-func (p *DNSPersistence) Set(viplist VIPList) error {
+func (g *global) Set(vips VIPList) error {
 	resource := &config_model.ConfigResource{}
-	err := p.manager.Get(context.Background(), resource, store.GetByKey(ConfigKey, ""))
+	err := g.manager.Get(context.Background(), resource, store.GetByKey(ConfigKey, ""))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
-			if err := p.manager.Create(context.Background(), resource, store.CreateByKey(ConfigKey, "")); err != nil {
+			if err := g.manager.Create(context.Background(), resource, store.CreateByKey(ConfigKey, "")); err != nil {
 				return errors.Wrap(err, "could not create config")
 			}
 		} else {
@@ -55,13 +55,13 @@ func (p *DNSPersistence) Set(viplist VIPList) error {
 		}
 	}
 
-	jsonBytes, err := json.Marshal(viplist)
+	jsonBytes, err := json.Marshal(vips)
 	if err != nil {
 		return errors.Wrap(err, "unable to marshall VIP list")
 	}
 	resource.Spec.Config = string(jsonBytes)
 
-	err = p.manager.Update(context.Background(), resource)
+	err = g.manager.Update(context.Background(), resource)
 	if err != nil {
 		return errors.Wrap(err, "unable to update VIP list")
 	}

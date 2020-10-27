@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/persistence"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 
@@ -86,6 +88,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addPodReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
+	if err := addDNS(mgr, rt); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -111,6 +116,7 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 		CaManagers:      rt.CaManagers(),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceManager: rt.ResourceManager(),
+		ConfigManager:   rt.ConfigManager(),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -126,9 +132,43 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			Zone:              rt.Config().Multicluster.Remote.Zone,
 			ResourceConverter: converter,
 		},
+		Persistence:     persistence.NewMeshedPersistence(rt.ConfigManager()),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	return reconciler.SetupWithManager(mgr)
+}
+
+func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	ipam, err := dns.NewSimpleIPAM(rt.Config().DNSServer.CIDR)
+	if err != nil {
+		return err
+	}
+	p := persistence.NewMeshedPersistence(rt.ConfigManager())
+	vipsSync, err := dns.NewVIPsSynchronizer(rt.DNSResolver(), p, rt.LeaderInfo())
+	if err != nil {
+		return err
+	}
+	server, err := dns.NewDNSServer(rt.Config().DNSServer.Port, rt.DNSResolver(), rt.Metrics())
+	if err != nil {
+		return err
+	}
+	if err := rt.Add(server, vipsSync); err != nil {
+		return err
+	}
+	reconciler := &k8s_controllers.ConfigMapReconciler{
+		Client:          mgr.GetClient(),
+		EventRecorder:   mgr.GetEventRecorderFor("k8s.kuma.io/vips-generator"),
+		Scheme:          mgr.GetScheme(),
+		Log:             core.Log.WithName("controllers").WithName("ConfigMap"),
+		ResourceManager: rt.ResourceManager(),
+		IPAM:            ipam,
+		Persistence:     persistence.NewMeshedPersistence(rt.ConfigManager()),
+		Resolver:        rt.DNSResolver(),
+	}
+	if err := reconciler.SetupWithManager(mgr); err != nil {
+		return err
+	}
+	return nil
 }
 
 func addDefaulters(mgr kube_ctrl.Manager, converter k8s_extensions.Converter) error {

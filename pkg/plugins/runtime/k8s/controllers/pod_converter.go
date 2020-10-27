@@ -3,8 +3,9 @@ package controllers
 import (
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/dns/persistence"
+
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/dns"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
@@ -35,7 +36,7 @@ func (p *PodConverter) PodToDataplane(
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	vips dns.VIPList,
+	vips persistence.VIPList,
 ) error {
 	dataplane.Mesh = MeshFor(pod)
 	dataplaneProto, err := p.DataplaneFor(pod, services, externalServices, others, vips)
@@ -77,7 +78,7 @@ func (p *PodConverter) DataplaneFor(
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	vips dns.VIPList,
+	vips persistence.VIPList,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
