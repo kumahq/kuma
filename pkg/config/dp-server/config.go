@@ -1,7 +1,7 @@
 package dp_server
 
 import (
-	"errors"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
 )
@@ -28,8 +28,18 @@ const (
 	DpServerAuthNone                = "none"
 )
 
+// Authentication configuration for Dataplane Server
 type DpServerAuthConfig struct {
+	// Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
+	// If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
 	Type string `yaml:"type" envconfig:"kuma_dp_server_auth_type"`
+}
+
+func (a *DpServerAuthConfig) Validate() error {
+	if a.Type != "" && a.Type != DpServerAuthNone && a.Type != DpServerAuthDpToken && a.Type != DpServerAuthServiceAccountToken {
+		return errors.Errorf("Type is invalid. Available values are: %q, %q, %q", DpServerAuthDpToken, DpServerAuthServiceAccountToken, DpServerAuthNone)
+	}
+	return nil
 }
 
 func (a *DpServerConfig) Sanitize() {
@@ -38,6 +48,9 @@ func (a *DpServerConfig) Sanitize() {
 func (a *DpServerConfig) Validate() error {
 	if a.Port < 0 {
 		return errors.New("Port cannot be negative")
+	}
+	if err := a.Auth.Validate(); err != nil {
+		return errors.Wrap(err, "Auth is invalid")
 	}
 	return nil
 }

@@ -121,7 +121,7 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 		config: *serverConfig,
 	}
 
-	dpWs, err := dataplaneTokenWs(resManager)
+	dpWs, err := dataplaneTokenWs(resManager, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +164,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 				resManager:           resManager,
 				ResourceWsDefinition: definition,
 				meshFromRequest:      meshFromPathParam("name"),
+				adminAuth: auth.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
 			}
 			if config.ReadOnly || definition.ReadOnly {
 				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
@@ -182,6 +183,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 				meshFromRequest: func(request *restful.Request) string {
 					return "default"
 				},
+				adminAuth: auth.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
 			}
 			if config.ReadOnly || definition.ReadOnly {
 				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/zones")
@@ -198,6 +200,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 				resManager:           resManager,
 				ResourceWsDefinition: definition,
 				meshFromRequest:      meshFromPathParam("mesh"),
+				adminAuth: auth.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
 			}
 			if config.ReadOnly || definition.ReadOnly {
 				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
@@ -213,12 +216,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	}
 }
 
-func dataplaneTokenWs(resManager manager.ResourceManager) (*restful.WebService, error) {
+func dataplaneTokenWs(resManager manager.ResourceManager, cfg *kuma_cp.Config) (*restful.WebService, error) {
 	generator, err := builtin.NewDataplaneTokenIssuer(resManager)
 	if err != nil {
 		return nil, err
 	}
-	return tokens_server.NewWebservice(generator).Filter(auth.AdminAuth), nil
+	return tokens_server.NewWebservice(generator).Filter(auth.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost}.Validate), nil
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {
@@ -233,7 +236,7 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 	}
 	select {
 	case <-stop:
-		log.Info("Stopping down API Server")
+		log.Info("stopping down API Server")
 		if httpServer != nil {
 			return httpServer.Shutdown(context.Background())
 		}
@@ -257,9 +260,9 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 		if err != nil {
 			switch err {
 			case http.ErrServerClosed:
-				log.Info("Shutting down server")
+				log.Info("shutting down server")
 			default:
-				log.Error(err, "Could not start an HTTP Server")
+				log.Error(err, "could not start an HTTP Server")
 				errChan <- err
 			}
 		}
@@ -269,7 +272,7 @@ func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 }
 
 func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
-	tlsConfig, err := requireClientCerts(a.config.HTTPS.ClientCertsDir)
+	tlsConfig, err := configureMTLS(a.config.HTTPS.ClientCertsDir)
 	if err != nil {
 		errChan <- err
 	}
@@ -285,9 +288,9 @@ func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
 		if err != nil {
 			switch err {
 			case http.ErrServerClosed:
-				log.Info("Shutting down server")
+				log.Info("shutting down server")
 			default:
-				log.Error(err, "Could not start an HTTPS Server")
+				log.Error(err, "could not start an HTTPS Server")
 				errChan <- err
 			}
 		}
@@ -296,7 +299,7 @@ func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
 	return server
 }
 
-func requireClientCerts(certsDir string) (*tls.Config, error) { // todo better name
+func configureMTLS(certsDir string) (*tls.Config, error) {
 	tlsConfig := &tls.Config{}
 	if certsDir != "" {
 		clientCertPool := x509.NewCertPool()
@@ -320,7 +323,7 @@ func requireClientCerts(certsDir string) (*tls.Config, error) { // todo better n
 		}
 		tlsConfig.ClientCAs = clientCertPool
 	}
-	tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven
+	tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints
 	return tlsConfig, nil
 }
 

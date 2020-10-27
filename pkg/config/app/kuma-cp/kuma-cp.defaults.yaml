@@ -87,18 +87,32 @@ xdsServer:
 
 # API Server configuration
 apiServer:
+  # HTTP configuration of the API Server
   http:
-    enabled: true
-    interface: 0.0.0.0
+    # If true then API Server will be served on HTTP
+    enabled: true # ENV: KUMA_API_SERVER_HTTP_ENABLED
+    # Network interface on which HTTP API Server will be exposed
+    interface: 0.0.0.0 # ENV: KUMA_API_SERVER_HTTP_INTERFACE
     # Port of the API Server
     port: 5681 # ENV: KUMA_API_SERVER_PORT
+  # HTTPS configuration of the API Server
   https:
-    enabled: true
-    interface: 0.0.0.0
-    port: 5679
-    tlsCertFile: ""
-    tlsKeyFile: ""
-    clientCertsDir: ""
+    # If true then API Server will be served on HTTPS
+    enabled: true # ENV: KUMA_API_SERVER_HTTPS_ENABLED
+    # Network interface on which HTTPS API Server will be exposed
+    interface: 0.0.0.0 # ENV: KUMA_API_SERVER_HTTPS_INTERFACE
+    # Port of the HTTPS API Server
+    port: 5679 # ENV: KUMA_API_SERVER_HTTPS_PORT
+    # Path to TLS certificate file. Autoconfigured from KUMA_GENERAL_TLS_CERT_FILE if empty
+    tlsCertFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
+    # Path to TLS key file. Autoconfigured from KUMA_GENERAL_TLS_KEY_FILE if empty
+    tlsKeyFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
+  # Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
+  auth:
+    # Directory of authorized client certificates (only validate in HTTPS)
+    clientCertsDir: "" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
+    # Allow requests that are originating from localhost
+    allowFromLocalhost: true # ENV: KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
@@ -302,5 +316,8 @@ dpServer:
   tlsCertFile: # ENV: KUMA_DP_SERVER_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
   tlsKeyFile: # ENV: KUMA_DP_SERVER_TLS_KEY_FILE
+  # Auth defines an authentication configuration for the DP Server
   auth:
-    type: ""
+    # Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
+    # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
+    type: "" # ENV: KUMA_DP_SERVER_AUTH_TYPE

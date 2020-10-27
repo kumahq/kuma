@@ -1,6 +1,8 @@
 package api_server
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
 )
@@ -14,34 +16,80 @@ type ApiServerConfig struct {
 	// API Catalog
 	Catalog *catalog.CatalogConfig `yaml:"catalog"`
 	// Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
-	CorsAllowedDomains []string             `yaml:"corsAllowedDomains" envconfig:"kuma_api_server_cors_allowed_domains"`
-	HTTP               ApiServerHTTPConfig  `yaml:"http"`
-	HTTPS              ApiServerHTTPSConfig `yaml:"https"`
+	CorsAllowedDomains []string `yaml:"corsAllowedDomains" envconfig:"kuma_api_server_cors_allowed_domains"`
+	// HTTP configuration of the API Server
+	HTTP ApiServerHTTPConfig `yaml:"http"`
+	// HTTPS configuration of the API Server
+	HTTPS ApiServerHTTPSConfig `yaml:"https"`
+	// Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
+	Auth ApiServerAuth `yaml:"auth"`
 }
 
+// API Server HTTP configuration
 type ApiServerHTTPConfig struct {
-	Enabled   bool   `yaml:"enabled" envconfig:"kuma_api_server_http_enabled"`
+	// If true then API Server will be served on HTTP
+	Enabled bool `yaml:"enabled" envconfig:"kuma_api_server_http_enabled"`
+	// Network interface on which HTTP API Server will be exposed
 	Interface string `yaml:"interface" envconfig:"kuma_api_server_http_interface"`
-	// Port of the API Server
+	// Port of the HTTP API Server
 	Port uint32 `yaml:"port" envconfig:"kuma_api_server_http_port"`
 }
 
-type ApiServerHTTPSConfig struct { // todo comments
-	Enabled   bool   `yaml:"enabled" envconfig:"kuma_api_server_https_enabled"`
+func (a *ApiServerHTTPConfig) Validate() error {
+	if a.Interface == "" {
+		return errors.New("Interface cannot be empty")
+	}
+	if a.Port < 0 {
+		return errors.New("Port cannot be negative")
+	}
+	return nil
+}
+
+// API Server HTTPS configuration
+type ApiServerHTTPSConfig struct {
+	// If true then API Server will be served on HTTPS
+	Enabled bool `yaml:"enabled" envconfig:"kuma_api_server_https_enabled"`
+	// Network interface on which HTTPS API Server will be exposed
 	Interface string `yaml:"interface" envconfig:"kuma_api_server_https_interface"`
-	Port      uint32 `yaml:"port" envconfig:"kuma_admin_server_public_port"`
-	// Path to TLS certificate file
+	// Port of the HTTPS API Server
+	Port uint32 `yaml:"port" envconfig:"kuma_api_server_https_port"`
+	// Path to TLS certificate file. Autoconfigured from KUMA_GENERAL_TLS_CERT_FILE if empty
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_api_server_https_tls_cert_file"`
-	// Path to TLS key file
+	// Path to TLS key file. Autoconfigured from KUMA_GENERAL_TLS_KEY_FILE if empty
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_api_server_https_tls_key_file"`
-	// Directory of authorized client certificates
-	ClientCertsDir string `yaml:"clientCertsDir" envconfig:"kuma_api_server_https_client_certs_dir"`
+}
+
+func (a *ApiServerHTTPSConfig) Validate() error {
+	if a.Interface == "" {
+		return errors.New("Interface cannot be empty")
+	}
+	if a.Port < 0 {
+		return errors.New("Port cannot be negative")
+	}
+	if (a.TlsKeyFile == "" && a.TlsCertFile != "") || (a.TlsKeyFile != "" && a.TlsCertFile == "") {
+		return errors.New("Port cannot be negative")
+	}
+	return nil
+}
+
+// API Server authentication configuration
+type ApiServerAuth struct {
+	// Directory of authorized client certificates (only validate in HTTPS)
+	ClientCertsDir string `yaml:"clientCertsDir" envconfig:"kuma_api_server_auth_client_certs_dir"`
+	// Allow requests that are originating from localhost
+	AllowFromLocalhost bool `yaml:"allowFromLocalhost" envconfig:"kuma_api_server_auth_allow_from_localhost"`
 }
 
 func (a *ApiServerConfig) Sanitize() {
 }
 
 func (a *ApiServerConfig) Validate() error {
+	if err := a.HTTP.Validate(); err != nil {
+		return errors.Wrap(err, ".HTTP not valid")
+	}
+	if err := a.HTTPS.Validate(); err != nil {
+		return errors.Wrap(err, ".HTTP not valid")
+	}
 	return nil
 }
 
@@ -56,12 +104,15 @@ func DefaultApiServerConfig() *ApiServerConfig {
 			Port:      5681,
 		},
 		HTTPS: ApiServerHTTPSConfig{
-			Enabled:        true,
-			Interface:      "0.0.0.0",
-			Port:           5679,
-			TlsCertFile:    "", // autoconfigured
-			TlsKeyFile:     "", // autoconfigured
-			ClientCertsDir: "",
+			Enabled:     true,
+			Interface:   "0.0.0.0",
+			Port:        5679,
+			TlsCertFile: "", // autoconfigured
+			TlsKeyFile:  "", // autoconfigured
+		},
+		Auth: ApiServerAuth{
+			ClientCertsDir:     "",
+			AllowFromLocalhost: true,
 		},
 	}
 }

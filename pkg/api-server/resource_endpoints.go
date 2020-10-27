@@ -45,11 +45,12 @@ type resourceEndpoints struct {
 	resManager      manager.ResourceManager
 	meshFromRequest meshFromRequestFn
 	definitions.ResourceWsDefinition
+	adminAuth auth.AdminAuth
 }
 
 func (r *resourceEndpoints) auth() restful.FilterFunction {
 	if r.ResourceWsDefinition.Admin {
-		return auth.AdminAuth
+		return r.adminAuth.Validate
 	}
 	return auth.NoAuth
 }
