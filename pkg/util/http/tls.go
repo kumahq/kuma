@@ -18,18 +18,20 @@ func ConfigureTls(httpClient *http.Client, caCert string, clientCert string, cli
 	if ok := certPool.AppendCertsFromPEM(certBytes); !ok {
 		return errors.New("could not add certificate")
 	}
-
-	cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
-	if err != nil {
-		return errors.Wrap(err, "could not create key pair from client cert and client key")
-	}
-
-	httpClient.Transport = &http.Transport{
+	transport := &http.Transport{
 		TLSClientConfig: &tls.Config{
-			RootCAs:      certPool,
-			Certificates: []tls.Certificate{cert},
+			RootCAs: certPool,
 		},
 	}
+
+	if clientKey != "" && clientCert != "" {
+		cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
+		if err != nil {
+			return errors.Wrap(err, "could not create key pair from client cert and client key")
+		}
+		transport.TLSClientConfig.Certificates = []tls.Certificate{cert}
+	}
+
+	httpClient.Transport = transport
 	return nil
 }
-

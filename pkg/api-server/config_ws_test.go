@@ -72,12 +72,12 @@ var _ = Describe("Config WS", func() {
               "port": %s
             },
             "https": {
-              "enabled": false,
+              "enabled": true,
               "interface": "0.0.0.0",
-              "port": 5679,
-              "tlsCertFile": "",
-              "tlsKeyFile": "",
-              "clientCertsDir": ""
+              "port": %d,
+              "tlsCertFile": "../../test/certs/server-cert.pem",
+              "tlsKeyFile": "../../test/certs/server-key.pem",
+              "clientCertsDir": "../../test/certs/client"
             },
             "readOnly": false
           },
@@ -252,7 +252,7 @@ var _ = Describe("Config WS", func() {
             "debugEndpoints": false
           }
         }
-		`, port)
+		`, port, cfg.HTTPS.Port)
 		Expect(body).To(MatchJSON(json))
 	})
 })

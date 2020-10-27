@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	"github.com/kumahq/kuma/pkg/catalog"
 	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -123,18 +122,6 @@ func (rc *RootContext) CurrentZoneOverviewClient() (kumactl_resources.ZoneOvervi
 		return nil, err
 	}
 	return rc.Runtime.NewZoneOverviewClient(controlPlane.Coordinates.ApiServer)
-}
-
-func (rc *RootContext) catalog() (catalog.Catalog, error) {
-	controlPlane, err := rc.CurrentControlPlane()
-	if err != nil {
-		return catalog.Catalog{}, err
-	}
-	client, err := rc.Runtime.NewCatalogClient(controlPlane.Coordinates.ApiServer.Url)
-	if err != nil {
-		return catalog.Catalog{}, errors.Wrap(err, "could not create components client")
-	}
-	return client.Catalog()
 }
 
 func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {

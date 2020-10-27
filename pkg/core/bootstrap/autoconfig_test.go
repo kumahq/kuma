@@ -43,7 +43,7 @@ var _ = Describe("Auto configuration", func() {
 					Url: "https://kuma.internal:5678",
 				},
 				DataplaneToken: catalog.DataplaneTokenApiConfig{
-					LocalUrl:  "http://localhost:5681",
+					LocalUrl: "http://localhost:5681",
 				},
 				MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
 					Url: "grpc://kuma.internal:5676",

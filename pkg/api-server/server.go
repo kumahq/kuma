@@ -41,7 +41,7 @@ var (
 )
 
 type ApiServer struct {
-	mux *http.ServeMux
+	mux    *http.ServeMux
 	config api_server.ApiServerConfig
 }
 
@@ -117,7 +117,7 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	container.Filter(cors.Filter)
 
 	newApiServer := &ApiServer{
-		mux: container.ServeMux,
+		mux:    container.ServeMux,
 		config: *serverConfig,
 	}
 
@@ -248,8 +248,8 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 
 func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 	server := &http.Server{
-		Addr:      fmt.Sprintf("%s:%d", a.config.HTTP.Interface, a.config.HTTP.Port),
-		Handler:   a.mux,
+		Addr:    fmt.Sprintf("%s:%d", a.config.HTTP.Interface, a.config.HTTP.Port),
+		Handler: a.mux,
 	}
 
 	go func() {
@@ -279,7 +279,6 @@ func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
 		Handler:   a.mux,
 		TLSConfig: tlsConfig,
 	}
-
 
 	go func() {
 		err := server.ListenAndServeTLS(a.config.HTTPS.TlsCertFile, a.config.HTTPS.TlsKeyFile)
@@ -320,8 +319,8 @@ func requireClientCerts(certsDir string) (*tls.Config, error) { // todo better n
 			clientCertPool.AppendCertsFromPEM(caCert)
 		}
 		tlsConfig.ClientCAs = clientCertPool
-		tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven
 	}
+	tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven
 	return tlsConfig, nil
 }
 

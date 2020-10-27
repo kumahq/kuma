@@ -23,7 +23,7 @@ type ApiServerHTTPConfig struct {
 	Enabled   bool   `yaml:"enabled" envconfig:"kuma_api_server_http_enabled"`
 	Interface string `yaml:"interface" envconfig:"kuma_api_server_http_interface"`
 	// Port of the API Server
-	Port int `yaml:"port" envconfig:"kuma_api_server_http_port"`
+	Port uint32 `yaml:"port" envconfig:"kuma_api_server_http_port"`
 }
 
 type ApiServerHTTPSConfig struct { // todo comments
