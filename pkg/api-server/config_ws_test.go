@@ -76,8 +76,11 @@ var _ = Describe("Config WS", func() {
               "interface": "0.0.0.0",
               "port": %d,
               "tlsCertFile": "../../test/certs/server-cert.pem",
-              "tlsKeyFile": "../../test/certs/server-key.pem",
-              "clientCertsDir": "../../test/certs/client"
+              "tlsKeyFile": "../../test/certs/server-key.pem"
+            },
+            "auth": {
+              "clientCertsDir": "../../test/certs/client",
+              "allowFromLocalhost": true
             },
             "readOnly": false
           },

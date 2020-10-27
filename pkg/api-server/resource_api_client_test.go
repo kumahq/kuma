@@ -112,7 +112,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	if config.HTTPS.TlsKeyFile == "" {
 		config.HTTPS.TlsKeyFile = filepath.Join("..", "..", "test", "certs", "server-key.pem")
 		config.HTTPS.TlsCertFile = filepath.Join("..", "..", "test", "certs", "server-cert.pem")
-		config.HTTPS.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
+		config.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
 	}
 
 	defs := append(definitions.All, SampleTrafficRouteWsDefinition)

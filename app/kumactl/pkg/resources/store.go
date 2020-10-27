@@ -8,7 +8,7 @@ import (
 )
 
 func NewResourceStore(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-	client, err := apiServerClient(coordinates.Url)
+	client, err := apiServerClient(coordinates)
 	if err != nil {
 		return nil, err
 	}

@@ -39,8 +39,8 @@ func (a *ApiServerHTTPConfig) Validate() error {
 	if a.Interface == "" {
 		return errors.New("Interface cannot be empty")
 	}
-	if a.Port < 0 {
-		return errors.New("Port cannot be negative")
+	if a.Port > 65535 {
+		return errors.New("Port must be in range [0, 65535]")
 	}
 	return nil
 }
@@ -63,11 +63,11 @@ func (a *ApiServerHTTPSConfig) Validate() error {
 	if a.Interface == "" {
 		return errors.New("Interface cannot be empty")
 	}
-	if a.Port < 0 {
-		return errors.New("Port cannot be negative")
+	if a.Port > 65535 {
+		return errors.New("Port must be in range [0, 65535]")
 	}
 	if (a.TlsKeyFile == "" && a.TlsCertFile != "") || (a.TlsKeyFile != "" && a.TlsCertFile == "") {
-		return errors.New("Port cannot be negative")
+		return errors.New("Both TlsCertFile and TlsKeyFile has to be specified")
 	}
 	return nil
 }

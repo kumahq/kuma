@@ -10,18 +10,22 @@ import (
 )
 
 func ConfigureTls(httpClient *http.Client, caCert string, clientCert string, clientKey string) error {
-	certBytes, err := ioutil.ReadFile(caCert)
-	if err != nil {
-		return errors.Wrap(err, "could not read CA cert")
-	}
-	certPool := x509.NewCertPool()
-	if ok := certPool.AppendCertsFromPEM(certBytes); !ok {
-		return errors.New("could not add certificate")
-	}
 	transport := &http.Transport{
-		TLSClientConfig: &tls.Config{
-			RootCAs: certPool,
-		},
+		TLSClientConfig: &tls.Config{},
+	}
+
+	if caCert == "" {
+		transport.TLSClientConfig.InsecureSkipVerify = true
+	} else {
+		certBytes, err := ioutil.ReadFile(caCert)
+		if err != nil {
+			return errors.Wrap(err, "could not read CA cert")
+		}
+		certPool := x509.NewCertPool()
+		if ok := certPool.AppendCertsFromPEM(certBytes); !ok {
+			return errors.New("could not add certificate")
+		}
+		transport.TLSClientConfig.RootCAs = certPool
 	}
 
 	if clientKey != "" && clientCert != "" {
