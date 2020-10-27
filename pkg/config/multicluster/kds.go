@@ -44,7 +44,7 @@ func (c *KdsServerConfig) Validate() (errs error) {
 type KdsClientConfig struct {
 	// Interval for refreshing state of the world
 	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_multicluster_remote_kds_refresh_interval"`
-	// RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
+	// RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify the server by using it.
 	RootCAFile string `yaml:"rootCaFile" envconfig:"kuma_multicluster_remote_kds_root_ca_file"`
 }
 

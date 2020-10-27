@@ -42,10 +42,17 @@ controlPlane:
   #       memory: 256Mi
 
   # TLS for various servers
-  #  tls:
-  #    cert: ""
-  #    key: ""
-  #    caCert: ""
+  tls:
+    general:
+      secret: ""
+      caBundle: ""
+    apiServer:
+      secret: ""
+      clientCertsSecret: ""
+    kdsGlobalServer:
+      secret: ""
+    kdsRemoteClient:
+      secret: ""
 
   image:
     pullPolicy: IfNotPresent
