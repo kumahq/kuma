@@ -48,7 +48,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 	var claCache *cla.Cache
 	var metrics core_metrics.Metrics
 
-	expiration := 500 * time.Millisecond
+	expiration := 2 * time.Second
 
 	BeforeEach(func() {
 		s = memory.NewStore()

@@ -126,7 +126,10 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 			ToRequests: &ServiceToConfigMapsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("service-to-configmap-mapper")},
 		}).
 		Watches(&kube_source.Kind{Type: &mesh_k8s.Dataplane{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &DataplaneToMeshMapper{Client: mgr.GetClient(), Log: r.Log.WithName("dataplane-to-mesh-mapper")},
+			ToRequests: &DataplaneToMeshMapper{Client: mgr.GetClient(), Log: r.Log.WithName("dataplane-to-configmap-mapper")},
+		}).
+		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, &kube_handler.EnqueueRequestsFromMapFunc{
+			ToRequests: &ExternalServiceToConfigMapsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("external-service-to-configmap-mapperr")},
 		}).
 		Complete(r)
 }
@@ -175,6 +178,23 @@ func (m *DataplaneToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.
 	cause, ok := obj.Object.(*mesh_k8s.Dataplane)
 	if !ok {
 		m.Log.WithValues("dataplane", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
+		return nil
+	}
+
+	return []kube_reconile.Request{{
+		NamespacedName: kube_types.NamespacedName{Namespace: "kuma-system", Name: fmt.Sprintf("kuma-%s-dns-vips", cause.Mesh)},
+	}}
+}
+
+type ExternalServiceToConfigMapsMapper struct {
+	kube_client.Client
+	Log logr.Logger
+}
+
+func (m *ExternalServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
+	cause, ok := obj.Object.(*mesh_k8s.ExternalService)
+	if !ok {
+		m.Log.WithValues("externalService", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
 		return nil
 	}
 
