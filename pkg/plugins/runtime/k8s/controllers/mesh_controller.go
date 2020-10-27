@@ -5,10 +5,11 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/pkg/errors"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -37,36 +38,40 @@ type MeshReconciler struct {
 	SystemNamespace string
 	ResourceManager manager.ResourceManager
 	ConfigManager   config_manager.ConfigManager
+	Mode            config_core.CpMode
 }
 
 func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("mesh", req.NamespacedName)
+	log.Info("Reconcile")
 
-	// Fetch the Mesh instance
-	mesh := &mesh_k8s.Mesh{}
-	if err := r.Get(ctx, req.NamespacedName, mesh); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(req.Name, req.Name))
+	if r.Mode != config_core.Remote {
+		// Fetch the Mesh instance
+		mesh := &mesh_k8s.Mesh{}
+		if err := r.Get(ctx, req.NamespacedName, mesh); err != nil {
+			if kube_apierrs.IsNotFound(err) {
+				err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(req.Name, req.Name))
+				return kube_ctrl.Result{}, err
+			}
+			log.Error(err, "unable to fetch Mesh")
 			return kube_ctrl.Result{}, err
 		}
-		log.Error(err, "unable to fetch Mesh")
-		return kube_ctrl.Result{}, err
+
+		meshResource := &mesh_core.MeshResource{}
+		if err := r.Converter.ToCoreResource(mesh, meshResource); err != nil {
+			log.Error(err, "unable to convert Mesh k8s object into core model")
+			return kube_ctrl.Result{}, err
+		}
+
+		// Ensure CA Managers are created
+		if err := core_managers.EnsureEnabledCA(ctx, r.CaManagers, meshResource, meshResource.Meta.GetName()); err != nil {
+			log.Error(err, "unable to ensure that mesh CAs are created")
+			return kube_ctrl.Result{}, err
+		}
 	}
 
-	meshResource := &mesh_core.MeshResource{}
-	if err := r.Converter.ToCoreResource(mesh, meshResource); err != nil {
-		log.Error(err, "unable to convert Mesh k8s object into core model")
-		return kube_ctrl.Result{}, err
-	}
-
-	// Ensure CA Managers are created
-	if err := core_managers.EnsureEnabledCA(ctx, r.CaManagers, meshResource, meshResource.Meta.GetName()); err != nil {
-		log.Error(err, "unable to ensure that mesh CAs are created")
-		return kube_ctrl.Result{}, err
-	}
-
-	cmName := fmt.Sprintf("kuma-%s-dns-vips", mesh.Name)
+	cmName := fmt.Sprintf("kuma-%s-dns-vips", req.Name)
 	if err := r.ConfigManager.Create(ctx, &system.ConfigResource{}, store.CreateByKey(cmName, "")); err != nil {
 		if !kube_apierrs.IsAlreadyExists(err) {
 			return kube_ctrl.Result{}, err

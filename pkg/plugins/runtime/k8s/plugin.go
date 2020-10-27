@@ -104,9 +104,6 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 }
 
 func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_extensions.Converter) error {
-	if rt.Config().Mode == config_core.Remote {
-		return nil
-	}
 	reconciler := &k8s_controllers.MeshReconciler{
 		Client:          mgr.GetClient(),
 		Reader:          mgr.GetAPIReader(),
@@ -117,6 +114,7 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceManager: rt.ResourceManager(),
 		ConfigManager:   rt.ConfigManager(),
+		Mode:            rt.Config().Mode,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
