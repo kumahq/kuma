@@ -303,6 +303,7 @@ func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
 func configureMTLS(certsDir string) (*tls.Config, error) {
 	tlsConfig := &tls.Config{}
 	if certsDir != "" {
+		log.Info("loading client certificates")
 		clientCertPool := x509.NewCertPool()
 		files, err := ioutil.ReadDir(certsDir)
 		if err != nil {
@@ -313,8 +314,10 @@ func configureMTLS(certsDir string) (*tls.Config, error) {
 				continue
 			}
 			if !strings.HasSuffix(file.Name(), ".pem") {
+				log.Info("skipping file, all the client certificates has to have .pem extension", "file", file.Name())
 				continue
 			}
+			log.Info("adding client certificate", "file", file.Name())
 			path := filepath.Join(certsDir, file.Name())
 			caCert, err := ioutil.ReadFile(path)
 			if err != nil {

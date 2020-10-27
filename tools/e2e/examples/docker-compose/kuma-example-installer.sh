@@ -52,7 +52,7 @@ function create_dataplane {
 # Arguments
 #
 
-KUMA_CONTROL_PLANE_URL=http://kuma-control-plane:5681
+KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5679
 
 KUMA_EXAMPLE_APP_HOSTNAME=kuma-example-app
 KUMA_EXAMPLE_APP_PUBLIC_PORT=8000
@@ -78,7 +78,7 @@ KUMA_EXAMPLE_BACKEND_V2_LOCAL_PORT=7070
 # Configure `kumactl`
 #
 
-kumactl config control-planes add --name universal --address ${KUMA_CONTROL_PLANE_URL} --admin-client-cert /certs/client/cert.pem --admin-client-key /certs/client/cert.key --overwrite
+kumactl config control-planes add --name universal --address ${KUMA_CONTROL_PLANE_URL} --ca-cert-file /certs/server/cert.pem --client-cert-file /certs/client/cert.pem --client-key-file /certs/client/cert.key --overwrite
 
 #
 # Create Dataplane for `kuma-example-app` service
