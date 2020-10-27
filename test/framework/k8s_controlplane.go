@@ -20,9 +20,9 @@ import (
 )
 
 type PortFwd struct {
-	lowFwdPort     uint32
-	hiFwdPort      uint32
-	localAPIPort   uint32
+	lowFwdPort   uint32
+	hiFwdPort    uint32
+	localAPIPort uint32
 }
 
 type K8sControlPlane struct {

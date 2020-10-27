@@ -215,11 +215,8 @@ Resources:
               Value: !Join [ "-", [ !Ref Zone, "controlplane.kuma.io" ] ]
             - Name: KUMA_DNS_SERVER_PORT
               Value: 53
-            # TODO: remove this one once the token workflow is fixed
-            - Name: KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED
-              Value: "false"
-            - Name: KUMA_DATAPLANE_TOKEN_SERVER_ENABLED
-              Value: "false"
+            - Name: KUMA_DP_SERVER_AUTH_TYPE
+              Value: "none"
           Command:
             - "run"
           LogConfiguration:

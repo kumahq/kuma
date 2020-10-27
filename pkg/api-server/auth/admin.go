@@ -40,7 +40,7 @@ func (a *AdminAuth) Validate(request *restful.Request, response *restful.Respons
 		chain.ProcessFilter(request, response)
 		return
 	}
-	log.Info("attempt to access admin server from the outside of the same machine without allowed certificates")
+	log.Info("attempt to access admin endpoints from the outside of the same machine without allowed certificates")
 	response.WriteHeader(403)
 	_, err = response.Write([]byte("Access Denied. To access this endpoint you need to do it either from the same machine or by configuring HTTPS on API Server and providing valid certificates"))
 	if err != nil {

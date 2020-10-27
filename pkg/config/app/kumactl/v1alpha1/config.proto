@@ -37,13 +37,16 @@ message ControlPlaneCoordinates {
     // URL defines URL of the Control Plane API Server.
     string url = 1 [ (validate.rules).string.uri = true ];
 
-    // CaCert defines certificate of authorized client of admin server
+    // CaCert defines the certificate authority which will be used to verify
+    // connection to the control plane API server
     string ca_cert_file = 2;
 
-    // ClientCert defines certificate of authorized client of admin server
+    // ClientCert defines the certificate of the authorized client of the
+    // control plane API server
     string client_cert_file = 3;
 
-    // ClientKey defines key of authorized client of admin server
+    // ClientKey defines the key of the authorized client of the control plane
+    // API server
     string client_key_file = 4;
   }
 

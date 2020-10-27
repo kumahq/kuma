@@ -89,6 +89,16 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
 
 			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
+			Expect(cfg.ApiServer.HTTP.Enabled).To(Equal(false))
+			Expect(cfg.ApiServer.HTTP.Interface).To(Equal("192.168.0.1"))
+			Expect(cfg.ApiServer.HTTP.Port).To(Equal(uint32(15681)))
+			Expect(cfg.ApiServer.HTTPS.Enabled).To(Equal(false))
+			Expect(cfg.ApiServer.HTTPS.Interface).To(Equal("192.168.0.2"))
+			Expect(cfg.ApiServer.HTTPS.Port).To(Equal(uint32(15679)))
+			Expect(cfg.ApiServer.HTTPS.TlsCertFile).To(Equal("/cert"))
+			Expect(cfg.ApiServer.HTTPS.TlsKeyFile).To(Equal("/key"))
+			Expect(cfg.ApiServer.Auth.AllowFromLocalhost).To(Equal(false))
+			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
 			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
@@ -155,7 +165,19 @@ bootstrapServer:
     xdsHost: kuma-control-plane
     xdsPort: 4321
 apiServer:
-  port: 9090
+  http:
+    enabled: false # ENV: KUMA_API_SERVER_HTTP_ENABLED
+    interface: 192.168.0.1 # ENV: KUMA_API_SERVER_HTTP_INTERFACE
+    port: 15681 # ENV: KUMA_API_SERVER_PORT
+  https:
+    enabled: false # ENV: KUMA_API_SERVER_HTTPS_ENABLED
+    interface: 192.168.0.2 # ENV: KUMA_API_SERVER_HTTPS_INTERFACE
+    port: 15679 # ENV: KUMA_API_SERVER_HTTPS_PORT
+    tlsCertFile: "/cert" # ENV: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
+    tlsKeyFile: "/key" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
+  auth:
+    clientCertsDir: "/certs" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
+    allowFromLocalhost: false # ENV: KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST
   readOnly: true
   corsAllowedDomains:
     - https://kuma
@@ -231,7 +253,16 @@ diagnostics:
 				"KUMA_STORE_CACHE_ENABLED":                                       "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                               "3s",
 				"KUMA_API_SERVER_READ_ONLY":                                      "true",
-				"KUMA_API_SERVER_PORT":                                           "9090",
+				"KUMA_API_SERVER_HTTP_PORT":                                      "15681",
+				"KUMA_API_SERVER_HTTP_INTERFACE":                                 "192.168.0.1",
+				"KUMA_API_SERVER_HTTP_ENABLED":                                   "false",
+				"KUMA_API_SERVER_HTTPS_ENABLED":                                  "false",
+				"KUMA_API_SERVER_HTTPS_PORT":                                     "15679",
+				"KUMA_API_SERVER_HTTPS_INTERFACE":                                "192.168.0.2",
+				"KUMA_API_SERVER_HTTPS_TLS_CERT_FILE":                            "/cert",
+				"KUMA_API_SERVER_HTTPS_TLS_KEY_FILE":                             "/key",
+				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                          "/certs",
+				"KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST":                      "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                    "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":  "12s",
 				"KUMA_REPORTS_ENABLED":                                           "false",

@@ -173,11 +173,11 @@ func (m *ControlPlaneCoordinates) GetApiServer() *ControlPlaneCoordinates_ApiSer
 type ControlPlaneCoordinates_ApiServer struct {
 	// URL defines URL of the Control Plane API Server.
 	Url string `protobuf:"bytes,1,opt,name=url,proto3" json:"url,omitempty"`
-	// CaCert defines certificate of authorized client of admin server
+	// CaCert defines the certificate authority which will be used to verify connection to the control plane API server
 	CaCertFile string `protobuf:"bytes,2,opt,name=ca_cert_file,json=caCertFile,proto3" json:"ca_cert_file,omitempty"`
-	// ClientCert defines certificate of authorized client of admin server
+	// ClientCert defines the certificate of the authorized client of the control plane API server
 	ClientCertFile string `protobuf:"bytes,3,opt,name=client_cert_file,json=clientCertFile,proto3" json:"client_cert_file,omitempty"`
-	// ClientKey defines key of authorized client of admin server
+	// ClientKey defines the key of the authorized client of the control plane API server
 	ClientKeyFile        string   `protobuf:"bytes,4,opt,name=client_key_file,json=clientKeyFile,proto3" json:"client_key_file,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
