@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"sync"
 
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -61,6 +62,8 @@ type runtime struct {
 var _ RuntimeInfo = &runtimeInfo{}
 
 type runtimeInfo struct {
+	mtx sync.RWMutex
+
 	instanceId string
 	clusterId  string
 }
@@ -70,10 +73,14 @@ func (i *runtimeInfo) GetInstanceId() string {
 }
 
 func (i *runtimeInfo) SetClusterId(clusterId string) {
+	i.mtx.Lock()
+	defer i.mtx.Unlock()
 	i.clusterId = clusterId
 }
 
 func (i *runtimeInfo) GetClusterId() string {
+	i.mtx.RLock()
+	defer i.mtx.RUnlock()
 	return i.clusterId
 }
 
