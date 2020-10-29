@@ -67,7 +67,7 @@ func (c *UniversalControlPlane) GenerateDpToken(service string) (string, error) 
 			"--fail", "--show-error",
 			"-H", "\"Content-Type: application/json\"",
 			"--data", fmt.Sprintf(`'{"mesh": "default", "type": "%s", "tags": {"kuma.io/service":["%s"]}}'`, dpType, service),
-			"http://localhost:5679/tokens"})
+			"http://localhost:5681/tokens"})
 		if err := sshApp.Run(); err != nil {
 			return "", err
 		}

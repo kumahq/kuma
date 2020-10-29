@@ -20,10 +20,9 @@ import (
 )
 
 type PortFwd struct {
-	lowFwdPort     uint32
-	hiFwdPort      uint32
-	localAPIPort   uint32
-	localAdminPort uint32
+	lowFwdPort   uint32
+	hiFwdPort    uint32
+	localAPIPort uint32
 }
 
 type K8sControlPlane struct {
@@ -89,15 +88,6 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 
 	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
 	c.portFwd.localAPIPort = apiPort
-
-	// Admin
-	adminPort, err := util_net.PickTCPPort("", c.portFwd.lowFwdPort+2, c.portFwd.hiFwdPort)
-	if err != nil {
-		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
-	}
-
-	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, adminPort, kumaCPAdminPort)
-	c.portFwd.localAdminPort = adminPort
 
 	return nil
 }
@@ -249,7 +239,7 @@ func (c *K8sControlPlane) GenerateDpToken(service string) (string, error) {
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
-		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAdminPort),
+		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
 		[]byte(fmt.Sprintf(`{"mesh": "default", "tags": {"kuma.io/service": ["%s"]}}`, service)),
 		map[string]string{"content-type": "application/json"},
 		200,

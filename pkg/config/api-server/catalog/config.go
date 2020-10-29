@@ -5,7 +5,6 @@ type CatalogConfig struct {
 	ApiServer            ApiServerConfig               `yaml:"-"`
 	Bootstrap            BootstrapApiConfig            `yaml:"bootstrap"` // DEPRECATED: remove in next major version of Kuma
 	DataplaneToken       DataplaneTokenApiConfig       `yaml:"-"`         // DEPRECATED: remove in next major version of Kuma
-	Admin                AdminApiConfig                `yaml:"-"`
 	MonitoringAssignment MonitoringAssignmentApiConfig `yaml:"monitoringAssignment"`
 	Sds                  SdsApiConfig                  `yaml:"sds"` // DEPRECATED: remove in next major version of Kuma
 }
@@ -19,11 +18,6 @@ type BootstrapApiConfig struct {
 }
 
 type DataplaneTokenApiConfig struct {
-	LocalUrl  string
-	PublicUrl string
-}
-
-type AdminApiConfig struct {
 	LocalUrl  string
 	PublicUrl string
 }

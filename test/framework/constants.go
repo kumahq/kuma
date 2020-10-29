@@ -52,7 +52,6 @@ const (
 	confPath = "/kuma/kuma-cp.conf"
 
 	kumaCPAPIPort        = 5681
-	kumaCPAdminPort      = 5679
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 
 	cniApp       = "kuma-cni"

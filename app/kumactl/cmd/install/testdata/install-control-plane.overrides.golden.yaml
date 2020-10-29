@@ -5746,19 +5746,15 @@ spec:
   ports:
     - port: 5681
       name: http-api-server
+    - port: 5682
+      name: https-api-server
     - port: 443
       name: https-admission-server
       targetPort: 5443
     - port: 5676
       name: mads-server
-    - port: 5677
-      name: grpc-sds
     - port: 5678
-      name: grpc-xds
-    - port: 5679
-      name: http-xds
-    - port: 5682
-      name: http-bootstrap-server
+      name: dp-server
     - port: 5653
       name: dns-server
       protocol: UDP
@@ -5846,11 +5842,9 @@ spec:
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5681
-            - containerPort: 5443
-            - containerPort: 5677
-            - containerPort: 5678
-            - containerPort: 5679
             - containerPort: 5682
+            - containerPort: 5443
+            - containerPort: 5678
             - containerPort: 5653
               protocol: UDP
           livenessProbe:

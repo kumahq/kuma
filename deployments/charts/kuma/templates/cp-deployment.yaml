@@ -89,12 +89,10 @@ spec:
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5681
+            - containerPort: 5682
             - containerPort: 5443
             {{- if ne .Values.controlPlane.mode "global" }}
-            - containerPort: 5677
             - containerPort: 5678
-            - containerPort: 5679
-            - containerPort: 5682
             - containerPort: 5653
               protocol: UDP
           {{- end }}

@@ -22,7 +22,7 @@ type DataplaneOverviewClient interface {
 }
 
 func NewDataplaneOverviewClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (DataplaneOverviewClient, error) {
-	client, err := apiServerClient(coordinates.Url)
+	client, err := apiServerClient(coordinates)
 	if err != nil {
 		return nil, err
 	}
