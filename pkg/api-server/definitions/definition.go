@@ -8,4 +8,5 @@ type ResourceWsDefinition struct {
 	ResourceFactory     func() model.Resource
 	ResourceListFactory func() model.ResourceList
 	ReadOnly            bool
+	Admin               bool
 }

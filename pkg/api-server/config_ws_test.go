@@ -66,7 +66,22 @@ var _ = Describe("Config WS", func() {
             "corsAllowedDomains": [
               ".*"
             ],
-            "port": %s,
+            "http": {
+              "enabled": true,
+              "interface": "0.0.0.0",
+              "port": %s
+            },
+            "https": {
+              "enabled": true,
+              "interface": "0.0.0.0",
+              "port": %d,
+              "tlsCertFile": "../../test/certs/server-cert.pem",
+              "tlsKeyFile": "../../test/certs/server-key.pem"
+            },
+            "auth": {
+              "clientCertsDir": "../../test/certs/client",
+              "allowFromLocalhost": true
+            },
             "readOnly": false
           },
           "bootstrapServer": {
@@ -77,24 +92,6 @@ var _ = Describe("Config WS", func() {
               "xdsConnectTimeout": "1s",
               "xdsHost": "",
               "xdsPort": 0
-            }
-          },
-          "adminServer": {
-            "local": {
-              "port": 5679
-            },
-            "public": {
-              "clientCertsDir": "",
-              "enabled": false,
-              "interface": "",
-              "port": 0,
-              "tlsCertFile": "",
-              "tlsKeyFile": ""
-            },
-            "apis": {
-              "dataplaneToken": {
-                "enabled": true
-              }
             }
           },
           "defaults": {
@@ -219,7 +216,10 @@ var _ = Describe("Config WS", func() {
           "dpServer": {
             "port": 5678,
             "tlsCertFile": "",
-            "tlsKeyFile": ""
+            "tlsKeyFile": "",
+            "auth": {
+              "type": ""
+            }
           },
           "store": {
             "kubernetes": {
@@ -255,7 +255,7 @@ var _ = Describe("Config WS", func() {
             "debugEndpoints": false
           }
         }
-		`, port)
+		`, port, cfg.HTTPS.Port)
 		Expect(body).To(MatchJSON(json))
 	})
 })

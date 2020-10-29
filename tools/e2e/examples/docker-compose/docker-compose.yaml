@@ -17,26 +17,19 @@ services:
     environment:
     # DNS name of the Kuma xDS server
     - KUMA_GENERAL_ADVERTISED_HOSTNAME=kuma-control-plane
-    - KUMA_ADMIN_SERVER_PUBLIC_ENABLED=true
-    - KUMA_ADMIN_SERVER_PUBLIC_INTERFACE=0.0.0.0
-    - KUMA_ADMIN_SERVER_PUBLIC_PORT=5684 # otherwise there would be conflict with local port
-    - KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE=/certs/server/cert.pem
-    - KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE=/certs/server/key.pem
-    - KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR=/certs/client
+    - KUMA_GENERAL_TLS_CERT_FILE=/certs/server/cert.pem
+    - KUMA_GENERAL_TLS_KEY_FILE=/certs/server/key.pem
+    - KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR=/certs/client
     expose:
     - "5678"
-    - "5679"
     - "5680"
     - "5681"
     - "5682"
-    - "5684"
     ports:
     - "5678:5678"
-    - "5679:5679"
     - "5680:5680"
     - "5681:5681"
     - "5682:5682"
-    - "5684:5684"
     networks:
       kuma-example:
         aliases:
@@ -58,6 +51,7 @@ services:
     - token-example-web:/kuma-example-web:rw
     - token-example-backend-v1:/kuma-example-backend-v1:rw
     - token-example-backend-v2:/kuma-example-backend-v2:rw
+    - ./certs/server/cert.pem:/certs/server/cert.pem
     - ./certs/client:/certs/client
     user: root # needed to write the tokens, named volumes are mounted with root permissions
     command:

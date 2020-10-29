@@ -1,14 +1,10 @@
 contexts:
-  - controlPlane: test1
-    defaults:
-      mesh: demo
-    name: test1
-  - controlPlane: example
-    name: example
-    credentials:
-      adminApi:
-        clientCert: /tmp/client.pem
-        clientKey: /tmp/client.key.pem
+- controlPlane: test1
+  defaults:
+    mesh: demo
+  name: test1
+- controlPlane: example
+  name: example
 controlPlanes:
   - coordinates:
       apiServer:
@@ -16,6 +12,9 @@ controlPlanes:
     name: test1
   - coordinates:
       apiServer:
+        caCertFile: /tmp/ca-cert.pem
+        clientCertFile: /tmp/client.cert.pem
+        clientKeyFile: /tmp/client.key.pem
         url: http://placeholder-address
     name: example
 currentContext: example
