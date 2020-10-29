@@ -7,6 +7,9 @@ import (
 )
 
 const (
+	// Constants for Locality Aware load balancing
+	// Highest priority 0 shall be assigned to all locally available services
+	// A priority of 1 is for ExternalServices and services exposed on neighboring ingress-es
 	priorityLocal  = 0
 	priorityRemote = 1
 )
@@ -31,7 +34,7 @@ func BuildEndpointMap(
 					Port:     dataplane.Spec.Networking.Inbound[0].Port,
 					Tags:     ingress.Tags,
 					Weight:   ingress.Instances,
-					Locality: localityFromTags(priorityRemote, ingress.Tags),
+					Locality: localityFromTags(mesh, priorityRemote, ingress.Tags),
 				})
 			}
 			continue
@@ -47,7 +50,7 @@ func BuildEndpointMap(
 					Port:     iface.DataplanePort,
 					Tags:     inbound.Tags,
 					Weight:   1,
-					Locality: localityFromTags(priorityLocal, inbound.Tags),
+					Locality: localityFromTags(mesh, priorityLocal, inbound.Tags),
 				})
 			}
 		}
@@ -74,17 +77,15 @@ func BuildEndpointMap(
 			ExternalService: &core_xds.ExternalService{
 				TLSEnabled: tlsEnabled,
 			},
-			Locality: localityFromTags(priorityRemote, tags),
+			Locality: localityFromTags(mesh, priorityRemote, tags),
 		})
 	}
 
 	return outbound
 }
 
-func localityFromTags(priority uint32, tags map[string]string) *core_xds.Locality {
-	locality, localityOK := tags[mesh_proto.LocalityTag]
-
-	if localityOK && locality == "disable" {
+func localityFromTags(mesh *mesh_core.MeshResource, priority uint32, tags map[string]string) *core_xds.Locality {
+	if !mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
 		return nil
 	}
 

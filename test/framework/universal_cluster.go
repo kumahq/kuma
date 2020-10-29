@@ -145,11 +145,6 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	token := opts.token
 	id := opts.id
 
-	locality := "disable"
-	if opts.locality {
-		locality = "enable"
-	}
-
 	var args []string
 	switch appname {
 	case AppModeEchoServer:
@@ -174,7 +169,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	dpyaml := ""
 	switch appname {
 	case AppModeEchoServer:
-		dpyaml = fmt.Sprintf(EchoServerDataplane, "8080", "80", "8080", locality)
+		dpyaml = fmt.Sprintf(EchoServerDataplane, "8080", "80", "8080")
 	case AppModeDemoClient:
 		dpyaml = fmt.Sprintf(DemoClientDataplane, "13000", "3000", "80", "8080")
 	}

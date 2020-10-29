@@ -37,6 +37,17 @@ var _ = Describe("TrafficRoute", func() {
 			},
 		},
 	}
+	defaultMeshWithLocality := &mesh_core.MeshResource{
+		Meta: &test_model.ResourceMeta{
+			Mesh: defaultMeshName,
+			Name: defaultMeshName,
+		},
+		Spec: mesh_proto.Mesh{
+			Routing: &mesh_proto.Routing{
+				LocalityAwareLoadBalancing: true,
+			},
+		},
+	}
 	const nonDefaultMesh = "non-default"
 
 	Describe("GetOutboundTargets()", func() {
@@ -178,15 +189,13 @@ var _ = Describe("TrafficRoute", func() {
 						mesh_proto.ServiceTag: "elastic",
 						mesh_proto.RegionTag:  "eu",
 					},
-					Weight:   1,
-					Locality: &core_xds.Locality{Region: "eu"},
+					Weight: 1,
 				},
 				{
-					Target:   "192.168.0.6",
-					Port:     9200,
-					Tags:     map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.RegionTag: "us"},
-					Weight:   1,
-					Locality: &core_xds.Locality{Region: "us"},
+					Target: "192.168.0.6",
+					Port:   9200,
+					Tags:   map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.RegionTag: "us"},
+					Weight: 1,
 				},
 			}))
 			Expect(targets).To(HaveKeyWithValue("frontend", []core_xds.Endpoint{
@@ -197,8 +206,7 @@ var _ = Describe("TrafficRoute", func() {
 						mesh_proto.ServiceTag: "frontend",
 						mesh_proto.RegionTag:  "eu",
 					},
-					Weight:   1,
-					Locality: &core_xds.Locality{Region: "eu"},
+					Weight: 1,
 				},
 			}))
 			Expect(targets).To(HaveKeyWithValue("backend", []core_xds.Endpoint{
@@ -209,8 +217,7 @@ var _ = Describe("TrafficRoute", func() {
 						mesh_proto.ServiceTag: "backend",
 						mesh_proto.RegionTag:  "eu",
 					},
-					Weight:   1,
-					Locality: &core_xds.Locality{Region: "eu"},
+					Weight: 1,
 				},
 			}))
 		})
@@ -290,11 +297,10 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1,
 						},
 						{
-							Target:   "10.20.1.2",
-							Port:     10001,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
-							Weight:   2,
-							Locality: &core_xds.Locality{Region: "eu", Priority: 1},
+							Target: "10.20.1.2",
+							Port:   10001,
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+							Weight: 2,
 						},
 						{
 							Target: "10.20.1.2",
@@ -360,11 +366,10 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1,
 						},
 						{
-							Target:   "10.20.1.2",
-							Port:     10001,
-							Tags:     map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
-							Weight:   2,
-							Locality: &core_xds.Locality{Region: "eu", Priority: 1},
+							Target: "10.20.1.2",
+							Port:   10001,
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+							Weight: 2,
 						},
 					},
 				},
@@ -527,7 +532,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 				},
-				mesh: defaultMeshWithMTLS,
+				mesh: defaultMeshWithLocality,
 				expected: core_xds.EndpointMap{
 					"redis": []core_xds.Endpoint{
 						{

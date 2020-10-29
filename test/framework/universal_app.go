@@ -51,7 +51,6 @@ networking:
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: http
-      kuma.io/locality: %s
 `
 	AppModeDemoClient   = "demo-client"
 	DemoClientDataplane = `

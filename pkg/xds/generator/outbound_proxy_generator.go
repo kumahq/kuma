@@ -145,10 +145,6 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 				Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, tags)).
 				Configure(envoy_clusters.Http2())
 		}
-		if clusters.Get(clusterName).HasLocality() {
-			edsClusterBuilder = edsClusterBuilder.
-				Configure(envoy_clusters.CommonLb())
-		}
 		edsCluster, err := edsClusterBuilder.Build()
 		if err != nil {
 			return nil, err
@@ -237,9 +233,6 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 			ep := endpoints[0]
 			if ep.IsExternalService() {
 				subset.IsExternalService = true
-			}
-			if ep.HasLocality() {
-				subset.HasLocality = true
 			}
 		}
 

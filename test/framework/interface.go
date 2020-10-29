@@ -32,7 +32,6 @@ type deployOptions struct {
 	appname   string
 	id        string
 	token     string
-	locality  bool
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -97,12 +96,6 @@ func WithId(id string) DeployOptionsFunc {
 func WithToken(token string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.token = token
-	}
-}
-
-func WithLocality(locality bool) DeployOptionsFunc {
-	return func(o *deployOptions) {
-		o.locality = locality
 	}
 }
 

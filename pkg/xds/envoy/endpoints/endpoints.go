@@ -89,8 +89,7 @@ func (l LocalityLbEndpointsMap) Get(ep core_xds.Endpoint) *envoy_endpoint.Locali
 		l[key] = &envoy_endpoint.LocalityLbEndpoints{
 			LbEndpoints: make([]*envoy_endpoint.LbEndpoint, 0),
 			Locality:    locality,
-			//LoadBalancingWeight:
-			Priority: priority,
+			Priority:    priority,
 		}
 	}
 
