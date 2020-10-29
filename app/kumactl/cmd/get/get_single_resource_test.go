@@ -8,10 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/catalog"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
-	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -50,17 +46,6 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 				Now: func() time.Time { return rootTime },
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
-				},
-				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
-					return &test_catalog.StaticCatalogClient{
-						Resp: catalog.Catalog{
-							Apis: catalog.Apis{
-								DataplaneToken: catalog.DataplaneTokenApi{
-									LocalUrl: "http://localhost:1234",
-								},
-							},
-						},
-					}, nil
 				},
 				NewAPIServerClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.ApiServerClient, error) {
 					return testClient, nil

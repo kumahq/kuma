@@ -8,7 +8,6 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -27,7 +26,6 @@ type RootRuntime struct {
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewZoneOverviewClient      func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ZoneOverviewClient, error)
 	NewDataplaneTokenClient    func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error)
-	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
 	NewAPIServerClient         func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
 }
 
@@ -44,7 +42,6 @@ func DefaultRootContext() *RootContext {
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewZoneOverviewClient:      kumactl_resources.NewZoneOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
-			NewCatalogClient:           catalog_client.NewCatalogClient,
 			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
 		},
 	}

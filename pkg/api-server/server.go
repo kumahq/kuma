@@ -20,7 +20,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
-	"github.com/kumahq/kuma/pkg/api-server/auth"
+	"github.com/kumahq/kuma/pkg/api-server/authz"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -164,7 +164,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 				resManager:           resManager,
 				ResourceWsDefinition: definition,
 				meshFromRequest:      meshFromPathParam("name"),
-				adminAuth:            auth.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
+				adminAuth:            authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
 			}
 			if config.ReadOnly || definition.ReadOnly {
 				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
@@ -183,7 +183,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 				meshFromRequest: func(request *restful.Request) string {
 					return "default"
 				},
-				adminAuth: auth.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
+				adminAuth: authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
 			}
 			if config.ReadOnly || definition.ReadOnly {
 				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/zones")
@@ -200,7 +200,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 				resManager:           resManager,
 				ResourceWsDefinition: definition,
 				meshFromRequest:      meshFromPathParam("mesh"),
-				adminAuth:            auth.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
+				adminAuth:            authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
 			}
 			if config.ReadOnly || definition.ReadOnly {
 				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
@@ -221,7 +221,7 @@ func dataplaneTokenWs(resManager manager.ResourceManager, cfg *kuma_cp.Config) (
 	if err != nil {
 		return nil, err
 	}
-	adminAuth := auth.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost}
+	adminAuth := authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost}
 	return tokens_server.NewWebservice(generator).Filter(adminAuth.Validate), nil
 }
 

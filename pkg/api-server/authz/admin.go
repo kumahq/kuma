@@ -1,4 +1,4 @@
-package auth
+package authz
 
 import (
 	"net"
@@ -22,11 +22,10 @@ type AdminAuth struct {
 func (a *AdminAuth) Validate(request *restful.Request, response *restful.Response, chain *restful.FilterChain) {
 	host, _, err := net.SplitHostPort(request.Request.RemoteAddr)
 	if err != nil {
-		response.WriteHeader(500)
 		log.Error(err, "could not parse Remote Address from the Request")
-		_, err := response.Write([]byte("Internal Server Error"))
-		if err != nil {
+		if err := response.WriteErrorString(500, "Internal Server Error"); err != nil {
 			log.Error(err, "could not write the response")
+			return
 		}
 	}
 	if host == "127.0.0.1" || host == "::1" {
@@ -41,9 +40,7 @@ func (a *AdminAuth) Validate(request *restful.Request, response *restful.Respons
 		return
 	}
 	log.Info("attempt to access admin endpoints from the outside of the same machine without allowed certificates")
-	response.WriteHeader(403)
-	_, err = response.Write([]byte("Access Denied. To access this endpoint you need to do it either from the same machine or by configuring HTTPS on API Server and providing valid certificates"))
-	if err != nil {
+	if err := response.WriteErrorString(403, "Access Denied. To access this endpoint you need to do it either from the same machine or by configuring HTTPS on API Server and providing valid certificates"); err != nil {
 		log.Error(err, "could not write the response")
 	}
 }

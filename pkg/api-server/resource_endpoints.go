@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/api-server/auth"
+	"github.com/kumahq/kuma/pkg/api-server/authz"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/emicklei/go-restful"
@@ -45,14 +45,14 @@ type resourceEndpoints struct {
 	resManager      manager.ResourceManager
 	meshFromRequest meshFromRequestFn
 	definitions.ResourceWsDefinition
-	adminAuth auth.AdminAuth
+	adminAuth authz.AdminAuth
 }
 
 func (r *resourceEndpoints) auth() restful.FilterFunction {
 	if r.ResourceWsDefinition.Admin {
 		return r.adminAuth.Validate
 	}
-	return auth.NoAuth
+	return authz.NoAuth
 }
 
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {

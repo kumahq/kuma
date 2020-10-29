@@ -11,15 +11,12 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/catalog"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
@@ -43,17 +40,6 @@ var _ = Describe("kumactl apply", func() {
 			Runtime: kumactl_cmd.RootRuntime{
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
-				},
-				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
-					return &test_catalog.StaticCatalogClient{
-						Resp: catalog.Catalog{
-							Apis: catalog.Apis{
-								DataplaneToken: catalog.DataplaneTokenApi{
-									LocalUrl: "http://localhost:1234",
-								},
-							},
-						},
-					}, nil
 				},
 			},
 		}

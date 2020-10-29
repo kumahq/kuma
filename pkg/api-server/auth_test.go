@@ -53,7 +53,7 @@ var _ = Describe("Auth test", func() {
 
 		// configure https clients
 		httpsClient = &http.Client{}
-		err = http2.ConfigureTls(
+		err = http2.ConfigureMTLS(
 			httpsClient,
 			certPath,
 			filepath.Join("..", "..", "test", "certs", "client", "client.pem"),
@@ -62,7 +62,7 @@ var _ = Describe("Auth test", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		httpsClientWithoutCerts = &http.Client{}
-		err = http2.ConfigureTls(httpsClientWithoutCerts, certPath, "", "")
+		err = http2.ConfigureMTLS(httpsClientWithoutCerts, certPath, "", "")
 		Expect(err).ToNot(HaveOccurred())
 
 		// wait for both http and https server
@@ -152,9 +152,7 @@ func getExternalIP() string {
 	}
 	for _, address := range addrs {
 		if ipnet, ok := address.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil {
-				return ipnet.IP.String()
-			}
+			return ipnet.IP.String()
 		}
 	}
 	return ""

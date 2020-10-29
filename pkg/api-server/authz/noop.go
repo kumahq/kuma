@@ -1,4 +1,4 @@
-package auth
+package authz
 
 import "github.com/emicklei/go-restful"
 
