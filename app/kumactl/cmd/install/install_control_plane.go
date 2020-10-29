@@ -29,12 +29,12 @@ type InstallControlPlaneArgs struct {
 	ControlPlane_image_repository                string            `helm:"controlPlane.image.repository"`
 	ControlPlane_image_tag                       string            `helm:"controlPlane.image.tag"`
 	ControlPlane_service_name                    string            `helm:"controlPlane.service.name"`
-	ControlPlane_tls_general_secret              string            `helm:"controlPlane.tls.general.secret"`
+	ControlPlane_tls_general_secret              string            `helm:"controlPlane.tls.general.secretName"`
 	ControlPlane_tls_general_caBundle            string            `helm:"controlPlane.tls.general.caBundle"`
-	ControlPlane_tls_apiServer_secret            string            `helm:"controlPlane.tls.apiServer.secret"`
-	ControlPlane_tls_apiServer_clientCertsSecret string            `helm:"controlPlane.tls.apiServer.clientCertsSecret"`
-	ControlPlane_tls_kdsGlobalServer_secret      string            `helm:"controlPlane.tls.kdsGlobalServer.secret"`
-	ControlPlane_tls_kdsRemoteClient_secret      string            `helm:"controlPlane.tls.kdsRemoteClient.secret"`
+	ControlPlane_tls_apiServer_secret            string            `helm:"controlPlane.tls.apiServer.secretName"`
+	ControlPlane_tls_apiServer_clientCertsSecret string            `helm:"controlPlane.tls.apiServer.clientCertsSecretName"`
+	ControlPlane_tls_kdsGlobalServer_secret      string            `helm:"controlPlane.tls.kdsGlobalServer.secretName"`
+	ControlPlane_tls_kdsRemoteClient_secret      string            `helm:"controlPlane.tls.kdsRemoteClient.secretName"`
 	ControlPlane_injectorFailurePolicy           string            `helm:"controlPlane.injectorFailurePolicy"`
 	ControlPlane_secrets                         []ImageEnvSecret  `helm:"controlPlane.secrets"`
 	ControlPlane_envVars                         map[string]string `helm:"controlPlane.envVars"`

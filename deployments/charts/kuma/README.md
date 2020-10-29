@@ -8,7 +8,7 @@ The chart supports Helm v3+.
 ## Values
 
 | Parameter                                          | Description                                                                                         | Default                                                  |
-|---------------------------------------------       |-----------------------------------------------------------------------------------------------------|----------------------------------------------------------|
+|----------------------------------------------------|-----------------------------------------------------------------------------------------------------|----------------------------------------------------------|
 | `global.image.registry`                            | Default registry for all Kuma images                                                                | `kong-docker-kuma-docker.bintray.io`                     |
 | `global.image.tag`                                 | Default tag for all Kuma images                                                                     | nil, defaults to Chart.AppVersion                        |
 | `patchSystemNamespace`                             | Patch the release namespace with the Kuma system label                                              | `true`                                                   |
@@ -27,12 +27,12 @@ The chart supports Helm v3+.
 | `controlPlane.globalRemoteSyncService.annotations` | Additional annotations to put on the Global-Remote Sync service                                     | {}                                                       |
 | `controlPlane.defaults.skipMeshCreation`           | Whether or not to skip creating the default Mesh                                                    | `true`                                                   |
 | `controlPlane.resources`                           | The K8s resources spec for Kuma CP                                                                  | nil, differs based on mode                               |
-| `controlPlane.tls.general.secret`                  | Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication       | nil, generated and self-signed                           |
+| `controlPlane.tls.general.secretName`              | Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication       | nil, generated and self-signed                           |
 | `controlPlane.tls.general.caBundle`                | Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)               | nil, generated and self-signed                           |
-| `controlPlane.tls.apiServer.secret`                | Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS                              | nil, autoconfigured from tls.general.secret              |
-| `controlPlane.tls.apiServer.clientCertsSecret`     | Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS | nil                                                      |
-| `controlPlane.tls.kdsGlobalServer.secret`          | Secret that contains tls.crt, key.crt for protecting cross cluster communication                    | nil, autoconfigured from tls.general.secret              |
-| `controlPlane.tls.kdsRemoteClient.secret`          | Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification      | nil                                                      |
+| `controlPlane.tls.apiServer.secretName`            | Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS                              | nil, autoconfigured from tls.general.secret              |
+| `controlPlane.tls.apiServer.clientCertsSecretName` | Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS | nil                                                      |
+| `controlPlane.tls.kdsGlobalServer.secretName`      | Secret that contains tls.crt, key.crt for protecting cross cluster communication                    | nil, autoconfigured from tls.general.secret              |
+| `controlPlane.tls.kdsRemoteClient.secretName`      | Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification      | nil                                                      |
 | `controlPlane.image.pullPolicy`                    | Kuma CP ImagePullPolicy                                                                             | `IfNotPresent`                                           |
 | `controlPlane.image.registry`                      | Kuma CP image registry                                                                              | nil, uses global                                         |
 | `controlPlane.image.repository`                    | Kuma CP image repository                                                                            | `kuma-cp`                                                |

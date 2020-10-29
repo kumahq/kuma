@@ -72,23 +72,23 @@ spec:
             - name: KUMA_MULTICLUSTER_REMOTE_ZONE
               value: {{ .Values.controlPlane.zone | quote }}
             {{- end }}
-            {{- if .Values.controlPlane.tls.apiServer.secret }}
+            {{- if .Values.controlPlane.tls.apiServer.secretName }}
             - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
               value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.crt
             - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
               value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.key
             {{- end }}
-            {{- if .Values.controlPlane.tls.apiServer.clientCertsSecret }}
+            {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
             - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
               value: /var/run/secrets/kuma.io/api-server-client-certs/
             {{- end }}
-            {{- if .Values.controlPlane.tls.kdsGlobalServer.secret }}
+            {{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
             - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE
               value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
             - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE
               value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
             {{- end }}
-            {{- if .Values.controlPlane.tls.kdsRemoteClient.secret }}
+            {{- if .Values.controlPlane.tls.kdsRemoteClient.secretName }}
             - name: KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE
               value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
             {{- end }}
@@ -143,55 +143,55 @@ spec:
             - name: {{ include "kuma.name" . }}-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
-          {{- if .Values.controlPlane.tls.apiServer.secret }}
+          {{- if .Values.controlPlane.tls.apiServer.secretName }}
             - name: api-server-tls-cert
               mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.apiServer.clientCertsSecret }}
+          {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
             - name: api-server-client-certs
               mountPath: /var/run/secrets/kuma.io/api-server-client-certs
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.kdsGlobalServer.secret }}
+          {{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
             - name: kds-server-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-server-tls-cert
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.kdsRemoteClient.secret }}
+          {{- if .Values.controlPlane.tls.kdsRemoteClient.secretName }}
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
           {{- end }}
       volumes:
-        {{- if .Values.controlPlane.tls.general.secret }}
+        {{- if .Values.controlPlane.tls.general.secretName }}
         - name: general-tls-cert
           secret:
-            secretName: {{ .Values.controlPlane.tls.general.secret }}
+            secretName: {{ .Values.controlPlane.tls.general.secretName }}
         {{- else }}
         - name: general-tls-cert
           secret:
             secretName: {{ include "kuma.name" . }}-tls-cert
         {{- end }}
-        {{- if .Values.controlPlane.tls.apiServer.secret }}
+        {{- if .Values.controlPlane.tls.apiServer.secretName }}
         - name: api-server-tls-cert
           secret:
-            secretName: {{ .Values.controlPlane.tls.apiServer.secret }}
+            secretName: {{ .Values.controlPlane.tls.apiServer.secretName }}
         {{- end }}
-        {{- if .Values.controlPlane.tls.apiServer.clientCertsSecret }}
+        {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
         - name: api-server-client-certs
           secret:
-            secretName: {{ .Values.controlPlane.tls.apiServer.clientCertsSecret }}
+            secretName: {{ .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
         {{- end }}
-        {{- if .Values.controlPlane.tls.kdsGlobalServer.secret }}
+        {{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
         - name: kds-server-tls-cert
           secret:
-            secretName: {{ .Values.controlPlane.tls.kdsGlobalServer.secret }}
+            secretName: {{ .Values.controlPlane.tls.kdsGlobalServer.secretName }}
         {{- end }}
-        {{- if .Values.controlPlane.tls.kdsRemoteClient.secret }}
+        {{- if .Values.controlPlane.tls.kdsRemoteClient.secretName }}
         - name: kds-client-tls-cert
           secret:
-            secretName: {{ .Values.controlPlane.tls.kdsRemoteClient.secret }}
+            secretName: {{ .Values.controlPlane.tls.kdsRemoteClient.secretName }}
         {{- end }}
         - name: {{ include "kuma.name" . }}-control-plane-config
           configMap:

@@ -44,15 +44,15 @@ controlPlane:
   # TLS for various servers
   tls:
     general:
-      secret: ""
+      secretName: ""
       caBundle: ""
     apiServer:
-      secret: ""
-      clientCertsSecret: ""
+      secretName: ""
+      clientCertsSecretName: ""
     kdsGlobalServer:
-      secret: ""
+      secretName: ""
     kdsRemoteClient:
-      secret: ""
+      secretName: ""
 
   image:
     pullPolicy: IfNotPresent
