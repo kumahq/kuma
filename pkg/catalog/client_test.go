@@ -20,20 +20,12 @@ var _ = Describe("Catalog client", func() {
 			Bootstrap: config_catalog.BootstrapApiConfig{
 				Url: "http://kuma.internal:3333",
 			},
-			Admin: config_catalog.AdminApiConfig{
-				LocalUrl:  "http://localhost:1111",
-				PublicUrl: "https://kuma.internal:2222",
-			},
 		}
 
 		expected := catalog.Catalog{
 			Apis: catalog.Apis{
 				Bootstrap: catalog.BootstrapApi{
 					Url: "http://kuma.internal:3333",
-				},
-				Admin: catalog.AdminApi{
-					LocalUrl:  "http://localhost:1111",
-					PublicUrl: "https://kuma.internal:2222",
 				},
 			},
 		}

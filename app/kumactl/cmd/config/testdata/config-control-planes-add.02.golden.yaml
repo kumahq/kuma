@@ -9,21 +9,20 @@ contexts:
   name: test2
 - controlPlane: example
   name: example
-  credentials:
-    adminApi:
-      clientCert: /tmp/client.pem
-      clientKey: /tmp/client.key.pem
 controlPlanes:
-- coordinates:
-    apiServer:
-      url: https://test1.internal:5681
-  name: test1
-- coordinates:
-    apiServer:
-      url: https://test2.internal:5681
-  name: test2
-- coordinates:
-    apiServer:
-      url: http://placeholder-address
-  name: example
+  - coordinates:
+      apiServer:
+        url: https://test1.internal:5681
+    name: test1
+  - coordinates:
+      apiServer:
+        url: https://test2.internal:5681
+    name: test2
+  - coordinates:
+      apiServer:
+        caCertFile: /tmp/ca-cert.pem
+        clientCertFile: /tmp/client.cert.pem
+        clientKeyFile: /tmp/client.key.pem
+        url: http://placeholder-address
+    name: example
 currentContext: example
