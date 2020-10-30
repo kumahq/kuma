@@ -38,7 +38,7 @@ destinations:
 - match:
    kuma.io/service: "*"
 `
-	const iterations = 50
+	const iterations = 100
 
 	var global, remote_1, remote_2 Cluster
 	var optsGlobal, optsRemote1, optsRemote2 []DeployOptionsFunc
@@ -183,8 +183,8 @@ destinations:
 		}
 
 		// then some requests are routed to the same zone and some are not
-		Expect(responses > iterations/4).To(BeTrue())
-		Expect(responses < iterations*3/4).To(BeTrue())
+		Expect(responses > iterations/8).To(BeTrue())
+		Expect(responses < iterations*7/8).To(BeTrue())
 	})
 
 	It("should use locality aware load balancing", func() {
