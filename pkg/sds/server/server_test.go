@@ -22,6 +22,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	dp_server_cfg "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -60,6 +61,7 @@ var _ = Describe("SDS Server", func() {
 		cfg.DpServer.Port = port
 		cfg.DpServer.TlsCertFile = filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem")
 		cfg.DpServer.TlsKeyFile = filepath.Join("..", "..", "..", "test", "certs", "server-key.pem")
+		cfg.DpServer.Auth.Type = dp_server_cfg.DpServerAuthDpToken
 
 		runtime, err := runtime.BuilderFor(cfg).Build()
 		Expect(err).ToNot(HaveOccurred())
@@ -123,7 +125,7 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// retrieve example DP token
-		tokenIssuer, err := tokens_builtin.NewDataplaneTokenIssuer(runtime)
+		tokenIssuer, err := tokens_builtin.NewDataplaneTokenIssuer(runtime.ReadOnlyResourceManager())
 		Expect(err).ToNot(HaveOccurred())
 		dpCredential, err = tokenIssuer.Generate(tokens_issuer.DataplaneIdentity{
 			Name: dpRes.GetMeta().GetName(),

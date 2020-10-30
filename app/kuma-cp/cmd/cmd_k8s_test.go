@@ -59,14 +59,12 @@ var _ = Describe("K8S CMD test", func() {
 
 		return fmt.Sprintf(`
 xdsServer:
-  grpcPort: 0
   diagnosticsPort: %%d
-bootstrapServer:
-  port: 0
 apiServer:
-  port: 0
-sdsServer:
-  grpcPort: 0
+  http:
+    port: 0
+  https:
+    port: 0
 environment: kubernetes
 store:
   type: kubernetes

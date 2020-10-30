@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	admin_server "github.com/kumahq/kuma/pkg/admin-server"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -125,10 +124,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			if err := api_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up API server")
-				return err
-			}
-			if err := admin_server.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up Admin server")
 				return err
 			}
 

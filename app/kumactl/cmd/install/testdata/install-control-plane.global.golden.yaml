@@ -5755,6 +5755,8 @@ spec:
   ports:
     - port: 5681
       name: http-api-server
+    - port: 5682
+      name: https-api-server
     - port: 443
       name: https-admission-server
       targetPort: 5443
@@ -5838,6 +5840,7 @@ spec:
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5681
+            - containerPort: 5682
             - containerPort: 5443
           livenessProbe:
             httpGet:
