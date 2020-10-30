@@ -42,7 +42,6 @@ destinations:
 
 	var global, remote_1, remote_2 Cluster
 	var optsGlobal, optsRemote1, optsRemote2 []DeployOptionsFunc
-	var echoServerToken string
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -63,7 +62,7 @@ destinations:
 
 		globalCP := global.GetKuma()
 
-		echoServerToken, err = globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
+		echoServerToken, err := globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
 		Expect(err).ToNot(HaveOccurred())
@@ -113,7 +112,7 @@ destinations:
 			fmt.Sprintf(ZoneTemplateUniversal, Kuma3, remote_2CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "no"))(global)
+		err = YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "false"))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(trafficPermissionAll)(global)
@@ -190,7 +189,7 @@ destinations:
 
 	It("should use locality aware load balancing", func() {
 		// given services in zone1 and zone2 in a mesh with enabled Locality Aware Load Balancing
-		err := YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "yes"))(global)
+		err := YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "true"))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when executing requests from zone 2
