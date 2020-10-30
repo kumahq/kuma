@@ -96,6 +96,11 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet()))
+		case mesh_core.ProtocolKafka:
+			filterChainBuilder.
+				Configure(envoy_listeners.Kafka()).
+				Configure(envoy_listeners.TcpProxy(serviceName, subsets...)).
+				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy))
 		case mesh_core.ProtocolTCP:
 			fallthrough
 		default:
