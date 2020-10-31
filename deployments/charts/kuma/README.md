@@ -64,6 +64,21 @@ The chart supports Helm v3+.
 All Kuma CRDs are loaded via the [`crds`](crds) directory. For more detailed information on CRDs and Helm,
 please refer to [the Helm documentation][helm-crd].
 
+## Deleting
+
+As part of [Helm's limitations][helm-crd-limitations], CRDs will not be deleted when the `kuma` chart is deleted and 
+must be deleted manually. When a CRD is deleted Kubernetes deletes all resources of that kind as well, so this should
+be done carefully.
+
+To do this with `kubectl` on *nix platforms, run: 
+
+```shell
+kubectl get crds | grep kuma.io | tr -s " " | cut -d " " -f1 | xargs kubectl delete crd
+
+# or with jq
+kubectl get crds -o json | jq '.items[].metadata.name | select(.|test(".*kuma\\.io"))' | xargs kubectl delete crd
+```
+
 ## Note to Chart developers
 
 The charts are used internally in `kumactl install`, therefore the following rules apply when developing new chat features:
@@ -73,3 +88,4 @@ The charts are used internally in `kumactl install`, therefore the following rul
 [kuma-url]: https://kuma.io/
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png
 [helm-crd]: https://helm.sh/docs/chart_best_practices/custom_resource_definitions/
+[helm-crd-limitations]: https://helm.sh/docs/topics/charts/#limitations-on-crds
