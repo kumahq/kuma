@@ -9,6 +9,14 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
+const (
+	// Constants for Locality Aware load balancing
+	// Highest priority 0 shall be assigned to all locally available services
+	// A priority of 1 is for ExternalServices and services exposed on neighboring ingress-es
+	priorityLocal  = 0
+	priorityRemote = 1
+)
+
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
 func BuildEndpointMap(
 	mesh *mesh_core.MeshResource,
@@ -26,10 +34,11 @@ func BuildEndpointMap(
 				}
 				service := ingress.Tags[mesh_proto.ServiceTag]
 				outbound[service] = append(outbound[service], core_xds.Endpoint{
-					Target: dataplane.Spec.Networking.Address,
-					Port:   dataplane.Spec.Networking.Inbound[0].Port,
-					Tags:   ingress.Tags,
-					Weight: ingress.Instances,
+					Target:   dataplane.Spec.Networking.Address,
+					Port:     dataplane.Spec.Networking.Inbound[0].Port,
+					Tags:     ingress.Tags,
+					Weight:   ingress.Instances,
+					Locality: localityFromTags(mesh, priorityRemote, ingress.Tags),
 				})
 			}
 			continue
@@ -41,10 +50,11 @@ func BuildEndpointMap(
 				// TODO(yskopets): do we need to dedup?
 				// TODO(yskopets): sort ?
 				outbound[service] = append(outbound[service], core_xds.Endpoint{
-					Target: iface.DataplaneIP,
-					Port:   iface.DataplanePort,
-					Tags:   inbound.Tags,
-					Weight: 1,
+					Target:   iface.DataplaneIP,
+					Port:     iface.DataplanePort,
+					Tags:     inbound.Tags,
+					Weight:   1,
+					Locality: localityFromTags(mesh, priorityLocal, inbound.Tags),
 				})
 			}
 		}
@@ -53,7 +63,7 @@ func BuildEndpointMap(
 	for _, externalService := range externalServices {
 		service := externalService.Spec.GetService()
 
-		externalServiceEndpoint, err := buildExternalServiceEndpoint(externalService, mesh.Meta.GetMesh(), loader)
+		externalServiceEndpoint, err := buildExternalServiceEndpoint(externalService, mesh)
 		if err != nil {
 			core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
 			continue
@@ -64,7 +74,7 @@ func BuildEndpointMap(
 	return outbound
 }
 
-func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceResource, mesh string, loader datasource.Loader) (*core_xds.Endpoint, error) {
+func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceResource, mesh *mesh_core.MeshResource) (*core_xds.Endpoint, error) {
 	es := &core_xds.ExternalService{
 		TLSEnabled: externalService.Spec.GetNetworking().GetTls().GetEnabled(),
 		CaCert:     externalService.Spec.GetNetworking().GetTls().GetCaCert().ConvertToEnvoy(),
@@ -83,5 +93,27 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 		Tags:            tags,
 		Weight:          1,
 		ExternalService: es,
+		Locality:        localityFromTags(mesh, priorityRemote, tags),
 	}, nil
+}
+
+func localityFromTags(mesh *mesh_core.MeshResource, priority uint32, tags map[string]string) *core_xds.Locality {
+	if !mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
+		return nil
+	}
+
+	region, regionPresent := tags[mesh_proto.RegionTag]
+	zone, zonePresent := tags[mesh_proto.ZoneTag]
+	subZone, subZonePresent := tags[mesh_proto.SubZoneTag]
+
+	if !regionPresent && !zonePresent && !subZonePresent {
+		return nil
+	}
+
+	return &core_xds.Locality{
+		Region:   region,
+		Zone:     zone,
+		SubZone:  subZone,
+		Priority: priority,
+	}
 }

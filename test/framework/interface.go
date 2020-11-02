@@ -18,6 +18,7 @@ var (
 )
 
 type deployOptions struct {
+	// cp specific
 	globalAddress    string
 	installationMode InstallationMode
 	helmReleaseName  string
@@ -25,6 +26,12 @@ type deployOptions struct {
 	ctlOpts          map[string]string
 	ingress          bool
 	cni              bool
+
+	// app specific
+	namespace string
+	appname   string
+	id        string
+	token     string
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -65,6 +72,30 @@ func WithIngress() DeployOptionsFunc {
 func WithCNI() DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.cni = true
+	}
+}
+
+func WithNamespace(namespace string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.namespace = namespace
+	}
+}
+
+func WithAppname(appname string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.appname = appname
+	}
+}
+
+func WithId(id string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.id = id
+	}
+}
+
+func WithToken(token string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.token = token
 	}
 }
 
@@ -112,7 +143,7 @@ type Cluster interface {
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
-	DeployApp(namespace, appname, token string) error
+	DeployApp(fs ...DeployOptionsFunc) error
 	DeleteApp(namespace, appname string) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
 	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)

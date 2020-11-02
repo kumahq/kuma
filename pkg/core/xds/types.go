@@ -49,12 +49,20 @@ type ExternalService struct {
 	ClientKey  *envoy_core.DataSource
 }
 
+type Locality struct {
+	Region   string
+	Zone     string
+	SubZone  string
+	Priority uint32
+}
+
 // Endpoint holds routing-related information about a single endpoint.
 type Endpoint struct {
 	Target          string
 	Port            uint32
 	Tags            map[string]string
 	Weight          uint32
+	Locality        *Locality
 	ExternalService *ExternalService
 }
 
@@ -119,6 +127,17 @@ func (s TagSelectorSet) Matches(tags map[string]string) bool {
 
 func (e Endpoint) IsExternalService() bool {
 	return e.ExternalService != nil
+}
+
+func (e Endpoint) LocalityString() string {
+	if e.Locality == nil {
+		return ""
+	}
+	return e.Locality.Region + "/" + e.Locality.Zone + "/" + e.Locality.SubZone
+}
+
+func (e Endpoint) HasLocality() bool {
+	return e.Locality != nil
 }
 
 func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
