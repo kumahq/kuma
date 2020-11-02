@@ -1,6 +1,7 @@
 package e2e_test
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -23,6 +24,8 @@ mtls:
   backends:
   - name: ca-1
     type: builtin
+routing:
+  localityAwareLoadBalancing: %s
 `
 	trafficPermissionAll := `
 type: TrafficPermission
@@ -35,6 +38,8 @@ destinations:
 - match:
    kuma.io/service: "*"
 `
+	const iterations = 100
+
 	var global, remote_1, remote_2 Cluster
 	var optsGlobal, optsRemote1, optsRemote2 []DeployOptionsFunc
 
@@ -72,7 +77,7 @@ destinations:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote1...)).
-			Install(EchoServerUniversal(echoServerToken)).
+			Install(EchoServerUniversal("universal1", echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
 			Setup(remote_1)
@@ -88,6 +93,7 @@ destinations:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote2...)).
+			Install(EchoServerUniversal("universal2", echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
 			Setup(remote_2)
@@ -95,7 +101,7 @@ destinations:
 		err = remote_2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlUniversal(meshDefaulMtlsOn)(global)
+		err = YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "false"))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(trafficPermissionAll)(global)
@@ -118,12 +124,12 @@ destinations:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("Should deploy two apps", func() {
+	It("should access service locally and remotely", func() {
 		retry.DoWithRetry(remote_1.GetTesting(), "curl local service",
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "localhost:4001")
+					"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 				if err != nil {
 					return "should retry", err
 				}
@@ -137,7 +143,7 @@ destinations:
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				stdout, _, err := remote_2.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "localhost:4001")
+					"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 				if err != nil {
 					return "should retry", err
 				}
@@ -146,5 +152,50 @@ destinations:
 				}
 				return "should retry", errors.Errorf("should retry")
 			})
+	})
+
+	It("should distribute requests cross zones", func() {
+		// given services in zone1 and zone2 in a mesh with disabled Locality Aware Load Balancing
+
+		// when executing requests from zone 1
+		responses := 0
+		for i := 0; i < iterations; i++ {
+			stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Expect(stdout).To(ContainSubstring("universal"))
+
+			if strings.Contains(stdout, "universal1") {
+				responses++
+			}
+		}
+
+		// then some requests are routed to the same zone and some are not
+		Expect(responses > iterations/8).To(BeTrue())
+		Expect(responses < iterations*7/8).To(BeTrue())
+	})
+
+	It("should use locality aware load balancing", func() {
+		// given services in zone1 and zone2 in a mesh with enabled Locality Aware Load Balancing
+		err := YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "true"))(global)
+		Expect(err).ToNot(HaveOccurred())
+
+		// when executing requests from zone 2
+		responses := 0
+		for i := 0; i < iterations; i++ {
+			stdout, _, err := remote_2.ExecWithRetries("", "", "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			Expect(err).ToNot(HaveOccurred())
+			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+			Expect(stdout).To(ContainSubstring("universal"))
+
+			if strings.Contains(stdout, "universal2") {
+				responses++
+			}
+		}
+
+		// then all the requests are routed to the same zone 2
+		Expect(responses).To(Equal(iterations))
 	})
 })

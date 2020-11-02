@@ -55,7 +55,7 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote...)).
-			Install(EchoServerUniversal(echoServerToken)).
+			Install(EchoServerUniversal("universal", echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
 			Setup(remoteCluster)
