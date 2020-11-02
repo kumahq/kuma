@@ -1,10 +1,8 @@
 package e2e
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -63,13 +61,6 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 			Setup(remoteCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = remoteCluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		// connect Remote with Global
-		err = k8s.KubectlApplyFromStringE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions(),
-			fmt.Sprintf(ZoneTemplateK8s,
-				Kuma3,
-				remoteCluster.GetKuma().GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

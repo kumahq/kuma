@@ -102,7 +102,7 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 	}
 	for i, inbound := range networking.GetInbound() {
 		p := path.Field("inbound").Index(i)
-		if inbound.Port < 1 || inbound.Port > 65535 {
+		if inbound.Port > 65535 {
 			err.AddViolationAt(p.Field("port"), `port has to be in range of [1, 65535]`)
 		}
 		if inbound.ServicePort != 0 {
@@ -121,8 +121,26 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 			}
 		}
 	}
-	for i, ingressInterface := range networking.GetIngress().GetAvailableServices() {
-		p := path.Field("ingress").Field("availableService").Index(i)
+	err.Add(validateIngress(path.Field("ingress"), networking.Ingress))
+	return err
+}
+
+func validateIngress(path validators.PathBuilder, ingress *mesh_proto.Dataplane_Networking_Ingress) validators.ValidationError {
+	if ingress == nil {
+		return validators.ValidationError{}
+	}
+	var err validators.ValidationError
+	if (ingress.GetPublicAddress() == "") != (ingress.GetPublicPort() == 0) {
+		err.AddViolationAt(path.Field("publicAddress"), `has to be defined with publicPort`)
+	}
+	if ingress.GetPublicAddress() != "" {
+		err.Add(validateAddress(path.Field("publicAddress"), ingress.GetPublicAddress()))
+	}
+	if ingress.GetPublicPort() > 65535 {
+		err.AddViolationAt(path.Field("publicPort"), `port has to be in range of [1, 65535]`)
+	}
+	for i, ingressInterface := range ingress.GetAvailableServices() {
+		p := path.Field("availableService").Index(i)
 		if _, ok := ingressInterface.Tags[mesh_proto.ServiceTag]; !ok {
 			err.AddViolationAt(p.Field("tags").Key(mesh_proto.ServiceTag), "cannot be empty")
 		}

@@ -111,6 +111,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
 		PodConverter: controllers.PodConverter{
 			ServiceGetter: mgr.GetClient(),
+			NodeGetter:    mgr.GetClient(),
 			Zone:          rt.Config().Multicluster.Remote.Zone,
 		},
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,

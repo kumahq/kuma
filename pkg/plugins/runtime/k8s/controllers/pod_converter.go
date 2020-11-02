@@ -25,6 +25,7 @@ var (
 
 type PodConverter struct {
 	ServiceGetter kube_client.Reader
+	NodeGetter    kube_client.Reader
 	Zone          string
 }
 
@@ -150,24 +151,6 @@ func (p *PodConverter) DataplaneFor(
 	dataplane.Probes = probes
 
 	return dataplane, nil
-}
-
-func (p *PodConverter) IngressFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane, error) {
-	ifaces, err := InboundInterfacesFor(p.Zone, pod, services)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not generate inbound interfaces")
-	}
-	if len(ifaces) != 1 {
-		return nil, errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
-	}
-
-	return &mesh_proto.Dataplane{
-		Networking: &mesh_proto.Dataplane_Networking{
-			Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
-			Address: pod.Status.PodIP,
-			Inbound: ifaces,
-		},
-	}, nil
 }
 
 func GatewayFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {

@@ -259,6 +259,8 @@ var _ = Describe("TrafficRoute", func() {
 									},
 								},
 								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+									PublicAddress: "192.168.0.100",
+									PublicPort:    12345,
 									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 										{
 											Instances: 2,
@@ -286,14 +288,14 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1,
 						},
 						{
-							Target: "10.20.1.2",
-							Port:   10001,
+							Target: "192.168.0.100",
+							Port:   12345,
 							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v2", "region": "eu"},
 							Weight: 2,
 						},
 						{
-							Target: "10.20.1.2",
-							Port:   10001,
+							Target: "192.168.0.100",
+							Port:   12345,
 							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v3"},
 							Weight: 3,
 						},
@@ -328,6 +330,8 @@ var _ = Describe("TrafficRoute", func() {
 									},
 								},
 								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+									PublicAddress: "192.168.0.100",
+									PublicPort:    12345,
 									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 										{
 											Instances: 2,
@@ -355,8 +359,8 @@ var _ = Describe("TrafficRoute", func() {
 							Weight: 1,
 						},
 						{
-							Target: "10.20.1.2",
-							Port:   10001,
+							Target: "192.168.0.100",
+							Port:   12345,
 							Tags:   map[string]string{"kuma.io/service": "redis", "version": "v2", "region": "eu"},
 							Weight: 2,
 						},

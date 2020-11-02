@@ -3,9 +3,7 @@ items:
     modificationTime: "2019-07-17T18:08:41Z"
     name: zone-1
     type: ZoneOverview
-    zone:
-      ingress:
-        address: 192.168.1.1:1000
+    zone: {}
     zoneInsight:
       subscriptions:
         - connectTime: "2018-07-17T16:05:36.995Z"
@@ -60,9 +58,7 @@ items:
     modificationTime: "2019-07-17T18:08:41Z"
     name: zone-2
     type: ZoneOverview
-    zone:
-      ingress:
-        address: 192.168.1.2:1000
+    zone: {}
     zoneInsight:
       subscriptions:
         - globalInstanceId: node-001

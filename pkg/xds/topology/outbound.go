@@ -15,15 +15,17 @@ func BuildEndpointMap(
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	for _, dataplane := range dataplanes {
-		if dataplane.Spec.IsIngress() && dataplane.Spec.IsRemoteIngress(zone) && mesh.MTLSEnabled() {
+		// Ingress routes the request by TLS SNI, therefore for cross cluster communication MTLS is required
+		// We ignore Ingress from endpoints if MTLS is disabled, otherwise we would fail anyway.
+		if dataplane.Spec.IsIngress() && dataplane.Spec.IsRemoteIngress(zone) && mesh.MTLSEnabled() && dataplane.Spec.HasPublicAddress() {
 			for _, ingress := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
 				if ingress.Mesh != mesh.GetMeta().GetName() {
 					continue
 				}
 				service := ingress.Tags[mesh_proto.ServiceTag]
 				outbound[service] = append(outbound[service], core_xds.Endpoint{
-					Target: dataplane.Spec.Networking.Address,
-					Port:   dataplane.Spec.Networking.Inbound[0].Port,
+					Target: dataplane.Spec.Networking.Ingress.PublicAddress,
+					Port:   dataplane.Spec.Networking.Ingress.PublicPort,
 					Tags:   ingress.Tags,
 					Weight: ingress.Instances,
 				})
