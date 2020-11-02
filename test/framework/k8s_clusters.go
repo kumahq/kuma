@@ -162,10 +162,10 @@ func (c *K8sClusters) GetKumactlOptions() *KumactlOptions {
 	return nil
 }
 
-func (cs *K8sClusters) DeployApp(namespace, appname, token string) error {
+func (cs *K8sClusters) DeployApp(fs ...DeployOptionsFunc) error {
 	for name, c := range cs.clusters {
-		if err := c.DeployApp(namespace, appname, token); err != nil {
-			return errors.Wrapf(err, "Labeling Namespace %s on %s failed: %v", namespace, name, err)
+		if err := c.DeployApp(fs...); err != nil {
+			return errors.Wrapf(err, "unable to deploy on %s", name)
 		}
 	}
 
