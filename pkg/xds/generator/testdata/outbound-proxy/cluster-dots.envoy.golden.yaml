@@ -15,8 +15,6 @@ resources:
     resource:
       '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
       clusterName: db
-      endpoints:
-        - {}
   - name: backend.kuma-system
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster

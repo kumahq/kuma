@@ -133,15 +133,11 @@ func EchoServerK8s() InstallFunc {
 	)
 }
 
-func EchoServerUniversal(token string) InstallFunc {
+func EchoServerUniversal(id, token string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp("", AppModeEchoServer, token)
+		fs = append(fs, WithAppname(AppModeEchoServer), WithId(id), WithToken(token))
+		return cluster.DeployApp(fs...)
 	}
-}
-
-type IngressDesc struct {
-	Port int32
-	IP   string
 }
 
 func IngressUniversal(token string) InstallFunc {
@@ -174,7 +170,7 @@ func DemoClientK8s() InstallFunc {
 
 func DemoClientUniversal(token string) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp("", AppModeDemoClient, token)
+		return cluster.DeployApp(WithAppname(AppModeDemoClient), WithToken(token))
 	}
 }
 

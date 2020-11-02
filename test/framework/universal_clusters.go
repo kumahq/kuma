@@ -137,10 +137,10 @@ func (c *UniversalClusters) GetKumactlOptions() *KumactlOptions {
 	return nil
 }
 
-func (cs *UniversalClusters) DeployApp(namespace, appname, token string) error {
+func (cs *UniversalClusters) DeployApp(fs ...DeployOptionsFunc) error {
 	for name, c := range cs.clusters {
-		if err := c.DeployApp(namespace, appname, token); err != nil {
-			return errors.Wrapf(err, "Labeling Namespace %s on %s failed: %v", namespace, name, err)
+		if err := c.DeployApp(fs...); err != nil {
+			return errors.Wrapf(err, "unable to deploy on %s", name)
 		}
 	}
 

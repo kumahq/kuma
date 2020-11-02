@@ -101,6 +101,9 @@ var _ = Describe("kumactl get meshes", func() {
 						},
 					},
 				},
+				Routing: &mesh_proto.Routing{
+					LocalityAwareLoadBalancing: true,
+				},
 			},
 			Meta: &test_model.ResourceMeta{
 				Mesh: "mesh1",

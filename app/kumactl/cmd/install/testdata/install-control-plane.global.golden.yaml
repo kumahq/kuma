@@ -17,20 +17,6 @@ metadata:
     app.kubernetes.io/instance: kuma
 ---
 apiVersion: v1
-kind: Secret
-type: kubernetes.io/tls
-metadata:
-  name: kuma-tls-cert
-  namespace: kuma-system
-  labels:
-    app.kubernetes.io/name: kuma
-    app.kubernetes.io/instance: kuma
-data:
-  tls.crt: Q0VSVA==
-  tls.key: S0VZ
-  ca.crt: Q0VSVA==
----
-apiVersion: v1
 kind: ConfigMap
 metadata:
   name: kuma-control-plane-config
@@ -5788,7 +5774,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 8db352a0efe11201b4c69a2f5d2c28a0255246c13c7f617b579fed223107288a
-        checksum/tls-secrets: 1f1c49efe8beb36938260e188d86c1a5cc153344c76ab39e8aedad866140a256
+        checksum/tls-secrets: 687ff2885db59f6ada611e0dbc31ea4cd2ee71528684f9532467c16f9cd9aef1
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -5855,16 +5841,16 @@ spec:
               cpu: 500m
               memory: 256Mi
           volumeMounts:
-            - name: kuma-tls-cert
+            - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert
               readOnly: true
             - name: kuma-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
       volumes:
-        - name: kuma-tls-cert
+        - name: general-tls-cert
           secret:
-            secretName: kuma-tls-cert
+            secretName: general-tls-secret
         - name: kuma-control-plane-config
           configMap:
             name: kuma-control-plane-config
@@ -5881,7 +5867,7 @@ webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: Q0VSVA==
+      caBundle: XYZ
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -5900,7 +5886,7 @@ webhooks:
   - name: owner-reference.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: Q0VSVA==
+      caBundle: XYZ
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -5926,7 +5912,7 @@ webhooks:
   - name: kuma-injector.kuma.io
     failurePolicy: Ignore
     clientConfig:
-      caBundle: Q0VSVA==
+      caBundle: XYZ
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -5954,7 +5940,7 @@ webhooks:
   - name: validator.kuma-admission.kuma.io
     failurePolicy: Fail
     clientConfig:
-      caBundle: Q0VSVA==
+      caBundle: XYZ
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -5985,7 +5971,7 @@ webhooks:
   - name: service.validator.kuma-admission.kuma.io
     failurePolicy: Ignore
     clientConfig:
-      caBundle: Q0VSVA==
+      caBundle: XYZ
       service:
         namespace: kuma-system
         name: kuma-control-plane
@@ -6007,7 +5993,7 @@ webhooks:
         kuma.io/system-namespace: "true"
     failurePolicy: Ignore
     clientConfig:
-      caBundle: Q0VSVA==
+      caBundle: XYZ
       service:
         namespace: kuma-system
         name: kuma-control-plane
