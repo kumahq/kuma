@@ -186,8 +186,10 @@ var _ = Describe("kumactl config control-planes add", func() {
 					"config", "control-planes", "add",
 					"--name", "example",
 					"--address", fmt.Sprintf("http://localhost:%d", port),
-					"--admin-client-cert", "/tmp/client.pem",
-					"--admin-client-key", "/tmp/client.key.pem"}
+					"--ca-cert-file", "/tmp/ca-cert.pem",
+					"--client-cert-file", "/tmp/client.cert.pem",
+					"--client-key-file", "/tmp/client.key.pem",
+				}
 				if given.overwrite {
 					args = append(args, "--overwrite")
 				}

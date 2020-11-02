@@ -112,7 +112,7 @@ check the [instructions](https://kuma.io/docs/0.7.1/documentation/security/#acce
 
 Run in the same network namespace as Kuma CP (this example deploys ssh server as a sidecar for Kuma CP):
 ```bash
-wget --header='Content-Type: application/json' --post-data='{"mesh": "default"}' -O /tmp/dp-httpbin-1 http://localhost:5679/tokens
+wget --header='Content-Type: application/json' --post-data='{"mesh": "default"}' -O /tmp/dp-httpbin-1 http://localhost:5681/tokens
 ```
 Note: this command generates token which is valid for all Dataplanes in the `default` mesh. Kuma also allows you to generate tokens based
 on Dataplane's Name and Tags.   

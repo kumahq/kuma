@@ -138,12 +138,14 @@ Usage:
   kumactl config control-planes add [flags]
 
 Flags:
-      --address string             URL of the Control Plane API Server (required)
-      --admin-client-cert string   Path to certificate of a client that is authorized to use Admin Server
-      --admin-client-key string    Path to certificate key of a client that is authorized to use Admin Server
-  -h, --help                       help for add
-      --name string                reference name for the Control Plane (required)
-      --overwrite                  overwrite existing Control Plane with the same reference name
+      --address string            URL of the Control Plane API Server (required)
+      --ca-cert-file string       path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)
+      --client-cert-file string   path to the certificate of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)
+      --client-key-file string    path to the certificate key of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)
+  -h, --help                      help for add
+      --name string               reference name for the Control Plane (required)
+      --overwrite                 overwrite existing Control Plane with the same reference name
+      --skip-verify               skip CA verification
 
 Global Flags:
       --config-file string   path to the configuration file to use

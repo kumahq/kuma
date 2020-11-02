@@ -24,7 +24,7 @@ func newGetSecretsCmd(pctx *getContext) *cobra.Command {
 		Short: "Show Secrets",
 		Long:  `Show Secrets.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			rs, err := pctx.CurrentAdminResourceStore()
+			rs, err := pctx.CurrentResourceStore()
 			if err != nil {
 				return err
 			}

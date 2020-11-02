@@ -21,7 +21,7 @@ type ZoneOverviewClient interface {
 }
 
 func NewZoneOverviewClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (ZoneOverviewClient, error) {
-	client, err := apiServerClient(coordinates.Url)
+	client, err := apiServerClient(coordinates)
 	if err != nil {
 		return nil, err
 	}

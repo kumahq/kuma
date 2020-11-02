@@ -15,4 +15,5 @@ var All = []ResourceWsDefinition{
 	CircuitBreakerWsDefinition,
 	ZoneWsDefinition,
 	ZoneInsightWsDefinition,
+	SecretWsDefinition,
 }
