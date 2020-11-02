@@ -3,7 +3,6 @@ package model
 import (
 	"fmt"
 	"reflect"
-	"strings"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -43,13 +42,16 @@ type Resource interface {
 
 type ByMeta []Resource
 
-func (a ByMeta) Len() int           { return len(a) }
-func (a ByMeta) Less(i, j int) bool { return key(a[i]) < key(a[j]) }
-func (a ByMeta) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByMeta) Len() int { return len(a) }
 
-func key(r Resource) string {
-	return strings.Join([]string{r.GetMeta().GetMesh(), r.GetMeta().GetName()}, ":")
+func (a ByMeta) Less(i, j int) bool {
+	if a[i].GetMeta().GetMesh() == a[j].GetMeta().GetMesh() {
+		return a[i].GetMeta().GetName() < a[j].GetMeta().GetName()
+	}
+	return a[i].GetMeta().GetMesh() < a[j].GetMeta().GetMesh()
 }
+
+func (a ByMeta) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 
 type ResourceType string
 

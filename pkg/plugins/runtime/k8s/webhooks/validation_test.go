@@ -3,12 +3,12 @@ package webhooks_test
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,7 +28,7 @@ import (
 
 var _ = Describe("Validation", func() {
 
-	var converter k8s_extensions.Converter
+	var converter k8s_common.Converter
 
 	BeforeEach(func() {
 		converter = k8s_resources.NewSimpleConverter()

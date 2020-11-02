@@ -15,7 +15,9 @@ limitations under the License.
 */
 
 // Package cache is a copy of the package sigs.k8s.io/controller-runtime/pkg/cache
-// but without deepCopy on Get and List methods
+// but without deepCopy on Get and List methods. We actively call Get/List from multiple
+// goroutines and everywhere treat results as immutable. So apparently deepCopy doesn't make
+// any sense to us and leads to extra memory usage.
 
 // Package cache provides object caches that act as caching client.Reader
 // instances and help drive Kubernetes-object-based event handlers.

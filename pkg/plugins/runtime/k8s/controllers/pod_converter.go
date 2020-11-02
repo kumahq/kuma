@@ -5,7 +5,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/dns"
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
 	"github.com/pkg/errors"
@@ -25,7 +25,7 @@ var (
 
 type PodConverter struct {
 	ServiceGetter     kube_client.Reader
-	ResourceConverter k8s_extensions.Converter
+	ResourceConverter k8s_common.Converter
 	Zone              string
 }
 

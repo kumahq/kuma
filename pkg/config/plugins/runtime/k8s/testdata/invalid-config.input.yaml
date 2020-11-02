@@ -13,3 +13,4 @@ injector:
     drainTime: 0s
   initContainer:
     image:
+marshalingCacheExpirationTime: -2

@@ -4,24 +4,26 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/patrickmn/go-cache"
 
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var _ k8s_extensions.Converter = &cachingConverter{}
+var _ k8s_common.Converter = &cachingConverter{}
 
+// According to the profile, a huge amount of time is spent on marshaling of json objects.
+// That's why having a cache on this execution path gives a big performance boost in Kubernetes.
 type cachingConverter struct {
 	SimpleConverter
 	cache *cache.Cache
 }
 
-func NewCachingConverter(expirationTime time.Duration) k8s_extensions.Converter {
+func NewCachingConverter(expirationTime time.Duration) k8s_common.Converter {
 	return &cachingConverter{
 		SimpleConverter: SimpleConverter{
 			KubeFactory: &SimpleKubeFactory{
@@ -37,9 +39,8 @@ func (c *cachingConverter) ToCoreResource(obj k8s_model.KubernetesObject, out co
 	key := strings.Join([]string{
 		obj.GetNamespace(),
 		obj.GetName(),
-		obj.GetMesh(),
 		obj.GetResourceVersion(),
-		proto.MessageName(out.GetSpec()),
+		obj.GetObjectKind().GroupVersionKind().String(),
 	}, ":")
 	if obj.GetResourceVersion() == "" {
 		// an absent of the ResourceVersion means we decode 'obj' from webhook request,
