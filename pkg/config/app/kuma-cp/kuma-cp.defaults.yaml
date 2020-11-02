@@ -94,7 +94,7 @@ apiServer:
     # Network interface on which HTTP API Server will be exposed
     interface: 0.0.0.0 # ENV: KUMA_API_SERVER_HTTP_INTERFACE
     # Port of the API Server
-    port: 5681 # ENV: KUMA_API_SERVER_PORT
+    port: 5681 # ENV: KUMA_API_SERVER_HTTP_PORT
   # HTTPS configuration of the API Server
   https:
     # If true then API Server will be served on HTTPS

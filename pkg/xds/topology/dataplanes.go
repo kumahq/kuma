@@ -47,6 +47,9 @@ func ResolveAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.Datap
 }
 
 func ResolveIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.DataplaneResource) error {
+	if dataplane.Spec.Networking.Ingress.PublicAddress == "" { // Ingress may not have public address yet.
+		return nil
+	}
 	ips, err := lookupIPFunc(dataplane.Spec.Networking.Ingress.PublicAddress)
 	if err != nil {
 		return err
