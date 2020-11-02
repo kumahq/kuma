@@ -64,8 +64,10 @@ networking:
   address: %s
   tls:
     enabled: %s
-    ca: /cert/server-cert.pem
+    ca_cert:
+      inline: "%s"
 `
+	externalServiceCaCert := "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUM5akNDQWQ0Q0NRRElFLzJhN1N1alhqQU5CZ2txaGtpRzl3MEJBUXNGQURBOU1Rc3dDUVlEVlFRR0V3SlYKVXpFV01CUUdBMVVFQ0F3TlUyRnVJRVp5WVc1amFYTmpiekVXTUJRR0ExVUVCd3dOVTJGdUlFWnlZVzVqYVhOagpiekFlRncweU1ERXhNREl4TlRFeU16bGFGdzB6TURFd016RXhOVEV5TXpsYU1EMHhDekFKQmdOVkJBWVRBbFZUCk1SWXdGQVlEVlFRSURBMVRZVzRnUm5KaGJtTnBjMk52TVJZd0ZBWURWUVFIREExVFlXNGdSbkpoYm1OcGMyTnYKTUlJQklqQU5CZ2txaGtpRzl3MEJBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUF0dzlPZUwvVlltSk5zeXZYNUcvNwplaFpOZkxFRWJyUXJVQjB4NmtEM1Y1aGFUV1NUOW9mbjN1NEljN1VIcG1lV0pla2NLMjFGKyt1QVVVeXZEd3grClAySGpZWm9ZTFQ1Z1ZTaHpFZlFoSjNnNWFjZDU4ZUt3LzRQL0JncDRySnFGT2hzeU1TV1JvRFFwVFdYTkwrUWoKUVljLzdJT2VMMkxBcmhpL3VmdEFuMEJYRERlQmhyNTl3RWkwY2UvNVpEM3dGMGlDeW5sajRudlVFNlg5MzVLZgpoRWc1K3piTHp5RXpJQ29qajJoMDNlYURUM29yM2ZUQmhmdDFRalYyTUxCLytBbWM5eUtQcUNGMVJ0NTNpN29SCjhFY3FLTXRmSXhQZ0IydkhjbnkvU3NDeVhSU3NGcStJN0tidTdKOEpqWm43ZitJSGRhNGduUW9hbkpUbnpiZC8Ka3dJREFRQUJNQTBHQ1NxR1NJYjNEUUVCQ3dVQUE0SUJBUUNjK2V1alVvZlhzeGpxZ3FXaFpsL25lVUp5bVBXYQpRM0VlTVlsZHQzT3huYXd6SDZEKzJQemM0d0RacVl6dWlNTk51emp1ZEpFOW9kcUkrSUwwVmdadmJPQ00weExmClM2blNWcVRNc1lVL1VDcHdPZXk1MWRzSTd3Y21nYlJzVnl6TzM5ZDJIRUhLZ0VUbVZ1eXlQWTRMTEw5aW1aUjQKdVIrK2dlVTd6bjVzbG9MWDZFU3VIMEIxSEJRNVJmcXdOMWxGL2NvcUE0QjhhU1pJYnA0QjhDajBRTUcxdXMzZApFTnE1b0VaRmtDdzhnMnBkakdSSytlbDlmaGN6K0xZWjBSaEwzK2tWTzlFcks2RGd5UVJ4UGErM29TOWkzazJvCkhoOU9jbUJRWnZXNlNuY2RvMHhVM0plRDNkR0p0dkhJWjk2bmE4cXMvbFRGejVkZWdiZk5kRUloCi0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K"
 	es1 := "1"
 	es2 := "2"
 
@@ -111,7 +113,8 @@ networking:
 		err = YamlUniversal(fmt.Sprintf(externalService,
 			es1, es1,
 			externalServiceAddress+":80",
-			"false"))(cluster)
+			"false",
+			externalServiceCaCert))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		externalServiceAddress = externalservice.From(cluster, externalservice.HttpsServer).GetExternalAppAddress()
@@ -120,7 +123,8 @@ networking:
 		err = YamlUniversal(fmt.Sprintf(externalService,
 			es2, es2,
 			externalServiceAddress+":443",
-			"true"))(cluster)
+			"true",
+			externalServiceCaCert))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
