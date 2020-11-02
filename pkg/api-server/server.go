@@ -313,8 +313,8 @@ func configureMTLS(certsDir string) (*tls.Config, error) {
 			if file.IsDir() {
 				continue
 			}
-			if !strings.HasSuffix(file.Name(), ".pem") {
-				log.Info("skipping file, all the client certificates has to have .pem extension", "file", file.Name())
+			if !strings.HasSuffix(file.Name(), ".pem") && !strings.HasSuffix(file.Name(), ".crt") {
+				log.Info("skipping file, all the client certificates has to have .pem or .crt extension", "file", file.Name())
 				continue
 			}
 			log.Info("adding client certificate", "file", file.Name())

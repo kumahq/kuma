@@ -1,7 +1,6 @@
 package install
 
 import (
-	"fmt"
 	"net/url"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
@@ -24,40 +23,43 @@ var (
 )
 
 type InstallControlPlaneArgs struct {
-	Namespace                                 string            `helm:"namespace"`
-	ControlPlane_image_pullPolicy             string            `helm:"controlPlane.image.pullPolicy"`
-	ControlPlane_image_registry               string            `helm:"controlPlane.image.registry"`
-	ControlPlane_image_repository             string            `helm:"controlPlane.image.repository"`
-	ControlPlane_image_tag                    string            `helm:"controlPlane.image.tag"`
-	ControlPlane_service_name                 string            `helm:"controlPlane.service.name"`
-	ControlPlane_tls_cert                     string            `helm:"controlPlane.tls.cert"`
-	ControlPlane_tls_ca_cert                  string            `helm:"controlPlane.tls.caCert"`
-	ControlPlane_tls_key                      string            `helm:"controlPlane.tls.key"`
-	ControlPlane_injectorFailurePolicy        string            `helm:"controlPlane.injectorFailurePolicy"`
-	ControlPlane_secrets                      []ImageEnvSecret  `helm:"controlPlane.secrets"`
-	ControlPlane_envVars                      map[string]string `helm:"controlPlane.envVars"`
-	DataPlane_image_registry                  string            `helm:"dataPlane.image.registry"`
-	DataPlane_image_repository                string            `helm:"dataPlane.image.repository"`
-	DataPlane_image_tag                       string            `helm:"dataPlane.image.tag"`
-	DataPlane_initImage_registry              string            `helm:"dataPlane.initImage.registry"`
-	DataPlane_initImage_repository            string            `helm:"dataPlane.initImage.repository"`
-	DataPlane_initImage_tag                   string            `helm:"dataPlane.initImage.tag"`
-	ControlPlane_kdsGlobalAddress             string            `helm:"controlPlane.kdsGlobalAddress"`
-	Cni_enabled                               bool              `helm:"cni.enabled"`
-	Cni_chained                               bool              `helm:"cni.chained"`
-	Cni_net_dir                               string            `helm:"cni.netDir"`
-	Cni_bin_dir                               string            `helm:"cni.binDir"`
-	Cni_conf_name                             string            `helm:"cni.confName"`
-	Cni_image_registry                        string            `helm:"cni.image.registry"`
-	Cni_image_repository                      string            `helm:"cni.image.repository"`
-	Cni_image_tag                             string            `helm:"cni.image.tag"`
-	ControlPlane_mode                         string            `helm:"controlPlane.mode"`
-	ControlPlane_zone                         string            `helm:"controlPlane.zone"`
-	ControlPlane_globalRemoteSyncService_type string            `helm:"controlPlane.globalRemoteSyncService.type"`
-	Ingress_enabled                           bool              `helm:"ingress.enabled"`
-	Ingress_mesh                              string            `helm:"ingress.mesh"`
-	Ingress_drainTime                         string            `helm:"ingress.drainTime"`
-	Ingress_service_type                      string            `helm:"ingress.service.type"`
+	Namespace                                    string            `helm:"namespace"`
+	ControlPlane_image_pullPolicy                string            `helm:"controlPlane.image.pullPolicy"`
+	ControlPlane_image_registry                  string            `helm:"controlPlane.image.registry"`
+	ControlPlane_image_repository                string            `helm:"controlPlane.image.repository"`
+	ControlPlane_image_tag                       string            `helm:"controlPlane.image.tag"`
+	ControlPlane_service_name                    string            `helm:"controlPlane.service.name"`
+	ControlPlane_tls_general_secret              string            `helm:"controlPlane.tls.general.secretName"`
+	ControlPlane_tls_general_caBundle            string            `helm:"controlPlane.tls.general.caBundle"`
+	ControlPlane_tls_apiServer_secret            string            `helm:"controlPlane.tls.apiServer.secretName"`
+	ControlPlane_tls_apiServer_clientCertsSecret string            `helm:"controlPlane.tls.apiServer.clientCertsSecretName"`
+	ControlPlane_tls_kdsGlobalServer_secret      string            `helm:"controlPlane.tls.kdsGlobalServer.secretName"`
+	ControlPlane_tls_kdsRemoteClient_secret      string            `helm:"controlPlane.tls.kdsRemoteClient.secretName"`
+	ControlPlane_injectorFailurePolicy           string            `helm:"controlPlane.injectorFailurePolicy"`
+	ControlPlane_secrets                         []ImageEnvSecret  `helm:"controlPlane.secrets"`
+	ControlPlane_envVars                         map[string]string `helm:"controlPlane.envVars"`
+	DataPlane_image_registry                     string            `helm:"dataPlane.image.registry"`
+	DataPlane_image_repository                   string            `helm:"dataPlane.image.repository"`
+	DataPlane_image_tag                          string            `helm:"dataPlane.image.tag"`
+	DataPlane_initImage_registry                 string            `helm:"dataPlane.initImage.registry"`
+	DataPlane_initImage_repository               string            `helm:"dataPlane.initImage.repository"`
+	DataPlane_initImage_tag                      string            `helm:"dataPlane.initImage.tag"`
+	ControlPlane_kdsGlobalAddress                string            `helm:"controlPlane.kdsGlobalAddress"`
+	Cni_enabled                                  bool              `helm:"cni.enabled"`
+	Cni_chained                                  bool              `helm:"cni.chained"`
+	Cni_net_dir                                  string            `helm:"cni.netDir"`
+	Cni_bin_dir                                  string            `helm:"cni.binDir"`
+	Cni_conf_name                                string            `helm:"cni.confName"`
+	Cni_image_registry                           string            `helm:"cni.image.registry"`
+	Cni_image_repository                         string            `helm:"cni.image.repository"`
+	Cni_image_tag                                string            `helm:"cni.image.tag"`
+	ControlPlane_mode                            string            `helm:"controlPlane.mode"`
+	ControlPlane_zone                            string            `helm:"controlPlane.zone"`
+	ControlPlane_globalRemoteSyncService_type    string            `helm:"controlPlane.globalRemoteSyncService.type"`
+	Ingress_enabled                              bool              `helm:"ingress.enabled"`
+	Ingress_mesh                                 string            `helm:"ingress.mesh"`
+	Ingress_drainTime                            string            `helm:"ingress.drainTime"`
+	Ingress_service_type                         string            `helm:"ingress.service.type"`
 }
 
 type ImageEnvSecret struct {
@@ -73,9 +75,6 @@ var DefaultInstallControlPlaneArgs = InstallControlPlaneArgs{
 	ControlPlane_image_repository:             "kuma-cp",
 	ControlPlane_image_tag:                    kuma_version.Build.Version,
 	ControlPlane_service_name:                 "kuma-control-plane",
-	ControlPlane_tls_ca_cert:                  "",
-	ControlPlane_tls_cert:                     "",
-	ControlPlane_tls_key:                      "",
 	ControlPlane_envVars:                      map[string]string{},
 	ControlPlane_injectorFailurePolicy:        "Ignore",
 	DataPlane_image_registry:                  "kong-docker-kuma-docker.bintray.io",
@@ -124,10 +123,6 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				args.Ingress_service_type = "NodePort"
 			}
 
-			if err := autogenerateCerts(&args); err != nil {
-				return err
-			}
-
 			templateFiles, err := InstallCpTemplateFilesFn(args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
@@ -159,9 +154,12 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.ControlPlane_image_repository, "control-plane-repository", args.ControlPlane_image_repository, "repository for the image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlane_image_tag, "control-plane-version", args.ControlPlane_image_tag, "version of the image of the Kuma Control Plane component")
 	cmd.Flags().StringVar(&args.ControlPlane_service_name, "control-plane-service-name", args.ControlPlane_service_name, "Service name of the Kuma Control Plane")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_cert, "tls-cert", args.ControlPlane_tls_cert, "TLS certificate for Kuma Control Plane servers")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_ca_cert, "tls-ca-cert", args.ControlPlane_tls_ca_cert, "CA certificate that was used to generate TLS certificate for Kuma Control Plane servers")
-	cmd.Flags().StringVar(&args.ControlPlane_tls_key, "tls-key", args.ControlPlane_tls_key, "TLS key for Kuma Control Plane servers")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_general_secret, "tls-general-secret", args.ControlPlane_tls_general_secret, "Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_general_caBundle, "tls-general-ca-bundle", args.ControlPlane_tls_general_secret, "Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_apiServer_secret, "tls-api-server-secret", args.ControlPlane_tls_apiServer_secret, "Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_apiServer_clientCertsSecret, "tls-api-server-client-certs-secret", args.ControlPlane_tls_apiServer_clientCertsSecret, "Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_kdsGlobalServer_secret, "tls-kds-global-server-secret", args.ControlPlane_tls_kdsGlobalServer_secret, "Secret that contains tls.crt, key.crt for protecting cross cluster communication")
+	cmd.Flags().StringVar(&args.ControlPlane_tls_kdsRemoteClient_secret, "tls-kds-remote-client-secret", args.ControlPlane_tls_kdsRemoteClient_secret, "Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification")
 	cmd.Flags().StringVar(&args.ControlPlane_injectorFailurePolicy, "injector-failure-policy", args.ControlPlane_injectorFailurePolicy, "failue policy of the mutating web hook implemented by the Kuma Injector component")
 	cmd.Flags().StringToStringVar(&args.ControlPlane_envVars, "env-var", args.ControlPlane_envVars, "environment variables that will be passed to the control plane")
 	cmd.Flags().StringVar(&args.DataPlane_image_registry, "dataplane-registry", args.DataPlane_image_registry, "registry for the image of the Kuma DataPlane component")
@@ -193,54 +191,25 @@ func validateArgs(args InstallControlPlaneArgs) error {
 		return err
 	}
 	if args.ControlPlane_mode == core.Remote && args.ControlPlane_zone == "" {
-		return errors.Errorf("--zone is mandatory with `remote` mode")
+		return errors.New("--zone is mandatory with `remote` mode")
 	}
 	if args.ControlPlane_mode == core.Remote && args.ControlPlane_kdsGlobalAddress == "" {
-		return errors.Errorf("--kds-global-address is mandatory with `remote` mode")
+		return errors.New("--kds-global-address is mandatory with `remote` mode")
 	}
 	if args.ControlPlane_kdsGlobalAddress != "" {
 		if args.ControlPlane_mode != core.Remote {
-			return errors.Errorf("--kds-global-address can only be used when --mode=remote")
+			return errors.New("--kds-global-address can only be used when --mode=remote")
 		}
 		u, err := url.Parse(args.ControlPlane_kdsGlobalAddress)
 		if err != nil {
-			return errors.Errorf("--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port")
+			return errors.New("--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port")
 		}
 		if u.Scheme != "grpcs" {
-			return errors.Errorf("--kds-global-address should start with grpcs://")
+			return errors.New("--kds-global-address should start with grpcs://")
 		}
 	}
-	tlsArgs := 0
-	if args.ControlPlane_tls_cert != "" {
-		tlsArgs++
-	}
-	if args.ControlPlane_tls_key != "" {
-		tlsArgs++
-	}
-	if args.ControlPlane_tls_ca_cert != "" {
-		tlsArgs++
-	}
-	if tlsArgs != 0 && tlsArgs != 3 { // either all of them have to be provided or none
-		return errors.Errorf("--tls-cert, --tls-key and --tls-ca-cert must be provided at the same time")
-	}
-	return nil
-}
-
-func autogenerateCerts(args *InstallControlPlaneArgs) error {
-	if args.ControlPlane_tls_cert == "" && args.ControlPlane_tls_key == "" && args.ControlPlane_tls_ca_cert == "" {
-		fqdn := fmt.Sprintf("%s.%s.svc", args.ControlPlane_service_name, args.Namespace)
-		hosts := []string{
-			fqdn,
-			fmt.Sprintf("%s.%s", args.ControlPlane_service_name, args.Namespace),
-			"localhost",
-		}
-		cert, err := NewSelfSignedCert(fqdn, tls.ServerCertType, hosts...)
-		if err != nil {
-			return errors.Wrapf(err, "Failed to generate TLS certificate for %q", fqdn)
-		}
-		args.ControlPlane_tls_cert = string(cert.CertPEM)
-		args.ControlPlane_tls_key = string(cert.KeyPEM)
-		args.ControlPlane_tls_ca_cert = string(cert.CertPEM) // generated cert is a CA
+	if (args.ControlPlane_tls_general_secret == "") != (args.ControlPlane_tls_general_caBundle == "") {
+		return errors.New("--tls-general-secret and --tls-general-ca-bundle must be provided at the same time")
 	}
 	return nil
 }
