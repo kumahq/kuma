@@ -7,6 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -33,7 +35,7 @@ var _ = Describe("Defaulter", func() {
 		}
 	})
 
-	var converter k8s_resources.Converter
+	var converter k8s_common.Converter
 
 	BeforeEach(func() {
 		kubeTypes := k8s_registry.NewTypeRegistry()

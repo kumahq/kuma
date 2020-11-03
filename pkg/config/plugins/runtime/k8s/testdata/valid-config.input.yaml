@@ -33,3 +33,4 @@ injector:
         memory: 1512Mi
   initContainer:
     image: kuma-init:latest
+marshalingCacheExpirationTime: 1s

@@ -153,7 +153,8 @@ func IngressUniversal(token string) InstallFunc {
 		}
 		uniCluster.apps[AppIngress] = app
 
-		dpyaml := fmt.Sprintf(IngressDataplane, kdsPort)
+		publicAddress := uniCluster.apps[AppIngress].ip
+		dpyaml := fmt.Sprintf(IngressDataplane, publicAddress, kdsPort, kdsPort)
 		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token)
 	}
 }

@@ -1,7 +1,6 @@
 package framework
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -203,32 +202,6 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 	pod := c.GetKumaCPPods()[0]
 
 	return "grpcs://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(kdsPort), 10)
-}
-
-func (c *K8sControlPlane) GetIngressAddress() string {
-	ctx := context.Background()
-	cs, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
-	if err != nil {
-		return "invalid"
-	}
-	ingressSvc, err := cs.CoreV1().Services(KumaNamespace).Get(ctx, "kuma-ingress", metav1.GetOptions{})
-	if err != nil {
-		return "invalid"
-	}
-	port := ingressSvc.Spec.Ports[0].NodePort
-
-	nodes, err := cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return "invalid"
-	}
-	// assume that we have single node cluster
-	for _, addr := range nodes.Items[0].Status.Addresses {
-		if addr.Type == v1.NodeInternalIP {
-			return addr.Address + ":" + strconv.Itoa(int(port))
-		}
-	}
-
-	return "invalid"
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {

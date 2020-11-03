@@ -94,7 +94,7 @@ apiServer:
     # Network interface on which HTTP API Server will be exposed
     interface: 0.0.0.0 # ENV: KUMA_API_SERVER_HTTP_INTERFACE
     # Port of the API Server
-    port: 5681 # ENV: KUMA_API_SERVER_PORT
+    port: 5681 # ENV: KUMA_API_SERVER_HTTP_PORT
   # HTTPS configuration of the API Server
   https:
     # If true then API Server will be served on HTTPS
@@ -225,6 +225,7 @@ runtime:
         # List of outbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
         excludeOutboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
+    marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
   # Universal-specific configuration
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC

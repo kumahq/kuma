@@ -270,6 +270,66 @@ var _ = Describe("TrafficRoute", func() {
 									},
 								},
 								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+									PublicAddress: "192.168.0.100",
+									PublicPort:    12345,
+									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+										{
+											Instances: 2,
+											Mesh:      defaultMeshName,
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+										},
+										{
+											Instances: 3,
+											Mesh:      defaultMeshName,
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "10.20.1.3", // another instance of the same ingress will be ignored
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags: map[string]string{mesh_proto.ServiceTag: "ingress", mesh_proto.ZoneTag: "zone-2"},
+										Port: 10001,
+									},
+								},
+								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+									PublicAddress: "192.168.0.100",
+									PublicPort:    12345,
+									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+										{
+											Instances: 2,
+											Mesh:      defaultMeshName,
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+										},
+										{
+											Instances: 3,
+											Mesh:      defaultMeshName,
+											Tags:      map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "10.20.1.4",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags: map[string]string{mesh_proto.ServiceTag: "ingress", mesh_proto.ZoneTag: "zone-2"},
+										Port: 10001,
+									},
+								},
+								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+									PublicAddress: "192.168.0.101", // instance of the ingress with different public coordinates
+									PublicPort:    12345,
 									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 										{
 											Instances: 2,
@@ -291,22 +351,34 @@ var _ = Describe("TrafficRoute", func() {
 				expected: core_xds.EndpointMap{
 					"redis": []core_xds.Endpoint{
 						{
-							Target: "192.168.0.1",
-							Port:   6379,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
-							Weight: 1,
-						},
-						{
-							Target: "10.20.1.2",
-							Port:   10001,
+							Target: "192.168.0.100",
+							Port:   12345,
 							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
 							Weight: 2,
 						},
 						{
-							Target: "10.20.1.2",
-							Port:   10001,
+							Target: "192.168.0.100",
+							Port:   12345,
 							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
 							Weight: 3,
+						},
+						{
+							Target: "192.168.0.101",
+							Port:   12345,
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+							Weight: 2,
+						},
+						{
+							Target: "192.168.0.101",
+							Port:   12345,
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v3"},
+							Weight: 3,
+						},
+						{
+							Target: "192.168.0.1",
+							Port:   6379,
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+							Weight: 2, // local weight is bumped to 2 to factor two instances of Ingresses
 						},
 					},
 				},
@@ -339,6 +411,8 @@ var _ = Describe("TrafficRoute", func() {
 									},
 								},
 								Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+									PublicAddress: "192.168.0.100",
+									PublicPort:    12345,
 									AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 										{
 											Instances: 2,
@@ -360,16 +434,16 @@ var _ = Describe("TrafficRoute", func() {
 				expected: core_xds.EndpointMap{
 					"redis": []core_xds.Endpoint{
 						{
+							Target: "192.168.0.100",
+							Port:   12345,
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+							Weight: 2,
+						},
+						{
 							Target: "192.168.0.1",
 							Port:   6379,
 							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
 							Weight: 1,
-						},
-						{
-							Target: "10.20.1.2",
-							Port:   10001,
-							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
-							Weight: 2,
 						},
 					},
 				},

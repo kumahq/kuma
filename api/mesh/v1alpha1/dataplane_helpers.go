@@ -338,6 +338,13 @@ func (d *Dataplane) IsIngress() bool {
 	return d.Networking.Ingress != nil
 }
 
+func (d *Dataplane) HasPublicAddress() bool {
+	if d.Networking.Ingress == nil {
+		return false
+	}
+	return d.Networking.Ingress.PublicAddress != "" && d.Networking.Ingress.PublicPort != 0
+}
+
 func (d *Dataplane) HasAvailableServices() bool {
 	if !d.IsIngress() {
 		return false

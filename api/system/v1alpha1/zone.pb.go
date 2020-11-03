@@ -23,10 +23,9 @@ const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 // Zone defines the Zone configuration used at the Global Control Plane
 // within a distributed deployment
 type Zone struct {
-	Ingress              *Zone_Ingress `protobuf:"bytes,2,opt,name=ingress,proto3" json:"ingress,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
-	XXX_unrecognized     []byte        `json:"-"`
-	XXX_sizecache        int32         `json:"-"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
 }
 
 func (m *Zone) Reset()         { *m = Zone{} }
@@ -54,70 +53,18 @@ func (m *Zone) XXX_DiscardUnknown() {
 
 var xxx_messageInfo_Zone proto.InternalMessageInfo
 
-func (m *Zone) GetIngress() *Zone_Ingress {
-	if m != nil {
-		return m.Ingress
-	}
-	return nil
-}
-
-// Configure the Zone's Ingress
-type Zone_Ingress struct {
-	// The public load balancer address of the Zone Ingress
-	Address              string   `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
-}
-
-func (m *Zone_Ingress) Reset()         { *m = Zone_Ingress{} }
-func (m *Zone_Ingress) String() string { return proto.CompactTextString(m) }
-func (*Zone_Ingress) ProtoMessage()    {}
-func (*Zone_Ingress) Descriptor() ([]byte, []int) {
-	return fileDescriptor_0b77e158d4963c0f, []int{0, 0}
-}
-
-func (m *Zone_Ingress) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_Zone_Ingress.Unmarshal(m, b)
-}
-func (m *Zone_Ingress) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_Zone_Ingress.Marshal(b, m, deterministic)
-}
-func (m *Zone_Ingress) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Zone_Ingress.Merge(m, src)
-}
-func (m *Zone_Ingress) XXX_Size() int {
-	return xxx_messageInfo_Zone_Ingress.Size(m)
-}
-func (m *Zone_Ingress) XXX_DiscardUnknown() {
-	xxx_messageInfo_Zone_Ingress.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_Zone_Ingress proto.InternalMessageInfo
-
-func (m *Zone_Ingress) GetAddress() string {
-	if m != nil {
-		return m.Address
-	}
-	return ""
-}
-
 func init() {
 	proto.RegisterType((*Zone)(nil), "kuma.system.v1alpha1.Zone")
-	proto.RegisterType((*Zone_Ingress)(nil), "kuma.system.v1alpha1.Zone.Ingress")
 }
 
 func init() { proto.RegisterFile("system/v1alpha1/zone.proto", fileDescriptor_0b77e158d4963c0f) }
 
 var fileDescriptor_0b77e158d4963c0f = []byte{
-	// 138 bytes of a gzipped FileDescriptorProto
+	// 83 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x2a, 0xae, 0x2c, 0x2e,
 	0x49, 0xcd, 0xd5, 0x2f, 0x33, 0x4c, 0xcc, 0x29, 0xc8, 0x48, 0x34, 0xd4, 0xaf, 0xca, 0xcf, 0x4b,
 	0xd5, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x12, 0xc9, 0x2e, 0xcd, 0x4d, 0xd4, 0x83, 0x28, 0xd0,
-	0x83, 0x29, 0x50, 0xca, 0xe4, 0x62, 0x89, 0xca, 0xcf, 0x4b, 0x15, 0xb2, 0xe1, 0x62, 0xcf, 0xcc,
-	0x4b, 0x2f, 0x4a, 0x2d, 0x2e, 0x96, 0x60, 0x52, 0x60, 0xd4, 0xe0, 0x36, 0x52, 0xd2, 0xc3, 0xa6,
-	0x5e, 0x0f, 0xa4, 0x58, 0xcf, 0x13, 0xa2, 0x32, 0x08, 0xa6, 0x45, 0x4a, 0x99, 0x8b, 0x1d, 0x2a,
-	0x26, 0x24, 0xc1, 0xc5, 0x9e, 0x98, 0x92, 0x02, 0x36, 0x88, 0x51, 0x81, 0x51, 0x83, 0x33, 0x08,
-	0xc6, 0x75, 0xe2, 0x8a, 0xe2, 0x80, 0x19, 0x93, 0xc4, 0x06, 0x76, 0x93, 0x31, 0x20, 0x00, 0x00,
-	0xff, 0xff, 0x46, 0x49, 0xd4, 0x98, 0xb1, 0x00, 0x00, 0x00,
+	0x83, 0x29, 0x50, 0x62, 0xe3, 0x62, 0x89, 0xca, 0xcf, 0x4b, 0x75, 0xe2, 0x8a, 0xe2, 0x80, 0x89,
+	0x25, 0xb1, 0x81, 0x35, 0x18, 0x03, 0x02, 0x00, 0x00, 0xff, 0xff, 0xa4, 0xd6, 0x08, 0x45, 0x4e,
+	0x00, 0x00, 0x00,
 }

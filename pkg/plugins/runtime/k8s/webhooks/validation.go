@@ -18,13 +18,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
-	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode) AdmissionValidator {
+func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode) AdmissionValidator {
 	return &validatingHandler{
 		coreRegistry: coreRegistry,
 		k8sRegistry:  k8sRegistry,
@@ -36,7 +35,7 @@ func NewValidatingWebhook(converter k8s_resources.Converter, coreRegistry core_r
 type validatingHandler struct {
 	coreRegistry core_registry.TypeRegistry
 	k8sRegistry  k8s_registry.TypeRegistry
-	converter    k8s_resources.Converter
+	converter    k8s_common.Converter
 	decoder      *admission.Decoder
 	mode         core.CpMode
 }
@@ -95,11 +94,11 @@ func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8
 	switch h.mode {
 	case core.Remote:
 		// Although Remote CP consumes Dataplane (Ingress) we also apply Dataplane on Remote
-		if resType != core_mesh.DataplaneType && kds_remote.ConsumesType(resType) && obj.GetAnnotations()[common_k8s.K8sSynced] != "true" {
+		if resType != core_mesh.DataplaneType && kds_remote.ConsumesType(resType) && obj.GetAnnotations()[k8s_common.K8sSynced] != "true" {
 			return syncErrorResponse(resType, core.Remote)
 		}
 	case core.Global:
-		if kds_global.ConsumesType(resType) && obj.GetAnnotations()[common_k8s.K8sSynced] != "true" {
+		if kds_global.ConsumesType(resType) && obj.GetAnnotations()[k8s_common.K8sSynced] != "true" {
 			return syncErrorResponse(resType, core.Global)
 		}
 	}
