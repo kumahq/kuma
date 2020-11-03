@@ -694,6 +694,7 @@ Usage:
 Flags:
       --gateway              filter gateway dataplanes
   -h, --help                 help for dataplanes
+      --ingress              filter ingress dataplanes
       --tag stringToString   filter by tag in format of key=value. You can provide many tags (default [])
 
 Global Flags:

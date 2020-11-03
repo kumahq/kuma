@@ -33,13 +33,15 @@ import (
 type testDataplaneOverviewClient struct {
 	receivedTags    map[string]string
 	receivedGateway bool
+	receivedIngress bool
 	total           uint32
 	overviews       []*mesh_core.DataplaneOverviewResource
 }
 
-func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string, gateway bool) (*mesh_core.DataplaneOverviewResourceList, error) {
+func (c *testDataplaneOverviewClient) List(_ context.Context, _ string, tags map[string]string, gateway bool, ingress bool) (*mesh_core.DataplaneOverviewResourceList, error) {
 	c.receivedTags = tags
 	c.receivedGateway = gateway
+	c.receivedIngress = ingress
 	return &mesh_core.DataplaneOverviewResourceList{
 		Items: c.overviews,
 		Pagination: model.Pagination{
@@ -283,6 +285,22 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				Expect(testClient.receivedGateway).To(BeTrue())
+			})
+		})
+
+		Describe("kumactl inspect dataplanes --ingress", func() {
+			It("gateway should be passed to the client", func() {
+				// given
+				rootCmd.SetArgs([]string{
+					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+					"inspect", "dataplanes", "--ingress"})
+
+				// when
+				err := rootCmd.Execute()
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// and
+				Expect(testClient.receivedIngress).To(BeTrue())
 			})
 		})
 	})
