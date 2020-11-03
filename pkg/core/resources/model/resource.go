@@ -40,6 +40,19 @@ type Resource interface {
 	Scope() ResourceScope
 }
 
+type ByMeta []Resource
+
+func (a ByMeta) Len() int { return len(a) }
+
+func (a ByMeta) Less(i, j int) bool {
+	if a[i].GetMeta().GetMesh() == a[j].GetMeta().GetMesh() {
+		return a[i].GetMeta().GetName() < a[j].GetMeta().GetName()
+	}
+	return a[i].GetMeta().GetMesh() < a[j].GetMeta().GetMesh()
+}
+
+func (a ByMeta) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+
 type ResourceType string
 
 // ResourceNameExtensions represents an composite resource name in environments

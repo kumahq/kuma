@@ -5,7 +5,7 @@ import (
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 
 	kube_core "k8s.io/api/core/v1"
 )
@@ -19,7 +19,7 @@ func init() {
 }
 
 func (p *plugin) NewSecretStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (secret_store.SecretStore, error) {
-	mgr, ok := k8s_runtime.FromManagerContext(pc.Extensions())
+	mgr, ok := k8s_extensions.FromManagerContext(pc.Extensions())
 	if !ok {
 		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}

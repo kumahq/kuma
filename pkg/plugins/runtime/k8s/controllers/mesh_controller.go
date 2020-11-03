@@ -6,12 +6,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 
 	kube_core "k8s.io/api/core/v1"
@@ -28,7 +29,7 @@ type MeshReconciler struct {
 	Log    logr.Logger
 
 	Scheme          *kube_runtime.Scheme
-	Converter       k8s_resources.Converter
+	Converter       k8s_common.Converter
 	CaManagers      core_ca.Managers
 	SystemNamespace string
 	ResourceManager manager.ResourceManager

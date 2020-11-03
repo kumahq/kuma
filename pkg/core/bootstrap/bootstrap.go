@@ -123,18 +123,11 @@ func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	if err = onStartup(runtime); err != nil {
+	if err = startReporter(runtime); err != nil {
 		return nil, err
 	}
 
 	return runtime, nil
-}
-
-func onStartup(runtime core_runtime.Runtime) error {
-	if err := createClusterID(runtime); err != nil {
-		return err
-	}
-	return startReporter(runtime)
 }
 
 func startReporter(runtime core_runtime.Runtime) error {

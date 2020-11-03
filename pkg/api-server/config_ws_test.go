@@ -204,7 +204,8 @@ var _ = Describe("Config WS", func() {
                   }
                 },
                 "caCertFile": ""
-              }
+              },
+              "marshalingCacheExpirationTime": "5m0s"
             },
             "universal": {
               "dataplaneCleanupAge": "72h0m0s"
