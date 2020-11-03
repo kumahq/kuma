@@ -14,6 +14,7 @@ func (d *DataplaneResource) Validate() error {
 	var err validators.ValidationError
 	if d.Spec.IsIngress() {
 		err.Add(validateIngressNetworking(d.Spec.GetNetworking()))
+		err.Add(validateIngress(validators.RootedAt("networking").Field("ingress"), d.Spec.GetNetworking().GetIngress()))
 	} else {
 		err.Add(validateNetworking(d.Spec.GetNetworking()))
 		err.Add(validateProbes(d.Spec.GetProbes()))
@@ -121,7 +122,6 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 			}
 		}
 	}
-	err.Add(validateIngress(path.Field("ingress"), networking.Ingress))
 	return err
 }
 
@@ -130,8 +130,11 @@ func validateIngress(path validators.PathBuilder, ingress *mesh_proto.Dataplane_
 		return validators.ValidationError{}
 	}
 	var err validators.ValidationError
-	if (ingress.GetPublicAddress() == "") != (ingress.GetPublicPort() == 0) {
+	if ingress.GetPublicAddress() == "" && ingress.GetPublicPort() != 0 {
 		err.AddViolationAt(path.Field("publicAddress"), `has to be defined with publicPort`)
+	}
+	if ingress.GetPublicPort() == 0 && ingress.GetPublicAddress() != "" {
+		err.AddViolationAt(path.Field("publicPort"), `has to be defined with publicAddress`)
 	}
 	if ingress.GetPublicAddress() != "" {
 		err.Add(validateAddress(path.Field("publicAddress"), ingress.GetPublicAddress()))

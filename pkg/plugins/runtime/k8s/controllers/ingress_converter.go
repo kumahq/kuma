@@ -22,15 +22,15 @@ var NodePortAddressPriority = []kube_core.NodeAddressType{
 }
 
 func (p *PodConverter) IngressFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane, error) {
+	if len(services) != 1 {
+		return nil, errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
+	}
 	ifaces, err := InboundInterfacesFor(p.Zone, pod, services)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not generate inbound interfaces")
 	}
 	if len(ifaces) != 1 {
 		return nil, errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
-	}
-	if len(services) != 1 {
-		return nil, errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
 	}
 
 	ingress, err := p.ingressSpecFromAnnotations(metadata.Annotations(pod.Annotations))
