@@ -19,6 +19,7 @@ const (
 	ProtocolHTTP    = "http"
 	ProtocolHTTP2   = "http2"
 	ProtocolGRPC    = "grpc"
+	ProtocolKafka   = "kafka"
 )
 
 func ParseProtocol(tag string) Protocol {
@@ -31,6 +32,8 @@ func ParseProtocol(tag string) Protocol {
 		return ProtocolTCP
 	case ProtocolGRPC:
 		return ProtocolGRPC
+	case ProtocolKafka:
+		return ProtocolKafka
 	default:
 		return ProtocolUnknown
 	}
@@ -52,6 +55,7 @@ var SupportedProtocols = ProtocolList{
 	ProtocolGRPC,
 	ProtocolHTTP,
 	ProtocolHTTP2,
+	ProtocolKafka,
 	ProtocolTCP,
 }
 
