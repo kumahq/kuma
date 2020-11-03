@@ -65,9 +65,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{
-						Ingress: &system_proto.Zone_Ingress{Address: "192.168.1.1:1000"},
-					},
+					Zone: &system_proto.Zone{},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -150,9 +148,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{
-						Ingress: &system_proto.Zone_Ingress{Address: "192.168.1.2:1000"},
-					},
+					Zone: &system_proto.Zone{},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{

@@ -30,21 +30,13 @@ var _ = Describe("kumactl get zones", func() {
 
 	zoneResources := []*system.ZoneResource{
 		{
-			Spec: v1alpha1.Zone{
-				Ingress: &v1alpha1.Zone_Ingress{
-					Address: "192.168.0.2:10000",
-				},
-			},
+			Spec: v1alpha1.Zone{},
 			Meta: &test_model.ResourceMeta{
 				Name: "zone-1",
 			},
 		},
 		{
-			Spec: v1alpha1.Zone{
-				Ingress: &v1alpha1.Zone_Ingress{
-					Address: "192.168.1.2:10000",
-				},
-			},
+			Spec: v1alpha1.Zone{},
 			Meta: &test_model.ResourceMeta{
 				Name: "zone-2",
 			},

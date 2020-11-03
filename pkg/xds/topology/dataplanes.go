@@ -46,12 +46,34 @@ func ResolveAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.Datap
 	return nil
 }
 
+func ResolveIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.DataplaneResource) error {
+	if dataplane.Spec.Networking.Ingress.PublicAddress == "" { // Ingress may not have public address yet.
+		return nil
+	}
+	ips, err := lookupIPFunc(dataplane.Spec.Networking.Ingress.PublicAddress)
+	if err != nil {
+		return err
+	}
+	if len(ips) == 0 {
+		return errors.Errorf("can't resolve address %v", dataplane.Spec.Networking.Ingress.PublicAddress)
+	}
+	dataplane.Spec.Networking.Ingress.PublicAddress = ips[0].String()
+	return nil
+}
+
 func ResolveAddresses(log logr.Logger, lookupIPFunc lookup.LookupIPFunc, dataplanes []*core_mesh.DataplaneResource) []*core_mesh.DataplaneResource {
 	rv := []*core_mesh.DataplaneResource{}
 	for _, d := range dataplanes {
-		if err := ResolveAddress(lookupIPFunc, d); err != nil {
-			log.Error(err, "failed to resolve dataplane's domain name, skipping dataplane")
-			continue
+		if d.Spec.IsIngress() {
+			if err := ResolveIngressPublicAddress(lookupIPFunc, d); err != nil {
+				log.Error(err, "failed to resolve ingress's public name, skipping dataplane")
+				continue
+			}
+		} else {
+			if err := ResolveAddress(lookupIPFunc, d); err != nil {
+				log.Error(err, "failed to resolve dataplane's domain name, skipping dataplane")
+				continue
+			}
 		}
 		rv = append(rv, d)
 	}

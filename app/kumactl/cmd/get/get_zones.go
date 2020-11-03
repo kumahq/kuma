@@ -51,7 +51,7 @@ func newGetZonesCmd(pctx *listContext) *cobra.Command {
 
 func printZones(rootTime time.Time, zones *system.ZoneResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME", "INGRESS", "AGE"},
+		Headers: []string{"NAME", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -63,7 +63,6 @@ func printZones(rootTime time.Time, zones *system.ZoneResourceList, out io.Write
 
 				return []string{
 					zone.GetMeta().GetName(), // NAME
-					zone.Spec.GetIngress().GetAddress(),
 					table.TimeSince(zone.GetMeta().GetModificationTime(), rootTime), // AGE
 				}
 			}
