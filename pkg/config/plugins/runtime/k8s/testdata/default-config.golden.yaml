@@ -43,3 +43,4 @@ injector:
     labels:
       openshift.io/build.name: "*"
       openshift.io/deployer-pod-for.name: "*"
+marshalingCacheExpirationTime: 5m0s
