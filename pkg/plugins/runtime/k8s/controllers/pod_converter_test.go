@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/kumahq/kuma/pkg/dns"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -146,8 +146,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter: serviceGetter,
-				Zone:          "zone-1",
+				ServiceGetter:     serviceGetter,
+				Zone:              "zone-1",
+				ResourceConverter: k8s.NewSimpleConverter(),
 			}
 
 			// when

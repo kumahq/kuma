@@ -6,6 +6,14 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
+const (
+	// Constants for Locality Aware load balancing
+	// Highest priority 0 shall be assigned to all locally available services
+	// A priority of 1 is for ExternalServices and services exposed on neighboring ingress-es
+	priorityLocal  = 0
+	priorityRemote = 1
+)
+
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
 func BuildEndpointMap(
 	dataplanes []*mesh_core.DataplaneResource,
@@ -22,10 +30,11 @@ func BuildEndpointMap(
 				}
 				service := ingress.Tags[mesh_proto.ServiceTag]
 				outbound[service] = append(outbound[service], core_xds.Endpoint{
-					Target: dataplane.Spec.Networking.Address,
-					Port:   dataplane.Spec.Networking.Inbound[0].Port,
-					Tags:   ingress.Tags,
-					Weight: ingress.Instances,
+					Target:   dataplane.Spec.Networking.Address,
+					Port:     dataplane.Spec.Networking.Inbound[0].Port,
+					Tags:     ingress.Tags,
+					Weight:   ingress.Instances,
+					Locality: localityFromTags(mesh, priorityRemote, ingress.Tags),
 				})
 			}
 			continue
@@ -37,10 +46,11 @@ func BuildEndpointMap(
 				// TODO(yskopets): do we need to dedup?
 				// TODO(yskopets): sort ?
 				outbound[service] = append(outbound[service], core_xds.Endpoint{
-					Target: iface.DataplaneIP,
-					Port:   iface.DataplanePort,
-					Tags:   inbound.Tags,
-					Weight: 1,
+					Target:   iface.DataplaneIP,
+					Port:     iface.DataplanePort,
+					Tags:     inbound.Tags,
+					Weight:   1,
+					Locality: localityFromTags(mesh, priorityLocal, inbound.Tags),
 				})
 			}
 		}
@@ -56,7 +66,7 @@ func BuildEndpointMap(
 
 		tags := externalService.Spec.GetTags()
 		if tlsEnabled {
-			tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
+			tags[mesh_proto.ExternalServiceTag] = externalService.Meta.GetName()
 		}
 
 		outbound[service] = append(outbound[service], core_xds.Endpoint{
@@ -67,8 +77,30 @@ func BuildEndpointMap(
 			ExternalService: &core_xds.ExternalService{
 				TLSEnabled: tlsEnabled,
 			},
+			Locality: localityFromTags(mesh, priorityRemote, tags),
 		})
 	}
 
 	return outbound
+}
+
+func localityFromTags(mesh *mesh_core.MeshResource, priority uint32, tags map[string]string) *core_xds.Locality {
+	if !mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
+		return nil
+	}
+
+	region, regionPresent := tags[mesh_proto.RegionTag]
+	zone, zonePresent := tags[mesh_proto.ZoneTag]
+	subZone, subZonePresent := tags[mesh_proto.SubZoneTag]
+
+	if !regionPresent && !zonePresent && !subZonePresent {
+		return nil
+	}
+
+	return &core_xds.Locality{
+		Region:   region,
+		Zone:     zone,
+		SubZone:  subZone,
+		Priority: priority,
+	}
 }

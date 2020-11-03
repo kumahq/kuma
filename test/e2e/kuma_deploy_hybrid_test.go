@@ -138,7 +138,7 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote3...)).
-			Install(EchoServerUniversal(echoServerToken)).
+			Install(EchoServerUniversal("universal", echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
 			Setup(remote_3)
