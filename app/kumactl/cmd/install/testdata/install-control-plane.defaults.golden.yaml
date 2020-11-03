@@ -5557,6 +5557,7 @@ rules:
       - pods
       - services
       - configmaps
+      - nodes
     verbs:
       - get
       - list

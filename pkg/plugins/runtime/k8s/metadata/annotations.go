@@ -25,6 +25,14 @@ const (
 	// which is crucial for Multicluster communication
 	KumaIngressAnnotation = "kuma.io/ingress"
 
+	// KumaIngressPublicAddressAnnotation allows to pick public address for Ingress
+	// If not defined, Kuma will try to pick this address from the Ingress Service
+	KumaIngressPublicAddressAnnotation = "kuma.io/ingress-public-address"
+
+	// KumaIngressPublicPortAnnotation allows to pick public port for Ingress
+	// If not defined, Kuma will try to pick this address from the Ingress Service
+	KumaIngressPublicPortAnnotation = "kuma.io/ingress-public-port"
+
 	// KumaDirectAccess defines a comma-separated list of Services that will be accessed directly
 	KumaDirectAccess = "kuma.io/direct-access-services"
 

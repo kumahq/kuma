@@ -33,9 +33,11 @@ mesh: default
 name: dp-ingress
 networking:
   address: {{ address }}
-  ingress: {}
+  ingress:
+    publicAddress: %s
+    publicPort: %d
   inbound:
-  - port: %d	
+  - port: %d
     tags:
       kuma.io/service: ingress
 `

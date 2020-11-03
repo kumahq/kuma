@@ -364,6 +364,10 @@ func (m *Dataplane_Networking_Ingress) Validate() error {
 
 	}
 
+	// no validation rules for PublicAddress
+
+	// no validation rules for PublicPort
+
 	return nil
 }
 
