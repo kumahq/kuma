@@ -29,7 +29,7 @@ import (
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
-	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -110,7 +110,7 @@ func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 }
 
 func NewKubeAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
-	mgr, ok := k8s_runtime.FromManagerContext(rt.Extensions())
+	mgr, ok := k8s_extensions.FromManagerContext(rt.Extensions())
 	if !ok {
 		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}

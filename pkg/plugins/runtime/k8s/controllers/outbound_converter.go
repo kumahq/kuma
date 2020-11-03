@@ -5,13 +5,12 @@ import (
 	"strconv"
 	"strings"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/dns"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -27,7 +26,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 	dataplanes := []*core_mesh.DataplaneResource{}
 	for _, other := range others {
 		dp := &core_mesh.DataplaneResource{}
-		if err := k8s.DefaultConverter().ToCoreResource(other, dp); err != nil {
+		if err := p.ResourceConverter.ToCoreResource(other, dp); err != nil {
 			converterLog.Error(err, "failed to parse Dataplane", "dataplane", other.Spec)
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
@@ -36,7 +35,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 	externalServicesRes := []*core_mesh.ExternalServiceResource{}
 	for _, es := range externalServices {
 		res := &core_mesh.ExternalServiceResource{}
-		if err := k8s.DefaultConverter().ToCoreResource(es, res); err != nil {
+		if err := p.ResourceConverter.ToCoreResource(es, res); err != nil {
 			converterLog.Error(err, "failed to parse ExternalService", "externalService", es.Spec)
 			continue // one invalid ExternalService definition should not break the entire mesh
 		}

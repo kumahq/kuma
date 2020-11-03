@@ -231,7 +231,6 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	return nil
 }
 
-// HELLOOOO
 func (r *PodReconciler) createOrUpdateIngress(pod *kube_core.Pod, services []*kube_core.Service) error {
 	ctx := context.Background()
 
