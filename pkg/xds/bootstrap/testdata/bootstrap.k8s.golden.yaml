@@ -44,6 +44,10 @@ statsConfig:
       tagName: name
     - regex: ^grpc.*streams_closed(_([0-9]+))
       tagName: status
+    - regex: ^kafka(\.(\S*[0-9]))\.
+      tagName: kafka_name
+    - regex: ^kafka\..*\.(.*)
+      tagName: kafka_type
     - regex: (worker_([0-9]+)\.)
       tagName: worker
     - regex: ((.+?)\.)rbac\.

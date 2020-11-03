@@ -3,6 +3,7 @@ package listeners
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_kafka "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/kafka_broker/v2alpha1"
+
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 
 	"github.com/kumahq/kuma/pkg/util/proto"

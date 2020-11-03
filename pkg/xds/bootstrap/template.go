@@ -49,7 +49,7 @@ stats_config:
   - tag_name: status
     regex: '^grpc.*streams_closed(_([0-9]+))'
   - tag_name: kafka_name
-    regex:'^kafka(\.(\S*[0-9]))\.'
+    regex: '^kafka(\.(\S*[0-9]))\.'
   - tag_name: kafka_type
     regex: '^kafka\..*\.(.*)'
   - tag_name: worker
