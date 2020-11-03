@@ -4,6 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/core/validators"
+
 	"github.com/emicklei/go-restful"
 	"github.com/golang/protobuf/proto"
 
@@ -98,11 +100,23 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 		return
 	}
 
-	tags := parseTags(request.QueryParameters("tag"))
-	overviews.RetainGatewayDataplanes(request.QueryParameter("gateway"))
-	overviews.RetainIngressDataplanes(request.QueryParameter("ingress"))
+	mode, err := modeFromParameter(request, "gateway")
+	if err != nil {
+		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
+		return
+	}
+	overviews.RetainGatewayDataplanes(mode)
 
+	mode, err = modeFromParameter(request, "ingress")
+	if err != nil {
+		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
+		return
+	}
+	overviews.RetainIngressDataplanes(mode)
+
+	tags := parseTags(request.QueryParameters("tag"))
 	overviews.RetainMatchingTags(tags)
+
 	// pagination is not supported yet so we need to override pagination total items after retaining dataplanes
 	overviews.GetPagination().SetTotal(uint32(len(overviews.Items)))
 	restList := rest.From.ResourceList(&overviews)
@@ -144,4 +158,18 @@ func parseTags(queryParamValues []string) map[string]string {
 		tags[tagKv[0]] = tagKv[1]
 	}
 	return tags
+}
+
+func modeFromParameter(request *restful.Request, param string) (string, error) {
+	mode := strings.ToLower(request.QueryParameter(param))
+	if mode == "" || mode == "true" || mode == "false" {
+		return mode, nil
+	}
+
+	verr := validators.ValidationError{}
+	verr.AddViolationAt(
+		validators.RootedAt(request.SelectedRoutePath()).Field(param),
+		"shoud use `true` or `false` instead of "+mode)
+
+	return "", &verr
 }
