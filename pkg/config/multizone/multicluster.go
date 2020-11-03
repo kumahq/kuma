@@ -1,4 +1,4 @@
-package multicluster
+package multizone
 
 import (
 	"crypto/x509"
@@ -12,11 +12,11 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 )
 
-var _ config.Config = &MulticlusterConfig{}
+var _ config.Config = &MultizoneConfig{}
 
 // Global configuration
 type GlobalConfig struct {
-	PollTimeout time.Duration `yaml:"pollTimeout,omitempty" envconfig:"kuma_multicluster_global_poll_timeout"`
+	PollTimeout time.Duration `yaml:"pollTimeout,omitempty" envconfig:"kuma_multizone_global_poll_timeout"`
 	// KDS Configuration
 	KDS *KdsServerConfig `yaml:"kds,omitempty"`
 }
@@ -42,9 +42,9 @@ func DefaultGlobalConfig() *GlobalConfig {
 // Remote configuration
 type RemoteConfig struct {
 	// Kuma Zone name used to mark the remote dataplane resources
-	Zone string `yaml:"zone,omitempty" envconfig:"kuma_multicluster_remote_zone"`
+	Zone string `yaml:"zone,omitempty" envconfig:"kuma_multizone_remote_zone"`
 	// GlobalAddress URL of Global Kuma CP
-	GlobalAddress string `yaml:"globalAddress,omitempty" envconfig:"kuma_multicluster_remote_global_address"`
+	GlobalAddress string `yaml:"globalAddress,omitempty" envconfig:"kuma_multizone_remote_global_address"`
 	// KDS Configuration
 	KDS *KdsClientConfig `yaml:"kds,omitempty"`
 }
@@ -97,23 +97,23 @@ func DefaultRemoteConfig() *RemoteConfig {
 	}
 }
 
-// Multicluster configuration
-type MulticlusterConfig struct {
+// Multizone configuration
+type MultizoneConfig struct {
 	Global *GlobalConfig `yaml:"global,omitempty"`
 	Remote *RemoteConfig `yaml:"remote,omitempty"`
 }
 
-func (m *MulticlusterConfig) Sanitize() {
+func (m *MultizoneConfig) Sanitize() {
 	m.Global.Sanitize()
 	m.Remote.Sanitize()
 }
 
-func (m *MulticlusterConfig) Validate() error {
+func (m *MultizoneConfig) Validate() error {
 	panic("not implemented. Call Global and Remote validators as needed.")
 }
 
-func DefaultMulticlusterConfig() *MulticlusterConfig {
-	return &MulticlusterConfig{
+func DefaultMultizoneConfig() *MultizoneConfig {
+	return &MultizoneConfig{
 		Global: DefaultGlobalConfig(),
 		Remote: DefaultRemoteConfig(),
 	}

@@ -117,7 +117,7 @@ func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admi
 			Allowed: false,
 			Result: &metav1.Status{
 				Status:  "Failure",
-				Message: fmt.Sprintf("You are trying to apply a %s on %s CP. In multicluster setup, it should be only applied on %s CP and synced to %s CP.", resType, cpMode, otherCpMode, cpMode),
+				Message: fmt.Sprintf("You are trying to apply a %s on %s CP. In multizone setup, it should be only applied on %s CP and synced to %s CP.", resType, cpMode, otherCpMode, cpMode),
 				Reason:  "Forbidden",
 				Code:    403,
 				Details: &metav1.StatusDetails{
