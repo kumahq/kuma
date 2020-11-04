@@ -13,7 +13,7 @@ import (
 // List of priority for picking IP when Service that selects ingress is of type NodePort
 // We first try to find ExternalIP and then InternalIP.
 // ExternalIP will be available in public clouds like GCP, but not on Kind or Minikube.
-// On the other hand, on Kind with multicluster, there is a connectivity between clusters using InternalIP.
+// On the other hand, on Kind with multizone, there is a connectivity between clusters using InternalIP.
 // Technically there is a risk that we will pick InternalIP and other cluster will try to access it without connectivity between them.
 // However, in most cases, LoadBalancer will be used anyways, therefore we accept this risk.
 var NodePortAddressPriority = []kube_core.NodeAddressType{

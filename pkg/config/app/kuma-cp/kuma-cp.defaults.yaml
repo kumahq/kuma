@@ -279,30 +279,30 @@ dnsServer:
   # The CIDR range used to allocate
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
 
-# Multicluster mode
-multicluster:
+# Multizone mode
+multizone:
   global:
     # The Zone status poller timeout
-    pollTimeout: 500ms # ENV: KUMA_MULTICLUSTER_GLOBAL_POLL_TIMEOUT
+    pollTimeout: 500ms # ENV: KUMA_MULTIZONE_GLOBAL_POLL_TIMEOUT
     kds:
       # Port of a gRPC server that serves Kuma Discovery Service (KDS).
-      grpcPort: 5685 # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_GRPC_PORT
+      grpcPort: 5685 # ENV: KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT
       # Interval for refreshing state of the world
-      refreshInterval: 1s # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_REFRESH_INTERVAL
+      refreshInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL
       # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
-      tlsCertFile: # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE
+      tlsCertFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
       # TTlsKeyFile defines a path to a file with PEM-encoded TLS key.
-      tlsKeyFile: # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE
+      tlsKeyFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
   remote:
     # Kuma Zone name used to mark the remote dataplane resources
-    zone: "" # ENV: KUMA_MULTICLUSTER_REMOTE_ZONE
+    zone: "" # ENV: KUMA_MULTIZONE_REMOTE_ZONE
     # GlobalAddress URL of Global Kuma CP
-    globalAddress: # ENV KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
+    globalAddress: # ENV KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
     kds:
       # Interval for refreshing state of the world
-      refreshInterval: 1s # ENV: KUMA_MULTICLUSTER_REMOTE_KDS_REFRESH_INTERVAL
+      refreshInterval: 1s # ENV: KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
-      rootCaFile: # ENV: KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE
+      rootCaFile: # ENV: KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE
 
 # Diagnostics configuration
 diagnostics:

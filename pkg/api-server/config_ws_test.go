@@ -123,7 +123,7 @@ var _ = Describe("Config WS", func() {
             }
           },
           "mode": "standalone",
-          "multicluster": {
+          "multizone": {
             "global": {
               "pollTimeout": "500ms",
               "kds": {

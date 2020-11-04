@@ -40,9 +40,9 @@ func autoconfigureDpServerAuth(cfg *kuma_cp.Config) {
 }
 
 func autoconfigureServersTLS(cfg *kuma_cp.Config) {
-	if cfg.Multicluster.Global.KDS.TlsCertFile == "" {
-		cfg.Multicluster.Global.KDS.TlsCertFile = cfg.General.TlsCertFile
-		cfg.Multicluster.Global.KDS.TlsKeyFile = cfg.General.TlsKeyFile
+	if cfg.Multizone.Global.KDS.TlsCertFile == "" {
+		cfg.Multizone.Global.KDS.TlsCertFile = cfg.General.TlsCertFile
+		cfg.Multizone.Global.KDS.TlsKeyFile = cfg.General.TlsKeyFile
 	}
 	if cfg.DpServer.TlsCertFile == "" {
 		cfg.DpServer.TlsCertFile = cfg.General.TlsCertFile

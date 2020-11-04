@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config/multicluster"
+	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
@@ -22,11 +22,11 @@ type client struct {
 	callbacks Callbacks
 	globalURL string
 	clientID  string
-	config    multicluster.KdsClientConfig
+	config    multizone.KdsClientConfig
 	metrics   metrics.Metrics
 }
 
-func NewClient(globalURL string, clientID string, callbacks Callbacks, config multicluster.KdsClientConfig, metrics metrics.Metrics) component.Component {
+func NewClient(globalURL string, clientID string, callbacks Callbacks, config multizone.KdsClientConfig, metrics metrics.Metrics) component.Component {
 	return &client{
 		callbacks: callbacks,
 		globalURL: globalURL,

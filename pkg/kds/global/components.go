@@ -50,7 +50,7 @@ var (
 
 func Setup(rt runtime.Runtime) (err error) {
 	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes,
-		"global", rt.Config().Multicluster.Global.KDS.RefreshInterval,
+		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
 		ProvidedFilter, true)
 	if err != nil {
 		return err
@@ -78,7 +78,7 @@ func Setup(rt runtime.Runtime) (err error) {
 		}()
 		return nil
 	})
-	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().Multicluster.Global.KDS, rt.Metrics()))
+	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().Multizone.Global.KDS, rt.Metrics()))
 }
 
 func createZoneIfAbsent(name string, resManager manager.ResourceManager) (*system.ZoneResource, error) {

@@ -342,7 +342,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a TrafficRoute on remote CP. In multicluster setup, it should be only applied on global CP and synced to remote CP.",
+						Message: "You are trying to apply a TrafficRoute on remote CP. In multizone setup, it should be only applied on global CP and synced to remote CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -379,7 +379,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a Dataplane on global CP. In multicluster setup, it should be only applied on remote CP and synced to global CP.",
+						Message: "You are trying to apply a Dataplane on global CP. In multizone setup, it should be only applied on remote CP and synced to global CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{

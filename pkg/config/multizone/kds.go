@@ -1,4 +1,4 @@
-package multicluster
+package multizone
 
 import (
 	"time"
@@ -11,13 +11,13 @@ import (
 
 type KdsServerConfig struct {
 	// Port of a gRPC server that serves Kuma Discovery Service (KDS).
-	GrpcPort uint32 `yaml:"grpcPort" envconfig:"kuma_multicluster_global_kds_grpc_port"`
+	GrpcPort uint32 `yaml:"grpcPort" envconfig:"kuma_multizone_global_kds_grpc_port"`
 	// Interval for refreshing state of the world
-	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_multicluster_global_kds_refresh_interval"`
+	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_multizone_global_kds_refresh_interval"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert.
-	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_multicluster_global_kds_tls_cert_file"`
+	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_multizone_global_kds_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.
-	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_multicluster_global_kds_tls_key_file"`
+	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_multizone_global_kds_tls_key_file"`
 }
 
 var _ config.Config = &KdsServerConfig{}
@@ -43,9 +43,9 @@ func (c *KdsServerConfig) Validate() (errs error) {
 
 type KdsClientConfig struct {
 	// Interval for refreshing state of the world
-	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_multicluster_remote_kds_refresh_interval"`
+	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_multizone_remote_kds_refresh_interval"`
 	// RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify the server by using it.
-	RootCAFile string `yaml:"rootCaFile" envconfig:"kuma_multicluster_remote_kds_root_ca_file"`
+	RootCAFile string `yaml:"rootCaFile" envconfig:"kuma_multizone_remote_kds_root_ca_file"`
 }
 
 var _ config.Config = &KdsClientConfig{}
