@@ -13,9 +13,8 @@ import (
 )
 
 type Zone struct {
-	Name    string `json:"name"`
-	Address string `json:"url"`
-	Active  bool   `json:"active"`
+	Name   string `json:"name"`
+	Active bool   `json:"active"`
 }
 
 type Zones []Zone
@@ -54,9 +53,8 @@ func toZones(rlist system.ZoneOverviewResourceList) Zones {
 	var zones Zones
 	for _, overview := range rlist.Items {
 		zones = append(zones, Zone{
-			Name:    overview.GetMeta().GetName(),
-			Address: overview.Spec.Zone.Ingress.Address,
-			Active:  overview.Spec.ZoneInsight.IsOnline(),
+			Name:   overview.GetMeta().GetName(),
+			Active: overview.Spec.ZoneInsight.IsOnline(),
 		})
 	}
 	return zones

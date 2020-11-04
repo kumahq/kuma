@@ -468,6 +468,10 @@ var _ = Describe("ParseProtocol()", func() {
 			tag:      "grpc",
 			expected: ProtocolGRPC,
 		}),
+		Entry("kafka", testCase{
+			tag:      "kafka",
+			expected: ProtocolKafka,
+		}),
 		Entry("mongo", testCase{
 			tag:      "mongo",
 			expected: ProtocolUnknown,

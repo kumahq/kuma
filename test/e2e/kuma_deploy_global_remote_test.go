@@ -83,12 +83,6 @@ metadata:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(),
-			fmt.Sprintf(ZoneTemplateK8s,
-				remote.GetName(),
-				remote.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
 		// then
 		logs1, err := global.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
@@ -131,15 +125,13 @@ metadata:
 		}, time.Minute, DefaultTimeout).Should(BeTrue())
 
 		// then remote is online
-		found := false
+		active := true
 		for _, cluster := range clustersStatus {
-			if cluster.Address == remote.GetIngressAddress() {
-				Expect(cluster.Active).To(BeTrue())
-				found = true
-				break
+			if !cluster.Active {
+				active = false
 			}
 		}
-		Expect(found).To(BeTrue())
+		Expect(active).To(BeTrue())
 
 		// and dataplanes are synced to global
 		Eventually(func() string {

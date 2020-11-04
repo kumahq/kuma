@@ -1725,6 +1725,7 @@ _kumactl_inspect_dataplanes()
     flags_completion=()
 
     flags+=("--gateway")
+    flags+=("--ingress")
     flags+=("--tag=")
     two_word_flags+=("--tag")
     flags+=("--config-file=")

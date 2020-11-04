@@ -2,7 +2,6 @@ package framework
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
@@ -47,10 +46,6 @@ func (c *UniversalControlPlane) GetKumaCPLogs() (string, error) {
 
 func (c *UniversalControlPlane) GetKDSServerAddress() string {
 	return "grpcs://" + c.cluster.apps[AppModeCP].ip + ":5685"
-}
-
-func (c *UniversalControlPlane) GetIngressAddress() string {
-	return c.cluster.apps[AppIngress].ip + ":" + strconv.FormatUint(uint64(kdsPort), 10)
 }
 
 func (c *UniversalControlPlane) GetGlobaStatusAPI() string {

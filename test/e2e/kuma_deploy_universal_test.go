@@ -101,17 +101,6 @@ destinations:
 		err = remote_2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		remote_1CP := remote_1.GetKuma()
-		remote_2CP := remote_2.GetKuma()
-
-		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateUniversal, Kuma2, remote_1CP.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateUniversal, Kuma3, remote_2CP.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
 		err = YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "false"))(global)
 		Expect(err).ToNot(HaveOccurred())
 

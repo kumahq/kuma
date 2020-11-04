@@ -54,11 +54,7 @@ var _ = Describe("Global Sync", func() {
 			clientStreams = append(clientStreams, ss.ClientStream(stopCh))
 		}
 		zone := &system.ZoneResource{
-			Spec: system_proto.Zone{
-				Ingress: &system_proto.Zone_Ingress{
-					Address: "192.168.0.2:10001",
-				},
-			},
+			Spec: system_proto.Zone{},
 		}
 		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, zone))
 

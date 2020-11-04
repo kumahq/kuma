@@ -156,7 +156,6 @@ type ControlPlane interface {
 	GetName() string
 	GetKumaCPLogs() (string, error)
 	GetKDSServerAddress() string
-	GetIngressAddress() string
 	GetGlobaStatusAPI() string
 	GenerateDpToken(appname string) (string, error)
 }

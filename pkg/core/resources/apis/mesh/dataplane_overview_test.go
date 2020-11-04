@@ -148,7 +148,7 @@ var _ = Describe("DataplaneOverview", func() {
 			},
 		}
 		It("should retain gateway overviews", func() {
-			dataplanes.RetainGatewayDataplanes()
+			dataplanes.RetainGatewayDataplanes("true")
 			Expect(dataplanes).To(Equal(gatewayDataplanes))
 		})
 	})

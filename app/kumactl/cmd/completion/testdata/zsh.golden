@@ -705,6 +705,7 @@ function _kumactl_inspect {
 function _kumactl_inspect_dataplanes {
   _arguments \
     '--gateway[filter gateway dataplanes]' \
+    '--ingress[filter ingress dataplanes]' \
     '--tag[filter by tag in format of key=value. You can provide many tags]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
