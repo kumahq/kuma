@@ -135,7 +135,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 
 		BeforeEach(func() {
 			store = memory_resources.NewStore()
-			err := store.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey("default", "default"))
+			err := store.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		})
 

@@ -3,13 +3,13 @@ package dataplane_test
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
@@ -20,7 +20,7 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
-		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default"))
+		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
@@ -58,7 +58,7 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
-		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default"))
+		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
@@ -106,7 +106,7 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
-		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default"))
+		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
@@ -140,7 +140,7 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
-		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default"))
+		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given

@@ -54,7 +54,7 @@ var _ = Describe("Components", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and example mesh
-			opts := core_store.CreateByKey("demo", "demo")
+			opts := core_store.CreateByKey("demo", core_model.NoMesh)
 			err = runtime.ResourceManager().Create(context.Background(), &mesh_core.MeshResource{}, opts)
 			Expect(err).ToNot(HaveOccurred())
 

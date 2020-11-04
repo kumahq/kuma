@@ -21,8 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-type meshFromRequestFn = func(*restful.Request) string
-
 const (
 	k8sReadOnlyMessage = "On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply' or via the HTTP API." +
 		" As a best practice, you should always be using 'kubectl apply' instead." +

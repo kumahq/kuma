@@ -13,6 +13,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -160,7 +161,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 			// then
 			resource := mesh.MeshResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, name))
+			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Tracing.Backends[0].Name).To(Equal("zipkin-us"))
 		})
@@ -215,7 +216,7 @@ var _ = Describe("Resource Endpoints", func() {
 	})
 
 	Describe("On DELETE", func() {
-		FIt("should delete existing resource", func() {
+		It("should delete existing resource", func() {
 			// given
 			name := "mesh-1"
 			putMeshIntoStore(resourceStore, name, t1)
@@ -244,6 +245,6 @@ var _ = Describe("Resource Endpoints", func() {
 
 func putMeshIntoStore(resourceStore store.ResourceStore, name string, createdAt time.Time) {
 	resource := mesh.MeshResource{}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, ""), store.CreatedAt(createdAt))
+	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, model.NoMesh), store.CreatedAt(createdAt))
 	Expect(err).NotTo(HaveOccurred())
 }

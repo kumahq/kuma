@@ -15,6 +15,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -49,7 +50,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh1", "mesh1"), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh1", model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

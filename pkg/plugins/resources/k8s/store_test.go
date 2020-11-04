@@ -214,7 +214,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should set owner reference", func() {
 			// setup
 			mesh := core_mesh.MeshResource{}
-			err := s.Create(context.Background(), &mesh, store.CreateByKey("mesh", "mesh"))
+			err := s.Create(context.Background(), &mesh, store.CreateByKey("mesh", core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			err = k8sClient.Get(context.Background(), client.ObjectKey{Namespace: ns, Name: "mesh"}, &mesh_k8s.Mesh{})

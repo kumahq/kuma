@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -57,7 +58,7 @@ var _ = Describe("bootstrapGenerator", func() {
 
 		// when
 		meshRes := mesh.MeshResource{}
-		err := resManager.Create(context.Background(), &meshRes, store.CreateByKey("mesh", "mesh"))
+		err := resManager.Create(context.Background(), &meshRes, store.CreateByKey("mesh", model.NoMesh))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
