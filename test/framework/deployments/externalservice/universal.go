@@ -19,6 +19,7 @@ type universalDeployment struct {
 	ip        string
 	ports     map[string]string
 	name      string
+	cert      string
 	args      []string
 	app       *framework.SshApp
 }
@@ -28,7 +29,7 @@ var _ Deployment = &universalDeployment{}
 var UniversalAppEchoServer = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
 var UniversalAppHttpsEchoServer = []string{"ncat",
 	"-lk", "-p", "443",
-	"--ssl", "--ssl-cert", "/cert/server-cert.pem", "--ssl-key", "/cert/server-key.pem",
+	"--ssl", "--ssl-cert", "/server-cert.pem", "--ssl-key", "/server-key.pem",
 	"--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n HTTPS Echo\n\"'"}
 
 func (u *universalDeployment) Name() string {
@@ -62,6 +63,24 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 	verbose := false
 	port := u.ports["22"]
 	env := []string{}
+
+	// ceritficates
+	cert, key, err := framework.CreateCertsForIP(ip)
+	if err != nil {
+		return err
+	}
+
+	err = framework.NewSshApp(verbose, port, env, []string{"printf ", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
+	if err != nil {
+		panic(err)
+	}
+
+	err = framework.NewSshApp(verbose, port, env, []string{"printf ", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
+	if err != nil {
+		panic(err)
+	}
+
+	u.cert = cert
 	u.app = framework.NewSshApp(verbose, port, env, u.args)
 
 	err = u.app.Start()
@@ -113,4 +132,8 @@ func (u *universalDeployment) Delete(cluster framework.Cluster) error {
 
 func (u *universalDeployment) GetExternalAppAddress() string {
 	return u.ip
+}
+
+func (u *universalDeployment) GetCert() string {
+	return u.cert
 }

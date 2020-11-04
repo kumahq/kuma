@@ -8,6 +8,7 @@ import (
 
 type ExternalService interface {
 	GetExternalAppAddress() string
+	GetCert() string
 }
 
 type Deployment interface {

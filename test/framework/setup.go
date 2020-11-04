@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/tls"
+
 	"github.com/go-errors/errors"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -207,4 +209,13 @@ func (cs *ClusterSetup) Install(fn InstallFunc) *ClusterSetup {
 
 func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
+}
+
+func CreateCertsForIP(ip string) (cert, key string, err error) {
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, "localhost", ip)
+	if err != nil {
+		return "", "", err
+	}
+
+	return string(keyPair.CertPEM), string(keyPair.KeyPEM), nil
 }
