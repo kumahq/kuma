@@ -109,12 +109,18 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 }
 
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
-		Filter(r.auth()).
-		Doc(fmt.Sprintf("Updates a %s", r.Name)).
-		Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
-		Returns(200, "OK", nil).
-		Returns(201, "Created", nil))
+	if r.ReadOnly {
+		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResourceReadOnly).
+			Doc("Not allowed in read-only mode.").
+			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
+	} else {
+		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
+			Filter(r.auth()).
+			Doc(fmt.Sprintf("Updates a %s", r.Name)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
+			Returns(200, "OK", nil).
+			Returns(201, "Created", nil))
+	}
 }
 
 func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, response *restful.Response) {
@@ -166,12 +172,6 @@ func (r *resourceEndpoints) updateResource(ctx context.Context, res model.Resour
 	}
 }
 
-func (r *resourceEndpoints) addCreateOrUpdateEndpointReadOnly(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResourceReadOnly).
-		Doc("Not allowed in read-only mode.").
-		Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
-}
-
 func (r *resourceEndpoints) createOrUpdateResourceReadOnly(request *restful.Request, response *restful.Response) {
 	err := response.WriteErrorString(http.StatusMethodNotAllowed, r.readOnlyMessage())
 	if err != nil {
@@ -180,11 +180,17 @@ func (r *resourceEndpoints) createOrUpdateResourceReadOnly(request *restful.Requ
 }
 
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
-		Filter(r.auth()).
-		Doc(fmt.Sprintf("Deletes a %s", r.Name)).
-		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
-		Returns(200, "OK", nil))
+	if r.ReadOnly {
+		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResourceReadOnly).
+			Doc("Not allowed in read-only mode.").
+			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
+	} else {
+		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
+			Filter(r.auth()).
+			Doc(fmt.Sprintf("Deletes a %s", r.Name)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
+			Returns(200, "OK", nil))
+	}
 }
 
 func (r *resourceEndpoints) deleteResource(request *restful.Request, response *restful.Response) {
@@ -195,12 +201,6 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(response, err, "Could not delete a resource")
 	}
-}
-
-func (r *resourceEndpoints) addDeleteEndpointReadOnly(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResourceReadOnly).
-		Doc("Not allowed in read-only mode.").
-		Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 }
 
 func (r *resourceEndpoints) deleteResourceReadOnly(request *restful.Request, response *restful.Response) {

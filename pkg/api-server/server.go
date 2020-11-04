@@ -156,33 +156,28 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	zoneOverviewEndpoints.addListEndpoint(ws)
 
 	for _, definition := range defs {
+		if config.ReadOnly {
+			definition.ReadOnly = true
+		}
 		endpoints := resourceEndpoints{
 			mode:                 cfg.Mode,
 			publicURL:            config.Catalog.ApiServer.Url,
 			resManager:           resManager,
 			ResourceWsDefinition: definition,
-			adminAuth:            authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
+			adminAuth: authz.AdminAuth{
+				AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost,
+			},
 		}
 		switch definition.ResourceFactory().Scope() {
 		case model.ScopeMesh:
-			if config.ReadOnly || definition.ReadOnly {
-				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
-				endpoints.addDeleteEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
-			} else {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-			}
+			endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
 		case model.ScopeGlobal:
-			if config.ReadOnly || definition.ReadOnly {
-				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/"+definition.Path)
-				endpoints.addDeleteEndpointReadOnly(ws, "/"+definition.Path)
-			} else {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.Path)
-				endpoints.addDeleteEndpoint(ws, "/"+definition.Path)
-			}
+			endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.Path)
+			endpoints.addDeleteEndpoint(ws, "/"+definition.Path)
 			endpoints.addFindEndpoint(ws, "/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/"+definition.Path)
 		}
