@@ -154,6 +154,12 @@ func GetByKey(name, mesh string) GetOptionsFunc {
 	}
 }
 
+func GetByName(name string) GetOptionsFunc {
+	return func(opts *GetOptions) {
+		opts.Name = name
+	}
+}
+
 func GetByVersion(version string) GetOptionsFunc {
 	return func(opts *GetOptions) {
 		opts.Version = version

@@ -27,8 +27,8 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/tokens/builtin"
@@ -140,13 +140,13 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 
 func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, cfg *kuma_cp.Config) {
 	config := cfg.ApiServer
-	endpoints := dataplaneOverviewEndpoints{
+	dpOverviewEndpoints := dataplaneOverviewEndpoints{
 		publicURL:  config.Catalog.ApiServer.Url,
 		resManager: resManager,
 	}
-	endpoints.addListEndpoint(ws, "/meshes/{mesh}")
-	endpoints.addFindEndpoint(ws, "/meshes/{mesh}")
-	endpoints.addListEndpoint(ws, "") // listing all resources in all meshes
+	dpOverviewEndpoints.addListEndpoint(ws, "/meshes/{mesh}")
+	dpOverviewEndpoints.addFindEndpoint(ws, "/meshes/{mesh}")
+	dpOverviewEndpoints.addListEndpoint(ws, "") // listing all resources in all meshes
 
 	zoneOverviewEndpoints := zoneOverviewEndpoints{
 		publicURL:  config.Catalog.ApiServer.Url,
@@ -156,52 +156,15 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	zoneOverviewEndpoints.addListEndpoint(ws)
 
 	for _, definition := range defs {
-		switch definition.ResourceFactory().GetType() {
-		case mesh.MeshType:
-			endpoints := resourceEndpoints{
-				mode:                 cfg.Mode,
-				publicURL:            config.Catalog.ApiServer.Url,
-				resManager:           resManager,
-				ResourceWsDefinition: definition,
-				meshFromRequest:      meshFromPathParam("name"),
-				adminAuth:            authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
-			}
-			if config.ReadOnly || definition.ReadOnly {
-				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
-				endpoints.addDeleteEndpointReadOnly(ws, "/meshes")
-			} else {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
-				endpoints.addDeleteEndpoint(ws, "/meshes")
-			}
-			endpoints.addFindEndpoint(ws, "/meshes")
-			endpoints.addListEndpoint(ws, "/meshes")
-		case system.ZoneType:
-			endpoints := resourceEndpoints{
-				publicURL:            config.Catalog.ApiServer.Url,
-				resManager:           resManager,
-				ResourceWsDefinition: definition,
-				meshFromRequest: func(request *restful.Request) string {
-					return "default"
-				},
-				adminAuth: authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
-			}
-			if config.ReadOnly || definition.ReadOnly {
-				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/zones")
-				endpoints.addDeleteEndpointReadOnly(ws, "/zones")
-			} else {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/zones")
-				endpoints.addDeleteEndpoint(ws, "/zones")
-			}
-			endpoints.addFindEndpoint(ws, "/zones")
-			endpoints.addListEndpoint(ws, "/zones")
-		default:
-			endpoints := resourceEndpoints{
-				publicURL:            config.Catalog.ApiServer.Url,
-				resManager:           resManager,
-				ResourceWsDefinition: definition,
-				meshFromRequest:      meshFromPathParam("mesh"),
-				adminAuth:            authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
-			}
+		endpoints := resourceEndpoints{
+			mode:                 cfg.Mode,
+			publicURL:            config.Catalog.ApiServer.Url,
+			resManager:           resManager,
+			ResourceWsDefinition: definition,
+			adminAuth:            authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
+		}
+		switch definition.ResourceFactory().Scope() {
+		case model.ScopeMesh:
 			if config.ReadOnly || definition.ReadOnly {
 				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
 				endpoints.addDeleteEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
@@ -212,6 +175,16 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
+		case model.ScopeGlobal:
+			if config.ReadOnly || definition.ReadOnly {
+				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/"+definition.Path)
+				endpoints.addDeleteEndpointReadOnly(ws, "/"+definition.Path)
+			} else {
+				endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.Path)
+				endpoints.addDeleteEndpoint(ws, "/"+definition.Path)
+			}
+			endpoints.addFindEndpoint(ws, "/"+definition.Path)
+			endpoints.addListEndpoint(ws, "/"+definition.Path)
 		}
 	}
 }

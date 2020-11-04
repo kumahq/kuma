@@ -215,7 +215,7 @@ var _ = Describe("Resource Endpoints", func() {
 	})
 
 	Describe("On DELETE", func() {
-		It("should delete existing resource", func() {
+		FIt("should delete existing resource", func() {
 			// given
 			name := "mesh-1"
 			putMeshIntoStore(resourceStore, name, t1)
@@ -244,6 +244,6 @@ var _ = Describe("Resource Endpoints", func() {
 
 func putMeshIntoStore(resourceStore store.ResourceStore, name string, createdAt time.Time) {
 	resource := mesh.MeshResource{}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, name), store.CreatedAt(createdAt))
+	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, ""), store.CreatedAt(createdAt))
 	Expect(err).NotTo(HaveOccurred())
 }

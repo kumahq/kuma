@@ -7,8 +7,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 )
 
@@ -36,13 +34,13 @@ func zonesWs(resManager manager.ResourceManager) *restful.WebService {
 
 func fetchOverviews(resManager manager.ResourceManager, ctx context.Context) (system.ZoneOverviewResourceList, error) {
 	zones := system.ZoneResourceList{}
-	if err := resManager.List(ctx, &zones, store.ListByMesh(core_model.DefaultMesh)); err != nil {
+	if err := resManager.List(ctx, &zones); err != nil {
 		return system.ZoneOverviewResourceList{}, err
 	}
 
 	// we cannot paginate insights since there is no guarantee that the elements will be the same as dataplanes
 	insights := system.ZoneInsightResourceList{}
-	if err := resManager.List(ctx, &insights, store.ListByMesh(core_model.DefaultMesh)); err != nil {
+	if err := resManager.List(ctx, &insights); err != nil {
 		return system.ZoneOverviewResourceList{}, err
 	}
 

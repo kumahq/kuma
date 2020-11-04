@@ -33,17 +33,10 @@ const (
 		" You can still use 'kumactl' or the HTTP API to modify the rest of the resource on the global control plane.\n"
 )
 
-func meshFromPathParam(param string) meshFromRequestFn {
-	return func(request *restful.Request) string {
-		return request.PathParameter(param)
-	}
-}
-
 type resourceEndpoints struct {
-	mode            config_core.CpMode
-	publicURL       string
-	resManager      manager.ResourceManager
-	meshFromRequest meshFromRequestFn
+	mode       config_core.CpMode
+	publicURL  string
+	resManager manager.ResourceManager
 	definitions.ResourceWsDefinition
 	adminAuth authz.AdminAuth
 }
@@ -221,6 +214,7 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	var err validators.ValidationError
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
+
 	if name != resource.Meta.Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
 	}
@@ -232,6 +226,13 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	}
 	err.AddError("", mesh.ValidateMeta(name, meshName, r.ResourceFactory().Scope()))
 	return err.OrNil()
+}
+
+func (r *resourceEndpoints) meshFromRequest(request *restful.Request) string {
+	if r.ResourceFactory().Scope() == model.ScopeMesh {
+		return request.PathParameter("mesh")
+	}
+	return ""
 }
 
 func (r *resourceEndpoints) readOnlyMessage() string {

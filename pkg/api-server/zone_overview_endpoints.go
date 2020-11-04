@@ -9,7 +9,6 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
@@ -51,12 +50,12 @@ func (r *zoneOverviewEndpoints) inspectZone(request *restful.Request, response *
 
 func (r *zoneOverviewEndpoints) fetchOverview(ctx context.Context, name string) (*system.ZoneOverviewResource, error) {
 	zone := system.ZoneResource{}
-	if err := r.resManager.Get(ctx, &zone, store.GetByKey(name, core_model.DefaultMesh)); err != nil {
+	if err := r.resManager.Get(ctx, &zone, store.GetByName(name)); err != nil {
 		return nil, err
 	}
 
 	insight := system.ZoneInsightResource{}
-	err := r.resManager.Get(ctx, &insight, store.GetByKey(name, core_model.DefaultMesh))
+	err := r.resManager.Get(ctx, &insight, store.GetByName(name))
 	if err != nil && !store.IsResourceNotFound(err) { // It's fine to have zone without insight
 		return nil, err
 	}
@@ -77,7 +76,7 @@ func (r *zoneOverviewEndpoints) inspectZones(request *restful.Request, response 
 		return
 	}
 
-	overviews, err := r.fetchOverviews(request.Request.Context(), page, core_model.DefaultMesh)
+	overviews, err := r.fetchOverviews(request.Request.Context(), page)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
@@ -97,15 +96,15 @@ func (r *zoneOverviewEndpoints) inspectZones(request *restful.Request, response 
 	}
 }
 
-func (r *zoneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string) (system.ZoneOverviewResourceList, error) {
+func (r *zoneOverviewEndpoints) fetchOverviews(ctx context.Context, p page) (system.ZoneOverviewResourceList, error) {
 	zones := system.ZoneResourceList{}
-	if err := r.resManager.List(ctx, &zones, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset)); err != nil {
+	if err := r.resManager.List(ctx, &zones, store.ListByPage(p.size, p.offset)); err != nil {
 		return system.ZoneOverviewResourceList{}, err
 	}
 
 	// we cannot paginate insights since there is no guarantee that the elements will be the same as dataplanes
 	insights := system.ZoneInsightResourceList{}
-	if err := r.resManager.List(ctx, &insights, store.ListByMesh(meshName)); err != nil {
+	if err := r.resManager.List(ctx, &insights); err != nil {
 		return system.ZoneOverviewResourceList{}, err
 	}
 
