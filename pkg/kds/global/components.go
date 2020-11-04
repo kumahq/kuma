@@ -83,7 +83,7 @@ func Setup(rt runtime.Runtime) (err error) {
 
 func createZoneIfAbsent(name string, resManager manager.ResourceManager) (*system.ZoneResource, error) {
 	zone := &system.ZoneResource{}
-	if err := resManager.Get(context.Background(), zone, store.GetByName(name)); err != nil {
+	if err := resManager.Get(context.Background(), zone, store.GetByKey(name, model.NoMesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
 			return nil, err
 		}

@@ -68,7 +68,7 @@ start/postgres: ## Boostrap: start Postgres for Control Plane with initial schem
 	$(TOOLS_DIR)/postgres/wait-for-postgres.sh 15432
 
 .PHONY: stop/postgres
-stop/postgres: ## Boostrap: stop Postgres for Control Plane with initial schema
+stop/postgres: ## Boostrap: stop Postgres
 	docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml down
 
 .PHONY: start/postgres/ssl
@@ -77,7 +77,7 @@ start/postgres/ssl: ## Boostrap: start Postgres for Control Plane with initial s
 	$(TOOLS_DIR)/postgres/wait-for-postgres.sh 15432
 
 .PHONY: stop/postgres/ssl
-stop/postgres/ssl: ## Boostrap: stop Postgres for Control Plane with initial schema and SSL enabled
+stop/postgres/ssl: ## Boostrap: stop Postgres with SSL enabled
 	docker-compose -f $(TOOLS_DIR)/postgres/ssl/docker-compose.yaml stop
 
 .PHONY: run/kuma-dp

@@ -9,6 +9,7 @@ import (
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
@@ -50,12 +51,12 @@ func (r *zoneOverviewEndpoints) inspectZone(request *restful.Request, response *
 
 func (r *zoneOverviewEndpoints) fetchOverview(ctx context.Context, name string) (*system.ZoneOverviewResource, error) {
 	zone := system.ZoneResource{}
-	if err := r.resManager.Get(ctx, &zone, store.GetByName(name)); err != nil {
+	if err := r.resManager.Get(ctx, &zone, store.GetByKey(name, model.NoMesh)); err != nil {
 		return nil, err
 	}
 
 	insight := system.ZoneInsightResource{}
-	err := r.resManager.Get(ctx, &insight, store.GetByName(name))
+	err := r.resManager.Get(ctx, &insight, store.GetByKey(name, model.NoMesh))
 	if err != nil && !store.IsResourceNotFound(err) { // It's fine to have zone without insight
 		return nil, err
 	}

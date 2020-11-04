@@ -67,7 +67,7 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return err
 			}
 
-			mesh := ""
+			mesh := model.NoMesh
 			if resource.Scope() == model.ScopeMesh {
 				mesh = pctx.CurrentMesh()
 			}
