@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 
+	"github.com/kumahq/kuma/pkg/events"
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -171,16 +172,21 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if err != nil {
 		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
 	}
-	if rs, err := plugin.NewResourceStore(builder, pluginConfig); err != nil {
+	rs, err := plugin.NewResourceStore(builder, pluginConfig)
+	if err != nil {
 		return err
-	} else {
-		meteredStore, err := metrics_store.NewMeteredStore(rs, builder.Metrics())
-		if err != nil {
-			return err
-		}
-		builder.WithResourceStore(meteredStore)
-		return nil
 	}
+	meteredStore, err := metrics_store.NewMeteredStore(rs, builder.Metrics())
+	if err != nil {
+		return err
+	}
+	builder.WithResourceStore(meteredStore)
+	eventBus := events.NewEventBus()
+	if err := plugin.EventListener(builder, eventBus); err != nil {
+		return err
+	}
+	builder.WithEventReaderFactory(eventBus)
+	return nil
 }
 
 func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) error {

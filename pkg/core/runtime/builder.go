@@ -5,6 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/events"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -35,6 +37,7 @@ type BuilderContext interface {
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	Metrics() metrics.Metrics
+	EventReaderFactory() events.ReaderFactory
 }
 
 var _ BuilderContext = &Builder{}
@@ -57,6 +60,7 @@ type Builder struct {
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
+	erf      events.ReaderFactory
 	*runtimeInfo
 }
 
@@ -156,6 +160,11 @@ func (b *Builder) WithMetrics(metrics metrics.Metrics) *Builder {
 	return b
 }
 
+func (b *Builder) WithEventReaderFactory(erf events.ReaderFactory) *Builder {
+	b.erf = erf
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -190,6 +199,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.metrics == nil {
 		return nil, errors.Errorf("Metrics has not been configured")
 	}
+	if b.erf == nil {
+		return nil, errors.Errorf("EventReaderFactory has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -206,6 +218,7 @@ func (b *Builder) Build() (Runtime, error) {
 			leadInfo: b.leadInfo,
 			lif:      b.lif,
 			metrics:  b.metrics,
+			erf:      b.erf,
 		},
 		Manager: b.cm,
 	}, nil
@@ -258,4 +271,7 @@ func (b *Builder) LookupIP() lookup.LookupIPFunc {
 }
 func (b *Builder) Metrics() metrics.Metrics {
 	return b.metrics
+}
+func (b *Builder) EventReaderFactory() events.ReaderFactory {
+	return b.erf
 }

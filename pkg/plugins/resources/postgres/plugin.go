@@ -6,6 +6,8 @@ import (
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/events"
+	postgres_events "github.com/kumahq/kuma/pkg/plugins/resources/postgres/events"
 )
 
 var _ core_plugins.ResourceStorePlugin = &plugin{}
@@ -37,4 +39,8 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 		return 0, errors.New("invalid type of the config. Passed config should be a PostgresStoreConfig")
 	}
 	return migrateDb(*cfg)
+}
+
+func (p *plugin) EventListener(pc core_plugins.PluginContext, out events.Writer) error {
+	return pc.ComponentManager().Add(postgres_events.NewListener(*pc.Config().Store.Postgres, out))
 }
