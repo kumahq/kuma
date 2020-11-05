@@ -322,7 +322,7 @@ var _ = Describe("KubernetesStore", func() {
 			mesh := &core_mesh.MeshResource{}
 
 			// when
-			err := s.Get(context.Background(), mesh, store.GetByKey(name, name))
+			err := s.Get(context.Background(), mesh, store.GetByKey(name, core_model.NoMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

@@ -86,9 +86,6 @@ func (s *strictResourceStore) Get(ctx context.Context, r model.Resource, fs ...G
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Get() requires options.Name to be a non-empty value")
 	}
-	if opts.Mesh == "" {
-		return fmt.Errorf("ResourceStore.Get() requires options.Mesh to be a non-empty value")
-	}
 	return s.delegate.Get(ctx, r, fs...)
 }
 func (s *strictResourceStore) List(ctx context.Context, rs model.ResourceList, fs ...ListOptionsFunc) error {
