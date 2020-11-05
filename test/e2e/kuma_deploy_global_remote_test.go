@@ -99,6 +99,11 @@ metadata:
 	})
 
 	AfterEach(func() {
+		defer func() {
+			// restore the original namespace
+			KumaNamespace = originalKumaNamespace
+		}()
+
 		err := c2.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -107,9 +112,6 @@ metadata:
 
 		err = c2.DeleteKuma(optsRemote...)
 		Expect(err).ToNot(HaveOccurred())
-
-		// restore the original namespace
-		KumaNamespace = originalKumaNamespace
 	})
 
 	It("should deploy Remote and Global on 2 clusters", func() {
