@@ -489,7 +489,7 @@ var _ = Describe("KubernetesStore", func() {
 			actual := &core_mesh.MeshResource{}
 
 			// when
-			err := s.Get(context.Background(), actual, store.GetByKey(name, name))
+			err := s.Get(context.Background(), actual, store.GetByKey(name, core_model.NoMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -561,7 +561,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// when
-			err := s.Delete(context.Background(), &core_mesh.MeshResource{}, store.DeleteByKey(name, name))
+			err := s.Delete(context.Background(), &core_mesh.MeshResource{}, store.DeleteByKey(name, core_model.NoMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -694,7 +694,7 @@ var _ = Describe("KubernetesStore", func() {
 			}))
 
 			// when
-			err = s.Delete(context.Background(), &core_mesh.MeshResource{}, store.DeleteByKey("demo", "demo"))
+			err = s.Delete(context.Background(), &core_mesh.MeshResource{}, store.DeleteByKey("demo", core_model.NoMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
