@@ -62,12 +62,12 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	cmd := []string{"kuma-cp", "run"}
 	env := []string{"KUMA_MODE=" + mode}
 	if opts.globalAddress != "" {
-		env = append(env, "KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
+		env = append(env, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
 	}
 
 	switch mode {
 	case core.Remote:
-		env = append(env, "KUMA_MULTICLUSTER_REMOTE_ZONE="+c.name)
+		env = append(env, "KUMA_MULTIZONE_REMOTE_ZONE="+c.name)
 	case core.Global:
 		cmd = append(cmd, "--config-file", confPath)
 	}

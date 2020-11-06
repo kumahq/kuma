@@ -103,7 +103,7 @@ func initializeMetrics(builder *core_runtime.Builder) error {
 	zone := ""
 	switch builder.Config().Mode {
 	case config_core.Remote:
-		zone = builder.Config().Multicluster.Remote.Zone
+		zone = builder.Config().Multizone.Remote.Zone
 	case config_core.Global:
 		zone = "Global"
 	case config_core.Standalone:
@@ -255,7 +255,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator)
 	customManagers[mesh.MeshType] = meshManager
 
-	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multicluster.Remote.Zone)
+	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Remote.Zone)
 	customManagers[mesh.DataplaneType] = dpManager
 
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)

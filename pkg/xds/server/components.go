@@ -193,7 +193,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 		return nil, err
 	}
 	claCache, err := cla.NewCache(
-		rt.ReadOnlyResourceManager(), rt.DataSourceLoader(), rt.Config().Multicluster.Remote.Zone,
+		rt.ReadOnlyResourceManager(), rt.DataSourceLoader(), rt.Config().Multizone.Remote.Zone,
 		rt.Config().Store.Cache.ExpirationTime, rt.LookupIP(), rt.Metrics())
 	if err != nil {
 		return nil, err
@@ -292,7 +292,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 
 				// resolve all endpoints that match given selectors
 				outbound := xds_topology.BuildEndpointMap(
-					mesh, rt.Config().Multicluster.Remote.Zone,
+					mesh, rt.Config().Multizone.Remote.Zone,
 					dataplanes.Items, externalServices.Items, rt.DataSourceLoader())
 
 				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())

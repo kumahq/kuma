@@ -203,9 +203,9 @@ Resources:
           Environment:
             - Name: KUMA_MODE
               Value: remote
-            - Name: KUMA_MULTICLUSTER_REMOTE_ZONE
+            - Name: KUMA_MULTIZONE_REMOTE_ZONE
               Value: !Ref Zone
-            - Name: KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
+            - Name: KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
               Value: !Ref KumaCPGlobal
             - Name: KUMA_GENERAL_ADVERTISED_HOSTNAME
               Value: !Join [ "-", [ !Ref Zone, "controlplane.kuma.io" ] ]

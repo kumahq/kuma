@@ -5801,7 +5801,7 @@ spec:
               value: /var/run/secrets/kuma.io/tls-cert/tls.crt
             - name: KUMA_GENERAL_TLS_KEY_FILE
               value: /var/run/secrets/kuma.io/tls-cert/tls.key
-            - name: KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
+            - name: KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
               value: grpcs://192.168.0.1:5685
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
@@ -5821,7 +5821,7 @@ spec:
               value: "false"
             - name: KUMA_MODE
               value: "remote"
-            - name: KUMA_MULTICLUSTER_REMOTE_ZONE
+            - name: KUMA_MULTIZONE_REMOTE_ZONE
               value: "zone-1"
             - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
               value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.crt
@@ -5829,11 +5829,11 @@ spec:
               value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.key
             - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
               value: /var/run/secrets/kuma.io/api-server-client-certs/
-            - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE
+            - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
               value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
-            - name: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE
+            - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
               value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
-            - name: KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE
+            - name: KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE
               value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
           args:
             - run

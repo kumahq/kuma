@@ -6,6 +6,7 @@ metadata:
   name: kuma-metrics
   annotations:
     kuma.io/sidecar-injection: enabled
+    kuma.io/mesh: default
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -6464,7 +6465,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTICLUSTER_GLOBAL_KDS_REFRESH_INTERVAL",
+          "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -6903,7 +6904,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTICLUSTER_REMOTE_KDS_REFRESH_INTERVAL",
+          "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL",
           "fieldConfig": {
             "defaults": {
               "custom": {}

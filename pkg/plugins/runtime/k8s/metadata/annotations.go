@@ -22,7 +22,7 @@ const (
 	KumaGatewayAnnotation = "kuma.io/gateway"
 
 	// KumaIngressAnnotation allows to mark pod with Kuma Ingress
-	// which is crucial for Multicluster communication
+	// which is crucial for Multizone communication
 	KumaIngressAnnotation = "kuma.io/ingress"
 
 	// KumaIngressPublicAddressAnnotation allows to pick public address for Ingress

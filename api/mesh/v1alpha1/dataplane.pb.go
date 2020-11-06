@@ -177,9 +177,11 @@ func (m *Dataplane_Networking) GetTransparentProxying() *Dataplane_Networking_Tr
 // that cluster.
 type Dataplane_Networking_Ingress struct {
 	AvailableServices []*Dataplane_Networking_Ingress_AvailableService `protobuf:"bytes,1,rep,name=availableServices,proto3" json:"availableServices,omitempty"`
-	// PublicAddress defines IP or DNS name on which Ingress is accessible to other Kuma clusters.
+	// PublicAddress defines IP or DNS name on which Ingress is accessible to
+	// other Kuma clusters.
 	PublicAddress string `protobuf:"bytes,2,opt,name=publicAddress,proto3" json:"publicAddress,omitempty"`
-	// PublicPort defines port on which Ingress is accessible to other Kuma clusters.
+	// PublicPort defines port on which Ingress is accessible to other Kuma
+	// clusters.
 	PublicPort           uint32   `protobuf:"varint,3,opt,name=publicPort,proto3" json:"publicPort,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
