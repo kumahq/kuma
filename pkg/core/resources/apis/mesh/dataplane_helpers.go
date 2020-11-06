@@ -141,3 +141,11 @@ func (d *DataplaneResource) GetIP() string {
 	}
 	return d.Spec.Networking.Address
 }
+
+func (d *DataplaneResource) Clone() *DataplaneResource {
+	dpSpec := proto.Clone(&d.Spec).(*mesh_proto.Dataplane)
+	return &DataplaneResource{
+		Meta: d.Meta,
+		Spec: *dpSpec,
+	}
+}
