@@ -1,13 +1,11 @@
 package bootstrap
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
@@ -23,7 +21,6 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 		return err
 	}
 	autoconfigureServersTLS(cfg)
-	autoconfigureCatalog(cfg)
 	autoconfigBootstrapXdsParams(cfg)
 	return nil
 }
@@ -57,8 +54,8 @@ func autoconfigureServersTLS(cfg *kuma_cp.Config) {
 func autoconfigureTLS(cfg *kuma_cp.Config) error {
 	if cfg.General.TlsCertFile == "" {
 		hosts := []string{
-			cfg.General.AdvertisedHostname,
 			"localhost",
+			"127.0.0.1",
 		}
 		cert, err := tls.NewSelfSignedCert("kuma-control-plane", tls.ServerCertType, hosts...)
 		if err != nil {
@@ -75,39 +72,7 @@ func autoconfigureTLS(cfg *kuma_cp.Config) error {
 	return nil
 }
 
-func autoconfigureCatalog(cfg *kuma_cp.Config) {
-	bootstrapUrl := cfg.ApiServer.Catalog.Bootstrap.Url
-	if len(bootstrapUrl) == 0 {
-		bootstrapUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.DpServer.Port)
-	}
-	madsUrl := cfg.ApiServer.Catalog.MonitoringAssignment.Url
-	if len(madsUrl) == 0 {
-		madsUrl = fmt.Sprintf("grpc://%s:%d", cfg.General.AdvertisedHostname, cfg.MonitoringAssignmentServer.GrpcPort)
-	}
-	cat := &catalog.CatalogConfig{
-		ApiServer: catalog.ApiServerConfig{
-			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.ApiServer.HTTP.Port),
-		},
-		Bootstrap: catalog.BootstrapApiConfig{
-			Url: bootstrapUrl,
-		},
-		MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
-			Url: madsUrl,
-		},
-		Sds: catalog.SdsApiConfig{
-			Url: cfg.ApiServer.Catalog.Sds.Url,
-		},
-	}
-	if cfg.DpServer.Auth.Type == dp_server.DpServerAuthDpToken {
-		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.ApiServer.HTTP.Port)
-	}
-	cfg.ApiServer.Catalog = cat
-}
-
 func autoconfigBootstrapXdsParams(cfg *kuma_cp.Config) {
-	if cfg.BootstrapServer.Params.XdsHost == "" {
-		cfg.BootstrapServer.Params.XdsHost = cfg.General.AdvertisedHostname
-	}
 	if cfg.BootstrapServer.Params.XdsPort == 0 {
 		cfg.BootstrapServer.Params.XdsPort = uint32(cfg.DpServer.Port)
 	}
