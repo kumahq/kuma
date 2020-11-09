@@ -134,7 +134,7 @@ type Cluster interface {
 	VerifyKuma() error
 	RestartKuma() error
 	DeleteKuma(opts ...DeployOptionsFunc) error
-	InjectDNS() error
+	InjectDNS(namespace ...string) error
 	GetKumactlOptions() *KumactlOptions
 	Deployment(name string) Deployment
 	Deploy(deployment Deployment) error

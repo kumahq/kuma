@@ -54,7 +54,7 @@ func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
 
 func KumaDNS() InstallFunc {
 	return func(cluster Cluster) error {
-		err := cluster.InjectDNS()
+		err := cluster.InjectDNS(KumaNamespace)
 		return err
 	}
 }

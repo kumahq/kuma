@@ -179,12 +179,12 @@ func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
 	return c.kumactl.KumactlInstallCP(c.mode, args...)
 }
 
-func (c *K8sControlPlane) InjectDNS() error {
+func (c *K8sControlPlane) InjectDNS(args ...string) error {
 	// store the kumactl environment
 	oldEnv := c.kumactl.Env
 	c.kumactl.Env["KUBECONFIG"] = c.GetKubectlOptions().ConfigPath
 
-	yaml, err := c.kumactl.RunKumactlAndGetOutput("install", "dns")
+	yaml, err := c.kumactl.KumactlInstallDNS(args...)
 	if err != nil {
 		return err
 	}

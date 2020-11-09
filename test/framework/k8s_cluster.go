@@ -248,6 +248,7 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 
 func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (string, error) {
 	argsMap := map[string]string{
+		"--namespace":               KumaNamespace,
 		"--control-plane-registry":  KumaImageRegistry,
 		"--dataplane-registry":      KumaImageRegistry,
 		"--dataplane-init-registry": KumaImageRegistry,
@@ -636,8 +637,13 @@ func (c *K8sCluster) DeleteApp(namespace, appname string) error {
 	return nil
 }
 
-func (c *K8sCluster) InjectDNS() error {
-	return c.controlplane.InjectDNS()
+func (c *K8sCluster) InjectDNS(namespace ...string) error {
+	args := []string{}
+	if len(namespace) > 0 {
+		args = append(args, "--namespace", namespace[0])
+	}
+
+	return c.controlplane.InjectDNS(args...)
 }
 
 func (c *K8sCluster) GetTesting() testing.TestingT {

@@ -808,6 +808,7 @@ function _kumactl_install_control-plane {
 
 function _kumactl_install_dns {
   _arguments \
+    '--namespace[namespace to look for Kuma Control Plane service]:' \
     '--port[port of the Kuma DNS server]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
