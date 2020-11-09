@@ -37,8 +37,11 @@ metadata:
 	var c1, c2 Cluster
 	var global, remote ControlPlane
 	var optsGlobal, optsRemote []DeployOptionsFunc
+	var originalKumaNamespace = KumaNamespace
 
 	BeforeEach(func() {
+		// set the new namespace
+		KumaNamespace = "other-kuma-system"
 		var err error
 		clusters, err = NewK8sClusters(
 			[]string{Kuma1, Kuma2},
@@ -96,6 +99,11 @@ metadata:
 	})
 
 	AfterEach(func() {
+		defer func() {
+			// restore the original namespace
+			KumaNamespace = originalKumaNamespace
+		}()
+
 		err := c2.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
