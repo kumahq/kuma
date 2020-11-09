@@ -51,7 +51,7 @@ resources:
           portValue: 18080
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend.kuma-system
@@ -67,7 +67,7 @@ resources:
           portValue: 54321
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: db

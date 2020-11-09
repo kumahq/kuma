@@ -67,12 +67,12 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       statPrefix: localhost_8080
                       httpFilters:
-                      - name: envoy.router`,
+                      - name: envoy.filters.http.router`,
 			},
 			modifications: []string{`
                 httpFilter:
@@ -92,11 +92,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
@@ -111,11 +111,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
@@ -137,7 +137,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       statPrefix: localhost_8080
@@ -153,11 +153,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
@@ -181,7 +181,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       statPrefix: localhost_8080
@@ -197,11 +197,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
@@ -213,11 +213,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8081
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
                       statPrefix: localhost_8081
                 name: inbound:192.168.0.1:8081
@@ -241,7 +241,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       statPrefix: localhost_8080
@@ -256,11 +256,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8081
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
                       statPrefix: localhost_8081
                 name: inbound:192.168.0.1:8081
@@ -275,11 +275,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
@@ -291,11 +291,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8081
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
                       statPrefix: localhost_8081
                 name: inbound:192.168.0.1:8081
@@ -319,11 +319,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND
@@ -336,11 +336,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8081
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       statPrefix: localhost_8081
                 name: inbound:192.168.0.1:8081
                 trafficDirection: INBOUND`,
@@ -354,11 +354,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.gzip
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
@@ -368,7 +368,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                 httpFilter:
                    operation: addAfter
                    match:
-                     name: envoy.router
+                     name: envoy.filters.http.router
                    value: |
                      name: envoy.filters.http.cors
 `,
@@ -384,11 +384,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
                       - name: envoy.filters.http.gzip
                       statPrefix: localhost_8080
@@ -404,11 +404,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
@@ -433,11 +433,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
                 trafficDirection: INBOUND`,
@@ -451,11 +451,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.gzip
                       statPrefix: localhost_8080
                 name: inbound:192.168.0.1:8080
@@ -481,11 +481,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       - name: envoy.filters.http.cors
                       - name: envoy.filters.http.gzip
                       statPrefix: localhost_8080
@@ -501,11 +501,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
                           startChildSpan: true
@@ -518,7 +518,7 @@ var _ = Describe("HTTP Filter modifications", func() {
                 httpFilter:
                    operation: patch
                    match:
-                     name: envoy.router
+                     name: envoy.filters.http.router
                    value: |
                      typedConfig:
                        '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
@@ -536,11 +536,11 @@ var _ = Describe("HTTP Filter modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
                           startChildSpan: true

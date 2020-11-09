@@ -52,11 +52,11 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 
 			expected: `
             filters:
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
-                - name: envoy.fault
+                - name: envoy.filters.http.fault
                   typedConfig:
                     '@type': type.googleapis.com/envoy.config.filter.http.fault.v2.HTTPFault
                     delay:
@@ -69,7 +69,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                         googleRe2: 
                           maxProgramSize: 500
                         regex: '.*&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*'
-                - name: envoy.router
+                - name: envoy.filters.http.router
                 statPrefix: stats`,
 		}),
 		Entry("2 policy selectors", testCase{
@@ -98,11 +98,11 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 
 			expected: `
             filters:
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
-                - name: envoy.fault
+                - name: envoy.filters.http.fault
                   typedConfig:
                     '@type': type.googleapis.com/envoy.config.filter.http.fault.v2.HTTPFault
                     delay:
@@ -115,7 +115,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                         googleRe2: 
                           maxProgramSize: 500
                         regex: '(.*&tag1=[^&]*value1m1[,&].*&tag2=[^&]*value2m1[,&].*|.*&tag1=[^&]*value1m2[,&].*&tag2=[^&]*value2m2[,&].*)'
-                - name: envoy.router
+                - name: envoy.filters.http.router
                 statPrefix: stats`,
 		}),
 	)

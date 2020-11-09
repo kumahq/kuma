@@ -6,7 +6,6 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/rbac/v2"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -49,7 +48,7 @@ func createRbacFilter(statsName string, permission *mesh_core.TrafficPermissionR
 		return nil, err
 	}
 	return &envoy_listener.Filter{
-		Name: envoy_wellknown.RoleBasedAccessControl,
+		Name: "envoy.filters.network.rbac",
 		ConfigType: &envoy_listener.Filter_TypedConfig{
 			TypedConfig: rbacMarshalled,
 		},
