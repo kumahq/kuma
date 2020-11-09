@@ -63,6 +63,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
 func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, destinationsPerService map[string][]envoy_common.Tags) (envoy_common.NamedResource, error) {
 	inbound := ingress.Spec.Networking.Inbound[0]
+	protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), inbound.Port)
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
 		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port)).

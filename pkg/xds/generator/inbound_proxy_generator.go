@@ -82,8 +82,13 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
 				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]))
 		}()
+<<<<<<< HEAD
 		inboundListener, err := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).
+=======
+		inboundListener, err := envoy_listeners.NewListenerBuilder().
+			Configure(envoy_listeners.InboundListener(inboundListenerName, protocol, endpoint.DataplaneIP, endpoint.DataplanePort)).
+>>>>>>> fix(*) remove isUDP
 			Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Build()

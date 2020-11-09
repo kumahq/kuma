@@ -21,6 +21,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 
 	type testCase struct {
 		listenerName    string
+		protocol        mesh_core.Protocol
 		listenerAddress string
 		listenerPort    uint32
 		isUDP           bool

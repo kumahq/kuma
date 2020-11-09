@@ -19,9 +19,9 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 
 	type testCase struct {
 		listenerName    string
+		protocol        mesh_core.Protocol
 		listenerAddress string
 		listenerPort    uint32
-		isUDP           bool
 		statsName       string
 		clusters        []envoy_common.ClusterSubset
 		rbacEnabled     bool
@@ -49,9 +49,9 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 		},
 		Entry("basic tcp_proxy with network RBAC enabled", testCase{
 			listenerName:    "inbound:192.168.0.1:8080",
+			protocol:        mesh_core.ProtocolTCP,
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
-			isUDP:           false,
 			statsName:       "localhost:8080",
 			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
 			rbacEnabled:     true,
@@ -110,9 +110,9 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 		}),
 		Entry("basic tcp_proxy with network RBAC disabled", testCase{
 			listenerName:    "inbound:192.168.0.1:8080",
+			protocol:        mesh_core.ProtocolTCP,
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
-			isUDP:           false,
 			statsName:       "localhost:8080",
 			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
 			rbacEnabled:     false,

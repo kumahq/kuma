@@ -1,6 +1,7 @@
 package listeners_test
 
 import (
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -25,7 +26,7 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder().
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, false)).
+				Configure(OutboundListener(given.listenerName, mesh_core.ProtocolTCP, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder().
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpOutboundRoute(given.routeName)))).

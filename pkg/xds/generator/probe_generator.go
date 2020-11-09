@@ -1,6 +1,7 @@
 package generator
 
 import (
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/pkg/errors"
 
 	model "github.com/kumahq/kuma/pkg/core/xds"

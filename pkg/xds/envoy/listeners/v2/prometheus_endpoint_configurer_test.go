@@ -1,6 +1,7 @@
 package v2_test
 
 import (
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -15,9 +16,9 @@ var _ = Describe("PrometheusEndpointConfigurer", func() {
 
 	type testCase struct {
 		listenerName    string
+		protocol        mesh_core.Protocol
 		listenerAddress string
 		listenerPort    uint32
-		isUDP           bool
 		path            string
 		clusterName     string
 		expected        string
@@ -42,9 +43,9 @@ var _ = Describe("PrometheusEndpointConfigurer", func() {
 		},
 		Entry("prometheus endpoint without transparent proxying", testCase{
 			listenerName:    "kuma:metrics:prometheus",
+			protocol:        mesh_core.ProtocolTCP,
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
-			isUDP:           false,
 			path:            "/non-standard-path",
 			clusterName:     "kuma:envoy:admin",
 			expected: `

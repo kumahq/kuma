@@ -1,6 +1,7 @@
 package v3_test
 
 import (
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -23,8 +24,13 @@ var _ = Describe("OutboundListenerConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
+<<<<<<< HEAD:pkg/xds/envoy/listeners/v3/outbound_listener_configurer_test.go
 			listener, err := NewListenerBuilder(envoy.APIV3).
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+=======
+			listener, err := NewListenerBuilder().
+				Configure(OutboundListener(given.listenerName, mesh_core.ProtocolTCP, given.listenerAddress, given.listenerPort)).
+>>>>>>> fix(*) remove isUDP:pkg/xds/envoy/listeners/outbound_listener_configurer_test.go
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
