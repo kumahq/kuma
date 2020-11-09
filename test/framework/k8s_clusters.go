@@ -182,9 +182,9 @@ func (cs *K8sClusters) DeleteApp(namespace, appname string) error {
 	return nil
 }
 
-func (cs *K8sClusters) InjectDNS() error {
+func (cs *K8sClusters) InjectDNS(namespace ...string) error {
 	for name, c := range cs.clusters {
-		if err := c.InjectDNS(); err != nil {
+		if err := c.InjectDNS(namespace...); err != nil {
 			return errors.Wrapf(err, "Injecting DNS on %s failed: %v", name, err)
 		}
 	}

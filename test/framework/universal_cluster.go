@@ -112,7 +112,7 @@ func (c *UniversalCluster) DeleteKuma(opts ...DeployOptionsFunc) error {
 	return err
 }
 
-func (c *UniversalCluster) InjectDNS() error {
+func (c *UniversalCluster) InjectDNS(namespace ...string) error {
 	return nil
 }
 
