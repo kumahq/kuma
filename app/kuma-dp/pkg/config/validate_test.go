@@ -56,4 +56,19 @@ var _ = Describe("ValidateTokenPath", func() {
 		// then
 		Expect(err).To(MatchError(fmt.Sprintf("token under file %s is empty", tokenFile.Name())))
 	})
+
+	It("should fail for invalid token", func() {
+		// setup
+		invalidTokenFile, err := ioutil.TempFile("", "")
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = invalidTokenFile.Write([]byte("invalid.token.file"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		err = config.ValidateTokenPath(invalidTokenFile.Name())
+
+		// then
+		Expect(err).To(HaveOccurred())
+	})
 })
