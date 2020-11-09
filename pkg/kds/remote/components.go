@@ -43,9 +43,9 @@ var (
 )
 
 func Setup(rt core_runtime.Runtime) error {
-	zone := rt.Config().Multicluster.Remote.Zone
+	zone := rt.Config().Multizone.Remote.Zone
 	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes,
-		zone, rt.Config().Multicluster.Remote.KDS.RefreshInterval,
+		zone, rt.Config().Multizone.Remote.KDS.RefreshInterval,
 		providedFilter(zone), false)
 	if err != nil {
 		return err
@@ -69,7 +69,7 @@ func Setup(rt core_runtime.Runtime) error {
 		}()
 		return nil
 	})
-	muxClient := mux.NewClient(rt.Config().Multicluster.Remote.GlobalAddress, zone, onSessionStarted, *rt.Config().Multicluster.Remote.KDS, rt.Metrics())
+	muxClient := mux.NewClient(rt.Config().Multizone.Remote.GlobalAddress, zone, onSessionStarted, *rt.Config().Multizone.Remote.KDS, rt.Metrics())
 	return rt.Add(component.NewResilientComponent(kdsRemoteLog.WithName("mux-client"), muxClient))
 }
 

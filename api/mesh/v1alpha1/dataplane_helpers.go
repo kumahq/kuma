@@ -13,13 +13,20 @@ const (
 	// Mandatory tag that has a reserved meaning in Kuma.
 	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"
-	// Mandatory tag that has a reserved meaning in Kuma.
-	ZoneTag = "kuma.io/zone"
+
+	// Locality related tags
+	RegionTag  = "kuma.io/region"
+	ZoneTag    = "kuma.io/zone"
+	SubZoneTag = "kuma.io/sub-zone"
+
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "kuma.io/protocol"
 	// InstanceTag is set only for Dataplanes that implements headless services
 	InstanceTag = "kuma.io/instance"
+
+	// External service tag
+	ExternalServiceTag = "kuma.io/external-service-name"
 )
 
 type InboundInterface struct {
@@ -329,6 +336,13 @@ func (d *Dataplane) GetIdentifyingService() string {
 
 func (d *Dataplane) IsIngress() bool {
 	return d.Networking.Ingress != nil
+}
+
+func (d *Dataplane) HasPublicAddress() bool {
+	if d.Networking.Ingress == nil {
+		return false
+	}
+	return d.Networking.Ingress.PublicAddress != "" && d.Networking.Ingress.PublicPort != 0
 }
 
 func (d *Dataplane) HasAvailableServices() bool {

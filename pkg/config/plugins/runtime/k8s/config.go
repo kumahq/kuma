@@ -67,6 +67,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				},
 			},
 		},
+		MarshalingCacheExpirationTime: 5 * time.Minute,
 	}
 }
 
@@ -76,6 +77,10 @@ type KubernetesRuntimeConfig struct {
 	AdmissionServer AdmissionServerConfig `yaml:"admissionServer"`
 	// Injector-specific configuration
 	Injector Injector `yaml:"injector,omitempty"`
+	// MarshalingCacheExpirationTime defines a duration for how long
+	// marshaled objects will be stored in the cache. If equal to 0s then
+	// cache is turned off
+	MarshalingCacheExpirationTime time.Duration `yaml:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
 }
 
 // Configuration of the Admission WebHook Server implemented by the Control Plane.
@@ -218,6 +223,9 @@ func (c *KubernetesRuntimeConfig) Validate() (errs error) {
 	}
 	if err := c.Injector.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Injector is not valid"))
+	}
+	if c.MarshalingCacheExpirationTime < 0 {
+		errs = multierr.Append(errs, errors.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
 	}
 	return
 }

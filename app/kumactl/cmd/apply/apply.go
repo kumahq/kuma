@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/util/template"
 
 	"github.com/pkg/errors"
@@ -113,12 +112,7 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 						return err
 					}
 				} else {
-					var rs store.ResourceStore
-					if resource.GetType() == system.SecretType { // Secret is exposed via Admin Server. It will be merged into API Server eventually.
-						rs, err = pctx.CurrentAdminResourceStore()
-					} else {
-						rs, err = pctx.CurrentResourceStore()
-					}
+					rs, err := pctx.CurrentResourceStore()
 					if err != nil {
 						return err
 					}

@@ -1,7 +1,6 @@
 package framework
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -20,10 +19,9 @@ import (
 )
 
 type PortFwd struct {
-	lowFwdPort     uint32
-	hiFwdPort      uint32
-	localAPIPort   uint32
-	localAdminPort uint32
+	lowFwdPort   uint32
+	hiFwdPort    uint32
+	localAPIPort uint32
 }
 
 type K8sControlPlane struct {
@@ -89,15 +87,6 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 
 	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
 	c.portFwd.localAPIPort = apiPort
-
-	// Admin
-	adminPort, err := util_net.PickTCPPort("", c.portFwd.lowFwdPort+2, c.portFwd.hiFwdPort)
-	if err != nil {
-		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
-	}
-
-	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, adminPort, kumaCPAdminPort)
-	c.portFwd.localAdminPort = adminPort
 
 	return nil
 }
@@ -190,12 +179,12 @@ func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
 	return c.kumactl.KumactlInstallCP(c.mode, args...)
 }
 
-func (c *K8sControlPlane) InjectDNS() error {
+func (c *K8sControlPlane) InjectDNS(args ...string) error {
 	// store the kumactl environment
 	oldEnv := c.kumactl.Env
 	c.kumactl.Env["KUBECONFIG"] = c.GetKubectlOptions().ConfigPath
 
-	yaml, err := c.kumactl.RunKumactlAndGetOutput("install", "dns")
+	yaml, err := c.kumactl.KumactlInstallDNS(args...)
 	if err != nil {
 		return err
 	}
@@ -215,32 +204,6 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 	return "grpcs://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(kdsPort), 10)
 }
 
-func (c *K8sControlPlane) GetIngressAddress() string {
-	ctx := context.Background()
-	cs, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
-	if err != nil {
-		return "invalid"
-	}
-	ingressSvc, err := cs.CoreV1().Services(KumaNamespace).Get(ctx, "kuma-ingress", metav1.GetOptions{})
-	if err != nil {
-		return "invalid"
-	}
-	port := ingressSvc.Spec.Ports[0].NodePort
-
-	nodes, err := cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return "invalid"
-	}
-	// assume that we have single node cluster
-	for _, addr := range nodes.Items[0].Status.Addresses {
-		if addr.Type == v1.NodeInternalIP {
-			return addr.Address + ":" + strconv.Itoa(int(port))
-		}
-	}
-
-	return "invalid"
-}
-
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
 	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
 }
@@ -249,7 +212,7 @@ func (c *K8sControlPlane) GenerateDpToken(service string) (string, error) {
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
-		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAdminPort),
+		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
 		[]byte(fmt.Sprintf(`{"mesh": "default", "tags": {"kuma.io/service": ["%s"]}}`, service)),
 		map[string]string{"content-type": "application/json"},
 		200,

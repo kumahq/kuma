@@ -112,13 +112,15 @@ var _ = Describe("Dataplane", func() {
                   tags:
                     kuma.io/service: redis`,
 		),
-		Entry("dataplane in ingress mode", `
+		Entry("dataplane in ingress mode with public address and port", `
             type: Dataplane
             name: dp-1
             mesh: default
             networking:
                 address: 192.168.0.1
                 ingress:
+                  publicAddress: 10.0.0.1
+                  publicPort: 1234
                   availableServices:
                     - tags:
                         kuma.io/service: backend
@@ -128,6 +130,18 @@ var _ = Describe("Dataplane", func() {
                         kuma.io/service: web
                         version: v2
                         region: eu
+                inbound:
+                  - port: 10001`,
+		),
+		// no public address and port is valid because we may be waiting for Kubernetes to reconcile it
+		Entry("dataplane in ingress mode without public address and port", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+                address: 192.168.0.1
+                ingress:
+                  availableServices: []
                 inbound:
                   - port: 10001`,
 		),
@@ -411,7 +425,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
-                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: grpc, http, http2, tcp'
+                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: grpc, http, http2, kafka, tcp'
                 - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
                   message: tag value cannot be empty`,
 		}),
@@ -433,7 +447,7 @@ var _ = Describe("Dataplane", func() {
 			expected: `
                 violations:
                 - field: 'networking.inbound[0].tags["kuma.io/protocol"]'
-                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: grpc, http, http2, tcp'`,
+                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: grpc, http, http2, kafka, tcp'`,
 		}),
 		Entry("networking.gateway: empty service tag", testCase{
 			dataplane: `
@@ -741,6 +755,36 @@ var _ = Describe("Dataplane", func() {
                   message: cannot be defined in the ingress mode
                 - field: networking.inbound[0].address
                   message: cannot be defined in the ingress mode`,
+		}),
+		Entry("networking.ingress: invalid public address and port", testCase{
+			dataplane: `
+                type: Dataplane
+                name: dp-1
+                mesh: default
+                networking:
+                  address: 192.168.0.1
+                  ingress:
+                    publicAddress: "!@#$"
+                    publicPort: 100000
+                    availableServices:
+                      - tags: 
+                          kuma.io/service: backend
+                          version: "1"
+                          region: us
+                      - tags:
+                          kuma.io/service: web
+                          version: v2
+                          region: eu
+                  inbound:
+                    - port: 10001
+                      tags:
+                        name: ingress-dp`,
+			expected: `
+                violations:
+                - field: networking.ingress.publicAddress.address
+                  message: address has to be valid IP address or domain name
+                - field: networking.ingress.publicPort
+                  message: port has to be in range of [1, 65535]`,
 		}),
 		Entry("inbound service address", testCase{
 			dataplane: `

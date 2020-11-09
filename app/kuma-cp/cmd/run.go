@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	admin_server "github.com/kumahq/kuma/pkg/admin-server"
 	api_server "github.com/kumahq/kuma/pkg/api-server"
+	"github.com/kumahq/kuma/pkg/clusterid"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -16,14 +16,13 @@ import (
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
 	"github.com/kumahq/kuma/pkg/dns/components"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	"github.com/kumahq/kuma/pkg/gc"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
 	metrics "github.com/kumahq/kuma/pkg/metrics/components"
-	sds_server "github.com/kumahq/kuma/pkg/sds/server"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
-	xds_server "github.com/kumahq/kuma/pkg/xds/server"
 )
 
 var (
@@ -76,14 +75,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode))
 			switch cfg.Mode {
 			case config_core.Standalone:
-				if err := sds_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up SDS server")
-					return err
-				}
-				if err := xds_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up xDS server")
-					return err
-				}
 				if err := mads_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
@@ -96,15 +87,15 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up GC")
 					return err
 				}
+				if err := clusterid.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up clusterID")
+					return err
+				}
+				if err := dp_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up DP Server")
+					return err
+				}
 			case config_core.Remote:
-				if err := sds_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up SDS server")
-					return err
-				}
-				if err := xds_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up xDS server")
-					return err
-				}
 				if err := mads_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
@@ -121,9 +112,17 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up GC")
 					return err
 				}
+				if err := dp_server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up DP Server")
+					return err
+				}
 			case config_core.Global:
 				if err := kds_global.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up KDS Global")
+					return err
+				}
+				if err := clusterid.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up clusterID")
 					return err
 				}
 			}
@@ -134,10 +133,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			if err := api_server.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up API server")
-				return err
-			}
-			if err := admin_server.SetupServer(rt); err != nil {
-				runLog.Error(err, "unable to set up Admin server")
 				return err
 			}
 

@@ -33,9 +33,11 @@ mesh: default
 name: dp-ingress
 networking:
   address: {{ address }}
-  ingress: {}
+  ingress:
+    publicAddress: %s
+    publicPort: %d
   inbound:
-  - port: %d	
+  - port: %d
     tags:
       kuma.io/service: ingress
 `
@@ -117,7 +119,7 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 	app.allocatePublicPortsFor("22")
 
 	if mode == AppModeCP {
-		app.allocatePublicPortsFor("5678", "5679", "5680", "5681", "5682", "5684", "5685")
+		app.allocatePublicPortsFor("5678", "5680", "5681", "5682", "5685")
 	}
 
 	opts := defaultDockerOptions

@@ -5,17 +5,16 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/config/diagnostics"
-	"github.com/kumahq/kuma/pkg/config/multicluster"
-
 	"github.com/kumahq/kuma/pkg/config"
-	admin_server "github.com/kumahq/kuma/pkg/config/admin-server"
 	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
+	"github.com/kumahq/kuma/pkg/config/diagnostics"
 	dns_server "github.com/kumahq/kuma/pkg/config/dns-server"
+	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	gui_server "github.com/kumahq/kuma/pkg/config/gui-server"
 	"github.com/kumahq/kuma/pkg/config/mads"
+	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/config/plugins/runtime"
 	"github.com/kumahq/kuma/pkg/config/sds"
 	"github.com/kumahq/kuma/pkg/config/xds"
@@ -104,8 +103,6 @@ type Config struct {
 	SdsServer *sds.SdsServerConfig `yaml:"sdsServer,omitempty"`
 	// Monitoring Assignment Discovery Service (MADS) server configuration
 	MonitoringAssignmentServer *mads.MonitoringAssignmentServerConfig `yaml:"monitoringAssignmentServer,omitempty"`
-	// Admin server configuration
-	AdminServer *admin_server.AdminServerConfig `yaml:"adminServer,omitempty"`
 	// API Server configuration
 	ApiServer *api_server.ApiServerConfig `yaml:"apiServer,omitempty"`
 	// Environment-specific configuration
@@ -118,12 +115,14 @@ type Config struct {
 	Reports *Reports `yaml:"reports,omitempty"`
 	// GUI Server Config
 	GuiServer *gui_server.GuiServerConfig `yaml:"guiServer,omitempty"`
-	// Multicluster Config
-	Multicluster *multicluster.MulticlusterConfig `yaml:"multicluster,omitempty"`
+	// Multizone Config
+	Multizone *multizone.MultizoneConfig `yaml:"multizone,omitempty"`
 	// DNS Server Config
 	DNSServer *dns_server.DNSServerConfig `yaml:"dnsServer,omitempty"`
 	// Diagnostics configuration
 	Diagnostics *diagnostics.DiagnosticsConfig `yaml:"diagnostics,omitempty"`
+	// Dataplane Server configuration
+	DpServer *dp_server.DpServerConfig `yaml:"dpServer"`
 }
 
 func (c *Config) Sanitize() {
@@ -133,14 +132,13 @@ func (c *Config) Sanitize() {
 	c.XdsServer.Sanitize()
 	c.SdsServer.Sanitize()
 	c.MonitoringAssignmentServer.Sanitize()
-	c.AdminServer.Sanitize()
 	c.ApiServer.Sanitize()
 	c.Runtime.Sanitize()
 	c.Metrics.Sanitize()
 	c.Defaults.Sanitize()
 	c.GuiServer.Sanitize()
 	c.DNSServer.Sanitize()
-	c.Multicluster.Sanitize()
+	c.Multizone.Sanitize()
 	c.Diagnostics.Sanitize()
 }
 
@@ -152,7 +150,6 @@ func DefaultConfig() Config {
 		XdsServer:                  xds.DefaultXdsServerConfig(),
 		SdsServer:                  sds.DefaultSdsServerConfig(),
 		MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig(),
-		AdminServer:                admin_server.DefaultAdminServerConfig(),
 		ApiServer:                  api_server.DefaultApiServerConfig(),
 		BootstrapServer:            bootstrap.DefaultBootstrapServerConfig(),
 		Runtime:                    runtime.DefaultRuntimeConfig(),
@@ -172,11 +169,12 @@ func DefaultConfig() Config {
 		Reports: &Reports{
 			Enabled: true,
 		},
-		General:      DefaultGeneralConfig(),
-		GuiServer:    gui_server.DefaultGuiServerConfig(),
-		DNSServer:    dns_server.DefaultDNSServerConfig(),
-		Multicluster: multicluster.DefaultMulticlusterConfig(),
-		Diagnostics:  diagnostics.DefaultDiagnosticsConfig(),
+		General:     DefaultGeneralConfig(),
+		GuiServer:   gui_server.DefaultGuiServerConfig(),
+		DNSServer:   dns_server.DefaultDNSServerConfig(),
+		Multizone:   multizone.DefaultMultizoneConfig(),
+		Diagnostics: diagnostics.DefaultDiagnosticsConfig(),
+		DpServer:    dp_server.DefaultDpServerConfig(),
 	}
 }
 
@@ -189,8 +187,8 @@ func (c *Config) Validate() error {
 		if err := c.GuiServer.Validate(); err != nil {
 			return errors.Wrap(err, "GuiServer validation failed")
 		}
-		if err := c.Multicluster.Global.Validate(); err != nil {
-			return errors.Wrap(err, "Multicluster Global validation failed")
+		if err := c.Multizone.Global.Validate(); err != nil {
+			return errors.Wrap(err, "Multizone Global validation failed")
 		}
 	case core.Standalone:
 		if err := c.GuiServer.Validate(); err != nil {
@@ -218,8 +216,8 @@ func (c *Config) Validate() error {
 			return errors.Wrap(err, "Metrics validation failed")
 		}
 	case core.Remote:
-		if err := c.Multicluster.Remote.Validate(); err != nil {
-			return errors.Wrap(err, "Multicluster Remote validation failed")
+		if err := c.Multizone.Remote.Validate(); err != nil {
+			return errors.Wrap(err, "Multizone Remote validation failed")
 		}
 		if err := c.XdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "Xds Server validation failed")
@@ -242,9 +240,6 @@ func (c *Config) Validate() error {
 		if err := c.Metrics.Validate(); err != nil {
 			return errors.Wrap(err, "Metrics validation failed")
 		}
-	}
-	if err := c.AdminServer.Validate(); err != nil {
-		return errors.Wrap(err, "Admin Server validation failed")
 	}
 	if err := c.Store.Validate(); err != nil {
 		return errors.Wrap(err, "Store validation failed")

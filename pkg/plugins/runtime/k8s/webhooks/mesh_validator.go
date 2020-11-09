@@ -8,17 +8,18 @@ import (
 	"k8s.io/api/admission/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+
 	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s.Converter, resourceManager manager.ResourceManager) AdmissionValidator {
+func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s_common.Converter, resourceManager manager.ResourceManager) AdmissionValidator {
 	return &MeshValidator{
 		validator:       validator,
 		converter:       converter,
@@ -28,7 +29,7 @@ func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8
 
 type MeshValidator struct {
 	validator       managers_mesh.MeshValidator
-	converter       k8s.Converter
+	converter       k8s_common.Converter
 	decoder         *admission.Decoder
 	resourceManager manager.ResourceManager
 }

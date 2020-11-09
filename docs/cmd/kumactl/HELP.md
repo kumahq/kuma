@@ -138,12 +138,14 @@ Usage:
   kumactl config control-planes add [flags]
 
 Flags:
-      --address string             URL of the Control Plane API Server (required)
-      --admin-client-cert string   Path to certificate of a client that is authorized to use Admin Server
-      --admin-client-key string    Path to certificate key of a client that is authorized to use Admin Server
-  -h, --help                       help for add
-      --name string                reference name for the Control Plane (required)
-      --overwrite                  overwrite existing Control Plane with the same reference name
+      --address string            URL of the Control Plane API Server (required)
+      --ca-cert-file string       path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)
+      --client-cert-file string   path to the certificate of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)
+      --client-key-file string    path to the certificate key of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)
+  -h, --help                      help for add
+      --name string               reference name for the Control Plane (required)
+      --overwrite                 overwrite existing Control Plane with the same reference name
+      --skip-verify               skip CA verification
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -222,35 +224,42 @@ Usage:
   kumactl install control-plane [flags]
 
 Flags:
-      --cni-enabled                         install Kuma with CNI instead of proxy init container
-      --cni-registry string                 registry for the image of the Kuma CNI component (default "docker.io")
-      --cni-repository string               repository for the image of the Kuma CNI component (default "lobkovilya/install-cni")
-      --cni-version string                  version of the image of the Kuma CNI component (default "0.0.2")
-      --control-plane-registry string       registry for the image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io")
-      --control-plane-repository string     repository for the image of the Kuma Control Plane component (default "kuma-cp")
-      --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
-      --control-plane-version string        version of the image of the Kuma Control Plane component (default "latest")
-      --dataplane-init-registry string      registry for the init image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
-      --dataplane-init-repository string    repository for the init image of the Kuma DataPlane component (default "kuma-init")
-      --dataplane-init-version string       version of the init image of the Kuma DataPlane component (default "latest")
-      --dataplane-registry string           registry for the image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
-      --dataplane-repository string         repository for the image of the Kuma DataPlane component (default "kuma-dp")
-      --dataplane-version string            version of the image of the Kuma DataPlane component (default "latest")
-      --env-var stringToString              environment variables that will be passed to the control plane (default [])
-  -h, --help                                help for control-plane
-      --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
-      --ingress-drain-time string           drain time for Envoy proxy (default "30s")
-      --ingress-enabled                     install Kuma with an Ingress deployment, using the Data Plane image
-      --ingress-use-node-port               use NodePort instead of LoadBalancer for the Ingress Service
-      --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
-      --kds-global-address string           URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
-      --mode string                         kuma cp modes: one of standalone|remote|global (default "standalone")
-      --namespace string                    namespace to install Kuma Control Plane to (default "kuma-system")
-      --tls-ca-cert string                  CA certificate that was used to generate TLS certificate for Kuma Control Plane servers
-      --tls-cert string                     TLS certificate for Kuma Control Plane servers
-      --tls-key string                      TLS key for Kuma Control Plane servers
-      --use-node-port                       use NodePort instead of LoadBalancer
-      --zone string                         set the Kuma zone name
+      --cni-bin-dir string                          set the CNI binary directory (default "/var/lib/cni/bin")
+      --cni-chained                                 enable chained CNI installation
+      --cni-conf-name string                        set the CNI configuration name (default "kuma-cni.conf")
+      --cni-enabled                                 install Kuma with CNI instead of proxy init container
+      --cni-net-dir string                          set the CNI install directory (default "/etc/cni/multus/net.d")
+      --cni-registry string                         registry for the image of the Kuma CNI component (default "docker.io")
+      --cni-repository string                       repository for the image of the Kuma CNI component (default "lobkovilya/install-cni")
+      --cni-version string                          version of the image of the Kuma CNI component (default "0.0.2")
+      --control-plane-registry string               registry for the image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io")
+      --control-plane-repository string             repository for the image of the Kuma Control Plane component (default "kuma-cp")
+      --control-plane-service-name string           Service name of the Kuma Control Plane (default "kuma-control-plane")
+      --control-plane-version string                version of the image of the Kuma Control Plane component (default "latest")
+      --dataplane-init-registry string              registry for the init image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
+      --dataplane-init-repository string            repository for the init image of the Kuma DataPlane component (default "kuma-init")
+      --dataplane-init-version string               version of the init image of the Kuma DataPlane component (default "latest")
+      --dataplane-registry string                   registry for the image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
+      --dataplane-repository string                 repository for the image of the Kuma DataPlane component (default "kuma-dp")
+      --dataplane-version string                    version of the image of the Kuma DataPlane component (default "latest")
+      --env-var stringToString                      environment variables that will be passed to the control plane (default [])
+  -h, --help                                        help for control-plane
+      --image-pull-policy string                    image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
+      --ingress-drain-time string                   drain time for Envoy proxy (default "30s")
+      --ingress-enabled                             install Kuma with an Ingress deployment, using the Data Plane image
+      --ingress-use-node-port                       use NodePort instead of LoadBalancer for the Ingress Service
+      --injector-failure-policy string              failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
+      --kds-global-address string                   URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
+      --mode string                                 kuma cp modes: one of standalone|remote|global (default "standalone")
+      --namespace string                            namespace to install Kuma Control Plane to (default "kuma-system")
+      --tls-api-server-client-certs-secret string   Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
+      --tls-api-server-secret string                Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS
+      --tls-general-ca-bundle string                Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
+      --tls-general-secret string                   Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication
+      --tls-kds-global-server-secret string         Secret that contains tls.crt, key.crt for protecting cross cluster communication
+      --tls-kds-remote-client-secret string         Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
+      --use-node-port                               use NodePort instead of LoadBalancer
+      --zone string                                 set the Kuma zone name
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -685,6 +694,7 @@ Usage:
 Flags:
       --gateway              filter gateway dataplanes
   -h, --help                 help for dataplanes
+      --ingress              filter ingress dataplanes
       --tag stringToString   filter by tag in format of key=value. You can provide many tags (default [])
 
 Global Flags:

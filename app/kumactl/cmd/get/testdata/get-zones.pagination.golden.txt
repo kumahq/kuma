@@ -1,4 +1,4 @@
-NAME     INGRESS             AGE
-zone-1   192.168.0.2:10000   292y
+NAME     AGE
+zone-1   292y
 
 Rerun command with --offset=1 argument to retrieve more resources

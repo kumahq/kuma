@@ -3,11 +3,10 @@ package global
 import (
 	"context"
 	"fmt"
-	"net"
-	"strconv"
 	"strings"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 
 	"github.com/pkg/errors"
 
@@ -20,7 +19,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/client"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
@@ -52,7 +50,7 @@ var (
 
 func Setup(rt runtime.Runtime) (err error) {
 	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes,
-		"global", rt.Config().Multicluster.Global.KDS.RefreshInterval,
+		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
 		ProvidedFilter, true)
 	if err != nil {
 		return err
@@ -67,10 +65,10 @@ func Setup(rt runtime.Runtime) (err error) {
 			}
 		}()
 		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID())
-		zone := &system.ZoneResource{}
-		if err := rt.ReadOnlyResourceManager().Get(context.Background(), zone, store.GetByKey(session.PeerID(), "default")); err != nil {
-			// send error back to Remote CP, it will re-try later when ZoneResource will appear
-			return errors.Wrap(err, "ZoneResource doesn't exist")
+		zone, err := createZoneIfAbsent(session.PeerID(), rt.ResourceManager())
+		if err != nil {
+			log.Error(err, "Global CP could not create a zone")
+			return errors.New("Global CP could not create a zone") // send back message without details. Remote CP will retry
 		}
 		sink := client.NewKDSSink(log, consumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, zone))
 		go func() {
@@ -80,7 +78,22 @@ func Setup(rt runtime.Runtime) (err error) {
 		}()
 		return nil
 	})
-	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().Multicluster.Global.KDS, rt.Metrics()))
+	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().Multizone.Global.KDS, rt.Metrics()))
+}
+
+func createZoneIfAbsent(name string, resManager manager.ResourceManager) (*system.ZoneResource, error) {
+	zone := &system.ZoneResource{}
+	if err := resManager.Get(context.Background(), zone, store.GetByKey(name, model.DefaultMesh)); err != nil {
+		if !store.IsResourceNotFound(err) {
+			return nil, err
+		}
+		kdsGlobalLog.Info("creating zone", "name", name)
+		err := resManager.Create(context.Background(), zone, store.CreateByKey(name, model.DefaultMesh))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return zone, nil
 }
 
 // ProvidedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
@@ -106,49 +119,11 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, zone *system.ZoneReso
 			if k8sStore {
 				util.AddSuffixToNames(rs.GetItems(), "default")
 			}
-			if rs.GetItemType() == mesh.DataplaneType {
-				rs = dedupIngresses(rs)
-				adjustIngressNetworking(zone, rs)
-			}
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
 			}))
 		},
 	}
-}
-
-func adjustIngressNetworking(zone *system.ZoneResource, rs model.ResourceList) {
-	host, portStr, err := net.SplitHostPort(zone.Spec.GetIngress().GetAddress())
-	if err != nil {
-		kdsGlobalLog.Error(err, "failed parsing ingress", "host", host, "port", portStr)
-		return
-	}
-	port, _ := strconv.ParseUint(portStr, 10, 32)
-	for _, r := range rs.GetItems() {
-		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
-			continue
-		}
-		r.(*mesh.DataplaneResource).Spec.Networking.Address = host
-		r.(*mesh.DataplaneResource).Spec.Networking.Inbound[0].Port = uint32(port)
-	}
-}
-
-// dedupIngresses returns ResourceList that consist of Dataplanes from 'rs' and has single Ingress.
-// We assume to have single Ingress Resource per Zone.
-func dedupIngresses(rs model.ResourceList) model.ResourceList {
-	rv, _ := registry.Global().NewList(rs.GetItemType())
-	ingressPicked := false
-	for _, r := range rs.GetItems() {
-		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
-			_ = rv.AddItem(r)
-			continue
-		}
-		if !ingressPicked {
-			_ = rv.AddItem(r)
-			ingressPicked = true
-		}
-	}
-	return rv
 }
 
 func ConsumesType(typ model.ResourceType) bool {

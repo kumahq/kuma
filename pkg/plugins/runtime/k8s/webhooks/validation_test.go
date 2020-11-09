@@ -3,11 +3,12 @@ package webhooks_test
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,14 +28,10 @@ import (
 
 var _ = Describe("Validation", func() {
 
-	var converter *k8s_resources.SimpleConverter
+	var converter k8s_common.Converter
 
 	BeforeEach(func() {
-		converter = &k8s_resources.SimpleConverter{
-			KubeFactory: &k8s_resources.SimpleKubeFactory{
-				KubeTypes: k8s_registry.Global(),
-			},
-		}
+		converter = k8s_resources.NewSimpleConverter()
 	})
 
 	type testCase struct {
@@ -345,7 +342,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a TrafficRoute on remote CP. In multicluster setup, it should be only applied on global CP and synced to remote CP.",
+						Message: "You are trying to apply a TrafficRoute on remote CP. In multizone setup, it should be only applied on global CP and synced to remote CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -382,7 +379,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a Dataplane on global CP. In multicluster setup, it should be only applied on remote CP and synced to global CP.",
+						Message: "You are trying to apply a Dataplane on global CP. In multizone setup, it should be only applied on remote CP and synced to global CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{

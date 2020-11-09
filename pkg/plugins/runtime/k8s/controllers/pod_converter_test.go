@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/kumahq/kuma/pkg/dns"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -103,6 +103,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		servicesForPod  string
 		otherDataplanes string
 		otherServices   string
+		node            string
 		dataplane       string
 	}
 	DescribeTable("should convert Pod into a Dataplane YAML version",
@@ -130,7 +131,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				YAMLs := util_yaml.SplitYAML(string(bytes))
 				services, err := ParseServices(YAMLs)
 				Expect(err).ToNot(HaveOccurred())
-				reader, err := newFakeReader(services)
+				reader, err := newFakeServiceReader(services)
 				Expect(err).ToNot(HaveOccurred())
 				serviceGetter = reader
 			}
@@ -146,8 +147,9 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			converter := PodConverter{
-				ServiceGetter: serviceGetter,
-				Zone:          "zone-1",
+				ServiceGetter:     serviceGetter,
+				Zone:              "zone-1",
+				ResourceConverter: k8s.NewSimpleConverter(),
 			}
 
 			// when
@@ -220,6 +222,84 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "10.pod.yaml",
 			servicesForPod: "10.services-for-pod.yaml",
 			dataplane:      "10.dataplane.yaml",
+		}),
+	)
+
+	DescribeTable("should convert Pod into a Dataplane YAML version",
+		func(given testCase) {
+			// given
+			// pod
+			pod := &kube_core.Pod{}
+			bytes, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.pod))
+			Expect(err).ToNot(HaveOccurred())
+			err = yaml.Unmarshal(bytes, pod)
+			Expect(err).ToNot(HaveOccurred())
+
+			// services for pod
+			bytes, err = ioutil.ReadFile(filepath.Join("testdata", "ingress", given.servicesForPod))
+			Expect(err).ToNot(HaveOccurred())
+			YAMLs := util_yaml.SplitYAML(string(bytes))
+			services, err := ParseServices(YAMLs)
+			Expect(err).ToNot(HaveOccurred())
+
+			// node
+			var nodeGetter kube_client.Reader
+			if given.node != "" {
+				bytes, err = ioutil.ReadFile(filepath.Join("testdata", "ingress", given.node))
+				Expect(err).ToNot(HaveOccurred())
+				nodeGetter = fakeNodeReader(bytes)
+			}
+
+			converter := PodConverter{
+				ServiceGetter: nil,
+				NodeGetter:    nodeGetter,
+				Zone:          "zone-1",
+			}
+
+			// when
+			dataplane := &mesh_k8s.Dataplane{}
+			err = converter.PodToIngress(dataplane, pod, services)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			actual, err := json.Marshal(dataplane)
+			Expect(err).ToNot(HaveOccurred())
+			expected, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.dataplane))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(MatchYAML(expected))
+		},
+		Entry("01. Ingress with load balancer service and hostname", testCase{ // AWS use case
+			pod:            "01.pod.yaml",
+			servicesForPod: "01.services-for-pod.yaml",
+			dataplane:      "01.dataplane.yaml",
+		}),
+		Entry("02. Ingress with load balancer and ip", testCase{ // GCP use case
+			pod:            "02.pod.yaml",
+			servicesForPod: "02.services-for-pod.yaml",
+			dataplane:      "02.dataplane.yaml",
+		}),
+		Entry("03. Ingress with load balancer without public ip", testCase{
+			pod:            "03.pod.yaml",
+			servicesForPod: "03.services-for-pod.yaml",
+			dataplane:      "03.dataplane.yaml",
+		}),
+		Entry("04. Ingress with node port external IP", testCase{ // Real deployment use case
+			pod:            "04.pod.yaml",
+			servicesForPod: "04.services-for-pod.yaml",
+			dataplane:      "04.dataplane.yaml",
+			node:           "04.node.yaml",
+		}),
+		Entry("05. Ingress with node port internal IP", testCase{ // KIND / Minikube use case
+			pod:            "05.pod.yaml",
+			servicesForPod: "05.services-for-pod.yaml",
+			dataplane:      "05.dataplane.yaml",
+			node:           "05.node.yaml",
+		}),
+		Entry("06. Ingress with annotations override", testCase{
+			pod:            "06.pod.yaml",
+			servicesForPod: "06.services-for-pod.yaml",
+			dataplane:      "06.dataplane.yaml",
 		}),
 	)
 
@@ -569,9 +649,9 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 	)
 })
 
-type fakeReader map[string]string
+type fakeServiceReader map[string]string
 
-func newFakeReader(services []*kube_core.Service) (fakeReader, error) {
+func newFakeServiceReader(services []*kube_core.Service) (fakeServiceReader, error) {
 	servicesMap := map[string]string{}
 	for _, service := range services {
 		bytes, err := yaml.Marshal(service)
@@ -583,9 +663,9 @@ func newFakeReader(services []*kube_core.Service) (fakeReader, error) {
 	return servicesMap, nil
 }
 
-var _ kube_client.Reader = fakeReader{}
+var _ kube_client.Reader = fakeServiceReader{}
 
-func (r fakeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_runtime.Object) error {
+func (r fakeServiceReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_runtime.Object) error {
 	data, ok := r[fmt.Sprintf("%s/%s", key.Namespace, key.Name)]
 	if !ok {
 		return errors.New("not found")
@@ -593,6 +673,23 @@ func (r fakeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube
 	return yaml.Unmarshal([]byte(data), obj)
 }
 
-func (f fakeReader) List(ctx context.Context, list kube_runtime.Object, opts ...kube_client.ListOption) error {
+func (f fakeServiceReader) List(ctx context.Context, list kube_runtime.Object, opts ...kube_client.ListOption) error {
 	return errors.New("not implemented")
+}
+
+type fakeNodeReader string
+
+func (r fakeNodeReader) Get(ctx context.Context, key kube_client.ObjectKey, obj kube_runtime.Object) error {
+	return errors.New("not implemented")
+}
+
+func (f fakeNodeReader) List(ctx context.Context, list kube_runtime.Object, opts ...kube_client.ListOption) error {
+	node := kube_core.Node{}
+	err := yaml.Unmarshal([]byte(f), &node)
+	if err != nil {
+		return err
+	}
+	l := list.(*kube_core.NodeList)
+	l.Items = append(l.Items, node)
+	return nil
 }

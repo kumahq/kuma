@@ -42,10 +42,17 @@ controlPlane:
   #       memory: 256Mi
 
   # TLS for various servers
-  #  tls:
-  #    cert: ""
-  #    key: ""
-  #    caCert: ""
+  tls:
+    general:
+      secretName: ""
+      caBundle: ""
+    apiServer:
+      secretName: ""
+      clientCertsSecretName: ""
+    kdsGlobalServer:
+      secretName: ""
+    kdsRemoteClient:
+      secretName: ""
 
   image:
     pullPolicy: IfNotPresent
@@ -55,6 +62,10 @@ controlPlane:
   envVars: {}
 cni:
   enabled: false
+  chained: false
+  netDir: /etc/cni/multus/net.d
+  binDir: /var/lib/cni/bin
+  confName: kuma-cni.conf
   logLevel: info
 
   nodeSelector:

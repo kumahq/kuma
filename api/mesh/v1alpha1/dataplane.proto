@@ -30,13 +30,19 @@ message Dataplane {
         string mesh = 3;
       }
       repeated AvailableService availableServices = 1;
+
+      // PublicAddress defines IP or DNS name on which Ingress is accessible to
+      // other Kuma clusters.
+      string publicAddress = 2;
+      // PublicPort defines port on which Ingress is accessible to other Kuma
+      // clusters.
+      uint32 publicPort = 3;
     }
 
     // Ingress if not nil, dataplane will be work in the Ingress mode
     Ingress ingress = 6;
 
     // Public IP on which the dataplane is accessible in the network.
-    // Host names and DNS are not allowed.
     string address = 5;
 
     // Inbound describes a service implemented by the dataplane.
