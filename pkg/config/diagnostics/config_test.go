@@ -1,23 +1,23 @@
-package xds_test
+package diagnostics_test
 
 import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/config/diagnostics"
+
 	"github.com/kumahq/kuma/pkg/config"
-	kuma_xds "github.com/kumahq/kuma/pkg/config/xds"
 )
 
 var _ = Describe("XdsServerConfig", func() {
 	It("should be loadable from configuration file", func() {
 		// given
-		cfg := kuma_xds.XdsServerConfig{}
+		cfg := diagnostics.DiagnosticsConfig{}
 
 		// when
 		err := config.Load(filepath.Join("testdata", "valid-config.input.yaml"), &cfg)
@@ -26,8 +26,7 @@ var _ = Describe("XdsServerConfig", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
-		Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
+		Expect(cfg.ServerPort).To(Equal(3456))
 	})
 
 	Context("with modified environment variables", func() {
@@ -49,15 +48,14 @@ var _ = Describe("XdsServerConfig", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
-				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":          "5s",
+				"KUMA_DIAGNOSTICS_SERVER_PORT": "3456",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
 			}
 
 			// given
-			cfg := kuma_xds.XdsServerConfig{}
+			cfg := diagnostics.DiagnosticsConfig{}
 
 			// when
 			err := config.Load("", &cfg)
@@ -66,14 +64,13 @@ var _ = Describe("XdsServerConfig", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
-			Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
+			Expect(cfg.ServerPort).To(Equal(3456))
 		})
 	})
 
 	It("should have consistent defaults", func() {
 		// given
-		cfg := kuma_xds.DefaultXdsServerConfig()
+		cfg := diagnostics.DefaultDiagnosticsConfig()
 
 		// when
 		actual, err := config.ToYAML(cfg)
@@ -90,7 +87,7 @@ var _ = Describe("XdsServerConfig", func() {
 
 	It("should have validators", func() {
 		// given
-		cfg := kuma_xds.XdsServerConfig{}
+		cfg := diagnostics.DiagnosticsConfig{}
 
 		// when
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)

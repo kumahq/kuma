@@ -63,8 +63,6 @@ var _ = Describe("Config loader", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			Expect(cfg.XdsServer.DiagnosticsPort).To(Equal(5003))
-
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
@@ -133,6 +131,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 
+			Expect(cfg.Diagnostics.ServerPort).To(Equal(5003))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
 		},
 		Entry("from config file", testCase{
@@ -157,8 +156,6 @@ store:
   cache:
     enabled: false
     expirationTime: 3s
-xdsServer:
-  diagnosticsPort: 5003
 bootstrapServer:
   params:
     adminPort: 1234
@@ -228,12 +225,12 @@ dnsServer:
 defaults:
   skipMeshCreation: true
 diagnostics:
+  serverPort: 5003
   debugEndpoints: true
 `,
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
-				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":                               "5003",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                        "1234",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                          "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                          "4321",
@@ -290,6 +287,7 @@ diagnostics:
 				"KUMA_MULTIZONE_REMOTE_ZONE":                                     "zone-1",
 				"KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE":                         "/rootCa",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                               "true",
+				"KUMA_DIAGNOSTICS_SERVER_PORT":                                   "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                               "true",
 			},
 			yamlFileConfig: "",
