@@ -65,7 +65,7 @@ networking:
   address: %s
   tls:
     enabled: %s
-    ca_cert:
+    caCert:
       inline: "%s"
 `
 	es1 := "1"

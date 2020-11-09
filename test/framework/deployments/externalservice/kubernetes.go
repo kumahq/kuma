@@ -78,5 +78,5 @@ func (k *k8SDeployment) GetExternalAppAddress() string {
 }
 
 func (k *k8SDeployment) GetCert() string {
-	return ""
+	panic("not implemented")
 }
