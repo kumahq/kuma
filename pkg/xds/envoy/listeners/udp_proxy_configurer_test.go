@@ -1,10 +1,11 @@
 package listeners_test
 
 import (
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
@@ -43,7 +44,7 @@ var _ = Describe("UDPProxyConfigurer", func() {
 		},
 		Entry("basic udp_proxy with a single destination cluster", testCase{
 			listenerName:    "inbound:192.168.0.1:8080",
-			protocol:        mesh_core.ProtocolTCP,
+			protocol:        mesh_core.ProtocolUDP,
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",

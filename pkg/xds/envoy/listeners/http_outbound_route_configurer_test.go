@@ -1,7 +1,6 @@
 package listeners_test
 
 import (
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"

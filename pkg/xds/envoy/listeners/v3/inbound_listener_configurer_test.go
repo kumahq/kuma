@@ -1,7 +1,6 @@
 package v3_test
 
 import (
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -51,9 +50,9 @@ var _ = Describe("InboundListenerConfigurer", func() {
                 portValue: 8080
 `,
 		}),
-		Entry("basic listener udp=true", testCase{
+		Entry("basic listener with udp protocol", testCase{
 			listenerName:    "inbound:192.168.0.1:8080",
-			protocol:        mesh_core.ProtocolTCP,
+			protocol:        mesh_core.ProtocolUDP,
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			expected: `
