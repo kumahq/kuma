@@ -14,12 +14,12 @@ RUN cd /opt && wget https://storage.googleapis.com/golang/go${GOVERSION}.linux-a
 
 RUN GO111MODULE=on go get istio.io/istio/tools/istio-iptables@1.6.5
 
-FROM ubuntu:bionic
+FROM ubuntu:focal
 
 COPY --from=builder /root/.go/bin/istio-iptables ./kuma-iptables
 
 RUN apt-get update
-RUN apt-get -y install iptables
+RUN apt-get -y install iptables iproute2
 
 RUN mkdir /kuma
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma

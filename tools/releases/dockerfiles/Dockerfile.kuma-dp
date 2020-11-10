@@ -8,6 +8,9 @@ COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/README /kuma
 
-USER nobody:nobody
+RUN echo kuma-dp:x:31337: >> /etc/group
+RUN echo kuma-dp:x:31337:31337:kuma-dp:/nonexistent:/sbin/nologin >> /etc/passwd
+
+USER root:root
 
 ENTRYPOINT ["kuma-dp"]

@@ -23,8 +23,8 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				Image:                "kuma/kuma-dp:latest",
 				RedirectPortInbound:  15006,
 				RedirectPortOutbound: 15001,
-				UID:                  5678,
-				GID:                  5678,
+				UID:                  0,
+				GID:                  0,
 				AdminPort:            9901,
 				DrainTime:            30 * time.Second,
 

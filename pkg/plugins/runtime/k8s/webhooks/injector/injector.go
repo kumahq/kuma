@@ -263,6 +263,11 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.UID,
 			RunAsGroup: &i.cfg.SidecarContainer.GID,
+			Capabilities: &kube_core.Capabilities{
+				Add: []kube_core.Capability{
+					kube_core.Capability("NET_ADMIN"),
+				},
+			},
 		},
 		LivenessProbe: &kube_core.Probe{
 			Handler: kube_core.Handler{
@@ -365,7 +370,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 			"-o",
 			excludeOutboundPorts,
 			"-m",
-			"REDIRECT",
+			"TPROXY",
 			"-i",
 			"*",
 			"-b",

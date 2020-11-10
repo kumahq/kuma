@@ -1,7 +1,10 @@
 package listeners
 
 import (
+	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/kumahq/kuma/pkg/util/proto"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
@@ -21,10 +24,18 @@ type TransparentProxyingConfigurer struct {
 }
 
 func (c *TransparentProxyingConfigurer) Configure(l *v2.Listener) error {
-	// TODO(yskopets): What is the up-to-date alternative ?
-	l.DeprecatedV1 = &v2.Listener_DeprecatedV1{
-		BindToPort: &wrappers.BoolValue{Value: false},
+	any, err := proto.MarshalAnyDeterministic(&empty.Empty{})
+	if err != nil {
+		return err
 	}
-
+	l.Transparent = &wrappers.BoolValue{
+		Value: true,
+	}
+	l.ListenerFilters = append(l.ListenerFilters, &envoy_api_v2_listener.ListenerFilter{
+		Name: "envoy.filters.listener.original_dst",
+		ConfigType: &envoy_api_v2_listener.ListenerFilter_TypedConfig{
+			TypedConfig: any,
+		},
+	})
 	return nil
 }
