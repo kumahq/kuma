@@ -50,7 +50,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(core_model.DefaultMesh, core_model.DefaultMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -58,7 +58,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 		zoneResource := system.ZoneResource{
 			Spec: zone,
 		}
-		err := resourceStore.Create(context.Background(), &zoneResource, store.CreateByKey(name, core_model.DefaultMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), &zoneResource, store.CreateByKey(name, core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
@@ -74,7 +74,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 				},
 			},
 		}
-		err = resourceStore.Create(context.Background(), &insightResource, store.CreateByKey(name, core_model.DefaultMesh))
+		err = resourceStore.Create(context.Background(), &insightResource, store.CreateByKey(name, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	}
 

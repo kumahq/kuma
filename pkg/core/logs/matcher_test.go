@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/logs"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -59,7 +60,7 @@ var _ = Describe("Matcher", func() {
 				},
 			},
 		}
-		err := manager.Create(context.Background(), &meshRes, store.CreateByKey("sample", "sample"))
+		err := manager.Create(context.Background(), &meshRes, store.CreateByKey("sample", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// and

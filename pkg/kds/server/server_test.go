@@ -79,7 +79,7 @@ var _ = Describe("KDS Server", func() {
 			To(HaveLen(len(kds.SupportedTypes)))
 
 		vrf := kds_verifier.New().
-			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: kds_samples.Mesh1}, store.CreateByKey("mesh-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: kds_samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))).
 			Exec(kds_verifier.Create(ctx, &mesh.DataplaneResource{Spec: kds_samples.Ingress}, store.CreateByKey("Ingress-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.DataplaneInsightResource{Spec: kds_samples.DataplaneInsight}, store.CreateByKey("insight-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.ExternalServiceResource{Spec: kds_samples.ExternalService}, store.CreateByKey("es-1", "mesh-1"))).
