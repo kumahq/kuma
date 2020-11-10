@@ -24,17 +24,6 @@ mtls:
   - name: ca-1
     type: builtin
 `
-	trafficPermissionAll := `
-type: TrafficPermission
-name: traffic-permission-all
-mesh: default
-sources:
-- match:
-   kuma.io/service: "*"
-destinations:
-- match:
-   kuma.io/service: "*"
-`
 
 	trafficPermissionAllTo2Remote := `
 type: TrafficPermission
@@ -163,9 +152,6 @@ metadata:
 
 		err = YamlUniversal(meshDefaulMtlsOn)(global)
 		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlUniversal(trafficPermissionAll)(global)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
@@ -254,7 +240,7 @@ metadata:
 			return stdout, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
-		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "traffic-permission-all")
+		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-default.default") // remove builtin traffic permission
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(trafficPermissionAllTo2Remote)(global)

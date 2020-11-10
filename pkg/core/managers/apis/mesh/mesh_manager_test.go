@@ -85,6 +85,26 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
+		It("should create default traffic permission", func() {
+			// given
+			meshName := "mesh-1"
+			resKey := model.ResourceKey{
+				Mesh: meshName,
+				Name: meshName,
+			}
+
+			// when
+			mesh := &core_mesh.MeshResource{}
+			err := resManager.Create(context.Background(), mesh, store.CreateBy(resKey))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// and default TrafficPermission for the mesh exists
+			err = resStore.Get(context.Background(), &core_mesh.TrafficPermissionResource{}, store.GetByKey("allow-all-mesh-1.default", meshName))
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 		Describe("should set default values for Prometheus settings", func() {
 
 			type testCase struct {
