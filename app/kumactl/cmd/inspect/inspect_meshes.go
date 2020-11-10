@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -33,7 +32,7 @@ func newInspectMeshesCmd(ctx *inspectContext) *cobra.Command {
 
 			switch format := output.Format(ctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printMeshInsights(ctx.Now(), insights, cmd.OutOrStdout())
+				return printMeshInsights(insights, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
@@ -46,21 +45,8 @@ func newInspectMeshesCmd(ctx *inspectContext) *cobra.Command {
 	return cmd
 }
 
-func printMeshInsights(now time.Time, meshInsights *mesh.MeshInsightResourceList, out io.Writer) error {
+func printMeshInsights(meshInsights *mesh.MeshInsightResourceList, out io.Writer) error {
 	data := printers.Table{
-		//Headers: []string{
-		//	"MESH",
-		//	"DPs",
-		//	"TPs",
-		//	"TRs",
-		//	"CBs",
-		//	"HCs",
-		//	"FIs",
-		//	"ESs",
-		//	"TTs",
-		//	"TLs",
-		//	"PTs",
-		//},
 		Headers: []string{
 			"MESH",
 			"DATAPLANES",
