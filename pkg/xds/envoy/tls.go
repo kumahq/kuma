@@ -123,7 +123,7 @@ func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xd
 		return grpc, nil
 	}
 	googleGrpc, err := withCallCredentials(&envoy_core.GrpcService_GoogleGrpc{
-		TargetUri:  context.ControlPlane.SdsLocation,
+		TargetUri:  context.SDSLocation(),
 		StatPrefix: util_xds.SanitizeMetric("sds_" + name),
 		ChannelCredentials: &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials{
 			CredentialSpecifier: &envoy_core.GrpcService_GoogleGrpc_ChannelCredentials_SslCredentials{

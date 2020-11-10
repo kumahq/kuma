@@ -80,7 +80,9 @@ func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 
 	ingressReconciler := DefaultIngressReconciler(rt)
 
-	syncTracker, err := DefaultDataplaneSyncTracker(rt, reconciler, ingressReconciler, metadataTracker)
+	connectionInfoTracker := newConnectionInfoTracker()
+
+	syncTracker, err := DefaultDataplaneSyncTracker(rt, reconciler, ingressReconciler, metadataTracker, connectionInfoTracker)
 	if err != nil {
 		return err
 	}
@@ -95,6 +97,7 @@ func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 	}
 	callbacks := util_xds.CallbacksChain{
 		statsCallbacks,
+		connectionInfoTracker,
 		authCallbacks,
 		syncTracker,
 		metadataTracker,
@@ -164,7 +167,7 @@ func DefaultIngressReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 	}
 }
 
-func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressReconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker) (envoy_xds.Callbacks, error) {
+func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressReconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker, connectionInfoTracker *connectionInfoTracker) (envoy_xds.Callbacks, error) {
 	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	faultInjectionMatcher := faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
@@ -278,6 +281,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 						Resource:   mesh,
 						Dataplanes: dataplanes,
 					},
+					ConnectionInfo: connectionInfoTracker.ConnectionInfo(streamId),
 				}
 
 				// pick a single the most specific route for each outbound interface

@@ -1,7 +1,6 @@
 package context
 
 import (
-	"fmt"
 	"io/ioutil"
 	"net/url"
 
@@ -10,13 +9,27 @@ import (
 )
 
 type Context struct {
-	ControlPlane *ControlPlaneContext
-	Mesh         MeshContext
+	ControlPlane   *ControlPlaneContext
+	Mesh           MeshContext
+	ConnectionInfo ConnectionInfo
+}
+
+type ConnectionInfo struct {
+	// Authority defines the URL that was used by the data plane to connect to the control plane
+	Authority string
 }
 
 type ControlPlaneContext struct {
 	SdsLocation string
 	SdsTlsCert  []byte
+}
+
+func (c Context) SDSLocation() string {
+	if c.ControlPlane.SdsLocation != "" {
+		return c.ControlPlane.SdsLocation
+	}
+	// SDS lives on the same server as XDS so we can use the URL that Dataplaned used to connect to XDS
+	return c.ConnectionInfo.Authority
 }
 
 type MeshContext struct {
@@ -40,9 +53,6 @@ func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, erro
 			return nil, err
 		}
 		sdsLocation = u.Host
-	}
-	if len(sdsLocation) == 0 {
-		sdsLocation = fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.DpServer.Port)
 	}
 
 	return &ControlPlaneContext{
