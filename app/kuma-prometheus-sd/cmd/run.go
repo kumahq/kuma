@@ -9,7 +9,6 @@ import (
 
 	"github.com/prometheus/prometheus/documentation/examples/custom-sd/adapter"
 
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_promsd "github.com/kumahq/kuma/pkg/config/app/kuma-prometheus-sd"
 	"github.com/kumahq/kuma/pkg/core"
@@ -22,8 +21,6 @@ import (
 var (
 	runLog = prometheusSdLog.WithName("run")
 )
-
-type CatalogClientFactory func(string) (catalog_client.CatalogClient, error)
 
 var (
 	// overridable by unit tests

@@ -14,7 +14,6 @@ import (
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/kumahq/kuma/pkg/catalog/client"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
@@ -25,8 +24,6 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-type CatalogClientFactory func(string) (client.CatalogClient, error)
-
 var (
 	runLog = dataplaneLog.WithName("run")
 	// overridable by tests
@@ -35,7 +32,6 @@ var (
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	},
 	)
-	catalogClientFactory = client.NewCatalogClient
 )
 
 func newRunCmd() *cobra.Command {
