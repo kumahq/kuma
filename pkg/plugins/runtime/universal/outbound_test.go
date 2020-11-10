@@ -36,7 +36,7 @@ var _ = Describe("UpdateOutbound", func() {
 	BeforeEach(func() {
 		rm = &countingManager{ResourceManager: core_manager.NewResourceManager(memory.NewStore())}
 
-		err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default"))
+		err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -97,7 +97,7 @@ var _ = Describe("UpdateOutbound", func() {
 
 		It("should not update dataplane outbounds when new service is added to another mesh", func() {
 			// when
-			err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("another-mesh", "another-mesh"))
+			err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("another-mesh", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			err = rm.Create(context.Background(), &mesh.DataplaneResource{

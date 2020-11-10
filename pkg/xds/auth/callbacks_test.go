@@ -13,6 +13,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -71,7 +72,7 @@ var _ = Describe("Auth Callbacks", func() {
 		testAuth = &testAuthenticator{}
 		callbacks = auth.NewCallbacks(resManager, testAuth)
 
-		err := resManager.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey("default", "default"))
+		err := resManager.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 		err = resManager.Create(context.Background(), dpRes, core_store.CreateByKey("web-01", "default"))
 		Expect(err).ToNot(HaveOccurred())

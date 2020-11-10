@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/policy"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 
@@ -34,7 +35,7 @@ func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.Dat
 		return nil, errors.Wrap(err, "could not retrieve traffic logs")
 	}
 	mesh := mesh_core.MeshResource{}
-	if err := m.ResourceManager.Get(ctx, &mesh, store.GetByKey(dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetMesh())); err != nil {
+	if err := m.ResourceManager.Get(ctx, &mesh, store.GetByKey(dataplane.GetMeta().GetMesh(), model.NoMesh)); err != nil {
 		return nil, err
 	}
 	return BuildTrafficLogMap(dataplane, &mesh, logs.Items), nil

@@ -33,7 +33,7 @@ func ExecuteOwnerTests(
 	It("should delete resource when its owner is deleted", func() {
 		// setup
 		meshRes := core_mesh.MeshResource{}
-		err := s.Create(context.Background(), &meshRes, store.CreateByKey(mesh, mesh))
+		err := s.Create(context.Background(), &meshRes, store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		name := "resource-1"
@@ -49,7 +49,7 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = s.Delete(context.Background(), &meshRes, store.DeleteByKey(mesh, mesh))
+		err = s.Delete(context.Background(), &meshRes, store.DeleteByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -61,7 +61,7 @@ func ExecuteOwnerTests(
 	It("should delete several resources when their owner is deleted", func() {
 		// setup
 		meshRes := core_mesh.MeshResource{}
-		err := s.Create(context.Background(), &meshRes, store.CreateByKey(mesh, mesh))
+		err := s.Create(context.Background(), &meshRes, store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		for i := 0; i < 10; i++ {
@@ -82,7 +82,7 @@ func ExecuteOwnerTests(
 		Expect(actual.Items).To(HaveLen(10))
 
 		// when
-		err = s.Delete(context.Background(), &meshRes, store.DeleteByKey(mesh, mesh))
+		err = s.Delete(context.Background(), &meshRes, store.DeleteByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -95,7 +95,7 @@ func ExecuteOwnerTests(
 	It("should delete owners chain", func() {
 		// setup
 		meshRes := core_mesh.MeshResource{}
-		err := s.Create(context.Background(), &meshRes, store.CreateByKey(mesh, mesh))
+		err := s.Create(context.Background(), &meshRes, store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		var prev model.Resource = &meshRes
@@ -119,7 +119,7 @@ func ExecuteOwnerTests(
 		Expect(actual.Items).To(HaveLen(10))
 
 		// when
-		err = s.Delete(context.Background(), &meshRes, store.DeleteByKey(mesh, mesh))
+		err = s.Delete(context.Background(), &meshRes, store.DeleteByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

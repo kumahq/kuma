@@ -30,7 +30,7 @@ var _ = Describe("Resource Manager", func() {
 		meshRes := mesh.MeshResource{
 			Spec: mesh_proto.Mesh{},
 		}
-		return resManager.Create(context.Background(), &meshRes, store.CreateByKey(name, name))
+		return resManager.Create(context.Background(), &meshRes, store.CreateByKey(name, model.NoMesh))
 	}
 
 	createSampleResource := func(mesh string) (*sample.TrafficRouteResource, error) {

@@ -21,6 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -95,7 +96,7 @@ var _ = Describe("SDS Server", func() {
 				},
 			},
 		}
-		err = resManager.Create(context.Background(), &meshRes, core_store.CreateByKey("default", "default"))
+		err = resManager.Create(context.Background(), &meshRes, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup backend dataplane
@@ -245,7 +246,7 @@ var _ = Describe("SDS Server", func() {
 		It("should return pair when CA is changed", func(done Done) {
 			// when
 			meshRes := mesh_core.MeshResource{}
-			Expect(resManager.Get(context.Background(), &meshRes, core_store.GetByKey("default", "default"))).To(Succeed())
+			Expect(resManager.Get(context.Background(), &meshRes, core_store.GetByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "" // we need to first disable mTLS
 			Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "ca-2"
