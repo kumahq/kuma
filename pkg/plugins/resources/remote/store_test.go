@@ -104,13 +104,13 @@ var _ = Describe("RemoteStore", func() {
 
 			// when
 			resource := mesh.MeshResource{}
-			err := store.Get(context.Background(), &resource, core_store.GetByKey(meshName, meshName))
+			err := store.Get(context.Background(), &resource, core_store.GetByKey(meshName, core_model.NoMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(resource.GetMeta().GetName()).To(Equal(meshName))
-			Expect(resource.GetMeta().GetMesh()).To(Equal(meshName))
+			Expect(resource.GetMeta().GetMesh()).To(Equal(core_model.NoMesh))
 			Expect(resource.GetMeta().GetCreationTime()).Should(Equal(creationTime))
 			Expect(resource.GetMeta().GetModificationTime()).Should(Equal(modificationTime))
 		})
@@ -185,14 +185,14 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"mesh":"someMesh","name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
+				Expect(bytes).To(MatchJSON(`{"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})
 
 			// when
 			resource := mesh.MeshResource{
 				Spec: v1alpha1.Mesh{},
 			}
-			err := store.Create(context.Background(), &resource, core_store.CreateByKey(meshName, meshName))
+			err := store.Create(context.Background(), &resource, core_store.CreateByKey(meshName, core_model.NoMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -214,7 +214,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			err := store.Create(context.Background(), &mesh.MeshResource{}, core_store.CreateByKey("test", "test"))
+			err := store.Create(context.Background(), &mesh.MeshResource{}, core_store.CreateByKey("test", core_model.NoMesh))
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -265,7 +265,7 @@ var _ = Describe("RemoteStore", func() {
 				Expect(req.URL.Path).To(Equal(fmt.Sprintf("/meshes/%s", meshName)))
 				bytes, err := ioutil.ReadAll(req.Body)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(bytes).To(MatchJSON(`{"mesh":"someMesh","mtls":{"enabledBackend":"builtin","backends":[{"name":"builtin","type":"builtin"}]},"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
+				Expect(bytes).To(MatchJSON(`{"name":"someMesh","mtls":{"enabledBackend":"builtin","backends":[{"name":"builtin","type":"builtin"}]},"name":"someMesh","type":"Mesh","creationTime": "0001-01-01T00:00:00Z","modificationTime": "0001-01-01T00:00:00Z"}`))
 			})
 
 			// when
@@ -282,7 +282,6 @@ var _ = Describe("RemoteStore", func() {
 					},
 				},
 				Meta: &model.ResourceMeta{
-					Mesh: meshName,
 					Name: meshName,
 				},
 			}
@@ -300,7 +299,6 @@ var _ = Describe("RemoteStore", func() {
 			resource := mesh.MeshResource{
 				Spec: v1alpha1.Mesh{},
 				Meta: &model.ResourceMeta{
-					Mesh: "default",
 					Name: "default",
 				},
 			}
@@ -332,7 +330,6 @@ var _ = Describe("RemoteStore", func() {
 			// when
 			resource := mesh.MeshResource{
 				Meta: &model.ResourceMeta{
-					Mesh: "test",
 					Name: "test",
 				},
 			}
@@ -427,12 +424,12 @@ var _ = Describe("RemoteStore", func() {
 			Expect(meshes.Items).To(HaveLen(2))
 
 			Expect(meshes.Items[0].Meta.GetName()).To(Equal("mesh-1"))
-			Expect(meshes.Items[0].Meta.GetMesh()).To(Equal("mesh-1"))
+			Expect(meshes.Items[0].Meta.GetMesh()).To(Equal(core_model.NoMesh))
 			Expect(meshes.Items[0].Meta.GetCreationTime()).Should(Equal(creationTime))
 			Expect(meshes.Items[0].Meta.GetModificationTime()).Should(Equal(modificationTime))
 
 			Expect(meshes.Items[1].Meta.GetName()).To(Equal("mesh-2"))
-			Expect(meshes.Items[1].Meta.GetMesh()).To(Equal("mesh-2"))
+			Expect(meshes.Items[1].Meta.GetMesh()).To(Equal(core_model.NoMesh))
 			Expect(meshes.Items[1].Meta.GetCreationTime()).Should(Equal(creationTime))
 			Expect(meshes.Items[1].Meta.GetModificationTime()).Should(Equal(modificationTime))
 		})

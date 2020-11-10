@@ -26,7 +26,7 @@ import (
 	kube_record "k8s.io/client-go/tools/record"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
@@ -116,7 +116,7 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 
 	vipconfig := &kube_core.ConfigMap{}
 	vips := dns.VIPList{}
-	if err := r.Get(ctx, kube_types.NamespacedName{Namespace: "kuma-system", Name: "kuma-dns-vips"}, vipconfig); err == nil {
+	if err := r.Get(ctx, kube_types.NamespacedName{Namespace: r.SystemNamespace, Name: "kuma-dns-vips"}, vipconfig); err == nil {
 		if err = json.Unmarshal([]byte(vipconfig.Data["config"]), &vips); err != nil {
 			return kube_ctrl.Result{}, errors.Wrap(err, "could not unmarshal")
 		}
@@ -282,7 +282,7 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 			ToRequests: &DataplaneToSameMeshDataplanesMapper{Client: mgr.GetClient(), Log: r.Log.WithName("dataplane-to-dataplanes-mapper")},
 		}).
 		Watches(&kube_source.Kind{Type: &kube_core.ConfigMap{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ConfigMapToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("configmap-to-pods-mapper")},
+			ToRequests: &ConfigMapToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("configmap-to-pods-mapper"), SystemNamespace: r.SystemNamespace},
 		}).
 		Complete(r)
 }
@@ -311,11 +311,12 @@ func (m *ServiceToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Re
 
 type ConfigMapToPodsMapper struct {
 	kube_client.Client
-	Log logr.Logger
+	Log             logr.Logger
+	SystemNamespace string
 }
 
 func (m *ConfigMapToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	if obj.Meta.GetName() != dns.ConfigKey || obj.Meta.GetNamespace() != "kuma-system" {
+	if obj.Meta.GetName() != dns.ConfigKey || obj.Meta.GetNamespace() != m.SystemNamespace {
 		return nil
 	}
 	pods := &kube_core.PodList{}

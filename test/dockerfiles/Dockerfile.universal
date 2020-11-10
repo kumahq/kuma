@@ -1,5 +1,9 @@
-# using Envoy's base to inherit the Envoy binary
-FROM envoyproxy/envoy-alpine:v1.15.0
+# using Envoy's base to copy the Envoy binary
+FROM envoyproxy/envoy-alpine:v1.16.0 as envoy
+
+FROM ubuntu:20.04
+
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
@@ -9,10 +13,16 @@ RUN mkdir /kuma
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
     && chmod a+rw /kuma/kuma-cp.conf
 
-RUN apk add --no-cache openssh curl nmap-ncat vim \
-  && ssh-keygen -A \
+RUN apt update \
+  && apt dist-upgrade -y \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata \
+  && apt install -y openssh-server curl ncat vim \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN ssh-keygen -A \
   && sed -i s/#PermitRootLogin.*/PermitRootLogin\ yes/ /etc/ssh/sshd_config \
   && sed -i s/#PermitEmptyPasswords.*/PermitEmptyPasswords\ yes/ /etc/ssh/sshd_config \
+  && mkdir /var/run/sshd \
   && passwd -d root
 
 # do not detach (-D), log to stderr (-e)

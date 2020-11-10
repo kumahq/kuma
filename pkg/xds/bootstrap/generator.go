@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"text/template"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/validators"
 
@@ -117,7 +118,7 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 }
 
 func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string) error {
-	if err := b.resManager.Get(ctx, &core_mesh.MeshResource{}, core_store.GetByKey(mesh, mesh)); err != nil {
+	if err := b.resManager.Get(ctx, &core_mesh.MeshResource{}, core_store.GetByKey(mesh, model.NoMesh)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			verr := validators.ValidationError{}
 			verr.AddViolation("mesh", fmt.Sprintf("mesh %q does not exist", mesh))

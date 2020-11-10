@@ -83,7 +83,6 @@ type zoneInsightStore struct {
 
 func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSubscription) error {
 	key := core_model.ResourceKey{
-		Mesh: core_model.DefaultMesh,
 		Name: zone,
 	}
 	zoneInsight := &system.ZoneInsightResource{}

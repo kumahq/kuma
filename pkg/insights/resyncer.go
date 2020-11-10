@@ -79,6 +79,9 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		if err != nil {
 			return err
 		}
+		if obj, err := registry.Global().NewObject(event.Type); err != nil || obj.Scope() != model.ScopeMesh {
+			continue
+		}
 		if event.Operation == events.Update && event.Type != core_mesh.DataplaneInsightType {
 			// 'Update' events doesn't affect MeshInsight expect for DataplaneInsight,
 			// because that's how we find online/offline Dataplane's status

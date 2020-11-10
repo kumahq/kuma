@@ -20,6 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -86,7 +87,7 @@ var _ = Describe("Bootstrap Server", func() {
 	})
 
 	BeforeEach(func() {
-		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("default", "default"))
+		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 		core.Now = func() time.Time {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
