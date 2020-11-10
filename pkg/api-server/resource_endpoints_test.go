@@ -32,12 +32,9 @@ var _ = Describe("Resource Endpoints", func() {
 
 	const mesh = "default"
 
-	const publicApiServerUrl = "http://kuma.internal:1234" // for pagination test
-
 	BeforeEach(func() {
 		resourceStore = memory.NewStore()
 		serverConfig := config.DefaultApiServerConfig()
-		serverConfig.Catalog.ApiServer.Url = publicApiServerUrl
 		m, err := core_metrics.NewMetrics("Standalone")
 		metrics = m
 		Expect(err).ToNot(HaveOccurred())
@@ -219,8 +216,8 @@ var _ = Describe("Resource Endpoints", func() {
 						"path": "/sample-path"
 					}
 				],
-				"next": "%s/sample-traffic-routes?offset=2&size=2"
-			}`, publicApiServerUrl)
+				"next": "http://%s/sample-traffic-routes?offset=2&size=2"
+			}`, client.address)
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(json))

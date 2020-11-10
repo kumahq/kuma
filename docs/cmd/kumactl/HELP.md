@@ -277,7 +277,7 @@ Usage:
 
 Flags:
   -h, --help                                help for metrics
-      --kuma-cp-address string              the address of Kuma CP (default "http://kuma-control-plane.kuma-system:5681")
+      --kuma-cp-address string              the address of Kuma CP (default "grpc://kuma-control-plane.kuma-system:5676")
       --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd")
       --kuma-prometheus-sd-version string   version of Kuma Prometheus SD (default "latest")
       --namespace string                    namespace to install metrics to (default "kuma-metrics")

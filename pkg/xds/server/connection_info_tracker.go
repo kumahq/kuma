@@ -15,25 +15,25 @@ import (
 
 const authorityHeader = ":authority"
 
-// connectionInfoTracker tracks the information about the connection itself from the data plane to the control plane
-type connectionInfoTracker struct {
+// ConnectionInfoTracker tracks the information about the connection itself from the data plane to the control plane
+type ConnectionInfoTracker struct {
 	sync.RWMutex
 	connectionInfos map[core_xds.StreamID]xds_context.ConnectionInfo
 }
 
-func newConnectionInfoTracker() *connectionInfoTracker {
-	return &connectionInfoTracker{
+func NewConnectionInfoTracker() *ConnectionInfoTracker {
+	return &ConnectionInfoTracker{
 		connectionInfos: map[core_xds.StreamID]xds_context.ConnectionInfo{},
 	}
 }
 
-func (c *connectionInfoTracker) ConnectionInfo(streamID core_xds.StreamID) xds_context.ConnectionInfo {
+func (c *ConnectionInfoTracker) ConnectionInfo(streamID core_xds.StreamID) xds_context.ConnectionInfo {
 	c.RLock()
 	defer c.RUnlock()
 	return c.connectionInfos[streamID]
 }
 
-func (c *connectionInfoTracker) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
+func (c *ConnectionInfoTracker) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
 	metadata, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		return errors.New("request has no metadata")
@@ -51,24 +51,24 @@ func (c *connectionInfoTracker) OnStreamOpen(ctx context.Context, streamID core_
 	return nil
 }
 
-func (c *connectionInfoTracker) OnStreamClosed(streamID core_xds.StreamID) {
+func (c *ConnectionInfoTracker) OnStreamClosed(streamID core_xds.StreamID) {
 	c.Lock()
 	delete(c.connectionInfos, streamID)
 	c.Unlock()
 }
 
-func (c *connectionInfoTracker) OnStreamRequest(core_xds.StreamID, *envoy_api_v2.DiscoveryRequest) error {
+func (c *ConnectionInfoTracker) OnStreamRequest(core_xds.StreamID, *envoy_api_v2.DiscoveryRequest) error {
 	return nil
 }
 
-func (c *connectionInfoTracker) OnStreamResponse(core_xds.StreamID, *envoy_api_v2.DiscoveryRequest, *envoy_api_v2.DiscoveryResponse) {
+func (c *ConnectionInfoTracker) OnStreamResponse(core_xds.StreamID, *envoy_api_v2.DiscoveryRequest, *envoy_api_v2.DiscoveryResponse) {
 }
 
-func (c *connectionInfoTracker) OnFetchRequest(context.Context, *envoy_api_v2.DiscoveryRequest) error {
+func (c *ConnectionInfoTracker) OnFetchRequest(context.Context, *envoy_api_v2.DiscoveryRequest) error {
 	return nil
 }
 
-func (c *connectionInfoTracker) OnFetchResponse(*envoy_api_v2.DiscoveryRequest, *envoy_api_v2.DiscoveryResponse) {
+func (c *ConnectionInfoTracker) OnFetchResponse(*envoy_api_v2.DiscoveryRequest, *envoy_api_v2.DiscoveryResponse) {
 }
 
-var _ envoy_server.Callbacks = &connectionInfoTracker{}
+var _ envoy_server.Callbacks = &ConnectionInfoTracker{}

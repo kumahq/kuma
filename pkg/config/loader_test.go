@@ -114,7 +114,6 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
 
-			Expect(cfg.General.AdvertisedHostname).To(Equal("kuma.internal"))
 			Expect(cfg.General.TlsCertFile).To(Equal("/tmp/cert"))
 			Expect(cfg.General.TlsKeyFile).To(Equal("/tmp/key"))
 
@@ -203,7 +202,6 @@ runtime:
 reports:
   enabled: false
 general:
-  advertisedHostname: kuma.internal
   tlsKeyFile: /tmp/key
   tlsCertFile: /tmp/cert
 guiServer:
@@ -272,7 +270,6 @@ diagnostics:
 				"KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS":  "1234,5678",
 				"KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS": "4321,8765",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE":                  "/tmp/ca.crt",
-				"KUMA_GENERAL_ADVERTISED_HOSTNAME":                               "kuma.internal",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                     "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                      "/tmp/key",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                           "https://kuma,https://someapi",

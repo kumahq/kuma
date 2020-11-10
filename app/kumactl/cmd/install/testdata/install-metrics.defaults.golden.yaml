@@ -9358,7 +9358,7 @@ spec:
           args:
             - run
             - --name=kuma-prometheus-sd
-            - --cp-address=http://kuma-control-plane.kuma-system:5681
+            - --cp-address=grpc://kuma-control-plane.kuma-system:5676
             - --output-file=/var/run/kuma.io/prometheus-sd/kuma.file_sd.json
           volumeMounts:
             - mountPath: "/var/run/kuma.io/prometheus-sd"

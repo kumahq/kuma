@@ -80,7 +80,7 @@ func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 
 	ingressReconciler := DefaultIngressReconciler(rt)
 
-	connectionInfoTracker := newConnectionInfoTracker()
+	connectionInfoTracker := NewConnectionInfoTracker()
 
 	syncTracker, err := DefaultDataplaneSyncTracker(rt, reconciler, ingressReconciler, metadataTracker, connectionInfoTracker)
 	if err != nil {
@@ -167,7 +167,7 @@ func DefaultIngressReconciler(rt core_runtime.Runtime) SnapshotReconciler {
 	}
 }
 
-func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressReconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker, connectionInfoTracker *connectionInfoTracker) (envoy_xds.Callbacks, error) {
+func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressReconciler SnapshotReconciler, metadataTracker *DataplaneMetadataTracker, connectionInfoTracker *ConnectionInfoTracker) (envoy_xds.Callbacks, error) {
 	permissionsMatcher := permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	logsMatcher := logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()}
 	faultInjectionMatcher := faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()}

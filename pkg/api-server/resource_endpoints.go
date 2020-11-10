@@ -32,8 +32,8 @@ const (
 )
 
 type resourceEndpoints struct {
-	mode            config_core.CpMode
-	resManager      manager.ResourceManager
+	mode       config_core.CpMode
+	resManager manager.ResourceManager
 	definitions.ResourceWsDefinition
 	adminAuth authz.AdminAuth
 }

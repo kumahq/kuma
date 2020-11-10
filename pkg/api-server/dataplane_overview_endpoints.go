@@ -19,7 +19,6 @@ import (
 )
 
 type dataplaneOverviewEndpoints struct {
-	publicURL  string
 	resManager manager.ResourceManager
 }
 

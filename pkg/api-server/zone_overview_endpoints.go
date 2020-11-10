@@ -16,7 +16,6 @@ import (
 )
 
 type zoneOverviewEndpoints struct {
-	publicURL  string
 	resManager manager.ResourceManager
 }
 
