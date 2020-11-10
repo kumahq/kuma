@@ -221,10 +221,10 @@ runtime:
       sidecarTraffic:
         # List of inbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ports annotation is specified on Pod.
-        excludeInboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS
+        excludeInboundPorts: [ ] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS
         # List of outbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
-        excludeOutboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
+        excludeOutboundPorts: [ ] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
   # Universal-specific configuration
   universal:
@@ -247,6 +247,11 @@ metrics:
     enabled: true # ENV: KUMA_METRICS_ZONE_ENABLED
     # How many latest subscriptions will be stored in ZoneInsights object, if equals 0 then unlimited
     subscriptionLimit: 10 # ENV: KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT
+  mesh:
+    # Min time that should pass between Mesh resync
+    minResyncTimeout: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT
+    # Max time that Mesh could spend without resync
+    maxResyncTimeout: 60s # ENV: KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT
 
 # Reports configuration
 reports:

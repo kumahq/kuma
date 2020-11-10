@@ -175,6 +175,19 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 			}
 			endpoints.addFindEndpoint(ws, "/meshes")
 			endpoints.addListEndpoint(ws, "/meshes")
+		case mesh.MeshInsightType:
+			endpoints := resourceEndpoints{
+				mode:                 cfg.Mode,
+				publicURL:            config.Catalog.ApiServer.Url,
+				resManager:           resManager,
+				ResourceWsDefinition: definition,
+				meshFromRequest:      meshFromPathParam("name"),
+				adminAuth:            authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost},
+			}
+			endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/mesh-insights")
+			endpoints.addDeleteEndpointReadOnly(ws, "/mesh-insights")
+			endpoints.addFindEndpoint(ws, "/mesh-insights")
+			endpoints.addListEndpoint(ws, "/mesh-insights")
 		case system.ZoneType:
 			endpoints := resourceEndpoints{
 				publicURL:            config.Catalog.ApiServer.Url,

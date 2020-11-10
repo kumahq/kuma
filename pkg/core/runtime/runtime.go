@@ -117,27 +117,35 @@ func (rc *runtimeContext) EventReaderFactory() events.ReaderFactory {
 func (rc *runtimeContext) CaManagers() ca.Managers {
 	return rc.cam
 }
+
 func (rc *runtimeContext) Config() kuma_cp.Config {
 	return rc.cfg
 }
+
 func (rc *runtimeContext) XDS() core_xds.XdsContext {
 	return rc.xds
 }
+
 func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
 	return rc.rm
 }
+
 func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {
 	return rc.rs
 }
+
 func (rc *runtimeContext) SecretStore() store.SecretStore {
 	return rc.ss
 }
+
 func (rc *runtimeContext) ConfigStore() core_store.ResourceStore {
 	return rc.cs
 }
+
 func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return rc.rom
 }
+
 func (rc *runtimeContext) Extensions() context.Context {
 	return rc.ext
 }

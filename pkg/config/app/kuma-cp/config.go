@@ -39,6 +39,7 @@ func (d *Defaults) Validate() error {
 type Metrics struct {
 	Dataplane *DataplaneMetrics `yaml:"dataplane"`
 	Zone      *ZoneMetrics      `yaml:"zone"`
+	Mesh      *MeshMetrics      `yaml:"mesh"`
 }
 
 func (m *Metrics) Sanitize() {
@@ -77,6 +78,21 @@ func (d *ZoneMetrics) Sanitize() {
 func (d *ZoneMetrics) Validate() error {
 	if d.SubscriptionLimit < 0 {
 		return errors.New("SubscriptionLimit should be positive or equal 0")
+	}
+	return nil
+}
+
+type MeshMetrics struct {
+	MinResyncTimeout time.Duration `yaml:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
+	MaxResyncTimeout time.Duration `yaml:"maxResyncTimeout" envconfig:"kuma_metrics_mesh_max_resync_timeout"`
+}
+
+func (d *MeshMetrics) Sanitize() {
+}
+
+func (d *MeshMetrics) Validate() error {
+	if d.MaxResyncTimeout <= d.MinResyncTimeout {
+		return errors.New("MaxResyncTimeout should be greater than MinResyncTimeout")
 	}
 	return nil
 }
@@ -164,6 +180,10 @@ func DefaultConfig() Config {
 			Zone: &ZoneMetrics{
 				Enabled:           true,
 				SubscriptionLimit: 10,
+			},
+			Mesh: &MeshMetrics{
+				MinResyncTimeout: 1 * time.Second,
+				MaxResyncTimeout: 60 * time.Second,
 			},
 		},
 		Reports: &Reports{

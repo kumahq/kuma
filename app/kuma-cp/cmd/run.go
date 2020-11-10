@@ -6,6 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/pkg/insights"
+
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/clusterid"
 	"github.com/kumahq/kuma/pkg/config"
@@ -143,6 +145,11 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 
 			if err := defaults.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Defaults")
+				return err
+			}
+
+			if err := insights.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up Insights resyncer")
 				return err
 			}
 

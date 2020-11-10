@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	kuma_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
@@ -14,6 +13,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
 
+	"github.com/kumahq/kuma/pkg/core"
+	kuma_v1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -22,6 +24,8 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
+
+var log = core.Log.WithName("k8s-event-listener")
 
 type listener struct {
 	mgr manager.Manager
@@ -79,6 +83,10 @@ func resourceKey(obj model.KubernetesObject) core_model.ResourceKey {
 
 func (k *listener) OnAdd(obj interface{}) {
 	kobj := obj.(model.KubernetesObject)
+	if err := k.addTypeInformationToObject(kobj); err != nil {
+		log.Error(err, "unable to add TypeMeta to KubernetesObject")
+		return
+	}
 	k.out.Send(
 		events.Create,
 		core_model.ResourceType(kobj.GetObjectKind().GroupVersionKind().Kind),
@@ -88,6 +96,10 @@ func (k *listener) OnAdd(obj interface{}) {
 
 func (k *listener) OnUpdate(oldObj, newObj interface{}) {
 	kobj := newObj.(model.KubernetesObject)
+	if err := k.addTypeInformationToObject(kobj); err != nil {
+		log.Error(err, "unable to add TypeMeta to KubernetesObject")
+		return
+	}
 	k.out.Send(
 		events.Update,
 		core_model.ResourceType(kobj.GetObjectKind().GroupVersionKind().Kind),
@@ -97,6 +109,10 @@ func (k *listener) OnUpdate(oldObj, newObj interface{}) {
 
 func (k *listener) OnDelete(obj interface{}) {
 	kobj := obj.(model.KubernetesObject)
+	if err := k.addTypeInformationToObject(kobj); err != nil {
+		log.Error(err, "unable to add TypeMeta to KubernetesObject")
+		return
+	}
 	k.out.Send(
 		events.Delete,
 		core_model.ResourceType(kobj.GetObjectKind().GroupVersionKind().Kind),
@@ -106,6 +122,26 @@ func (k *listener) OnDelete(obj interface{}) {
 
 func (k *listener) NeedLeaderElection() bool {
 	return false
+}
+
+func (k *listener) addTypeInformationToObject(obj runtime.Object) error {
+	gvks, _, err := k.mgr.GetScheme().ObjectKinds(obj)
+	if err != nil {
+		return fmt.Errorf("missing apiVersion or kind and cannot assign it; %w", err)
+	}
+
+	for _, gvk := range gvks {
+		if len(gvk.Kind) == 0 {
+			continue
+		}
+		if len(gvk.Version) == 0 || gvk.Version == runtime.APIVersionInternal {
+			continue
+		}
+		obj.GetObjectKind().SetGroupVersionKind(gvk)
+		break
+	}
+
+	return nil
 }
 
 func (k *listener) createListerWatcher(gvk schema.GroupVersionKind) (cache.ListerWatcher, error) {

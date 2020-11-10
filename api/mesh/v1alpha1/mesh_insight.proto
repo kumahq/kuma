@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+import "google/protobuf/timestamp.proto";
+
+message MeshInsight {
+  google.protobuf.Timestamp last_sync = 1;
+
+  message DataplaneStat {
+    uint32 total = 1;
+    uint32 online = 2;
+    uint32 offline = 3;
+  }
+  DataplaneStat dataplanes = 2;
+
+  message PolicyStat { uint32 total = 1; }
+  map<string, PolicyStat> policies = 3;
+}
