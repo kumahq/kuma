@@ -37,7 +37,7 @@ func (m *zoneInsightManager) Create(ctx context.Context, resource core_model.Res
 	m.limitSubscription(resource.(*system.ZoneInsightResource))
 
 	zone := system.ZoneResource{}
-	if err := m.store.Get(ctx, &zone, core_store.GetByKey(opts.Name, opts.Mesh)); err != nil {
+	if err := m.store.Get(ctx, &zone, core_store.GetByKey(opts.Name, core_model.NoMesh)); err != nil {
 		return err
 	}
 	return m.store.Create(ctx, resource, append(fs, core_store.CreatedAt(core.Now()), core_store.CreateWithOwner(&zone))...)

@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/ca"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
@@ -40,7 +41,7 @@ type secretValidator struct {
 
 func (s *secretValidator) ValidateDelete(ctx context.Context, name string, mesh string) error {
 	meshRes := &mesh_core.MeshResource{}
-	err := s.store.Get(ctx, meshRes, core_store.GetByKey(mesh, mesh))
+	err := s.store.Get(ctx, meshRes, core_store.GetByKey(mesh, model.NoMesh))
 	if err != nil {
 		return err
 	}

@@ -9,7 +9,6 @@ import (
 )
 
 var defaultMeshKey = core_model.ResourceKey{
-	Mesh: core_model.DefaultMesh,
 	Name: core_model.DefaultMesh,
 }
 
