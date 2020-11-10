@@ -53,7 +53,6 @@ var _ = Describe("Mesh Manager", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
-				Mesh: meshName,
 				Name: meshName,
 			}
 
@@ -89,7 +88,6 @@ var _ = Describe("Mesh Manager", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
-				Mesh: meshName,
 				Name: meshName,
 			}
 
@@ -115,7 +113,7 @@ var _ = Describe("Mesh Manager", func() {
 			DescribeTable("should apply defaults on a target MeshResource",
 				func(given testCase) {
 					// given
-					key := model.ResourceKey{Mesh: "demo", Name: "demo"}
+					key := model.ResourceKey{Name: "demo"}
 					mesh := core_mesh.MeshResource{}
 
 					// when
@@ -175,7 +173,6 @@ var _ = Describe("Mesh Manager", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
-				Mesh: meshName,
 				Name: meshName,
 			}
 
@@ -209,7 +206,6 @@ var _ = Describe("Mesh Manager", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
-				Mesh: meshName,
 				Name: meshName,
 			}
 
@@ -256,7 +252,6 @@ var _ = Describe("Mesh Manager", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
-				Mesh: meshName,
 				Name: meshName,
 			}
 
@@ -302,7 +297,7 @@ var _ = Describe("Mesh Manager", func() {
 			DescribeTable("should apply defaults on a target MeshResource",
 				func(given testCase) {
 					// given
-					key := model.ResourceKey{Mesh: "demo", Name: "demo"}
+					key := model.ResourceKey{Name: "demo"}
 					mesh := core_mesh.MeshResource{}
 
 					// when
