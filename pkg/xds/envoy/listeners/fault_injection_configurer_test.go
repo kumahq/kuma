@@ -66,8 +66,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                     headers:
                     - name: x-kuma-tags
                       safeRegexMatch:
-                        googleRe2: 
-                          maxProgramSize: 500
+                        googleRe2: {}
                         regex: '.*&tag1=[^&]*value1[,&].*&tag2=[^&]*value2[,&].*'
                 - name: envoy.filters.http.router
                 statPrefix: stats`,
@@ -112,8 +111,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
                     headers:
                     - name: x-kuma-tags
                       safeRegexMatch:
-                        googleRe2: 
-                          maxProgramSize: 500
+                        googleRe2: {}
                         regex: '(.*&tag1=[^&]*value1m1[,&].*&tag2=[^&]*value2m1[,&].*|.*&tag1=[^&]*value1m2[,&].*&tag2=[^&]*value2m2[,&].*)'
                 - name: envoy.filters.http.router
                 statPrefix: stats`,

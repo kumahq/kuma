@@ -7,7 +7,6 @@ import (
 	envoy_http_fault "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/fault/v2"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
-	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -76,9 +75,7 @@ func createHeaders(selectors []mesh_proto.SingleValueTagSet) *envoy_api_v2_route
 		HeaderMatchSpecifier: &envoy_api_v2_route.HeaderMatcher_SafeRegexMatch{
 			SafeRegexMatch: &envoy_type_matcher.RegexMatcher{
 				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-					GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{
-						MaxProgramSize: &wrappers.UInt32Value{Value: 500},
-					},
+					GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
 				},
 				Regex: regexOR,
 			},

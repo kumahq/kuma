@@ -124,8 +124,7 @@ resources:
                       headers:
                         - name: x-kuma-tags
                           safeRegexMatch:
-                            googleRe2:
-                              maxProgramSize: 500
+                            googleRe2: {}
                             regex: .*&kuma.io/service=[^&]*frontend[,&].*
                   - name: envoy.filters.http.router
                 routeConfig:
