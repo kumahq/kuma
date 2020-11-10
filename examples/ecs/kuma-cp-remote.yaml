@@ -207,8 +207,6 @@ Resources:
               Value: !Ref Zone
             - Name: KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
               Value: !Ref KumaCPGlobal
-            - Name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              Value: !Join [ "-", [ !Ref Zone, "controlplane.kuma.io" ] ]
             - Name: KUMA_DNS_SERVER_PORT
               Value: 53
             - Name: KUMA_DP_SERVER_AUTH_TYPE

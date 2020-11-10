@@ -5797,8 +5797,6 @@ spec:
               value: "kubernetes"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma-system"
-            - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              value: kuma-control-plane.kuma-system
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: /var/run/secrets/kuma.io/tls-cert/tls.crt
             - name: KUMA_GENERAL_TLS_KEY_FILE
