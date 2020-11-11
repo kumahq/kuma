@@ -46,7 +46,7 @@ var _ = Describe("ValidateTokenPath", func() {
 		err := config.ValidateTokenPath("nonexistingfile")
 
 		// then
-		Expect(err).To(MatchError("could not read file: stat nonexistingfile: no such file or directory"))
+		Expect(err).To(MatchError("could not read file nonexistingfile: stat nonexistingfile: no such file or directory"))
 	})
 
 	It("should fail for empty file", func() {
