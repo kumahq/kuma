@@ -2,7 +2,10 @@ package api_server
 
 import (
 	"context"
+	"reflect"
 	"strings"
+
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/kumahq/kuma/pkg/core/validators"
 
@@ -94,28 +97,17 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 		return
 	}
 
-	overviews, err := r.fetchOverviews(request.Request.Context(), page, meshName)
+	filter, err := genFilter(request)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
 	}
 
-	mode, err := modeFromParameter(request, "gateway")
+	overviews, err := r.fetchOverviews(request.Request.Context(), page, meshName, filter)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
 	}
-	overviews.RetainGatewayDataplanes(mode)
-
-	mode, err = modeFromParameter(request, "ingress")
-	if err != nil {
-		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
-		return
-	}
-	overviews.RetainIngressDataplanes(mode)
-
-	tags := parseTags(request.QueryParameters("tag"))
-	overviews.RetainMatchingTags(tags)
 
 	// pagination is not supported yet so we need to override pagination total items after retaining dataplanes
 	overviews.GetPagination().SetTotal(uint32(len(overviews.Items)))
@@ -131,9 +123,9 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 	}
 }
 
-func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string) (mesh.DataplaneOverviewResourceList, error) {
+func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string, filter store.ListOptionsFunc) (mesh.DataplaneOverviewResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset)); err != nil {
+	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset), filter); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err
 	}
 
@@ -172,4 +164,61 @@ func modeFromParameter(request *restful.Request, param string) (string, error) {
 		"shoud use `true` or `false` instead of "+mode)
 
 	return "", &verr
+}
+
+type DpFilter func(a interface{}) bool
+
+func modeToFilter(mode string) DpFilter {
+	isnil := func(a interface{}) bool {
+		return a == nil || reflect.ValueOf(a).IsNil()
+	}
+	switch mode {
+	case "true":
+		return func(a interface{}) bool {
+			return !isnil(a)
+		}
+	case "false":
+		return func(a interface{}) bool {
+			return isnil(a)
+		}
+	default:
+		return func(a interface{}) bool {
+			return true
+		}
+	}
+}
+
+func genFilter(request *restful.Request) (store.ListOptionsFunc, error) {
+	gatewayMode, err := modeFromParameter(request, "gateway")
+	if err != nil {
+		return nil, err
+	}
+
+	ingressMode, err := modeFromParameter(request, "ingress")
+	if err != nil {
+		return nil, err
+	}
+
+	tags := parseTags(request.QueryParameters("tag"))
+
+	return func(options *store.ListOptions) {
+		options.FilterFunc = func(rs core_model.Resource) bool {
+			gatewayFilter := modeToFilter(gatewayMode)
+			ingressFilter := modeToFilter(ingressMode)
+			dataplane := rs.(*mesh.DataplaneResource)
+			if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
+				return false
+			}
+
+			if !ingressFilter(dataplane.Spec.GetNetworking().GetIngress()) {
+				return false
+			}
+
+			if !dataplane.Spec.MatchTags(tags) {
+				return false
+			}
+
+			return true
+		}
+	}, nil
 }
