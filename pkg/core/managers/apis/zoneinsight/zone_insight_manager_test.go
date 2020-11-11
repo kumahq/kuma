@@ -6,6 +6,7 @@ import (
 
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,7 +28,7 @@ var _ = Describe("ZoneInsight Manager", func() {
 		}
 		manager := zoneinsight.NewZoneInsightManager(s, cfg)
 
-		err := s.Create(context.Background(), &system.ZoneResource{}, store.CreateByKey("di1", "default"))
+		err := s.Create(context.Background(), &system.ZoneResource{}, store.CreateByKey("di1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		input := system.ZoneInsightResource{}
@@ -38,11 +39,11 @@ var _ = Describe("ZoneInsight Manager", func() {
 		}
 
 		// when
-		err = manager.Create(context.Background(), &input, store.CreateByKey("di1", "default"))
+		err = manager.Create(context.Background(), &input, store.CreateByKey("di1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := system.ZoneInsightResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey("di1", "default"))
+		err = s.Get(context.Background(), &actual, store.GetByKey("di1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -60,7 +61,7 @@ var _ = Describe("ZoneInsight Manager", func() {
 		}
 		manager := zoneinsight.NewZoneInsightManager(s, cfg)
 
-		err := s.Create(context.Background(), &system.ZoneResource{}, store.CreateByKey("di1", "default"))
+		err := s.Create(context.Background(), &system.ZoneResource{}, store.CreateByKey("di1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		input := system.ZoneInsightResource{}
@@ -71,11 +72,11 @@ var _ = Describe("ZoneInsight Manager", func() {
 		}
 
 		// when
-		err = manager.Create(context.Background(), &input, store.CreateByKey("di1", "default"))
+		err = manager.Create(context.Background(), &input, store.CreateByKey("di1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		actual := system.ZoneInsightResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey("di1", "default"))
+		err = s.Get(context.Background(), &actual, store.GetByKey("di1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

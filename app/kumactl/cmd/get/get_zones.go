@@ -30,7 +30,7 @@ func newGetZonesCmd(pctx *listContext) *cobra.Command {
 			}
 
 			zones := system.ZoneResourceList{}
-			if err := rs.List(context.Background(), &zones, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
+			if err := rs.List(context.Background(), &zones, core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
 				return errors.Wrapf(err, "failed to list Zone")
 			}
 

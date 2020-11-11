@@ -79,7 +79,6 @@ var _ = Describe("snapshotGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
-							Mesh: "default",
 						},
 					},
 				},
@@ -110,13 +109,11 @@ var _ = Describe("snapshotGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
-							Mesh: "default",
 						},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
-							Mesh: "demo",
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
@@ -162,13 +159,11 @@ var _ = Describe("snapshotGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
-							Mesh: "default",
 						},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
-							Mesh: "demo",
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{

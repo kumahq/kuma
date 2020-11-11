@@ -76,7 +76,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 	BeforeEach(func() {
 		mesh := "mesh-0"
-		err := s.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey(mesh, mesh))
+		err := s.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey(mesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = s.Create(context.Background(), &core_mesh.DataplaneResource{

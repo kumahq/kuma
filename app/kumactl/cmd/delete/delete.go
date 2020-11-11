@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -29,41 +29,33 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			var resourceType model.ResourceType
 			switch resourceTypeArg {
 			case "mesh":
-				resourceType = mesh.MeshType
+				resourceType = core_mesh.MeshType
 			case "dataplane":
-				resourceType = mesh.DataplaneType
+				resourceType = core_mesh.DataplaneType
 			case "externalservice":
-				resourceType = mesh.ExternalServiceType
+				resourceType = core_mesh.ExternalServiceType
 			case "healthcheck":
-				resourceType = mesh.HealthCheckType
+				resourceType = core_mesh.HealthCheckType
 			case "proxytemplate":
-				resourceType = mesh.ProxyTemplateType
+				resourceType = core_mesh.ProxyTemplateType
 			case "traffic-log":
-				resourceType = mesh.TrafficLogType
+				resourceType = core_mesh.TrafficLogType
 			case "traffic-permission":
-				resourceType = mesh.TrafficPermissionType
+				resourceType = core_mesh.TrafficPermissionType
 			case "traffic-route":
-				resourceType = mesh.TrafficRouteType
+				resourceType = core_mesh.TrafficRouteType
 			case "traffic-trace":
-				resourceType = mesh.TrafficTraceType
+				resourceType = core_mesh.TrafficTraceType
 			case "fault-injection":
-				resourceType = mesh.FaultInjectionType
+				resourceType = core_mesh.FaultInjectionType
 			case "circuit-breaker":
-				resourceType = mesh.CircuitBreakerType
+				resourceType = core_mesh.CircuitBreakerType
 			case "secret":
 				resourceType = system.SecretType
 			case "zone":
 				resourceType = system.ZoneType
 			default:
 				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret, zone", resourceTypeArg)
-			}
-
-			currentMesh := pctx.CurrentMesh()
-			switch resourceType {
-			case mesh.MeshType:
-				currentMesh = name
-			case system.ZoneType:
-				currentMesh = "default"
 			}
 
 			rs, err := pctx.CurrentResourceStore()
@@ -75,7 +67,12 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return err
 			}
 
-			if err := deleteResource(name, currentMesh, resource, resourceType, rs); err != nil {
+			mesh := model.NoMesh
+			if resource.Scope() == model.ScopeMesh {
+				mesh = pctx.CurrentMesh()
+			}
+
+			if err := deleteResource(name, mesh, resource, resourceType, rs); err != nil {
 				return err
 			}
 

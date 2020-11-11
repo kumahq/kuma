@@ -9,6 +9,7 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/metrics"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -83,7 +84,7 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_ap
 			return nil, err
 		}
 		mesh := &core_mesh.MeshResource{}
-		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, meshName)); err != nil {
+		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, model.NoMesh)); err != nil {
 			return nil, err
 		}
 		externalServices := &core_mesh.ExternalServiceResourceList{}
