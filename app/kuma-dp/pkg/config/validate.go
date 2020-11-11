@@ -15,7 +15,7 @@ func ValidateTokenPath(path string) error {
 	}
 	empty, err := util_files.FileEmpty(path)
 	if err != nil {
-		return errors.Wrap(err, "could not read file")
+		return errors.Wrapf(err, "could not read file %s", path)
 	}
 	if empty {
 		return errors.Errorf("token under file %s is empty", path)
@@ -23,12 +23,12 @@ func ValidateTokenPath(path string) error {
 
 	rawToken, err := ioutil.ReadFile(path)
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "could not read the token in the file %s", path)
 	}
 
 	_, _, err = new(jwt.Parser).ParseUnverified(string(rawToken), &jwt.MapClaims{})
 	if err != nil {
-		return err
+		return errors.Wrapf(err, "token in the file %s is not valid JWT token. Double check blank characters in the file", path)
 	}
 
 	return nil
