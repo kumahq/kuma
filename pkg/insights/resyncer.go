@@ -110,6 +110,9 @@ func (p *resyncer) resync() error {
 		return err
 	}
 	for _, mesh := range meshes.Items {
+		if need, err := p.needResync(mesh.GetMeta().GetName()); err != nil || !need {
+			continue
+		}
 		err := p.resyncMesh(mesh.GetMeta().GetName())
 		if err != nil {
 			log.Error(err, "unable to resync resources", "mesh", mesh.GetMeta().GetName())
@@ -120,14 +123,6 @@ func (p *resyncer) resync() error {
 }
 
 func (p *resyncer) resyncMesh(mesh string) error {
-	need, err := p.needResync(mesh)
-	if err != nil {
-		return err
-	}
-	if !need {
-		return nil
-	}
-
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
 		Policies:   map[string]*mesh_proto.MeshInsight_PolicyStat{},
