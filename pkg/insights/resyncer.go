@@ -79,15 +79,12 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		if err != nil {
 			return err
 		}
-		if obj, err := registry.Global().NewObject(event.Type); err != nil || obj.Scope() != model.ScopeMesh {
+		if !meshScoped(event.Type) || event.Type == core_mesh.DataplaneType {
 			continue
 		}
 		if event.Operation == events.Update && event.Type != core_mesh.DataplaneInsightType {
 			// 'Update' events doesn't affect MeshInsight expect for DataplaneInsight,
 			// because that's how we find online/offline Dataplane's status
-			continue
-		}
-		if event.Type == core_mesh.DataplaneType {
 			continue
 		}
 		if !limiter.Allow() {
@@ -98,6 +95,13 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 			continue
 		}
 	}
+}
+
+func meshScoped(t model.ResourceType) bool {
+	if obj, err := registry.Global().NewObject(t); err != nil || obj.Scope() != model.ScopeMesh {
+		return false
+	}
+	return true
 }
 
 func (p *resyncer) resync() error {
@@ -129,6 +133,9 @@ func (p *resyncer) resyncMesh(mesh string) error {
 		Policies:   map[string]*mesh_proto.MeshInsight_PolicyStat{},
 	}
 	for _, resType := range registry.Global().ListTypes() {
+		if !meshScoped(resType) || resType == core_mesh.DataplaneType {
+			continue
+		}
 		list, err := registry.Global().NewList(resType)
 		if err != nil {
 			return err
@@ -137,8 +144,6 @@ func (p *resyncer) resyncMesh(mesh string) error {
 			return err
 		}
 		switch resType {
-		case core_mesh.DataplaneType:
-			continue
 		case core_mesh.DataplaneInsightType:
 			insight.Dataplanes.Total = uint32(len(list.GetItems()))
 			for _, dpInsight := range list.(*core_mesh.DataplaneInsightResourceList).Items {
@@ -157,7 +162,7 @@ func (p *resyncer) resyncMesh(mesh string) error {
 		}
 	}
 
-	if err := manager.Upsert(p.rm, model.ResourceKey{Mesh: mesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
+	if err := manager.Upsert(p.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
 		_ = resource.SetSpec(insight)
 	}); err != nil {
@@ -168,7 +173,7 @@ func (p *resyncer) resyncMesh(mesh string) error {
 
 func (p *resyncer) needResync(mesh string) (bool, error) {
 	meshInsight := &core_mesh.MeshInsightResource{}
-	if err := p.rm.Get(context.Background(), meshInsight, store.GetByKey(mesh, mesh)); err != nil {
+	if err := p.rm.Get(context.Background(), meshInsight, store.GetByKey(mesh, model.NoMesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
 			return false, errors.Wrap(err, "failed to get MeshInsight")
 		}

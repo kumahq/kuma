@@ -251,7 +251,7 @@ metrics:
     # Min time that should pass between Mesh resync
     minResyncTimeout: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT
     # Max time that Mesh could spend without resync
-    maxResyncTimeout: 60s # ENV: KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT
+    maxResyncTimeout: 20s # ENV: KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT
 
 # Reports configuration
 reports:

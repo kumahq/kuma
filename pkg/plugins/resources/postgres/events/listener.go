@@ -2,8 +2,9 @@ package events
 
 import (
 	"encoding/json"
-	"fmt"
 	"time"
+
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core"
@@ -63,7 +64,7 @@ func (k *listener) Start(stop <-chan struct{}) error {
 			case "DELETE":
 				op = events.Delete
 			default:
-				fmt.Println("unknown Action")
+				log.Error(errors.New("unknown Action"), "failed to parse action", "action", op)
 				continue
 			}
 			k.out.Send(op, model.ResourceType(obj.Data.Type), model.ResourceKey{Mesh: obj.Data.Mesh, Name: obj.Data.Name})

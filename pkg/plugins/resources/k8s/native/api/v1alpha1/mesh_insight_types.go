@@ -11,6 +11,7 @@ type MeshInsightSpec = map[string]interface{}
 type MeshInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
+	Mesh              string `json:"mesh,omitempty"`
 
 	Spec MeshInsightSpec `json:"status,omitempty"`
 }

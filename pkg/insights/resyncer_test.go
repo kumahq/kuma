@@ -63,7 +63,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should not sync more often than MinResyncTimeout", func() {
-		err := rm.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("mesh-1", "mesh-1"))
+		err := rm.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))
@@ -77,7 +77,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		insight := &core_mesh.MeshInsightResource{}
 		Eventually(func() error {
-			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", "mesh-1"))
+			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 		}, "10s", "100ms").Should(BeNil())
 		Expect(insight.Spec.Policies[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
 		Expect(insight.Spec.LastSync).To(Equal(proto.MustTimestampProto(now)))
@@ -94,14 +94,14 @@ var _ = Describe("Insight Persistence", func() {
 			Key:       model.ResourceKey{Name: "tp-2", Mesh: "mesh-1"},
 		}
 
-		err = rm.Get(context.Background(), insight, store.GetByKey("mesh-1", "mesh-1"))
+		err = rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(insight.Spec.Policies[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
 		Expect(insight.Spec.LastSync).To(Equal(proto.MustTimestampProto(prev)))
 	})
 
 	It("should sync more often than MaxResyncTimeout", func() {
-		err := rm.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("mesh-1", "mesh-1"))
+		err := rm.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))
@@ -112,7 +112,7 @@ var _ = Describe("Insight Persistence", func() {
 
 		insight := &core_mesh.MeshInsightResource{}
 		Eventually(func() error {
-			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", "mesh-1"))
+			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 		}, "10s", "100ms").Should(BeNil())
 		Expect(insight.Spec.Policies[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
 		Expect(insight.Spec.LastSync).To(Equal(proto.MustTimestampProto(now)))

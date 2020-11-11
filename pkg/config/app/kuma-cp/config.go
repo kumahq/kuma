@@ -183,7 +183,7 @@ func DefaultConfig() Config {
 			},
 			Mesh: &MeshMetrics{
 				MinResyncTimeout: 1 * time.Second,
-				MaxResyncTimeout: 60 * time.Second,
+				MaxResyncTimeout: 20 * time.Second,
 			},
 		},
 		Reports: &Reports{

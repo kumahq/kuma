@@ -17,7 +17,7 @@ func (in *MeshInsight) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (in *MeshInsight) GetMesh() string {
-	return in.Name
+	return in.Mesh
 }
 
 func (in *MeshInsight) SetMesh(mesh string) {
