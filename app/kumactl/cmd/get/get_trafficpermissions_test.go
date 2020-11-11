@@ -96,7 +96,7 @@ var _ = Describe("kumactl get traffic-permissions", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, ds := range trafficPermissionResources {
 				err := store.Create(context.Background(), ds, core_store.CreateBy(core_model.MetaToResourceKey(ds.GetMeta())))

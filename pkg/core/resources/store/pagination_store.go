@@ -39,8 +39,6 @@ func (p *PaginationStore) List(ctx context.Context, list model.ResourceList, opt
 	if err != nil {
 		return err
 	}
-	allItems := fullList.GetItems()
-	lenAllItems := len(allItems)
 
 	err = p.delegate.List(ctx, fullList, optionsFunc...)
 	if err != nil {
@@ -50,7 +48,7 @@ func (p *PaginationStore) List(ctx context.Context, list model.ResourceList, opt
 	opts := NewListOptions(optionsFunc...)
 
 	offset := 0
-	pageSize := len(list.GetItems())
+	pageSize := len(fullList.GetItems())
 	paginateResults := opts.PageSize != 0
 	if paginateResults {
 		pageSize = opts.PageSize
@@ -63,19 +61,19 @@ func (p *PaginationStore) List(ctx context.Context, list model.ResourceList, opt
 		}
 	}
 
-	for i := offset; i < offset+pageSize && i < lenAllItems; i++ {
-		_ = list.AddItem(allItems[i])
+	for i := offset; i < offset+pageSize && i < len(fullList.GetItems()); i++ {
+		_ = list.AddItem(fullList.GetItems()[i])
 	}
 
 	if paginateResults {
 		nextOffset := ""
-		if offset+pageSize < lenAllItems { // set new offset only if we did not reach the end of the collection
+		if offset+pageSize < len(fullList.GetItems()) { // set new offset only if we did not reach the end of the collection
 			nextOffset = strconv.Itoa(offset + opts.PageSize)
 		}
 		list.GetPagination().SetNextOffset(nextOffset)
 	}
 
-	list.GetPagination().SetTotal(uint32(lenAllItems))
+	list.GetPagination().SetTotal(uint32(len(fullList.GetItems())))
 
 	return nil
 }

@@ -22,7 +22,7 @@ func ExecuteStoreTests(
 	var s store.ClosableResourceStore
 
 	BeforeEach(func() {
-		s = store.NewStrictResourceStore(createStore())
+		s = store.NewStrictResourceStore(store.NewPaginationStore(createStore()))
 	})
 
 	AfterEach(func() {
