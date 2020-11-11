@@ -2,8 +2,6 @@ package k8s
 
 import (
 	"context"
-	"sort"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -188,40 +186,11 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	if err := s.Converter.ToCoreList(obj, fullList, predicate); err != nil {
 		return errors.Wrap(err, "failed to convert k8s model into core counterpart")
 	}
-	total := len(fullList.GetItems())
-	if opts.PageSize > 0 {
-		items := fullList.GetItems()
-		sort.Sort(core_model.ByMeta(items))
-		offset := 0
-		if opts.PageOffset != "" {
-			if o, err := strconv.Atoi(opts.PageOffset); err != nil {
-				return store.ErrorInvalidOffset
-			} else {
-				offset = o
-			}
-		}
 
-		min := func(x, y int) int {
-			if x < y {
-				return x
-			} else {
-				return y
-			}
-		}
-		for _, item := range items[offset:min(offset+opts.PageSize, total)] {
-			_ = rs.AddItem(item)
-		}
-		nextOffset := ""
-		if offset+opts.PageSize < total { // set new offset only if we did not reach the end of the collection
-			nextOffset = strconv.Itoa(offset + opts.PageSize)
-		}
-		rs.GetPagination().SetNextOffset(nextOffset)
-	} else {
-		for _, item := range fullList.GetItems() {
-			_ = rs.AddItem(item)
-		}
+	for _, item := range fullList.GetItems() {
+		_ = rs.AddItem(item)
 	}
-	rs.GetPagination().SetTotal(uint32(total))
+
 	return nil
 }
 
