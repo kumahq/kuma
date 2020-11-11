@@ -65,6 +65,13 @@ func (p *PaginationStore) List(ctx context.Context, list model.ResourceList, opt
 	}
 
 	for i := offset; i < offset+pageSize && i < lenAllItems; i++ {
+		for i < lenAllItems && !opts.Filter(allItems[i]) {
+			i++
+		}
+		if i == lenAllItems {
+			// no filtered items to add
+			break
+		}
 		_ = list.AddItem(allItems[i])
 	}
 
