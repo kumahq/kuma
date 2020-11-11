@@ -45,10 +45,13 @@ func (p *PaginationStore) List(ctx context.Context, list model.ResourceList, opt
 		return err
 	}
 
+	allItems := fullList.GetItems()
+	lenAllItems := len(allItems)
+
 	opts := NewListOptions(optionsFunc...)
 
 	offset := 0
-	pageSize := len(fullList.GetItems())
+	pageSize := lenAllItems
 	paginateResults := opts.PageSize != 0
 	if paginateResults {
 		pageSize = opts.PageSize
@@ -61,19 +64,19 @@ func (p *PaginationStore) List(ctx context.Context, list model.ResourceList, opt
 		}
 	}
 
-	for i := offset; i < offset+pageSize && i < len(fullList.GetItems()); i++ {
-		_ = list.AddItem(fullList.GetItems()[i])
+	for i := offset; i < offset+pageSize && i < lenAllItems; i++ {
+		_ = list.AddItem(allItems[i])
 	}
 
 	if paginateResults {
 		nextOffset := ""
-		if offset+pageSize < len(fullList.GetItems()) { // set new offset only if we did not reach the end of the collection
+		if offset+pageSize < lenAllItems { // set new offset only if we did not reach the end of the collection
 			nextOffset = strconv.Itoa(offset + opts.PageSize)
 		}
 		list.GetPagination().SetNextOffset(nextOffset)
 	}
 
-	list.GetPagination().SetTotal(uint32(len(fullList.GetItems())))
+	list.GetPagination().SetTotal(uint32(lenAllItems))
 
 	return nil
 }
