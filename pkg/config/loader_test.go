@@ -131,7 +131,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 
-			Expect(cfg.Diagnostics.ServerPort).To(Equal(5003))
+			Expect(cfg.Diagnostics.ServerPort).To(Equal(uint32(5003)))
 			Expect(cfg.Diagnostics.DebugEndpoints).To(BeTrue())
 		},
 		Entry("from config file", testCase{
