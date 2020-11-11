@@ -117,6 +117,10 @@ var _ = Describe("Config WS", func() {
               "enabled": true,
               "subscriptionLimit": 10
             },
+            "mesh": {
+              "maxResyncTimeout": "20s",
+              "minResyncTimeout": "1s"
+            },
             "zone": {
               "enabled": true,
               "subscriptionLimit": 10

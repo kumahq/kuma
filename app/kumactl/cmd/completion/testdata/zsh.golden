@@ -686,6 +686,7 @@ function _kumactl_inspect {
   cmnds)
     commands=(
       "dataplanes:Inspect Dataplanes"
+      "meshes:Inspect Meshes"
       "zones:Inspect Zones"
     )
     _describe "command" commands
@@ -695,6 +696,9 @@ function _kumactl_inspect {
   case "$words[1]" in
   dataplanes)
     _kumactl_inspect_dataplanes
+    ;;
+  meshes)
+    _kumactl_inspect_meshes
     ;;
   zones)
     _kumactl_inspect_zones
@@ -707,6 +711,14 @@ function _kumactl_inspect_dataplanes {
     '--gateway[filter gateway dataplanes]' \
     '--ingress[filter ingress dataplanes]' \
     '--tag[filter by tag in format of key=value. You can provide many tags]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_inspect_meshes {
+  _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \

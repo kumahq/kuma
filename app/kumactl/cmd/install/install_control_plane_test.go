@@ -102,6 +102,7 @@ var _ = Describe("kumactl install control-plane", func() {
 			Expect(len(actualManifests)).To(Equal(len(expectedManifests)))
 			// and
 			for i := range expectedManifests {
+				//fmt.Println(actualManifests[i])
 				Expect(actualManifests[i]).To(MatchYAML(expectedManifests[i]))
 			}
 		},
