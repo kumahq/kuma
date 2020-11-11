@@ -174,10 +174,16 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if rs, err := plugin.NewResourceStore(builder, pluginConfig); err != nil {
 		return err
 	} else {
-		meteredStore, err := metrics_store.NewMeteredStore(rs, builder.Metrics())
+		paginationStore := core_store.NewPaginationStore(rs)
 		if err != nil {
 			return err
 		}
+
+		meteredStore, err := metrics_store.NewMeteredStore(paginationStore, builder.Metrics())
+		if err != nil {
+			return err
+		}
+
 		builder.WithResourceStore(meteredStore)
 		return nil
 	}
