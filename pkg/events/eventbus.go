@@ -21,7 +21,7 @@ func (b *EventBus) New() Reader {
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
-	events := make(chan Event)
+	events := make(chan Event, 10)
 	b.subscribers = append(b.subscribers, events)
 	return &reader{
 		events: events,

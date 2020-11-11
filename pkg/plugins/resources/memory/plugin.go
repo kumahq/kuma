@@ -26,5 +26,6 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 }
 
 func (p *plugin) EventListener(context core_plugins.PluginContext, writer events.Writer) error {
-	return errors.New("EventListener is not supported for Memory resource store")
+	context.ResourceStore().(*memoryStore).SetEventWriter(writer)
+	return nil
 }

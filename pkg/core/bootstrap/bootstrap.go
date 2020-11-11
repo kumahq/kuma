@@ -6,6 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+
 	"github.com/kumahq/kuma/pkg/events"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -33,7 +35,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/metrics"
-	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 )
 
 func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
@@ -173,20 +174,24 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if err != nil {
 		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
 	}
+
 	rs, err := plugin.NewResourceStore(builder, pluginConfig)
 	if err != nil {
 		return err
 	}
-	meteredStore, err := metrics_store.NewMeteredStore(rs, builder.Metrics())
-	if err != nil {
-		return err
-	}
-	builder.WithResourceStore(meteredStore)
+	builder.WithResourceStore(rs)
+
 	eventBus := events.NewEventBus()
 	if err := plugin.EventListener(builder, eventBus); err != nil {
 		return err
 	}
 	builder.WithEventReaderFactory(eventBus)
+
+	meteredStore, err := metrics_store.NewMeteredStore(rs, builder.Metrics())
+	if err != nil {
+		return err
+	}
+	builder.WithResourceStore(meteredStore)
 	return nil
 }
 
