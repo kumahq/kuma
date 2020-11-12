@@ -26,7 +26,6 @@ var _ = Describe("XdsServerConfig", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(cfg.DiagnosticsPort).To(Equal(3456))
 		Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
 		Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
 	})
@@ -50,7 +49,6 @@ var _ = Describe("XdsServerConfig", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":                         "3456",
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":          "5s",
 			}
@@ -68,7 +66,6 @@ var _ = Describe("XdsServerConfig", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(cfg.DiagnosticsPort).To(Equal(3456))
 			Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
 			Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
 		})
