@@ -12,8 +12,6 @@ var _ config.Config = &XdsServerConfig{}
 
 // Envoy XDS server configuration
 type XdsServerConfig struct {
-	// Port of Diagnostic Server for checking health and readiness of the Control Plane
-	DiagnosticsPort int `yaml:"diagnosticsPort" envconfig:"kuma_xds_server_diagnostics_port"`
 	// Interval for re-genarting configuration for Dataplanes connected to the Control Plane
 	DataplaneConfigurationRefreshInterval time.Duration `yaml:"dataplaneConfigurationRefreshInterval" envconfig:"kuma_xds_server_dataplane_configuration_refresh_interval"`
 	// Interval for flushing status of Dataplanes connected to the Control Plane
@@ -24,9 +22,6 @@ func (x *XdsServerConfig) Sanitize() {
 }
 
 func (x *XdsServerConfig) Validate() error {
-	if x.DiagnosticsPort < 0 {
-		return errors.New("DiagnosticPort cannot be negative")
-	}
 	if x.DataplaneConfigurationRefreshInterval <= 0 {
 		return errors.New("DataplaneConfigurationRefreshInterval must be positive")
 	}
@@ -38,7 +33,6 @@ func (x *XdsServerConfig) Validate() error {
 
 func DefaultXdsServerConfig() *XdsServerConfig {
 	return &XdsServerConfig{
-		DiagnosticsPort:                       5680,
 		DataplaneConfigurationRefreshInterval: 1 * time.Second,
 		DataplaneStatusFlushInterval:          1 * time.Second,
 	}
