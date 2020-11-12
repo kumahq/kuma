@@ -44,6 +44,9 @@ type DestinationMap map[ServiceName]TagSelectorSet
 
 type ExternalService struct {
 	TLSEnabled bool
+	CaCert     *envoy_core.DataSource
+	ClientCert *envoy_core.DataSource
+	ClientKey  *envoy_core.DataSource
 }
 
 type Locality struct {

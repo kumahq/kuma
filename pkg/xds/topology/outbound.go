@@ -1,9 +1,17 @@
 package topology
 
 import (
+	"context"
 	"fmt"
 
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+
+	"github.com/kumahq/kuma/api/system/v1alpha1"
+
+	"github.com/kumahq/kuma/pkg/core"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
@@ -18,10 +26,11 @@ const (
 
 // BuildEndpointMap creates a map of all endpoints that match given selectors.
 func BuildEndpointMap(
-	dataplanes []*mesh_core.DataplaneResource,
-	zone string,
 	mesh *mesh_core.MeshResource,
+	zone string,
+	dataplanes []*mesh_core.DataplaneResource,
 	externalServices []*mesh_core.ExternalServiceResource,
+	loader datasource.Loader,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	ingressInstances := fillIngressOutbounds(outbound, dataplanes, zone, mesh)
@@ -30,7 +39,7 @@ func BuildEndpointMap(
 		endpointWeight = ingressInstances
 	}
 	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight)
-	fillExternalServicesOutbounds(outbound, externalServices, mesh)
+	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader)
 	return outbound
 }
 
@@ -114,26 +123,63 @@ func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core
 	return uint32(len(ingressInstances))
 }
 
-func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServices []*mesh_core.ExternalServiceResource, mesh *mesh_core.MeshResource) {
+func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServices []*mesh_core.ExternalServiceResource, mesh *mesh_core.MeshResource, loader datasource.Loader) {
 	for _, externalService := range externalServices {
 		service := externalService.Spec.GetService()
-		tlsEnabled := externalService.Spec.GetNetworking().GetTls().GetEnabled()
 
-		tags := externalService.Spec.GetTags()
-		if tlsEnabled {
-			tags[mesh_proto.ExternalServiceTag] = externalService.Meta.GetName()
+		externalServiceEndpoint, err := buildExternalServiceEndpoint(externalService, mesh, loader)
+		if err != nil {
+			core.Log.Error(err, "unable to create ExternalService endpoint. Endpoint won't be included in the XDS.", "name", externalService.Meta.GetName(), "mesh", externalService.Meta.GetMesh())
+			continue
 		}
+		outbound[service] = append(outbound[service], *externalServiceEndpoint)
+	}
+}
 
-		outbound[service] = append(outbound[service], core_xds.Endpoint{
-			Target: externalService.Spec.GetHost(),
-			Port:   externalService.Spec.GetPortUInt32(),
-			Tags:   tags,
-			Weight: 1,
-			ExternalService: &core_xds.ExternalService{
-				TLSEnabled: tlsEnabled,
-			},
-			Locality: localityFromTags(mesh, priorityRemote, tags),
-		})
+func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceResource, mesh *mesh_core.MeshResource, loader datasource.Loader) (*core_xds.Endpoint, error) {
+	es := &core_xds.ExternalService{
+		TLSEnabled: externalService.Spec.GetNetworking().GetTls().GetEnabled(),
+		CaCert: convertToEnvoy(
+			externalService.Spec.GetNetworking().GetTls().GetCaCert(),
+			mesh.GetMeta().GetName(), loader),
+		ClientCert: convertToEnvoy(
+			externalService.Spec.GetNetworking().GetTls().GetClientCert(),
+			mesh.GetMeta().GetName(), loader),
+		ClientKey: convertToEnvoy(
+			externalService.Spec.GetNetworking().GetTls().GetClientKey(),
+			mesh.GetMeta().GetName(), loader),
+	}
+
+	tags := externalService.Spec.GetTags()
+	if es.TLSEnabled {
+		tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
+	}
+
+	return &core_xds.Endpoint{
+		Target:          externalService.Spec.GetHost(),
+		Port:            externalService.Spec.GetPortUInt32(),
+		Tags:            tags,
+		Weight:          1,
+		ExternalService: es,
+		Locality:        localityFromTags(mesh, priorityRemote, tags),
+	}, nil
+}
+
+func convertToEnvoy(ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) *envoy_core.DataSource {
+	if ds == nil {
+		return nil
+	}
+
+	data, err := loader.Load(context.Background(), mesh, ds)
+	if err != nil {
+		core.Log.Error(err, "failed to resolve ingress's public name, skipping dataplane")
+		return nil
+	}
+
+	return &envoy_core.DataSource{
+		Specifier: &envoy_core.DataSource_InlineBytes{
+			InlineBytes: data,
+		},
 	}
 }
 
