@@ -70,12 +70,12 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
-	err = framework.NewSshApp(verbose, port, env, []string{"printf ", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
+	err = framework.NewSshApp(verbose, port, env, []string{"printf ", "--", "\"" + cert + "\"", ">", "/server-cert.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
 
-	err = framework.NewSshApp(verbose, port, env, []string{"printf ", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
+	err = framework.NewSshApp(verbose, port, env, []string{"printf ", "--", "\"" + key + "\"", ">", "/server-key.pem"}).Run()
 	if err != nil {
 		panic(err)
 	}
