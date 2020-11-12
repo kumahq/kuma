@@ -6,8 +6,6 @@ import (
 
 var _ = Describe("Universal In-Memory test", func() {
 	RunSmokeTest(StaticConfig(`
-xdsServer:
-  diagnosticsPort: %d
 apiServer:
   http:
     port: 0
@@ -18,5 +16,7 @@ dnsServer:
 environment: universal
 store:
   type: memory
+diagnostics:
+  serverPort: %d
 `))
 })

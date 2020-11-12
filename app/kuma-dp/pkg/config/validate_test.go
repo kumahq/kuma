@@ -46,7 +46,7 @@ var _ = Describe("ValidateTokenPath", func() {
 		err := config.ValidateTokenPath("nonexistingfile")
 
 		// then
-		Expect(err).To(MatchError("could not read file: stat nonexistingfile: no such file or directory"))
+		Expect(err).To(MatchError("could not read file nonexistingfile: stat nonexistingfile: no such file or directory"))
 	})
 
 	It("should fail for empty file", func() {
@@ -55,5 +55,20 @@ var _ = Describe("ValidateTokenPath", func() {
 
 		// then
 		Expect(err).To(MatchError(fmt.Sprintf("token under file %s is empty", tokenFile.Name())))
+	})
+
+	It("should fail for invalid token", func() {
+		// setup
+		invalidTokenFile, err := ioutil.TempFile("", "")
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = invalidTokenFile.Write([]byte("invalid.token.file"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		err = config.ValidateTokenPath(invalidTokenFile.Name())
+
+		// then
+		Expect(err).To(HaveOccurred())
 	})
 })
