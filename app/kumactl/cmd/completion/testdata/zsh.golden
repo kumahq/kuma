@@ -203,10 +203,12 @@ function _kumactl_config_control-planes {
 function _kumactl_config_control-planes_add {
   _arguments \
     '--address[URL of the Control Plane API Server (required)]:' \
-    '--admin-client-cert[Path to certificate of a client that is authorized to use Admin Server]:' \
-    '--admin-client-key[Path to certificate key of a client that is authorized to use Admin Server]:' \
+    '--ca-cert-file[path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)]:' \
+    '--client-cert-file[path to the certificate of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)]:' \
+    '--client-key-file[path to the certificate key of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)]:' \
     '--name[reference name for the Control Plane (required)]:' \
     '--overwrite[overwrite existing Control Plane with the same reference name]' \
+    '--skip-verify[skip CA verification]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
@@ -703,6 +705,7 @@ function _kumactl_inspect {
 function _kumactl_inspect_dataplanes {
   _arguments \
     '--gateway[filter gateway dataplanes]' \
+    '--ingress[filter ingress dataplanes]' \
     '--tag[filter by tag in format of key=value. You can provide many tags]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
@@ -790,9 +793,12 @@ function _kumactl_install_control-plane {
     '--kds-global-address[URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)]:' \
     '--mode[kuma cp modes: one of standalone|remote|global]:' \
     '--namespace[namespace to install Kuma Control Plane to]:' \
-    '--tls-ca-cert[CA certificate that was used to generate TLS certificate for Kuma Control Plane servers]:' \
-    '--tls-cert[TLS certificate for Kuma Control Plane servers]:' \
-    '--tls-key[TLS key for Kuma Control Plane servers]:' \
+    '--tls-api-server-client-certs-secret[Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS]:' \
+    '--tls-api-server-secret[Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS]:' \
+    '--tls-general-ca-bundle[Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)]:' \
+    '--tls-general-secret[Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication]:' \
+    '--tls-kds-global-server-secret[Secret that contains tls.crt, key.crt for protecting cross cluster communication]:' \
+    '--tls-kds-remote-client-secret[Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification]:' \
     '--use-node-port[use NodePort instead of LoadBalancer]' \
     '--zone[set the Kuma zone name]:' \
     '--config-file[path to the configuration file to use]:' \
@@ -802,6 +808,7 @@ function _kumactl_install_control-plane {
 
 function _kumactl_install_dns {
   _arguments \
+    '--namespace[namespace to look for Kuma Control Plane service]:' \
     '--port[port of the Kuma DNS server]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \

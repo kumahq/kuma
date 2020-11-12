@@ -4,9 +4,10 @@ import (
 	"fmt"
 	"strings"
 
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/dns/persistence"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -78,7 +79,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	return nil
 }
 
-func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_extensions.Converter) error {
+func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if err := addNamespaceReconciler(mgr, rt); err != nil {
 		return err
 	}
@@ -103,7 +104,10 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_extensions.Converter) error {
+func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+	if rt.Config().Mode == config_core.Remote {
+		return nil
+	}
 	reconciler := &k8s_controllers.MeshReconciler{
 		Client:          mgr.GetClient(),
 		Reader:          mgr.GetAPIReader(),
@@ -119,7 +123,7 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_extensions.Converter) error {
+func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	reconciler := &controllers.PodReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-generator"),
@@ -127,7 +131,8 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
 		PodConverter: controllers.PodConverter{
 			ServiceGetter:     mgr.GetClient(),
-			Zone:              rt.Config().Multicluster.Remote.Zone,
+			NodeGetter:        mgr.GetClient(),
+			Zone:              rt.Config().Multizone.Remote.Zone,
 			ResourceConverter: converter,
 		},
 		Persistence:     persistence.NewMeshedPersistence(rt.ConfigManager()),
@@ -169,7 +174,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	return nil
 }
 
-func addDefaulters(mgr kube_ctrl.Manager, converter k8s_extensions.Converter) error {
+func addDefaulters(mgr kube_ctrl.Manager, converter k8s_common.Converter) error {
 	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
 		return errors.Wrapf(err, "could not add %q to scheme", mesh_k8s.GroupVersion)
 	}
@@ -186,7 +191,7 @@ func addDefaulter(
 	mgr kube_ctrl.Manager,
 	gvk kube_schema.GroupVersionKind,
 	factory func() core_model.Resource,
-	converter k8s_extensions.Converter,
+	converter k8s_common.Converter,
 ) {
 	wh := k8s_webhooks.DefaultingWebhookFor(factory, converter)
 	path := generateDefaulterPath(gvk)
@@ -198,7 +203,7 @@ func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
 	return fmt.Sprintf("/default-%s-%s-%s", strings.ReplaceAll(gvk.Group, ".", "-"), gvk.Version, strings.ToLower(gvk.Kind))
 }
 
-func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_extensions.Converter) error {
+func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	composite := k8s_webhooks.CompositeValidator{}
 
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode)
@@ -225,7 +230,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	return nil
 }
 
-func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_extensions.Converter) error {
+func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode != config_core.Global {
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,

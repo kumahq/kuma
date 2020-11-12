@@ -72,6 +72,13 @@ func (c *CacheReader) Get(_ context.Context, key client.ObjectKey, out runtime.O
 	// deep copy to avoid mutating cache
 	// TODO(directxman12): revisit the decision to always deepcopy
 
+	// Kuma modification start
+
+	// DELETE LINE
+	// obj = obj.(runtime.Object).DeepCopyObject()
+
+	// Kuma modification end
+
 	// Copy the value of the item in the cache to the returned value
 	// TODO(directxman12): this is a terrible hack, pls fix (we should have deepcopyinto)
 	outVal := reflect.ValueOf(out)
@@ -133,7 +140,17 @@ func (c *CacheReader) List(_ context.Context, out runtime.Object, opts ...client
 				continue
 			}
 		}
+
+		// Kuma modification start
+
+		// REPLACE LINES
+		// outObj := obj.DeepCopyObject()
+		// outObj.GetObjectKind().SetGroupVersionKind(c.groupVersionKind)
+		// runtimeObjs = append(runtimeObjs, outObj)
+		// WITH
 		runtimeObjs = append(runtimeObjs, obj)
+
+		// Kuma modification end
 	}
 	return apimeta.SetList(out, runtimeObjs)
 }

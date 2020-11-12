@@ -10,7 +10,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config/multicluster"
+	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -32,7 +32,7 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 }
 
 type server struct {
-	config    multicluster.KdsServerConfig
+	config    multizone.KdsServerConfig
 	callbacks Callbacks
 	metrics   core_metrics.Metrics
 }
@@ -41,7 +41,7 @@ var (
 	_ component.Component = &server{}
 )
 
-func NewServer(callbacks Callbacks, config multicluster.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
+func NewServer(callbacks Callbacks, config multizone.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
 	return &server{
 		callbacks: callbacks,
 		config:    config,

@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/spf13/cobra"
 
@@ -27,13 +28,12 @@ func newGetMeshCmd(pctx *getContext) *cobra.Command {
 				return err
 			}
 			name := args[0]
-			currentMesh := name
 			mesh := &core_mesh.MeshResource{}
-			if err := rs.Get(context.Background(), mesh, store.GetByKey(name, currentMesh)); err != nil {
+			if err := rs.Get(context.Background(), mesh, store.GetByKey(name, model.NoMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
-					return errors.Errorf("No resources found in %s mesh", currentMesh)
+					return errors.Errorf("No resources found in %s mesh", name)
 				}
-				return errors.Wrapf(err, "failed to get mesh %s", currentMesh)
+				return errors.Wrapf(err, "failed to get mesh %s", name)
 			}
 			meshes := &core_mesh.MeshResourceList{
 				Items: []*core_mesh.MeshResource{mesh},

@@ -68,6 +68,10 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 					Configure(envoy_listeners.FaultInjection(proxy.FaultInjections[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
 					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterSubset{ClusterName: localClusterName}))
+			case mesh_core.ProtocolKafka:
+				filterChainBuilder.
+					Configure(envoy_listeners.Kafka(localClusterName)).
+					Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.ClusterSubset{ClusterName: localClusterName}))
 			case mesh_core.ProtocolTCP:
 				fallthrough
 			default:

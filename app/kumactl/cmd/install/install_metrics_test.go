@@ -83,6 +83,7 @@ var _ = Describe("kumactl install metrics", func() {
 		Entry("should generate Kubernetes resources with custom settings", testCase{
 			extraArgs: []string{
 				"--namespace", "kuma",
+				"--mesh", "mesh-1",
 				"--kuma-prometheus-sd-image", "kuma-ci/kuma-prometheus-sd",
 				"--kuma-prometheus-sd-version", "greatest",
 				"--kuma-cp-address", "http://kuma.local:5681",

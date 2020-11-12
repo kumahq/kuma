@@ -2,7 +2,6 @@ package framework
 
 import (
 	"fmt"
-	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
@@ -49,10 +48,6 @@ func (c *UniversalControlPlane) GetKDSServerAddress() string {
 	return "grpcs://" + c.cluster.apps[AppModeCP].ip + ":5685"
 }
 
-func (c *UniversalControlPlane) GetIngressAddress() string {
-	return c.cluster.apps[AppIngress].ip + ":" + strconv.FormatUint(uint64(kdsPort), 10)
-}
-
 func (c *UniversalControlPlane) GetGlobaStatusAPI() string {
 	panic("not implemented")
 }
@@ -67,7 +62,7 @@ func (c *UniversalControlPlane) GenerateDpToken(service string) (string, error) 
 			"--fail", "--show-error",
 			"-H", "\"Content-Type: application/json\"",
 			"--data", fmt.Sprintf(`'{"mesh": "default", "type": "%s", "tags": {"kuma.io/service":["%s"]}}'`, dpType, service),
-			"http://localhost:5679/tokens"})
+			"http://localhost:5681/tokens"})
 		if err := sshApp.Run(); err != nil {
 			return "", err
 		}

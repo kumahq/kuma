@@ -88,21 +88,21 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.TLS.KeyPath).To(Equal("/path/to/key"))
 			Expect(cfg.Store.Postgres.TLS.CAPath).To(Equal("/path/to/rootCert"))
 
-			Expect(cfg.ApiServer.Port).To(Equal(9090))
 			Expect(cfg.ApiServer.ReadOnly).To(Equal(true))
+			Expect(cfg.ApiServer.HTTP.Enabled).To(Equal(false))
+			Expect(cfg.ApiServer.HTTP.Interface).To(Equal("192.168.0.1"))
+			Expect(cfg.ApiServer.HTTP.Port).To(Equal(uint32(15681)))
+			Expect(cfg.ApiServer.HTTPS.Enabled).To(Equal(false))
+			Expect(cfg.ApiServer.HTTPS.Interface).To(Equal("192.168.0.2"))
+			Expect(cfg.ApiServer.HTTPS.Port).To(Equal(uint32(15682)))
+			Expect(cfg.ApiServer.HTTPS.TlsCertFile).To(Equal("/cert"))
+			Expect(cfg.ApiServer.HTTPS.TlsKeyFile).To(Equal("/key"))
+			Expect(cfg.ApiServer.Auth.AllowFromLocalhost).To(Equal(false))
+			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
 			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
-
-			Expect(cfg.AdminServer.Apis.DataplaneToken.Enabled).To(BeTrue())
-			Expect(cfg.AdminServer.Local.Port).To(Equal(uint32(1111)))
-			Expect(cfg.AdminServer.Public.Enabled).To(BeTrue())
-			Expect(cfg.AdminServer.Public.Port).To(Equal(uint32(2222)))
-			Expect(cfg.AdminServer.Public.Interface).To(Equal("192.168.0.1"))
-			Expect(cfg.AdminServer.Public.TlsKeyFile).To(Equal("/tmp/key"))
-			Expect(cfg.AdminServer.Public.TlsCertFile).To(Equal("/tmp/cert"))
-			Expect(cfg.AdminServer.Public.ClientCertsDir).To(Equal("/tmp/certs"))
 
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -120,16 +120,16 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
 			Expect(cfg.Mode).To(Equal(config_core.Remote))
-			Expect(cfg.Multicluster.Remote.Zone).To(Equal("zone-1"))
+			Expect(cfg.Multizone.Remote.Zone).To(Equal("zone-1"))
 
-			Expect(cfg.Multicluster.Global.PollTimeout).To(Equal(750 * time.Millisecond))
-			Expect(cfg.Multicluster.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
-			Expect(cfg.Multicluster.Global.KDS.RefreshInterval).To(Equal(time.Second * 2))
-			Expect(cfg.Multicluster.Global.KDS.TlsCertFile).To(Equal("/cert"))
-			Expect(cfg.Multicluster.Global.KDS.TlsKeyFile).To(Equal("/key"))
-			Expect(cfg.Multicluster.Remote.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
-			Expect(cfg.Multicluster.Remote.Zone).To(Equal("zone-1"))
-			Expect(cfg.Multicluster.Remote.KDS.RootCAFile).To(Equal("/rootCa"))
+			Expect(cfg.Multizone.Global.PollTimeout).To(Equal(750 * time.Millisecond))
+			Expect(cfg.Multizone.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
+			Expect(cfg.Multizone.Global.KDS.RefreshInterval).To(Equal(time.Second * 2))
+			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
+			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
+			Expect(cfg.Multizone.Remote.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
+			Expect(cfg.Multizone.Remote.Zone).To(Equal("zone-1"))
+			Expect(cfg.Multizone.Remote.KDS.RootCAFile).To(Equal("/rootCa"))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 
@@ -165,7 +165,19 @@ bootstrapServer:
     xdsHost: kuma-control-plane
     xdsPort: 4321
 apiServer:
-  port: 9090
+  http:
+    enabled: false # ENV: KUMA_API_SERVER_HTTP_ENABLED
+    interface: 192.168.0.1 # ENV: KUMA_API_SERVER_HTTP_INTERFACE
+    port: 15681 # ENV: KUMA_API_SERVER_PORT
+  https:
+    enabled: false # ENV: KUMA_API_SERVER_HTTPS_ENABLED
+    interface: 192.168.0.2 # ENV: KUMA_API_SERVER_HTTPS_INTERFACE
+    port: 15682 # ENV: KUMA_API_SERVER_HTTPS_PORT
+    tlsCertFile: "/cert" # ENV: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
+    tlsKeyFile: "/key" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
+  auth:
+    clientCertsDir: "/certs" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
+    allowFromLocalhost: false # ENV: KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST
   readOnly: true
   corsAllowedDomains:
     - https://kuma
@@ -173,19 +185,6 @@ apiServer:
 monitoringAssignmentServer:
   grpcPort: 3333
   assignmentRefreshInterval: 12s
-adminServer:
-  local:
-    port: 1111
-  public:
-    enabled: true
-    interface: 192.168.0.1
-    port: 2222
-    tlsCertFile: /tmp/cert
-    tlsKeyFile: /tmp/key
-    clientCertsDir: /tmp/certs
-  apis:
-    dataplaneToken:
-      enabled: true
 runtime:
   kubernetes:
     admissionServer:
@@ -210,7 +209,7 @@ general:
 guiServer:
   apiServerUrl: http://localhost:1234
 mode: remote
-multicluster:
+multizone:
   global:
     pollTimeout: 750ms
     kds:
@@ -254,17 +253,18 @@ diagnostics:
 				"KUMA_STORE_CACHE_ENABLED":                                       "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                               "3s",
 				"KUMA_API_SERVER_READ_ONLY":                                      "true",
-				"KUMA_API_SERVER_PORT":                                           "9090",
+				"KUMA_API_SERVER_HTTP_PORT":                                      "15681",
+				"KUMA_API_SERVER_HTTP_INTERFACE":                                 "192.168.0.1",
+				"KUMA_API_SERVER_HTTP_ENABLED":                                   "false",
+				"KUMA_API_SERVER_HTTPS_ENABLED":                                  "false",
+				"KUMA_API_SERVER_HTTPS_PORT":                                     "15682",
+				"KUMA_API_SERVER_HTTPS_INTERFACE":                                "192.168.0.2",
+				"KUMA_API_SERVER_HTTPS_TLS_CERT_FILE":                            "/cert",
+				"KUMA_API_SERVER_HTTPS_TLS_KEY_FILE":                             "/key",
+				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                          "/certs",
+				"KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST":                      "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                    "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":  "12s",
-				"KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED":                 "true",
-				"KUMA_ADMIN_SERVER_LOCAL_PORT":                                   "1111",
-				"KUMA_ADMIN_SERVER_PUBLIC_ENABLED":                               "true",
-				"KUMA_ADMIN_SERVER_PUBLIC_INTERFACE":                             "192.168.0.1",
-				"KUMA_ADMIN_SERVER_PUBLIC_PORT":                                  "2222",
-				"KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE":                          "/tmp/key",
-				"KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE":                         "/tmp/cert",
-				"KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR":                      "/tmp/certs",
 				"KUMA_REPORTS_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":               "127.0.0.2",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                  "9443",
@@ -281,14 +281,14 @@ diagnostics:
 				"KUMA_DNS_SERVER_PORT":                                           "15653",
 				"KUMA_DNS_CIDR":                                                  "127.1.0.0/16",
 				"KUMA_MODE":                                                      "remote",
-				"KUMA_MULTICLUSTER_GLOBAL_POLL_TIMEOUT":                          "750ms",
-				"KUMA_MULTICLUSTER_GLOBAL_KDS_GRPC_PORT":                         "1234",
-				"KUMA_MULTICLUSTER_GLOBAL_KDS_REFRESH_INTERVAL":                  "2s",
-				"KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE":                     "/cert",
-				"KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE":                      "/key",
-				"KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS":                        "grpc://1.1.1.1:5685",
-				"KUMA_MULTICLUSTER_REMOTE_ZONE":                                  "zone-1",
-				"KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE":                      "/rootCa",
+				"KUMA_MULTIZONE_GLOBAL_POLL_TIMEOUT":                             "750ms",
+				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                            "1234",
+				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                     "2s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE":                        "/cert",
+				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE":                         "/key",
+				"KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS":                           "grpc://1.1.1.1:5685",
+				"KUMA_MULTIZONE_REMOTE_ZONE":                                     "zone-1",
+				"KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE":                         "/rootCa",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                               "true",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                               "true",
 			},

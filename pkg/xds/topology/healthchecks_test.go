@@ -38,13 +38,11 @@ var _ = Describe("HealthCheck", func() {
 			// given
 			mesh := &mesh_core.MeshResource{ // mesh that is relevant to this test case
 				Meta: &test_model.ResourceMeta{
-					Mesh: "demo",
 					Name: "demo",
 				},
 			}
 			otherMesh := &mesh_core.MeshResource{ // mesh that is irrelevant to this test case
 				Meta: &test_model.ResourceMeta{
-					Mesh: "default",
 					Name: "default",
 				},
 			}

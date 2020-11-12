@@ -62,12 +62,12 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	cmd := []string{"kuma-cp", "run"}
 	env := []string{"KUMA_MODE=" + mode}
 	if opts.globalAddress != "" {
-		env = append(env, "KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
+		env = append(env, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
 	}
 
 	switch mode {
 	case core.Remote:
-		env = append(env, "KUMA_MULTICLUSTER_REMOTE_ZONE="+c.name)
+		env = append(env, "KUMA_MULTIZONE_REMOTE_ZONE="+c.name)
 	case core.Global:
 		cmd = append(cmd, "--config-file", confPath)
 	}
@@ -112,7 +112,7 @@ func (c *UniversalCluster) DeleteKuma(opts ...DeployOptionsFunc) error {
 	return err
 }
 
-func (c *UniversalCluster) InjectDNS() error {
+func (c *UniversalCluster) InjectDNS(namespace ...string) error {
 	return nil
 }
 
@@ -139,11 +139,16 @@ func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, toke
 	return app.dpApp.Start()
 }
 
-func (c *UniversalCluster) DeployApp(namespace, appname, token string) error {
+func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
+	opts := newDeployOpt(fs...)
+	appname := opts.appname
+	token := opts.token
+	id := opts.id
+
 	var args []string
 	switch appname {
 	case AppModeEchoServer:
-		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
+		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo " + id + "\n\"'"}
 	case AppModeDemoClient:
 		args = []string{"ncat", "-lvk", "-p", "3000"}
 	default:

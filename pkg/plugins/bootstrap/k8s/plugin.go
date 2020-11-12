@@ -1,8 +1,6 @@
 package k8s
 
 import (
-	"time"
-
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
@@ -46,8 +44,11 @@ func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig)
 	}
 	b.WithComponentManager(&kubeComponentManager{mgr})
 	b.WithExtensions(k8s_extensions.NewManagerContext(b.Extensions(), mgr))
-	b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewCachingConverter(5*time.Minute)))
-
+	if expTime := b.Config().Runtime.Kubernetes.MarshalingCacheExpirationTime; expTime > 0 {
+		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewCachingConverter(expTime)))
+	} else {
+		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter()))
+	}
 	return nil
 }
 

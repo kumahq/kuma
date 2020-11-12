@@ -33,13 +33,13 @@ spec:
     spec:
       containers:
         - name: demo-client
-          image: kong-docker-kuma-ci-docker.bintray.io/curl
+          image: kuma-universal
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
-          command:
-            - nc
-            - -lvk
+          command: [ "ncat" ]
+          args:
+            - -lk
             - -p
             - "3000"
           resources:

@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -16,7 +14,9 @@ import (
 	. "github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
@@ -74,7 +74,7 @@ var _ = Describe("Match", func() {
 			matcher := FaultInjectionMatcher{ResourceManager: manager}
 
 			mesh := &mesh.MeshResource{}
-			err := manager.Create(context.Background(), mesh, store.CreateByKey("default", "default"))
+			err := manager.Create(context.Background(), mesh, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, p := range given.policies {

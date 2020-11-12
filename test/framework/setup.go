@@ -54,7 +54,7 @@ func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
 
 func KumaDNS() InstallFunc {
 	return func(cluster Cluster) error {
-		err := cluster.InjectDNS()
+		err := cluster.InjectDNS(KumaNamespace)
 		return err
 	}
 }
@@ -133,15 +133,11 @@ func EchoServerK8s() InstallFunc {
 	)
 }
 
-func EchoServerUniversal(token string) InstallFunc {
+func EchoServerUniversal(id, token string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp("", AppModeEchoServer, token)
+		fs = append(fs, WithAppname(AppModeEchoServer), WithId(id), WithToken(token))
+		return cluster.DeployApp(fs...)
 	}
-}
-
-type IngressDesc struct {
-	Port int32
-	IP   string
 }
 
 func IngressUniversal(token string) InstallFunc {
@@ -157,7 +153,8 @@ func IngressUniversal(token string) InstallFunc {
 		}
 		uniCluster.apps[AppIngress] = app
 
-		dpyaml := fmt.Sprintf(IngressDataplane, kdsPort)
+		publicAddress := uniCluster.apps[AppIngress].ip
+		dpyaml := fmt.Sprintf(IngressDataplane, publicAddress, kdsPort, kdsPort)
 		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token)
 	}
 }
@@ -174,7 +171,7 @@ func DemoClientK8s() InstallFunc {
 
 func DemoClientUniversal(token string) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp("", AppModeDemoClient, token)
+		return cluster.DeployApp(WithAppname(AppModeDemoClient), WithToken(token))
 	}
 }
 

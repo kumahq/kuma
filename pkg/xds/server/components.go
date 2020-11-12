@@ -6,6 +6,7 @@ import (
 
 	"google.golang.org/grpc"
 
+	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/xds/cache/cla"
@@ -18,7 +19,6 @@ import (
 	kube_auth "k8s.io/api/authentication/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
@@ -121,10 +121,7 @@ func NewKubeAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
 }
 
 func NewUniversalAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
-	if !rt.Config().AdminServer.Apis.DataplaneToken.Enabled {
-		return universal_auth.NewNoopAuthenticator(), nil
-	}
-	issuer, err := builtin.NewDataplaneTokenIssuer(rt)
+	issuer, err := builtin.NewDataplaneTokenIssuer(rt.ReadOnlyResourceManager())
 	if err != nil {
 		return nil, err
 	}
@@ -132,13 +129,15 @@ func NewUniversalAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, err
 }
 
 func DefaultAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {
-	switch env := rt.Config().Environment; env {
-	case config_core.KubernetesEnvironment:
+	switch rt.Config().DpServer.Auth.Type {
+	case dp_server.DpServerAuthServiceAccountToken:
 		return NewKubeAuthenticator(rt)
-	case config_core.UniversalEnvironment:
+	case dp_server.DpServerAuthDpToken:
 		return NewUniversalAuthenticator(rt)
+	case dp_server.DpServerAuthNone:
+		return universal_auth.NewNoopAuthenticator(), nil
 	default:
-		return nil, errors.Errorf("unable to choose SDS authenticator for environment type %q", env)
+		return nil, errors.Errorf("unable to choose authenticator of %q", rt.Config().DpServer.Auth.Type)
 	}
 }
 
@@ -193,7 +192,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	if err != nil {
 		return nil, err
 	}
-	claCache, err := cla.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Multicluster.Remote.Zone,
+	claCache, err := cla.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Multizone.Remote.Zone,
 		rt.Config().Store.Cache.ExpirationTime, rt.LookupIP(), rt.Metrics())
 	if err != nil {
 		return nil, err
@@ -261,7 +260,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				prevHash = snapshotHash
 
 				mesh := &core_mesh.MeshResource{}
-				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, proxyID.Mesh)); err != nil {
+				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, core_model.NoMesh)); err != nil {
 					return err
 				}
 
@@ -291,7 +290,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound := xds_topology.BuildEndpointMap(dataplanes.Items, rt.Config().Multicluster.Remote.Zone, mesh, externalServices.Items)
+				outbound := xds_topology.BuildEndpointMap(dataplanes.Items, rt.Config().Multizone.Remote.Zone, mesh, externalServices.Items)
 
 				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
 				if err != nil {

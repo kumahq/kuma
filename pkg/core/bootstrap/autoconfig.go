@@ -8,8 +8,9 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
-
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/tls"
 )
@@ -17,24 +18,39 @@ import (
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
+	autoconfigureDpServerAuth(cfg)
 	if err := autoconfigureTLS(cfg); err != nil {
 		return err
 	}
 	autoconfigureServersTLS(cfg)
-	autoconfigureAdminServer(cfg)
 	autoconfigureCatalog(cfg)
 	autoconfigBootstrapXdsParams(cfg)
 	return nil
 }
 
+func autoconfigureDpServerAuth(cfg *kuma_cp.Config) {
+	if cfg.DpServer.Auth.Type == "" {
+		switch cfg.Environment {
+		case config_core.KubernetesEnvironment:
+			cfg.DpServer.Auth.Type = dp_server.DpServerAuthServiceAccountToken
+		case config_core.UniversalEnvironment:
+			cfg.DpServer.Auth.Type = dp_server.DpServerAuthDpToken
+		}
+	}
+}
+
 func autoconfigureServersTLS(cfg *kuma_cp.Config) {
-	if cfg.Multicluster.Global.KDS.TlsCertFile == "" {
-		cfg.Multicluster.Global.KDS.TlsCertFile = cfg.General.TlsCertFile
-		cfg.Multicluster.Global.KDS.TlsKeyFile = cfg.General.TlsKeyFile
+	if cfg.Multizone.Global.KDS.TlsCertFile == "" {
+		cfg.Multizone.Global.KDS.TlsCertFile = cfg.General.TlsCertFile
+		cfg.Multizone.Global.KDS.TlsKeyFile = cfg.General.TlsKeyFile
 	}
 	if cfg.DpServer.TlsCertFile == "" {
 		cfg.DpServer.TlsCertFile = cfg.General.TlsCertFile
 		cfg.DpServer.TlsKeyFile = cfg.General.TlsKeyFile
+	}
+	if cfg.ApiServer.HTTPS.TlsCertFile == "" {
+		cfg.ApiServer.HTTPS.TlsCertFile = cfg.General.TlsCertFile
+		cfg.ApiServer.HTTPS.TlsKeyFile = cfg.General.TlsKeyFile
 	}
 }
 
@@ -70,13 +86,10 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 	}
 	cat := &catalog.CatalogConfig{
 		ApiServer: catalog.ApiServerConfig{
-			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.ApiServer.Port),
+			Url: fmt.Sprintf("http://%s:%d", cfg.General.AdvertisedHostname, cfg.ApiServer.HTTP.Port),
 		},
 		Bootstrap: catalog.BootstrapApiConfig{
 			Url: bootstrapUrl,
-		},
-		Admin: catalog.AdminApiConfig{
-			LocalUrl: fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port),
 		},
 		MonitoringAssignment: catalog.MonitoringAssignmentApiConfig{
 			Url: madsUrl,
@@ -85,22 +98,10 @@ func autoconfigureCatalog(cfg *kuma_cp.Config) {
 			Url: cfg.ApiServer.Catalog.Sds.Url,
 		},
 	}
-	if cfg.AdminServer.Public.Enabled {
-		cat.Admin.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.AdminServer.Public.Port)
-	}
-	if cfg.AdminServer.Apis.DataplaneToken.Enabled {
-		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.AdminServer.Local.Port)
-		if cfg.AdminServer.Public.Enabled {
-			cat.DataplaneToken.PublicUrl = fmt.Sprintf("https://%s:%d", cfg.General.AdvertisedHostname, cfg.AdminServer.Public.Port)
-		}
+	if cfg.DpServer.Auth.Type == dp_server.DpServerAuthDpToken {
+		cat.DataplaneToken.LocalUrl = fmt.Sprintf("http://localhost:%d", cfg.ApiServer.HTTP.Port)
 	}
 	cfg.ApiServer.Catalog = cat
-}
-
-func autoconfigureAdminServer(cfg *kuma_cp.Config) {
-	if cfg.AdminServer.Public.Enabled && cfg.AdminServer.Public.Port == 0 {
-		cfg.AdminServer.Public.Port = cfg.AdminServer.Local.Port
-	}
 }
 
 func autoconfigBootstrapXdsParams(cfg *kuma_cp.Config) {

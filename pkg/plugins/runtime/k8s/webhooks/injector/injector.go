@@ -8,7 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/core"
@@ -40,7 +40,7 @@ func New(
 	cfg runtime_k8s.Injector,
 	controlPlaneUrl string,
 	client kube_client.Client,
-	converter k8s_extensions.Converter,
+	converter k8s_common.Converter,
 ) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
@@ -63,7 +63,7 @@ type KumaInjector struct {
 	cfg             runtime_k8s.Injector
 	controlPlaneUrl string
 	client          kube_client.Client
-	converter       k8s_extensions.Converter
+	converter       k8s_common.Converter
 	caCert          string
 }
 

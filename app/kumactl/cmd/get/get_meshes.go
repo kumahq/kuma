@@ -51,7 +51,7 @@ func newGetMeshesCmd(pctx *listContext) *cobra.Command {
 
 func printMeshes(rootTime time.Time, meshes *mesh.MeshResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING", "AGE"},
+		Headers: []string{"NAME", "mTLS", "METRICS", "LOGGING", "TRACING", "LOCALITY", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -86,12 +86,17 @@ func printMeshes(rootTime time.Time, meshes *mesh.MeshResourceList, out io.Write
 						tracing = "off"
 					}
 				}
+				locality := "off"
+				if mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
+					locality = "on"
+				}
 				return []string{
 					mesh.GetMeta().GetName(), // NAME
 					mtls,                     // mTLS
 					metrics,                  // METRICS
 					logging,                  // LOGGING
 					tracing,                  // TRACING
+					locality,                 // LOCALITY
 					table.TimeSince(mesh.GetMeta().GetModificationTime(), rootTime), // AGE
 				}
 			}

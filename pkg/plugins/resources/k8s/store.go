@@ -13,13 +13,11 @@ import (
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
-
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	common_k8s "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
@@ -29,11 +27,11 @@ var _ store.ResourceStore = &KubernetesStore{}
 
 type KubernetesStore struct {
 	Client    kube_client.Client
-	Converter k8s_extensions.Converter
+	Converter k8s_common.Converter
 	Scheme    *kube_runtime.Scheme
 }
 
-func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_extensions.Converter) (store.ResourceStore, error) {
+func NewStore(client kube_client.Client, scheme *kube_runtime.Scheme, converter k8s_common.Converter) (store.ResourceStore, error) {
 	return &KubernetesStore{
 		Client:    client,
 		Converter: converter,
@@ -87,7 +85,7 @@ func markAsSynced(obj k8s_model.KubernetesObject) {
 	if annotations == nil {
 		annotations = map[string]string{}
 	}
-	annotations[common_k8s.K8sSynced] = "true"
+	annotations[k8s_common.K8sSynced] = "true"
 	obj.SetAnnotations(annotations)
 }
 
@@ -253,7 +251,7 @@ func (m *KubernetesMetaAdapter) GetName() string {
 }
 
 func (m *KubernetesMetaAdapter) GetNameExtensions() core_model.ResourceNameExtensions {
-	return common_k8s.ResourceNameExtensions(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
+	return k8s_common.ResourceNameExtensions(m.ObjectMeta.Namespace, m.ObjectMeta.Name)
 }
 
 func (m *KubernetesMetaAdapter) GetVersion() string {

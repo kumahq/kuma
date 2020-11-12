@@ -25,7 +25,7 @@ import (
 	kube_record "k8s.io/client-go/tools/record"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
@@ -275,7 +275,7 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 			ToRequests: &ServiceToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("service-to-pods-mapper")},
 		}).
 		Watches(&kube_source.Kind{Type: &kube_core.ConfigMap{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ConfigMapToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("configmap-to-pods-mapper")},
+			ToRequests: &ConfigMapToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("configmap-to-pods-mapper"), SystemNamespace: r.SystemNamespace},
 		}).
 		Complete(r)
 }
@@ -304,11 +304,12 @@ func (m *ServiceToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Re
 
 type ConfigMapToPodsMapper struct {
 	kube_client.Client
-	Log logr.Logger
+	Log             logr.Logger
+	SystemNamespace string
 }
 
 func (m *ConfigMapToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	if obj.Meta.GetNamespace() != "kuma-system" {
+	if obj.Meta.GetName() != persistence.ConfigKey || obj.Meta.GetNamespace() != m.SystemNamespace {
 		return nil
 	}
 	mesh, ok := persistence.MeshedConfigKey(obj.Meta.GetName())

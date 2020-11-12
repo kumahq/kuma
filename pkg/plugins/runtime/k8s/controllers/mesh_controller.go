@@ -6,12 +6,11 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
-
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
+
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
@@ -34,7 +33,7 @@ type MeshReconciler struct {
 	Log    logr.Logger
 
 	Scheme          *kube_runtime.Scheme
-	Converter       k8s_extensions.Converter
+	Converter       k8s_common.Converter
 	CaManagers      core_ca.Managers
 	SystemNamespace string
 	ResourceManager manager.ResourceManager

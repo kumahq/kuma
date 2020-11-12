@@ -138,7 +138,7 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote3...)).
-			Install(EchoServerUniversal(echoServerToken)).
+			Install(EchoServerUniversal("universal", echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
 			Setup(remote_3)
@@ -159,35 +159,6 @@ metadata:
 			Setup(remote_4)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_4.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		remote_1CP := remote_1.GetKuma()
-		remote_2CP := remote_2.GetKuma()
-		remote_3CP := remote_3.GetKuma()
-		remote_4CP := remote_4.GetKuma()
-
-		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateUniversal,
-				remote_1CP.GetName(),
-				remote_1CP.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateUniversal,
-				remote_2CP.GetName(),
-				remote_2CP.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateUniversal,
-				Kuma3,
-				remote_3CP.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
-		err = global.GetKumactlOptions().KumactlApplyFromString(
-			fmt.Sprintf(ZoneTemplateUniversal,
-				Kuma4,
-				remote_4CP.GetIngressAddress()))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(meshDefaulMtlsOn)(global)

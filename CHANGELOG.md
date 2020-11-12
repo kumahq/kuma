@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## [1.0.0-rc2]
+> Released on  2020/11/04
+
+Changes: 
+* feat: new multizone deployment flow [#1122](https://github.com//kumahq/kuma/pull/1122) [#1125](https://github.com//kumahq/kuma/pull/1125)
+* feat: performance optimisation [#1045](https://github.com//kumahq/kuma/pull/1045) [#1113](https://github.com//kumahq/kuma/pull/1113)
+* feat: improved control plane communication security [#1065](https://github.com//kumahq/kuma/pull/1065) [#1069](https://github.com//kumahq/kuma/pull/1069) [#1083](https://github.com//kumahq/kuma/pull/1083) [#1084](https://github.com//kumahq/kuma/pull/1084) [#1092](https://github.com//kumahq/kuma/pull/1092) [#1115](https://github.com//kumahq/kuma/pull/1115) [#1118](https://github.com//kumahq/kuma/pull/1118)
+* feat: locality aware load balancing [#1111](https://github.com//kumahq/kuma/pull/1111) 
+* feat: add ExternalService  [#1025](https://github.com//kumahq/kuma/pull/1025) [#1058](https://github.com//kumahq/kuma/pull/1058) [#1062](https://github.com//kumahq/kuma/pull/1062) [#1080](https://github.com//kumahq/kuma/pull/1080)
+* feat: apply multiple resources [#1057](https://github.com//kumahq/kuma/pull/1057) 
+ 👍contributed by @tharun208
+* feat: add kafka protocol suport [#1121](https://github.com//kumahq/kuma/pull/1121)
+* feat: exclude injection from pods that match labels [#1072](https://github.com//kumahq/kuma/pull/1072)
+* feat: GUI updates for 1.0 RC2. [#1061](https://github.com/kumahq/kuma/pull/1061) [#1123](https://github.com//kumahq/kuma/pull/1123)
+* fix: missing kuma.io prefix in example dataplane [#1054](https://github.com//kumahq/kuma/pull/1054) 
+ 👍contributed by @nikita15p
+* chore: improve DP insights API filtering [#1104](https://github.com//kumahq/kuma/pull/1104)
+* chore: use /ready endpoint for sidecar health-check [#1055](https://github.com//kumahq/kuma/pull/1055) 
+ 👍contributed by @tharun208
+* chore: Ingress Dataplane on K8S can only be deployed in system namespace [#1070](https://github.com//kumahq/kuma/pull/1070)
+* chore: Helm improvements [#1053](https://github.com//kumahq/kuma/pull/1053) [#1066](https://github.com//kumahq/kuma/pull/1066)  [#1120](https://github.com//kumahq/kuma/pull/1120)
+ 👍contributed by @austince
+* chore: add dependabot config [#1067](https://github.com//kumahq/kuma/pull/1067) 
+ 👍contributed by @austince
+* chore: added missing variables to default config file [#1073](https://github.com//kumahq/kuma/pull/1073) 
+ 👍contributed by @sudeeptoroy
+
 ## [0.7.3]
 > Released on  2020/10/22
 * chore: generate static outbound routes [#1098](https://github.com/kumahq/kuma/pull/1098/)

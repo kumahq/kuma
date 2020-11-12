@@ -208,7 +208,7 @@ var _ = Describe("ExternalService", func() {
                 - field: tags["kuma.io/protocol"]
                   message: tag value cannot be empty
                 - field: tags["kuma.io/protocol"]
-                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: grpc, http, http2, tcp'
+                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: grpc, http, http2, kafka, tcp'
 `,
 		}),
 		Entry("tags: `protocol` tag with unsupported value", testCase{
@@ -224,7 +224,7 @@ var _ = Describe("ExternalService", func() {
 			expected: `
                 violations:
                 - field: tags["kuma.io/protocol"]
-                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: grpc, http, http2, tcp'`,
+                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: grpc, http, http2, kafka, tcp'`,
 		}),
 		Entry("tags: tag name with invalid characters", testCase{
 			dataplane: `

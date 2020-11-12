@@ -73,7 +73,6 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
-							Mesh: "demo",
 						},
 					},
 				},
@@ -112,7 +111,6 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
-							Mesh: "demo",
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
@@ -180,7 +178,6 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
-							Mesh: "demo",
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
@@ -266,7 +263,6 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
-							Mesh: "demo",
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
@@ -339,7 +335,6 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
-							Mesh: "demo",
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
@@ -413,7 +408,6 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
-							Mesh: "default",
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
@@ -555,7 +549,6 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
-							Mesh: "demo",
 						},
 						Spec: mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{

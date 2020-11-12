@@ -96,6 +96,11 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet()))
+		case mesh_core.ProtocolKafka:
+			filterChainBuilder.
+				Configure(envoy_listeners.Kafka(serviceName)).
+				Configure(envoy_listeners.TcpProxy(serviceName, subsets...)).
+				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy))
 		case mesh_core.ProtocolTCP:
 			fallthrough
 		default:
@@ -147,7 +152,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		}
 		edsCluster, err := edsClusterBuilder.Build()
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrapf(err, "build CDS for cluster %s failed", clusterName)
 		}
 		resources.Add(&model.Resource{
 			Name:     clusterName,
@@ -179,9 +184,9 @@ func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, proxy *mode
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !clusters.Get(clusterName).HasExternalService() {
 			serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
-			loadAssignment, err := proxy.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetMesh(), serviceName)
+			loadAssignment, err := proxy.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), serviceName)
 			if err != nil {
-				return nil, err
+				return nil, errors.Wrapf(err, "could not get ClusterLoadAssingment for %s", serviceName)
 			}
 			resources.Add(&model.Resource{
 				Name:     clusterName,

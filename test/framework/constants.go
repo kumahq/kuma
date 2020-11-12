@@ -20,24 +20,6 @@ const (
 	KumaUniversalImage = "kuma-universal"
 
 	kdsPort = 30685
-
-	ZoneTemplateK8s = `
-apiVersion: kuma.io/v1alpha1
-kind: Zone
-mesh: default
-metadata:
-  name: %s
-spec:
-  ingress:
-    address: %s
-`
-	ZoneTemplateUniversal = `
-type: Zone
-mesh: default
-name: %s
-ingress:
-  address: %s
-`
 )
 
 const (
@@ -52,7 +34,6 @@ const (
 	confPath = "/kuma/kuma-cp.conf"
 
 	kumaCPAPIPort        = 5681
-	kumaCPAdminPort      = 5679
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 
 	cniApp       = "kuma-cni"
