@@ -18,9 +18,13 @@ type SimpleConverter struct {
 
 func NewSimpleConverter() k8s_common.Converter {
 	return &SimpleConverter{
-		KubeFactory: &SimpleKubeFactory{
-			KubeTypes: registry.Global(),
-		},
+		KubeFactory: NewSimpleKubeFactory(),
+	}
+}
+
+func NewSimpleKubeFactory() KubeFactory {
+	return &SimpleKubeFactory{
+		KubeTypes: registry.Global(),
 	}
 }
 
