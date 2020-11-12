@@ -17,7 +17,7 @@ func (pt *Mesh) SetObjectMeta(m *metav1.ObjectMeta) {
 }
 
 func (pt *Mesh) GetMesh() string {
-	return pt.Name
+	return ""
 }
 
 func (pt *Mesh) SetMesh(mesh string) {

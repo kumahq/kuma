@@ -6,6 +6,7 @@ metadata:
   name: kuma-metrics
   annotations:
     kuma.io/sidecar-injection: enabled
+    kuma.io/mesh: default
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy

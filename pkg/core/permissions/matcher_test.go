@@ -3,8 +3,6 @@ package permissions_test
 import (
 	"context"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -13,9 +11,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Match", func() {
@@ -32,7 +32,7 @@ var _ = Describe("Match", func() {
 			manager := core_manager.NewResourceManager(memory.NewStore())
 			matcher := permissions.TrafficPermissionsMatcher{ResourceManager: manager}
 
-			err := manager.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("default", "default"))
+			err := manager.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, p := range given.policies {
@@ -50,7 +50,6 @@ var _ = Describe("Match", func() {
 		Entry("2 inbounds dataplane with additional service, 2 policies", testCase{
 			mesh: &core_mesh.MeshResource{
 				Meta: &model.ResourceMeta{
-					Mesh: "default",
 					Name: "default",
 				},
 				Spec: mesh_proto.Mesh{

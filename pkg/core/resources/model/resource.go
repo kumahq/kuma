@@ -10,6 +10,9 @@ import (
 
 const (
 	DefaultMesh = "default"
+	// NoMesh defines a marker that resource is not bound to a Mesh.
+	// Resources not bound to a mesh (ScopeGlobal) should have an empty string in Mesh field.
+	NoMesh = ""
 )
 
 var (

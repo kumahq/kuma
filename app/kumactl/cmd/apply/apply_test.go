@@ -17,6 +17,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
@@ -187,7 +188,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
-		Expect(resource.Meta.GetMesh()).To(Equal("sample"))
+		Expect(resource.Meta.GetMesh()).To(Equal(core_model.NoMesh))
 	})
 
 	It("should apply a Secret resource", func() {
@@ -274,7 +275,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("meshinit"))
-		Expect(resource.Meta.GetMesh()).To(Equal("meshinit"))
+		Expect(resource.Meta.GetMesh()).To(Equal(core_model.NoMesh))
 	})
 
 	It("should apply multiple resources of same type", func() {
@@ -482,6 +483,10 @@ networking:
   inbound: 0 # should be a string
 `,
 			err: "YAML contains invalid resource: json: cannot unmarshal number into Go value of type []json.RawMessage",
+		}),
+		Entry("no resource", testCase{
+			resource: ``,
+			err:      "no resource(s) passed to apply",
 		}),
 	)
 })

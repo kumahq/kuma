@@ -30,7 +30,7 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 	}
 
 	mesh := &core_mesh.MeshResource{}
-	if err := rm.Get(ctx, mesh, core_store.GetByKey(meshName, meshName)); err != nil {
+	if err := rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
 		return nil, err
 	}
 	snapshot.mesh = mesh

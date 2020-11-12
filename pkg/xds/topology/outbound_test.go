@@ -17,7 +17,6 @@ var _ = Describe("TrafficRoute", func() {
 	const defaultMeshName = "default"
 	defaultMeshWithMTLS := &mesh_core.MeshResource{
 		Meta: &test_model.ResourceMeta{
-			Mesh: defaultMeshName,
 			Name: defaultMeshName,
 		},
 		Spec: mesh_proto.Mesh{
@@ -28,7 +27,6 @@ var _ = Describe("TrafficRoute", func() {
 	}
 	defaultMeshWithoutMTLS := &mesh_core.MeshResource{
 		Meta: &test_model.ResourceMeta{
-			Mesh: defaultMeshName,
 			Name: defaultMeshName,
 		},
 		Spec: mesh_proto.Mesh{
@@ -39,7 +37,6 @@ var _ = Describe("TrafficRoute", func() {
 	}
 	defaultMeshWithLocality := &mesh_core.MeshResource{
 		Meta: &test_model.ResourceMeta{
-			Mesh: defaultMeshName,
 			Name: defaultMeshName,
 		},
 		Spec: mesh_proto.Mesh{

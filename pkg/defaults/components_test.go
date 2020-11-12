@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_component "github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/defaults"
@@ -41,7 +42,7 @@ var _ = Describe("Defaults Component", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), &mesh_core.MeshResource{}, core_store.GetByKey("default", "default"))
+			err = manager.Get(context.Background(), &mesh_core.MeshResource{}, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -60,7 +61,7 @@ var _ = Describe("Defaults Component", func() {
 					},
 				},
 			}
-			err := manager.Create(context.Background(), mesh, core_store.CreateByKey("default", "default"))
+			err := manager.Create(context.Background(), mesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -69,7 +70,7 @@ var _ = Describe("Defaults Component", func() {
 			// then
 			mesh = &mesh_core.MeshResource{}
 			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), mesh, core_store.GetByKey("default", "default"))
+			err = manager.Get(context.Background(), mesh, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(mesh.Spec.Mtls.EnabledBackend).To(Equal("builtin"))
 		})
@@ -111,7 +112,7 @@ var _ = Describe("Defaults Component", func() {
 			store := resources_memory.NewStore()
 			manager := core_manager.NewResourceManager(store)
 			component := defaults.NewDefaultsComponent(&kuma_cp.Defaults{}, given.cpMode, given.environment, manager, store)
-			err := manager.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey("default", "default"))
+			err := manager.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when

@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/gc"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -55,7 +56,7 @@ var _ = Describe("Dataplane Collector", func() {
 
 	BeforeEach(func() {
 		rm = manager.NewResourceManager(memory.NewStore())
-		err := rm.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("default", "default"))
+		err := rm.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

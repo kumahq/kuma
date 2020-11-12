@@ -62,7 +62,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
 							Name: "default",
 						},
 						Spec: mesh_proto.Mesh{
@@ -145,7 +144,6 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
 							Name: "default",
 						},
 						Spec: mesh_proto.Mesh{
