@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/go-logr/logr"
+	"github.com/golang/protobuf/proto"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 
@@ -43,9 +45,12 @@ func ResolveAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.Datap
 		return nil, errors.Errorf("can't resolve address %v", dataplane.Spec.Networking.Address)
 	}
 	if dataplane.Spec.Networking.Address != ips[0].String() { // only if we resolve any address, in most cases this is IP not a hostname
-		dp := dataplane.Clone()
-		dp.Spec.Networking.Address = ips[0].String()
-		return dp, nil
+		dpSpec := proto.Clone(&dataplane.Spec).(*mesh_proto.Dataplane)
+		dpSpec.Networking.Address = ips[0].String()
+		return &core_mesh.DataplaneResource{
+			Meta: dataplane.Meta,
+			Spec: *dpSpec,
+		}, nil
 	}
 	return dataplane, nil
 }
@@ -62,9 +67,12 @@ func ResolveIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *co
 		return nil, errors.Errorf("can't resolve address %v", dataplane.Spec.Networking.Ingress.PublicAddress)
 	}
 	if dataplane.Spec.Networking.Ingress.PublicAddress != ips[0].String() { // only if we resolve any address, in most cases this is IP not a hostname
-		dp := dataplane.Clone()
-		dp.Spec.Networking.Ingress.PublicAddress = ips[0].String()
-		return dp, nil
+		dpSpec := proto.Clone(&dataplane.Spec).(*mesh_proto.Dataplane)
+		dpSpec.Networking.Ingress.PublicAddress = ips[0].String()
+		return &core_mesh.DataplaneResource{
+			Meta: dataplane.Meta,
+			Spec: *dpSpec,
+		}, nil
 	}
 	return dataplane, nil
 }

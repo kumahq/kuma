@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -12,6 +13,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
+
+var meshCacheLog = core.Log.WithName("mesh-cache")
 
 // meshSnapshot represents all resources that belong to Mesh and allows to calculate hash.
 // Calculating and comparing hashes is much faster than call 'equal' for xDS resources. So
@@ -114,6 +117,7 @@ func (m *meshSnapshot) hashResolvedIPs(address string) string {
 	}
 	ips, err := m.ipFunc(address)
 	if err != nil {
+		meshCacheLog.V(1).Info("could not resolve hostname", "err", err)
 		// we can ignore an error and assume that address is not yet resolvable for some reason, once it will be resolvable the hash will change
 		return ""
 	}
