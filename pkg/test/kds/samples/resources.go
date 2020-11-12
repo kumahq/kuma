@@ -174,12 +174,14 @@ var (
 				"service": "*",
 			},
 		}},
-		Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-			Weight: 10,
-			Destination: map[string]string{
-				"version": "v2",
-			},
-		}},
+		Conf: &mesh_proto.TrafficRoute_Conf{
+			Split: []*mesh_proto.TrafficRoute_Split{{
+				Weight: 10,
+				Destination: map[string]string{
+					"version": "v2",
+				},
+			}},
+		},
 	}
 	TrafficTrace = mesh_proto.TrafficTrace{
 		Selectors: []*mesh_proto.Selector{{

@@ -75,10 +75,12 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 					Destinations: []*mesh_proto.Selector{{
 						Match: mesh_proto.MatchService(serviceName),
 					}},
-					Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-						Weight:      100,
-						Destination: mesh_proto.MatchTags(oface.GetTagsIncludingLegacy()),
-					}},
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Split: []*mesh_proto.TrafficRoute_Split{{
+							Weight:      100,
+							Destination: mesh_proto.MatchTags(oface.GetTagsIncludingLegacy()),
+						}},
+					},
 				},
 			}
 		}
@@ -95,7 +97,7 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		route, ok := routes[outbound]
 		if ok {
-			for _, destination := range route.Spec.Conf {
+			for _, destination := range route.Spec.Conf.Split {
 				service, ok := destination.Destination[mesh_proto.ServiceTag]
 				if !ok {
 					// ignore destinations without a `service` tag

@@ -170,10 +170,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						DataplanePort: 40001,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("api-http"),
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchService("api-http"),
+								}},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -181,10 +183,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						DataplanePort: 40002,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("api-tcp"),
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchService("api-tcp"),
+								}},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -192,10 +196,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						DataplanePort: 40003,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("api-http2"),
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchService("api-http2"),
+								}},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -203,10 +209,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						DataplanePort: 40004,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("api-grpc"),
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchService("api-grpc"),
+								}},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -214,10 +222,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						DataplanePort: 18080,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("backend"),
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchService("backend"),
+								}},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -225,16 +235,18 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						DataplanePort: 54321,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      10,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "master"},
-							}, {
-								Weight:      90,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "replica"},
-							}, {
-								Weight:      0, // should be excluded from Envoy configuration
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "canary"},
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      10,
+									Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "master"},
+								}, {
+									Weight:      90,
+									Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "replica"},
+								}, {
+									Weight:      0, // should be excluded from Envoy configuration
+									Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "canary"},
+								}},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -242,10 +254,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						DataplanePort: 18081,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      1,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "es", "kuma.io/protocol": "http"},
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      1,
+									Destination: mesh_proto.TagSelector{"kuma.io/service": "es", "kuma.io/protocol": "http"},
+								}},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -253,10 +267,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						DataplanePort: 18082,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      1,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      1,
+									Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
+								}},
+							},
 						},
 					},
 				},
@@ -486,10 +502,12 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					DataplanePort: 18080,
 				}: &mesh_core.TrafficRouteResource{
 					Spec: mesh_proto.TrafficRoute{
-						Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-							Weight:      100,
-							Destination: mesh_proto.MatchService("backend.kuma-system"),
-						}},
+						Conf: &mesh_proto.TrafficRoute_Conf{
+							Split: []*mesh_proto.TrafficRoute_Split{{
+								Weight:      100,
+								Destination: mesh_proto.MatchService("backend.kuma-system"),
+							}},
+						},
 					},
 				},
 				mesh_proto.OutboundInterface{
@@ -497,10 +515,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					DataplanePort: 54321,
 				}: &mesh_core.TrafficRouteResource{
 					Spec: mesh_proto.TrafficRoute{
-						Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-							Weight:      100,
-							Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},
-						},
+						Conf: &mesh_proto.TrafficRoute_Conf{
+							Split: []*mesh_proto.TrafficRoute_Split{{
+								Weight:      100,
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},
+							}},
 						}},
 				},
 			},

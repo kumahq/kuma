@@ -47,6 +47,7 @@ destinations:
 - match:
    kuma.io/service: external-service
 conf:
+  split:
   - weight: 1
     destination:
       kuma.io/service: external-service

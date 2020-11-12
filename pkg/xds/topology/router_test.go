@@ -84,9 +84,17 @@ var _ = Describe("TrafficRoute", func() {
 					Destinations: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 					},
-					Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-						{Weight: 10, Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"}},
-						{Weight: 90, Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"}},
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Split: []*mesh_proto.TrafficRoute_Split{
+							{
+								Weight:      10,
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
+							},
+							{
+								Weight:      90,
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
+							},
+						},
 					},
 				},
 			}
@@ -102,9 +110,17 @@ var _ = Describe("TrafficRoute", func() {
 					Destinations: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
 					},
-					Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-						{Weight: 30, Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic", "region": "us"}},
-						{Weight: 70, Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic", "region": "eu"}},
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Split: []*mesh_proto.TrafficRoute_Split{
+							{
+								Weight:      30,
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic", "region": "us"},
+							},
+							{
+								Weight:      70,
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic", "region": "eu"},
+							},
+						},
 					},
 				},
 			}
@@ -120,8 +136,13 @@ var _ = Describe("TrafficRoute", func() {
 					Destinations: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 					},
-					Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-						{Weight: 100, Destination: mesh_proto.TagSelector{"kuma.io/service": "blackhole"}},
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Split: []*mesh_proto.TrafficRoute_Split{
+							{
+								Weight:      100,
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "blackhole"},
+							},
+						},
 					},
 				},
 			}
@@ -199,10 +220,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "blackhole"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "blackhole"},
+									},
 								},
 							},
 						},
@@ -246,10 +269,14 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{{
 								Match: mesh_proto.TagSelector{"kuma.io/service": "redis"},
 							}},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "redis"},
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis"},
+									},
+								},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -266,10 +293,14 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{{
 								Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"},
 							}},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic"},
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic"},
+									},
+								},
+							},
 						},
 					},
 				},
@@ -306,10 +337,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      200,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic", "version": "v1"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "elastic", "version": "v1"},
+									},
 								},
 							},
 						},
@@ -330,10 +363,14 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{{
 								Match: mesh_proto.TagSelector{"kuma.io/service": "redis"},
 							}},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "redis"},
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis"},
+									},
+								},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -375,10 +412,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "hollygrail"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "hollygrail"},
+									},
 								},
 							},
 						},
@@ -395,10 +434,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "blackhole"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "blackhole"},
+									},
 								},
 							},
 						},
@@ -443,10 +484,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
+									},
 								},
 							},
 						},
@@ -462,10 +505,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
+									},
 								},
 							},
 						},
@@ -510,10 +555,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
+									},
 								},
 							},
 						},
@@ -529,10 +576,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
+									},
 								},
 							},
 						},
@@ -577,10 +626,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
+									},
 								},
 							},
 						},
@@ -596,10 +647,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
+									},
 								},
 							},
 						},
@@ -645,10 +698,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v2"},
+									},
 								},
 							},
 						},
@@ -665,10 +720,12 @@ var _ = Describe("TrafficRoute", func() {
 							Destinations: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "version": "v1"},
+									},
 								},
 							},
 						},
@@ -744,14 +801,16 @@ var _ = Describe("TrafficRoute", func() {
 						DataplanePort: 10001,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      10,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "role": "master"},
-								},
-								{
-									Weight:      90,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "role": "replica"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      10,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "role": "master"},
+									},
+									{
+										Weight:      90,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "redis", "role": "replica"},
+									},
 								},
 							},
 						},
@@ -761,10 +820,12 @@ var _ = Describe("TrafficRoute", func() {
 						DataplanePort: 10002,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{
-								{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "google"},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "google"},
+									},
 								},
 							},
 						},

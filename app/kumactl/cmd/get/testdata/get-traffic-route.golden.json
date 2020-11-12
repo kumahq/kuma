@@ -18,13 +18,15 @@
             }
         }
     ],
-    "conf": [
-        {
-            "weight": 90,
-            "destination": {
-                "service": "redis",
-                "version": "1.0"
+    "conf": {
+        "split": [
+            {
+                "weight": 90,
+                "destination": {
+                    "service": "redis",
+                    "version": "1.0"
+                }
             }
-        }
-    ]
+        ]
+    }
 }
