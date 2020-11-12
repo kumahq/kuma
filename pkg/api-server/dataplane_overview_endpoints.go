@@ -13,7 +13,6 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -87,13 +86,6 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 	page, err := pagination(request)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
-		return
-	}
-
-	// todo(jakubdyszkiewicz) for now pagination + filtering is not supported
-	if (request.QueryParameter("size") != "" || request.QueryParameter("offset") != "") &&
-		(request.QueryParameter("tag") != "" || request.QueryParameter("gateway") != "" || request.QueryParameter("ingress") != "") {
-		rest_errors.HandleError(response, types.PaginationNotSupported, "Could not retrieve dataplane overviews")
 		return
 	}
 
