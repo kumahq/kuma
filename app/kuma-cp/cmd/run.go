@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/clusterid"
 	"github.com/kumahq/kuma/pkg/config"

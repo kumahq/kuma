@@ -6,9 +6,10 @@ import (
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+
 	config_core "github.com/kumahq/kuma/pkg/config/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
