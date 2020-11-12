@@ -123,9 +123,9 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 	}
 }
 
-func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string, filter store.ListOptionsFunc) (mesh.DataplaneOverviewResourceList, error) {
+func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string, filter store.ListFilterFunc) (mesh.DataplaneOverviewResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset), filter); err != nil {
+	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset), ListByFilterFunc(filter)); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err
 	}
 
@@ -188,7 +188,13 @@ func modeToFilter(mode string) DpFilter {
 	}
 }
 
-func genFilter(request *restful.Request) (store.ListOptionsFunc, error) {
+func ListByFilterFunc(filterFunc store.ListFilterFunc) store.ListOptionsFunc {
+	return func(opts *store.ListOptions) {
+		opts.FilterFunc = filterFunc
+	}
+}
+
+func genFilter(request *restful.Request) (store.ListFilterFunc, error) {
 	gatewayMode, err := modeFromParameter(request, "gateway")
 	if err != nil {
 		return nil, err
@@ -201,24 +207,22 @@ func genFilter(request *restful.Request) (store.ListOptionsFunc, error) {
 
 	tags := parseTags(request.QueryParameters("tag"))
 
-	return func(options *store.ListOptions) {
-		options.FilterFunc = func(rs core_model.Resource) bool {
-			gatewayFilter := modeToFilter(gatewayMode)
-			ingressFilter := modeToFilter(ingressMode)
-			dataplane := rs.(*mesh.DataplaneResource)
-			if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
-				return false
-			}
-
-			if !ingressFilter(dataplane.Spec.GetNetworking().GetIngress()) {
-				return false
-			}
-
-			if !dataplane.Spec.MatchTags(tags) {
-				return false
-			}
-
-			return true
+	return func(rs core_model.Resource) bool {
+		gatewayFilter := modeToFilter(gatewayMode)
+		ingressFilter := modeToFilter(ingressMode)
+		dataplane := rs.(*mesh.DataplaneResource)
+		if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
+			return false
 		}
+
+		if !ingressFilter(dataplane.Spec.GetNetworking().GetIngress()) {
+			return false
+		}
+
+		if !dataplane.Spec.MatchTags(tags) {
+			return false
+		}
+
+		return true
 	}, nil
 }

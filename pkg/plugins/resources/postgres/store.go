@@ -191,6 +191,7 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	}
 	defer rows.Close()
 
+	total := 0
 	for rows.Next() {
 		item, err := rowToItem(resources, rows)
 		if err != nil {
@@ -199,8 +200,10 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 		if err := resources.AddItem(item); err != nil {
 			return err
 		}
+		total++
 	}
 
+	resources.GetPagination().SetTotal(uint32(total))
 	return nil
 }
 

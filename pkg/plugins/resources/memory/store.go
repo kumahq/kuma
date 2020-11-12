@@ -230,6 +230,8 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 		_ = rs.AddItem(r)
 	}
 
+	rs.GetPagination().SetTotal(uint32(len(records)))
+
 	return nil
 }
 

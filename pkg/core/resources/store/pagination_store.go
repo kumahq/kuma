@@ -8,33 +8,45 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 )
 
+// The Pagination Store is handling only the pagination functionality in the List.
+// This is an in-memory operation and offloads this from the persistent stores (k8s, postgres etc.)
+// which makes their implementation more simple. The in-memory filtering has been tested with 10,000
+// Dataplanes and proved to be fast enough, although not that efficient.
+
 func NewPaginationStore(delegate ResourceStore) ResourceStore {
-	return &PaginationStore{
+	return &paginationStore{
 		delegate: delegate,
 	}
 }
 
-type PaginationStore struct {
+type paginationStore struct {
 	delegate ResourceStore
 }
 
-func (p *PaginationStore) Create(ctx context.Context, resource model.Resource, optionsFunc ...CreateOptionsFunc) error {
+func (p *paginationStore) Create(ctx context.Context, resource model.Resource, optionsFunc ...CreateOptionsFunc) error {
 	return p.delegate.Create(ctx, resource, optionsFunc...)
 }
 
-func (p *PaginationStore) Update(ctx context.Context, resource model.Resource, optionsFunc ...UpdateOptionsFunc) error {
+func (p *paginationStore) Update(ctx context.Context, resource model.Resource, optionsFunc ...UpdateOptionsFunc) error {
 	return p.delegate.Update(ctx, resource, optionsFunc...)
 }
 
-func (p *PaginationStore) Delete(ctx context.Context, resource model.Resource, optionsFunc ...DeleteOptionsFunc) error {
+func (p *paginationStore) Delete(ctx context.Context, resource model.Resource, optionsFunc ...DeleteOptionsFunc) error {
 	return p.delegate.Delete(ctx, resource, optionsFunc...)
 }
 
-func (p *PaginationStore) Get(ctx context.Context, resource model.Resource, optionsFunc ...GetOptionsFunc) error {
+func (p *paginationStore) Get(ctx context.Context, resource model.Resource, optionsFunc ...GetOptionsFunc) error {
 	return p.delegate.Get(ctx, resource, optionsFunc...)
 }
 
-func (p *PaginationStore) List(ctx context.Context, list model.ResourceList, optionsFunc ...ListOptionsFunc) error {
+func (p *paginationStore) List(ctx context.Context, list model.ResourceList, optionsFunc ...ListOptionsFunc) error {
+	opts := NewListOptions(optionsFunc...)
+
+	// Perfomramnce optimization
+	if opts.FilterFunc == nil && opts.PageSize == 0 && opts.PageOffset == "" {
+		return p.delegate.List(ctx, list, optionsFunc...)
+	}
+
 	fullList, err := registry.Global().NewList(list.GetItemType())
 	if err != nil {
 		return err
@@ -45,15 +57,24 @@ func (p *PaginationStore) List(ctx context.Context, list model.ResourceList, opt
 		return err
 	}
 
-	allItems := fullList.GetItems()
-	lenAllItems := len(allItems)
+	filteredList, err := registry.Global().NewList(list.GetItemType())
+	if err != nil {
+		return err
+	}
 
-	opts := NewListOptions(optionsFunc...)
+	for _, item := range fullList.GetItems() {
+		if opts.Filter(item) {
+			_ = filteredList.AddItem(item)
+		}
+	}
+
+	filteredItems := filteredList.GetItems()
+	lenFilteresItems := len(filteredItems)
 
 	offset := 0
-	pageSize := lenAllItems
-	paginateResults := opts.PageSize != 0
-	if paginateResults {
+	pageSize := lenFilteresItems
+	paginationEnabled := opts.PageSize != 0
+	if paginationEnabled {
 		pageSize = opts.PageSize
 		if opts.PageOffset != "" {
 			o, err := strconv.Atoi(opts.PageOffset)
@@ -64,28 +85,21 @@ func (p *PaginationStore) List(ctx context.Context, list model.ResourceList, opt
 		}
 	}
 
-	for i := offset; i < offset+pageSize && i < lenAllItems; i++ {
-		for i < lenAllItems && !opts.Filter(allItems[i]) {
-			i++
-		}
-		if i == lenAllItems {
-			// no filtered items to add
-			break
-		}
-		_ = list.AddItem(allItems[i])
+	for i := offset; i < offset+pageSize && i < lenFilteresItems; i++ {
+		_ = list.AddItem(filteredItems[i])
 	}
 
-	if paginateResults {
+	if paginationEnabled {
 		nextOffset := ""
-		if offset+pageSize < lenAllItems { // set new offset only if we did not reach the end of the collection
+		if offset+pageSize < lenFilteresItems { // set new offset only if we did not reach the end of the collection
 			nextOffset = strconv.Itoa(offset + opts.PageSize)
 		}
 		list.GetPagination().SetNextOffset(nextOffset)
 	}
 
-	list.GetPagination().SetTotal(uint32(lenAllItems))
+	list.GetPagination().SetTotal(uint32(lenFilteresItems))
 
 	return nil
 }
 
-var _ ResourceStore = &PaginationStore{}
+var _ ResourceStore = &paginationStore{}

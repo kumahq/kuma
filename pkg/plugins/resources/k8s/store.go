@@ -191,6 +191,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 		_ = rs.AddItem(item)
 	}
 
+	rs.GetPagination().SetTotal(uint32(len(fullList.GetItems())))
 	return nil
 }
 

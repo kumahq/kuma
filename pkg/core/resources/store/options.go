@@ -183,7 +183,7 @@ func NewListOptions(fs ...ListOptionsFunc) *ListOptions {
 	return opts
 }
 
-// Filter return true if the item passes the filtering criteria
+// Filter returns true if the item passes the filtering criteria
 func (l *ListOptions) Filter(rs core_model.Resource) bool {
 	if l.FilterFunc == nil {
 		return true
