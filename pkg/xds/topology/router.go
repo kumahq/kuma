@@ -97,14 +97,18 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		route, ok := routes[outbound]
 		if ok {
-			for _, destination := range route.Spec.Conf.Split {
+			for _, destination := range route.Spec.GetConf().GetSplit() {
 				service, ok := destination.Destination[mesh_proto.ServiceTag]
 				if !ok {
 					// ignore destinations without a `service` tag
 					// TODO(yskopets): consider adding a metric for this
 					continue
 				}
-				destinations[service] = destinations[service].Add(mesh_proto.MatchTags(destination.Destination))
+				if service == mesh_proto.MatchAllTag {
+					destinations[serviceName] = destinations[serviceName].Add(mesh_proto.MatchTags(destination.Destination))
+				} else {
+					destinations[service] = destinations[service].Add(mesh_proto.MatchTags(destination.Destination))
+				}
 			}
 		} else {
 			destinations[serviceName] = destinations[serviceName].Add(mesh_proto.MatchService(serviceName))
