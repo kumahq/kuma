@@ -24,17 +24,6 @@ mtls:
   - name: ca-1
     type: builtin
 `
-	trafficPermissionAll := `
-type: TrafficPermission
-name: traffic-permission
-mesh: default
-sources:
-- match:
-   kuma.io/service: "*"
-destinations:
-- match:
-   kuma.io/service: "*"
-`
 
 	trafficRoute := `
 type: TrafficRoute
@@ -102,9 +91,6 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(meshDefaulMtlsOn)(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlUniversal(trafficPermissionAll)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		externalServiceAddress := externalservice.From(cluster, externalservice.HttpServer).GetExternalAppAddress()
