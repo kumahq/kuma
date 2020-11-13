@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"

@@ -5,13 +5,14 @@ import (
 	"sort"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 )
 
 var vipsAllocatorLog = core.Log.WithName("dns-vips-allocator")

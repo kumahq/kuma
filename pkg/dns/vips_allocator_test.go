@@ -3,6 +3,9 @@ package dns_test
 import (
 	"context"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -10,8 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("VIP Allocator", func() {
@@ -140,6 +141,7 @@ var _ = Describe("VIP Allocator", func() {
 			}
 			// when
 			updated, err := dns.UpdateMeshedVIPs(vips, vips, ipam, serviceSet)
+			Expect(err).ToNot(HaveOccurred())
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(updated).To(BeTrue())
@@ -162,6 +164,7 @@ var _ = Describe("VIP Allocator", func() {
 			}
 			// when
 			updated, err := dns.UpdateMeshedVIPs(vips, vips, ipam, serviceSet)
+			Expect(err).ToNot(HaveOccurred())
 			// then
 			Expect(updated).To(BeTrue())
 			Expect(vips).To(Equal(dns.VIPList{
@@ -183,6 +186,7 @@ var _ = Describe("VIP Allocator", func() {
 			}
 			// when
 			updated, err := dns.UpdateMeshedVIPs(vips, vips, ipam, serviceSet)
+			Expect(err).ToNot(HaveOccurred())
 			// then
 			Expect(updated).To(BeFalse())
 			Expect(vips).To(Equal(dns.VIPList{
@@ -211,6 +215,7 @@ var _ = Describe("VIP Allocator", func() {
 			}
 			// when
 			updated, err := dns.UpdateMeshedVIPs(global, meshed, ipam, serviceSet)
+			Expect(err).ToNot(HaveOccurred())
 			// then
 			Expect(updated).To(BeTrue())
 			Expect(meshed).To(Equal(dns.VIPList{

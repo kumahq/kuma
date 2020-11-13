@@ -3,9 +3,10 @@ package dns_test
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/dns"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/dns"
 
 	config_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
