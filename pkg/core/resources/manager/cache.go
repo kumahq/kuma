@@ -16,6 +16,9 @@ import (
 
 // Cached version of the ReadOnlyResourceManager designed to be used only for use cases of eventual consistency.
 // This cache is NOT consistent across instances of the control plane.
+//
+// When retrieving elements from cache, they point to the same instances of the resources.
+// We cannot do deep copies because it would consume lots of memory, therefore you need to be extra careful to NOT modify the resources.
 type cachedManager struct {
 	delegate ReadOnlyResourceManager
 	cache    *cache.Cache
