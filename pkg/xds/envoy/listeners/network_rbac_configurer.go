@@ -3,6 +3,8 @@ package listeners
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/rbac/v2"
 	rbac_config "github.com/envoyproxy/go-control-plane/envoy/config/rbac/v2"
@@ -12,7 +14,6 @@ import (
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 func NetworkRBAC(statsName string, rbacEnabled bool, permission *mesh_core.TrafficPermissionResource) FilterChainBuilderOpt {
@@ -87,7 +88,7 @@ func createPolicy(permission *mesh_core.TrafficPermissionResource) *rbac_config.
 		} else {
 			principal.Identifier = &rbac_config.Principal_Authenticated_{
 				Authenticated: &rbac_config.Principal_Authenticated{
-					PrincipalName: envoy.ServiceSpiffeIDMatcher(permission.Meta.GetMesh(), service),
+					PrincipalName: tls.ServiceSpiffeIDMatcher(permission.Meta.GetMesh(), service),
 				},
 			}
 		}
