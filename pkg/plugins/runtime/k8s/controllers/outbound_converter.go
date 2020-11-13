@@ -7,7 +7,6 @@ import (
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/persistence"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -21,7 +20,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 	pod *kube_core.Pod,
 	others []*mesh_k8s.Dataplane,
 	externalServices []*mesh_k8s.ExternalService,
-	vips persistence.VIPList,
+	vips dns.VIPList,
 ) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	dataplanes := []*core_mesh.DataplaneResource{}

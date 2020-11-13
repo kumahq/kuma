@@ -5,8 +5,6 @@ import (
 
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/dns/persistence"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
@@ -16,7 +14,7 @@ const VIPListenPort = uint32(80)
 func VIPOutbounds(
 	name string,
 	dataplanes []*core_mesh.DataplaneResource,
-	vips persistence.VIPList,
+	vips VIPList,
 	externalServices []*core_mesh.ExternalServiceResource,
 ) []*mesh_proto.Dataplane_Networking_Outbound {
 	serviceVIPMap := map[string]string{}
@@ -78,7 +76,7 @@ func VIPOutbounds(
 	return outbounds
 }
 
-func ForwardLookup(vips persistence.VIPList, service string) (string, error) {
+func ForwardLookup(vips VIPList, service string) (string, error) {
 	ip, found := vips[service]
 	if !found {
 		return "", errors.Errorf("service [%s] not found", service)

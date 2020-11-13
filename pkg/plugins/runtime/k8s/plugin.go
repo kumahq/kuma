@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/persistence"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
@@ -135,7 +134,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			Zone:              rt.Config().Multizone.Remote.Zone,
 			ResourceConverter: converter,
 		},
-		Persistence:     persistence.NewMeshedPersistence(rt.ConfigManager()),
+		Persistence:     dns.NewMeshedPersistence(rt.ConfigManager()),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	return reconciler.SetupWithManager(mgr)
@@ -146,7 +145,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	p := persistence.NewMeshedPersistence(rt.ConfigManager())
+	p := dns.NewMeshedPersistence(rt.ConfigManager())
 	vipsSync, err := dns.NewVIPsSynchronizer(rt.DNSResolver(), p, rt.LeaderInfo())
 	if err != nil {
 		return err
@@ -165,7 +164,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		Log:             core.Log.WithName("controllers").WithName("ConfigMap"),
 		ResourceManager: rt.ResourceManager(),
 		IPAM:            ipam,
-		Persistence:     persistence.NewMeshedPersistence(rt.ConfigManager()),
+		Persistence:     dns.NewMeshedPersistence(rt.ConfigManager()),
 		Resolver:        rt.DNSResolver(),
 	}
 	if err := reconciler.SetupWithManager(mgr); err != nil {

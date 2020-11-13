@@ -8,10 +8,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/persistence"
 )
 
-func UpdateOutbounds(ctx context.Context, rm manager.ResourceManager, vips persistence.VIPList) error {
+func UpdateOutbounds(ctx context.Context, rm manager.ResourceManager, vips dns.VIPList) error {
 	meshes := &mesh.MeshResourceList{}
 	if err := rm.List(ctx, meshes); err != nil {
 		return err

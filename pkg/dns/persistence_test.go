@@ -1,15 +1,15 @@
-package persistence_test
+package dns_test
 
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/dns"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	config_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/dns/persistence"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -48,10 +48,10 @@ func (t *testConfigManager) List(ctx context.Context, list *system.ConfigResourc
 }
 
 var _ = Describe("Meshed Persistence", func() {
-	var p persistence.MeshedWriter
+	var p *dns.MeshedPersistence
 
 	BeforeEach(func() {
-		p = persistence.NewMeshedPersistence(&testConfigManager{
+		p = dns.NewMeshedPersistence(&testConfigManager{
 			configs: map[string]*system.ConfigResource{
 				"kuma-mesh-1-dns-vips": {
 					Meta: &model.ResourceMeta{Name: "kuma-mesh-1-dns-vips"},
@@ -73,7 +73,7 @@ var _ = Describe("Meshed Persistence", func() {
 		actual, err := p.Get()
 		Expect(err).ToNot(HaveOccurred())
 
-		expected := persistence.VIPList{
+		expected := dns.VIPList{
 			"backend":    "240.0.0.1",
 			"backend_2":  "240.0.1.1",
 			"backend_3":  "240.0.2.1",
@@ -93,7 +93,7 @@ var _ = Describe("Meshed Persistence", func() {
 	It("should return vips for mesh", func() {
 		actual, err := p.GetByMesh("mesh-2")
 		Expect(err).ToNot(HaveOccurred())
-		expected := persistence.VIPList{
+		expected := dns.VIPList{
 			"backend_2":  "240.0.1.1",
 			"frontend_2": "240.0.1.3",
 			"postgres_2": "240.0.1.0",

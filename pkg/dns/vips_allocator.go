@@ -2,18 +2,16 @@ package dns
 
 import (
 	"context"
+	"sort"
 	"time"
-
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
-
-	"github.com/kumahq/kuma/pkg/dns/persistence"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
 )
 
 var vipsAllocatorLog = core.Log.WithName("dns-vips-allocator")
@@ -28,13 +26,13 @@ type (
 	vipsAllocator struct {
 		rm          manager.ReadOnlyResourceManager
 		ipam        IPAM
-		persistence persistence.GlobalWriter
+		persistence *MeshedPersistence
 		resolver    DNSResolver
 		newTicker   func() *time.Ticker
 	}
 )
 
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, persistence persistence.GlobalWriter, ipam IPAM, resolver DNSResolver) (VIPsAllocator, error) {
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, persistence *MeshedPersistence, ipam IPAM, resolver DNSResolver) (VIPsAllocator, error) {
 	return &vipsAllocator{
 		rm:          rm,
 		persistence: persistence,
@@ -58,8 +56,8 @@ func (d *vipsAllocator) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
-			if err := d.synchronize(); err != nil {
-				vipsAllocatorLog.Error(err, "unable to synchronise")
+			if err := d.createOrUpdateVIPConfigs(); err != nil {
+				vipsAllocatorLog.Error(err, "unable to create or update VIP configs")
 			}
 		case <-stop:
 			vipsAllocatorLog.Info("stopping")
@@ -68,89 +66,120 @@ func (d *vipsAllocator) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *vipsAllocator) synchronize() error {
+func (d *vipsAllocator) createOrUpdateVIPConfigs() error {
 	meshes := core_mesh.MeshResourceList{}
 	err := d.rm.List(context.Background(), &meshes)
 	if err != nil {
 		return err
 	}
 
-	serviceMap := make(map[string]bool)
 	for _, mesh := range meshes.Items {
-		dataplanes := core_mesh.DataplaneResourceList{}
-
-		err := d.rm.List(context.Background(), &dataplanes, store.ListByMesh(mesh.Meta.GetName()))
-		if err != nil {
-			return err
-		}
-
-		// TODO: Do we need to reflect somehow the fact this service belongs to a particular `mesh`
-		for _, dp := range dataplanes.Items {
-			if dp.Spec.IsIngress() {
-				for _, service := range dp.Spec.Networking.Ingress.AvailableServices {
-					serviceMap[service.Tags[mesh_proto.ServiceTag]] = true
-				}
-			} else {
-				for _, inbound := range dp.Spec.Networking.Inbound {
-					serviceMap[inbound.GetService()] = true
-				}
-			}
-		}
-
-		externalServices := core_mesh.ExternalServiceResourceList{}
-		err = d.rm.List(context.Background(), &externalServices, store.ListByMesh(mesh.Meta.GetName()))
-		if err != nil {
-			return err
-		}
-
-		for _, es := range externalServices.Items {
-			service := es.Spec.GetService()
-			serviceMap[service] = true
+		if err := CreateOrUpdateVIPConfig(d.persistence, d.rm, d.resolver, d.ipam, mesh.GetMeta().GetName()); err != nil {
+			vipsAllocatorLog.Error(err, "unable to create or update VIP config", "mesh", mesh.GetMeta().GetName())
 		}
 	}
-
-	return d.allocateVIPs(serviceMap)
+	return nil
 }
 
-func (d *vipsAllocator) allocateVIPs(services map[string]bool) (errs error) {
-	viplist, err := d.persistence.Get()
+func CreateOrUpdateVIPConfig(p *MeshedPersistence, rm manager.ReadOnlyResourceManager, r DNSResolver, ipam IPAM, mesh string) error {
+	serviceSet, err := BuildServiceSet(rm, mesh)
 	if err != nil {
 		return err
 	}
-	change := false
 
-	// ensure all services have entries in the domain
-	for service := range services {
-		_, found := viplist[service]
-		if !found {
-			ip, err := d.ipam.AllocateIP()
-			if err != nil {
-				errs = multierr.Append(errs, errors.Wrapf(err, "unable to allocate an ip for service %s", service))
-			} else {
-				viplist[service] = ip
-				change = true
-				vipsAllocatorLog.Info("Adding", "service", service, "ip", ip)
+	global, err := p.Get()
+	if err != nil {
+		return err
+	}
+
+	meshed, err := p.GetByMesh(mesh)
+	if err != nil {
+		return err
+	}
+
+	updated, updError := UpdateMeshedVIPs(global, meshed, ipam, serviceSet)
+	if !updated {
+		return err
+	}
+
+	if err := p.Set(mesh, meshed); err != nil {
+		return multierr.Append(updError, err)
+	}
+
+	r.SetVIPs(meshed)
+
+	return updError
+}
+
+type ServiceSet map[string]bool
+
+func (s ServiceSet) ToArray() (services []string) {
+	for service := range s {
+		services = append(services, service)
+	}
+	sort.Strings(services)
+	return
+}
+
+func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (ServiceSet, error) {
+	serviceSet := make(map[string]bool)
+
+	dataplanes := core_mesh.DataplaneResourceList{}
+	if err := rm.List(context.Background(), &dataplanes, store.ListByMesh(mesh)); err != nil {
+		return nil, err
+	}
+	for _, dp := range dataplanes.Items {
+		if dp.Spec.IsIngress() {
+			for _, service := range dp.Spec.Networking.Ingress.AvailableServices {
+				if service.Mesh != mesh {
+					continue
+				}
+				serviceSet[service.Tags[mesh_proto.ServiceTag]] = true
+			}
+		} else {
+			for _, inbound := range dp.Spec.Networking.Inbound {
+				serviceSet[inbound.GetService()] = true
 			}
 		}
 	}
 
-	// ensure all entries in the domain are present in the service list, and delete them otherwise
-	for service := range viplist {
-		_, found := services[service]
-		if !found {
-			ip := viplist[service]
-			change = true
-			vipsAllocatorLog.Info("Removing", "service", service, "ip", ip)
-			_ = d.ipam.FreeIP(ip)
-			delete(viplist, service)
-		}
+	externalServices := core_mesh.ExternalServiceResourceList{}
+	if err := rm.List(context.Background(), &externalServices, store.ListByMesh(mesh)); err != nil {
+		return nil, err
+	}
+	for _, es := range externalServices.Items {
+		serviceSet[es.Spec.GetService()] = true
 	}
 
-	if change {
-		if err := d.persistence.Set(viplist); err != nil {
-			return err
+	return serviceSet, nil
+}
+
+func UpdateMeshedVIPs(global, meshed VIPList, ipam IPAM, serviceSet ServiceSet) (updated bool, errs error) {
+	for _, service := range serviceSet.ToArray() {
+		_, found := meshed[service]
+		if found {
+			continue
 		}
-		d.resolver.SetVIPs(viplist)
+		ip, found := global[service]
+		if found {
+			meshed[service] = ip
+			updated = true
+			continue
+		}
+		ip, err := ipam.AllocateIP()
+		if err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, "unable to allocate an ip for service %s", service))
+			continue
+		}
+		meshed[service] = ip
+		updated = true
+	}
+	for service, ip := range meshed {
+		if _, found := serviceSet[service]; !found {
+			updated = true
+			_ = ipam.FreeIP(ip)
+			delete(meshed, service)
+		}
 	}
 	return
 }

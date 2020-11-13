@@ -5,7 +5,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	"github.com/kumahq/kuma/pkg/dns/persistence"
 )
 
 var (
@@ -21,7 +20,7 @@ type (
 
 	vipsSynchronizer struct {
 		resolver    DNSResolver
-		persistence persistence.Reader
+		persistence *MeshedPersistence
 		leadInfo    component.LeaderInfo
 		newTicker   func() *time.Ticker
 	}
@@ -31,7 +30,7 @@ const (
 	tickInterval = 500 * time.Millisecond
 )
 
-func NewVIPsSynchronizer(resolver DNSResolver, persistence persistence.Reader, leadInfo component.LeaderInfo) (VIPsSynchronizer, error) {
+func NewVIPsSynchronizer(resolver DNSResolver, persistence *MeshedPersistence, leadInfo component.LeaderInfo) (VIPsSynchronizer, error) {
 	return &vipsSynchronizer{
 		resolver:    resolver,
 		persistence: persistence,

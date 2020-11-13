@@ -1,4 +1,4 @@
-package persistence
+package dns
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
@@ -14,7 +15,15 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-type meshed struct {
+type VIPList map[string]string
+
+func (vips VIPList) Append(other VIPList) {
+	for k, v := range other {
+		vips[k] = v
+	}
+}
+
+type MeshedPersistence struct {
 	manager config_manager.ConfigManager
 }
 
@@ -31,13 +40,13 @@ func MeshedConfigKey(name string) (string, bool) {
 	return mesh, true
 }
 
-func NewMeshedPersistence(manager config_manager.ConfigManager) MeshedWriter {
-	return &meshed{
+func NewMeshedPersistence(manager config_manager.ConfigManager) *MeshedPersistence {
+	return &MeshedPersistence{
 		manager: manager,
 	}
 }
 
-func (m *meshed) Get() (VIPList, error) {
+func (m *MeshedPersistence) Get() (VIPList, error) {
 	resourceList := &config_model.ConfigResourceList{}
 	if err := m.manager.List(context.Background(), resourceList); err != nil {
 		return nil, err
@@ -62,7 +71,7 @@ func (m *meshed) Get() (VIPList, error) {
 	return vips, nil
 }
 
-func (m *meshed) GetByMesh(mesh string) (VIPList, error) {
+func (m *MeshedPersistence) GetByMesh(mesh string) (VIPList, error) {
 	name := fmt.Sprintf(template, mesh)
 	vips := VIPList{}
 	resource := &config_model.ConfigResource{}
@@ -86,22 +95,19 @@ func (m *meshed) GetByMesh(mesh string) (VIPList, error) {
 	return vips, nil
 }
 
-func (m *meshed) Set(mesh string, vips VIPList) error {
+func (m *MeshedPersistence) Set(mesh string, vips VIPList) error {
 	name := fmt.Sprintf(template, mesh)
 	resource := &config_model.ConfigResource{}
-	if err := m.manager.Get(context.Background(), resource, store.GetByKey(name, "")); err != nil {
-		return err
-	}
 
 	jsonBytes, err := json.Marshal(vips)
 	if err != nil {
 		return errors.Wrap(err, "unable to marshall VIP list")
 	}
-	resource.Spec.Config = string(jsonBytes)
 
-	err = m.manager.Update(context.Background(), resource)
-	if err != nil {
-		return errors.Wrap(err, "unable to update VIP list")
+	if err := config_manager.Upsert(m.manager, model.ResourceKey{Name: name, Mesh: model.NoMesh}, resource, func(resource *config_model.ConfigResource) {
+		resource.Spec.Config = string(jsonBytes)
+	}); err != nil {
+		return err
 	}
 	return nil
 }

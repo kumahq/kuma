@@ -7,9 +7,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/kumahq/kuma/pkg/dns/persistence"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 
 	. "github.com/onsi/ginkgo"
@@ -155,7 +154,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, persistence.VIPList{})
+			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, dns.VIPList{})
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -326,7 +325,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, persistence.VIPList{})
+				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, dns.VIPList{})
 
 				// then
 				Expect(err).To(HaveOccurred())

@@ -7,7 +7,6 @@ import (
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/persistence"
 )
 
 var (
@@ -23,7 +22,7 @@ func init() {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
-	rt.DNSResolver().SetVIPsChangedHandler(func(list persistence.VIPList) {
+	rt.DNSResolver().SetVIPsChangedHandler(func(list dns.VIPList) {
 		if err := UpdateOutbounds(context.Background(), rt.ResourceManager(), list); err != nil {
 			log.Error(err, "failed to update VIP outbounds")
 		}
@@ -40,7 +39,7 @@ func addDNS(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	p := persistence.NewGlobalPersistence(rt.ConfigManager())
+	p := dns.NewMeshedPersistence(rt.ConfigManager())
 	vipsAllocator, err := dns.NewVIPsAllocator(rt.ReadOnlyResourceManager(), p, ipam, rt.DNSResolver())
 	if err != nil {
 		return err

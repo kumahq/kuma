@@ -11,7 +11,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/persistence"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 
 	. "github.com/onsi/ginkgo"
@@ -30,7 +29,7 @@ var _ = Describe("DNS sync", func() {
 		memory := memory_resources.NewStore()
 		resManager = resources_manager.NewResourceManager(memory)
 		cfgManager := config_manager.NewConfigManager(memory)
-		p := persistence.NewGlobalPersistence(cfgManager)
+		p := dns.NewMeshedPersistence(cfgManager)
 		dnsResolver = dns.NewDNSResolver("mesh")
 
 		ipam, err := dns.NewSimpleIPAM("240.0.0.0/24")
@@ -107,6 +106,7 @@ var _ = Describe("DNS sync", func() {
 						Ingress: &mesh_proto.Dataplane_Networking_Ingress{
 							AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 								{
+									Mesh: "default",
 									Tags: map[string]string{
 										"kuma.io/service": "backend",
 									},

@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/pkg/dns/persistence"
 
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 
@@ -25,21 +26,6 @@ import (
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
-
-type testPersistence struct {
-}
-
-func (t *testPersistence) Get() (persistence.VIPList, error) {
-	return persistence.VIPList{}, nil
-}
-
-func (t *testPersistence) GetByMesh(mesh string) (persistence.VIPList, error) {
-	return persistence.VIPList{}, nil
-}
-
-func (t *testPersistence) Set(mesh string, vips persistence.VIPList) error {
-	return nil
-}
 
 var _ = Describe("PodReconciler", func() {
 
@@ -190,7 +176,7 @@ var _ = Describe("PodReconciler", func() {
 			Scheme:          k8sClientScheme,
 			Log:             core.Log.WithName("test"),
 			SystemNamespace: "kuma-system",
-			Persistence:     &testPersistence{},
+			Persistence:     dns.NewMeshedPersistence(manager.NewConfigManager(memory.NewStore())),
 		}
 	})
 
