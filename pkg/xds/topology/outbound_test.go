@@ -5,6 +5,11 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	. "github.com/kumahq/kuma/pkg/xds/topology"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -47,6 +52,12 @@ var _ = Describe("TrafficRoute", func() {
 	}
 	const nonDefaultMesh = "non-default"
 
+	var dataSourceLoader datasource.Loader
+
+	BeforeEach(func() {
+		secretManager := secret_manager.NewSecretManager(secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil)
+		dataSourceLoader = datasource.NewDataSourceLoader(secretManager)
+	})
 	Describe("GetOutboundTargets()", func() {
 
 		It("should pick proper dataplanes for each outbound destination", func() {
@@ -157,7 +168,7 @@ var _ = Describe("TrafficRoute", func() {
 			externalServices := &mesh_core.ExternalServiceResourceList{}
 
 			// when
-			targets := BuildEndpointMap(dataplanes.Items, "zone-1", defaultMeshWithMTLS, externalServices.Items)
+			targets := BuildEndpointMap(defaultMeshWithMTLS, "zone-1", dataplanes.Items, externalServices.Items, dataSourceLoader)
 
 			Expect(targets).To(HaveLen(4))
 			// and
@@ -230,7 +241,7 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should include only those dataplanes that match given selectors",
 			func(given testCase) {
 				// when
-				endpoints := BuildEndpointMap(given.dataplanes, "zone-1", given.mesh, given.externalServices)
+				endpoints := BuildEndpointMap(given.mesh, "zone-1", given.dataplanes, given.externalServices, dataSourceLoader)
 				// then
 				Expect(endpoints).To(Equal(given.expected))
 			},

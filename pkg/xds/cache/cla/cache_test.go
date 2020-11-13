@@ -9,6 +9,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 
@@ -51,6 +56,10 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 	expiration := 2 * time.Second
 
 	BeforeEach(func() {
+		dataSourceLoader := datasource.NewDataSourceLoader(
+			secret_manager.NewSecretManager(
+				secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil))
+
 		s = memory.NewStore()
 		countingManager = &countingResourcesManager{store: s}
 		var err error
@@ -58,9 +67,10 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		metrics, err = core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 
-		claCache, err = cla.NewCache(countingManager, "", expiration, func(s string) ([]net.IP, error) {
-			return []net.IP{net.ParseIP(s)}, nil
-		}, metrics)
+		claCache, err = cla.NewCache(countingManager, dataSourceLoader, "", expiration,
+			func(s string) ([]net.IP, error) {
+				return []net.IP{net.ParseIP(s)}, nil
+			}, metrics)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

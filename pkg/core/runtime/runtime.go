@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/kumahq/kuma/pkg/core/datasource"
+
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -37,6 +39,7 @@ type RuntimeInfo interface {
 type RuntimeContext interface {
 	Config() kuma_cp.Config
 	XDS() core_xds.XdsContext
+	DataSourceLoader() datasource.Loader
 	ResourceManager() core_manager.ResourceManager
 	ResourceStore() core_store.ResourceStore
 	ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
@@ -95,6 +98,7 @@ type runtimeContext struct {
 	rom      core_manager.ReadOnlyResourceManager
 	cam      ca.Managers
 	xds      core_xds.XdsContext
+	dsl      datasource.Loader
 	ext      context.Context
 	dns      dns.DNSResolver
 	configm  config_manager.ConfigManager
@@ -115,6 +119,9 @@ func (rc *runtimeContext) Config() kuma_cp.Config {
 }
 func (rc *runtimeContext) XDS() core_xds.XdsContext {
 	return rc.xds
+}
+func (rc *runtimeContext) DataSourceLoader() datasource.Loader {
+	return rc.dsl
 }
 func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
 	return rc.rm

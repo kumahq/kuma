@@ -83,7 +83,7 @@ func (c *clientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 }
 
 func (c *clientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_core.TransportSocket, error) {
-	tlsContext, err := envoy.CreateUpstreamTlsContext(c.ctx, c.metadata, c.clientService, sni)
+	tlsContext, err := tls.CreateUpstreamTlsContext(c.ctx, c.metadata, c.clientService, sni)
 	if err != nil {
 		return nil, err
 	}
