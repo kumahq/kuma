@@ -55,7 +55,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
                 portValue: 12345
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: pass_through

@@ -10,7 +10,7 @@ static_resources:
         port_value: 7070
     filter_chains:
     - filters:
-      - name: envoy.http_connection_manager
+      - name: envoy.filters.network.http_connection_manager
         config:
           stat_prefix: ingress_http
           codec_type: auto
@@ -23,10 +23,10 @@ static_resources:
               routes:
               - match:
                   prefix: "/"
-                direct_response: 
+                direct_response:
                   status: 200
                   body:
                     filename: /tmp/response.json
           http_filters:
-          - name: envoy.router
+          - name: envoy.filters.http.router
             config: {}
