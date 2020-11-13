@@ -4,10 +4,11 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 func ServerSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata) FilterChainBuilderOpt {
@@ -25,7 +26,7 @@ type ServerSideMTLSConfigurer struct {
 }
 
 func (c *ServerSideMTLSConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
-	tlsContext, err := envoy.CreateDownstreamTlsContext(c.ctx, c.metadata)
+	tlsContext, err := tls.CreateDownstreamTlsContext(c.ctx, c.metadata)
 	if err != nil {
 		return err
 	}

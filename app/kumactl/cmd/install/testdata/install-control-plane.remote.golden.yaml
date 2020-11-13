@@ -5577,18 +5577,8 @@ rules:
       - meshes
       - zones
       - zoneinsights
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - kuma.io
-    resources:
       - proxytemplates
+      - trafficpermissions
     verbs:
       - get
       - list
@@ -5597,14 +5587,6 @@ rules:
       - update
       - patch
       - delete
-  - apiGroups:
-      - kuma.io
-    resources:
-      - proxytemplates/status
-    verbs:
-      - get
-      - update
-      - patch
   - apiGroups:
       - kuma.io
     resources:
@@ -5612,7 +5594,6 @@ rules:
       - externalservices
       - faultinjections
       - healthchecks
-      - trafficpermissions
       - trafficlogs
       - trafficroutes
       - traffictraces

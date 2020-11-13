@@ -113,7 +113,16 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceManager: rt.ResourceManager(),
 	}
-	return reconciler.SetupWithManager(mgr)
+	if err := reconciler.SetupWithManager(mgr); err != nil {
+		return errors.Wrap(err, "could not setup mesh reconciller")
+	}
+	defaultsReconciller := &k8s_controllers.MeshDefaultsReconciler{
+		ResourceManager: rt.ResourceManager(),
+	}
+	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
+		return errors.Wrap(err, "could not setup mesh defaults reconciller")
+	}
+	return nil
 }
 
 func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {

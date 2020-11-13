@@ -8,7 +8,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/metrics"
 
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
 
 	"github.com/patrickmn/go-cache"
@@ -16,10 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-)
-
-var (
-	meshCacheLog = core.Log.WithName("mesh-cache")
 )
 
 // Cache is needed to share and cache Hashes among goroutines which
