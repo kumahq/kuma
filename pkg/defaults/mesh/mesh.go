@@ -14,6 +14,9 @@ func CreateDefaultMeshResources(resManager manager.ResourceManager, meshName str
 	if err := createDefaultTrafficPermission(resManager, meshName); err != nil {
 		return errors.Wrap(err, "could not create default traffic permission")
 	}
+	if err := createDefaultTrafficRoute(resManager, meshName); err != nil {
+		return errors.Wrap(err, "could not create default traffic permission")
+	}
 	log.Info("default TrafficPermission created", "mesh", meshName, "name", defaultTrafficPermissionName(meshName))
 	return nil
 }
