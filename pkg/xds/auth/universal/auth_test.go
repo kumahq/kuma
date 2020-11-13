@@ -238,9 +238,11 @@ var _ = Describe("Authentication flow", func() {
 		})
 
 		// when
-		_, err := issuer.Generate(builtin_issuer.DataplaneIdentity{})
+		_, err := issuer.Generate(builtin_issuer.DataplaneIdentity{
+			Mesh: "demo",
+		})
 
 		// then
-		Expect(err).To(MatchError("there is no Signing Key in the Control Plane. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens."))
+		Expect(err).To(MatchError(`there is no Signing Key in the Control Plane for Mesh "demo". Make sure the Mesh exist. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens.`))
 	})
 })

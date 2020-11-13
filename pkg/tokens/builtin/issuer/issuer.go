@@ -57,7 +57,7 @@ func (i *jwtTokenIssuer) signingKey(meshName string) ([]byte, error) {
 		return nil, err
 	}
 	if len(signingKey) == 0 {
-		return nil, SigningKeyNotFound
+		return nil, SigningKeyNotFound(meshName)
 	}
 	return signingKey, nil
 }
