@@ -21,40 +21,50 @@ var NodePortAddressPriority = []kube_core.NodeAddressType{
 	kube_core.NodeInternalIP,
 }
 
-func (p *PodConverter) IngressFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane, error) {
+func (p *PodConverter) IngressFor(dp *mesh_proto.Dataplane, pod *kube_core.Pod, services []*kube_core.Service) error {
 	if len(services) != 1 {
-		return nil, errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
+		return errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
 	}
 	ifaces, err := InboundInterfacesFor(p.Zone, pod, services)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not generate inbound interfaces")
+		return errors.Wrap(err, "could not generate inbound interfaces")
 	}
 	if len(ifaces) != 1 {
-		return nil, errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
+		return errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
 	}
+	if dp.Networking == nil {
+		dp.Networking = &mesh_proto.Dataplane_Networking{
+			Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
+		}
+	}
+	dp.Networking.Inbound = ifaces
+	dp.Networking.Address = pod.Status.PodIP
 
-	ingress, err := p.ingressSpecFromAnnotations(metadata.Annotations(pod.Annotations))
+	coords, err := p.coordinatesFromAnnotations(metadata.Annotations(pod.Annotations))
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	if ingress == nil { // if ingress public coordinates were not present in annotations we will try to pick it from service
-		ingress, err = p.ingressSpecFromService(services[0])
+	if coords == nil { // if ingress public coordinates were not present in annotations we will try to pick it from service
+		coords, err = p.coordinatesFromService(services[0])
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
-	return &mesh_proto.Dataplane{
-		Networking: &mesh_proto.Dataplane_Networking{
-			Ingress: ingress,
-			Address: pod.Status.PodIP,
-			Inbound: ifaces,
-		},
-	}, nil
+	if coords != nil {
+		dp.Networking.Ingress.PublicAddress = coords.address
+		dp.Networking.Ingress.PublicPort = coords.port
+	}
+	return nil
 }
 
-func (p *PodConverter) ingressSpecFromAnnotations(annotations metadata.Annotations) (*mesh_proto.Dataplane_Networking_Ingress, error) {
+type coordinates struct {
+	address string
+	port    uint32
+}
+
+func (p *PodConverter) coordinatesFromAnnotations(annotations metadata.Annotations) (*coordinates, error) {
 	publicAddress, addressExist := annotations.GetString(metadata.KumaIngressPublicAddressAnnotation)
 	publicPort, portExist, err := annotations.GetUint32(metadata.KumaIngressPublicPortAnnotation)
 	if err != nil {
@@ -64,28 +74,28 @@ func (p *PodConverter) ingressSpecFromAnnotations(annotations metadata.Annotatio
 		return nil, errors.Errorf("both %s and %s has to be defined", metadata.KumaIngressPublicAddressAnnotation, metadata.KumaIngressPublicPortAnnotation)
 	}
 	if addressExist && portExist {
-		return &mesh_proto.Dataplane_Networking_Ingress{
-			PublicAddress: publicAddress,
-			PublicPort:    publicPort,
+		return &coordinates{
+			address: publicAddress,
+			port:    publicPort,
 		}, nil
 	}
 	return nil, nil
 }
 
-// ingressSpecFromService is trying to generate ingress with public address and port using Service that selects the ingress
-func (p *PodConverter) ingressSpecFromService(service *kube_core.Service) (*mesh_proto.Dataplane_Networking_Ingress, error) {
+// coordinatesFromService is trying to generate ingress with public address and port using Service that selects the ingress
+func (p *PodConverter) coordinatesFromService(service *kube_core.Service) (*coordinates, error) {
 	switch service.Spec.Type {
 	case kube_core.ServiceTypeLoadBalancer:
-		return p.ingressSpecFromLoadBalancer(service)
+		return p.coordinatesFromLoadBalancer(service)
 	case kube_core.ServiceTypeNodePort:
-		return p.ingressSpecFromNodePort(service)
+		return p.coordinatesFromNodePort(service)
 	default:
 		converterLog.Info("ingress service type is not public, therefore the public coordinates of the ingress will not be automatically set. Change the ingress service to LoadBalancer or NodePort or override the settings using annotations.")
-		return &mesh_proto.Dataplane_Networking_Ingress{}, nil
+		return nil, nil
 	}
 }
 
-func (p *PodConverter) ingressSpecFromNodePort(service *kube_core.Service) (*mesh_proto.Dataplane_Networking_Ingress, error) {
+func (p *PodConverter) coordinatesFromNodePort(service *kube_core.Service) (*coordinates, error) {
 	nodes := &kube_core.NodeList{}
 	if err := p.NodeGetter.List(context.Background(), nodes); err != nil {
 		return nil, err
@@ -96,21 +106,21 @@ func (p *PodConverter) ingressSpecFromNodePort(service *kube_core.Service) (*mes
 	for _, addressType := range NodePortAddressPriority {
 		for _, address := range nodes.Items[0].Status.Addresses {
 			if address.Type == addressType {
-				ingress := &mesh_proto.Dataplane_Networking_Ingress{
-					PublicAddress: address.Address,
-					PublicPort:    uint32(service.Spec.Ports[0].NodePort),
+				coords := &coordinates{
+					address: address.Address,
+					port:    uint32(service.Spec.Ports[0].NodePort),
 				}
-				return ingress, nil
+				return coords, nil
 			}
 		}
 	}
 	return nil, errors.New("could not find valid Node address for Ingress publicAddress")
 }
 
-func (p *PodConverter) ingressSpecFromLoadBalancer(service *kube_core.Service) (*mesh_proto.Dataplane_Networking_Ingress, error) {
+func (p *PodConverter) coordinatesFromLoadBalancer(service *kube_core.Service) (*coordinates, error) {
 	if len(service.Status.LoadBalancer.Ingress) == 0 {
 		converterLog.V(1).Info("load balancer for ingress is not yet ready")
-		return &mesh_proto.Dataplane_Networking_Ingress{}, nil
+		return nil, nil
 	}
 	publicAddress := ""
 	if service.Status.LoadBalancer.Ingress[0].Hostname != "" {
@@ -121,11 +131,11 @@ func (p *PodConverter) ingressSpecFromLoadBalancer(service *kube_core.Service) (
 	}
 	if publicAddress == "" {
 		converterLog.V(1).Info("load balancer for ingress is not yet ready. Hostname and IP are empty")
-		return &mesh_proto.Dataplane_Networking_Ingress{}, nil
+		return nil, nil
 	}
-	ingress := &mesh_proto.Dataplane_Networking_Ingress{
-		PublicAddress: publicAddress,
-		PublicPort:    uint32(service.Spec.Ports[0].Port), // service has to have port, otherwise we would not generate inbound
+	coords := &coordinates{
+		address: publicAddress,
+		port:    uint32(service.Spec.Ports[0].Port), // service has to have port, otherwise we would not generate inbound
 	}
-	return ingress, nil
+	return coords, nil
 }
