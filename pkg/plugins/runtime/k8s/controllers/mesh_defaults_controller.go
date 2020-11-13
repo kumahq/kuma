@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
@@ -17,20 +16,17 @@ import (
 
 // MeshDefaultsReconciler creates default resources for a created Mesh
 type MeshDefaultsReconciler struct {
-	Log             logr.Logger
 	ResourceManager manager.ResourceManager
 }
 
 func (r *MeshDefaultsReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	log := r.Log.WithValues("mesh", req.NamespacedName)
-
 	// we skip default name Mesh because pkg/defaults/mesh.go uses ResourceManager that executes CreateDefaultMeshResources already
 	if req.Name == model.DefaultMesh {
 		return kube_ctrl.Result{}, nil
 	}
 
 	if err := defaults_mesh.CreateDefaultMeshResources(r.ResourceManager, req.Name); err != nil {
-		log.Error(err, "could not create default mesh resources")
+		return kube_ctrl.Result{}, errors.Wrap(err, "could not create default mesh resources")
 	}
 	return kube_ctrl.Result{}, nil
 }
