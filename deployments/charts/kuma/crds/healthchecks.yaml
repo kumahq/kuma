@@ -8,7 +8,7 @@ spec:
   names:
     kind: HealthCheck
     plural: healthchecks
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: HealthCheck is the Schema for the healthchecks API
