@@ -8,6 +8,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/rest/errors"
+	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 )
@@ -39,6 +40,13 @@ func (d *dataplaneTokenWebService) handleIdentityRequest(request *restful.Reques
 	if err := request.ReadEntity(&idReq); err != nil {
 		log.Error(err, "Could not read a request")
 		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if idReq.Mesh == "" {
+		verr := validators.ValidationError{}
+		verr.AddViolation("mesh", "cannot be empty")
+		errors.HandleError(response, verr.OrNil(), "Invalid request")
 		return
 	}
 

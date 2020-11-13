@@ -20,7 +20,7 @@ import (
 var _ = Describe("Authentication flow", func() {
 	var privateKey = []byte("testPrivateKey")
 
-	issuer := builtin_issuer.NewDataplaneTokenIssuer(func() ([]byte, error) {
+	issuer := builtin_issuer.NewDataplaneTokenIssuer(func(string) ([]byte, error) {
 		return privateKey, nil
 	})
 	var authenticator auth.Authenticator
@@ -57,6 +57,10 @@ var _ = Describe("Authentication flow", func() {
 	}
 
 	ingressDp := core_mesh.DataplaneResource{
+		Meta: &test_model.ResourceMeta{
+			Mesh: "ingress-1",
+			Name: "default",
+		},
 		Spec: mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
@@ -100,14 +104,6 @@ var _ = Describe("Authentication flow", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		},
-		Entry("should auth with token bound to nothing", testCase{
-			id: builtin_issuer.DataplaneIdentity{
-				Name: "",
-				Mesh: "",
-				Tags: nil,
-			},
-			dpRes: &dpRes,
-		}),
 		Entry("should auth with token bound to mesh", testCase{
 			id: builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
@@ -237,7 +233,7 @@ var _ = Describe("Authentication flow", func() {
 
 	It("should throw an error when signing key is not found", func() {
 		// given
-		issuer := builtin_issuer.NewDataplaneTokenIssuer(func() ([]byte, error) {
+		issuer := builtin_issuer.NewDataplaneTokenIssuer(func(string) ([]byte, error) {
 			return nil, nil
 		})
 

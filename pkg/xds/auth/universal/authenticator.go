@@ -31,7 +31,7 @@ type universalAuthenticator struct {
 }
 
 func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
-	dpIdentity, err := u.issuer.Validate(credential)
+	dpIdentity, err := u.issuer.Validate(credential, dataplane.Meta.GetMesh())
 	if err != nil {
 		return err
 	}
