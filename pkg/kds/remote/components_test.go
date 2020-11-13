@@ -30,7 +30,7 @@ var _ = Describe("Remote Sync", func() {
 
 	consumedTypes := []model.ResourceType{mesh.DataplaneType, mesh.MeshType, mesh.TrafficPermissionType}
 	newPolicySink := func(zone string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream) component.Component {
-		return kds_client.NewKDSSink(core.Log, consumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(nil, resourceSyncer, false, zone))
+		return kds_client.NewKDSSink(core.Log, consumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(nil, resourceSyncer, false, zone, nil))
 	}
 	start := func(comp component.Component, stop chan struct{}) {
 		go func() {

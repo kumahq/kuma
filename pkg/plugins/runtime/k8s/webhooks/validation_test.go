@@ -79,7 +79,6 @@ var _ = Describe("Validation", func() {
               "kind":"TrafficRoute",
               "mesh":"demo",
               "metadata":{
-                "namespace":"example",
                 "name":"empty",
                 "creationTimestamp":null
               },
@@ -153,7 +152,6 @@ var _ = Describe("Validation", func() {
               "kind":"TrafficRoute",
               "mesh":"demo",
               "metadata":{
-                "namespace":"example",
                 "name":"empty",
                 "creationTimestamp":null,
                 "annotations": {
@@ -283,7 +281,6 @@ var _ = Describe("Validation", func() {
 			  "kind": "TrafficRoute",
 			  "mesh": "demo",
 			  "metadata": {
-				"namespace": "example",
 				"name": "empty",
 				"creationTimestamp": null
 			  },
@@ -339,7 +336,6 @@ var _ = Describe("Validation", func() {
 			  "kind": "TrafficRoute",
 			  "mesh": "demo",
 			  "metadata": {
-				"namespace": "example",
 				"name": "empty",
 				"creationTimestamp": null
 			  }
