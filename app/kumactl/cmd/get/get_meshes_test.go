@@ -106,7 +106,6 @@ var _ = Describe("kumactl get meshes", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh1",
 				Name: "mesh1",
 			},
 		},
@@ -123,7 +122,6 @@ var _ = Describe("kumactl get meshes", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh2",
 				Name: "mesh2",
 			},
 		},

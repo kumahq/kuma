@@ -7,11 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -93,12 +89,6 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 	defer c.mu.Unlock()
 
 	opts := store.NewCreateOptions(fs...)
-	switch r.GetType() {
-	case mesh.MeshType:
-		opts.Mesh = opts.Name
-	case system.ZoneType:
-		opts.Mesh = "default"
-	}
 	// Name must be provided via CreateOptions
 	if _, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh); record != nil {
 		return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
@@ -214,12 +204,6 @@ func (c *memoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOp
 	defer c.mu.RUnlock()
 
 	opts := store.NewGetOptions(fs...)
-	switch r.GetType() {
-	case mesh.MeshType:
-		opts.Mesh = opts.Name
-	case system.ZoneType:
-		opts.Mesh = "default"
-	}
 	// Name must be provided via GetOptions
 	_, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh)
 	if record == nil {

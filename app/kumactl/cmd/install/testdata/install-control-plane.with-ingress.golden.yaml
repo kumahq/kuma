@@ -5554,7 +5554,7 @@ spec:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kuma:control-plane
+  name: kuma-control-plane
   labels:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -5586,18 +5586,8 @@ rules:
       - meshes
       - zones
       - zoneinsights
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - kuma.io
-    resources:
       - proxytemplates
+      - trafficpermissions
     verbs:
       - get
       - list
@@ -5606,14 +5596,6 @@ rules:
       - update
       - patch
       - delete
-  - apiGroups:
-      - kuma.io
-    resources:
-      - proxytemplates/status
-    verbs:
-      - get
-      - update
-      - patch
   - apiGroups:
       - kuma.io
     resources:
@@ -5621,7 +5603,6 @@ rules:
       - externalservices
       - faultinjections
       - healthchecks
-      - trafficpermissions
       - trafficlogs
       - trafficroutes
       - traffictraces
@@ -5658,14 +5639,14 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kuma:control-plane
+  name: kuma-control-plane
   labels:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: kuma:control-plane
+  name: kuma-control-plane
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane
@@ -5674,7 +5655,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: kuma:control-plane
+  name: kuma-control-plane
   namespace: kuma-system
   labels:
     app.kubernetes.io/name: kuma
@@ -5708,12 +5689,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: kuma:control-plane
+  name: kuma-control-plane
   namespace: kuma-system
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: kuma:control-plane
+  name: kuma-control-plane
 subjects:
   - kind: ServiceAccount
     name: kuma-control-plane

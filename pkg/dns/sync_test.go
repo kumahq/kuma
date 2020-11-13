@@ -7,6 +7,7 @@ import (
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	resources_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/dns"
@@ -56,7 +57,7 @@ var _ = Describe("DNS sync", func() {
 		BeforeEach(func() {
 			// given a mesh and one service
 			mesh := core_mesh.MeshResource{}
-			err := resManager.Create(context.Background(), &mesh, core_store.CreateByKey("default", "default"))
+			err := resManager.Create(context.Background(), &mesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			webDp := core_mesh.DataplaneResource{

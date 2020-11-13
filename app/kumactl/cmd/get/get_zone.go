@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/pkg/errors"
 
@@ -28,7 +29,7 @@ func newGetZoneCmd(pctx *getContext) *cobra.Command {
 			}
 			name := args[0]
 			zone := &system.ZoneResource{}
-			if err := rs.Get(context.Background(), zone, store.GetByKey(name, "default")); err != nil {
+			if err := rs.Get(context.Background(), zone, store.GetByKey(name, model.NoMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No zone resources found")
 				}

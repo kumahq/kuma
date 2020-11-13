@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
@@ -15,12 +17,16 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	dp_server_cfg "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -29,10 +35,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/runtime"
 	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("SDS Server", func() {
@@ -95,7 +97,7 @@ var _ = Describe("SDS Server", func() {
 				},
 			},
 		}
-		err = resManager.Create(context.Background(), &meshRes, core_store.CreateByKey("default", "default"))
+		err = resManager.Create(context.Background(), &meshRes, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup backend dataplane
@@ -170,7 +172,7 @@ var _ = Describe("SDS Server", func() {
 			Node: &envoy_api_core.Node{
 				Id: "default.backend-01",
 			},
-			ResourceNames: []string{envoy.MeshCaResource, envoy.IdentityCertResource},
+			ResourceNames: []string{tls.MeshCaResource, tls.IdentityCertResource},
 			TypeUrl:       envoy_resource.SecretType,
 		}
 	}
@@ -245,7 +247,7 @@ var _ = Describe("SDS Server", func() {
 		It("should return pair when CA is changed", func(done Done) {
 			// when
 			meshRes := mesh_core.MeshResource{}
-			Expect(resManager.Get(context.Background(), &meshRes, core_store.GetByKey("default", "default"))).To(Succeed())
+			Expect(resManager.Get(context.Background(), &meshRes, core_store.GetByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "" // we need to first disable mTLS
 			Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "ca-2"
