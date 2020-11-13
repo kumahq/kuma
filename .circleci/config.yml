@@ -539,14 +539,6 @@ jobs:
           curl -L -o /tmp/docker-$VER.tgz https://download.docker.com/linux/static/stable/x86_64/docker-$VER.tgz
           tar -xz -C /tmp -f /tmp/docker-$VER.tgz
           mv /tmp/docker/docker /usr/bin
-#    - run:
-#        name: "Install Helm Chart Releaser"
-#        command: |
-#          VER="1.0.0-beta.1"
-#          curl -L -o /tmp/cr-$VER.tgz https://github.com/helm/chart-releaser/releases/download/v$VER/chart-releaser_$VER_linux_amd64.tar.gz
-#          mkdir -p /tmp/cr
-#          tar -xz -C /tmp/cr -f /tmp/cr-$VER.tgz
-#          mv /tmp/cr/cr /usr/bin
     - run:
         name: Build Packages
         command: ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
@@ -559,12 +551,28 @@ jobs:
     - run:
         name: Push Docker
         command: ./tools/releases/docker.sh --push --version $CIRCLE_TAG
-#    - run:
-#        name: Package Helm Charts
-#        command: ./tools/releases/helm.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
-#    - run:
-#        name: Release Helm Charts
-#        command: ./tools/releases/helm.sh --release --version $CIRCLE_TAG --sha $CIRCLE_SHA1
+
+  helm-release:
+    executor: golang
+    steps:
+    - checkout
+    - run:
+        name: "Install Helm Chart Releaser"
+        command: |
+          VER="1.1.1"
+          curl -L -o /tmp/cr-$VER.tgz https://github.com/helm/chart-releaser/releases/download/v$VER/chart-releaser_${VER}_linux_amd64.tar.gz
+          mkdir -p /tmp/cr
+          tar -xz -C /tmp/cr -f /tmp/cr-$VER.tgz
+          mv /tmp/cr/cr /usr/bin
+    - run:
+        name: "Package Helm Charts"
+        command: |
+          ./tools/releases/helm.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
+    - run:
+        name: "Release Helm Charts"
+        command: |
+          ./tools/releases/helm.sh --release --version $CIRCLE_TAG --sha $CIRCLE_SHA1
+
 
 #
 # Below, the tag filter needs to be in all jobs
@@ -741,6 +749,10 @@ workflows:
         - check
         - test
         - integration
+    - helm-release:
+        <<: *release_workflow_filters
+        requires:
+        - release
     - example_docker-compose:
         <<: *release_workflow_filters
         name: docker-compose
