@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"sort"
 	"strconv"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -12,7 +13,6 @@ import (
 // This is an in-memory operation and offloads this from the persistent stores (k8s, postgres etc.)
 // which makes their implementation more simple. The in-memory filtering has been tested with 10,000
 // Dataplanes and proved to be fast enough, although not that efficient.
-
 func NewPaginationStore(delegate ResourceStore) ResourceStore {
 	return &paginationStore{
 		delegate: delegate,
@@ -69,10 +69,11 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 	}
 
 	filteredItems := filteredList.GetItems()
-	lenFilteresItems := len(filteredItems)
+	lenFilteredItems := len(filteredItems)
+	sort.Sort(model.ByMeta(filteredItems))
 
 	offset := 0
-	pageSize := lenFilteresItems
+	pageSize := lenFilteredItems
 	paginationEnabled := opts.PageSize != 0
 	if paginationEnabled {
 		pageSize = opts.PageSize
@@ -85,19 +86,19 @@ func (p *paginationStore) List(ctx context.Context, list model.ResourceList, opt
 		}
 	}
 
-	for i := offset; i < offset+pageSize && i < lenFilteresItems; i++ {
+	for i := offset; i < offset+pageSize && i < lenFilteredItems; i++ {
 		_ = list.AddItem(filteredItems[i])
 	}
 
 	if paginationEnabled {
 		nextOffset := ""
-		if offset+pageSize < lenFilteresItems { // set new offset only if we did not reach the end of the collection
+		if offset+pageSize < lenFilteredItems { // set new offset only if we did not reach the end of the collection
 			nextOffset = strconv.Itoa(offset + opts.PageSize)
 		}
 		list.GetPagination().SetNextOffset(nextOffset)
 	}
 
-	list.GetPagination().SetTotal(uint32(lenFilteresItems))
+	list.GetPagination().SetTotal(uint32(lenFilteredItems))
 
 	return nil
 }
