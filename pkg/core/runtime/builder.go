@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -16,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -31,7 +31,7 @@ type BuilderContext interface {
 	Config() kuma_cp.Config
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
-	DNSResolver() dns.DNSResolver
+	DNSResolver() resolver.DNSResolver
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	Metrics() metrics.Metrics
@@ -52,7 +52,7 @@ type Builder struct {
 	xds      core_xds.XdsContext
 	dsl      datasource.Loader
 	ext      context.Context
-	dns      dns.DNSResolver
+	dns      resolver.DNSResolver
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
@@ -131,7 +131,7 @@ func (b *Builder) WithExtension(key interface{}, value interface{}) *Builder {
 	return b
 }
 
-func (b *Builder) WithDNSResolver(dns dns.DNSResolver) *Builder {
+func (b *Builder) WithDNSResolver(dns resolver.DNSResolver) *Builder {
 	b.dns = dns
 	return b
 }
@@ -245,7 +245,7 @@ func (b *Builder) DataSourceLoader() datasource.Loader {
 func (b *Builder) Extensions() context.Context {
 	return b.ext
 }
-func (b *Builder) DNSResolver() dns.DNSResolver {
+func (b *Builder) DNSResolver() resolver.DNSResolver {
 	return b.dns
 }
 func (b *Builder) ConfigManager() config_manager.ConfigManager {

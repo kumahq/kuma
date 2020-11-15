@@ -3,6 +3,7 @@ package dns_test
 import (
 	"fmt"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -28,7 +29,7 @@ var _ = Describe("DNS server", func() {
 			port = uint32(p)
 			Expect(err).ToNot(HaveOccurred())
 
-			resolver := NewDNSResolver("mesh")
+			resolver := resolver.NewDNSResolver("mesh")
 			m, err := core_metrics.NewMetrics("Standalone")
 			metrics = m
 			Expect(err).ToNot(HaveOccurred())

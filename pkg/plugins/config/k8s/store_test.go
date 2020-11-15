@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	. "github.com/onsi/ginkgo"
@@ -76,7 +77,7 @@ var _ = Describe("KubernetesStore", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		s, err = k8s.NewStore(k8sClient, ns)
+		s, err = k8s.NewStore(k8sClient, ns, k8sClientScheme, k8s_resources.NewSimpleConverter())
 		Expect(err).ToNot(HaveOccurred())
 	})
 

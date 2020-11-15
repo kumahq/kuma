@@ -1,18 +1,17 @@
-package dns
+package resolver
 
 import (
 	"sync"
 
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
 )
 
-type VIPsChangedHandler func(list VIPList)
-
 type DNSResolver interface {
 	GetDomain() string
-	SetVIPs(list VIPList)
-	SetVIPsChangedHandler(handler VIPsChangedHandler)
+	SetVIPs(list vips.List)
+	SetVIPsChangedHandler(handler vips.ChangeHandler)
 
 	ForwardLookup(service string) (string, error)
 	ForwardLookupFQDN(name string) (string, error)
@@ -22,8 +21,8 @@ type DNSResolver interface {
 type dnsResolver struct {
 	sync.RWMutex
 	domain  string
-	viplist VIPList
-	handler VIPsChangedHandler
+	viplist vips.List
+	handler vips.ChangeHandler
 }
 
 var _ DNSResolver = &dnsResolver{}
@@ -38,7 +37,7 @@ func (d *dnsResolver) GetDomain() string {
 	return d.domain
 }
 
-func (s *dnsResolver) SetVIPs(list VIPList) {
+func (s *dnsResolver) SetVIPs(list vips.List) {
 	s.Lock()
 	defer s.Unlock()
 	s.viplist = list
@@ -47,7 +46,7 @@ func (s *dnsResolver) SetVIPs(list VIPList) {
 	}
 }
 
-func (s *dnsResolver) SetVIPsChangedHandler(handler VIPsChangedHandler) {
+func (s *dnsResolver) SetVIPsChangedHandler(handler vips.ChangeHandler) {
 	s.Lock()
 	defer s.Unlock()
 	s.handler = handler

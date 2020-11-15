@@ -2,15 +2,12 @@ package controllers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -45,7 +42,6 @@ type MeshReconciler struct {
 func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("mesh", req.NamespacedName)
-	log.Info("Reconcile")
 
 	if r.Mode != config_core.Remote {
 		// Fetch the Mesh instance
@@ -68,13 +64,6 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 		// Ensure CA Managers are created
 		if err := core_managers.EnsureEnabledCA(ctx, r.CaManagers, meshResource, meshResource.Meta.GetName()); err != nil {
 			log.Error(err, "unable to ensure that mesh CAs are created")
-			return kube_ctrl.Result{}, err
-		}
-	}
-
-	cmName := fmt.Sprintf("kuma-%s-dns-vips", req.Name)
-	if err := r.ConfigManager.Create(ctx, &system.ConfigResource{}, store.CreateByKey(cmName, "")); err != nil {
-		if !kube_apierrs.IsAlreadyExists(err) {
 			return kube_ctrl.Result{}, err
 		}
 	}

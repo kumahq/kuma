@@ -3,6 +3,8 @@ package dns_test
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -11,7 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 )
 
@@ -132,7 +133,7 @@ var _ = Describe("VIP Allocator", func() {
 	Context("UpdateMeshedVIPs", func() {
 		It("should allocate new VIPs", func() {
 			// setup
-			vips := dns.VIPList{}
+			vipsList := vips.List{}
 			ipam, err := dns.NewSimpleIPAM("240.0.0.0/4")
 			Expect(err).ToNot(HaveOccurred())
 			serviceSet := dns.ServiceSet{
@@ -140,12 +141,12 @@ var _ = Describe("VIP Allocator", func() {
 				"frontend": true,
 			}
 			// when
-			updated, err := dns.UpdateMeshedVIPs(vips, vips, ipam, serviceSet)
+			updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
 			Expect(err).ToNot(HaveOccurred())
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(updated).To(BeTrue())
-			Expect(vips).To(Equal(dns.VIPList{
+			Expect(vipsList).To(Equal(vips.List{
 				"backend":  "240.0.0.0",
 				"frontend": "240.0.0.1",
 			}))
@@ -153,7 +154,7 @@ var _ = Describe("VIP Allocator", func() {
 
 		It("should free IP for deleted service", func() {
 			// setup
-			vips := dns.VIPList{
+			vipsList := vips.List{
 				"backend":  "240.0.0.0",
 				"frontend": "240.0.0.1",
 			}
@@ -163,18 +164,18 @@ var _ = Describe("VIP Allocator", func() {
 				"backend": true,
 			}
 			// when
-			updated, err := dns.UpdateMeshedVIPs(vips, vips, ipam, serviceSet)
+			updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
 			Expect(err).ToNot(HaveOccurred())
 			// then
 			Expect(updated).To(BeTrue())
-			Expect(vips).To(Equal(dns.VIPList{
+			Expect(vipsList).To(Equal(vips.List{
 				"backend": "240.0.0.0",
 			}))
 		})
 
 		It("should return updated=false if nothing changed", func() {
 			// setup
-			vips := dns.VIPList{
+			vipsList := vips.List{
 				"backend":  "240.0.0.0",
 				"frontend": "240.0.0.1",
 			}
@@ -185,11 +186,11 @@ var _ = Describe("VIP Allocator", func() {
 				"frontend": true,
 			}
 			// when
-			updated, err := dns.UpdateMeshedVIPs(vips, vips, ipam, serviceSet)
+			updated, err := dns.UpdateMeshedVIPs(vipsList, vipsList, ipam, serviceSet)
 			Expect(err).ToNot(HaveOccurred())
 			// then
 			Expect(updated).To(BeFalse())
-			Expect(vips).To(Equal(dns.VIPList{
+			Expect(vipsList).To(Equal(vips.List{
 				"backend":  "240.0.0.0",
 				"frontend": "240.0.0.1",
 			}))
@@ -197,12 +198,12 @@ var _ = Describe("VIP Allocator", func() {
 
 		It("should generate the same VIP for services across meshes", func() {
 			// setup
-			global := dns.VIPList{
+			global := vips.List{
 				"backend":  "240.0.0.0",
 				"frontend": "240.0.0.1",
 				"database": "240.0.0.10",
 			}
-			meshed := dns.VIPList{
+			meshed := vips.List{
 				"backend":  "240.0.0.0",
 				"frontend": "240.0.0.1",
 			}
@@ -218,7 +219,7 @@ var _ = Describe("VIP Allocator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// then
 			Expect(updated).To(BeTrue())
-			Expect(meshed).To(Equal(dns.VIPList{
+			Expect(meshed).To(Equal(vips.List{
 				"backend":  "240.0.0.0",
 				"frontend": "240.0.0.1",
 				"database": "240.0.0.10",

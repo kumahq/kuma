@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -29,18 +30,17 @@ type ConfigMapReconciler struct {
 	Scheme          *kube_runtime.Scheme
 	Log             logr.Logger
 	ResourceManager manager.ResourceManager
-	IPAM            dns.IPAM
-	Persistence     *dns.MeshedPersistence
-	Resolver        dns.DNSResolver
+	VIPsAllocator   *dns.VIPsAllocator
+	SystemNamespace string
 }
 
 func (r *ConfigMapReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	mesh, ok := dns.MeshedConfigKey(req.Name)
+	mesh, ok := vips.MeshFromConfigKey(req.Name)
 	if !ok {
 		return kube_ctrl.Result{}, nil
 	}
 
-	if err := dns.CreateOrUpdateVIPConfig(r.Persistence, r.ResourceManager, r.Resolver, r.IPAM, mesh); err != nil {
+	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
@@ -56,20 +56,33 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.ConfigMap{}).
 		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ServiceToConfigMapsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("service-to-configmap-mapper")},
+			ToRequests: &ServiceToConfigMapsMapper{
+				Client:          mgr.GetClient(),
+				Log:             r.Log.WithName("service-to-configmap-mapper"),
+				SystemNamespace: r.SystemNamespace,
+			},
 		}).
 		Watches(&kube_source.Kind{Type: &mesh_k8s.Dataplane{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &DataplaneToMeshMapper{Client: mgr.GetClient(), Log: r.Log.WithName("dataplane-to-configmap-mapper")},
+			ToRequests: &DataplaneToMeshMapper{
+				Client:          mgr.GetClient(),
+				Log:             r.Log.WithName("dataplane-to-configmap-mapper"),
+				SystemNamespace: r.SystemNamespace,
+			},
 		}).
 		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ExternalServiceToConfigMapsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("external-service-to-configmap-mapperr")},
+			ToRequests: &ExternalServiceToConfigMapsMapper{
+				Client:          mgr.GetClient(),
+				Log:             r.Log.WithName("external-service-to-configmap-mapperr"),
+				SystemNamespace: r.SystemNamespace,
+			},
 		}).
 		Complete(r)
 }
 
 type ServiceToConfigMapsMapper struct {
 	kube_client.Client
-	Log logr.Logger
+	Log             logr.Logger
+	SystemNamespace string
 }
 
 func (m *ServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
@@ -90,12 +103,14 @@ func (m *ServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_recon
 
 	meshSet := map[string]bool{}
 	for _, pod := range pods.Items {
-		meshSet[pod.Annotations[metadata.KumaMeshAnnotation]] = true
+		if mesh, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaMeshAnnotation); exist {
+			meshSet[mesh] = true
+		}
 	}
 	var req []kube_reconile.Request
 	for mesh := range meshSet {
 		req = append(req, kube_reconile.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: "kuma-system", Name: fmt.Sprintf("kuma-%s-dns-vips", mesh)},
+			NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(mesh)},
 		})
 	}
 
@@ -104,7 +119,8 @@ func (m *ServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_recon
 
 type DataplaneToMeshMapper struct {
 	kube_client.Client
-	Log logr.Logger
+	Log             logr.Logger
+	SystemNamespace string
 }
 
 func (m *DataplaneToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
@@ -115,13 +131,14 @@ func (m *DataplaneToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.
 	}
 
 	return []kube_reconile.Request{{
-		NamespacedName: kube_types.NamespacedName{Namespace: "kuma-system", Name: fmt.Sprintf("kuma-%s-dns-vips", cause.Mesh)},
+		NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(cause.Mesh)},
 	}}
 }
 
 type ExternalServiceToConfigMapsMapper struct {
 	kube_client.Client
-	Log logr.Logger
+	Log             logr.Logger
+	SystemNamespace string
 }
 
 func (m *ExternalServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
@@ -132,6 +149,6 @@ func (m *ExternalServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []ku
 	}
 
 	return []kube_reconile.Request{{
-		NamespacedName: kube_types.NamespacedName{Namespace: "kuma-system", Name: fmt.Sprintf("kuma-%s-dns-vips", cause.Mesh)},
+		NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(cause.Mesh)},
 	}}
 }

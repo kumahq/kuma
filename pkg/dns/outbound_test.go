@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -39,7 +40,7 @@ var _ = Describe("VIPOutbounds", func() {
 		// given
 		dataplanes := core_mesh.DataplaneResourceList{}
 		externalServices := &core_mesh.ExternalServiceResourceList{}
-		vipList := dns.VIPList{}
+		vipList := vips.List{}
 		for i := 1; i <= 5; i++ {
 			service := "service-" + strconv.Itoa(i)
 			vip := fmt.Sprintf("240.0.0.%d", i)

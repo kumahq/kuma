@@ -5,6 +5,9 @@ import (
 	"sort"
 	"time"
 
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
@@ -17,26 +20,22 @@ import (
 
 var vipsAllocatorLog = core.Log.WithName("dns-vips-allocator")
 
-type (
-	// VIPsAllocator takes service tags in dataplanes and allocate VIP for every unique service. It is only run by CP leader.
-	VIPsAllocator interface {
-		Start(<-chan struct{}) error
-		NeedLeaderElection() bool
-	}
+type VIPsAllocator struct {
+	rm          manager.ReadOnlyResourceManager
+	ipam        IPAM
+	persistence *vips.Persistence
+	resolver    resolver.DNSResolver
+	newTicker   func() *time.Ticker
+}
 
-	vipsAllocator struct {
-		rm          manager.ReadOnlyResourceManager
-		ipam        IPAM
-		persistence *MeshedPersistence
-		resolver    DNSResolver
-		newTicker   func() *time.Ticker
+func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, cidr string, resolver resolver.DNSResolver) (*VIPsAllocator, error) {
+	ipam, err := NewSimpleIPAM(cidr)
+	if err != nil {
+		return nil, err
 	}
-)
-
-func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, persistence *MeshedPersistence, ipam IPAM, resolver DNSResolver) (VIPsAllocator, error) {
-	return &vipsAllocator{
+	return &VIPsAllocator{
 		rm:          rm,
-		persistence: persistence,
+		persistence: vips.NewPersistence(rm, configManager),
 		ipam:        ipam,
 		resolver:    resolver,
 		newTicker: func() *time.Ticker {
@@ -45,11 +44,11 @@ func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, persistence *MeshedPer
 	}, nil
 }
 
-func (d *vipsAllocator) NeedLeaderElection() bool {
+func (d *VIPsAllocator) NeedLeaderElection() bool {
 	return true
 }
 
-func (d *vipsAllocator) Start(stop <-chan struct{}) error {
+func (d *VIPsAllocator) Start(stop <-chan struct{}) error {
 	ticker := d.newTicker()
 	defer ticker.Stop()
 
@@ -67,7 +66,7 @@ func (d *vipsAllocator) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *vipsAllocator) createOrUpdateVIPConfigs() error {
+func (d *VIPsAllocator) createOrUpdateVIPConfigs() error {
 	meshes := core_mesh.MeshResourceList{}
 	err := d.rm.List(context.Background(), &meshes)
 	if err != nil {
@@ -75,39 +74,39 @@ func (d *vipsAllocator) createOrUpdateVIPConfigs() error {
 	}
 
 	for _, mesh := range meshes.Items {
-		if err := CreateOrUpdateVIPConfig(d.persistence, d.rm, d.resolver, d.ipam, mesh.GetMeta().GetName()); err != nil {
+		if err := d.CreateOrUpdateVIPConfig(mesh.GetMeta().GetName()); err != nil {
 			vipsAllocatorLog.Error(err, "unable to create or update VIP config", "mesh", mesh.GetMeta().GetName())
 		}
 	}
 	return nil
 }
 
-func CreateOrUpdateVIPConfig(p *MeshedPersistence, rm manager.ReadOnlyResourceManager, r DNSResolver, ipam IPAM, mesh string) error {
-	serviceSet, err := BuildServiceSet(rm, mesh)
+func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string) error {
+	serviceSet, err := BuildServiceSet(d.rm, mesh)
 	if err != nil {
 		return err
 	}
 
-	global, err := p.Get()
+	global, err := d.persistence.Get()
 	if err != nil {
 		return err
 	}
 
-	meshed, err := p.GetByMesh(mesh)
+	meshed, err := d.persistence.GetByMesh(mesh)
 	if err != nil {
 		return err
 	}
 
-	updated, updError := UpdateMeshedVIPs(global, meshed, ipam, serviceSet)
+	updated, updError := UpdateMeshedVIPs(global, meshed, d.ipam, serviceSet)
 	if !updated {
 		return err
 	}
 
-	if err := p.Set(mesh, meshed); err != nil {
+	if err := d.persistence.Set(mesh, meshed); err != nil {
 		return multierr.Append(updError, err)
 	}
 
-	r.SetVIPs(meshed)
+	d.resolver.SetVIPs(meshed)
 
 	return updError
 }
@@ -155,7 +154,7 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (ServiceSe
 	return serviceSet, nil
 }
 
-func UpdateMeshedVIPs(global, meshed VIPList, ipam IPAM, serviceSet ServiceSet) (updated bool, errs error) {
+func UpdateMeshedVIPs(global, meshed vips.List, ipam IPAM, serviceSet ServiceSet) (updated bool, errs error) {
 	for _, service := range serviceSet.ToArray() {
 		_, found := meshed[service]
 		if found {

@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/config/manager"
-	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
@@ -177,7 +178,7 @@ var _ = Describe("PodReconciler", func() {
 			Scheme:          k8sClientScheme,
 			Log:             core.Log.WithName("test"),
 			SystemNamespace: "kuma-system",
-			Persistence:     dns.NewMeshedPersistence(manager.NewConfigManager(memory.NewStore())),
+			Persistence:     vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore())),
 		}
 	})
 

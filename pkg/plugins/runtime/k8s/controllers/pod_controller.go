@@ -3,7 +3,7 @@ package controllers
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
@@ -49,7 +49,7 @@ type PodReconciler struct {
 	Scheme          *kube_runtime.Scheme
 	Log             logr.Logger
 	PodConverter    PodConverter
-	Persistence     *dns.MeshedPersistence
+	Persistence     *vips.Persistence
 	SystemNamespace string
 }
 
@@ -194,7 +194,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	vips dns.VIPList,
+	vips vips.List,
 ) error {
 	ctx := context.Background()
 
@@ -312,7 +312,7 @@ func (m *ConfigMapToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.
 	if obj.Meta.GetNamespace() != m.SystemNamespace {
 		return nil
 	}
-	mesh, ok := dns.MeshedConfigKey(obj.Meta.GetName())
+	mesh, ok := vips.MeshFromConfigKey(obj.Meta.GetName())
 	if !ok {
 		return nil
 	}

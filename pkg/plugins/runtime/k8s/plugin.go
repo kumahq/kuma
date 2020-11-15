@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
@@ -134,27 +135,23 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			Zone:              rt.Config().Multizone.Remote.Zone,
 			ResourceConverter: converter,
 		},
-		Persistence:     dns.NewMeshedPersistence(rt.ConfigManager()),
+		Persistence:     vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
 
 func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
-	ipam, err := dns.NewSimpleIPAM(rt.Config().DNSServer.CIDR)
-	if err != nil {
-		return err
+	if rt.Config().Mode == config_core.Global {
+		return nil
 	}
-	p := dns.NewMeshedPersistence(rt.ConfigManager())
-	vipsSync, err := dns.NewVIPsSynchronizer(rt.DNSResolver(), p, rt.LeaderInfo())
+	vipsAllocator, err := dns.NewVIPsAllocator(
+		rt.ReadOnlyResourceManager(),
+		rt.ConfigManager(),
+		rt.Config().DNSServer.CIDR,
+		rt.DNSResolver(),
+	)
 	if err != nil {
-		return err
-	}
-	server, err := dns.NewDNSServer(rt.Config().DNSServer.Port, rt.DNSResolver(), rt.Metrics())
-	if err != nil {
-		return err
-	}
-	if err := rt.Add(server, vipsSync); err != nil {
 		return err
 	}
 	reconciler := &k8s_controllers.ConfigMapReconciler{
@@ -163,9 +160,8 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		Scheme:          mgr.GetScheme(),
 		Log:             core.Log.WithName("controllers").WithName("ConfigMap"),
 		ResourceManager: rt.ResourceManager(),
-		IPAM:            ipam,
-		Persistence:     dns.NewMeshedPersistence(rt.ConfigManager()),
-		Resolver:        rt.DNSResolver(),
+		VIPsAllocator:   vipsAllocator,
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	if err := reconciler.SetupWithManager(mgr); err != nil {
 		return err

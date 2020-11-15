@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -29,7 +30,6 @@ import (
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 )
@@ -298,7 +298,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 }
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	builder.WithDNSResolver(dns.NewDNSResolver(cfg.DNSServer.Domain))
+	builder.WithDNSResolver(resolver.NewDNSResolver(cfg.DNSServer.Domain))
 	return nil
 }
 
