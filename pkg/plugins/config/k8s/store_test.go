@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

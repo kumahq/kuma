@@ -3,9 +3,10 @@ package resolver
 import (
 	"sync"
 
-	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/miekg/dns"
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/dns/vips"
 )
 
 type DNSResolver interface {

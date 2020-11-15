@@ -3,10 +3,11 @@ package dns_test
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/miekg/dns"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 
 	. "github.com/kumahq/kuma/pkg/dns"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"

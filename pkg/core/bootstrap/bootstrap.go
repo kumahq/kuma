@@ -4,8 +4,9 @@ import (
 	"context"
 	"net"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"

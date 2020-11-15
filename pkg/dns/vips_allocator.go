@@ -5,11 +5,12 @@ import (
 	"sort"
 	"time"
 
+	"github.com/pkg/errors"
+	"go.uber.org/multierr"
+
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/pkg/errors"
-	"go.uber.org/multierr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"

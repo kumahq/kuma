@@ -3,8 +3,9 @@ package runtime
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"

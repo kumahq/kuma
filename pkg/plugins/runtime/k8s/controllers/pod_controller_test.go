@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/dns/vips"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 
 	"github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"

@@ -3,13 +3,14 @@ package vips_test
 import (
 	"context"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 
 	config_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"

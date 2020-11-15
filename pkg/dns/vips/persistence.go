@@ -6,10 +6,11 @@ import (
 	"fmt"
 	"regexp"
 
-	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
+
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
