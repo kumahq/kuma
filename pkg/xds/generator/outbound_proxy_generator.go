@@ -228,6 +228,7 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 		}
 		if service == kuma_mesh.MatchAllTag {
 			service = serviceName
+			destination.Destination[kuma_mesh.ServiceTag] = serviceName
 		}
 
 		subset := envoy_common.ClusterSubset{

@@ -60,28 +60,38 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 		policy, exists := policyMap[serviceName]
+
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		if exists {
-			routeMap[outbound] = policy.(*mesh_core.TrafficRouteResource)
-		} else {
-			routeMap[outbound] = &mesh_core.TrafficRouteResource{
-				Meta: &pseudoMeta{
-					Name: "(implicit default route)",
-				},
-				Spec: mesh_proto.TrafficRoute{
-					Sources: []*mesh_proto.Selector{{
-						Match: mesh_proto.MatchAnyService(),
-					}},
-					Destinations: []*mesh_proto.Selector{{
-						Match: mesh_proto.MatchService(serviceName),
-					}},
-					Conf: &mesh_proto.TrafficRoute_Conf{
-						Split: []*mesh_proto.TrafficRoute_Split{{
-							Weight:      100,
-							Destination: mesh_proto.MatchTags(oface.GetTagsIncludingLegacy()),
-						}},
+			route := policy.(*mesh_core.TrafficRouteResource)
+			if route.Spec.GetConf().HasWildcard() {
+				split := []*mesh_proto.TrafficRoute_Split{}
+				for _, destination := range route.Spec.GetConf().GetSplit() {
+					newDestination := make(map[string]string, len(destination.Destination))
+					for k, v := range destination.Destination {
+						if k == mesh_proto.ServiceTag {
+							v = serviceName
+						}
+						newDestination[k] = v
+					}
+					split = append(split, &mesh_proto.TrafficRoute_Split{
+						Weight:      destination.Weight,
+						Destination: newDestination,
+					})
+				}
+
+				routeMap[outbound] = &mesh_core.TrafficRouteResource{
+					Meta: route.GetMeta(),
+					Spec: mesh_proto.TrafficRoute{
+						Sources:      route.Spec.GetSources(),
+						Destinations: route.Spec.GetDestinations(),
+						Conf: &mesh_proto.TrafficRoute_Conf{
+							Split: split,
+						},
 					},
-				},
+				}
+			} else {
+				routeMap[outbound] = route
 			}
 		}
 	}
@@ -105,7 +115,7 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 					continue
 				}
 				if service == mesh_proto.MatchAllTag {
-					destinations[serviceName] = destinations[serviceName].Add(mesh_proto.MatchTags(destination.Destination))
+					destinations[serviceName] = destinations[serviceName].Add(mesh_proto.MatchTags(oface.GetTagsIncludingLegacy()))
 				} else {
 					destinations[service] = destinations[service].Add(mesh_proto.MatchTags(destination.Destination))
 				}
