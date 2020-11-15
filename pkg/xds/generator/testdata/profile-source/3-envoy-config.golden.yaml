@@ -173,11 +173,11 @@ resources:
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
                 rules: {}
                 statPrefix: inbound_192_168_0_1_80.
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                 routeConfig:
                   name: inbound:backend
                   validateClusters: false
@@ -244,11 +244,11 @@ resources:
               - addressPrefix: 192.168.0.1
                 prefixLen: 32
           filters:
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                 routeConfig:
                   validateClusters: false
                   virtualHosts:
@@ -268,11 +268,11 @@ resources:
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
                 rules: {}
                 statPrefix: kuma_metrics_prometheus.
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                 routeConfig:
                   validateClusters: false
                   virtualHosts:
@@ -333,7 +333,7 @@ resources:
           portValue: 54321
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: db
@@ -349,7 +349,7 @@ resources:
           portValue: 59200
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: elastic

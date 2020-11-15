@@ -10,7 +10,6 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	filter_accesslog "github.com/envoyproxy/go-control-plane/envoy/config/filter/accesslog/v2"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -101,7 +100,7 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 		return nil, errors.Wrapf(err, "could not marshall %T", httpGrpcAccessLog)
 	}
 	return &filter_accesslog.AccessLog{
-		Name: envoy_wellknown.HTTPGRPCAccessLog,
+		Name: "envoy.access_loggers.http_grpc",
 		ConfigType: &filter_accesslog.AccessLog_TypedConfig{
 			TypedConfig: marshalled,
 		},
@@ -125,7 +124,7 @@ func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (
 		return nil, errors.Wrapf(err, "could not marshall %T", fileAccessLog)
 	}
 	return &filter_accesslog.AccessLog{
-		Name: envoy_wellknown.FileAccessLog,
+		Name: "envoy.access_loggers.file",
 		ConfigType: &filter_accesslog.AccessLog_TypedConfig{
 			TypedConfig: marshalled,
 		},

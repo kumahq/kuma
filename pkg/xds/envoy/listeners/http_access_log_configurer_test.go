@@ -88,11 +88,11 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                 portValue: 27070
             filterChains:
             - filters:
-              - name: envoy.http_connection_manager
+              - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                   httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                   statPrefix: backend
             trafficDirection: OUTBOUND
 `,
@@ -118,11 +118,11 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                 portValue: 27070
             filterChains:
             - filters:
-              - name: envoy.http_connection_manager
+              - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                   accessLog:
-                  - name: envoy.file_access_log
+                  - name: envoy.access_loggers.file
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                       format: |+
@@ -130,7 +130,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 
                       path: /tmp/log
                   httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                   statPrefix: backend
             trafficDirection: OUTBOUND
 `,
@@ -160,11 +160,11 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                 portValue: 27070
             filterChains:
             - filters:
-              - name: envoy.http_connection_manager
+              - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                   accessLog:
-                  - name: envoy.http_grpc_access_log
+                  - name: envoy.access_loggers.http_grpc
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
                       additionalRequestHeadersToLog:
@@ -184,7 +184,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                           "%RESP(server):5%" "%TRAILER(grpc-message):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
 
                   httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                   statPrefix: backend
             trafficDirection: OUTBOUND
 `,

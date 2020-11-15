@@ -293,7 +293,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
               portValue: 15001
           filterChains:
           - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: pass_through
@@ -313,7 +313,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                     portValue: 15001
                 filterChains:
                 - filters:
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: pass_through
