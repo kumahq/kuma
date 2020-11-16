@@ -6,6 +6,8 @@ import (
 	"github.com/miekg/dns"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+
 	"github.com/kumahq/kuma/pkg/core"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
@@ -21,13 +23,13 @@ type DNSServer interface {
 
 type SimpleDNSServer struct {
 	address  string
-	resolver DNSResolver
+	resolver resolver.DNSResolver
 
 	latencyMetric    prometheus.Summary
 	resolutionMetric *prometheus.CounterVec
 }
 
-func NewDNSServer(port uint32, resolver DNSResolver, metrics core_metrics.Metrics) (DNSServer, error) {
+func NewDNSServer(port uint32, resolver resolver.DNSResolver, metrics core_metrics.Metrics) (DNSServer, error) {
 	handler := &SimpleDNSServer{
 		address:  fmt.Sprintf("0.0.0.0:%d", port),
 		resolver: resolver,

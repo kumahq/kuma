@@ -18,7 +18,7 @@ import (
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
@@ -78,7 +78,7 @@ func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 }
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	builder.WithDNSResolver(dns.NewDNSResolver("mesh"))
+	builder.WithDNSResolver(resolver.NewDNSResolver("mesh"))
 	return nil
 }
 
