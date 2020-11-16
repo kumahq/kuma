@@ -148,6 +148,9 @@ metadata:
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		err := cluster.DeleteKuma(deployOptsFuncs...)
 		Expect(err).ToNot(HaveOccurred())
 
