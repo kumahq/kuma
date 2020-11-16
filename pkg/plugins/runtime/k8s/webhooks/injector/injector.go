@@ -409,7 +409,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 	if _, exist, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation); !exist {
 		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationEnabled
 	}
-	// Disable virtual probes if pod has 'kuma.io/gateway' annotation
+	// Disable virtual probes if pod has 'kuma.io/gateway' annotation, because we don't intercept inbound traffic
 	if enabled, exist, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation); exist && enabled {
 		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationDisabled
 	}
