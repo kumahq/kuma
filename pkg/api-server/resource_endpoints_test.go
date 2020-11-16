@@ -35,7 +35,7 @@ var _ = Describe("Resource Endpoints", func() {
 	const publicApiServerUrl = "http://kuma.internal:1234" // for pagination test
 
 	BeforeEach(func() {
-		resourceStore = memory.NewStore()
+		resourceStore = store.NewPaginationStore(memory.NewStore())
 		serverConfig := config.DefaultApiServerConfig()
 		serverConfig.Catalog.ApiServer.Url = publicApiServerUrl
 		m, err := core_metrics.NewMetrics("Standalone")

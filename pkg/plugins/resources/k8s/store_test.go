@@ -95,7 +95,7 @@ var _ = Describe("KubernetesStore", func() {
 			},
 			Scheme: k8sClientScheme,
 		}
-		s = store.NewStrictResourceStore(ks)
+		s = store.NewStrictResourceStore(store.NewPaginationStore(ks))
 		ns = string(uuid.NewUUID())
 
 		err := k8sClient.Create(context.Background(), &kube_core.Namespace{
