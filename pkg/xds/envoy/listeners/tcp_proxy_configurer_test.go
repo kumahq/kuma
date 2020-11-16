@@ -56,7 +56,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
             portValue: 8080
         filterChains:
         - filters:
-          - name: envoy.tcp_proxy
+          - name: envoy.filters.network.tcp_proxy
             typedConfig:
               '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
               cluster: localhost:8080
@@ -84,7 +84,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
                 portValue: 5432
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   statPrefix: db

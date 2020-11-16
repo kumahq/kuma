@@ -8,7 +8,7 @@ spec:
   names:
     kind: ExternalService
     plural: externalservices
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: ExternalService is the Schema for the externalservices API

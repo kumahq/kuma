@@ -76,7 +76,7 @@ spec:
   names:
     kind: CircuitBreaker
     plural: circuitbreakers
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: CircuitBreaker is the Schema for the circuitbreaker API
@@ -866,7 +866,7 @@ spec:
   names:
     kind: TrafficRoute
     plural: trafficroutes
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficRoute is the Schema for the trafficroutes API
@@ -1259,7 +1259,7 @@ spec:
   names:
     kind: TrafficTrace
     plural: traffictraces
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficTrace is the Schema for the traffictraces API
@@ -2831,7 +2831,7 @@ spec:
   names:
     kind: ExternalService
     plural: externalservices
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: ExternalService is the Schema for the externalservices API
@@ -3224,7 +3224,7 @@ spec:
   names:
     kind: FaultInjection
     plural: faultinjections
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: FaultInjection is the Schema for the faultinjections API
@@ -3617,7 +3617,7 @@ spec:
   names:
     kind: HealthCheck
     plural: healthchecks
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: HealthCheck is the Schema for the healthchecks API
@@ -4409,7 +4409,7 @@ spec:
   names:
     kind: ProxyTemplate
     plural: proxytemplates
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: ProxyTemplate is the Schema for the proxytemplates API
@@ -4810,7 +4810,7 @@ spec:
   names:
     kind: TrafficLog
     plural: trafficlogs
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficLog is the Schema for the trafficlogs API
@@ -5199,7 +5199,7 @@ spec:
   names:
     kind: TrafficPermission
     plural: trafficpermissions
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficPermission is the Schema for the trafficpermissions API
@@ -5630,18 +5630,8 @@ rules:
       - meshes
       - zones
       - zoneinsights
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - kuma.io
-    resources:
       - proxytemplates
+      - trafficpermissions
     verbs:
       - get
       - list
@@ -5650,14 +5640,6 @@ rules:
       - update
       - patch
       - delete
-  - apiGroups:
-      - kuma.io
-    resources:
-      - proxytemplates/status
-    verbs:
-      - get
-      - update
-      - patch
   - apiGroups:
       - kuma.io
     resources:
@@ -5665,7 +5647,6 @@ rules:
       - externalservices
       - faultinjections
       - healthchecks
-      - trafficpermissions
       - trafficlogs
       - trafficroutes
       - traffictraces

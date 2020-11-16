@@ -179,7 +179,7 @@ resources:
                 '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
                 rules: {}
                 statPrefix: inbound_192_168_0_1_80.
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: localhost:8080
@@ -231,7 +231,7 @@ resources:
           portValue: 15006
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: inbound:passthrough
@@ -250,7 +250,7 @@ resources:
         bindToPort: false
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: db
@@ -268,7 +268,7 @@ resources:
         bindToPort: false
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: elastic
@@ -284,7 +284,7 @@ resources:
           portValue: 15001
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: outbound:passthrough

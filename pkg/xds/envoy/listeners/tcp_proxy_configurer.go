@@ -3,7 +3,6 @@ package listeners
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -34,7 +33,7 @@ func (c *TcpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) 
 	}
 
 	filterChain.Filters = append(filterChain.Filters, &envoy_listener.Filter{
-		Name: envoy_wellknown.TCPProxy,
+		Name: "envoy.filters.network.tcp_proxy",
 		ConfigType: &envoy_listener.Filter_TypedConfig{
 			TypedConfig: pbst,
 		},

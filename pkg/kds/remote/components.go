@@ -1,11 +1,15 @@
 package remote
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
+	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
@@ -51,6 +55,7 @@ func Setup(rt core_runtime.Runtime) error {
 		return err
 	}
 	resourceSyncer := sync_store.NewResourceSyncer(kdsRemoteLog, rt.ResourceStore())
+	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
 		log := kdsRemoteLog.WithValues("peer-id", session.PeerID())
 		log.Info("new session created")
@@ -60,7 +65,7 @@ func Setup(rt core_runtime.Runtime) error {
 			}
 		}()
 		sink := kds_client.NewKDSSink(log, consumedTypes, kds_client.NewKDSStream(session.ClientStream(), zone),
-			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone),
+			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
 		)
 		go func() {
 			if err := sink.Start(session.Done()); err != nil {
@@ -83,18 +88,24 @@ func providedFilter(clusterName string) reconcile.ResourceFilter {
 	}
 }
 
-func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string) *kds_client.Callbacks {
+func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
 		OnResourcesReceived: func(clusterID string, rs model.ResourceList) error {
-			if k8sStore &&
-				rs.GetItemType() != mesh.MeshType &&
-				rs.GetItemType() != system.SecretType &&
-				rs.GetItemType() != system.ConfigType {
-				util.AddSuffixToNames(rs.GetItems(), "default")
+			if k8sStore && rs.GetItemType() != system.ConfigType && rs.GetItemType() != system.SecretType {
+				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
+				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
+				// System resources are not in the kubeFactory therefore we need explicit ifs for them
+				kubeObject, err := kubeFactory.NewObject(rs.NewItem())
+				if err != nil {
+					return errors.Wrap(err, "could not convert object")
+				}
+				if kubeObject.Scope() == k8s_model.ScopeNamespace {
+					util.AddSuffixToNames(rs.GetItems(), "default")
+				}
 			}
 			if rs.GetItemType() == mesh.DataplaneType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					return r.(*mesh.DataplaneResource).Spec.IsIngress() && localZone != util.ZoneTag(r)
+					return r.(*mesh.DataplaneResource).Spec.IsRemoteIngress(localZone)
 				}))
 			}
 			if rs.GetItemType() == system.ConfigType {

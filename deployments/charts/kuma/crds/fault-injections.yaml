@@ -8,7 +8,7 @@ spec:
   names:
     kind: FaultInjection
     plural: faultinjections
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: FaultInjection is the Schema for the faultinjections API

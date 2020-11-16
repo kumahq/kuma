@@ -222,9 +222,11 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
-				if err := xds_topology.ResolveAddress(rt.LookupIP(), dataplane); err != nil {
+				resolvedDp, err := xds_topology.ResolveAddress(rt.LookupIP(), dataplane)
+				if err != nil {
 					return err
 				}
+				dataplane = resolvedDp
 
 				if dataplane.Spec.IsIngress() {
 					// update Ingress
