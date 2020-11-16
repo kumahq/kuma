@@ -85,12 +85,7 @@ func (r *zoneOverviewEndpoints) inspectZones(request *restful.Request, response 
 	// pagination is not supported yet so we need to override pagination total items after retaining dataplanes
 	overviews.GetPagination().SetTotal(uint32(len(overviews.Items)))
 	restList := rest.From.ResourceList(&overviews)
-	next, err := nextLink(request, &overviews)
-	if err != nil {
-		rest_errors.HandleError(response, err, "Could not list dataplane overviews")
-		return
-	}
-	restList.Next = next
+	restList.Next = nextLink(request, &overviews)
 	if err := response.WriteAsJson(restList); err != nil {
 		rest_errors.HandleError(response, err, "Could not list dataplane overviews")
 	}

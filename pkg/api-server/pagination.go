@@ -38,9 +38,9 @@ func pagination(request *restful.Request) (page, error) {
 	}, nil
 }
 
-func nextLink(request *restful.Request, list model.ResourceList) (*string, error) {
+func nextLink(request *restful.Request, list model.ResourceList) *string {
 	if list.GetPagination().NextOffset == "" {
-		return nil, nil
+		return nil
 	}
 
 	query := request.Request.URL.Query()
@@ -56,5 +56,5 @@ func nextLink(request *restful.Request, list model.ResourceList) (*string, error
 	nextURL.Path = request.Request.URL.Path
 	nextURL.RawQuery = query.Encode()
 	urlString := nextURL.String()
-	return &urlString, nil
+	return &urlString
 }
