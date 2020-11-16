@@ -73,7 +73,7 @@ func newRunCmd() *cobra.Command {
 		},
 	}
 	// flags
-	cmd.PersistentFlags().StringVar(&cfg.MonitoringAssignment.Client.URL, "cp-address", cfg.MonitoringAssignment.Client.URL, "URL of the Control Plane Monitoring Assignment Discovery Server (ex. grpc://localhost:5676)")
+	cmd.PersistentFlags().StringVar(&cfg.MonitoringAssignment.Client.URL, "cp-address", cfg.MonitoringAssignment.Client.URL, "URL of the Control Plane Monitoring Assignment Discovery Server. Example: grpc://localhost:5676")
 	cmd.PersistentFlags().StringVar(&cfg.MonitoringAssignment.Client.Name, "name", cfg.MonitoringAssignment.Client.Name, "Name to use to identify itself to the Monitoring Assignment server.")
 	cmd.PersistentFlags().StringVar(&cfg.Prometheus.OutputFile, "output-file", cfg.Prometheus.OutputFile, "Path to an output file with a list of scrape targets. The same file path must be used on Prometheus side in a configuration of `file_sd` discovery mechanism.")
 	return cmd
