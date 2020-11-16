@@ -119,12 +119,6 @@ var _ = Describe("SDS Server", func() {
 		err = resManager.Create(context.Background(), &dpRes, core_store.CreateByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		// setup Auth with Dataplane Token
-		key, err := tokens_issuer.CreateSigningKey()
-		Expect(err).ToNot(HaveOccurred())
-		err = resManager.Create(context.Background(), &key, core_store.CreateBy(tokens_issuer.SigningKeyResourceKey))
-		Expect(err).ToNot(HaveOccurred())
-
 		// retrieve example DP token
 		tokenIssuer, err := tokens_builtin.NewDataplaneTokenIssuer(runtime.ReadOnlyResourceManager())
 		Expect(err).ToNot(HaveOccurred())
