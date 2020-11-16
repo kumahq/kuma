@@ -75,7 +75,7 @@ var _ = Describe("kumactl get traffic-routes", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, pt := range sampleTrafficRoutes {
 				key := core_model.ResourceKey{

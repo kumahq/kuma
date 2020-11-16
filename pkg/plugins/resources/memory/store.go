@@ -222,34 +222,12 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 
 	records := c.findRecords(string(rs.GetItemType()), opts.Mesh)
 
-	offset := 0
-	pageSize := len(records)
-	paginateResults := opts.PageSize != 0
-	if paginateResults {
-		pageSize = opts.PageSize
-		if opts.PageOffset != "" {
-			o, err := strconv.Atoi(opts.PageOffset)
-			if err != nil {
-				return store.ErrorInvalidOffset
-			}
-			offset = o
-		}
-	}
-
-	for i := offset; i < offset+pageSize && i < len(records); i++ {
+	for i := 0; i < len(records); i++ {
 		r := rs.NewItem()
 		if err := c.unmarshalRecord(records[i], r); err != nil {
 			return err
 		}
 		_ = rs.AddItem(r)
-	}
-
-	if paginateResults {
-		nextOffset := ""
-		if offset+pageSize < len(records) { // set new offset only if we did not reach the end of the collection
-			nextOffset = strconv.Itoa(offset + opts.PageSize)
-		}
-		rs.GetPagination().SetNextOffset(nextOffset)
 	}
 
 	rs.GetPagination().SetTotal(uint32(len(records)))
