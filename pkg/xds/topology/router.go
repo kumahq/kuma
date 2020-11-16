@@ -64,27 +64,23 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		if exists {
 			route := policy.(*mesh_core.TrafficRouteResource)
-			if route.Spec.GetConf().HasWildcard() {
-				split := []*mesh_proto.TrafficRoute_Split{}
-				for _, destination := range route.Spec.GetConf().GetSplit() {
-					split = append(split, &mesh_proto.TrafficRoute_Split{
-						Weight:      destination.Weight,
-						Destination: handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), destination.Destination),
-					})
-				}
+			split := []*mesh_proto.TrafficRoute_Split{}
+			for _, destination := range route.Spec.GetConf().GetSplit() {
+				split = append(split, &mesh_proto.TrafficRoute_Split{
+					Weight:      destination.Weight,
+					Destination: handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), destination.Destination),
+				})
+			}
 
-				routeMap[outbound] = &mesh_core.TrafficRouteResource{
-					Meta: route.GetMeta(),
-					Spec: mesh_proto.TrafficRoute{
-						Sources:      route.Spec.GetSources(),
-						Destinations: route.Spec.GetDestinations(),
-						Conf: &mesh_proto.TrafficRoute_Conf{
-							Split: split,
-						},
+			routeMap[outbound] = &mesh_core.TrafficRouteResource{
+				Meta: route.GetMeta(),
+				Spec: mesh_proto.TrafficRoute{
+					Sources:      route.Spec.GetSources(),
+					Destinations: route.Spec.GetDestinations(),
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Split: split,
 					},
-				}
-			} else {
-				routeMap[outbound] = route
+				},
 			}
 		}
 	}

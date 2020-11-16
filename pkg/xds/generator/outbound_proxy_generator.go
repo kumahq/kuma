@@ -210,7 +210,6 @@ func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []env
 
 func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *kuma_mesh.Dataplane_Networking_Outbound) (subsets []envoy_common.ClusterSubset, err error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
-	serviceName := outbound.GetTagsIncludingLegacy()[kuma_mesh.ServiceTag]
 
 	route := proxy.TrafficRoutes[oface]
 	if route == nil { // should not happen since we always generate default route if TrafficRoute is not found
@@ -225,10 +224,6 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 		if destination.Weight == 0 {
 			// 0 assumes no traffic is passed there. Envoy doesn't support 0 weight, so instead of passing it to Envoy we just skip such cluster.
 			continue
-		}
-		if service == kuma_mesh.MatchAllTag {
-			service = serviceName
-			destination.Destination[kuma_mesh.ServiceTag] = serviceName
 		}
 
 		subset := envoy_common.ClusterSubset{
