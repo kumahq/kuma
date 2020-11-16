@@ -404,9 +404,16 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
+
+	// By default always set 'kuma.io/virtual-probes: enabled' if it's not set yet.
 	if _, exist, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation); !exist {
 		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationEnabled
 	}
+	// Disable virtual probes if pod has 'kuma.io/gateway' annotation, because we don't intercept inbound traffic
+	if enabled, exist, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation); exist && enabled {
+		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationDisabled
+	}
+
 	if _, exist, _ := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation); !exist {
 		annotations[metadata.KumaVirtualProbesPortAnnotation] = fmt.Sprintf("%d", i.cfg.VirtualProbesPort)
 	}

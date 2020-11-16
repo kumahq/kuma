@@ -240,7 +240,7 @@ metadata:
 			return stdout, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
-		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-default.default") // remove builtin traffic permission
+		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-default") // remove builtin traffic permission
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(trafficPermissionAllTo2Remote)(global)
