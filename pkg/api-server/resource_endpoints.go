@@ -33,7 +33,6 @@ const (
 
 type resourceEndpoints struct {
 	mode       config_core.CpMode
-	publicURL  string
 	resManager manager.ResourceManager
 	definitions.ResourceWsDefinition
 	adminAuth authz.AdminAuth
@@ -94,12 +93,7 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 		rest_errors.HandleError(response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)
-		next, err := nextLink(request, r.publicURL, list)
-		if err != nil {
-			rest_errors.HandleError(response, err, "Could not retrieve resources")
-			return
-		}
-		restList.Next = next
+		restList.Next = nextLink(request, list)
 		if err := response.WriteAsJson(restList); err != nil {
 			rest_errors.HandleError(response, err, "Could not list resources")
 		}

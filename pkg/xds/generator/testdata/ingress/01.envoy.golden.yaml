@@ -67,7 +67,7 @@ resources:
             serverNames:
               - backend{mesh=mesh1}
           filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend
@@ -80,7 +80,7 @@ resources:
             serverNames:
               - backend{mesh=mesh1,region=eu}
           filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend
@@ -94,7 +94,7 @@ resources:
             serverNames:
               - backend{mesh=mesh1,version=v1}
           filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend
@@ -108,7 +108,7 @@ resources:
             serverNames:
               - backend{mesh=mesh1,region=eu,version=v1}
           filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend
@@ -123,7 +123,7 @@ resources:
             serverNames:
               - backend{mesh=mesh1,region=us}
           filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend
@@ -137,7 +137,7 @@ resources:
             serverNames:
               - backend{mesh=mesh1,version=v2}
           filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend
@@ -151,7 +151,7 @@ resources:
             serverNames:
               - backend{mesh=mesh1,region=us,version=v2}
           filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend

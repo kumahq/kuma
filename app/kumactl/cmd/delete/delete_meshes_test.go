@@ -53,7 +53,7 @@ var _ = Describe("kumactl delete mesh", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, ds := range sampleMeshes {
 				key := core_model.MetaToResourceKey(ds.Meta)

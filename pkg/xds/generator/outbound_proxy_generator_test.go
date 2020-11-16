@@ -33,9 +33,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 	}
 
 	mtlsCtx := xds_context.Context{
+		ConnectionInfo: xds_context.ConnectionInfo{
+			Authority: "kuma-system:5677",
+		},
 		ControlPlane: &xds_context.ControlPlaneContext{
-			SdsLocation: "kuma-system:5677",
-			SdsTlsCert:  []byte("12345"),
+			SdsTlsCert: []byte("12345"),
 		},
 		Mesh: xds_context.MeshContext{
 			Resource: &mesh_core.MeshResource{

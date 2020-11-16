@@ -8,7 +8,7 @@ spec:
   names:
     kind: TrafficLog
     plural: trafficlogs
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficLog is the Schema for the trafficlogs API

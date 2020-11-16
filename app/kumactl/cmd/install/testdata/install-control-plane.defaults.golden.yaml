@@ -40,7 +40,7 @@ spec:
   names:
     kind: CircuitBreaker
     plural: circuitbreakers
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: CircuitBreaker is the Schema for the circuitbreaker API
@@ -830,7 +830,7 @@ spec:
   names:
     kind: TrafficRoute
     plural: trafficroutes
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficRoute is the Schema for the trafficroutes API
@@ -1223,7 +1223,7 @@ spec:
   names:
     kind: TrafficTrace
     plural: traffictraces
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficTrace is the Schema for the traffictraces API
@@ -2795,7 +2795,7 @@ spec:
   names:
     kind: ExternalService
     plural: externalservices
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: ExternalService is the Schema for the externalservices API
@@ -3188,7 +3188,7 @@ spec:
   names:
     kind: FaultInjection
     plural: faultinjections
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: FaultInjection is the Schema for the faultinjections API
@@ -3581,7 +3581,7 @@ spec:
   names:
     kind: HealthCheck
     plural: healthchecks
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: HealthCheck is the Schema for the healthchecks API
@@ -4373,7 +4373,7 @@ spec:
   names:
     kind: ProxyTemplate
     plural: proxytemplates
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: ProxyTemplate is the Schema for the proxytemplates API
@@ -4774,7 +4774,7 @@ spec:
   names:
     kind: TrafficLog
     plural: trafficlogs
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficLog is the Schema for the trafficlogs API
@@ -5163,7 +5163,7 @@ spec:
   names:
     kind: TrafficPermission
     plural: trafficpermissions
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficPermission is the Schema for the trafficpermissions API
@@ -5769,8 +5769,6 @@ spec:
               value: "kubernetes"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma-system"
-            - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              value: kuma-control-plane.kuma-system
             - name: KUMA_GENERAL_TLS_CERT_FILE
               value: /var/run/secrets/kuma.io/tls-cert/tls.crt
             - name: KUMA_GENERAL_TLS_KEY_FILE

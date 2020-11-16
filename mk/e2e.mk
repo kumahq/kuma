@@ -159,7 +159,7 @@ define envoy_active_routing_listeners_count
 	| select(.name | startswith(\"$(1)\")) \
 	| select(.active_state.listener.address.socket_address.port_value == $(2)) \
 	| select(.active_state.listener.filter_chains[] | .filters[] \
-		 | select((.name = \"envoy.tcp_proxy\") \
+		 | select((.name = \"envoy.filters.network.tcp_proxy\") \
 			and (.typed_config.cluster == \"$(3)\")) \
 	  ) " \
 	| jq -s ". | length"

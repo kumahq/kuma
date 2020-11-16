@@ -8,7 +8,7 @@ spec:
   names:
     kind: TrafficPermission
     plural: trafficpermissions
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficPermission is the Schema for the trafficpermissions API

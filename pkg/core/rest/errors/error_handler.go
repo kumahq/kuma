@@ -30,8 +30,6 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleMaxPageSizeExceeded(title, err, response)
 	case err == api_server_types.InvalidPageSize:
 		handleInvalidPageSize(title, response)
-	case err == api_server_types.PaginationNotSupported:
-		handlePaginationNotSupported(title, response)
 	case issuer.IsSigningKeyNotFoundErr(err):
 		handleSigningKeyNotFound(err, response)
 	default:
@@ -107,14 +105,6 @@ func handleInvalidOffset(title string, response *restful.Response) {
 				Message: "Invalid format",
 			},
 		},
-	}
-	writeError(response, 400, kumaErr)
-}
-
-func handlePaginationNotSupported(title string, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: api_server_types.PaginationNotSupported.Error(),
 	}
 	writeError(response, 400, kumaErr)
 }

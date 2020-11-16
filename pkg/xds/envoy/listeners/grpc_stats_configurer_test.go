@@ -31,7 +31,7 @@ var _ = Describe("gRPCStatsConfigurer", func() {
 		Entry("basic input", testCase{
 			expected: `
             filters:
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
@@ -40,7 +40,7 @@ var _ = Describe("gRPCStatsConfigurer", func() {
                     '@type': type.googleapis.com/envoy.config.filter.http.grpc_stats.v2alpha.FilterConfig
                     emitFilterState: true
                     statsForAllMethods: true
-                - name: envoy.router
+                - name: envoy.filters.http.router
                 statPrefix: stats`,
 		}),
 	)

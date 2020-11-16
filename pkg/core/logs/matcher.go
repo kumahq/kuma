@@ -55,7 +55,7 @@ func BuildTrafficLogMap(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.
 		log := policy.(*mesh_core.TrafficLogResource)
 		backend, found := backends[log.Spec.GetConf().GetBackend()]
 		if !found {
-			logger.Info("Logging backend is not found. Ignoring.", "name", log.Spec.GetConf().GetBackend(), "trafficLog", log.GetMeta())
+			logger.Info("Logging backend is not found. Ignoring.", "backendName", log.Spec.GetConf().GetBackend(), "trafficLogName", log.GetMeta().GetName(), "trafficLogMesh", log.GetMeta().GetMesh())
 			continue
 		}
 		logMap[service] = backend

@@ -69,7 +69,7 @@ var _ = Describe("Network Filter modifications", func() {
                 networkFilter:
                    operation: addFirst
                    value: |
-                     name: envoy.tcp_proxy
+                     name: envoy.filters.network.tcp_proxy
                      typedConfig:
                        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                        cluster: backend
@@ -102,7 +102,7 @@ var _ = Describe("Network Filter modifications", func() {
                 networkFilter:
                    operation: addFirst
                    value: |
-                     name: envoy.tcp_proxy
+                     name: envoy.filters.network.tcp_proxy
                      typedConfig:
                        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                        cluster: backend
@@ -115,7 +115,7 @@ var _ = Describe("Network Filter modifications", func() {
                 '@type': type.googleapis.com/envoy.api.v2.Listener
                 filterChains:
                 - filters:
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend
@@ -137,7 +137,7 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
                       response:
                         inlineString: "xyz"
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend`,
@@ -145,7 +145,7 @@ var _ = Describe("Network Filter modifications", func() {
                 name: inbound:192.168.0.1:8081
                 filterChains:
                 - filters:
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend`,
@@ -181,7 +181,7 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
                       response:
                         inlineString: "xyz"
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend`,
@@ -189,7 +189,7 @@ var _ = Describe("Network Filter modifications", func() {
                 name: inbound:192.168.0.1:8081
                 filterChains:
                 - filters:
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend`,
@@ -227,7 +227,7 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
                       response:
                         inlineString: "xyz"
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend`,
@@ -235,7 +235,7 @@ var _ = Describe("Network Filter modifications", func() {
                 name: inbound:192.168.0.1:8081
                 filterChains:
                 - filters:
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend`,
@@ -260,7 +260,7 @@ var _ = Describe("Network Filter modifications", func() {
                 '@type': type.googleapis.com/envoy.api.v2.Listener
                 filterChains:
                 - filters:
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend
@@ -277,7 +277,7 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
                       response:
                         inlineString: "xyz"
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend`,
@@ -285,7 +285,7 @@ var _ = Describe("Network Filter modifications", func() {
                 name: inbound:192.168.0.1:8081
                 filterChains:
                 - filters:
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend`,
@@ -294,7 +294,7 @@ var _ = Describe("Network Filter modifications", func() {
                 networkFilter:
                    operation: remove
                    match:
-                     name: envoy.tcp_proxy
+                     name: envoy.filters.network.tcp_proxy
 `,
 			},
 			expected: `
@@ -335,7 +335,7 @@ var _ = Describe("Network Filter modifications", func() {
                    match:
                      name: envoy.filters.network.direct_response
                    value: |
-                     name: envoy.tcp_proxy
+                     name: envoy.filters.network.tcp_proxy
                      typedConfig:
                        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                        cluster: backend
@@ -353,7 +353,7 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
                       response:
                         inlineString: xyz
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend
@@ -370,7 +370,7 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
                       response:
                         inlineString: "xyz"
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                        cluster: backend
@@ -402,7 +402,7 @@ var _ = Describe("Network Filter modifications", func() {
                   - name: envoy.filters.network.echo
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.echo.v2.Echo
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend
@@ -421,7 +421,7 @@ var _ = Describe("Network Filter modifications", func() {
                    match:
                      name: envoy.filters.network.direct_response
                    value: |
-                     name: envoy.tcp_proxy
+                     name: envoy.filters.network.tcp_proxy
                      typedConfig:
                        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                        cluster: backend
@@ -454,7 +454,7 @@ var _ = Describe("Network Filter modifications", func() {
                    match:
                      name: envoy.filters.network.direct_response
                    value: |
-                     name: envoy.tcp_proxy
+                     name: envoy.filters.network.tcp_proxy
                      typedConfig:
                        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                        cluster: backend
@@ -467,7 +467,7 @@ var _ = Describe("Network Filter modifications", func() {
                 '@type': type.googleapis.com/envoy.api.v2.Listener
                 filterChains:
                 - filters:
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend
@@ -489,7 +489,7 @@ var _ = Describe("Network Filter modifications", func() {
                       '@type': type.googleapis.com/envoy.config.filter.network.direct_response.v2.Config
                       response:
                         inlineString: "xyz"
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                        '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                        cluster: backend
@@ -499,7 +499,7 @@ var _ = Describe("Network Filter modifications", func() {
                 networkFilter:
                    operation: addBefore
                    match:
-                     name: envoy.tcp_proxy
+                     name: envoy.filters.network.tcp_proxy
                    value: |
                      name: envoy.filters.network.echo
                      typedConfig:
@@ -521,7 +521,7 @@ var _ = Describe("Network Filter modifications", func() {
                   - name: envoy.filters.network.echo
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.echo.v2.Echo
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: backend
@@ -533,7 +533,7 @@ var _ = Describe("Network Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       stat_prefix: backend
@@ -549,9 +549,9 @@ var _ = Describe("Network Filter modifications", func() {
                networkFilter:
                  operation: patch
                  match:
-                   name: envoy.http_connection_manager
+                   name: envoy.filters.network.http_connection_manager
                  value: |
-                   name: envoy.http_connection_manager
+                   name: envoy.filters.network.http_connection_manager
                    typedConfig:
                      '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                      streamIdleTimeout: 5s
@@ -565,7 +565,7 @@ var _ = Describe("Network Filter modifications", func() {
                 '@type': type.googleapis.com/envoy.api.v2.Listener
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       drainTimeout: 10s
@@ -586,16 +586,16 @@ var _ = Describe("Network Filter modifications", func() {
                 name: inbound:192.168.0.1:8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
 `,
 			},
 			modifications: []string{`
                networkFilter:
                  operation: patch
                  match:
-                   name: envoy.http_connection_manager
+                   name: envoy.filters.network.http_connection_manager
                  value: |
-                   name: envoy.http_connection_manager
+                   name: envoy.filters.network.http_connection_manager
                    typedConfig:
                      '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                      statPrefix: backend`,
@@ -607,7 +607,7 @@ var _ = Describe("Network Filter modifications", func() {
                 '@type': type.googleapis.com/envoy.api.v2.Listener
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       statPrefix: backend

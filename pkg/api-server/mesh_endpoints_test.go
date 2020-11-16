@@ -28,7 +28,7 @@ var _ = Describe("Resource Endpoints", func() {
 	var stop chan struct{}
 	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
-		resourceStore = memory.NewStore()
+		resourceStore = store.NewPaginationStore(memory.NewStore())
 		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
