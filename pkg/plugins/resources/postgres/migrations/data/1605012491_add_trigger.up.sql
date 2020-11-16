@@ -23,7 +23,7 @@ BEGIN
 
 
     -- Execute pg_notify(channel, notification)
-    PERFORM pg_notify('events',notification::text);
+    PERFORM pg_notify('resource_events',notification::text);
 
     -- Result is ignored since this is an AFTER trigger
     RETURN NULL;

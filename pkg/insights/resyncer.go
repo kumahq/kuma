@@ -2,6 +2,7 @@ package insights
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
@@ -25,26 +26,34 @@ var (
 )
 
 type Config struct {
-	ResourceManager  manager.ResourceManager
-	EventReader      events.Reader
-	MinResyncTimeout time.Duration
-	MaxResyncTimeout time.Duration
-	Tick             func(d time.Duration) <-chan time.Time
+	ResourceManager    manager.ResourceManager
+	EventReaderFactory events.ListenerFactory
+	MinResyncTimeout   time.Duration
+	MaxResyncTimeout   time.Duration
+	Tick               func(d time.Duration) <-chan time.Time
 }
 
 type resyncer struct {
 	rm               manager.ResourceManager
-	events           events.Reader
+	eventFactory     events.ListenerFactory
 	minResyncTimeout time.Duration
 	maxResyncTimeout time.Duration
 	tick             func(d time.Duration) <-chan time.Time
 }
 
+// NewResyncer creates a new Component that periodically updates insights
+// for various policies (right now only for Mesh).
+//
+// It operates with 2 timeouts: MinResyncTimeout and MaxResyncTimeout. Component
+// guarantees resync won't happen more often than MinResyncTimeout. It also guarantees
+// during MaxResyncTimeout at least one resync will happen. MinResyncTimeout is provided
+// by RateLimiter. MaxResyncTimeout is provided by goroutine with Ticker, it runs
+// resync every t = MaxResyncTimeout - MinResyncTimeout.
 func NewResyncer(config *Config) component.Component {
 	r := &resyncer{
 		minResyncTimeout: config.MinResyncTimeout,
 		maxResyncTimeout: config.MaxResyncTimeout,
-		events:           config.EventReader,
+		eventFactory:     config.EventReaderFactory,
 		rm:               config.ResourceManager,
 	}
 
@@ -74,15 +83,20 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 	}(stop)
 
 	limiter := rate.NewLimiter(rate.Every(p.minResyncTimeout), 50)
+	eventReader := p.eventFactory.New()
 	for {
-		event, err := p.events.Recv(stop)
+		event, err := eventReader.Recv(stop)
 		if err != nil {
 			return err
 		}
-		if !meshScoped(event.Type) || event.Type == core_mesh.DataplaneType {
+		resourceChanged, ok := event.(events.ResourceChangedEvent)
+		if !ok {
 			continue
 		}
-		if event.Operation == events.Update && event.Type != core_mesh.DataplaneInsightType {
+		if !meshScoped(resourceChanged.Type) || resourceChanged.Type == core_mesh.DataplaneType {
+			continue
+		}
+		if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
 			// 'Update' events doesn't affect MeshInsight expect for DataplaneInsight,
 			// because that's how we find online/offline Dataplane's status
 			continue
@@ -90,7 +104,11 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		if !limiter.Allow() {
 			continue
 		}
-		if err := p.resyncMesh(event.Key.Mesh); err != nil {
+		if resourceChanged.Key.Mesh == "" {
+			fmt.Println(resourceChanged)
+			panic(resourceChanged)
+		}
+		if err := p.resyncMesh(resourceChanged.Key.Mesh); err != nil {
 			log.Error(err, "unable to resync resources")
 			continue
 		}

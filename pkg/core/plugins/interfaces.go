@@ -33,7 +33,7 @@ type ResourceStorePlugin interface {
 	Plugin
 	NewResourceStore(PluginContext, PluginConfig) (core_store.ResourceStore, error)
 	Migrate(PluginContext, PluginConfig) (DbVersion, error)
-	EventListener(PluginContext, events.Writer) error
+	EventListener(PluginContext, events.Emitter) error
 }
 
 var AlreadyMigrated = errors.New("database already migrated")

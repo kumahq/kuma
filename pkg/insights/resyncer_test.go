@@ -27,6 +27,14 @@ func (t *testEventReader) Recv(stop <-chan struct{}) (events.Event, error) {
 	return <-t.ch, nil
 }
 
+type testEventReaderFactory struct {
+	reader *testEventReader
+}
+
+func (t *testEventReaderFactory) New() events.Listener {
+	return t.reader
+}
+
 var _ = Describe("Insight Persistence", func() {
 	var rm manager.ResourceManager
 	var now time.Time
@@ -47,10 +55,10 @@ var _ = Describe("Insight Persistence", func() {
 		tickCh = make(chan time.Time)
 
 		resyncer := insights.NewResyncer(&insights.Config{
-			MinResyncTimeout: 5 * time.Second,
-			MaxResyncTimeout: 1 * time.Minute,
-			ResourceManager:  rm,
-			EventReader:      &testEventReader{ch: eventCh},
+			MinResyncTimeout:   5 * time.Second,
+			MaxResyncTimeout:   1 * time.Minute,
+			ResourceManager:    rm,
+			EventReaderFactory: &testEventReaderFactory{reader: &testEventReader{ch: eventCh}},
 			Tick: func(d time.Duration) <-chan time.Time {
 				Expect(d).To(Equal(55 * time.Second)) // should be equal MaxResyncTimeout - MinResyncTimeout
 				return tickCh
@@ -69,7 +77,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		eventCh <- events.Event{
+		eventCh <- events.ResourceChangedEvent{
 			Operation: events.Create,
 			Type:      core_mesh.TrafficPermissionType,
 			Key:       model.ResourceKey{Name: "tp-1", Mesh: "mesh-1"},
@@ -88,7 +96,7 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		eventCh <- events.Event{
+		eventCh <- events.ResourceChangedEvent{
 			Operation: events.Create,
 			Type:      core_mesh.TrafficPermissionType,
 			Key:       model.ResourceKey{Name: "tp-2", Mesh: "mesh-1"},

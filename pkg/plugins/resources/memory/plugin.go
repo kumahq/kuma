@@ -25,7 +25,7 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 	return 0, errors.New("migrations are not supported for Memory resource store")
 }
 
-func (p *plugin) EventListener(context core_plugins.PluginContext, writer events.Writer) error {
+func (p *plugin) EventListener(context core_plugins.PluginContext, writer events.Emitter) error {
 	context.ResourceStore().(*memoryStore).SetEventWriter(writer)
 	return nil
 }

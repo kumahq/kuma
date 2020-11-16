@@ -37,7 +37,7 @@ type BuilderContext interface {
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	Metrics() metrics.Metrics
-	EventReaderFactory() events.ReaderFactory
+	EventReaderFactory() events.ListenerFactory
 }
 
 var _ BuilderContext = &Builder{}
@@ -60,7 +60,7 @@ type Builder struct {
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
-	erf      events.ReaderFactory
+	erf      events.ListenerFactory
 	*runtimeInfo
 }
 
@@ -160,7 +160,7 @@ func (b *Builder) WithMetrics(metrics metrics.Metrics) *Builder {
 	return b
 }
 
-func (b *Builder) WithEventReaderFactory(erf events.ReaderFactory) *Builder {
+func (b *Builder) WithEventReaderFactory(erf events.ListenerFactory) *Builder {
 	b.erf = erf
 	return b
 }
@@ -272,6 +272,6 @@ func (b *Builder) LookupIP() lookup.LookupIPFunc {
 func (b *Builder) Metrics() metrics.Metrics {
 	return b.metrics
 }
-func (b *Builder) EventReaderFactory() events.ReaderFactory {
+func (b *Builder) EventReaderFactory() events.ListenerFactory {
 	return b.erf
 }

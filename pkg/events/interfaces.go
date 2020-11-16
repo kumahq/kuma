@@ -4,6 +4,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
+type Event interface{}
+
 type Op int
 
 const (
@@ -12,20 +14,20 @@ const (
 	Delete
 )
 
-type Event struct {
+type ResourceChangedEvent struct {
 	Operation Op
 	Type      model.ResourceType
 	Key       model.ResourceKey
 }
 
-type Reader interface {
+type Listener interface {
 	Recv(stop <-chan struct{}) (Event, error)
 }
 
-type Writer interface {
-	Send(Op, model.ResourceType, model.ResourceKey)
+type Emitter interface {
+	Send(Event)
 }
 
-type ReaderFactory interface {
-	New() Reader
+type ListenerFactory interface {
+	New() Listener
 }

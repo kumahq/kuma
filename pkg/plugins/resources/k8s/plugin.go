@@ -38,7 +38,7 @@ func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.Plug
 	return 0, errors.New("migrations are not supported for Kubernetes resource store")
 }
 
-func (p *plugin) EventListener(pc core_plugins.PluginContext, writer events.Writer) error {
+func (p *plugin) EventListener(pc core_plugins.PluginContext, writer events.Emitter) error {
 	mgr, ok := k8s_runtime.FromManagerContext(pc.Extensions())
 	if !ok {
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")

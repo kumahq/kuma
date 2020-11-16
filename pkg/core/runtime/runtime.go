@@ -50,7 +50,7 @@ type RuntimeContext interface {
 	LeaderInfo() component.LeaderInfo
 	LookupIP() lookup.LookupIPFunc
 	Metrics() metrics.Metrics
-	EventReaderFactory() events.ReaderFactory
+	EventReaderFactory() events.ListenerFactory
 }
 
 var _ Runtime = &runtime{}
@@ -103,14 +103,14 @@ type runtimeContext struct {
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
-	erf      events.ReaderFactory
+	erf      events.ListenerFactory
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
 	return rc.metrics
 }
 
-func (rc *runtimeContext) EventReaderFactory() events.ReaderFactory {
+func (rc *runtimeContext) EventReaderFactory() events.ListenerFactory {
 	return rc.erf
 }
 

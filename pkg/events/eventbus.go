@@ -4,8 +4,6 @@ import (
 	"sync"
 
 	"github.com/pkg/errors"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 func NewEventBus() *EventBus {
@@ -17,7 +15,7 @@ type EventBus struct {
 	subscribers []chan Event
 }
 
-func (b *EventBus) New() Reader {
+func (b *EventBus) New() Listener {
 	b.mtx.Lock()
 	defer b.mtx.Unlock()
 
@@ -28,15 +26,18 @@ func (b *EventBus) New() Reader {
 	}
 }
 
-func (b *EventBus) Send(op Op, resourceType model.ResourceType, key model.ResourceKey) {
+func (b *EventBus) Send(event Event) {
 	b.mtx.RLock()
 	defer b.mtx.RUnlock()
 
-	for _, s := range b.subscribers {
-		s <- Event{
-			Operation: op,
-			Type:      resourceType,
-			Key:       key,
+	switch e := event.(type) {
+	case ResourceChangedEvent:
+		for _, s := range b.subscribers {
+			s <- ResourceChangedEvent{
+				Operation: e.Operation,
+				Type:      e.Type,
+				Key:       e.Key,
+			}
 		}
 	}
 }
@@ -49,10 +50,10 @@ func (k *reader) Recv(stop <-chan struct{}) (Event, error) {
 	select {
 	case event, ok := <-k.events:
 		if !ok {
-			return Event{}, errors.New("end of events channel")
+			return nil, errors.New("end of events channel")
 		}
 		return event, nil
 	case <-stop:
-		return Event{}, errors.New("stop channel was closed")
+		return nil, errors.New("stop channel was closed")
 	}
 }

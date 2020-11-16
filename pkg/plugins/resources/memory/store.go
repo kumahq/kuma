@@ -79,14 +79,14 @@ var _ store.ResourceStore = &memoryStore{}
 type memoryStore struct {
 	records     memoryStoreRecords
 	mu          sync.RWMutex
-	eventWriter events.Writer
+	eventWriter events.Emitter
 }
 
 func NewStore() store.ResourceStore {
 	return &memoryStore{}
 }
 
-func (c *memoryStore) SetEventWriter(writer events.Writer) {
+func (c *memoryStore) SetEventWriter(writer events.Emitter) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.eventWriter = writer
@@ -133,7 +133,11 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 	// persist
 	c.records = append(c.records, record)
 	if c.eventWriter != nil {
-		c.eventWriter.Send(events.Create, r.GetType(), model.MetaToResourceKey(r.GetMeta()))
+		c.eventWriter.Send(events.ResourceChangedEvent{
+			Operation: events.Create,
+			Type:      r.GetType(),
+			Key:       model.MetaToResourceKey(r.GetMeta()),
+		})
 	}
 	return nil
 }
@@ -170,7 +174,11 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 
 	r.SetMeta(meta)
 	if c.eventWriter != nil {
-		c.eventWriter.Send(events.Update, r.GetType(), model.MetaToResourceKey(r.GetMeta()))
+		c.eventWriter.Send(events.ResourceChangedEvent{
+			Operation: events.Update,
+			Type:      r.GetType(),
+			Key:       model.MetaToResourceKey(r.GetMeta()),
+		})
 	}
 	return nil
 }
@@ -211,7 +219,11 @@ func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.
 	}
 	c.records = append(c.records[:idx], c.records[idx+1:]...)
 	if c.eventWriter != nil {
-		c.eventWriter.Send(events.Delete, r.GetType(), model.MetaToResourceKey(r.GetMeta()))
+		c.eventWriter.Send(events.ResourceChangedEvent{
+			Operation: events.Delete,
+			Type:      r.GetType(),
+			Key:       model.MetaToResourceKey(r.GetMeta()),
+		})
 	}
 	return nil
 }

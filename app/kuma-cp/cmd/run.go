@@ -97,6 +97,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DP Server")
 					return err
 				}
+				if err := insights.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up Insights resyncer")
+					return err
+				}
 			case config_core.Remote:
 				if err := mads_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
@@ -127,6 +131,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up clusterID")
 					return err
 				}
+				if err := insights.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up Insights resyncer")
+					return err
+				}
 			}
 
 			if err := diagnostics.SetupServer(rt); err != nil {
@@ -145,11 +153,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 
 			if err := defaults.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Defaults")
-				return err
-			}
-
-			if err := insights.Setup(rt); err != nil {
-				runLog.Error(err, "unable to set up Insights resyncer")
 				return err
 			}
 

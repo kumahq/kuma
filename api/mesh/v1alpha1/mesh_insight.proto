@@ -4,9 +4,13 @@ package kuma.mesh.v1alpha1;
 
 import "google/protobuf/timestamp.proto";
 
+// MeshInsight defines the observed state of a Mesh.
 message MeshInsight {
+
+  // last_sync is a time of the last synchronization
   google.protobuf.Timestamp last_sync = 1;
 
+  // DataplaneStat defines statistic specifically for Dataplane
   message DataplaneStat {
     uint32 total = 1;
     uint32 online = 2;
@@ -14,6 +18,7 @@ message MeshInsight {
   }
   DataplaneStat dataplanes = 2;
 
+  // PolicyStat defines statistic for all policies in general
   message PolicyStat { uint32 total = 1; }
   map<string, PolicyStat> policies = 3;
 }

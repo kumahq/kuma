@@ -21,7 +21,9 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
+// MeshInsight defines the observed state of a Mesh.
 type MeshInsight struct {
+	// last_sync is a time of the last synchronization
 	LastSync             *timestamp.Timestamp               `protobuf:"bytes,1,opt,name=last_sync,json=lastSync,proto3" json:"last_sync,omitempty"`
 	Dataplanes           *MeshInsight_DataplaneStat         `protobuf:"bytes,2,opt,name=dataplanes,proto3" json:"dataplanes,omitempty"`
 	Policies             map[string]*MeshInsight_PolicyStat `protobuf:"bytes,3,rep,name=policies,proto3" json:"policies,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
@@ -76,6 +78,7 @@ func (m *MeshInsight) GetPolicies() map[string]*MeshInsight_PolicyStat {
 	return nil
 }
 
+// DataplaneStat defines statistic specifically for Dataplane
 type MeshInsight_DataplaneStat struct {
 	Total                uint32   `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
 	Online               uint32   `protobuf:"varint,2,opt,name=online,proto3" json:"online,omitempty"`
@@ -131,6 +134,7 @@ func (m *MeshInsight_DataplaneStat) GetOffline() uint32 {
 	return 0
 }
 
+// PolicyStat defines statistic for all policies in general
 type MeshInsight_PolicyStat struct {
 	Total                uint32   `protobuf:"varint,1,opt,name=total,proto3" json:"total,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`

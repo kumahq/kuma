@@ -2,7 +2,6 @@ package events
 
 import (
 	"encoding/json"
-	"time"
 
 	"github.com/pkg/errors"
 
@@ -18,10 +17,10 @@ var log = core.Log.WithName("postgres-event-listener")
 
 type listener struct {
 	cfg postgres.PostgresStoreConfig
-	out events.Writer
+	out events.Emitter
 }
 
-func NewListener(cfg postgres.PostgresStoreConfig, out events.Writer) component.Component {
+func NewListener(cfg postgres.PostgresStoreConfig, out events.Emitter) component.Component {
 	return &listener{
 		cfg: cfg,
 		out: out,
@@ -43,6 +42,9 @@ func (k *listener) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case n := <-listener.Notify:
+			if n == nil {
+				continue
+			}
 			obj := &struct {
 				Action string `json:"action"`
 				Data   struct {
@@ -67,14 +69,11 @@ func (k *listener) Start(stop <-chan struct{}) error {
 				log.Error(errors.New("unknown Action"), "failed to parse action", "action", op)
 				continue
 			}
-			k.out.Send(op, model.ResourceType(obj.Data.Type), model.ResourceKey{Mesh: obj.Data.Mesh, Name: obj.Data.Name})
-		case <-time.After(90 * time.Second):
-			log.V(1).Info("received no events for 90 seconds, checking connection")
-			go func() {
-				if err := listener.Ping(); err != nil {
-					log.Error(err, "database ping failed")
-				}
-			}()
+			k.out.Send(events.ResourceChangedEvent{
+				Operation: op,
+				Type:      model.ResourceType(obj.Data.Type),
+				Key:       model.ResourceKey{Mesh: obj.Data.Mesh, Name: obj.Data.Name},
+			})
 		case <-stop:
 			log.Info("stop")
 			return nil

@@ -83,7 +83,9 @@ func (d *ZoneMetrics) Validate() error {
 }
 
 type MeshMetrics struct {
+	// MinResyncTimeout is a minimal time that should pass between MeshInsight resync
 	MinResyncTimeout time.Duration `yaml:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
+	// MaxResyncTimeout is a maximum time that MeshInsight could spend without resync
 	MaxResyncTimeout time.Duration `yaml:"maxResyncTimeout" envconfig:"kuma_metrics_mesh_max_resync_timeout"`
 }
 

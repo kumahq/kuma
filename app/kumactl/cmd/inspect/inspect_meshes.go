@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
@@ -23,7 +22,7 @@ func newInspectMeshesCmd(ctx *inspectContext) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			client, err := ctx.CurrentResourceStore()
 			if err != nil {
-				return errors.Wrap(err, "failed to create a zone client")
+				return err
 			}
 			insights := &mesh.MeshInsightResourceList{}
 			if err := client.List(context.Background(), insights); err != nil {
