@@ -48,7 +48,6 @@ var _ = Describe("Config WS", func() {
 		body, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
-		// when
 		json := fmt.Sprintf(`
         {
           "apiServer": {
@@ -237,6 +236,8 @@ var _ = Describe("Config WS", func() {
               "maxOpenConnections": 0,
               "password": "*****",
               "port": 15432,
+              "maxReconnectInterval": "1m0s",
+              "minReconnectInterval": "10s",
               "tls": {
                 "certPath": "",
                 "keyPath": "",
@@ -261,6 +262,7 @@ var _ = Describe("Config WS", func() {
           }
         }
 		`, port, cfg.HTTPS.Port)
+		// when
 		Expect(body).To(MatchJSON(json))
 	})
 })
