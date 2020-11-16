@@ -11,8 +11,11 @@ import (
 
 // The Pagination Store is handling only the pagination functionality in the List.
 // This is an in-memory operation and offloads this from the persistent stores (k8s, postgres etc.)
-// which makes their implementation more simple. The in-memory filtering has been tested with 10,000
-// Dataplanes and proved to be fast enough, although not that efficient.
+// Two reasons why this is needed:
+// * There is no filtering + pagination on the native K8S database
+// * On Postgres, we keep the object in a column as a string. We would have to use JSON column type and convert it to native SQL queries.
+//
+// The in-memory filtering has been tested with 10,000 Dataplanes and proved to be fast enough, although not that efficient.
 func NewPaginationStore(delegate ResourceStore) ResourceStore {
 	return &paginationStore{
 		delegate: delegate,
