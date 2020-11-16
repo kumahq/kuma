@@ -29,6 +29,10 @@ type VIPsAllocator struct {
 	newTicker   func() *time.Ticker
 }
 
+// NewVIPsAllocator creates new object of VIPsAllocator. You can either
+// call method CreateOrUpdateVIPConfig manually or start VIPsAllocator as a component.
+// In the latter scenario it will call CreateOrUpdateVIPConfig every 'tickInterval'
+// for all meshes in the store.
 func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, cidr string, resolver resolver.DNSResolver) (*VIPsAllocator, error) {
 	ipam, err := NewSimpleIPAM(cidr)
 	if err != nil {
