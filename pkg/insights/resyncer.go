@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/go-kit/kit/ratelimit"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
-	"golang.org/x/time/rate"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -31,6 +31,7 @@ type Config struct {
 	MinResyncTimeout   time.Duration
 	MaxResyncTimeout   time.Duration
 	Tick               func(d time.Duration) <-chan time.Time
+	RateLimiter        ratelimit.Allower
 }
 
 type resyncer struct {
@@ -39,6 +40,7 @@ type resyncer struct {
 	minResyncTimeout time.Duration
 	maxResyncTimeout time.Duration
 	tick             func(d time.Duration) <-chan time.Time
+	rateLimiter      ratelimit.Allower
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -55,6 +57,7 @@ func NewResyncer(config *Config) component.Component {
 		maxResyncTimeout: config.MaxResyncTimeout,
 		eventFactory:     config.EventReaderFactory,
 		rm:               config.ResourceManager,
+		rateLimiter:      config.RateLimiter,
 	}
 
 	r.tick = config.Tick
@@ -82,7 +85,6 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		}
 	}(stop)
 
-	limiter := rate.NewLimiter(rate.Every(p.minResyncTimeout), 50)
 	eventReader := p.eventFactory.New()
 	for {
 		event, err := eventReader.Recv(stop)
@@ -101,7 +103,7 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 			// because that's how we find online/offline Dataplane's status
 			continue
 		}
-		if !limiter.Allow() {
+		if !p.rateLimiter.Allow() {
 			continue
 		}
 		if resourceChanged.Key.Mesh == "" {
