@@ -105,6 +105,10 @@ var _ = Describe("Mesh Manager", func() {
 			err = resStore.Get(context.Background(), &core_mesh.TrafficPermissionResource{}, store.GetByKey("allow-all-mesh-1", meshName))
 			Expect(err).ToNot(HaveOccurred())
 
+			// and default TrafficRoute for the mesh exists
+			err = resStore.Get(context.Background(), &core_mesh.TrafficRouteResource{}, store.GetByKey("route-all-mesh-1", meshName))
+			Expect(err).ToNot(HaveOccurred())
+
 			// and Signing Key for the mesh exists
 			err = secretManager.Get(context.Background(), &system.SecretResource{}, store.GetBy(issuer.SigningKeyResourceKey(meshName)))
 			Expect(err).ToNot(HaveOccurred())

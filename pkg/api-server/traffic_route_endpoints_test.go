@@ -79,15 +79,16 @@ var _ = Describe("TrafficRoute Endpoints", func() {
         - match:
             kuma.io/service: backend
         conf:
-        - weight: 90
-          destination:
-            kuma.io/service: backend
-            region: us-east-1
-            version: v2
-        - weight: 10
-          destination:
-            kuma.io/service: backend
-            version: v3
+          split:
+          - weight: 90
+            destination:
+              kuma.io/service: backend
+              region: us-east-1
+              version: v2
+          - weight: 10
+            destination:
+              kuma.io/service: backend
+              version: v3
 `
 		It("GET should return data saved by PUT", func() {
 			// given

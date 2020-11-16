@@ -45,6 +45,8 @@ var _ = Describe("TrafficRoute", func() {
                 - field: destinations
                   message: must have at least one element
                 - field: conf
+                  message: must have split
+                - field: conf.split
                   message: must have at least one element
 `,
 			}),
@@ -55,7 +57,8 @@ var _ = Describe("TrafficRoute", func() {
                 destinations:
                 - match: {}
                 conf:
-                - destination: {}
+                  split:
+                  - destination: {}
 `,
 				expected: `
                 violations:
@@ -67,9 +70,9 @@ var _ = Describe("TrafficRoute", func() {
                   message: must consist of exactly one tag "kuma.io/service"
                 - field: destinations[0].match
                   message: mandatory tag "kuma.io/service" is missing
-                - field: conf[0].destination
+                - field: conf.split[0].destination
                   message: must have at least one tag
-                - field: conf[0].destination
+                - field: conf.split[0].destination
                   message: mandatory tag "kuma.io/service" is missing
 `,
 			}),
@@ -84,9 +87,10 @@ var _ = Describe("TrafficRoute", func() {
                     kuma.io/service:
                     region:
                 conf:
-                - destination:
-                    kuma.io/service:
-                    region:
+                  split:
+                  - destination:
+                      kuma.io/service:
+                      region:
 `,
 				expected: `
                 violations:
@@ -102,9 +106,9 @@ var _ = Describe("TrafficRoute", func() {
                   message: tag "region" is not allowed
                 - field: destinations[0].match["region"]
                   message: tag value must be non-empty
-                - field: conf[0].destination["kuma.io/service"]
+                - field: conf.split[0].destination["kuma.io/service"]
                   message: tag value must be non-empty
-                - field: conf[0].destination["region"]
+                - field: conf.split[0].destination["region"]
                   message: tag value must be non-empty
 `,
 			}),
@@ -121,10 +125,11 @@ var _ = Describe("TrafficRoute", func() {
                     region:
                 - match: {}
                 conf:
-                - destination:
-                    kuma.io/service:
-                    region:
-                - destination: {}
+                  split:
+                  - destination:
+                      kuma.io/service:
+                      region:
+                  - destination: {}
 `,
 				expected: `
                 violations:
@@ -148,13 +153,13 @@ var _ = Describe("TrafficRoute", func() {
                   message: must consist of exactly one tag "kuma.io/service"
                 - field: destinations[1].match
                   message: mandatory tag "kuma.io/service" is missing
-                - field: conf[0].destination["kuma.io/service"]
+                - field: conf.split[0].destination["kuma.io/service"]
                   message: tag value must be non-empty
-                - field: conf[0].destination["region"]
+                - field: conf.split[0].destination["region"]
                   message: tag value must be non-empty
-                - field: conf[1].destination
+                - field: conf.split[1].destination
                   message: must have at least one tag
-                - field: conf[1].destination
+                - field: conf.split[1].destination
                   message: mandatory tag "kuma.io/service" is missing
 `,
 			}),

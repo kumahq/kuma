@@ -88,26 +88,21 @@ func (m *TrafficRoute) Validate() error {
 
 	}
 
-	if len(m.GetConf()) < 1 {
+	if m.GetConf() == nil {
 		return TrafficRouteValidationError{
 			field:  "Conf",
-			reason: "value must contain at least 1 item(s)",
+			reason: "value is required",
 		}
 	}
 
-	for idx, item := range m.GetConf() {
-		_, _ = idx, item
-
-		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return TrafficRouteValidationError{
-					field:  fmt.Sprintf("Conf[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
+	if v, ok := interface{}(m.GetConf()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return TrafficRouteValidationError{
+				field:  "Conf",
+				reason: "embedded message failed validation",
+				cause:  err,
 			}
 		}
-
 	}
 
 	return nil
@@ -167,23 +162,23 @@ var _ interface {
 	ErrorName() string
 } = TrafficRouteValidationError{}
 
-// Validate checks the field values on TrafficRoute_WeightedDestination with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, an error is returned.
-func (m *TrafficRoute_WeightedDestination) Validate() error {
+// Validate checks the field values on TrafficRoute_Split with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, an error is returned.
+func (m *TrafficRoute_Split) Validate() error {
 	if m == nil {
 		return nil
 	}
 
 	if m.GetWeight() < 0 {
-		return TrafficRoute_WeightedDestinationValidationError{
+		return TrafficRoute_SplitValidationError{
 			field:  "Weight",
 			reason: "value must be greater than or equal to 0",
 		}
 	}
 
 	if len(m.GetDestination()) < 1 {
-		return TrafficRoute_WeightedDestinationValidationError{
+		return TrafficRoute_SplitValidationError{
 			field:  "Destination",
 			reason: "value must contain at least 1 pair(s)",
 		}
@@ -193,14 +188,14 @@ func (m *TrafficRoute_WeightedDestination) Validate() error {
 		_ = val
 
 		if utf8.RuneCountInString(key) < 1 {
-			return TrafficRoute_WeightedDestinationValidationError{
+			return TrafficRoute_SplitValidationError{
 				field:  fmt.Sprintf("Destination[%v]", key),
 				reason: "value length must be at least 1 runes",
 			}
 		}
 
 		if utf8.RuneCountInString(val) < 1 {
-			return TrafficRoute_WeightedDestinationValidationError{
+			return TrafficRoute_SplitValidationError{
 				field:  fmt.Sprintf("Destination[%v]", key),
 				reason: "value length must be at least 1 runes",
 			}
@@ -211,10 +206,9 @@ func (m *TrafficRoute_WeightedDestination) Validate() error {
 	return nil
 }
 
-// TrafficRoute_WeightedDestinationValidationError is the validation error
-// returned by TrafficRoute_WeightedDestination.Validate if the designated
-// constraints aren't met.
-type TrafficRoute_WeightedDestinationValidationError struct {
+// TrafficRoute_SplitValidationError is the validation error returned by
+// TrafficRoute_Split.Validate if the designated constraints aren't met.
+type TrafficRoute_SplitValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -222,24 +216,24 @@ type TrafficRoute_WeightedDestinationValidationError struct {
 }
 
 // Field function returns field value.
-func (e TrafficRoute_WeightedDestinationValidationError) Field() string { return e.field }
+func (e TrafficRoute_SplitValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e TrafficRoute_WeightedDestinationValidationError) Reason() string { return e.reason }
+func (e TrafficRoute_SplitValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e TrafficRoute_WeightedDestinationValidationError) Cause() error { return e.cause }
+func (e TrafficRoute_SplitValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e TrafficRoute_WeightedDestinationValidationError) Key() bool { return e.key }
+func (e TrafficRoute_SplitValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e TrafficRoute_WeightedDestinationValidationError) ErrorName() string {
-	return "TrafficRoute_WeightedDestinationValidationError"
+func (e TrafficRoute_SplitValidationError) ErrorName() string {
+	return "TrafficRoute_SplitValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e TrafficRoute_WeightedDestinationValidationError) Error() string {
+func (e TrafficRoute_SplitValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -251,14 +245,14 @@ func (e TrafficRoute_WeightedDestinationValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sTrafficRoute_WeightedDestination.%s: %s%s",
+		"invalid %sTrafficRoute_Split.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = TrafficRoute_WeightedDestinationValidationError{}
+var _ error = TrafficRoute_SplitValidationError{}
 
 var _ interface {
 	Field() string
@@ -266,4 +260,93 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = TrafficRoute_WeightedDestinationValidationError{}
+} = TrafficRoute_SplitValidationError{}
+
+// Validate checks the field values on TrafficRoute_Conf with the rules defined
+// in the proto definition for this message. If any rules are violated, an
+// error is returned.
+func (m *TrafficRoute_Conf) Validate() error {
+	if m == nil {
+		return nil
+	}
+
+	if len(m.GetSplit()) < 1 {
+		return TrafficRoute_ConfValidationError{
+			field:  "Split",
+			reason: "value must contain at least 1 item(s)",
+		}
+	}
+
+	for idx, item := range m.GetSplit() {
+		_, _ = idx, item
+
+		if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return TrafficRoute_ConfValidationError{
+					field:  fmt.Sprintf("Split[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// TrafficRoute_ConfValidationError is the validation error returned by
+// TrafficRoute_Conf.Validate if the designated constraints aren't met.
+type TrafficRoute_ConfValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e TrafficRoute_ConfValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e TrafficRoute_ConfValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e TrafficRoute_ConfValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e TrafficRoute_ConfValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e TrafficRoute_ConfValidationError) ErrorName() string {
+	return "TrafficRoute_ConfValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e TrafficRoute_ConfValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sTrafficRoute_Conf.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = TrafficRoute_ConfValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = TrafficRoute_ConfValidationError{}

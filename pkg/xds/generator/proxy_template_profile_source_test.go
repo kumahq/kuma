@@ -105,10 +105,14 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						DataplanePort: 54321,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("db"),
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.MatchService("db"),
+									},
+								},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -116,10 +120,14 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						DataplanePort: 59200,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("elastic"),
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.MatchService("elastic"),
+									},
+								},
+							},
 						},
 					},
 				},
