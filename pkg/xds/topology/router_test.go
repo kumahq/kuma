@@ -623,7 +623,7 @@ var _ = Describe("TrafficRoute", func() {
 				routes: []*mesh_core.TrafficRouteResource{
 					{
 						Meta: &PseudoMeta{
-							Name: "allow-all-default",
+							Name: "route-all-default",
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -650,7 +650,7 @@ var _ = Describe("TrafficRoute", func() {
 						DataplanePort: 1234,
 					}: &mesh_core.TrafficRouteResource{
 						Meta: &PseudoMeta{
-							Name: "allow-all-default",
+							Name: "route-all-default",
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -674,7 +674,7 @@ var _ = Describe("TrafficRoute", func() {
 						DataplanePort: 1235,
 					}: &mesh_core.TrafficRouteResource{
 						Meta: &PseudoMeta{
-							Name: "allow-all-default",
+							Name: "route-all-default",
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -718,7 +718,7 @@ var _ = Describe("TrafficRoute", func() {
 				routes: []*mesh_core.TrafficRouteResource{
 					{
 						Meta: &PseudoMeta{
-							Name: "allow-all-default",
+							Name: "route-all-default",
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
@@ -766,7 +766,7 @@ var _ = Describe("TrafficRoute", func() {
 						DataplanePort: 1234,
 					}: &mesh_core.TrafficRouteResource{
 						Meta: &PseudoMeta{
-							Name: "allow-all-default",
+							Name: "route-all-default",
 						},
 						Spec: mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
