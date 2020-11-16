@@ -1,31 +1,61 @@
 # CHANGELOG
 
-## [1.0.0-rc2]
-> Released on  2020/11/04
+## [1.0.0]
+> Released on  2020/11/17
 
-Changes: 
-* feat: new multizone deployment flow [#1122](https://github.com//kumahq/kuma/pull/1122) [#1125](https://github.com//kumahq/kuma/pull/1125)
+* feat: new multizone deployment flow [#1122](https://github.com//kumahq/kuma/pull/1122) [#1125](https://github.com//kumahq/kuma/pull/1125) [#1133](https://github.com//kumahq/kuma/pull/1133)
 * feat: performance optimisation [#1045](https://github.com//kumahq/kuma/pull/1045) [#1113](https://github.com//kumahq/kuma/pull/1113)
 * feat: improved control plane communication security [#1065](https://github.com//kumahq/kuma/pull/1065) [#1069](https://github.com//kumahq/kuma/pull/1069) [#1083](https://github.com//kumahq/kuma/pull/1083) [#1084](https://github.com//kumahq/kuma/pull/1084) [#1092](https://github.com//kumahq/kuma/pull/1092) [#1115](https://github.com//kumahq/kuma/pull/1115) [#1118](https://github.com//kumahq/kuma/pull/1118)
 * feat: locality aware load balancing [#1111](https://github.com//kumahq/kuma/pull/1111) 
-* feat: add ExternalService  [#1025](https://github.com//kumahq/kuma/pull/1025) [#1058](https://github.com//kumahq/kuma/pull/1058) [#1062](https://github.com//kumahq/kuma/pull/1062) [#1080](https://github.com//kumahq/kuma/pull/1080)
-* feat: apply multiple resources [#1057](https://github.com//kumahq/kuma/pull/1057) 
- 👍contributed by @tharun208
+* feat: add ExternalService  [#1025](https://github.com//kumahq/kuma/pull/1025) [#1058](https://github.com//kumahq/kuma/pull/1058) [#1062](https://github.com//kumahq/kuma/pull/1062) [#1080](https://github.com//kumahq/kuma/pull/1080) [#1094](https://github.com//kumahq/kuma/pull/1094) 
 * feat: add kafka protocol suport [#1121](https://github.com//kumahq/kuma/pull/1121)
 * feat: exclude injection from pods that match labels [#1072](https://github.com//kumahq/kuma/pull/1072)
-* feat: GUI updates for 1.0 RC2. [#1061](https://github.com/kumahq/kuma/pull/1061) [#1123](https://github.com//kumahq/kuma/pull/1123)
-* fix: missing kuma.io prefix in example dataplane [#1054](https://github.com//kumahq/kuma/pull/1054) 
- 👍contributed by @nikita15p
+* feat: create default resources for Mesh [#1141](https://github.com//kumahq/kuma/pull/1141) [#1149](https://github.com/kumahq/kuma/pull/1149) [#1154](https://github.com//kumahq/kuma/pull/1154) [#1155](https://github.com//kumahq/kuma/pull/1155) 
+* chore: GUI updates [#1061](https://github.com/kumahq/kuma/pull/1061) [#1123](https://github.com//kumahq/kuma/pull/1123) [#1156](https://github.com/kumahq/kuma/pull/1156)
+* feat: auth on XDS [#1040](https://github.com//kumahq/kuma/pull/1040)
+* feat: merge install ingress into install control-plane [#1038](https://github.com//kumahq/kuma/pull/1038) 
+ 👍contributed by @austince
+* feat: Support probes with mTLS enabled [#1036](https://github.com//kumahq/kuma/pull/1036) 
+* feat: autoconfigure single cert for all services [#1032](https://github.com//kumahq/kuma/pull/1032)
+* feat: cache with better performance and debug endpoints [#1018](https://github.com//kumahq/kuma/pull/1018) 
+* feat: Kuma CP metrics [#993](https://github.com//kumahq/kuma/pull/993) [#1014](https://github.com//kumahq/kuma/pull/1014)
+* fix: signing token in multizone [#1007](https://github.com//kumahq/kuma/pull/1007) 
+* feat: dataplane token bound to a service [#1004](https://github.com//kumahq/kuma/pull/1004) [#1136](https://github.com//kumahq/kuma/pull/1136)
+* feat: new dataplane lifecycle [#999](https://github.com//kumahq/kuma/pull/999) 
+* feat: apply multiple resources with kumactl [#1057](https://github.com//kumahq/kuma/pull/1057) 
+ 👍contributed by @tharun208
+ * chore: Helm improvements [#990](https://github.com//kumahq/kuma/pull/990) [#1053](https://github.com//kumahq/kuma/pull/1053) [#1066](https://github.com//kumahq/kuma/pull/1066)  [#1120](https://github.com//kumahq/kuma/pull/1120) [#1147](https://github.com//kumahq/kuma/pull/1147)
+  👍contributed by @austince
+* chore: change policies on K8S to scope global [#1148](https://github.com//kumahq/kuma/pull/1148) [#1127](https://github.com//kumahq/kuma/pull/1127)
+* feat: Protocol tag for gateway & ingress [#984](https://github.com//kumahq/kuma/pull/984) 
+* feat: domain name support in dataplane.networking.address [#965](https://github.com//kumahq/kuma/pull/965) 
+* feat: examples for ECS Universal deployments [#1003](https://github.com//kumahq/kuma/pull/1003) 
+* chore: get rid of advertised hostname [#1159](https://github.com//kumahq/kuma/pull/1159)
+* chore: mesh insights [#1143](https://github.com/kumahq/kuma/pull/1143) 
 * chore: improve DP insights API filtering [#1104](https://github.com//kumahq/kuma/pull/1104)
+* chore: Ingress Dataplane on K8S can only be deployed in system namespace [#1070](https://github.com//kumahq/kuma/pull/1070)
 * chore: use /ready endpoint for sidecar health-check [#1055](https://github.com//kumahq/kuma/pull/1055) 
  👍contributed by @tharun208
-* chore: Ingress Dataplane on K8S can only be deployed in system namespace [#1070](https://github.com//kumahq/kuma/pull/1070)
-* chore: Helm improvements [#1053](https://github.com//kumahq/kuma/pull/1053) [#1066](https://github.com//kumahq/kuma/pull/1066)  [#1120](https://github.com//kumahq/kuma/pull/1120)
- 👍contributed by @austince
-* chore: add dependabot config [#1067](https://github.com//kumahq/kuma/pull/1067) 
- 👍contributed by @austince
+* fix: missing kuma.io prefix in example dataplane [#1054](https://github.com//kumahq/kuma/pull/1054) 
+ 👍contributed by @nikita15p
+* fix: CNI relies on annotations [#1043](https://github.com//kumahq/kuma/pull/1043) 
+* Fixed Developer.md for make build/kumactl [#1027](https://github.com//kumahq/kuma/pull/1027) 
+ 👍contributed by @nikita15p
 * chore: added missing variables to default config file [#1073](https://github.com//kumahq/kuma/pull/1073) 
  👍contributed by @sudeeptoroy
+* chore: add dependabot config [#1067](https://github.com//kumahq/kuma/pull/1067) 
+ 👍contributed by @austince
+* chore: added update homebrew formula github workflow [#1150](https://github.com//kumahq/kuma/pull/1150) 
+ 👍contributed by @tharun208
+* fix: disable virtual probes for pods with gateway annotation [#1157](https://github.com//kumahq/kuma/pull/1157)  
+* fix apply command to throw error when no resources are passed [#1103](https://github.com//kumahq/kuma/pull/1103) 
+* fix: move diagnostics port configuration [#1140](https://github.com//kumahq/kuma/pull/1140) 
+* chore: drop k8s 1.13 support [#1026](https://github.com//kumahq/kuma/pull/1026)
+⚠️ warning: breaking change
+* chore: migrate to golang 1.15.5 [#981](https://github.com//kumahq/kuma/pull/981) [#1153](https://github.com//kumahq/kuma/pull/1153)
+* chore: envoy 1.16.0 [#1130](https://github.com//kumahq/kuma/pull/1130) [#1139](https://github.com//kumahq/kuma/pull/1139) 
+* chore: choose the namespace when install dns [#1128](https://github.com//kumahq/kuma/pull/1128) 
+* fix: make install metrics use --mesh flag [#1129](https://github.com//kumahq/kuma/pull/1129) 
 
 ## [0.7.3]
 > Released on  2020/10/22
@@ -38,32 +68,6 @@ Changes:
 * feat: exclude injection from pods that match labels [#1072](https://github.com/kumahq/kuma/pull/1072/)
 * chore: use /ready endpoint for sidecar health-check [#1055](https://github.com/kumahq/kuma/pull/1055/)
  👍contributed by @tharun208
-
-## [1.0.0-rc1]
-> Released on  2020/10/07
-
-Changes:
-* fix: CNI relies on annotations [#1043](https://github.com//kumahq/kuma/pull/1043) 
-* feat: auth on XDS [#1040](https://github.com//kumahq/kuma/pull/1040)
-* feat: merge install ingress into install control-plane [#1038](https://github.com//kumahq/kuma/pull/1038) 
- 👍contributed by @austince
-* feat: Support probes with mTLS enabled [#1036](https://github.com//kumahq/kuma/pull/1036) 
-* feat: autoconfigure single cert for all services [#1032](https://github.com//kumahq/kuma/pull/1032)
-* feat: cache with better performance and debug endpoints [#1018](https://github.com//kumahq/kuma/pull/1018) 
-* feat: Kuma CP metrics [#993](https://github.com//kumahq/kuma/pull/993) [#1014](https://github.com//kumahq/kuma/pull/1014)
-* fix: signing token in multizone [#1007](https://github.com//kumahq/kuma/pull/1007) 
-* feat: dataplane token bound to a service [#1004](https://github.com//kumahq/kuma/pull/1004) 
-* feat: new dataplane lifecycle [#999](https://github.com//kumahq/kuma/pull/999) 
-* feat: specify nodeSelectors for CP and CNI pods [#990](https://github.com//kumahq/kuma/pull/990) 
- 👍contributed by @austince
-* feat: Protocol tag for gateway & ingress [#984](https://github.com//kumahq/kuma/pull/984) 
-* feat: domain name support in dataplane.networking.address [#965](https://github.com//kumahq/kuma/pull/965) 
-* feat: examples for ECS Universal deployments [#1003](https://github.com//kumahq/kuma/pull/1003) 
-* fix: drop k8s 1.13 support [#1026](https://github.com//kumahq/kuma/pull/1026)
-⚠️ warning: breaking change
-* chore: migrate to golang 1.15 [#981](https://github.com//kumahq/kuma/pull/981) 
-* Fixed Developer.md for make build/kumactl [#1027](https://github.com//kumahq/kuma/pull/1027) 
- 👍contributed by @nikita15p
 
 ## [0.7.2]
 
