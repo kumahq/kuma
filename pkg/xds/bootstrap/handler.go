@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -34,7 +35,20 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	hostname, _, err := net.SplitHostPort(req.Host)
+	if err != nil {
+		log.Error(err, "Could not parse a request")
+		resp.WriteHeader(http.StatusBadRequest)
+		_, err := resp.Write([]byte("Invalid Host header"))
+		if err != nil {
+			log.Error(err, "Error while writing the response")
+			return
+		}
+		return
+	}
+	reqParams.Host = hostname
 	logger := log.WithValues("params", reqParams)
+
 	config, err := b.Generator.Generate(req.Context(), reqParams)
 	if err != nil {
 		handleError(resp, err, logger)

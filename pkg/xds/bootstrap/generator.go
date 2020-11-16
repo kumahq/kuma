@@ -142,6 +142,13 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		return nil, err
 	}
 
+	xdsHost := ""
+	if b.config.XdsHost != "" {
+		xdsHost = b.config.XdsHost
+	} else {
+		xdsHost = request.Host
+	}
+
 	var certBytes string = ""
 	if b.xdsCertFile != "" {
 		cert, err := ioutil.ReadFile(b.xdsCertFile)
@@ -157,7 +164,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		AdminAddress:       b.config.AdminAddress,
 		AdminPort:          adminPort,
 		AdminAccessLogPath: b.config.AdminAccessLogPath,
-		XdsHost:            b.config.XdsHost,
+		XdsHost:            xdsHost,
 		XdsPort:            b.config.XdsPort,
 		XdsConnectTimeout:  b.config.XdsConnectTimeout,
 		AccessLogPipe:      accessLogPipe,
