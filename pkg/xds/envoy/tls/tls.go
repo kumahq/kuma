@@ -1,4 +1,4 @@
-package envoy
+package tls
 
 import (
 	"fmt"
@@ -183,8 +183,37 @@ func ServiceSpiffeIDMatcher(mesh string, service string) *envoy_type_matcher.Str
 	}
 }
 
-func CreateUpstreamTlsContextNoMetadata(sni string) (*envoy_auth.UpstreamTlsContext, error) {
+func UpstreamTlsContextOutsideMesh(ca, cert, key *envoy_core.DataSource, hostname string) (*envoy_auth.UpstreamTlsContext, error) {
+	var tlsCertificates []*envoy_auth.TlsCertificate
+	if cert != nil && key != nil {
+		tlsCertificates = []*envoy_auth.TlsCertificate{
+			{
+				CertificateChain: cert,
+				PrivateKey:       key,
+			},
+		}
+	}
+
+	var validationContextType *envoy_auth.CommonTlsContext_ValidationContext
+	if ca != nil {
+		validationContextType = &envoy_auth.CommonTlsContext_ValidationContext{
+			ValidationContext: &envoy_auth.CertificateValidationContext{
+				TrustedCa: ca,
+				MatchSubjectAltNames: []*envoy_type_matcher.StringMatcher{
+					{
+						MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+							Exact: hostname,
+						},
+					},
+				},
+			},
+		}
+	}
+
 	return &envoy_auth.UpstreamTlsContext{
-		Sni: sni,
+		CommonTlsContext: &envoy_auth.CommonTlsContext{
+			TlsCertificates:       tlsCertificates,
+			ValidationContextType: validationContextType,
+		},
 	}, nil
 }

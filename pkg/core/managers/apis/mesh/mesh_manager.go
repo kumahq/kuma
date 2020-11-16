@@ -14,6 +14,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	defaults_mesh "github.com/kumahq/kuma/pkg/defaults/mesh"
 )
 
 func NewMeshManager(
@@ -77,6 +78,9 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 
 	// persist Mesh
 	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
+		return err
+	}
+	if err := defaults_mesh.CreateDefaultMeshResources(m.otherManagers, opts.Name); err != nil {
 		return err
 	}
 	return nil

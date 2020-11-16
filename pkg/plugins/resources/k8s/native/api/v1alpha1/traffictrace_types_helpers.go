@@ -33,7 +33,7 @@ func (tt *TrafficTrace) SetSpec(spec map[string]interface{}) {
 }
 
 func (tt *TrafficTrace) Scope() model.Scope {
-	return model.ScopeNamespace
+	return model.ScopeCluster
 }
 
 func (l *TrafficTraceList) GetItems() []model.KubernetesObject {

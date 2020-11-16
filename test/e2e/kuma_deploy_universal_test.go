@@ -27,17 +27,6 @@ mtls:
 routing:
   localityAwareLoadBalancing: %s
 `
-	trafficPermissionAll := `
-type: TrafficPermission
-name: traffic-permission-all
-mesh: default
-sources:
-- match:
-   kuma.io/service: "*"
-destinations:
-- match:
-   kuma.io/service: "*"
-`
 	const iterations = 100
 
 	var global, remote_1, remote_2 Cluster
@@ -102,9 +91,6 @@ destinations:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "false"))(global)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlUniversal(trafficPermissionAll)(global)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

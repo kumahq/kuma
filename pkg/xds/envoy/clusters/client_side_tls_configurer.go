@@ -3,8 +3,9 @@ package clusters
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
+
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -26,16 +27,22 @@ type clientSideTLSConfigurer struct {
 func (c *clientSideTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	for _, ep := range c.endpoints {
 		if ep.ExternalService.TLSEnabled {
-			tlsContext, err := envoy.CreateUpstreamTlsContextNoMetadata(ep.Target)
+			tlsContext, err := tls.UpstreamTlsContextOutsideMesh(
+				ep.ExternalService.CaCert,
+				ep.ExternalService.ClientCert,
+				ep.ExternalService.ClientKey,
+				ep.Target)
 			if err != nil {
 				return err
 			}
+
 			pbst, err := proto.MarshalAnyDeterministic(tlsContext)
 			if err != nil {
 				return err
 			}
+
 			transportSocket := &envoy_core.TransportSocket{
-				Name: envoy_wellknown.TransportSocketTls,
+				Name: "envoy.transport_sockets.tls",
 				ConfigType: &envoy_core.TransportSocket_TypedConfig{
 					TypedConfig: pbst,
 				},

@@ -67,12 +67,12 @@ var _ = Describe("Virtual Host modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       statPrefix: localhost_8080
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       routeConfig:
                         name: outbound:backend
 `,
@@ -101,11 +101,11 @@ var _ = Describe("Virtual Host modifications", func() {
                         portValue: 8080
                     filterChains:
                     - filters:
-                      - name: envoy.http_connection_manager
+                      - name: envoy.filters.network.http_connection_manager
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                           httpFilters:
-                          - name: envoy.router
+                          - name: envoy.filters.http.router
                           routeConfig:
                             name: outbound:backend
                             virtualHosts:
@@ -131,11 +131,11 @@ var _ = Describe("Virtual Host modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       routeConfig:
                         name: outbound:backend
                         virtualHosts:
@@ -169,11 +169,11 @@ var _ = Describe("Virtual Host modifications", func() {
                         portValue: 8080
                     filterChains:
                     - filters:
-                      - name: envoy.http_connection_manager
+                      - name: envoy.filters.network.http_connection_manager
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                           httpFilters:
-                          - name: envoy.router
+                          - name: envoy.filters.http.router
                           routeConfig:
                             name: outbound:backend
                           statPrefix: localhost_8080
@@ -189,11 +189,11 @@ var _ = Describe("Virtual Host modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       routeConfig:
                         name: outbound:backend
                         virtualHosts:
@@ -231,11 +231,11 @@ var _ = Describe("Virtual Host modifications", func() {
                         portValue: 8080
                     filterChains:
                     - filters:
-                      - name: envoy.http_connection_manager
+                      - name: envoy.filters.network.http_connection_manager
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                           httpFilters:
-                          - name: envoy.router
+                          - name: envoy.filters.http.router
                           routeConfig:
                             name: outbound:backend
                             virtualHosts:
@@ -263,11 +263,11 @@ var _ = Describe("Virtual Host modifications", func() {
                     portValue: 8080
                 filterChains:
                 - filters:
-                  - name: envoy.http_connection_manager
+                  - name: envoy.filters.network.http_connection_manager
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                       httpFilters:
-                      - name: envoy.router
+                      - name: envoy.filters.http.router
                       routeConfig:
                         name: outbound:backend
                         virtualHosts:
@@ -307,11 +307,11 @@ var _ = Describe("Virtual Host modifications", func() {
                         portValue: 8080
                     filterChains:
                     - filters:
-                      - name: envoy.http_connection_manager
+                      - name: envoy.filters.network.http_connection_manager
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                           httpFilters:
-                          - name: envoy.router
+                          - name: envoy.filters.http.router
                           routeConfig:
                             name: outbound:backend
                             virtualHosts:

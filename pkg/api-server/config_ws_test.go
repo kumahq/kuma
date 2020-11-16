@@ -253,10 +253,10 @@ var _ = Describe("Config WS", func() {
           },
           "xdsServer": {
             "dataplaneConfigurationRefreshInterval": "1s",
-            "dataplaneStatusFlushInterval": "1s",
-            "diagnosticsPort": 5680
+            "dataplaneStatusFlushInterval": "1s"
           },
           "diagnostics": {
+            "serverPort": 5680,
             "debugEndpoints": false
           }
         }

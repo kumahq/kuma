@@ -100,6 +100,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Insights resyncer")
 					return err
 				}
+				if err := defaults.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up Defaults")
+					return err
+				}
 			case config_core.Remote:
 				if err := mads_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
@@ -134,6 +138,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Insights resyncer")
 					return err
 				}
+				if err := defaults.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up Defaults")
+					return err
+				}
 			}
 
 			if err := diagnostics.SetupServer(rt); err != nil {
@@ -144,14 +152,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up API server")
 				return err
 			}
-
 			if err := metrics.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Metrics")
-				return err
-			}
-
-			if err := defaults.Setup(rt); err != nil {
-				runLog.Error(err, "unable to set up Defaults")
 				return err
 			}
 

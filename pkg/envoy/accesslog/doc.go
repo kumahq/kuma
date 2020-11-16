@@ -11,7 +11,7 @@ Use HttpLogEntryFormatter interface to format an HTTP log entry.
 
 Use TcpLogEntryFormatter interface to format a TCP log entry.
 
-Use HttpLogConfigurer interface to configure `envoy.http_grpc_access_log` filter.
+Use HttpLogConfigurer interface to configure `envoy.access_loggers.http_grpc` filter.
 
 Use TcpLogConfigurer interface to configure `envoy.tcp_grpc_access_log` filter.
 

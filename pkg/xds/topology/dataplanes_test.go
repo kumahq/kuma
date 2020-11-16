@@ -29,12 +29,19 @@ var _ = Describe("Resolve Dataplane address", func() {
 
 	Context("ResolveAddress", func() {
 		It("should resolve if networking.address is domain name", func() {
+			// given
 			dp := &mesh.DataplaneResource{Spec: mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"}},
 			}
-			err := ResolveAddress(lif, dp)
+
+			// when
+			resolvedDp, err := ResolveAddress(lif, dp)
+
+			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dp.Spec.Networking.Address).To(Equal("192.168.0.1"))
+			Expect(resolvedDp.Spec.Networking.Address).To(Equal("192.168.0.1"))
+			// and original DP is not modified
+			Expect(dp.Spec.Networking.Address).To(Equal("example.com"))
 		})
 	})
 

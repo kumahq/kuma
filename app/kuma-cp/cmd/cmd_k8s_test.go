@@ -58,8 +58,6 @@ var _ = Describe("K8S CMD test", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		return fmt.Sprintf(`
-xdsServer:
-  diagnosticsPort: %%d
 apiServer:
   http:
     port: 0
@@ -77,6 +75,8 @@ guiServer:
   port: 0
 dnsServer:
   port: 0
+diagnostics:
+  serverPort: %%d
 `,
 			admissionServerPort,
 			filepath.Join("testdata"))

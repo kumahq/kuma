@@ -28,7 +28,7 @@ var parser = formatParser{}
 //
 // The returned object can be used for multiple purposes, i.e.
 //   1. To verify that access log format string is valid
-//   2. To adjust configuration of `envoy.http_grpc_access_log` and `envoy.tcp_grpc_access_log`
+//   2. To adjust configuration of `envoy.access_loggers.http_grpc` and `envoy.tcp_grpc_access_log`
 //      according to the format string, e.g. to capture additional HTTP headers
 //   3. To format a given HTTP or TCP log entry according to the format string
 //   4. To bind `%KUMA_*%` placeholders to concrete context-dependent values

@@ -30,7 +30,7 @@ type TcpLogEntryFormatter interface {
 	FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry) (string, error)
 }
 
-// HttpLogConfigurer adjusts configuration of `envoy.http_grpc_access_log`
+// HttpLogConfigurer adjusts configuration of `envoy.access_loggers.http_grpc`
 // according to the format string, e.g. to capture additional HTTP headers.
 type HttpLogConfigurer interface {
 	ConfigureHttpLog(config *accesslog_config.HttpGrpcAccessLogConfig) error

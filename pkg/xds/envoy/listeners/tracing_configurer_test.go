@@ -52,11 +52,11 @@ var _ = Describe("TracingConfigurer", func() {
                 portValue: 8080
             filterChains:
             - filters:
-              - name: envoy.http_connection_manager
+              - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                   httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                   statPrefix: localhost_8080
                   tracing:
                     overallSampling:
@@ -86,11 +86,11 @@ var _ = Describe("TracingConfigurer", func() {
                 portValue: 8080
             filterChains:
             - filters:
-              - name: envoy.http_connection_manager
+              - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                   httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                   statPrefix: localhost_8080
                   tracing:
                     provider:
@@ -114,12 +114,12 @@ var _ = Describe("TracingConfigurer", func() {
                 portValue: 8080
             filterChains:
             - filters:
-              - name: envoy.http_connection_manager
+              - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                   statPrefix: localhost_8080
                   httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
 `,
 		}),
 	)
