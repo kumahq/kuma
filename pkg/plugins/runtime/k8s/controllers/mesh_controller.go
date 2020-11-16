@@ -6,8 +6,6 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -35,37 +33,33 @@ type MeshReconciler struct {
 	CaManagers      core_ca.Managers
 	SystemNamespace string
 	ResourceManager manager.ResourceManager
-	ConfigManager   config_manager.ConfigManager
-	Mode            config_core.CpMode
 }
 
 func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
 	ctx := context.Background()
 	log := r.Log.WithValues("mesh", req.NamespacedName)
 
-	if r.Mode != config_core.Remote {
-		// Fetch the Mesh instance
-		mesh := &mesh_k8s.Mesh{}
-		if err := r.Get(ctx, req.NamespacedName, mesh); err != nil {
-			if kube_apierrs.IsNotFound(err) {
-				err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(req.Name, req.Name))
-				return kube_ctrl.Result{}, err
-			}
-			log.Error(err, "unable to fetch Mesh")
+	// Fetch the Mesh instance
+	mesh := &mesh_k8s.Mesh{}
+	if err := r.Get(ctx, req.NamespacedName, mesh); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(req.Name, req.Name))
 			return kube_ctrl.Result{}, err
 		}
+		log.Error(err, "unable to fetch Mesh")
+		return kube_ctrl.Result{}, err
+	}
 
-		meshResource := &mesh_core.MeshResource{}
-		if err := r.Converter.ToCoreResource(mesh, meshResource); err != nil {
-			log.Error(err, "unable to convert Mesh k8s object into core model")
-			return kube_ctrl.Result{}, err
-		}
+	meshResource := &mesh_core.MeshResource{}
+	if err := r.Converter.ToCoreResource(mesh, meshResource); err != nil {
+		log.Error(err, "unable to convert Mesh k8s object into core model")
+		return kube_ctrl.Result{}, err
+	}
 
-		// Ensure CA Managers are created
-		if err := core_managers.EnsureEnabledCA(ctx, r.CaManagers, meshResource, meshResource.Meta.GetName()); err != nil {
-			log.Error(err, "unable to ensure that mesh CAs are created")
-			return kube_ctrl.Result{}, err
-		}
+	// Ensure CA Managers are created
+	if err := core_managers.EnsureEnabledCA(ctx, r.CaManagers, meshResource, meshResource.Meta.GetName()); err != nil {
+		log.Error(err, "unable to ensure that mesh CAs are created")
+		return kube_ctrl.Result{}, err
 	}
 
 	return kube_ctrl.Result{}, nil

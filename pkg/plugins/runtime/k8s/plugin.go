@@ -117,8 +117,6 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter
 		CaManagers:      rt.CaManagers(),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceManager: rt.ResourceManager(),
-		ConfigManager:   rt.ConfigManager(),
-		Mode:            rt.Config().Mode,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
