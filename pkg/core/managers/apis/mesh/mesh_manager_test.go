@@ -118,7 +118,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and default TrafficRoute for the mesh exists
-			err = resStore.Get(context.Background(), &core_mesh.TrafficRouteResource{}, store.GetByKey("allow-all-mesh-1.default", meshName))
+			err = resStore.Get(context.Background(), &core_mesh.TrafficRouteResource{}, store.GetByKey("allow-all-mesh-1", meshName))
 			Expect(err).ToNot(HaveOccurred())
 		})
 

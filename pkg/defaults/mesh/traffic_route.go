@@ -32,7 +32,7 @@ var (
 // This will be dropped when TrafficRoute will be converted to Global Scope on K8S instead of Namespace Scope
 // TrafficRoute needs to contain mesh name inside it. Otherwise if the name is the same (ex. "allow-all") creating new mesh would fail because there is already resource of name "allow-all" which is unique key on K8S
 func defaultTrafficRouteName(meshName string) string {
-	return fmt.Sprintf("allow-all-%s.default", meshName)
+	return fmt.Sprintf("allow-all-%s", meshName)
 }
 
 func createDefaultTrafficRoute(resManager manager.ResourceManager, meshName string) error {
