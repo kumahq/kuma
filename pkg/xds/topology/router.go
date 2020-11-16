@@ -67,16 +67,9 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 			if route.Spec.GetConf().HasWildcard() {
 				split := []*mesh_proto.TrafficRoute_Split{}
 				for _, destination := range route.Spec.GetConf().GetSplit() {
-					newDestination := make(map[string]string, len(destination.Destination))
-					for k, v := range destination.Destination {
-						if k == mesh_proto.ServiceTag {
-							v = serviceName
-						}
-						newDestination[k] = v
-					}
 					split = append(split, &mesh_proto.TrafficRoute_Split{
 						Weight:      destination.Weight,
-						Destination: newDestination,
+						Destination: handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), destination.Destination),
 					})
 				}
 
@@ -96,6 +89,24 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 		}
 	}
 	return routeMap
+}
+
+func handleWildcardTagsFor(outboundTags, routeTags map[string]string) map[string]string {
+	resultingTags := map[string]string{}
+
+	for k, v := range routeTags {
+		if v != mesh_proto.MatchAllTag {
+			resultingTags[k] = v
+		}
+	}
+
+	for k, v := range outboundTags {
+		if _, found := resultingTags[k]; !found {
+			resultingTags[k] = v
+		}
+	}
+
+	return resultingTags
 }
 
 // BuildDestinationMap creates a map of selectors to match other dataplanes reachable from a given one
