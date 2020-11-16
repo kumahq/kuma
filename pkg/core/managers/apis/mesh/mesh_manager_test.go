@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -30,12 +32,13 @@ import (
 var _ = Describe("Mesh Manager", func() {
 
 	var resManager manager.ResourceManager
+	var secretManager manager.ResourceManager
 	var resStore store.ResourceStore
 	var builtinCaManager core_ca.Manager
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil)
+		secretManager = secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil)
 		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
 		providedCaManager := provided.NewProvidedCaManager(datasource.NewDataSourceLoader(secretManager))
 		caManagers := core_ca.Managers{
@@ -84,7 +87,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		It("should create default traffic permission", func() {
+		It("should create default resources", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
@@ -104,6 +107,10 @@ var _ = Describe("Mesh Manager", func() {
 
 			// and default TrafficRoute for the mesh exists
 			err = resStore.Get(context.Background(), &core_mesh.TrafficRouteResource{}, store.GetByKey("allow-all-mesh-1", meshName))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and Signing Key for the mesh exists
+			err = secretManager.Get(context.Background(), &system.SecretResource{}, store.GetBy(issuer.SigningKeyResourceKey(meshName)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
