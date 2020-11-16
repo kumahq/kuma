@@ -2,6 +2,7 @@ package insights_test
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -37,13 +38,18 @@ func (t *testEventReaderFactory) New() events.Listener {
 
 var _ = Describe("Insight Persistence", func() {
 	var rm manager.ResourceManager
+	nowMtx := &sync.RWMutex{}
 	var now time.Time
 
 	var eventCh chan events.Event
 	var stopCh chan struct{}
+
+	tickMtx := &sync.RWMutex{}
 	var tickCh chan time.Time
 
 	core.Now = func() time.Time {
+		nowMtx.RLock()
+		defer nowMtx.RUnlock()
 		return now
 	}
 
@@ -52,14 +58,19 @@ var _ = Describe("Insight Persistence", func() {
 		now = time.Now()
 		eventCh = make(chan events.Event)
 		stopCh = make(chan struct{})
+
+		tickMtx.Lock()
 		tickCh = make(chan time.Time)
+		tickMtx.Unlock()
 
 		resyncer := insights.NewResyncer(&insights.Config{
 			MinResyncTimeout:   5 * time.Second,
 			MaxResyncTimeout:   1 * time.Minute,
 			ResourceManager:    rm,
 			EventReaderFactory: &testEventReaderFactory{reader: &testEventReader{ch: eventCh}},
-			Tick: func(d time.Duration) <-chan time.Time {
+			Tick: func(d time.Duration) (rv <-chan time.Time) {
+				tickMtx.RLock()
+				defer tickMtx.RUnlock()
 				Expect(d).To(Equal(55 * time.Second)) // should be equal MaxResyncTimeout - MinResyncTimeout
 				return tickCh
 			},
@@ -91,7 +102,9 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(insight.Spec.LastSync).To(Equal(proto.MustTimestampProto(now)))
 
 		prev := now
+		nowMtx.Lock()
 		now = now.Add(1 * time.Second)
+		nowMtx.Unlock()
 
 		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
@@ -115,7 +128,9 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
+		nowMtx.Lock()
 		now = now.Add(61 * time.Second)
+		nowMtx.Unlock()
 		tickCh <- now
 
 		insight := &core_mesh.MeshInsightResource{}
