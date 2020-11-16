@@ -70,7 +70,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
+	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ReadOnlyResourceManager()))
 
 	if err := initializeCaManagers(builder); err != nil {
 		return nil, err

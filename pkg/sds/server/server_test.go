@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
@@ -14,6 +16,9 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -30,10 +35,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test/runtime"
 	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("SDS Server", func() {
@@ -171,7 +172,7 @@ var _ = Describe("SDS Server", func() {
 			Node: &envoy_api_core.Node{
 				Id: "default.backend-01",
 			},
-			ResourceNames: []string{envoy.MeshCaResource, envoy.IdentityCertResource},
+			ResourceNames: []string{tls.MeshCaResource, tls.IdentityCertResource},
 			TypeUrl:       envoy_resource.SecretType,
 		}
 	}

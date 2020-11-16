@@ -195,7 +195,8 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	if err != nil {
 		return nil, err
 	}
-	claCache, err := cla.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Multizone.Remote.Zone,
+	claCache, err := cla.NewCache(
+		rt.ReadOnlyResourceManager(), rt.DataSourceLoader(), rt.Config().Multizone.Remote.Zone,
 		rt.Config().Store.Cache.ExpirationTime, rt.LookupIP(), rt.Metrics())
 	if err != nil {
 		return nil, err
@@ -224,9 +225,11 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
-				if err := xds_topology.ResolveAddress(rt.LookupIP(), dataplane); err != nil {
+				resolvedDp, err := xds_topology.ResolveAddress(rt.LookupIP(), dataplane)
+				if err != nil {
 					return err
 				}
+				dataplane = resolvedDp
 
 				if dataplane.Spec.IsIngress() {
 					// update Ingress
@@ -294,7 +297,9 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 				// resolve all endpoints that match given selectors
-				outbound := xds_topology.BuildEndpointMap(dataplanes.Items, rt.Config().Multizone.Remote.Zone, mesh, externalServices.Items)
+				outbound := xds_topology.BuildEndpointMap(
+					mesh, rt.Config().Multizone.Remote.Zone,
+					dataplanes.Items, externalServices.Items, rt.DataSourceLoader())
 
 				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
 				if err != nil {

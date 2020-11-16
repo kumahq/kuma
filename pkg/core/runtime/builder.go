@@ -200,6 +200,7 @@ func (b *Builder) Build() (Runtime, error) {
 			ss:       b.ss,
 			cam:      b.cam,
 			xds:      b.xds,
+			dsl:      b.dsl,
 			ext:      b.ext,
 			dns:      b.dns,
 			configm:  b.configm,

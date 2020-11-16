@@ -224,7 +224,7 @@ resources:
           portValue: 18080
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend
@@ -240,11 +240,11 @@ resources:
           portValue: 40001
       filterChains:
         - filters:
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 accessLog:
-                  - name: envoy.file_access_log
+                  - name: envoy.access_loggers.file
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                       format: |+
@@ -252,7 +252,7 @@ resources:
 
                       path: /var/log
                 httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                 routeConfig:
                   name: outbound:api-http
                   validateClusters: false
@@ -281,11 +281,11 @@ resources:
           portValue: 40002
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 accessLog:
-                  - name: envoy.http_grpc_access_log
+                  - name: envoy.access_loggers.http_grpc
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
                       commonConfig:
@@ -308,11 +308,11 @@ resources:
           portValue: 40003
       filterChains:
         - filters:
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                 routeConfig:
                   name: outbound:api-http2
                   validateClusters: false
@@ -341,7 +341,7 @@ resources:
           portValue: 40004
       filterChains:
         - filters:
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
@@ -350,7 +350,7 @@ resources:
                       '@type': type.googleapis.com/envoy.config.filter.http.grpc_stats.v2alpha.FilterConfig
                       emitFilterState: true
                       statsForAllMethods: true
-                  - name: envoy.router
+                  - name: envoy.filters.http.router
                 routeConfig:
                   name: outbound:api-grpc
                   validateClusters: false
@@ -379,7 +379,7 @@ resources:
           portValue: 54321
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 statPrefix: db

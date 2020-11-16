@@ -1,7 +1,6 @@
 apiVersion: kuma.io/v1alpha1
 kind: HealthCheck
 metadata:
-  namespace: kuma-example
   name: web-to-backend
 mesh: default
 spec:
