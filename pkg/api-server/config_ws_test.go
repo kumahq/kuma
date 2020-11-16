@@ -55,12 +55,6 @@ var _ = Describe("Config WS", func() {
             "catalog": {
               "bootstrap": {
                 "url": ""
-              },
-              "monitoringAssignment": {
-                "url": ""
-              },
-              "sds": {
-                "url": ""
               }
             },
             "corsAllowedDomains": [
@@ -104,7 +98,6 @@ var _ = Describe("Config WS", func() {
           },
           "environment": "universal",
           "general": {
-            "advertisedHostname": "localhost",
             "dnsCacheTTL": "10s",
             "tlsCertFile": "",
             "tlsKeyFile": ""

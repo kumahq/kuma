@@ -9,7 +9,6 @@ import (
 
 	"github.com/prometheus/prometheus/documentation/examples/custom-sd/adapter"
 
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_promsd "github.com/kumahq/kuma/pkg/config/app/kuma-prometheus-sd"
 	"github.com/kumahq/kuma/pkg/core"
@@ -23,12 +22,9 @@ var (
 	runLog = prometheusSdLog.WithName("run")
 )
 
-type CatalogClientFactory func(string) (catalog_client.CatalogClient, error)
-
 var (
 	// overridable by unit tests
-	setupSignalHandler   = core.SetupSignalHandler
-	catalogClientFactory = catalog_client.NewCatalogClient
+	setupSignalHandler = core.SetupSignalHandler
 )
 
 func newRunCmd() *cobra.Command {
@@ -55,22 +51,12 @@ func newRunCmd() *cobra.Command {
 				return errors.Wrapf(err, "unable to write to directory %q", outputDir)
 			}
 
-			catalogClient, err := catalogClientFactory(cfg.ControlPlane.ApiServer.URL)
-			if err != nil {
-				return errors.Wrap(err, "unable to create a client for Kuma API Catalog")
-			}
-			catalog, err := catalogClient.Catalog()
-			if err != nil {
-				return errors.Wrap(err, "unable to retrieve Catalog of Kuma APIs")
-			}
-			runLog.Info("fetched Catalog of Kuma APIs", "catalog", catalog)
-
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 
 			discoverer, err := xds.NewDiscoverer(
 				xds.DiscoveryConfig{
-					ServerURL:  catalog.Apis.MonitoringAssignment.Url,
+					ServerURL:  cfg.MonitoringAssignment.Client.URL,
 					ClientName: cfg.MonitoringAssignment.Client.Name,
 				},
 				runLog.WithName("xds_sd").WithName("discoverer"),
@@ -87,7 +73,7 @@ func newRunCmd() *cobra.Command {
 		},
 	}
 	// flags
-	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.ApiServer.URL, "cp-address", cfg.ControlPlane.ApiServer.URL, "URL of the Control Plane API Server")
+	cmd.PersistentFlags().StringVar(&cfg.MonitoringAssignment.Client.URL, "cp-address", cfg.MonitoringAssignment.Client.URL, "URL of the Control Plane Monitoring Assignment Discovery Server. Example: grpc://localhost:5676")
 	cmd.PersistentFlags().StringVar(&cfg.MonitoringAssignment.Client.Name, "name", cfg.MonitoringAssignment.Client.Name, "Name to use to identify itself to the Monitoring Assignment server.")
 	cmd.PersistentFlags().StringVar(&cfg.Prometheus.OutputFile, "output-file", cfg.Prometheus.OutputFile, "Path to an output file with a list of scrape targets. The same file path must be used on Prometheus side in a configuration of `file_sd` discovery mechanism.")
 	return cmd

@@ -144,10 +144,6 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 
 	fmt.Printf("Node IP %s\n", app.ip)
 
-	if mode == AppModeCP {
-		env = append([]string{"KUMA_GENERAL_ADVERTISED_HOSTNAME=" + app.ip}, env...)
-	}
-
 	app.CreateMainApp(env, args)
 
 	return app, nil

@@ -260,9 +260,6 @@ func (c *Config) Validate() error {
 }
 
 type GeneralConfig struct {
-	// Hostname that other components should use in order to connect to the Control Plane.
-	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
-	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_general_advertised_hostname"`
 	// DNSCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
 	DNSCacheTTL time.Duration `yaml:"dnsCacheTTL" envconfig:"kuma_general_dns_cache_ttl"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert that will be used across all the Kuma Servers.
@@ -288,7 +285,6 @@ func (g *GeneralConfig) Validate() error {
 
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
-		AdvertisedHostname: "localhost",
-		DNSCacheTTL:        10 * time.Second,
+		DNSCacheTTL: 10 * time.Second,
 	}
 }
