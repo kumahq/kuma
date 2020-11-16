@@ -93,7 +93,7 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		if !ok {
 			continue
 		}
-		if !meshScoped(resourceChanged.Type) || resourceChanged.Type == core_mesh.DataplaneType {
+		if !meshScoped(resourceChanged.Type) {
 			continue
 		}
 		if resourceChanged.Operation == events.Update && resourceChanged.Type != core_mesh.DataplaneInsightType {
@@ -146,7 +146,7 @@ func (p *resyncer) resyncMesh(mesh string) error {
 		Policies:   map[string]*mesh_proto.MeshInsight_PolicyStat{},
 	}
 	for _, resType := range registry.Global().ListTypes() {
-		if !meshScoped(resType) || resType == core_mesh.DataplaneType {
+		if !meshScoped(resType) {
 			continue
 		}
 		list, err := registry.Global().NewList(resType)
@@ -157,13 +157,12 @@ func (p *resyncer) resyncMesh(mesh string) error {
 			return err
 		}
 		switch resType {
-		case core_mesh.DataplaneInsightType:
+		case core_mesh.DataplaneType:
 			insight.Dataplanes.Total = uint32(len(list.GetItems()))
+		case core_mesh.DataplaneInsightType:
 			for _, dpInsight := range list.(*core_mesh.DataplaneInsightResourceList).Items {
 				if dpInsight.Spec.IsOnline() {
 					insight.Dataplanes.Online++
-				} else {
-					insight.Dataplanes.Offline++
 				}
 			}
 		default:
@@ -174,6 +173,7 @@ func (p *resyncer) resyncMesh(mesh string) error {
 			}
 		}
 	}
+	insight.Dataplanes.Offline = insight.Dataplanes.Total - insight.Dataplanes.Online
 
 	if err := manager.Upsert(p.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
