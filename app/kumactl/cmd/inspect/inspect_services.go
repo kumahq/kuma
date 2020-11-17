@@ -6,13 +6,14 @@ import (
 	"io"
 	"sort"
 
+	"github.com/spf13/cobra"
+
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/spf13/cobra"
 )
 
 type inspectServicesContext struct {
