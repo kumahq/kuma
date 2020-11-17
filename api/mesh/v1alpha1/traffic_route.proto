@@ -22,8 +22,8 @@ message TrafficRoute {
   repeated Selector destinations = 2
       [ (validate.rules).repeated .min_items = 1 ];
 
-  // WeightedDestination defines a destination with a weight assigned to it.
-  message WeightedDestination {
+  // Split defines a destination with a weight assigned to it.
+  message Split {
 
     // Weight assigned to that destination.
     uint32 weight = 1 [ (validate.rules).uint32.gte = 0 ];
@@ -38,9 +38,14 @@ message TrafficRoute {
       keys : {string : {min_len : 1}},
       values : {string : {min_len : 1}}
     } ];
-  }
+  };
 
-  // List of destinations with weights assigned to them.
-  repeated WeightedDestination conf = 3
-      [ (validate.rules).repeated .min_items = 1 ];
+  // Conf defines the destination configuration
+  message Conf {
+    // List of destinations with weights assigned to them.
+    repeated Split split = 1 [ (validate.rules).repeated .min_items = 1 ];
+  };
+
+  // Configuration for the route
+  Conf conf = 3 [ (validate.rules).message.required = true ];
 }

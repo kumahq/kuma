@@ -1,8 +1,6 @@
-controlPlane:
-  apiServer:
-    url: https://kuma-control-plane.internal:5682
 monitoringAssignment:
   client:
     name: custom
+    url: grpc://kuma-control-plane.internal:5682
 prometheus:
   outputFile: /path/to/file

@@ -2,7 +2,6 @@ package mesh
 
 import (
 	"errors"
-	"reflect"
 
 	"github.com/golang/protobuf/proto"
 
@@ -20,8 +19,6 @@ type DataplaneOverviewResource struct {
 	Meta model.ResourceMeta
 	Spec mesh_proto.DataplaneOverview
 }
-
-type DpFilter func(a interface{}) bool
 
 func (t *DataplaneOverviewResource) GetType() model.ResourceType {
 	return DataplaneOverviewType
@@ -116,60 +113,4 @@ func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneI
 		Pagination: dataplanes.Pagination,
 		Items:      items,
 	}
-}
-
-func (d *DataplaneOverviewResourceList) RetainMatchingTags(tags map[string]string) {
-	result := []*DataplaneOverviewResource{}
-	for _, overview := range d.Items {
-		if overview.Spec.GetDataplane().MatchTags(tags) {
-			result = append(result, overview)
-		}
-	}
-	d.Items = result
-}
-
-func modeToFilter(mode string) DpFilter {
-	isnil := func(a interface{}) bool {
-		return a == nil || reflect.ValueOf(a).IsNil()
-	}
-	switch mode {
-	case "true":
-		return func(a interface{}) bool {
-			return !isnil(a)
-		}
-	case "false":
-		return func(a interface{}) bool {
-			return isnil(a)
-		}
-	default:
-		return func(a interface{}) bool {
-			return true
-		}
-	}
-}
-
-// RetainGatewayDataplanes to get only gateway Dataplanes
-func (l *DataplaneOverviewResourceList) RetainGatewayDataplanes(mode string) {
-	result := []*DataplaneOverviewResource{}
-	filter := modeToFilter(mode)
-
-	for _, overview := range l.Items {
-		if filter(overview.Spec.GetDataplane().GetNetworking().GetGateway()) {
-			result = append(result, overview)
-		}
-	}
-	l.Items = result
-}
-
-// RetainIngressDataplanes to get only ingress Dataplanes
-func (l *DataplaneOverviewResourceList) RetainIngressDataplanes(mode string) {
-	result := []*DataplaneOverviewResource{}
-	filter := modeToFilter(mode)
-
-	for _, overview := range l.Items {
-		if filter(overview.Spec.GetDataplane().GetNetworking().GetIngress()) {
-			result = append(result, overview)
-		}
-	}
-	l.Items = result
 }

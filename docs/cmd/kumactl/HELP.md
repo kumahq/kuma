@@ -138,7 +138,7 @@ Usage:
   kumactl config control-planes add [flags]
 
 Flags:
-      --address string            URL of the Control Plane API Server (required)
+      --address string            URL of the Control Plane API Server (required). Example: http://localhost:5681 or https://localhost:5682)
       --ca-cert-file string       path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)
       --client-cert-file string   path to the certificate of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)
       --client-key-file string    path to the certificate key of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)
@@ -277,7 +277,7 @@ Usage:
 
 Flags:
   -h, --help                                help for metrics
-      --kuma-cp-address string              the address of Kuma CP (default "http://kuma-control-plane.kuma-system:5681")
+      --kuma-cp-address string              the address of Kuma CP (default "grpc://kuma-control-plane.kuma-system:5676")
       --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd")
       --kuma-prometheus-sd-version string   version of Kuma Prometheus SD (default "latest")
       --namespace string                    namespace to install metrics to (default "kuma-metrics")
@@ -669,6 +669,7 @@ Usage:
 
 Available Commands:
   dataplanes  Inspect Dataplanes
+  meshes      Inspect Meshes
   zones       Inspect Zones
 
 Flags:

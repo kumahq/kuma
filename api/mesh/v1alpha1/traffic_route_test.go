@@ -39,8 +39,9 @@ var _ = Describe("TrafficRoute", func() {
                 - match:
                     service: backend
                 conf:
-                - destination:
-                    service: backend
+                  split:
+                  - destination:
+                      service: backend
 `,
 			}),
 			Entry("conf with 2 destinations and weights", testCase{
@@ -52,13 +53,14 @@ var _ = Describe("TrafficRoute", func() {
                 - match:
                     service: backend
                 conf:
-                - destination:
-                    service: backend
-                    version: v1
-                - weight: 99
-                  destination:
-                    service: backend
-                    version: v2
+                  split:
+                  - destination:
+                      service: backend
+                      version: v1
+                  - weight: 99
+                    destination:
+                      service: backend
+                      version: v2
 `,
 			}),
 		)
@@ -106,7 +108,7 @@ var _ = Describe("TrafficRoute", func() {
                 - match:
                     service: backend
 `,
-				expectedErr: `invalid TrafficRoute.Conf: value must contain at least 1 item(s)`,
+				expectedErr: `invalid TrafficRoute.Conf: value is required`,
 			}),
 			Entry("conf with 1 weighted destination but not selector", testCase{
 				input: `
@@ -117,9 +119,10 @@ var _ = Describe("TrafficRoute", func() {
                 - match:
                     service: backend
                 conf:
-                - {}
+                  split:
+                  - {}
 `,
-				expectedErr: `invalid TrafficRoute.Conf[0]: embedded message failed validation | caused by: invalid TrafficRoute_WeightedDestination.Destination: value must contain at least 1 pair(s)`,
+				expectedErr: `invalid TrafficRoute.Conf: embedded message failed validation | caused by: invalid TrafficRoute_Conf.Split[0]: embedded message failed validation | caused by: invalid TrafficRoute_Split.Destination: value must contain at least 1 pair(s)`,
 			}),
 		)
 	})

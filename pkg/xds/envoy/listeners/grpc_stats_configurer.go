@@ -3,7 +3,6 @@ package listeners
 import (
 	envoy_grpc_stats "github.com/envoyproxy/go-control-plane/envoy/config/filter/http/grpc_stats/v2alpha"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -34,7 +33,7 @@ func (g *GrpcStatsConfigurer) Configure(filterChain *envoy_listener.FilterChain)
 	return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
 		manager.HttpFilters = append([]*envoy_hcm.HttpFilter{
 			{
-				Name: envoy_wellknown.HTTPGRPCStats,
+				Name: "envoy.filters.http.grpc_stats",
 				ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
 					TypedConfig: pbst,
 				},

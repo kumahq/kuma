@@ -7,6 +7,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/dns/vips"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/dns"
@@ -39,7 +41,7 @@ var _ = Describe("VIPOutbounds", func() {
 		// given
 		dataplanes := core_mesh.DataplaneResourceList{}
 		externalServices := &core_mesh.ExternalServiceResourceList{}
-		vipList := dns.VIPList{}
+		vipList := vips.List{}
 		for i := 1; i <= 5; i++ {
 			service := "service-" + strconv.Itoa(i)
 			vip := fmt.Sprintf("240.0.0.%d", i)

@@ -14,6 +14,7 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
+	github.com/go-kit/kit v0.10.0
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.0
 	github.com/gogo/protobuf v1.3.1
@@ -43,6 +44,7 @@ require (
 	github.com/spiffe/spire v0.10.0
 	go.uber.org/multierr v1.3.0
 	go.uber.org/zap v1.13.0
+	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	golang.org/x/tools v0.0.0-20201009032223-96877f285f7e // indirect
 	google.golang.org/genproto v0.0.0-20200108215221-bd8f9a0ef82f
 	google.golang.org/grpc v1.30.0

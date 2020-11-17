@@ -72,7 +72,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 	var meshCache *mesh.Cache
 	var metrics core_metrics.Metrics
 
-	expiration := 500 * time.Millisecond
+	expiration := 2 * time.Second
 
 	BeforeEach(func() {
 		s = memory.NewStore()

@@ -28,10 +28,16 @@ func (d *TrafficRouteResource) validateDestinations() (err validators.Validation
 
 func (d *TrafficRouteResource) validateConf() (err validators.ValidationError) {
 	root := validators.RootedAt("conf")
-	if len(d.Spec.Conf) == 0 {
+	if d.Spec.GetConf().GetSplit() == nil {
+		err.AddViolationAt(root, "must have split")
+	}
+
+	root = validators.RootedAt("conf.split")
+	if len(d.Spec.GetConf().GetSplit()) == 0 {
 		err.AddViolationAt(root, "must have at least one element")
 	}
-	for i, routeEntry := range d.Spec.Conf {
+
+	for i, routeEntry := range d.Spec.GetConf().GetSplit() {
 		err.Add(ValidateSelector(root.Index(i).Field("destination"), routeEntry.GetDestination(), ValidateSelectorOpts{
 			RequireAtLeastOneTag: true,
 			RequireService:       true,

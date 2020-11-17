@@ -5,13 +5,13 @@ import (
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
 
+	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
+
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
-
 	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 )
 

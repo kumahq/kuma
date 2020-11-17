@@ -1,6 +1,8 @@
 package postgres_test
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -79,6 +81,56 @@ var _ = Describe("TLSPostgresStoreConfig", func() {
 			CAPath:   "/path",
 			KeyPath:  "/path",
 			CertPath: "/path",
+		}),
+	)
+})
+
+var _ = Describe("PostgresStoreConfig", func() {
+	type testCase struct {
+		config postgres.PostgresStoreConfig
+		error  string
+	}
+	DescribeTable("should validate invalid config",
+		func(given testCase) {
+			// when
+			err := given.config.Validate()
+
+			// then
+			Expect(err).To(MatchError(given.error))
+		},
+		Entry("MinReconnectInterval is equal to MaxReconnectInterval", testCase{
+			config: postgres.PostgresStoreConfig{
+				Host:     "localhost",
+				User:     "postgres",
+				Password: "postgres",
+				DbName:   "kuma",
+				TLS: postgres.TLSPostgresStoreConfig{
+					Mode:     postgres.VerifyFull,
+					CAPath:   "/path",
+					KeyPath:  "/path",
+					CertPath: "/path",
+				},
+				MinReconnectInterval: 10 * time.Second,
+				MaxReconnectInterval: 10 * time.Second,
+			},
+			error: "MinReconnectInterval should be less than MaxReconnectInterval",
+		}),
+		Entry("MinReconnectInterval is greater than MaxReconnectInterval", testCase{
+			config: postgres.PostgresStoreConfig{
+				Host:     "localhost",
+				User:     "postgres",
+				Password: "postgres",
+				DbName:   "kuma",
+				TLS: postgres.TLSPostgresStoreConfig{
+					Mode:     postgres.VerifyFull,
+					CAPath:   "/path",
+					KeyPath:  "/path",
+					CertPath: "/path",
+				},
+				MinReconnectInterval: 10 * time.Second,
+				MaxReconnectInterval: 1 * time.Second,
+			},
+			error: "MinReconnectInterval should be less than MaxReconnectInterval",
 		}),
 	)
 })

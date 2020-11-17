@@ -141,7 +141,6 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, cfg *kuma_cp.Config) {
 	config := cfg.ApiServer
 	dpOverviewEndpoints := dataplaneOverviewEndpoints{
-		publicURL:  config.Catalog.ApiServer.Url,
 		resManager: resManager,
 	}
 	dpOverviewEndpoints.addListEndpoint(ws, "/meshes/{mesh}")
@@ -149,7 +148,6 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	dpOverviewEndpoints.addListEndpoint(ws, "") // listing all resources in all meshes
 
 	zoneOverviewEndpoints := zoneOverviewEndpoints{
-		publicURL:  config.Catalog.ApiServer.Url,
 		resManager: resManager,
 	}
 	zoneOverviewEndpoints.addFindEndpoint(ws)
@@ -161,7 +159,6 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 		}
 		endpoints := resourceEndpoints{
 			mode:                 cfg.Mode,
-			publicURL:            config.Catalog.ApiServer.Url,
 			resManager:           resManager,
 			ResourceWsDefinition: definition,
 			adminAuth: authz.AdminAuth{

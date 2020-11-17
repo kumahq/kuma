@@ -311,9 +311,11 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		}),
 		Entry("should support a Dataplane with mTLS on", testCase{
 			ctx: xds_context.Context{
+				ConnectionInfo: xds_context.ConnectionInfo{
+					Authority: "kuma-system:5677",
+				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsLocation: "kuma-system:5677",
-					SdsTlsCert:  []byte("12345"),
+					SdsTlsCert: []byte("12345"),
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
@@ -372,9 +374,11 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		}),
 		Entry("should support a Dataplane with mTLS on (skipMTLS not explicitly defined)", testCase{
 			ctx: xds_context.Context{
+				ConnectionInfo: xds_context.ConnectionInfo{
+					Authority: "kuma-system:5677",
+				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsLocation: "kuma-system:5677",
-					SdsTlsCert:  []byte("12345"),
+					SdsTlsCert: []byte("12345"),
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
@@ -432,9 +436,11 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 		}),
 		Entry("should support a Dataplane with mTLS on but skipMTLS true", testCase{
 			ctx: xds_context.Context{
+				ConnectionInfo: xds_context.ConnectionInfo{
+					Authority: "kuma-system:5677",
+				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsLocation: "kuma-system:5677",
-					SdsTlsCert:  []byte("12345"),
+					SdsTlsCert: []byte("12345"),
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{

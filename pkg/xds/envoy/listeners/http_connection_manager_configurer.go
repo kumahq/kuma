@@ -3,7 +3,6 @@ package listeners
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -26,7 +25,7 @@ func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.
 		StatPrefix: util_xds.SanitizeMetric(c.statsName),
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
 		HttpFilters: []*envoy_hcm.HttpFilter{
-			{Name: envoy_wellknown.Router},
+			{Name: "envoy.filters.http.router"},
 		},
 		// notice that route configuration is left up to other configurers
 	}
@@ -37,7 +36,7 @@ func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.
 	}
 
 	filterChain.Filters = append(filterChain.Filters, &envoy_listener.Filter{
-		Name: envoy_wellknown.HTTPConnectionManager,
+		Name: "envoy.filters.network.http_connection_manager",
 		ConfigType: &envoy_listener.Filter_TypedConfig{
 			TypedConfig: pbst,
 		},
