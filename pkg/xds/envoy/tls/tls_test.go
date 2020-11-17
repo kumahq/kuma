@@ -49,9 +49,11 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			func(given testCase) {
 				// given
 				ctx := xds_context.Context{
+					ConnectionInfo: xds_context.ConnectionInfo{
+						Authority: "kuma-control-plane:5677",
+					},
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation: "kuma-control-plane:5677",
-						SdsTlsCert:  []byte("CERTIFICATE"),
+						SdsTlsCert: []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
 						Resource: &mesh_core.MeshResource{
@@ -252,9 +254,11 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			func(given testCase) {
 				// given
 				ctx := xds_context.Context{
+					ConnectionInfo: xds_context.ConnectionInfo{
+						Authority: "kuma-control-plane:5677",
+					},
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation: "kuma-control-plane:5677",
-						SdsTlsCert:  []byte("CERTIFICATE"),
+						SdsTlsCert: []byte("CERTIFICATE"),
 					},
 					Mesh: xds_context.MeshContext{
 						Resource: &mesh_core.MeshResource{

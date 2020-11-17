@@ -6,6 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 
 	"github.com/kumahq/kuma/pkg/events"
@@ -33,7 +35,6 @@ import (
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -180,17 +181,18 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 		return err
 	}
 	builder.WithResourceStore(rs)
-
 	eventBus := events.NewEventBus()
 	if err := plugin.EventListener(builder, eventBus); err != nil {
 		return err
 	}
 	builder.WithEventReaderFactory(eventBus)
 
-	meteredStore, err := metrics_store.NewMeteredStore(rs, builder.Metrics())
+	paginationStore := core_store.NewPaginationStore(rs)
+	meteredStore, err := metrics_store.NewMeteredStore(paginationStore, builder.Metrics())
 	if err != nil {
 		return err
 	}
+
 	builder.WithResourceStore(meteredStore)
 	return nil
 }
@@ -310,7 +312,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 }
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	builder.WithDNSResolver(dns.NewDNSResolver(cfg.DNSServer.Domain))
+	builder.WithDNSResolver(resolver.NewDNSResolver(cfg.DNSServer.Domain))
 	return nil
 }
 

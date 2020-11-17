@@ -185,52 +185,25 @@ func (r *postgresResourceStore) List(_ context.Context, resources model.Resource
 	}
 	statement += " ORDER BY name, mesh"
 
-	paginateResults := opts.PageSize != 0
-	offset := 0
-	if opts.PageOffset != "" {
-		o, err := strconv.Atoi(opts.PageOffset)
-		if err != nil {
-			return store.ErrorInvalidOffset
-		}
-		offset = o
-	}
-	if paginateResults {
-		statement += fmt.Sprintf(" LIMIT %d OFFSET %d", opts.PageSize+1, offset) // ask for +1 to check if there are any elements left
-	}
-
 	rows, err := r.db.Query(statement, statementArgs...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to execute query: %s", statement)
 	}
 	defer rows.Close()
-	items := 0
+
+	total := 0
 	for rows.Next() {
 		item, err := rowToItem(resources, rows)
 		if err != nil {
 			return err
 		}
-		if !paginateResults || items < opts.PageSize {
-			if err := resources.AddItem(item); err != nil {
-				return err
-			}
+		if err := resources.AddItem(item); err != nil {
+			return err
 		}
-		items++
+		total++
 	}
 
-	if paginateResults {
-		nextOffset := ""
-		if items > opts.PageSize { // set new offset only if there is next page
-			nextOffset = strconv.Itoa(offset + opts.PageSize)
-		}
-		resources.GetPagination().SetNextOffset(nextOffset)
-	}
-
-	total, err := r.countRows(string(resources.GetItemType()), opts.Mesh)
-	if err != nil {
-		return err
-	}
 	resources.GetPagination().SetTotal(uint32(total))
-
 	return nil
 }
 
@@ -255,28 +228,6 @@ func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, er
 	item.SetMeta(meta)
 
 	return item, nil
-}
-
-func (r *postgresResourceStore) countRows(resource, mesh string) (int, error) {
-	statement := `SELECT COUNT(*) as count FROM resources WHERE type=$1`
-	var statementArgs []interface{}
-	statementArgs = append(statementArgs, resource)
-	argsIndex := 1
-	if mesh != "" {
-		argsIndex++
-		statement += fmt.Sprintf(" AND mesh=$%d", argsIndex)
-		statementArgs = append(statementArgs, mesh)
-	}
-
-	var count int
-	err := r.db.QueryRow(statement, statementArgs...).Scan(&count)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return 0, nil
-		}
-		return 0, errors.Wrapf(err, "failed to execute query: %v", statement)
-	}
-	return count, nil
 }
 
 func (r *postgresResourceStore) Close() error {

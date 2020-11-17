@@ -6,6 +6,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -76,7 +78,7 @@ var _ = Describe("KubernetesStore", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		s, err = k8s.NewStore(k8sClient, ns)
+		s, err = k8s.NewStore(k8sClient, ns, k8sClientScheme, k8s_resources.NewSimpleConverter())
 		Expect(err).ToNot(HaveOccurred())
 	})
 

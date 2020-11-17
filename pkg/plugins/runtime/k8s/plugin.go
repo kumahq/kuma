@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
@@ -87,6 +89,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addPodReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
+	if err := addDNS(mgr, rt); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -137,9 +142,38 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 			Zone:              rt.Config().Multizone.Remote.Zone,
 			ResourceConverter: converter,
 		},
+		Persistence:     vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	return reconciler.SetupWithManager(mgr)
+}
+
+func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	if rt.Config().Mode == config_core.Global {
+		return nil
+	}
+	vipsAllocator, err := dns.NewVIPsAllocator(
+		rt.ReadOnlyResourceManager(),
+		rt.ConfigManager(),
+		rt.Config().DNSServer.CIDR,
+		rt.DNSResolver(),
+	)
+	if err != nil {
+		return err
+	}
+	reconciler := &k8s_controllers.ConfigMapReconciler{
+		Client:          mgr.GetClient(),
+		EventRecorder:   mgr.GetEventRecorderFor("k8s.kuma.io/vips-generator"),
+		Scheme:          mgr.GetScheme(),
+		Log:             core.Log.WithName("controllers").WithName("ConfigMap"),
+		ResourceManager: rt.ResourceManager(),
+		VIPsAllocator:   vipsAllocator,
+		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+	}
+	if err := reconciler.SetupWithManager(mgr); err != nil {
+		return err
+	}
+	return nil
 }
 
 func addDefaulters(mgr kube_ctrl.Manager, converter k8s_common.Converter) error {
@@ -200,9 +234,10 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode != config_core.Global {
+		address := fmt.Sprintf("https://kuma-control-plane.%s:%d", rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
-			rt.Config().ApiServer.Catalog.Bootstrap.Url,
+			address,
 			mgr.GetClient(),
 			converter,
 		)

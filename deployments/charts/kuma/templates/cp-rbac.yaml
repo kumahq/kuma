@@ -43,6 +43,7 @@ rules:
       - meshinsights
       - proxytemplates
       - trafficpermissions
+      - trafficroutes
     verbs:
       - get
       - list
@@ -59,7 +60,6 @@ rules:
       - faultinjections
       - healthchecks
       - trafficlogs
-      - trafficroutes
       - traffictraces
     verbs:
       - get

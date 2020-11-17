@@ -7,6 +7,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+
 	. "github.com/kumahq/kuma/pkg/dns"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/test"
@@ -28,7 +30,7 @@ var _ = Describe("DNS server", func() {
 			port = uint32(p)
 			Expect(err).ToNot(HaveOccurred())
 
-			resolver := NewDNSResolver("mesh")
+			resolver := resolver.NewDNSResolver("mesh")
 			m, err := core_metrics.NewMetrics("Standalone")
 			metrics = m
 			Expect(err).ToNot(HaveOccurred())

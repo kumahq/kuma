@@ -21,8 +21,6 @@ var _ = Describe("Catalog WS", func() {
 		cfg.Catalog.DataplaneToken.LocalUrl = "http://localhost:1111"
 		cfg.Catalog.DataplaneToken.PublicUrl = "https://kuma.internal:2222"
 		cfg.Catalog.Bootstrap.Url = "http://kuma.internal:3333"
-		cfg.Catalog.MonitoringAssignment.Url = "grpc://kuma.internal:4444"
-		cfg.Catalog.Sds.Url = "https://sds.kuma.io:5555"
 
 		// setup
 		resourceStore := memory.NewStore()
@@ -60,9 +58,6 @@ var _ = Describe("Catalog WS", func() {
 				"dataplaneToken": {
 					"localUrl": "http://localhost:1111",
 					"publicUrl": "https://kuma.internal:2222"
-				},
-				"monitoringAssignment": {
-					"url": "grpc://kuma.internal:4444"
 				}
 			}
 		}

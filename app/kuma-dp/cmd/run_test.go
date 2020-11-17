@@ -22,12 +22,9 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/kumahq/kuma/pkg/catalog"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/test"
-	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -35,27 +32,10 @@ var _ = Describe("run", func() {
 
 	var backupSetupSignalHandler func() <-chan struct{}
 	var backupBootstrapGenerator envoy.BootstrapConfigFactoryFunc
-	var backupCatalogClientFactory CatalogClientFactory
-
-	catalogDataplaneTokenServerEnabledFn := func(address string) (client catalog_client.CatalogClient, e error) {
-		return &test_catalog.StaticCatalogClient{
-			Resp: catalog.Catalog{
-				Apis: catalog.Apis{
-					Bootstrap: catalog.BootstrapApi{
-						Url: "http://localhost:5681",
-					},
-					DataplaneToken: catalog.DataplaneTokenApi{
-						LocalUrl: "http://localhost:5683",
-					},
-				},
-			},
-		}, nil
-	}
 
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
-		backupCatalogClientFactory = catalogClientFactory
 		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource) (proto.Message, error) {
 			bootstrap := envoy_bootstrap.Bootstrap{}
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
@@ -64,25 +44,10 @@ var _ = Describe("run", func() {
 			Expect(err).ToNot(HaveOccurred())
 			return &bootstrap, nil
 		}
-		catalogClientFactory = func(address string) (client catalog_client.CatalogClient, e error) {
-			return &test_catalog.StaticCatalogClient{
-				Resp: catalog.Catalog{
-					Apis: catalog.Apis{
-						Bootstrap: catalog.BootstrapApi{
-							Url: "http://localhost:5681",
-						},
-						DataplaneToken: catalog.DataplaneTokenApi{
-							LocalUrl: "", // dataplane token is disabled
-						},
-					},
-				},
-			}, nil
-		}
 	})
 	AfterEach(func() {
 		core.SetupSignalHandler = backupSetupSignalHandler
 		bootstrapGenerator = backupBootstrapGenerator
-		catalogClientFactory = backupCatalogClientFactory
 	})
 
 	var stopCh chan struct{}
@@ -275,7 +240,6 @@ var _ = Describe("run", func() {
 			}
 		}),
 		Entry("can be launched with args and dataplane token", func() testCase {
-			catalogClientFactory = catalogDataplaneTokenServerEnabledFn
 			return testCase{
 				envVars: map[string]string{},
 				args: []string{

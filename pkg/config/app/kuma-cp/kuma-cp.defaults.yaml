@@ -66,7 +66,7 @@ bootstrapServer:
     adminPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
     # Path to access log file of Envoy Admin
     adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
-    # Host of XDS Server. By default it is autoconfigured from KUMA_GENERAL_ADVERTISED_HOSTNAME
+    # Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
     xdsHost: "" # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
     # Port of XDS Server. By default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
@@ -267,9 +267,6 @@ reports:
 
 # General configuration
 general:
-  # Hostname that other components should use in order to connect to the Control Plane.
-  # Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
-  advertisedHostname: localhost # ENV: KUMA_GENERAL_ADVERTISED_HOSTNAME
   # dnsCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
   dnsCacheTTL: 10s # ENV: KUMA_GENERAL_DNS_CACHE_TTL
   # TlsCertFile defines a path to a file with PEM-encoded TLS cert that will be used across all the Kuma Servers.

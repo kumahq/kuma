@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
@@ -12,8 +13,6 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
-
-	"github.com/kumahq/kuma/pkg/dns"
 
 	"github.com/kumahq/kuma/pkg/core/ca"
 
@@ -48,7 +47,7 @@ type RuntimeContext interface {
 	ConfigStore() core_store.ResourceStore
 	CaManagers() ca.Managers
 	Extensions() context.Context
-	DNSResolver() dns.DNSResolver
+	DNSResolver() resolver.DNSResolver
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	LookupIP() lookup.LookupIPFunc
@@ -102,7 +101,7 @@ type runtimeContext struct {
 	xds      core_xds.XdsContext
 	dsl      datasource.Loader
 	ext      context.Context
-	dns      dns.DNSResolver
+	dns      resolver.DNSResolver
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
@@ -158,7 +157,7 @@ func (rc *runtimeContext) Extensions() context.Context {
 	return rc.ext
 }
 
-func (rc *runtimeContext) DNSResolver() dns.DNSResolver {
+func (rc *runtimeContext) DNSResolver() resolver.DNSResolver {
 	return rc.dns
 }
 

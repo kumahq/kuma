@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
 func HandleError(response *restful.Response, err error, title string) {
@@ -29,8 +30,8 @@ func HandleError(response *restful.Response, err error, title string) {
 		handleMaxPageSizeExceeded(title, err, response)
 	case err == api_server_types.InvalidPageSize:
 		handleInvalidPageSize(title, response)
-	case err == api_server_types.PaginationNotSupported:
-		handlePaginationNotSupported(title, response)
+	case issuer.IsSigningKeyNotFoundErr(err):
+		handleSigningKeyNotFound(err, response)
 	default:
 		handleUnknownError(err, title, response)
 	}
@@ -108,14 +109,6 @@ func handleInvalidOffset(title string, response *restful.Response) {
 	writeError(response, 400, kumaErr)
 }
 
-func handlePaginationNotSupported(title string, response *restful.Response) {
-	kumaErr := types.Error{
-		Title:   title,
-		Details: api_server_types.PaginationNotSupported.Error(),
-	}
-	writeError(response, 400, kumaErr)
-}
-
 func handleMaxPageSizeExceeded(title string, err error, response *restful.Response) {
 	kumaErr := types.Error{
 		Title:   title,
@@ -137,6 +130,14 @@ func handleUnknownError(err error, title string, response *restful.Response) {
 		Details: "Internal Server Error",
 	}
 	writeError(response, 500, kumaErr)
+}
+
+func handleSigningKeyNotFound(err error, response *restful.Response) {
+	kumaErr := types.Error{
+		Title:   "Signing Key not found",
+		Details: err.Error(),
+	}
+	writeError(response, 404, kumaErr)
 }
 
 func writeError(response *restful.Response, httpStatus int, kumaErr types.Error) {

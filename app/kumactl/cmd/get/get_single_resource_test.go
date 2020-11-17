@@ -52,7 +52,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 				},
 			},
 		}
-		store = memory_resources.NewStore()
+		store = core_store.NewPaginationStore(memory_resources.NewStore())
 		rootCmd = cmd.NewRootCmd(rootCtx)
 		outbuf = &bytes.Buffer{}
 		errbuf = &bytes.Buffer{}

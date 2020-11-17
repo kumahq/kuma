@@ -25,7 +25,7 @@ func (s *staticTokenIssuer) Generate(identity issuer.DataplaneIdentity) (issuer.
 	return fmt.Sprintf("token-for-%s-%s", identity.Name, identity.Mesh), nil
 }
 
-func (s *staticTokenIssuer) Validate(token issuer.Token) (issuer.DataplaneIdentity, error) {
+func (s *staticTokenIssuer) Validate(token issuer.Token, meshName string) (issuer.DataplaneIdentity, error) {
 	return issuer.DataplaneIdentity{}, errors.New("not implemented")
 }
 
@@ -70,7 +70,10 @@ var _ = Describe("Tokens Client", func() {
 		server := httptest.NewServer(mux)
 		defer server.Close()
 		mux.HandleFunc("/tokens", func(writer http.ResponseWriter, req *http.Request) {
+			defer GinkgoRecover()
 			writer.WriteHeader(500)
+			_, err := writer.Write([]byte("Internal Server Error"))
+			Expect(err).ToNot(HaveOccurred())
 		})
 		client, err := tokens.NewDataplaneTokenClient(&config_kumactl.ControlPlaneCoordinates_ApiServer{
 			Url: server.URL,
@@ -81,6 +84,6 @@ var _ = Describe("Tokens Client", func() {
 		_, err = client.Generate("example", "default", nil, "dataplane")
 
 		// then
-		Expect(err).To(MatchError("unexpected status code 500. Expected 200"))
+		Expect(err).To(MatchError("(500): Internal Server Error"))
 	})
 })

@@ -30,7 +30,7 @@ var DefaultMetricsTemplateArgs = metricsTemplateArgs{
 	Namespace:               "kuma-metrics",
 	KumaPrometheusSdImage:   "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd",
 	KumaPrometheusSdVersion: kuma_version.Build.Version,
-	KumaCpAddress:           "http://kuma-control-plane.kuma-system:5681",
+	KumaCpAddress:           "grpc://kuma-control-plane.kuma-system:5676",
 }
 
 func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {

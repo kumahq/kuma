@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
@@ -69,12 +70,18 @@ func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[s
 		return "", errors.Wrap(err, "could not execute the request")
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return "", errors.Errorf("unexpected status code %d. Expected 200", resp.StatusCode)
-	}
-	tokenBytes, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", errors.Wrap(err, "could not read a body of the request")
 	}
-	return string(tokenBytes), nil
+	if resp.StatusCode != 200 {
+		kumaErr := error_types.Error{}
+		if err := json.Unmarshal(body, &kumaErr); err == nil {
+			if kumaErr.Title != "" && kumaErr.Details != "" {
+				return "", &kumaErr
+			}
+		}
+		return "", errors.Errorf("(%d): %s", resp.StatusCode, body)
+	}
+	return string(body), nil
 }

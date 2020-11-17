@@ -210,12 +210,13 @@ func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []env
 
 func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *kuma_mesh.Dataplane_Networking_Outbound) (subsets []envoy_common.ClusterSubset, err error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
+
 	route := proxy.TrafficRoutes[oface]
 	if route == nil { // should not happen since we always generate default route if TrafficRoute is not found
 		return nil, errors.Errorf("no TrafficRoute for outbound %s", oface)
 	}
 
-	for j, destination := range route.Spec.Conf {
+	for j, destination := range route.Spec.GetConf().GetSplit() {
 		service, ok := destination.Destination[kuma_mesh.ServiceTag]
 		if !ok { // should not happen since we validate traffic route
 			return nil, errors.Errorf("trafficroute{name=%q}.%s: mandatory tag %q is missing: %v", route.GetMeta().GetName(), validators.RootedAt("conf").Index(j).Field("destination"), kuma_mesh.ServiceTag, destination.Destination)
