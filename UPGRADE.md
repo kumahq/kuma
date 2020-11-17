@@ -8,7 +8,7 @@ does not have any particular instructions.
 
 ## Upgrade to `1.0.0-rc1`
 
-This release introduces a new dataplane lifecyle, which is mostly relevant to Universal deployments.
+This release introduces a new dataplane lifecycle, which is mostly relevant to Universal deployments.
 
 ### Suggested Upgrade Path on Universal
 
