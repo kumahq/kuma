@@ -11,6 +11,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 
 	. "github.com/onsi/ginkgo"
@@ -20,8 +21,8 @@ import (
 var _ = Describe("DNS sync", func() {
 
 	var resManager resources_manager.ResourceManager
-	var dnsResolver dns.DNSResolver
-	var dnsResolverFollower dns.DNSResolver
+	var dnsResolver resolver.DNSResolver
+	var dnsResolverFollower resolver.DNSResolver
 	var stop chan struct{}
 
 	BeforeEach(func() {
@@ -29,20 +30,16 @@ var _ = Describe("DNS sync", func() {
 		memory := memory_resources.NewStore()
 		resManager = resources_manager.NewResourceManager(memory)
 		cfgManager := config_manager.NewConfigManager(memory)
-		persistence := dns.NewDNSPersistence(cfgManager)
-		dnsResolver = dns.NewDNSResolver("mesh")
+		dnsResolver = resolver.NewDNSResolver("mesh")
 
-		ipam, err := dns.NewSimpleIPAM("240.0.0.0/24")
-		Expect(err).ToNot(HaveOccurred())
-		vipAllocator, err := dns.NewVIPsAllocator(resManager, persistence, ipam, dnsResolver)
+		vipAllocator, err := dns.NewVIPsAllocator(resManager, cfgManager, "240.0.0.0/24", dnsResolver)
 		Expect(err).ToNot(HaveOccurred())
 		go func() {
 			Expect(vipAllocator.Start(stop)).ToNot(HaveOccurred())
 		}()
 
-		dnsResolverFollower = dns.NewDNSResolver("mesh")
-		vipsSynchronizer, err := dns.NewVIPsSynchronizer(dnsResolverFollower, persistence, neverLeaderInfo{})
-		Expect(err).ToNot(HaveOccurred())
+		dnsResolverFollower = resolver.NewDNSResolver("mesh")
+		vipsSynchronizer := dns.NewVIPsSynchronizer(dnsResolverFollower, resManager, cfgManager, neverLeaderInfo{})
 		go func() {
 			Expect(vipsSynchronizer.Start(stop)).ToNot(HaveOccurred())
 		}()
@@ -106,6 +103,7 @@ var _ = Describe("DNS sync", func() {
 						Ingress: &mesh_proto.Dataplane_Networking_Ingress{
 							AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 								{
+									Mesh: "default",
 									Tags: map[string]string{
 										"kuma.io/service": "backend",
 									},
