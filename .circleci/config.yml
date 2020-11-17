@@ -734,10 +734,10 @@ workflows:
   kuma-release:
     jobs:
     - go_cache: *release_workflow_filters
-    - api_check:
-        <<: *release_workflow_filters
-        requires:
-        - go_cache
+#    - api_check:
+#        <<: *release_workflow_filters
+#        requires:
+#        - go_cache
     - check:
         <<: *release_workflow_filters
         requires:
@@ -753,7 +753,7 @@ workflows:
     - release:
         <<: *release_workflow_filters
         requires:
-        - api_check
+#        - api_check
         - check
         - test
         - integration
