@@ -22,6 +22,14 @@ reusable:
         tags:
           only: /.*/
 
+    # release the charts only on tagged releases
+    helm_release_workflow_filters: &helm_release_workflow_filters
+      filters:
+        branches:
+          ignore: /.*/
+        tags:
+          only: /^(\d+)\.(\d+)\.(\d+)$/
+
     # filters for the kuma-commit workflow
     master_workflow_filters: &master_workflow_filters
       filters:
@@ -750,7 +758,7 @@ workflows:
         - test
         - integration
     - helm-release:
-        <<: *release_workflow_filters
+        <<: *helm_release_workflow_filters
         requires:
         - release
     - example_docker-compose:
