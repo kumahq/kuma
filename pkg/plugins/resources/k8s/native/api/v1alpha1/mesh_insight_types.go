@@ -7,7 +7,7 @@ import (
 // MeshInsightSpec defines the observed state of Mesh
 type MeshInsightSpec = map[string]interface{}
 
-// MeshInsight is the Schema for the Mesg Insights API
+// MeshInsight is the Schema for the Mesh Insights API
 type MeshInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

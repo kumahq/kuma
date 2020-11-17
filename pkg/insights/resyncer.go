@@ -6,8 +6,6 @@ import (
 
 	"github.com/go-kit/kit/ratelimit"
 	"github.com/golang/protobuf/ptypes"
-	"github.com/pkg/errors"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -18,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/util/proto"
+	"github.com/pkg/errors"
 )
 
 var (
@@ -73,9 +72,11 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		for {
 			select {
 			case <-ticker:
-				if err := p.resync(); err != nil {
-					log.Error(err, "unable to resync resources")
-					continue
+				if err := p.createOrUpdateMeshInsights(); err != nil {
+					log.Error(err, "unable to resync MeshInsight")
+				}
+				if err := p.createOrUpdateServiceInsights(); err != nil {
+					log.Error(err, "unable to resync ServiceInsight")
 				}
 			case <-stop:
 				log.Info("stop")
@@ -94,6 +95,11 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		if !ok {
 			continue
 		}
+		if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType {
+			if err := p.createOrUpdateServiceInsight(resourceChanged.Key.Mesh); err != nil {
+				log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
+			}
+		}
 		if !meshScoped(resourceChanged.Type) {
 			continue
 		}
@@ -105,8 +111,8 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		if !p.rateLimiter.Allow() {
 			continue
 		}
-		if err := p.resyncMesh(resourceChanged.Key.Mesh); err != nil {
-			log.Error(err, "unable to resync resources")
+		if err := p.createOrUpdateMeshInsight(resourceChanged.Key.Mesh); err != nil {
+			log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
 			continue
 		}
 	}
@@ -119,7 +125,7 @@ func meshScoped(t model.ResourceType) bool {
 	return true
 }
 
-func (p *resyncer) resync() error {
+func (p *resyncer) createOrUpdateServiceInsights() error {
 	meshes := &core_mesh.MeshResourceList{}
 	if err := p.rm.List(context.Background(), meshes); err != nil {
 		return err
@@ -128,7 +134,7 @@ func (p *resyncer) resync() error {
 		if need, err := p.needResync(mesh.GetMeta().GetName()); err != nil || !need {
 			continue
 		}
-		err := p.resyncMesh(mesh.GetMeta().GetName())
+		err := p.createOrUpdateMeshInsight(mesh.GetMeta().GetName())
 		if err != nil {
 			log.Error(err, "unable to resync resources", "mesh", mesh.GetMeta().GetName())
 			continue
@@ -137,7 +143,68 @@ func (p *resyncer) resync() error {
 	return nil
 }
 
-func (p *resyncer) resyncMesh(mesh string) error {
+func (p *resyncer) createOrUpdateServiceInsight(mesh string) error {
+	insight := &mesh_proto.ServiceInsight{
+		Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{},
+	}
+	dpList := &core_mesh.DataplaneResourceList{}
+	if err := p.rm.List(context.Background(), dpList, store.ListByMesh(mesh)); err != nil {
+		return err
+	}
+	dpMap := map[model.ResourceKey][]string{}
+	for _, dp := range dpList.Items {
+		dpKey := model.MetaToResourceKey(dp.Meta)
+		for _, inbound := range dp.Spec.Networking.Inbound {
+			svc := inbound.GetService()
+			dpMap[dpKey] = append(dpMap[dpKey], svc)
+			if _, ok := insight.Services[svc]; !ok {
+				insight.Services[svc] = &mesh_proto.ServiceInsight_DataplaneStat{}
+			}
+			insight.Services[svc].Total++
+		}
+	}
+	dpInsights := &core_mesh.DataplaneInsightResourceList{}
+	if err := p.rm.List(context.Background(), dpInsights, store.ListByMesh(mesh)); err != nil {
+		return err
+	}
+	for _, dpInsight := range dpInsights.Items {
+		if dpInsight.Spec.IsOnline() {
+			for _, svc := range dpMap[model.MetaToResourceKey(dpInsight.Meta)] {
+				insight.Services[svc].Online++
+			}
+		}
+	}
+	for _, stat := range insight.Services {
+		stat.Offline = stat.Total - stat.Online
+	}
+	if err := manager.Upsert(p.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.ServiceInsightResource{}, func(resource model.Resource) {
+		insight.LastSync = proto.MustTimestampProto(core.Now())
+		_ = resource.SetSpec(insight)
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (p *resyncer) createOrUpdateMeshInsights() error {
+	meshes := &core_mesh.MeshResourceList{}
+	if err := p.rm.List(context.Background(), meshes); err != nil {
+		return err
+	}
+	for _, mesh := range meshes.Items {
+		if need, err := p.needResync(mesh.GetMeta().GetName()); err != nil || !need {
+			continue
+		}
+		err := p.createOrUpdateMeshInsight(mesh.GetMeta().GetName())
+		if err != nil {
+			log.Error(err, "unable to resync resources", "mesh", mesh.GetMeta().GetName())
+			continue
+		}
+	}
+	return nil
+}
+
+func (p *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
 		Policies:   map[string]*mesh_proto.MeshInsight_PolicyStat{},

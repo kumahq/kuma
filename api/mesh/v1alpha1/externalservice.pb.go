@@ -7,7 +7,8 @@ import (
 	fmt "fmt"
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
 	proto "github.com/golang/protobuf/proto"
-	v1alpha1 "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/api/system/v1alpha1"
+
 	math "math"
 )
 
