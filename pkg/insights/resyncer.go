@@ -2,7 +2,6 @@ package insights
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"github.com/go-kit/kit/ratelimit"
@@ -105,10 +104,6 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		}
 		if !p.rateLimiter.Allow() {
 			continue
-		}
-		if resourceChanged.Key.Mesh == "" {
-			fmt.Println(resourceChanged)
-			panic(resourceChanged)
 		}
 		if err := p.resyncMesh(resourceChanged.Key.Mesh); err != nil {
 			log.Error(err, "unable to resync resources")
