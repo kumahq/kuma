@@ -4,19 +4,25 @@
 > Released on  2020/11/17
 
 * feat: new multizone deployment flow [#1122](https://github.com//kumahq/kuma/pull/1122) [#1125](https://github.com//kumahq/kuma/pull/1125) [#1133](https://github.com//kumahq/kuma/pull/1133)
+⚠️ warning: breaking change
 * feat: performance optimisation [#1045](https://github.com//kumahq/kuma/pull/1045) [#1113](https://github.com//kumahq/kuma/pull/1113)
 * feat: improved control plane communication security [#1065](https://github.com//kumahq/kuma/pull/1065) [#1069](https://github.com//kumahq/kuma/pull/1069) [#1083](https://github.com//kumahq/kuma/pull/1083) [#1084](https://github.com//kumahq/kuma/pull/1084) [#1092](https://github.com//kumahq/kuma/pull/1092) [#1115](https://github.com//kumahq/kuma/pull/1115) [#1118](https://github.com//kumahq/kuma/pull/1118)
+⚠️ warning: breaking change
 * feat: locality aware load balancing [#1111](https://github.com//kumahq/kuma/pull/1111) 
 * feat: add ExternalService  [#1025](https://github.com//kumahq/kuma/pull/1025) [#1058](https://github.com//kumahq/kuma/pull/1058) [#1062](https://github.com//kumahq/kuma/pull/1062) [#1080](https://github.com//kumahq/kuma/pull/1080) [#1094](https://github.com//kumahq/kuma/pull/1094) 
 * feat: add kafka protocol suport [#1121](https://github.com//kumahq/kuma/pull/1121)
 * feat: exclude injection from pods that match labels [#1072](https://github.com//kumahq/kuma/pull/1072)
 * feat: create default resources for Mesh [#1141](https://github.com//kumahq/kuma/pull/1141) [#1149](https://github.com/kumahq/kuma/pull/1149) [#1154](https://github.com//kumahq/kuma/pull/1154) [#1155](https://github.com//kumahq/kuma/pull/1155) 
+⚠️ warning: breaking change
 * chore: GUI updates [#1061](https://github.com/kumahq/kuma/pull/1061) [#1123](https://github.com//kumahq/kuma/pull/1123) [#1156](https://github.com/kumahq/kuma/pull/1156)
 * feat: auth on XDS [#1040](https://github.com//kumahq/kuma/pull/1040)
 * feat: merge install ingress into install control-plane [#1038](https://github.com//kumahq/kuma/pull/1038) 
  👍contributed by @austince
-* feat: Support probes with mTLS enabled [#1036](https://github.com//kumahq/kuma/pull/1036) 
+⚠️ warning: breaking change
+* feat: support HTTP probes with mTLS enabled [#1036](https://github.com//kumahq/kuma/pull/1036)
+* feat: mesh insights [#1143](https://github.com/kumahq/kuma/pull/1143)
 * feat: autoconfigure single cert for all services [#1032](https://github.com//kumahq/kuma/pull/1032)
+⚠️ warning: breaking change
 * feat: cache with better performance and debug endpoints [#1018](https://github.com//kumahq/kuma/pull/1018) 
 * feat: Kuma CP metrics [#993](https://github.com//kumahq/kuma/pull/993) [#1014](https://github.com//kumahq/kuma/pull/1014)
 * fix: signing token in multizone [#1007](https://github.com//kumahq/kuma/pull/1007) 
@@ -27,11 +33,12 @@
  * chore: Helm improvements [#990](https://github.com//kumahq/kuma/pull/990) [#1053](https://github.com//kumahq/kuma/pull/1053) [#1066](https://github.com//kumahq/kuma/pull/1066)  [#1120](https://github.com//kumahq/kuma/pull/1120) [#1147](https://github.com//kumahq/kuma/pull/1147)
   👍contributed by @austince
 * chore: change policies on K8S to scope global [#1148](https://github.com//kumahq/kuma/pull/1148) [#1127](https://github.com//kumahq/kuma/pull/1127)
-* feat: Protocol tag for gateway & ingress [#984](https://github.com//kumahq/kuma/pull/984) 
+⚠️ warning: breaking change
+* feat: protocol tag for gateway & ingress [#984](https://github.com//kumahq/kuma/pull/984) 
 * feat: domain name support in dataplane.networking.address [#965](https://github.com//kumahq/kuma/pull/965) 
 * feat: examples for ECS Universal deployments [#1003](https://github.com//kumahq/kuma/pull/1003) 
 * chore: get rid of advertised hostname [#1159](https://github.com//kumahq/kuma/pull/1159)
-* chore: mesh insights [#1143](https://github.com/kumahq/kuma/pull/1143) 
+⚠️ warning: breaking change 
 * chore: improve DP insights API filtering [#1104](https://github.com//kumahq/kuma/pull/1104)
 * chore: Ingress Dataplane on K8S can only be deployed in system namespace [#1070](https://github.com//kumahq/kuma/pull/1070)
 * chore: use /ready endpoint for sidecar health-check [#1055](https://github.com//kumahq/kuma/pull/1055) 
