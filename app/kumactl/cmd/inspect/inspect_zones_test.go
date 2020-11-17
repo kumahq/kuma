@@ -170,7 +170,7 @@ var _ = Describe("kumactl inspect zones", func() {
 		}
 	})
 
-	Describe("InspectDataplanesCmd", func() {
+	Describe("InspectZonesCmd", func() {
 
 		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command

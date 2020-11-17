@@ -28,5 +28,6 @@ func NewInspectCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	// sub-commands
 	cmd.AddCommand(newInspectDataplanesCmd(ctx))
 	cmd.AddCommand(newInspectZonesCmd(ctx))
+	cmd.AddCommand(newInspectMeshesCmd(ctx))
 	return cmd
 }

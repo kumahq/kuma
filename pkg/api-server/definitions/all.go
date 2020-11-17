@@ -2,6 +2,7 @@ package definitions
 
 var All = []ResourceWsDefinition{
 	MeshWsDefinition,
+	MeshInsightWsDefinition,
 	DataplaneWsDefinition,
 	DataplaneInsightWsDefinition,
 	ExternalServiceWsDefinition,

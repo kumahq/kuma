@@ -19,6 +19,7 @@ import (
 	"github.com/kumahq/kuma/pkg/diagnostics"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	"github.com/kumahq/kuma/pkg/gc"
+	"github.com/kumahq/kuma/pkg/insights"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
@@ -96,6 +97,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DP Server")
 					return err
 				}
+				if err := insights.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up Insights resyncer")
+					return err
+				}
 				if err := defaults.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up Defaults")
 					return err
@@ -128,6 +133,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 				if err := clusterid.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up clusterID")
+					return err
+				}
+				if err := insights.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up Insights resyncer")
 					return err
 				}
 				if err := defaults.Setup(rt); err != nil {

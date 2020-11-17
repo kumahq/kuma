@@ -57,6 +57,12 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 			return MeshNotFound(opts.Mesh)
 		}
 	}
+	if resource.GetType() == core_mesh.MeshInsightType {
+		owner = &core_mesh.MeshResource{}
+		if err := r.Store.Get(ctx, owner, store.GetByKey(opts.Name, model.NoMesh)); err != nil {
+			return MeshNotFound(opts.Mesh)
+		}
+	}
 
 	return r.Store.Create(ctx, resource, append(fs, store.CreatedAt(core.Now()), store.CreateWithOwner(owner))...)
 }
