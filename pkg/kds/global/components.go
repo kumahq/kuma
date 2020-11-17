@@ -88,7 +88,7 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 		if !store.IsResourceNotFound(err) {
 			return err
 		}
-		kdsGlobalLog.Info("creating zone", "name", name)
+		kdsGlobalLog.Info("creating Zone", "name", name)
 		err := resManager.Create(context.Background(), &system.ZoneResource{}, store.CreateByKey(name, model.NoMesh))
 		if err != nil {
 			return err
