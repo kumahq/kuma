@@ -6153,8 +6153,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 79c6abf3975b192e1eb85e3a8fe81594c498b635e153e75001f67b70cbec21a5
-        checksum/tls-secrets: e657a9a0da6557a18d4f38b229eb89efe8047fad512ef1c2e02a8057c7812f7d
+        checksum/config: 94bbaf581879296e81f70954d3c4c988b548d7fd708d8e3d1ec2c6a00c537483
+        checksum/tls-secrets: 89421a60e102b63b1bdc838a064b7b948c4b68905f995e194a5fd8db59ad7835
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
