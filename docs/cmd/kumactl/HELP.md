@@ -669,6 +669,7 @@ Usage:
 
 Available Commands:
   dataplanes  Inspect Dataplanes
+  meshes      Inspect Meshes
   zones       Inspect Zones
 
 Flags:

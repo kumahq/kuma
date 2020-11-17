@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
+	"github.com/kumahq/kuma/pkg/events"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -76,12 +77,19 @@ func (v memoryVersion) String() string {
 var _ store.ResourceStore = &memoryStore{}
 
 type memoryStore struct {
-	records memoryStoreRecords
-	mu      sync.RWMutex
+	records     memoryStoreRecords
+	mu          sync.RWMutex
+	eventWriter events.Emitter
 }
 
 func NewStore() store.ResourceStore {
 	return &memoryStore{}
+}
+
+func (c *memoryStore) SetEventWriter(writer events.Emitter) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.eventWriter = writer
 }
 
 func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.CreateOptionsFunc) error {
@@ -124,6 +132,13 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 
 	// persist
 	c.records = append(c.records, record)
+	if c.eventWriter != nil {
+		c.eventWriter.Send(events.ResourceChangedEvent{
+			Operation: events.Create,
+			Type:      r.GetType(),
+			Key:       model.MetaToResourceKey(r.GetMeta()),
+		})
+	}
 	return nil
 }
 func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
@@ -158,6 +173,13 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 	c.records[idx] = record
 
 	r.SetMeta(meta)
+	if c.eventWriter != nil {
+		c.eventWriter.Send(events.ResourceChangedEvent{
+			Operation: events.Update,
+			Type:      r.GetType(),
+			Key:       model.MetaToResourceKey(r.GetMeta()),
+		})
+	}
 	return nil
 }
 func (c *memoryStore) Delete(ctx context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
@@ -196,6 +218,13 @@ func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.
 		}
 	}
 	c.records = append(c.records[:idx], c.records[idx+1:]...)
+	if c.eventWriter != nil {
+		c.eventWriter.Send(events.ResourceChangedEvent{
+			Operation: events.Delete,
+			Type:      r.GetType(),
+			Key:       model.MetaToResourceKey(r.GetMeta()),
+		})
+	}
 	return nil
 }
 

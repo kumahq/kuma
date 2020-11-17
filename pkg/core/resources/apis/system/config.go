@@ -44,7 +44,7 @@ func (t *ConfigResource) Validate() error {
 	return nil
 }
 func (t *ConfigResource) Scope() model.ResourceScope {
-	return model.ScopeMesh
+	return model.ScopeGlobal
 }
 
 var _ model.ResourceList = &ConfigResourceList{}

@@ -40,6 +40,7 @@ rules:
       - meshes
       - zones
       - zoneinsights
+      - meshinsights
       - proxytemplates
       - trafficpermissions
       - trafficroutes

@@ -9,6 +9,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
+	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/metrics"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -51,6 +52,7 @@ type RuntimeContext interface {
 	LeaderInfo() component.LeaderInfo
 	LookupIP() lookup.LookupIPFunc
 	Metrics() metrics.Metrics
+	EventReaderFactory() events.ListenerFactory
 }
 
 var _ Runtime = &runtime{}
@@ -104,39 +106,53 @@ type runtimeContext struct {
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
+	erf      events.ListenerFactory
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
 	return rc.metrics
 }
 
+func (rc *runtimeContext) EventReaderFactory() events.ListenerFactory {
+	return rc.erf
+}
+
 func (rc *runtimeContext) CaManagers() ca.Managers {
 	return rc.cam
 }
+
 func (rc *runtimeContext) Config() kuma_cp.Config {
 	return rc.cfg
 }
+
 func (rc *runtimeContext) XDS() core_xds.XdsContext {
 	return rc.xds
 }
+
 func (rc *runtimeContext) DataSourceLoader() datasource.Loader {
 	return rc.dsl
 }
+
 func (rc *runtimeContext) ResourceManager() core_manager.ResourceManager {
 	return rc.rm
 }
+
 func (rc *runtimeContext) ResourceStore() core_store.ResourceStore {
 	return rc.rs
 }
+
 func (rc *runtimeContext) SecretStore() store.SecretStore {
 	return rc.ss
 }
+
 func (rc *runtimeContext) ConfigStore() core_store.ResourceStore {
 	return rc.cs
 }
+
 func (rc *runtimeContext) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
 	return rc.rom
 }
+
 func (rc *runtimeContext) Extensions() context.Context {
 	return rc.ext
 }
