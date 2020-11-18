@@ -109,6 +109,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeInboundPorts).To(Equal([]uint32{1234, 5678}))
 			Expect(cfg.Runtime.Kubernetes.Injector.CaCertFile).To(Equal("/tmp/ca.crt"))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarTraffic.ExcludeOutboundPorts).To(Equal([]uint32{4321, 8765}))
+			Expect(cfg.Runtime.Kubernetes.Injector.VirtualProbesEnabled).To(BeFalse())
+			Expect(cfg.Runtime.Kubernetes.Injector.VirtualProbesPort).To(Equal(uint32(1111)))
 
 			Expect(cfg.Reports.Enabled).To(BeFalse())
 
@@ -189,6 +191,8 @@ runtime:
       certDir: /var/run/secrets/kuma.io/kuma-admission-server/tls-cert
     injector:
       caCertFile: /tmp/ca.crt
+      virtualProbesEnabled: false
+      virtualProbesPort: 1111
       sidecarTraffic:
         excludeInboundPorts:
         - 1234
@@ -267,6 +271,8 @@ diagnostics:
 				"KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS":  "1234,5678",
 				"KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS": "4321,8765",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE":                  "/tmp/ca.crt",
+				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                 "false",
+				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                    "1111",
 				"KUMA_GENERAL_TLS_CERT_FILE":                                     "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                      "/tmp/key",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                           "https://kuma,https://someapi",
