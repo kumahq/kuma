@@ -24,6 +24,7 @@ type deployOptions struct {
 	helmReleaseName  string
 	helmOpts         map[string]string
 	ctlOpts          map[string]string
+	env              map[string]string
 	ingress          bool
 	cni              bool
 
@@ -60,6 +61,15 @@ func WithHelmOpt(name, value string) DeployOptionsFunc {
 			o.helmOpts = map[string]string{}
 		}
 		o.helmOpts[name] = value
+	}
+}
+
+func WithEnv(name, value string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		if o.env == nil {
+			o.env = map[string]string{}
+		}
+		o.env[name] = value
 	}
 }
 
