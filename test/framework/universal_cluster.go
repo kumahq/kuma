@@ -61,6 +61,9 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 
 	cmd := []string{"kuma-cp", "run"}
 	env := []string{"KUMA_MODE=" + mode}
+	for k, v := range opts.env {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
 	if opts.globalAddress != "" {
 		env = append(env, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
 	}
