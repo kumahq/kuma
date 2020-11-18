@@ -25,7 +25,8 @@ const (
 	k8sReadOnlyMessage = "On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply' or via the HTTP API." +
 		" As a best practice, you should always be using 'kubectl apply' instead." +
 		" You can still use 'kumactl' or the HTTP API to make read-only operations. On Universal this limitation does not apply.\n"
-	globalReadOnlyMessage = "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API." +
+	universalReadOnlyMessage = "On Universal you cannot change the state of Insight resources, they are managed and updated only by Kuma Control Plane.\n"
+	globalReadOnlyMessage    = "On global control plane you can not modify dataplane resources with 'kumactl apply' or via the HTTP API." +
 		" You can still use 'kumactl' or the HTTP API to modify them on the remote control plane.\n"
 	remoteReadOnlyMessage = "On remote control plane you can only modify dataplane resources with 'kumactl apply' or via the HTTP API." +
 		" You can still use 'kumactl' or the HTTP API to modify the rest of the resource on the global control plane.\n"
@@ -33,6 +34,7 @@ const (
 
 type resourceEndpoints struct {
 	mode       config_core.CpMode
+	env        config_core.EnvironmentType
 	resManager manager.ResourceManager
 	definitions.ResourceWsDefinition
 	adminAuth authz.AdminAuth
@@ -233,6 +235,10 @@ func (r *resourceEndpoints) readOnlyMessage() string {
 		return globalReadOnlyMessage
 	case config_core.Remote:
 		return remoteReadOnlyMessage
+	}
+	switch r.env {
+	case config_core.UniversalEnvironment:
+		return universalReadOnlyMessage
 	default:
 		return k8sReadOnlyMessage
 	}

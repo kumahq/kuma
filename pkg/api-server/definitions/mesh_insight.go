@@ -6,8 +6,9 @@ import (
 )
 
 var MeshInsightWsDefinition = ResourceWsDefinition{
-	Name: "Mesh Insight",
-	Path: "mesh-insights",
+	Name:     "Mesh Insight",
+	Path:     "mesh-insights",
+	ReadOnly: true,
 	ResourceFactory: func() model.Resource {
 		return &mesh.MeshInsightResource{}
 	},

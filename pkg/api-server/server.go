@@ -159,6 +159,7 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 		}
 		endpoints := resourceEndpoints{
 			mode:                 cfg.Mode,
+			env:                  cfg.Environment,
 			resManager:           resManager,
 			ResourceWsDefinition: definition,
 			adminAuth: authz.AdminAuth{

@@ -4,7 +4,6 @@ var All = []ResourceWsDefinition{
 	MeshWsDefinition,
 	MeshInsightWsDefinition,
 	DataplaneWsDefinition,
-	DataplaneInsightWsDefinition,
 	ExternalServiceWsDefinition,
 	HealthCheckWsDefinition,
 	ProxyTemplateWsDefinition,
@@ -15,6 +14,5 @@ var All = []ResourceWsDefinition{
 	FaultInjectionWsDefinition,
 	CircuitBreakerWsDefinition,
 	ZoneWsDefinition,
-	ZoneInsightWsDefinition,
 	SecretWsDefinition,
 }
