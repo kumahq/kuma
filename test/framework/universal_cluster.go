@@ -13,10 +13,6 @@ import (
 	"go.uber.org/multierr"
 )
 
-const (
-	kumaUniversalImage = "kuma-universal"
-)
-
 type UniversalCluster struct {
 	t            testing.TestingT
 	name         string
@@ -34,6 +30,10 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		verbose:     verbose,
 		deployments: map[string]Deployment{},
 	}
+}
+
+func (c *UniversalCluster) Name() string {
+	return c.name
 }
 
 func (c *UniversalCluster) DismissCluster() (errs error) {
@@ -62,12 +62,12 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	cmd := []string{"kuma-cp", "run"}
 	env := []string{"KUMA_MODE=" + mode}
 	if opts.globalAddress != "" {
-		env = append(env, "KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
+		env = append(env, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
 	}
 
 	switch mode {
 	case core.Remote:
-		env = append(env, "KUMA_MULTICLUSTER_REMOTE_ZONE="+c.name)
+		env = append(env, "KUMA_MULTIZONE_REMOTE_ZONE="+c.name)
 	case core.Global:
 		cmd = append(cmd, "--config-file", confPath)
 	}
@@ -112,7 +112,7 @@ func (c *UniversalCluster) DeleteKuma(opts ...DeployOptionsFunc) error {
 	return err
 }
 
-func (c *UniversalCluster) InjectDNS() error {
+func (c *UniversalCluster) InjectDNS(namespace ...string) error {
 	return nil
 }
 
@@ -134,18 +134,23 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string) error {
-	cpAddress := "http://" + c.apps[AppModeCP].ip + ":5681"
+	cpAddress := "https://" + c.apps[AppModeCP].ip + ":5678"
 	app.CreateDP(token, cpAddress, appname, ip, dpyaml)
 	return app.dpApp.Start()
 }
 
-func (c *UniversalCluster) DeployApp(namespace, appname, token string) error {
+func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
+	opts := newDeployOpt(fs...)
+	appname := opts.appname
+	token := opts.token
+	id := opts.id
+
 	var args []string
 	switch appname {
 	case AppModeEchoServer:
-		args = []string{"nc", "-lk", "-p", "80", "-e", "echo", "-e", "\"HTTP/1.1 200 OK\n\n Echo\n\""}
+		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo " + id + "\n\"'"}
 	case AppModeDemoClient:
-		args = []string{"nc", "-lvk", "-p", "3000"}
+		args = []string{"ncat", "-lvk", "-p", "3000"}
 	default:
 		return errors.Errorf("not supported app type %s", appname)
 	}

@@ -74,7 +74,7 @@ var _ = Describe("kumactl get healthchecks", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, pt := range sampleHealthChecks {
 				key := core_model.ResourceKey{

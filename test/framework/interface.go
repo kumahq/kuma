@@ -18,12 +18,20 @@ var (
 )
 
 type deployOptions struct {
+	// cp specific
 	globalAddress    string
 	installationMode InstallationMode
 	helmReleaseName  string
 	helmOpts         map[string]string
 	ctlOpts          map[string]string
 	ingress          bool
+	cni              bool
+
+	// app specific
+	namespace string
+	appname   string
+	id        string
+	token     string
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -61,6 +69,36 @@ func WithIngress() DeployOptionsFunc {
 	}
 }
 
+func WithCNI() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.cni = true
+	}
+}
+
+func WithNamespace(namespace string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.namespace = namespace
+	}
+}
+
+func WithAppname(appname string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.appname = appname
+	}
+}
+
+func WithId(id string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.id = id
+	}
+}
+
+func WithToken(token string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.token = token
+	}
+}
+
 func WithCtlOpt(name, value string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		if o.ctlOpts == nil {
@@ -88,6 +126,7 @@ type Deployment interface {
 
 type Cluster interface {
 	// Cluster
+	Name() string
 	DismissCluster() error
 	// Generic
 	DeployKuma(mode string, opts ...DeployOptionsFunc) error
@@ -95,7 +134,7 @@ type Cluster interface {
 	VerifyKuma() error
 	RestartKuma() error
 	DeleteKuma(opts ...DeployOptionsFunc) error
-	InjectDNS() error
+	InjectDNS(namespace ...string) error
 	GetKumactlOptions() *KumactlOptions
 	Deployment(name string) Deployment
 	Deploy(deployment Deployment) error
@@ -104,7 +143,7 @@ type Cluster interface {
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
 	CreateNamespace(namespace string) error
 	DeleteNamespace(namespace string) error
-	DeployApp(namespace, appname, token string) error
+	DeployApp(fs ...DeployOptionsFunc) error
 	DeleteApp(namespace, appname string) error
 	Exec(namespace, podName, containerName string, cmd ...string) (string, string, error)
 	ExecWithRetries(namespace, podName, containerName string, cmd ...string) (string, string, error)
@@ -117,7 +156,6 @@ type ControlPlane interface {
 	GetName() string
 	GetKumaCPLogs() (string, error)
 	GetKDSServerAddress() string
-	GetIngressAddress() string
 	GetGlobaStatusAPI() string
 	GenerateDpToken(appname string) (string, error)
 }

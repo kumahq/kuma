@@ -11,15 +11,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/catalog"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
+
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
@@ -44,23 +42,9 @@ var _ = Describe("kumactl apply", func() {
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
 				},
-				NewAdminResourceStore: func(string, *config_proto.Context_AdminApiCredentials) (core_store.ResourceStore, error) {
-					return store, nil
-				},
-				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
-					return &test_catalog.StaticCatalogClient{
-						Resp: catalog.Catalog{
-							Apis: catalog.Apis{
-								DataplaneToken: catalog.DataplaneTokenApi{
-									LocalUrl: "http://localhost:1234",
-								},
-							},
-						},
-					}, nil
-				},
 			},
 		}
-		store = memory_resources.NewStore()
+		store = core_store.NewPaginationStore(memory_resources.NewStore())
 		rootCmd = cmd.NewRootCmd(rootCtx)
 	})
 
@@ -74,7 +58,7 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Meta.GetMesh()).To(Equal("default"))
 		// and
 		Expect(resource.Spec.Networking.Address).To(Equal("2.2.2.2"))
-		//and
+		// and
 		Expect(resource.Spec.Networking.Inbound).To(HaveLen(1))
 		Expect(resource.Spec.Networking.Inbound[0].Address).To(Equal("1.1.1.1"))
 		Expect(resource.Spec.Networking.Inbound[0].Port).To(Equal(uint32(80)))
@@ -204,7 +188,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("sample"))
-		Expect(resource.Meta.GetMesh()).To(Equal("sample"))
+		Expect(resource.Meta.GetMesh()).To(Equal(core_model.NoMesh))
 	})
 
 	It("should apply a Secret resource", func() {
@@ -291,7 +275,57 @@ var _ = Describe("kumactl apply", func() {
 
 		// then
 		Expect(resource.Meta.GetName()).To(Equal("meshinit"))
-		Expect(resource.Meta.GetMesh()).To(Equal("meshinit"))
+		Expect(resource.Meta.GetMesh()).To(Equal(core_model.NoMesh))
+	})
+
+	It("should apply multiple resources of same type", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-multiple-resource-same-type.yaml")},
+		)
+
+		// when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		resource := mesh.DataplaneResourceList{}
+		err = store.List(context.Background(), &resource, core_store.ListByMesh("default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(resource.Items[0].Meta.GetName()).To(Equal("sample1"))
+		Expect(resource.Items[1].Meta.GetName()).To(Equal("sample2"))
+	})
+
+	It("should apply multiple resources of different type", func() {
+		// given
+		rootCmd.SetArgs([]string{
+			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+			"apply", "-f", filepath.Join("testdata", "apply-multiple-resource-different-type.yaml")},
+		)
+
+		// when
+		err := rootCmd.Execute()
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and
+		dataplaneResource := mesh.DataplaneResource{}
+		err = store.Get(context.Background(), &dataplaneResource, core_store.GetByKey("sample1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(dataplaneResource.Meta.GetName()).To(Equal("sample1"))
+		Expect(dataplaneResource.Meta.GetMesh()).To(Equal("default"))
+
+		secret := system.SecretResource{}
+		err = store.Get(context.Background(), &secret, core_store.GetByKey("sample", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(secret.Meta.GetName()).To(Equal("sample"))
+		Expect(secret.Meta.GetMesh()).To(Equal("default"))
+
 	})
 
 	It("should return kuma api server error", func() {
@@ -449,6 +483,10 @@ networking:
   inbound: 0 # should be a string
 `,
 			err: "YAML contains invalid resource: json: cannot unmarshal number into Go value of type []json.RawMessage",
+		}),
+		Entry("no resource", testCase{
+			resource: ``,
+			err:      "no resource(s) passed to apply",
 		}),
 	)
 })

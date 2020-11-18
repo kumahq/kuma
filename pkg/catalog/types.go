@@ -9,10 +9,8 @@ type Catalog struct {
 }
 
 type Apis struct {
-	Bootstrap            BootstrapApi            `json:"bootstrap"`
-	DataplaneToken       DataplaneTokenApi       `json:"dataplaneToken"` // DEPRECATED: remove in next major version of Kuma
-	Admin                AdminApi                `json:"admin"`
-	MonitoringAssignment MonitoringAssignmentApi `json:"monitoringAssignment"`
+	Bootstrap      BootstrapApi      `json:"bootstrap"`
+	DataplaneToken DataplaneTokenApi `json:"dataplaneToken"` // DEPRECATED: remove in next major version of Kuma
 }
 
 type AdminApi struct {
@@ -46,13 +44,6 @@ func FromConfig(cfg catalog.CatalogConfig) Catalog {
 			DataplaneToken: DataplaneTokenApi{
 				LocalUrl:  cfg.DataplaneToken.LocalUrl,
 				PublicUrl: cfg.DataplaneToken.PublicUrl,
-			},
-			Admin: AdminApi{
-				LocalUrl:  cfg.Admin.LocalUrl,
-				PublicUrl: cfg.Admin.PublicUrl,
-			},
-			MonitoringAssignment: MonitoringAssignmentApi{
-				Url: cfg.MonitoringAssignment.Url,
 			},
 		},
 	}

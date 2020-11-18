@@ -3,6 +3,8 @@ package plugins
 import (
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/events"
+
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -31,6 +33,7 @@ type ResourceStorePlugin interface {
 	Plugin
 	NewResourceStore(PluginContext, PluginConfig) (core_store.ResourceStore, error)
 	Migrate(PluginContext, PluginConfig) (DbVersion, error)
+	EventListener(PluginContext, events.Emitter) error
 }
 
 var AlreadyMigrated = errors.New("database already migrated")

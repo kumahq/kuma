@@ -26,12 +26,8 @@ var _ = Describe("XdsServerConfig", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(cfg.GrpcPort).To(Equal(1234))
-		Expect(cfg.DiagnosticsPort).To(Equal(3456))
 		Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
 		Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
-		Expect(cfg.TlsCertFile).To(Equal("/tmp/cert.pem"))
-		Expect(cfg.TlsKeyFile).To(Equal("/tmp/key.pem"))
 	})
 
 	Context("with modified environment variables", func() {
@@ -53,12 +49,8 @@ var _ = Describe("XdsServerConfig", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KUMA_XDS_SERVER_GRPC_PORT":                                "1234",
-				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":                         "3456",
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":          "5s",
-				"KUMA_XDS_SERVER_TLS_CERT_FILE":                            "/tmp/cert-env.pem",
-				"KUMA_XDS_SERVER_TLS_KEY_FILE":                             "/tmp/key-env.pem",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -74,12 +66,8 @@ var _ = Describe("XdsServerConfig", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(cfg.GrpcPort).To(Equal(1234))
-			Expect(cfg.DiagnosticsPort).To(Equal(3456))
 			Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
 			Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
-			Expect(cfg.TlsCertFile).To(Equal("/tmp/cert-env.pem"))
-			Expect(cfg.TlsKeyFile).To(Equal("/tmp/key-env.pem"))
 		})
 	})
 

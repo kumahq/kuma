@@ -1,4 +1,5 @@
 conf:
+  split:
   - weight: 90
     destination:
       service: redis

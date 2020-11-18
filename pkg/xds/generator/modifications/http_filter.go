@@ -5,7 +5,6 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
@@ -22,7 +21,7 @@ func (h *httpFilterModificator) apply(resources *core_xds.ResourceSet) error {
 			listener := resource.Resource.(*envoy_api.Listener)
 			for _, chain := range listener.FilterChains { // apply on all filter chains. We could introduce filter chain matcher as an improvement.
 				for _, networkFilter := range chain.Filters {
-					if networkFilter.Name == envoy_wellknown.HTTPConnectionManager {
+					if networkFilter.Name == "envoy.filters.network.http_connection_manager" {
 						hcm := &envoy_hcm.HttpConnectionManager{}
 						err := ptypes.UnmarshalAny(networkFilter.ConfigType.(*envoy_listener.Filter_TypedConfig).TypedConfig, hcm)
 						if err != nil {

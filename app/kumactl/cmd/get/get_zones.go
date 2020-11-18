@@ -30,7 +30,7 @@ func newGetZonesCmd(pctx *listContext) *cobra.Command {
 			}
 
 			zones := system.ZoneResourceList{}
-			if err := rs.List(context.Background(), &zones, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
+			if err := rs.List(context.Background(), &zones, core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
 				return errors.Wrapf(err, "failed to list Zone")
 			}
 
@@ -51,7 +51,7 @@ func newGetZonesCmd(pctx *listContext) *cobra.Command {
 
 func printZones(rootTime time.Time, zones *system.ZoneResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME", "INGRESS", "AGE"},
+		Headers: []string{"NAME", "AGE"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -63,7 +63,6 @@ func printZones(rootTime time.Time, zones *system.ZoneResourceList, out io.Write
 
 				return []string{
 					zone.GetMeta().GetName(), // NAME
-					zone.Spec.GetIngress().GetAddress(),
 					table.TimeSince(zone.GetMeta().GetModificationTime(), rootTime), // AGE
 				}
 			}

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"net"
 
-	"google.golang.org/grpc"
-
 	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
+
+	"google.golang.org/grpc"
 
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/core"
@@ -38,14 +38,14 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
 	grpcServer := grpc.NewServer(grpcOptions...)
 
+	// register services
+	observability_proto.RegisterMonitoringAssignmentDiscoveryServiceServer(grpcServer, s.server)
+	s.metrics.RegisterGRPC(grpcServer)
+
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
 	if err != nil {
 		return err
 	}
-
-	// register services
-	observability_proto.RegisterMonitoringAssignmentDiscoveryServiceServer(grpcServer, s.server)
-	s.metrics.RegisterGRPC(grpcServer)
 
 	errChan := make(chan error)
 	go func() {

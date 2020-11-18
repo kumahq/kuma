@@ -40,6 +40,12 @@ message Mesh {
   // for each dataplane individually using Dataplane resource.
   // +optional
   Metrics metrics = 4;
+
+  // Networking settings of the mesh
+  Networking networking = 5;
+
+  // Routing settings of the mesh
+  Routing routing = 6;
 }
 
 // CertificateAuthorityBackend defines Certificate Authority backend
@@ -68,6 +74,19 @@ message CertificateAuthorityBackend {
 
   // Configuration of the backend
   google.protobuf.Struct conf = 4;
+}
+
+// Networking defines the networking configuration of the mesh
+message Networking {
+
+  // Outbound describes the common mesh outbound settings
+  message Outbound {
+    // Control the passthrough cluster
+    google.protobuf.BoolValue passthrough = 1;
+  }
+
+  // Outbound settings
+  Outbound outbound = 1;
 }
 
 // Tracing defines tracing configuration of the mesh.
@@ -148,4 +167,10 @@ message FileLoggingBackendConfig {
 message TcpLoggingBackendConfig {
   // Address to TCP service that will receive logs
   string address = 1;
+}
+
+// Routing defines configuration for the routing in the mesh
+message Routing {
+  // Enable the Locality Aware Load Balancing
+  bool localityAwareLoadBalancing = 1;
 }

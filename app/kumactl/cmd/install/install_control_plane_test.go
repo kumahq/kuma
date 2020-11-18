@@ -73,7 +73,7 @@ var _ = Describe("kumactl install control-plane", func() {
 		func(given testCase) {
 			// given
 			rootCmd := cmd.DefaultRootCmd()
-			rootCmd.SetArgs(append([]string{"install", "control-plane"}, given.extraArgs...))
+			rootCmd.SetArgs(append([]string{"install", "control-plane", "--tls-general-secret", "general-tls-secret", "--tls-general-ca-bundle", "XYZ"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
 
@@ -121,8 +121,10 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--dataplane-version", "greatest",
 				"--dataplane-init-registry", "kuma-ci",
 				"--dataplane-init-version", "greatest",
-				"--tls-cert", "Cert",
-				"--tls-key", "Key",
+				"--tls-api-server-secret", "api-server-secret",
+				"--tls-api-server-client-certs-secret", "api-server-client-secret",
+				"--tls-kds-global-server-secret", "kds-global-secret",
+				"--tls-kds-remote-client-secret", "kds-ca-secret",
 				"--mode", "remote",
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--zone", "zone-1",
@@ -172,7 +174,7 @@ var _ = Describe("kumactl install control-plane", func() {
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)
 
-			//when
+			// when
 			err := rootCmd.Execute()
 
 			// then
@@ -199,13 +201,9 @@ var _ = Describe("kumactl install control-plane", func() {
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},
 			errorMsg:  "--kds-global-address can only be used when --mode=remote",
 		}),
-		Entry("--tls-cert without --tls-key", errTestCase{
-			extraArgs: []string{"--tls-cert", "cert.pem"},
-			errorMsg:  "both --tls-cert and --tls-key must be provided at the same time",
-		}),
-		Entry("--tls-key without --tls-cert", errTestCase{
-			extraArgs: []string{"--tls-key", "key.pem"},
-			errorMsg:  "both --tls-cert and --tls-key must be provided at the same time",
+		Entry("--tls-general-secret without --tls-general-ca-bundle", errTestCase{
+			extraArgs: []string{"--tls-general-secret", "sec"},
+			errorMsg:  "--tls-general-secret and --tls-general-ca-bundle must be provided at the same time",
 		}),
 	)
 })

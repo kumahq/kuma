@@ -55,14 +55,15 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			statsName:       "localhost:8080",
 			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
 			ctx: xds_context.Context{
+				ConnectionInfo: xds_context.ConnectionInfo{
+					Authority: "kuma-control-plane:5677",
+				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsLocation: "kuma-control-plane:5677",
-					SdsTlsCert:  []byte("CERTIFICATE"),
+					SdsTlsCert: []byte("CERTIFICATE"),
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
 							Name: "default",
 						},
 						Spec: mesh_proto.Mesh{
@@ -86,7 +87,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                 portValue: 8080
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
@@ -138,14 +139,15 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			statsName:       "localhost:8080",
 			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
 			ctx: xds_context.Context{
+				ConnectionInfo: xds_context.ConnectionInfo{
+					Authority: "kuma-control-plane:5677",
+				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsLocation: "kuma-control-plane:5677",
-					SdsTlsCert:  []byte("CERTIFICATE"),
+					SdsTlsCert: []byte("CERTIFICATE"),
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
 						Meta: &test_model.ResourceMeta{
-							Mesh: "default",
 							Name: "default",
 						},
 						Spec: mesh_proto.Mesh{
@@ -172,7 +174,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                 portValue: 8080
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080

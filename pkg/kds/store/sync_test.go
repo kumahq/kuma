@@ -27,7 +27,6 @@ var _ = Describe("SyncResourceStore", func() {
 		meshName := fmt.Sprintf("mesh-%d", idx)
 		return &mesh.MeshResource{
 			Meta: &model2.ResourceMeta{
-				Mesh: meshName,
 				Name: meshName,
 			},
 			Spec: mesh_proto.Mesh{

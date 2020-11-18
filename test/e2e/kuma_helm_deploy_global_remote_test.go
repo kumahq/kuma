@@ -40,13 +40,13 @@ metadata:
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, remote ControlPlane
-	var deployOptsFuncs []DeployOptionsFunc
+	var optsGlobal, optsRemote []DeployOptionsFunc
 
 	BeforeEach(func() {
 		var err error
 		clusters, err = NewK8sClusters(
 			[]string{Kuma1, Kuma2},
-			Verbose)
+			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		c1 = clusters.GetCluster(Kuma1)
@@ -56,23 +56,28 @@ metadata:
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
-		deployOptsFuncs = []DeployOptionsFunc{
+		optsGlobal = []DeployOptionsFunc{
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
 		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Global, deployOptsFuncs...)).
+			Install(Kuma(core.Global, optsGlobal...)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 
 		global = c1.GetKuma()
 		Expect(global).ToNot(BeNil())
 
-		deployOptsFuncs = append(deployOptsFuncs, WithGlobalAddress(global.GetKDSServerAddress()), WithHelmOpt("ingress.enabled", "true"))
+		optsRemote = []DeployOptionsFunc{
+			WithInstallationMode(HelmInstallationMode),
+			WithHelmReleaseName(releaseName),
+			WithGlobalAddress(global.GetKDSServerAddress()),
+			WithHelmOpt("ingress.enabled", "true"),
+		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, deployOptsFuncs...)).
+			Install(Kuma(core.Remote, optsRemote...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
@@ -93,12 +98,6 @@ metadata:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(),
-			fmt.Sprintf(ZoneTemplateK8s,
-				remote.GetName(),
-				remote.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
 		// then
 		logs1, err := global.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
@@ -115,7 +114,10 @@ metadata:
 		// tear down apps
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		// tear down Kuma
-		Expect(clusters.DeleteKuma(deployOptsFuncs...)).To(Succeed())
+		Expect(c1.DeleteKuma(optsGlobal...)).To(Succeed())
+		Expect(c2.DeleteKuma(optsRemote...)).To(Succeed())
+		// tear down clusters
+		Expect(clusters.DismissCluster()).To(Succeed())
 	})
 
 	It("Should deploy Remote and Global on 2 clusters", func() {
@@ -136,15 +138,13 @@ metadata:
 		}, time.Minute, DefaultTimeout).Should(BeTrue())
 
 		// then
-		found := false
+		active := true
 		for _, cluster := range clustersStatus {
-			if cluster.Address == remote.GetIngressAddress() {
-				Expect(cluster.Active).To(BeTrue())
-				found = true
-				break
+			if !cluster.Active {
+				active = false
 			}
 		}
-		Expect(found).To(BeTrue())
+		Expect(active).To(BeTrue())
 
 		// and dataplanes are synced to global
 		Eventually(func() string {

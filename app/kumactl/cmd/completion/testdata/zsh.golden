@@ -202,11 +202,13 @@ function _kumactl_config_control-planes {
 
 function _kumactl_config_control-planes_add {
   _arguments \
-    '--address[URL of the Control Plane API Server (required)]:' \
-    '--admin-client-cert[Path to certificate of a client that is authorized to use Admin Server]:' \
-    '--admin-client-key[Path to certificate key of a client that is authorized to use Admin Server]:' \
+    '--address[URL of the Control Plane API Server (required). Example: http://localhost:5681 or https://localhost:5682)]:' \
+    '--ca-cert-file[path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)]:' \
+    '--client-cert-file[path to the certificate of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)]:' \
+    '--client-key-file[path to the certificate key of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)]:' \
     '--name[reference name for the Control Plane (required)]:' \
     '--overwrite[overwrite existing Control Plane with the same reference name]' \
+    '--skip-verify[skip CA verification]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
@@ -284,6 +286,7 @@ function _kumactl_generate_dataplane-token {
   _arguments \
     '--dataplane[name of the Dataplane]:' \
     '--tag[required tag values for dataplane (split values by comma to provide multiple values)]:' \
+    '--type[type of the Dataplane ("dataplane", "ingress")]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
@@ -319,6 +322,8 @@ function _kumactl_get {
       "circuit-breakers:Show CircuitBreakers"
       "dataplane:Show a single Dataplane resource"
       "dataplanes:Show Dataplanes"
+      "external-service:Show a single ExternalService resource"
+      "external-services:Show ExternalServices"
       "fault-injection:Show a single Fault-Injection resource"
       "fault-injections:Show FaultInjections"
       "healthcheck:Show a single HealthCheck resource"
@@ -356,6 +361,12 @@ function _kumactl_get {
     ;;
   dataplanes)
     _kumactl_get_dataplanes
+    ;;
+  external-service)
+    _kumactl_get_external-service
+    ;;
+  external-services)
+    _kumactl_get_external-services
     ;;
   fault-injection)
     _kumactl_get_fault-injection
@@ -447,6 +458,24 @@ function _kumactl_get_dataplane {
 }
 
 function _kumactl_get_dataplanes {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_external-service {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_external-services {
   _arguments \
     '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
     '--size[maximum number of elements to return]:' \
@@ -657,6 +686,7 @@ function _kumactl_inspect {
   cmnds)
     commands=(
       "dataplanes:Inspect Dataplanes"
+      "meshes:Inspect Meshes"
       "zones:Inspect Zones"
     )
     _describe "command" commands
@@ -667,6 +697,9 @@ function _kumactl_inspect {
   dataplanes)
     _kumactl_inspect_dataplanes
     ;;
+  meshes)
+    _kumactl_inspect_meshes
+    ;;
   zones)
     _kumactl_inspect_zones
     ;;
@@ -676,7 +709,16 @@ function _kumactl_inspect {
 function _kumactl_inspect_dataplanes {
   _arguments \
     '--gateway[filter gateway dataplanes]' \
+    '--ingress[filter ingress dataplanes]' \
     '--tag[filter by tag in format of key=value. You can provide many tags]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_inspect_meshes {
+  _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
@@ -736,7 +778,11 @@ function _kumactl_install {
 
 function _kumactl_install_control-plane {
   _arguments \
+    '--cni-bin-dir[set the CNI binary directory]:' \
+    '--cni-chained[enable chained CNI installation]' \
+    '--cni-conf-name[set the CNI configuration name]:' \
     '--cni-enabled[install Kuma with CNI instead of proxy init container]' \
+    '--cni-net-dir[set the CNI install directory]:' \
     '--cni-registry[registry for the image of the Kuma CNI component]:' \
     '--cni-repository[repository for the image of the Kuma CNI component]:' \
     '--cni-version[version of the image of the Kuma CNI component]:' \
@@ -759,8 +805,12 @@ function _kumactl_install_control-plane {
     '--kds-global-address[URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)]:' \
     '--mode[kuma cp modes: one of standalone|remote|global]:' \
     '--namespace[namespace to install Kuma Control Plane to]:' \
-    '--tls-cert[TLS certificate for Kuma Control Plane servers]:' \
-    '--tls-key[TLS key for Kuma Control Plane servers]:' \
+    '--tls-api-server-client-certs-secret[Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS]:' \
+    '--tls-api-server-secret[Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS]:' \
+    '--tls-general-ca-bundle[Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)]:' \
+    '--tls-general-secret[Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication]:' \
+    '--tls-kds-global-server-secret[Secret that contains tls.crt, key.crt for protecting cross cluster communication]:' \
+    '--tls-kds-remote-client-secret[Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification]:' \
     '--use-node-port[use NodePort instead of LoadBalancer]' \
     '--zone[set the Kuma zone name]:' \
     '--config-file[path to the configuration file to use]:' \
@@ -770,6 +820,7 @@ function _kumactl_install_control-plane {
 
 function _kumactl_install_dns {
   _arguments \
+    '--namespace[namespace to look for Kuma Control Plane service]:' \
     '--port[port of the Kuma DNS server]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \

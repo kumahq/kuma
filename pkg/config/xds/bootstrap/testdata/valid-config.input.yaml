@@ -1,4 +1,3 @@
-port: 1234
 params:
   adminAddress: 192.168.0.1
   adminPort: 4321

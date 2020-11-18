@@ -3,38 +3,43 @@ package server_test
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sync/atomic"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_api_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
+	dp_server_cfg "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
-	sds_auth "github.com/kumahq/kuma/pkg/sds/auth"
-	"github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/test"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/test/runtime"
 	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
 	tokens_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("SDS Server", func() {
 
-	var dpCredential sds_auth.Credential
+	var dpCredential tokens_issuer.Token
 	var stop chan struct{}
 	var client envoy_discovery.SecretDiscoveryServiceClient
 	var conn *grpc.ClientConn
@@ -54,7 +59,10 @@ var _ = Describe("SDS Server", func() {
 		cfg.SdsServer.DataplaneConfigurationRefreshInterval = 100 * time.Millisecond
 		port, err := test.GetFreePort()
 		Expect(err).ToNot(HaveOccurred())
-		cfg.SdsServer.GrpcPort = port
+		cfg.DpServer.Port = port
+		cfg.DpServer.TlsCertFile = filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem")
+		cfg.DpServer.TlsKeyFile = filepath.Join("..", "..", "..", "test", "certs", "server-key.pem")
+		cfg.DpServer.Auth.Type = dp_server_cfg.DpServerAuthDpToken
 
 		runtime, err := runtime.BuilderFor(cfg).Build()
 		Expect(err).ToNot(HaveOccurred())
@@ -89,7 +97,7 @@ var _ = Describe("SDS Server", func() {
 				},
 			},
 		}
-		err = resManager.Create(context.Background(), &meshRes, core_store.CreateByKey("default", "default"))
+		err = resManager.Create(context.Background(), &meshRes, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup backend dataplane
@@ -111,24 +119,17 @@ var _ = Describe("SDS Server", func() {
 		err = resManager.Create(context.Background(), &dpRes, core_store.CreateByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		// setup Auth with Dataplane Token
-		key, err := tokens_issuer.CreateSigningKey()
-		Expect(err).ToNot(HaveOccurred())
-		err = resManager.Create(context.Background(), &key, core_store.CreateBy(tokens_issuer.SigningKeyResourceKey))
-		Expect(err).ToNot(HaveOccurred())
-
 		// retrieve example DP token
-		tokenIssuer, err := tokens_builtin.NewDataplaneTokenIssuer(runtime)
+		tokenIssuer, err := tokens_builtin.NewDataplaneTokenIssuer(runtime.ReadOnlyResourceManager())
 		Expect(err).ToNot(HaveOccurred())
-		token, err := tokenIssuer.Generate(tokens_issuer.DataplaneIdentity{
+		dpCredential, err = tokenIssuer.Generate(tokens_issuer.DataplaneIdentity{
 			Name: dpRes.GetMeta().GetName(),
 			Mesh: dpRes.GetMeta().GetMesh(),
 		})
 		Expect(err).ToNot(HaveOccurred())
-		dpCredential = sds_auth.Credential(token)
 
 		// start the runtime
-		Expect(server.SetupServer(runtime)).To(Succeed())
+		Expect(dp_server.SetupServer(runtime)).To(Succeed())
 		stop = make(chan struct{})
 		go func() {
 			defer GinkgoRecover()
@@ -138,9 +139,17 @@ var _ = Describe("SDS Server", func() {
 
 		// wait for SDS server
 		Eventually(func() error {
-			c, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithInsecure())
+			creds, err := credentials.NewClientTLSFromFile(filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), "")
+			if err != nil {
+				return err
+			}
+			c, err := grpc.Dial(fmt.Sprintf("localhost:%d", port), grpc.WithTransportCredentials(creds))
+			if err != nil {
+				return err
+			}
 			conn = c
 			client = envoy_discovery.NewSecretDiscoveryServiceClient(conn)
+			_, err = client.StreamSecrets(context.Background()) // dial is not enough, we need to double check if we can start to stream secrets
 			return err
 		}).ShouldNot(HaveOccurred())
 	})
@@ -157,14 +166,14 @@ var _ = Describe("SDS Server", func() {
 			Node: &envoy_api_core.Node{
 				Id: "default.backend-01",
 			},
-			ResourceNames: []string{server.MeshCaResource, server.IdentityCertResource},
+			ResourceNames: []string{tls.MeshCaResource, tls.IdentityCertResource},
 			TypeUrl:       envoy_resource.SecretType,
 		}
 	}
 
 	It("should return CA and Identity cert when DP is authorized", func(done Done) {
 		// given
-		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", string(dpCredential))
+		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", dpCredential)
 		stream, err := client.StreamSecrets(ctx)
 		defer func() {
 			if stream != nil {
@@ -206,7 +215,7 @@ var _ = Describe("SDS Server", func() {
 
 		BeforeEach(func(done Done) {
 			// given
-			ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", string(dpCredential))
+			ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", dpCredential)
 			s, err := client.StreamSecrets(ctx)
 			stream = s
 			Expect(err).ToNot(HaveOccurred())
@@ -232,7 +241,7 @@ var _ = Describe("SDS Server", func() {
 		It("should return pair when CA is changed", func(done Done) {
 			// when
 			meshRes := mesh_core.MeshResource{}
-			Expect(resManager.Get(context.Background(), &meshRes, core_store.GetByKey("default", "default"))).To(Succeed())
+			Expect(resManager.Get(context.Background(), &meshRes, core_store.GetByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "" // we need to first disable mTLS
 			Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "ca-2"

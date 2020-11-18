@@ -24,6 +24,8 @@ mtls:
     - name: builtin-1
       type: builtin
 name: mesh-1
+routing:
+  localityAwareLoadBalancing: true
 tracing:
   backends:
     - name: zipkin-us

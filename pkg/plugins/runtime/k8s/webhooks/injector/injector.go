@@ -3,15 +3,18 @@ package injector
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"github.com/pkg/errors"
 
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
@@ -31,20 +34,37 @@ const (
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 )
 
-func New(cfg runtime_k8s.Injector, controlPlaneUrl string, client kube_client.Client) *KumaInjector {
+var log = core.Log.WithName("injector")
+
+func New(
+	cfg runtime_k8s.Injector,
+	controlPlaneUrl string,
+	client kube_client.Client,
+	converter k8s_common.Converter,
+) (*KumaInjector, error) {
+	var caCert string
+	if cfg.CaCertFile != "" {
+		bytes, err := ioutil.ReadFile(cfg.CaCertFile)
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not read provided CA cert file %s", cfg.CaCertFile)
+		}
+		caCert = string(bytes)
+	}
 	return &KumaInjector{
 		cfg:             cfg,
 		controlPlaneUrl: controlPlaneUrl,
 		client:          client,
-		converter:       k8s_resources.DefaultConverter(),
-	}
+		converter:       converter,
+		caCert:          caCert,
+	}, nil
 }
 
 type KumaInjector struct {
 	cfg             runtime_k8s.Injector
 	controlPlaneUrl string
 	client          kube_client.Client
-	converter       k8s_resources.Converter
+	converter       k8s_common.Converter
+	caCert          string
 }
 
 func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
@@ -52,11 +72,13 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	if err != nil {
 		return errors.Wrap(err, "could not retrieve namespace for pod")
 	}
-	if inject, err := needInject(pod, ns); err != nil {
+	if inject, err := i.needInject(pod, ns); err != nil {
 		return err
 	} else if !inject {
+		log.V(1).Info("skip injecting Kuma", "name", pod.Name, "namespace", pod.Namespace)
 		return nil
 	}
+	log.Info("injecting Kuma", "name", pod.Name, "namespace", pod.Namespace)
 	// sidecar container
 	if pod.Spec.Containers == nil {
 		pod.Spec.Containers = []kube_core.Container{}
@@ -95,12 +117,20 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	return nil
 }
 
-func needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
+func (i *KumaInjector) needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
+	log.WithValues("name", pod.Name, "namespace", pod.Namespace)
+	if i.isInjectionException(pod) {
+		log.V(1).Info("pod fulfills exception requirements")
+		return false, nil
+	}
 	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
 	if err != nil {
 		return false, err
 	}
 	if exist {
+		if !enabled {
+			log.V(1).Info("pod has kuma.io/sidecar-injection: disabled annotation")
+		}
 		return enabled, nil
 	}
 	enabled, exist, err = metadata.Annotations(ns.Annotations).GetEnabled(metadata.KumaSidecarInjectionAnnotation)
@@ -108,9 +138,22 @@ func needInject(pod *kube_core.Pod, ns *kube_core.Namespace) (bool, error) {
 		return false, err
 	}
 	if exist {
+		if !enabled {
+			log.V(1).Info("namespace has kuma.io/sidecar-injection: disabled annotation")
+		}
 		return enabled, nil
 	}
 	return false, nil
+}
+
+func (i *KumaInjector) isInjectionException(pod *kube_core.Pod) bool {
+	for key, value := range i.cfg.Exceptions.Labels {
+		podValue, exist := pod.Labels[key]
+		if exist && (value == "*" || value == podValue) {
+			return true
+		}
+	}
+	return false
 }
 
 func meshName(pod *kube_core.Pod, ns *kube_core.Namespace) string {
@@ -187,7 +230,7 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 				},
 			},
 			{
-				Name:  "KUMA_CONTROL_PLANE_API_SERVER_URL",
+				Name:  "KUMA_CONTROL_PLANE_URL",
 				Value: i.controlPlaneUrl,
 			},
 			{
@@ -212,6 +255,10 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 				Name:  "KUMA_DATAPLANE_RUNTIME_TOKEN_PATH",
 				Value: "/var/run/secrets/kubernetes.io/serviceaccount/token",
 			},
+			{
+				Name:  "KUMA_CONTROL_PLANE_CA_CERT",
+				Value: i.caCert,
+			},
 		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.UID,
@@ -223,7 +270,7 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 					Command: []string{
 						"wget",
 						"-qO-",
-						fmt.Sprintf("http://127.0.0.1:%d", i.cfg.SidecarContainer.AdminPort),
+						fmt.Sprintf("http://127.0.0.1:%d/ready", i.cfg.SidecarContainer.AdminPort),
 					},
 				},
 			},
@@ -239,7 +286,7 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 					Command: []string{
 						"wget",
 						"-qO-",
-						fmt.Sprintf("http://127.0.0.1:%d", i.cfg.SidecarContainer.AdminPort),
+						fmt.Sprintf("http://127.0.0.1:%d/ready", i.cfg.SidecarContainer.AdminPort),
 					},
 				},
 			},
@@ -357,9 +404,16 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
+
+	// By default always set 'kuma.io/virtual-probes: enabled' if it's not set yet.
 	if _, exist, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation); !exist {
 		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationEnabled
 	}
+	// Disable virtual probes if pod has 'kuma.io/gateway' annotation, because we don't intercept inbound traffic
+	if enabled, exist, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation); exist && enabled {
+		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationDisabled
+	}
+
 	if _, exist, _ := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation); !exist {
 		annotations[metadata.KumaVirtualProbesPortAnnotation] = fmt.Sprintf("%d", i.cfg.VirtualProbesPort)
 	}

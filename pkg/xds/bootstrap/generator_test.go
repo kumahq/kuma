@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -57,7 +58,7 @@ var _ = Describe("bootstrapGenerator", func() {
 
 		// when
 		meshRes := mesh.MeshResource{}
-		err := resManager.Create(context.Background(), &meshRes, store.CreateByKey("mesh", "mesh"))
+		err := resManager.Create(context.Background(), &meshRes, store.CreateByKey("mesh", model.NoMesh))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -69,13 +70,14 @@ var _ = Describe("bootstrapGenerator", func() {
 
 	type testCase struct {
 		config             func() *bootstrap_config.BootstrapParamsConfig
+		dpAuthEnabled      bool
 		request            types.BootstrapRequest
 		expectedConfigFile string
 	}
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"))
+			generator := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled)
 
 			// when
 			bootstrapConfig, err := generator.Generate(context.Background(), given.request)
@@ -96,6 +98,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			Expect(actual).To(MatchYAML(expected))
 		},
 		Entry("default config with minimal request", testCase{
+			dpAuthEnabled: false,
 			config: func() *bootstrap_config.BootstrapParamsConfig {
 				cfg := bootstrap_config.DefaultBootstrapParamsConfig()
 				cfg.XdsHost = "127.0.0.1"
@@ -109,6 +112,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.default-config-minimal-request.golden.yaml",
 		}),
 		Entry("default config", testCase{
+			dpAuthEnabled: true,
 			config: func() *bootstrap_config.BootstrapParamsConfig {
 				cfg := bootstrap_config.DefaultBootstrapParamsConfig()
 				cfg.XdsHost = "127.0.0.1"
@@ -124,6 +128,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.default-config.golden.yaml",
 		}),
 		Entry("custom config with minimal request", testCase{
+			dpAuthEnabled: false,
 			config: func() *bootstrap_config.BootstrapParamsConfig {
 				return &bootstrap_config.BootstrapParamsConfig{
 					AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
@@ -141,6 +146,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedConfigFile: "generator.custom-config-minimal-request.golden.yaml",
 		}),
 		Entry("custom config", testCase{
+			dpAuthEnabled: true,
 			config: func() *bootstrap_config.BootstrapParamsConfig {
 				return &bootstrap_config.BootstrapParamsConfig{
 					AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
@@ -225,7 +231,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		params.XdsHost = "127.0.0.1"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params, "")
+		generator := NewDefaultBootstrapGenerator(resManager, params, "", false)
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
 			Name:      "name-1.namespace",
@@ -289,7 +295,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		params.XdsHost = "127.0.0.1"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params, "")
+		generator := NewDefaultBootstrapGenerator(resManager, params, "", false)
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
 			Name:      "name-3.namespace",

@@ -132,10 +132,8 @@ func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 		cmd...)
 }
 
-func (o *KumactlOptions) KumactlInstallDNS() (string, error) {
-	args := []string{
-		"install", "dns",
-	}
+func (o *KumactlOptions) KumactlInstallDNS(args ...string) (string, error) {
+	args = append([]string{"install", "dns"}, args...)
 
 	return o.RunKumactlAndGetOutputV(
 		false, // silence the log output of Install

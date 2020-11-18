@@ -30,7 +30,7 @@ var _ = Describe("Remote Sync", func() {
 
 	consumedTypes := []model.ResourceType{mesh.DataplaneType, mesh.MeshType, mesh.TrafficPermissionType}
 	newPolicySink := func(zone string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream) component.Component {
-		return kds_client.NewKDSSink(core.Log, consumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(nil, resourceSyncer, false, zone))
+		return kds_client.NewKDSSink(core.Log, consumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(nil, resourceSyncer, false, zone, nil))
 	}
 	start := func(comp component.Component, stop chan struct{}) {
 		go func() {
@@ -84,7 +84,7 @@ var _ = Describe("Remote Sync", func() {
 	})
 
 	It("should sync policies from global store to the local", func() {
-		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", "mesh-1"))
+		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {

@@ -58,15 +58,11 @@ var _ = Describe("K8S CMD test", func() {
 		Expect(err).NotTo(HaveOccurred())
 
 		return fmt.Sprintf(`
-xdsServer:
-  grpcPort: 0
-  diagnosticsPort: %%d
-bootstrapServer:
-  port: 0
 apiServer:
-  port: 0
-sdsServer:
-  grpcPort: 0
+  http:
+    port: 0
+  https:
+    port: 0
 environment: kubernetes
 store:
   type: kubernetes
@@ -79,6 +75,8 @@ guiServer:
   port: 0
 dnsServer:
   port: 0
+diagnostics:
+  serverPort: %%d
 `,
 			admissionServerPort,
 			filepath.Join("testdata"))

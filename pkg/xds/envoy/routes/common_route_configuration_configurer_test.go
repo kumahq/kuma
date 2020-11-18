@@ -37,7 +37,7 @@ var _ = Describe("CommonRouteConfigurationConfigurer", func() {
 			routeName: "outbound:backend",
 			expected: `
             name: outbound:backend
-            validateClusters: true
+            validateClusters: false
 `,
 		}),
 	)

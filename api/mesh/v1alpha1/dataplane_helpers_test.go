@@ -265,10 +265,10 @@ var _ = Describe("Dataplane with inbound", func() {
 		},
 	}
 
-	Describe("Tags()", func() {
+	Describe("TagSet()", func() {
 		It("should provide combined tags", func() {
 			// when
-			tags := d.Tags()
+			tags := d.TagSet()
 
 			// then
 			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend", "backend-metrics"}))
@@ -316,7 +316,7 @@ var _ = Describe("Dataplane with gateway", func() {
 	Describe("Tags()", func() {
 		It("should provide combined tags", func() {
 			// when
-			tags := d.Tags()
+			tags := d.TagSet()
 
 			// then
 			Expect(tags.Values("kuma.io/service")).To(Equal([]string{"backend"}))

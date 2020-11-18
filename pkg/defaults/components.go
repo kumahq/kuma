@@ -57,12 +57,6 @@ func (d *defaultsComponent) Start(_ <-chan struct{}) error {
 		// This code can execute before the control plane is ready therefore hooks can fail.
 		return errors.Wrap(err, "could not create the default Mesh")
 	}
-
-	if !d.shouldCreateSigningKey() {
-		log.V(1).Info("skip creating default Signing Key since CP with this mode is not required to have a key", "env", d.environment, "mode", d.cpMode)
-	} else if err := d.createSigningKeyIfNotExist(); err != nil {
-		return errors.Wrap(err, "could not create the default Signing Key")
-	}
 	return nil
 }
 

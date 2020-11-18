@@ -3,13 +3,13 @@ package apply
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/util/template"
 
 	"github.com/pkg/errors"
@@ -83,39 +83,44 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 					}
 				}
 			}
-
-			bytes := template.Render(string(b), ctx.args.vars)
-			res, err := rest.UnmarshallToCore(bytes)
-			if err != nil {
-				return errors.Wrap(err, "YAML contains invalid resource")
+			if len(b) == 0 {
+				return fmt.Errorf("no resource(s) passed to apply")
 			}
-			if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Scope()); err.HasViolations() {
-				return err.OrNil()
-			}
-
-			if ctx.args.dryRun {
-				p, err := printers.NewGenericPrinter(output.YAMLFormat)
+			var resources []model.Resource
+			rawResources := strings.Split(string(b), "---")
+			for _, rawResource := range rawResources {
+				if len(rawResource) == 0 {
+					continue
+				}
+				bytes := template.Render(rawResource, ctx.args.vars)
+				res, err := rest.UnmarshallToCore(bytes)
 				if err != nil {
-					return err
+					return errors.Wrap(err, "YAML contains invalid resource")
 				}
-				if err := p.Print(rest_types.From.Resource(res), cmd.OutOrStdout()); err != nil {
-					return err
+				if err := mesh.ValidateMeta(res.GetMeta().GetName(), res.GetMeta().GetMesh(), res.Scope()); err.HasViolations() {
+					return err.OrNil()
 				}
-				return nil
+				resources = append(resources, res)
 			}
+			for _, resource := range resources {
+				if ctx.args.dryRun {
+					p, err := printers.NewGenericPrinter(output.YAMLFormat)
+					if err != nil {
+						return err
+					}
+					if err := p.Print(rest_types.From.Resource(resource), cmd.OutOrStdout()); err != nil {
+						return err
+					}
+				} else {
+					rs, err := pctx.CurrentResourceStore()
+					if err != nil {
+						return err
+					}
 
-			var rs store.ResourceStore
-			if res.GetType() == system.SecretType { // Secret is exposed via Admin Server. It will be merged into API Server eventually.
-				rs, err = pctx.CurrentAdminResourceStore()
-			} else {
-				rs, err = pctx.CurrentResourceStore()
-			}
-			if err != nil {
-				return err
-			}
-
-			if err := upsert(rs, res); err != nil {
-				return err
+					if err := upsert(rs, resource); err != nil {
+						return err
+					}
+				}
 			}
 			return nil
 		},

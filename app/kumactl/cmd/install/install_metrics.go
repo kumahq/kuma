@@ -3,6 +3,8 @@ package install
 import (
 	"strings"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -14,6 +16,7 @@ import (
 
 type metricsTemplateArgs struct {
 	Namespace                 string
+	Mesh                      string
 	KumaPrometheusSdImage     string
 	KumaPrometheusSdVersion   string
 	KumaCpAddress             string
@@ -27,16 +30,18 @@ var DefaultMetricsTemplateArgs = metricsTemplateArgs{
 	Namespace:               "kuma-metrics",
 	KumaPrometheusSdImage:   "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd",
 	KumaPrometheusSdVersion: kuma_version.Build.Version,
-	KumaCpAddress:           "http://kuma-control-plane.kuma-system:5681",
+	KumaCpAddress:           "grpc://kuma-control-plane.kuma-system:5676",
 }
 
-func newInstallMetrics() *cobra.Command {
+func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	args := DefaultMetricsTemplateArgs
 	cmd := &cobra.Command{
 		Use:   "metrics",
 		Short: "Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)",
 		Long:  `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in a kuma-metrics namespace`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			args.Mesh = pctx.Args.Mesh
+
 			templateFiles, err := data.ReadFiles(metrics.Templates)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
@@ -57,13 +62,13 @@ func newInstallMetrics() *cobra.Command {
 			}
 			args.DashboardMesh = dashboard.String()
 
-			dashboard, err = data.ReadFile(metrics.Templates, ("/grafana/kuma-service-to-service.json"))
+			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-service-to-service.json")
 			if err != nil {
 				return err
 			}
 			args.DashboardServiceToService = dashboard.String()
 
-			dashboard, err = data.ReadFile(metrics.Templates, ("/grafana/kuma-cp.json"))
+			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-cp.json")
 			if err != nil {
 				return err
 			}

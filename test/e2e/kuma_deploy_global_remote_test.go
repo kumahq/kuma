@@ -36,27 +36,36 @@ metadata:
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, remote ControlPlane
+	var optsGlobal, optsRemote []DeployOptionsFunc
+	var originalKumaNamespace = KumaNamespace
 
 	BeforeEach(func() {
+		// set the new namespace
+		KumaNamespace = "other-kuma-system"
 		var err error
 		clusters, err = NewK8sClusters(
 			[]string{Kuma1, Kuma2},
-			Verbose)
+			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		c1 = clusters.GetCluster(Kuma1)
-		c2 = clusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Global)).
+			Install(Kuma(core.Global, optsGlobal...)).
 			Setup(c1)
 		Expect(err).ToNot(HaveOccurred())
 
 		global = c1.GetKuma()
 		Expect(global).ToNot(BeNil())
 
+		c2 = clusters.GetCluster(Kuma2)
+		optsRemote = []DeployOptionsFunc{
+			WithIngress(),
+			WithGlobalAddress(global.GetKDSServerAddress()),
+		}
+
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithIngress(), WithGlobalAddress(global.GetKDSServerAddress()))).
+			Install(Kuma(core.Remote, optsRemote...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s()).
@@ -77,12 +86,6 @@ metadata:
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(),
-			fmt.Sprintf(ZoneTemplateK8s,
-				remote.GetName(),
-				remote.GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
-
 		// then
 		logs1, err := global.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
@@ -96,10 +99,18 @@ metadata:
 	})
 
 	AfterEach(func() {
+		defer func() {
+			// restore the original namespace
+			KumaNamespace = originalKumaNamespace
+		}()
+
 		err := c2.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = clusters.DeleteKuma()
+		err = c1.DeleteKuma(optsGlobal...)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = c2.DeleteKuma(optsRemote...)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -122,15 +133,13 @@ metadata:
 		}, time.Minute, DefaultTimeout).Should(BeTrue())
 
 		// then remote is online
-		found := false
+		active := true
 		for _, cluster := range clustersStatus {
-			if cluster.Address == remote.GetIngressAddress() {
-				Expect(cluster.Active).To(BeTrue())
-				found = true
-				break
+			if !cluster.Active {
+				active = false
 			}
 		}
-		Expect(found).To(BeTrue())
+		Expect(active).To(BeTrue())
 
 		// and dataplanes are synced to global
 		Eventually(func() string {

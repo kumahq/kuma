@@ -101,9 +101,11 @@ var _ = Describe("kumactl get meshes", func() {
 						},
 					},
 				},
+				Routing: &mesh_proto.Routing{
+					LocalityAwareLoadBalancing: true,
+				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh1",
 				Name: "mesh1",
 			},
 		},
@@ -120,7 +122,6 @@ var _ = Describe("kumactl get meshes", func() {
 				},
 			},
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh2",
 				Name: "mesh2",
 			},
 		},
@@ -144,7 +145,7 @@ var _ = Describe("kumactl get meshes", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, ds := range sampleMeshes {
 				key := core_model.ResourceKey{

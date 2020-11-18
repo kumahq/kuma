@@ -2,8 +2,10 @@ package definitions
 
 var All = []ResourceWsDefinition{
 	MeshWsDefinition,
+	MeshInsightWsDefinition,
 	DataplaneWsDefinition,
 	DataplaneInsightWsDefinition,
+	ExternalServiceWsDefinition,
 	HealthCheckWsDefinition,
 	ProxyTemplateWsDefinition,
 	TrafficPermissionWsDefinition,
@@ -14,4 +16,5 @@ var All = []ResourceWsDefinition{
 	CircuitBreakerWsDefinition,
 	ZoneWsDefinition,
 	ZoneInsightWsDefinition,
+	SecretWsDefinition,
 }

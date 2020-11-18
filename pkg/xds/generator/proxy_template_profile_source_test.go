@@ -1,9 +1,14 @@
 package generator_test
 
 import (
+	"context"
 	"io/ioutil"
 	"path/filepath"
 	"time"
+
+	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+
+	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
@@ -18,6 +23,14 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
+
+type dummyCLACache struct {
+	outboundTargets model.EndpointMap
+}
+
+func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
+	return endpoints.CreateClusterLoadAssignment(service, d.outboundTargets[service]), nil
+}
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
 
@@ -37,9 +50,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 
 			// given
 			ctx := xds_context.Context{
+				ConnectionInfo: xds_context.ConnectionInfo{
+					Authority: "kuma-system:5677",
+				},
 				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsLocation: "kuma-system:5677",
-					SdsTlsCert:  []byte("12345"),
+					SdsTlsCert: []byte("12345"),
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
@@ -54,6 +69,26 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 
 			dataplane := mesh_proto.Dataplane{}
 			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
+
+			outboundTargets := model.EndpointMap{
+				"db": []model.Endpoint{
+					{
+						Target: "192.168.0.3",
+						Port:   5432,
+						Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
+						Weight: 1,
+					},
+				},
+				"elastic": []model.Endpoint{
+					{
+						Target: "192.168.0.4",
+						Port:   9200,
+						Tags:   map[string]string{"kuma.io/service": "elastic"},
+						Weight: 1,
+					},
+				},
+			}
+
 			proxy := &model.Proxy{
 				Id: model.ProxyId{Name: "demo.backend-01"},
 				Dataplane: &mesh_core.DataplaneResource{
@@ -70,10 +105,14 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						DataplanePort: 54321,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("db"),
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.MatchService("db"),
+									},
+								},
+							},
 						},
 					},
 					mesh_proto.OutboundInterface{
@@ -81,31 +120,18 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						DataplanePort: 59200,
 					}: &mesh_core.TrafficRouteResource{
 						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("elastic"),
-							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight:      100,
+										Destination: mesh_proto.MatchService("elastic"),
+									},
+								},
+							},
 						},
 					},
 				},
-				OutboundTargets: model.EndpointMap{
-					"db": []model.Endpoint{
-						{
-							Target: "192.168.0.3",
-							Port:   5432,
-							Tags:   map[string]string{"kuma.io/service": "db", "role": "master"},
-							Weight: 1,
-						},
-					},
-					"elastic": []model.Endpoint{
-						{
-							Target: "192.168.0.4",
-							Port:   9200,
-							Tags:   map[string]string{"kuma.io/service": "elastic"},
-							Weight: 1,
-						},
-					},
-				},
+				OutboundTargets: outboundTargets,
 				HealthChecks: model.HealthCheckMap{
 					"elastic": &mesh_core.HealthCheckResource{
 						Spec: mesh_proto.HealthCheck{
@@ -127,6 +153,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				Metadata: &model.DataplaneMetadata{
 					AdminPort: 9902,
 				},
+				CLACache: &dummyCLACache{outboundTargets: outboundTargets},
 			}
 
 			// when

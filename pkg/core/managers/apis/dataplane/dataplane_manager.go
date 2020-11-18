@@ -43,7 +43,7 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 
 	opts := core_store.NewCreateOptions(fs...)
 	owner := &core_mesh.MeshResource{}
-	if err := m.store.Get(ctx, owner, core_store.GetByKey(opts.Mesh, opts.Mesh)); err != nil {
+	if err := m.store.Get(ctx, owner, core_store.GetByKey(opts.Mesh, core_model.NoMesh)); err != nil {
 		return core_manager.MeshNotFound(opts.Mesh)
 	}
 

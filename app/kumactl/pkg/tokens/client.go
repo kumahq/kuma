@@ -11,6 +11,7 @@ import (
 	"github.com/pkg/errors"
 
 	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
@@ -19,8 +20,8 @@ const (
 	timeout = 10 * time.Second
 )
 
-func NewDataplaneTokenClient(address string, config *kumactl_config.Context_AdminApiCredentials) (DataplaneTokenClient, error) {
-	baseURL, err := url.Parse(address)
+func NewDataplaneTokenClient(config *kumactl_config.ControlPlaneCoordinates_ApiServer) (DataplaneTokenClient, error) {
+	baseURL, err := url.Parse(config.Url)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to parse Dataplane Token Server URL")
 	}
@@ -28,11 +29,7 @@ func NewDataplaneTokenClient(address string, config *kumactl_config.Context_Admi
 		Timeout: timeout,
 	}
 	if baseURL.Scheme == "https" {
-		if !config.HasClientCert() {
-			return nil, errors.New("certificates has to be configured to use https destination")
-		}
-		// Since we're not going to pass any secrets to the server, we can skip validating its identity.
-		if err := util_http.ConfigureTlsWithoutServerVerification(httpClient, config.ClientCert, config.ClientKey); err != nil {
+		if err := util_http.ConfigureMTLS(httpClient, config.CaCertFile, config.ClientCertFile, config.ClientKeyFile); err != nil {
 			return nil, errors.Wrap(err, "could not configure tls for dataplane token client")
 		}
 	}
@@ -43,7 +40,7 @@ func NewDataplaneTokenClient(address string, config *kumactl_config.Context_Admi
 }
 
 type DataplaneTokenClient interface {
-	Generate(name string, mesh string, tags map[string][]string) (string, error)
+	Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error)
 }
 
 type httpDataplaneTokenClient struct {
@@ -52,11 +49,12 @@ type httpDataplaneTokenClient struct {
 
 var _ DataplaneTokenClient = &httpDataplaneTokenClient{}
 
-func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string) (string, error) {
+func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error) {
 	tokenReq := &types.DataplaneTokenRequest{
 		Name: name,
 		Mesh: mesh,
 		Tags: tags,
+		Type: dpType,
 	}
 	reqBytes, err := json.Marshal(tokenReq)
 	if err != nil {
@@ -72,12 +70,18 @@ func (h *httpDataplaneTokenClient) Generate(name string, mesh string, tags map[s
 		return "", errors.Wrap(err, "could not execute the request")
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != 200 {
-		return "", errors.Errorf("unexpected status code %d. Expected 200", resp.StatusCode)
-	}
-	tokenBytes, err := ioutil.ReadAll(resp.Body)
+	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", errors.Wrap(err, "could not read a body of the request")
 	}
-	return string(tokenBytes), nil
+	if resp.StatusCode != 200 {
+		kumaErr := error_types.Error{}
+		if err := json.Unmarshal(body, &kumaErr); err == nil {
+			if kumaErr.Title != "" && kumaErr.Details != "" {
+				return "", &kumaErr
+			}
+		}
+		return "", errors.Errorf("(%d): %s", resp.StatusCode, body)
+	}
+	return string(body), nil
 }

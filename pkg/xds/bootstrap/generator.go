@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"text/template"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/validators"
 
@@ -32,21 +33,29 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	config *bootstrap_config.BootstrapParamsConfig,
-	cacertFile string) BootstrapGenerator {
+	cacertFile string,
+	dpAuthEnabled bool,
+) BootstrapGenerator {
 	return &bootstrapGenerator{
-		resManager:  resManager,
-		config:      config,
-		xdsCertFile: cacertFile,
+		resManager:    resManager,
+		config:        config,
+		xdsCertFile:   cacertFile,
+		dpAuthEnabled: dpAuthEnabled,
 	}
 }
 
 type bootstrapGenerator struct {
-	resManager  core_manager.ResourceManager
-	config      *bootstrap_config.BootstrapParamsConfig
-	xdsCertFile string
+	resManager    core_manager.ResourceManager
+	config        *bootstrap_config.BootstrapParamsConfig
+	dpAuthEnabled bool
+	xdsCertFile   string
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
+	if err := b.validateRequest(request); err != nil {
+		return nil, err
+	}
+
 	proxyId, err := core_xds.BuildProxyId(request.Mesh, request.Name)
 	if err != nil {
 		return nil, err
@@ -62,6 +71,15 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, err
 	}
 	return bootstrapCfg, nil
+}
+
+var DpTokenRequired = errors.New("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
+
+func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
+	if b.dpAuthEnabled && request.DataplaneTokenPath == "" {
+		return DpTokenRequired
+	}
+	return nil
 }
 
 // dataplaneFor returns dataplane for two flows
@@ -80,6 +98,12 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 		if err := dp.Validate(); err != nil {
 			return nil, err
 		}
+		// this part of validation works only for Universal scenarios with TransparentProxying
+		if dp.Spec.Networking.TransparentProxying != nil && len(dp.Spec.Networking.Outbound) != 0 {
+			var err validators.ValidationError
+			err.AddViolation("outbound", "should be empty since dataplane is in Transparent Proxying mode")
+			return nil, err.OrNil()
+		}
 		if err := b.validateMeshExist(ctx, dp.Meta.GetMesh()); err != nil {
 			return nil, err
 		}
@@ -94,7 +118,7 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 }
 
 func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string) error {
-	if err := b.resManager.Get(ctx, &core_mesh.MeshResource{}, core_store.GetByKey(mesh, mesh)); err != nil {
+	if err := b.resManager.Get(ctx, &core_mesh.MeshResource{}, core_store.GetByKey(mesh, model.NoMesh)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			verr := validators.ValidationError{}
 			verr.AddViolation("mesh", fmt.Sprintf("mesh %q does not exist", mesh))
@@ -118,6 +142,13 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		return nil, err
 	}
 
+	xdsHost := ""
+	if b.config.XdsHost != "" {
+		xdsHost = b.config.XdsHost
+	} else {
+		xdsHost = request.Host
+	}
+
 	var certBytes string = ""
 	if b.xdsCertFile != "" {
 		cert, err := ioutil.ReadFile(b.xdsCertFile)
@@ -133,7 +164,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		AdminAddress:       b.config.AdminAddress,
 		AdminPort:          adminPort,
 		AdminAccessLogPath: b.config.AdminAccessLogPath,
-		XdsHost:            b.config.XdsHost,
+		XdsHost:            xdsHost,
 		XdsPort:            b.config.XdsPort,
 		XdsConnectTimeout:  b.config.XdsConnectTimeout,
 		AccessLogPipe:      accessLogPipe,
@@ -146,7 +177,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 }
 
 func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_mesh.DataplaneResource) error {
-	//The admin port in kuma-dp is always bound to 127.0.0.1
+	// The admin port in kuma-dp is always bound to 127.0.0.1
 	if dataplane.UsesInboundInterface(core_mesh.IPv4Loopback, adminPort) {
 		return errors.Errorf("Resource precondition failed: Port %d requested as both admin and inbound port.", adminPort)
 	}

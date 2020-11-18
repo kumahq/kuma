@@ -123,7 +123,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
                 portValue: 15006
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: inbound:passthrough
@@ -140,7 +140,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
                 portValue: 15001
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: outbound:passthrough
@@ -207,7 +207,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
                 portValue: 15006
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: inbound:passthrough
@@ -224,11 +224,11 @@ var _ = Describe("TransparentProxyGenerator", func() {
                 portValue: 15001
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   accessLog:
-                  - name: envoy.file_access_log
+                  - name: envoy.access_loggers.file
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                       format: |+

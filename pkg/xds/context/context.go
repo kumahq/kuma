@@ -1,22 +1,30 @@
 package context
 
 import (
-	"fmt"
 	"io/ioutil"
-	"net/url"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
 type Context struct {
-	ControlPlane *ControlPlaneContext
-	Mesh         MeshContext
+	ControlPlane   *ControlPlaneContext
+	Mesh           MeshContext
+	ConnectionInfo ConnectionInfo
+}
+
+type ConnectionInfo struct {
+	// Authority defines the URL that was used by the data plane to connect to the control plane
+	Authority string
 }
 
 type ControlPlaneContext struct {
-	SdsLocation string
-	SdsTlsCert  []byte
+	SdsTlsCert []byte
+}
+
+func (c Context) SDSLocation() string {
+	// SDS lives on the same server as XDS so we can use the URL that Dataplane used to connect to XDS
+	return c.ConnectionInfo.Authority
 }
 
 type MeshContext struct {
@@ -26,27 +34,15 @@ type MeshContext struct {
 
 func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, error) {
 	var cert []byte
-	if config.SdsServer.TlsCertFile != "" {
-		c, err := ioutil.ReadFile(config.SdsServer.TlsCertFile)
+	if config.DpServer.TlsCertFile != "" {
+		c, err := ioutil.ReadFile(config.DpServer.TlsCertFile)
 		if err != nil {
 			return nil, err
 		}
 		cert = c
 	}
-	var sdsLocation = ""
-	if config.ApiServer.Catalog.Sds.Url != "" {
-		u, err := url.Parse(config.ApiServer.Catalog.Sds.Url)
-		if err != nil {
-			return nil, err
-		}
-		sdsLocation = u.Host
-	}
-	if len(sdsLocation) == 0 {
-		sdsLocation = fmt.Sprintf("%s:%d", config.BootstrapServer.Params.XdsHost, config.SdsServer.GrpcPort)
-	}
 
 	return &ControlPlaneContext{
-		SdsLocation: sdsLocation,
-		SdsTlsCert:  cert,
+		SdsTlsCert: cert,
 	}, nil
 }

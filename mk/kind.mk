@@ -21,8 +21,8 @@ define KIND_EXAMPLE_DATAPLANE_NAME
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
 endef
 
-CI_KIND_VERSION ?= v0.8.1
-CI_KUBERNETES_VERSION ?= v1.18.2@sha256:7b27a6d0f2517ff88ba444025beae41491b016bc6af573ba467b70c5e8e0d85f
+CI_KIND_VERSION ?= v0.9.0
+CI_KUBERNETES_VERSION ?= v1.18.8@sha256:f4bcc97a0ad6e7abaf3f643d890add7efe6ee4ab90baeb374b4f41a4c95567eb
 
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 
@@ -41,6 +41,7 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
 			--kubeconfig $(KIND_KUBECONFIG) \
 			--quiet --wait 120s && \
+		KUBECONFIG=$(KIND_KUBECONFIG) kubectl scale deployment --replicas 1 coredns --namespace kube-system && \
 		until \
 			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
 		do echo "Waiting for the cluster to come up" && sleep 1; done )
@@ -94,6 +95,14 @@ kind/deploy/kuma: build/kumactl kind/load
     	echo "Waiting for the cluster to come up" && sleep 1; \
     done
 
+.PHONY: kind/deploy/helm
+kind/deploy/helm: kind/load
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete namespace $(KUMA_NAMESPACE) | true
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(KUMA_NAMESPACE)
+	KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) --set global.image.registry="$(DOCKER_REGISTRY)",global.image.tag="$(BUILD_INFO_GIT_TAG)",cni.enabled=true kuma ./deployments/charts/kuma
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
+	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
+
 .PHONY: kind/deploy/kuma/global
 kind/deploy/kuma/global: KUMA_MODE=global
 kind/deploy/kuma/global: kind/deploy/kuma
@@ -117,10 +126,8 @@ kind/deploy/example-app:
 
 .PHONY: run/k8s
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode
-	@KUBECONFIG=$(KIND_KUBECONFIG) make crd/upgrade -C pkg/plugins/resources/k8s/native
+	@KUBECONFIG=$(KIND_KUBECONFIG) $(MAKE) crd/upgrade -C pkg/plugins/resources/k8s/native
 	KUBECONFIG=$(KIND_KUBECONFIG) \
-	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
-	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
 	KUMA_ENVIRONMENT=kubernetes \
 	KUMA_STORE_TYPE=kubernetes \
 	KUMA_SDS_SERVER_TLS_CERT_FILE=app/kuma-cp/cmd/testdata/tls.crt \

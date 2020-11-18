@@ -175,11 +175,7 @@ Resources:
           PortMappings:
             - ContainerPort: 5676
               Protocol: tcp
-            - ContainerPort: 5677
-              Protocol: tcp
             - ContainerPort: 5678
-              Protocol: tcp
-            - ContainerPort: 5679
               Protocol: tcp
             - ContainerPort: 5680
               Protocol: tcp
@@ -193,8 +189,6 @@ Resources:
           Environment:
             - Name: KUMA_MODE
               Value: standalone
-            - Name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              Value: controlplane.kuma.io
             - Name: KUMA_DNS_SERVER_PORT
               Value: 53
           Command:

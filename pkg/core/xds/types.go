@@ -1,8 +1,11 @@
 package xds
 
 import (
+	"context"
 	"fmt"
 	"strings"
+
+	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
 	"github.com/pkg/errors"
 
@@ -39,12 +42,28 @@ type TagSelectorSet []mesh_proto.TagSelector
 // Policies that match on outbound connections also match by service destination name and not outbound interface for the same reason.
 type DestinationMap map[ServiceName]TagSelectorSet
 
+type ExternalService struct {
+	TLSEnabled bool
+	CaCert     *envoy_core.DataSource
+	ClientCert *envoy_core.DataSource
+	ClientKey  *envoy_core.DataSource
+}
+
+type Locality struct {
+	Region   string
+	Zone     string
+	SubZone  string
+	Priority uint32
+}
+
 // Endpoint holds routing-related information about a single endpoint.
 type Endpoint struct {
-	Target string
-	Port   uint32
-	Tags   map[string]string
-	Weight uint32
+	Target          string
+	Port            uint32
+	Tags            map[string]string
+	Weight          uint32
+	Locality        *Locality
+	ExternalService *ExternalService
 }
 
 // EndpointList is a list of Endpoints with convenience methods.
@@ -68,6 +87,9 @@ type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjectio
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResource
 
+type CLACache interface {
+	GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error)
+}
 type Proxy struct {
 	Id                 ProxyId
 	Dataplane          *mesh_core.DataplaneResource
@@ -82,6 +104,7 @@ type Proxy struct {
 	TracingBackend     *mesh_proto.TracingBackend
 	Metadata           *DataplaneMetadata
 	FaultInjections    FaultInjectionMap
+	CLACache           CLACache
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
@@ -100,6 +123,21 @@ func (s TagSelectorSet) Matches(tags map[string]string) bool {
 		}
 	}
 	return false
+}
+
+func (e Endpoint) IsExternalService() bool {
+	return e.ExternalService != nil
+}
+
+func (e Endpoint) LocalityString() string {
+	if e.Locality == nil {
+		return ""
+	}
+	return e.Locality.Region + "/" + e.Locality.Zone + "/" + e.Locality.SubZone
+}
+
+func (e Endpoint) HasLocality() bool {
+	return e.Locality != nil
 }
 
 func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {

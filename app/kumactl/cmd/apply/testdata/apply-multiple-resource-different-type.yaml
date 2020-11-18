@@ -1,0 +1,22 @@
+---
+name: sample1
+mesh: default
+type: Dataplane
+networking:
+  address: 2.2.2.2
+  inbound:
+  - address: 1.1.1.1
+    port: 80
+    servicePort: 8080
+    tags:
+      service: web
+      version: "1.0"
+      env: production
+  outbound:
+  - port: 3000
+    service: postgres
+---
+type: Secret
+name: sample
+mesh: default
+data: dGVzdAo=

@@ -13,13 +13,20 @@ const (
 	// Mandatory tag that has a reserved meaning in Kuma.
 	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"
-	// Mandatory tag that has a reserved meaning in Kuma.
-	ZoneTag = "kuma.io/zone"
+
+	// Locality related tags
+	RegionTag  = "kuma.io/region"
+	ZoneTag    = "kuma.io/zone"
+	SubZoneTag = "kuma.io/sub-zone"
+
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "kuma.io/protocol"
 	// InstanceTag is set only for Dataplanes that implements headless services
 	InstanceTag = "kuma.io/instance"
+
+	// External service tag
+	ExternalServiceTag = "kuma.io/external-service-name"
 )
 
 type InboundInterface struct {
@@ -250,6 +257,15 @@ func (t SingleValueTagSet) Exclude(key string) SingleValueTagSet {
 	return rv
 }
 
+func (t SingleValueTagSet) String() string {
+	var tags []string
+	for tag, value := range t {
+		tags = append(tags, fmt.Sprintf("%s=%s", tag, value))
+	}
+	sort.Strings(tags)
+	return strings.Join(tags, " ")
+}
+
 // Set of tags that allows multiple values per key.
 type MultiValueTagSet map[string]map[string]bool
 
@@ -289,7 +305,7 @@ func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 	return set
 }
 
-func (d *Dataplane) Tags() MultiValueTagSet {
+func (d *Dataplane) TagSet() MultiValueTagSet {
 	tags := MultiValueTagSet{}
 	for _, inbound := range d.GetNetworking().GetInbound() {
 		for tag, value := range inbound.Tags {
@@ -311,7 +327,7 @@ func (d *Dataplane) Tags() MultiValueTagSet {
 }
 
 func (d *Dataplane) GetIdentifyingService() string {
-	services := d.Tags().Values(ServiceTag)
+	services := d.TagSet().Values(ServiceTag)
 	if len(services) > 0 {
 		return services[0]
 	}
@@ -320,6 +336,13 @@ func (d *Dataplane) GetIdentifyingService() string {
 
 func (d *Dataplane) IsIngress() bool {
 	return d.Networking.Ingress != nil
+}
+
+func (d *Dataplane) HasPublicAddress() bool {
+	if d.Networking.Ingress == nil {
+		return false
+	}
+	return d.Networking.Ingress.PublicAddress != "" && d.Networking.Ingress.PublicPort != 0
 }
 
 func (d *Dataplane) HasAvailableServices() bool {

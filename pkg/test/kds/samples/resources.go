@@ -96,6 +96,15 @@ var (
 			Address: "192.168.0.1",
 		},
 	}
+	ExternalService = mesh_proto.ExternalService{
+		Networking: &mesh_proto.ExternalService_Networking{
+			Address: "192.168.0.1",
+		},
+		Tags: map[string]string{
+			mesh_proto.ZoneTag:    "kuma-1",
+			mesh_proto.ServiceTag: "backend",
+		},
+	}
 	CircuitBreaker = mesh_proto.CircuitBreaker{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
@@ -145,12 +154,12 @@ var (
 	TrafficPermission = mesh_proto.TrafficPermission{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				"kuma.io/service": "*",
 			},
 		}},
 		Destinations: []*mesh_proto.Selector{{
 			Match: map[string]string{
-				"service": "*",
+				"kuma.io/service": "*",
 			},
 		}},
 	}
@@ -165,12 +174,14 @@ var (
 				"service": "*",
 			},
 		}},
-		Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-			Weight: 10,
-			Destination: map[string]string{
-				"version": "v2",
-			},
-		}},
+		Conf: &mesh_proto.TrafficRoute_Conf{
+			Split: []*mesh_proto.TrafficRoute_Split{{
+				Weight: 10,
+				Destination: map[string]string{
+					"version": "v2",
+				},
+			}},
+		},
 	}
 	TrafficTrace = mesh_proto.TrafficTrace{
 		Selectors: []*mesh_proto.Selector{{

@@ -6,6 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+
+	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+
+	"github.com/kumahq/kuma/pkg/events"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -29,9 +35,7 @@ import (
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/metrics"
-	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 )
 
 func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
@@ -70,7 +74,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
+	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ReadOnlyResourceManager()))
 
 	if err := initializeCaManagers(builder); err != nil {
 		return nil, err
@@ -103,7 +107,7 @@ func initializeMetrics(builder *core_runtime.Builder) error {
 	zone := ""
 	switch builder.Config().Mode {
 	case config_core.Remote:
-		zone = builder.Config().Multicluster.Remote.Zone
+		zone = builder.Config().Multizone.Remote.Zone
 	case config_core.Global:
 		zone = "Global"
 	case config_core.Standalone:
@@ -123,18 +127,11 @@ func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	if err = onStartup(runtime); err != nil {
+	if err = startReporter(runtime); err != nil {
 		return nil, err
 	}
 
 	return runtime, nil
-}
-
-func onStartup(runtime core_runtime.Runtime) error {
-	if err := createClusterID(runtime); err != nil {
-		return err
-	}
-	return startReporter(runtime)
 }
 
 func startReporter(runtime core_runtime.Runtime) error {
@@ -178,16 +175,26 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if err != nil {
 		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
 	}
-	if rs, err := plugin.NewResourceStore(builder, pluginConfig); err != nil {
+
+	rs, err := plugin.NewResourceStore(builder, pluginConfig)
+	if err != nil {
 		return err
-	} else {
-		meteredStore, err := metrics_store.NewMeteredStore(rs, builder.Metrics())
-		if err != nil {
-			return err
-		}
-		builder.WithResourceStore(meteredStore)
-		return nil
 	}
+	builder.WithResourceStore(rs)
+	eventBus := events.NewEventBus()
+	if err := plugin.EventListener(builder, eventBus); err != nil {
+		return err
+	}
+	builder.WithEventReaderFactory(eventBus)
+
+	paginationStore := core_store.NewPaginationStore(rs)
+	meteredStore, err := metrics_store.NewMeteredStore(paginationStore, builder.Metrics())
+	if err != nil {
+		return err
+	}
+
+	builder.WithResourceStore(meteredStore)
+	return nil
 }
 
 func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
@@ -262,7 +269,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator)
 	customManagers[mesh.MeshType] = meshManager
 
-	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multicluster.Remote.Zone)
+	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Remote.Zone)
 	customManagers[mesh.DataplaneType] = dpManager
 
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
@@ -305,7 +312,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 }
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	builder.WithDNSResolver(dns.NewDNSResolver(cfg.DNSServer.Domain))
+	builder.WithDNSResolver(resolver.NewDNSResolver(cfg.DNSServer.Domain))
 	return nil
 }
 

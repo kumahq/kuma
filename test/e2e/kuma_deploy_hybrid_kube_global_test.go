@@ -1,10 +1,8 @@
 package e2e
 
 import (
-	"fmt"
 	"strings"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,22 +15,25 @@ import (
 var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", func() {
 
 	var globalCluster, remoteCluster Cluster
+	var optsGlobal, optsRemote []DeployOptionsFunc
 
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters(
 			[]string{Kuma1},
-			Verbose)
+			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		universalClusters, err := NewUniversalClusters(
 			[]string{Kuma3},
-			Verbose)
+			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Global
 		globalCluster = k8sClusters.GetCluster(Kuma1)
+		optsGlobal = []DeployOptionsFunc{}
+
 		err = NewClusterSetup().
-			Install(Kuma(core.Global)).
+			Install(Kuma(core.Global, optsGlobal...)).
 			Setup(globalCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = globalCluster.VerifyKuma()
@@ -48,31 +49,28 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 
 		// Remote
 		remoteCluster = universalClusters.GetCluster(Kuma3)
+		optsRemote = []DeployOptionsFunc{
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+		}
+
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, WithGlobalAddress(globalCP.GetKDSServerAddress()))).
-			Install(EchoServerUniversal(echoServerToken)).
+			Install(Kuma(core.Remote, optsRemote...)).
+			Install(EchoServerUniversal("universal", echoServerToken)).
 			Install(DemoClientUniversal(demoClientToken)).
 			Install(IngressUniversal(ingressToken)).
 			Setup(remoteCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = remoteCluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
-
-		// connect Remote with Global
-		err = k8s.KubectlApplyFromStringE(globalCluster.GetTesting(), globalCluster.GetKubectlOptions(),
-			fmt.Sprintf(ZoneTemplateK8s,
-				Kuma3,
-				remoteCluster.GetKuma().GetIngressAddress()))
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
-		err := globalCluster.DeleteKuma()
+		err := globalCluster.DeleteKuma(optsGlobal...)
 		Expect(err).ToNot(HaveOccurred())
 		err = globalCluster.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remoteCluster.DeleteKuma()
+		err = remoteCluster.DeleteKuma(optsRemote...)
 		Expect(err).ToNot(HaveOccurred())
 		err = remoteCluster.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())

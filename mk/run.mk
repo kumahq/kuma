@@ -1,10 +1,5 @@
 GO_RUN := CGO_ENABLED=0 go run $(GOFLAGS) $(LD_FLAGS)
 
-CP_BIND_HOST ?= localhost
-CP_GRPC_PORT ?= 5678
-SDS_GRPC_PORT ?= 5677
-CP_K8S_ADMISSION_PORT ?= 5443
-
 EXAMPLE_DATAPLANE_MESH ?= default
 EXAMPLE_DATAPLANE_NAME ?= example
 ENVOY_ADMIN_PORT ?= 9901
@@ -32,8 +27,6 @@ run/universal/postgres: fmt vet ## Dev: Run Control Plane locally in universal m
 	KUMA_STORE_POSTGRES_TLS_CA_PATH=$(POSTGRES_SSL_ROOT_CERT_PATH) \
 	$(GO_RUN) ./app/kuma-cp/main.go migrate up --log-level=debug
 
-	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
-	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=postgres \
 	KUMA_STORE_POSTGRES_HOST=localhost \
@@ -65,8 +58,6 @@ config_dump/example/envoy: ## Dev: Dump effective configuration of example Envoy
 
 .PHONY: run/universal/memory
 run/universal/memory: ## Dev: Run Control Plane locally in universal mode with in-memory store
-	KUMA_SDS_SERVER_GRPC_PORT=$(SDS_GRPC_PORT) \
-	KUMA_GRPC_PORT=$(CP_GRPC_PORT) \
 	KUMA_ENVIRONMENT=universal \
 	KUMA_STORE_TYPE=memory \
 	$(GO_RUN) ./app/kuma-cp/main.go run --log-level=debug
@@ -76,10 +67,18 @@ start/postgres: ## Boostrap: start Postgres for Control Plane with initial schem
 	docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml up -d
 	$(TOOLS_DIR)/postgres/wait-for-postgres.sh 15432
 
+.PHONY: stop/postgres
+stop/postgres: ## Boostrap: stop Postgres
+	docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml down
+
 .PHONY: start/postgres/ssl
 start/postgres/ssl: ## Boostrap: start Postgres for Control Plane with initial schema and SSL enabled
 	docker-compose -f $(TOOLS_DIR)/postgres/ssl/docker-compose.yaml up -d
 	$(TOOLS_DIR)/postgres/wait-for-postgres.sh 15432
+
+.PHONY: stop/postgres/ssl
+stop/postgres/ssl: ## Boostrap: stop Postgres with SSL enabled
+	docker-compose -f $(TOOLS_DIR)/postgres/ssl/docker-compose.yaml stop
 
 .PHONY: run/kuma-dp
 run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally

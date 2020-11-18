@@ -25,13 +25,11 @@ var _ = Describe("kumactl delete mesh", func() {
 	sampleMeshes := []*mesh.MeshResource{
 		{
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh1",
 				Name: "mesh1",
 			},
 		},
 		{
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh2",
 				Name: "mesh2",
 			},
 		},
@@ -55,7 +53,7 @@ var _ = Describe("kumactl delete mesh", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, ds := range sampleMeshes {
 				key := core_model.MetaToResourceKey(ds.Meta)
@@ -127,13 +125,13 @@ var _ = Describe("kumactl delete mesh", func() {
 
 			By("verifying that resource under test was actually deleted")
 			// when
-			err = store.Get(context.Background(), &mesh.MeshResource{}, core_store.GetBy(core_model.ResourceKey{Mesh: "mesh2", Name: "mesh2"}))
+			err = store.Get(context.Background(), &mesh.MeshResource{}, core_store.GetBy(core_model.ResourceKey{Name: "mesh2"}))
 			// then
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 
 			By("verifying that another mesh wasn't affected")
 			// when
-			err = store.Get(context.Background(), &mesh.MeshResource{}, core_store.GetBy(core_model.ResourceKey{Mesh: "mesh1", Name: "mesh1"}))
+			err = store.Get(context.Background(), &mesh.MeshResource{}, core_store.GetBy(core_model.ResourceKey{Name: "mesh1"}))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		})

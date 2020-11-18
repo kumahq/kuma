@@ -5,7 +5,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -32,7 +32,7 @@ func (c *PrometheusEndpointConfigurer) Configure(filterChain *envoy_listener.Fil
 		StatPrefix: util_xds.SanitizeMetric(c.statsName),
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
 		HttpFilters: []*envoy_hcm.HttpFilter{{
-			Name: envoy_wellknown.Router,
+			Name: "envoy.filters.http.router",
 		}},
 		RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: &v2.RouteConfiguration{
@@ -55,6 +55,9 @@ func (c *PrometheusEndpointConfigurer) Configure(filterChain *envoy_listener.Fil
 						},
 					}},
 				}},
+				ValidateClusters: &wrappers.BoolValue{
+					Value: false,
+				},
 			},
 		},
 	}
@@ -64,7 +67,7 @@ func (c *PrometheusEndpointConfigurer) Configure(filterChain *envoy_listener.Fil
 	}
 
 	filterChain.Filters = append(filterChain.Filters, &envoy_listener.Filter{
-		Name: envoy_wellknown.HTTPConnectionManager,
+		Name: "envoy.filters.network.http_connection_manager",
 		ConfigType: &envoy_listener.Filter_TypedConfig{
 			TypedConfig: pbst,
 		},

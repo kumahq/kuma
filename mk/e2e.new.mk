@@ -10,19 +10,20 @@ define gen-k8sclusters
 test/e2e/kind/start/cluster/$1:
 	KIND_CLUSTER_NAME=$1 \
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
-		make kind/start
+		$(MAKE) kind/start
 	KIND_CLUSTER_NAME=$1 \
-		make kind/load/images
+		$(MAKE) kind/load/images
+	@kind load docker-image $(KUMA_UNIVERSAL_DOCKER_IMAGE) --name=$1
 
 .PHONY: test/e2e/kind/stop/cluster/$1
 test/e2e/kind/stop/cluster/$1:
 	KIND_CLUSTER_NAME=$1 \
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
-		make kind/stop
+		$(MAKE) kind/stop
 
 .PHONE: kind/load/images/$1
 kind/load/images/$1:
-	KIND_CLUSTER_NAME=$1 make kind/load/images
+	KIND_CLUSTER_NAME=$1 $(MAKE) kind/load/images
 endef
 
 $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
@@ -46,8 +47,8 @@ test/e2e/test:
 
 .PHONY: test/e2e
 test/e2e: build/kumactl images docker/build/universal test/e2e/kind/start
-	make test/e2e/test || \
+	$(MAKE) test/e2e/test || \
 	(ret=$$?; \
-	make test/e2e/kind/stop && \
+	$(MAKE) test/e2e/kind/stop && \
 	exit $$ret)
-	make test/e2e/kind/stop
+	$(MAKE) test/e2e/kind/stop

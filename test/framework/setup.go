@@ -5,6 +5,10 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/tls"
+
+	"github.com/go-errors/errors"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -52,7 +56,7 @@ func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
 
 func KumaDNS() InstallFunc {
 	return func(cluster Cluster) error {
-		err := cluster.InjectDNS()
+		err := cluster.InjectDNS(KumaNamespace)
 		return err
 	}
 }
@@ -91,6 +95,36 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 	}
 }
 
+func WaitPodsNotAvailable(namespace, app string) InstallFunc {
+	return func(c Cluster) error {
+		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
+			kube_meta.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
+		if err != nil {
+			return err
+		}
+
+		for _, p := range pods {
+			_, _ = retry.DoWithRetryE(
+				c.GetTesting(),
+				"Wait pod deletion",
+				DefaultRetries,
+				DefaultTimeout,
+				func() (string, error) {
+					pod, err := k8s.GetPodE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName())
+					if err == nil {
+						return "", err
+					}
+					if !k8s.IsPodAvailable(pod) {
+						return "Pod is not available", nil
+					}
+					return "", errors.Errorf("Pod is still available")
+				},
+			)
+		}
+		return nil
+	}
+}
+
 func EchoServerK8s() InstallFunc {
 	const name = "echo-server"
 	return Combine(
@@ -101,15 +135,11 @@ func EchoServerK8s() InstallFunc {
 	)
 }
 
-func EchoServerUniversal(token string) InstallFunc {
+func EchoServerUniversal(id, token string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp("", AppModeEchoServer, token)
+		fs = append(fs, WithAppname(AppModeEchoServer), WithId(id), WithToken(token))
+		return cluster.DeployApp(fs...)
 	}
-}
-
-type IngressDesc struct {
-	Port int32
-	IP   string
 }
 
 func IngressUniversal(token string) InstallFunc {
@@ -125,7 +155,8 @@ func IngressUniversal(token string) InstallFunc {
 		}
 		uniCluster.apps[AppIngress] = app
 
-		dpyaml := fmt.Sprintf(IngressDataplane, kdsPort)
+		publicAddress := uniCluster.apps[AppIngress].ip
+		dpyaml := fmt.Sprintf(IngressDataplane, publicAddress, kdsPort, kdsPort)
 		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token)
 	}
 }
@@ -142,7 +173,7 @@ func DemoClientK8s() InstallFunc {
 
 func DemoClientUniversal(token string) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp("", AppModeDemoClient, token)
+		return cluster.DeployApp(WithAppname(AppModeDemoClient), WithToken(token))
 	}
 }
 
@@ -178,4 +209,13 @@ func (cs *ClusterSetup) Install(fn InstallFunc) *ClusterSetup {
 
 func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
+}
+
+func CreateCertsForIP(ip string) (cert, key string, err error) {
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, "localhost", ip)
+	if err != nil {
+		return "", "", err
+	}
+
+	return string(keyPair.CertPEM), string(keyPair.KeyPEM), nil
 }

@@ -35,7 +35,7 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: alpine
+          image: kuma-universal
           imagePullPolicy: IfNotPresent
           readinessProbe:
             httpGet:
@@ -45,16 +45,14 @@ spec:
             periodSeconds: 3
           ports:
             - containerPort: 80
-          command:
-            - nc
+          command: [ "ncat" ]
+          args:
             - -lk
             - -p
             - "80"
-            - -e
-            - echo
-            - -e
-            - "HTTP/1.1 200 OK\n\n"
+            - --sh-exec
+            - '/usr/bin/printf "HTTP/1.1 200 OK\n\n Echo\n"'
           resources:
-            requests:
-              cpu: 100m
-              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 128Mi

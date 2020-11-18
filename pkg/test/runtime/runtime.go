@@ -18,7 +18,8 @@ import (
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/ca/builtin"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
@@ -55,7 +56,6 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 
 	builder.WithSecretStore(secret_store.NewSecretStore(builder.ResourceStore()))
 	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
-	//builder.WithSecretManager(newSecretManager(builder))
 
 	rm := newResourceManager(builder)
 	builder.WithResourceManager(rm).
@@ -64,6 +64,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 	builder.WithLookupIP(net.LookupIP)
+	builder.WithEventReaderFactory(events.NewEventBus())
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)
@@ -78,7 +79,7 @@ func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 }
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	builder.WithDNSResolver(dns.NewDNSResolver("mesh"))
+	builder.WithDNSResolver(resolver.NewDNSResolver("mesh"))
 	return nil
 }
 

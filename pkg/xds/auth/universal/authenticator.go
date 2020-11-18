@@ -31,7 +31,7 @@ type universalAuthenticator struct {
 }
 
 func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
-	dpIdentity, err := u.issuer.Validate(credential)
+	dpIdentity, err := u.issuer.Validate(credential, dataplane.Meta.GetMesh())
 	if err != nil {
 		return err
 	}
@@ -42,8 +42,24 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *co
 	if dpIdentity.Mesh != "" && dataplane.Meta.GetMesh() != dpIdentity.Mesh {
 		return errors.Errorf("proxy mesh from requestor: %s is different than in token: %s", dataplane.Meta.GetMesh(), dpIdentity.Mesh)
 	}
-	if err := validateTags(dpIdentity.Tags, dataplane.Spec.Tags()); err != nil {
+	if err := validateType(dataplane, dpIdentity.Type); err != nil {
 		return err
+	}
+	if err := validateTags(dpIdentity.Tags, dataplane.Spec.TagSet()); err != nil {
+		return err
+	}
+	return nil
+}
+
+func validateType(dataplane *core_mesh.DataplaneResource, dpType builtin_issuer.DpType) error {
+	if dpType == "" { // if dp type is not explicitly specified  we assume it's dataplane so we force Ingress token
+		dpType = builtin_issuer.DpTypeDataplane
+	}
+	if dataplane.Spec.IsIngress() && dpType != builtin_issuer.DpTypeIngress {
+		return errors.Errorf("dataplane is of type Ingress but token allows only for the %q type", dpType)
+	}
+	if !dataplane.Spec.IsIngress() && dpType == builtin_issuer.DpTypeIngress {
+		return errors.Errorf("dataplane is of type Dataplane but token allows only for the %q type", dpType)
 	}
 	return nil
 }

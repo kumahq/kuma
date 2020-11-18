@@ -59,7 +59,15 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				ExcludeInboundPorts:  []uint32{},
 				ExcludeOutboundPorts: []uint32{},
 			},
+			Exceptions: Exceptions{
+				Labels: map[string]string{
+					// when using DeploymentConfig instead of Deployment, OpenShift will create an extra deployer Pod for which we don't want to inject Kuma
+					"openshift.io/build.name":            "*",
+					"openshift.io/deployer-pod-for.name": "*",
+				},
+			},
 		},
+		MarshalingCacheExpirationTime: 5 * time.Minute,
 	}
 }
 
@@ -69,6 +77,10 @@ type KubernetesRuntimeConfig struct {
 	AdmissionServer AdmissionServerConfig `yaml:"admissionServer"`
 	// Injector-specific configuration
 	Injector Injector `yaml:"injector,omitempty"`
+	// MarshalingCacheExpirationTime defines a duration for how long
+	// marshaled objects will be stored in the cache. If equal to 0s then
+	// cache is turned off
+	MarshalingCacheExpirationTime time.Duration `yaml:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
 }
 
 // Configuration of the Admission WebHook Server implemented by the Control Plane.
@@ -97,8 +109,18 @@ type Injector struct {
 	VirtualProbesEnabled bool `yaml:"virtualProbesEnabled" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
 	// VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
 	VirtualProbesPort uint32 `yaml:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
-	// Cnfiguration for a traffic that is intercepted by sidecar
+	// SidecarTraffic is a configuration for a traffic that is intercepted by sidecar
 	SidecarTraffic SidecarTraffic `yaml:"sidecarTraffic"`
+	// Exceptions defines list of exceptions for Kuma injection
+	Exceptions Exceptions `yaml:"exceptions"`
+	// CaCertFile is CA certificate which will be used to verify a connection to the control plane
+	CaCertFile string `yaml:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
+}
+
+// Exceptions defines list of exceptions for Kuma injection
+type Exceptions struct {
+	// Labels is a map of labels for exception. If pod matches label with given value Kuma won't be injected. Specify '*' to match any value.
+	Labels map[string]string `yaml:"labels" envconfig:"kuma_runtime_kubernetes_exceptions_labels"`
 }
 
 type SidecarTraffic struct {
@@ -201,6 +223,9 @@ func (c *KubernetesRuntimeConfig) Validate() (errs error) {
 	}
 	if err := c.Injector.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Injector is not valid"))
+	}
+	if c.MarshalingCacheExpirationTime < 0 {
+		errs = multierr.Append(errs, errors.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
 	}
 	return
 }

@@ -90,7 +90,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                 portValue: 5432
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: db
@@ -119,11 +119,11 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                 portValue: 5432
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   accessLog:
-                  - name: envoy.file_access_log
+                  - name: envoy.access_loggers.file
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                       format: |+
@@ -160,11 +160,11 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                 portValue: 5432
             filterChains:
             - filters:
-              - name: envoy.tcp_proxy
+              - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   accessLog:
-                  - name: envoy.http_grpc_access_log
+                  - name: envoy.access_loggers.http_grpc
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
                       additionalRequestHeadersToLog:

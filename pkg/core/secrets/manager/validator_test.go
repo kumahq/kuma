@@ -12,6 +12,7 @@ import (
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secrets_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
@@ -72,9 +73,9 @@ var _ = Describe("Secret Validator", func() {
 				},
 			},
 		}
-		err := resManager.Create(context.Background(), mesh, core_store.CreateByKey("default", "default"))
+		err := resManager.Create(context.Background(), mesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
-		err = core_managers.EnsureEnabledCA(context.Background(), caManagers, mesh, "default")
+		err = core_managers.EnsureEnabledCA(context.Background(), caManagers, mesh, model.DefaultMesh)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

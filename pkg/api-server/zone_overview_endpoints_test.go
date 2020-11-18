@@ -50,7 +50,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(core_model.DefaultMesh, core_model.DefaultMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -58,7 +58,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 		zoneResource := system.ZoneResource{
 			Spec: zone,
 		}
-		err := resourceStore.Create(context.Background(), &zoneResource, store.CreateByKey(name, core_model.DefaultMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), &zoneResource, store.CreateByKey(name, core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
@@ -74,22 +74,16 @@ var _ = Describe("Zone Overview Endpoints", func() {
 				},
 			},
 		}
-		err = resourceStore.Create(context.Background(), &insightResource, store.CreateByKey(name, core_model.DefaultMesh))
+		err = resourceStore.Create(context.Background(), &insightResource, store.CreateByKey(name, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	}
 
 	BeforeEach(func() {
-		createZoneWithInsights("zone-1", system_proto.Zone{
-			Ingress: &system_proto.Zone_Ingress{Address: "10.20.1.1:10001"},
-		})
+		createZoneWithInsights("zone-1", system_proto.Zone{})
 
-		createZoneWithInsights("zone-2", system_proto.Zone{
-			Ingress: &system_proto.Zone_Ingress{Address: "10.20.1.2:10002"},
-		})
+		createZoneWithInsights("zone-2", system_proto.Zone{})
 
-		createZoneWithInsights("zone-3", system_proto.Zone{
-			Ingress: &system_proto.Zone_Ingress{Address: "10.20.1.3:10003"},
-		})
+		createZoneWithInsights("zone-3", system_proto.Zone{})
 	})
 
 	zone1Json := `
@@ -99,9 +93,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",
  "zone": {
-  "ingress": {
-   "address": "10.20.1.1:10001"
-  }
  },
  "zoneInsight": {
   "subscriptions": [
@@ -124,9 +115,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",
  "zone": {
-  "ingress": {
-   "address": "10.20.1.2:10002"
-  }
  },
  "zoneInsight": {
   "subscriptions": [
@@ -149,9 +137,6 @@ var _ = Describe("Zone Overview Endpoints", func() {
  "creationTime": "2018-07-17T16:05:36.995Z",
  "modificationTime": "2018-07-17T16:05:36.995Z",
  "zone": {
-  "ingress": {
-   "address": "10.20.1.3:10003"
-  }
  },
  "zoneInsight": {
   "subscriptions": [

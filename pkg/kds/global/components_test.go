@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"sync"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 
 	"github.com/kumahq/kuma/pkg/kds"
@@ -53,14 +51,7 @@ var _ = Describe("Global Sync", func() {
 		for _, ss := range serverStreams {
 			clientStreams = append(clientStreams, ss.ClientStream(stopCh))
 		}
-		zone := &system.ZoneResource{
-			Spec: system_proto.Zone{
-				Ingress: &system_proto.Zone_Ingress{
-					Address: "192.168.0.2:10001",
-				},
-			},
-		}
-		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, zone))
+		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, nil))
 
 		closeFunc = func() {
 			close(stopCh)

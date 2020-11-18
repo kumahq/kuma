@@ -1,6 +1,7 @@
 package generator
 
 import (
+	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/pkg/errors"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -12,7 +13,11 @@ import (
 )
 
 // OriginTransparent is a marker to indicate by which ProxyGenerator resources were generated.
-const OriginTransparent = "transparent"
+const (
+	OriginTransparent = "transparent"
+	outboundName      = "outbound:passthrough"
+	inboundName       = "inbound:passthrough"
+)
 
 type TransparentProxyGenerator struct {
 }
@@ -25,8 +30,21 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	}
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
-	const outboundName = "outbound:passthrough"
-	listener, err := envoy_listeners.NewListenerBuilder().
+
+	var outboundPassThroughCluster *envoy_api_v2.Cluster = nil
+	var outboundListener *envoy_api_v2.Listener = nil
+	var err error
+
+	if ctx.Mesh.Resource.Spec.IsPassthrough() {
+		outboundPassThroughCluster, err = envoy_clusters.NewClusterBuilder().
+			Configure(envoy_clusters.PassThroughCluster(outboundName)).
+			Build()
+		if err != nil {
+			return nil, errors.Wrapf(err, "could not generate outbound cluster: %s", outboundName)
+		}
+	}
+
+	outboundListener, err = envoy_listeners.NewListenerBuilder().
 		Configure(envoy_listeners.OutboundListener(outboundName, "0.0.0.0", redirectPortOutbound)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
 			Configure(envoy_listeners.TcpProxy(outboundName, envoy_common.ClusterSubset{ClusterName: outboundName})).
@@ -36,15 +54,9 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener: %s", outboundName)
 	}
-	cluster, err := envoy_clusters.NewClusterBuilder().
-		Configure(envoy_clusters.PassThroughCluster(outboundName)).
-		Build()
-	if err != nil {
-		return nil, errors.Wrapf(err, "could not generate cluster: %s", outboundName)
-	}
 
 	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
-	const inboundName = "inbound:passthrough"
+
 	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder().
 		Configure(envoy_clusters.PassThroughCluster(inboundName)).
 		Configure(envoy_clusters.UpstreamBindConfig("127.0.0.6", 0)).
@@ -64,15 +76,18 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	}
 
 	resources.Add(&model.Resource{
-		Name:     listener.Name,
+		Name:     outboundListener.Name,
 		Origin:   OriginTransparent,
-		Resource: listener,
+		Resource: outboundListener,
 	})
-	resources.Add(&model.Resource{
-		Name:     cluster.Name,
-		Origin:   OriginTransparent,
-		Resource: cluster,
-	})
+
+	if ctx.Mesh.Resource.Spec.IsPassthrough() {
+		resources.Add(&model.Resource{
+			Name:     outboundPassThroughCluster.Name,
+			Origin:   OriginTransparent,
+			Resource: outboundPassThroughCluster,
+		})
+	}
 	resources.Add(&model.Resource{
 		Name:     inboundListener.Name,
 		Origin:   OriginTransparent,

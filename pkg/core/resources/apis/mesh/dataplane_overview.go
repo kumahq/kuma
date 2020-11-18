@@ -114,35 +114,3 @@ func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneI
 		Items:      items,
 	}
 }
-
-func (d *DataplaneOverviewResourceList) RetainMatchingTags(tags map[string]string) {
-	result := []*DataplaneOverviewResource{}
-	for _, overview := range d.Items {
-		if overview.Spec.GetDataplane().MatchTags(tags) {
-			result = append(result, overview)
-		}
-	}
-	d.Items = result
-}
-
-// RetainGatewayDataplanes to get only gateway Dataplanes
-func (l *DataplaneOverviewResourceList) RetainGatewayDataplanes() {
-	result := []*DataplaneOverviewResource{}
-	for _, overview := range l.Items {
-		if overview.Spec.GetDataplane().GetNetworking().GetGateway() != nil {
-			result = append(result, overview)
-		}
-	}
-	l.Items = result
-}
-
-// RetainIngressDataplanes to get only ingress Dataplanes
-func (l *DataplaneOverviewResourceList) RetainIngressDataplanes() {
-	result := []*DataplaneOverviewResource{}
-	for _, overview := range l.Items {
-		if overview.Spec.GetDataplane().GetNetworking().GetIngress() != nil {
-			result = append(result, overview)
-		}
-	}
-	l.Items = result
-}

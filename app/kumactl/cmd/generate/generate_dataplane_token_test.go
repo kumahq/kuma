@@ -6,16 +6,15 @@ import (
 	"fmt"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	"github.com/kumahq/kuma/pkg/catalog"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
-	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 )
 
 type staticDataplaneTokenGenerator struct {
@@ -24,11 +23,11 @@ type staticDataplaneTokenGenerator struct {
 
 var _ tokens.DataplaneTokenClient = &staticDataplaneTokenGenerator{}
 
-func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags map[string][]string) (string, error) {
+func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags map[string][]string, dpType string) (string, error) {
 	if s.err != nil {
 		return "", s.err
 	}
-	return fmt.Sprintf("token-for-%s-%s", name, mesh), nil
+	return fmt.Sprintf("token-for-%s-%s-%s-%s", name, mesh, mesh_proto.MultiValueTagSetFrom(tags).String(), dpType), nil
 }
 
 var _ = Describe("kumactl generate dataplane-token", func() {
@@ -42,19 +41,8 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		generator = &staticDataplaneTokenGenerator{}
 		ctx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewDataplaneTokenClient: func(string, *config_kumactl.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error) {
+				NewDataplaneTokenClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error) {
 					return generator, nil
-				},
-				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
-					return &test_catalog.StaticCatalogClient{
-						Resp: catalog.Catalog{
-							Apis: catalog.Apis{
-								DataplaneToken: catalog.DataplaneTokenApi{
-									LocalUrl: "http://localhost:1234",
-								},
-							},
-						},
-					}, nil
 				},
 			},
 		}
@@ -64,29 +52,31 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		rootCmd.SetOut(buf)
 	})
 
-	It("should generate a token", func() {
-		// when
-		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--dataplane=example", "--mesh=demo"})
-		err := rootCmd.Execute()
+	type testCase struct {
+		args   []string
+		result string
+	}
+	DescribeTable("should generate token",
+		func(given testCase) {
+			// when
+			rootCmd.SetArgs(given.args)
+			err := rootCmd.Execute()
 
-		// then
-		Expect(err).ToNot(HaveOccurred())
+			// then
+			Expect(err).ToNot(HaveOccurred())
 
-		// and
-		Expect(buf.String()).To(Equal("token-for-example-demo"))
-	})
-
-	It("should generate a token for default mesh when it is not specified", func() {
-		// when
-		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--dataplane=example"})
-		err := rootCmd.Execute()
-
-		// then
-		Expect(err).ToNot(HaveOccurred())
-
-		// and
-		Expect(buf.String()).To(Equal("token-for-example-default"))
-	})
+			// and
+			Expect(buf.String()).To(Equal(given.result))
+		},
+		Entry("for default mesh when it is not specified", testCase{
+			args:   []string{"generate", "dataplane-token", "--dataplane=example"},
+			result: "token-for-example-default--",
+		}),
+		Entry("for all arguments", testCase{
+			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--dataplane=example", "--type=dataplane", "--tag", "kuma.io/service=web"},
+			result: "token-for-example-demo-kuma.io/service=web-dataplane",
+		}),
+	)
 
 	It("should write error when generating token fails", func() {
 		// setup
@@ -103,28 +93,4 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		Expect(buf.String()).To(Equal("Error: failed to generate a dataplane token: could not connect to API\n"))
 	})
 
-	It("should throw an error when dataplane token server is disabled", func() {
-		// setup
-		ctx.Runtime.NewCatalogClient = func(s string) (catalog_client.CatalogClient, error) {
-			return &test_catalog.StaticCatalogClient{
-				Resp: catalog.Catalog{
-					Apis: catalog.Apis{
-						DataplaneToken: catalog.DataplaneTokenApi{
-							LocalUrl: "", // disabled dataplane token server
-						},
-					},
-				},
-			}, nil
-		}
-
-		// when
-		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--dataplane=example"})
-		err := rootCmd.Execute()
-
-		// then
-		Expect(err).To(HaveOccurred())
-
-		// and
-		Expect(buf.String()).To(Equal("Error: failed to create dataplane token client: Enable the server to be able to generate tokens.\n"))
-	})
 })

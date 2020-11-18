@@ -175,8 +175,8 @@ resources:
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
-          ads: { }
-      http2ProtocolOptions: { }
+          ads: {}
+      http2ProtocolOptions: {}
       name: api-http2
       type: EDS
   - name: api-tcp
@@ -185,8 +185,8 @@ resources:
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
-          ads: { }
-      http2ProtocolOptions: { }
+          ads: {}
+      http2ProtocolOptions: {}
       name: api-tcp
       type: EDS
   - name: backend
@@ -195,8 +195,8 @@ resources:
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
-          ads: { }
-      http2ProtocolOptions: { }
+          ads: {}
+      http2ProtocolOptions: {}
       name: backend
       type: EDS
   - name: db
@@ -205,8 +205,8 @@ resources:
       connectTimeout: 5s
       edsClusterConfig:
         edsConfig:
-          ads: { }
-      http2ProtocolOptions: { }
+          ads: {}
+      http2ProtocolOptions: {}
       lbSubsetConfig:
         fallbackPolicy: ANY_ENDPOINT
         subsetSelectors:
@@ -215,60 +215,6 @@ resources:
               - role
       name: db
       type: EDS
-  - name: outbound:api-grpc
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
-      name: outbound:api-grpc
-      requestHeadersToAdd:
-        - header:
-            key: x-kuma-tags
-            value: '&kuma.io/service=gateway&'
-      validateClusters: true
-      virtualHosts:
-        - domains:
-            - '*'
-          name: api-grpc
-          routes:
-            - match:
-                prefix: /
-              route:
-                cluster: api-grpc
-  - name: outbound:api-http
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
-      name: outbound:api-http
-      requestHeadersToAdd:
-        - header:
-            key: x-kuma-tags
-            value: '&kuma.io/service=gateway&'
-      validateClusters: true
-      virtualHosts:
-        - domains:
-            - '*'
-          name: api-http
-          routes:
-            - match:
-                prefix: /
-              route:
-                cluster: api-http
-  - name: outbound:api-http2
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.RouteConfiguration
-      name: outbound:api-http2
-      requestHeadersToAdd:
-        - header:
-            key: x-kuma-tags
-            value: '&kuma.io/service=gateway&'
-      validateClusters: true
-      virtualHosts:
-        - domains:
-            - '*'
-          name: api-http2
-          routes:
-            - match:
-                prefix: /
-              route:
-                cluster: api-http2
   - name: outbound:127.0.0.1:18080
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
@@ -278,7 +224,7 @@ resources:
           portValue: 18080
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: backend
@@ -294,11 +240,11 @@ resources:
           portValue: 40001
       filterChains:
         - filters:
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 accessLog:
-                  - name: envoy.file_access_log
+                  - name: envoy.access_loggers.file
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
                       format: |+
@@ -306,11 +252,23 @@ resources:
 
                       path: /var/log
                 httpFilters:
-                  - name: envoy.router
-                rds:
-                  configSource:
-                    ads: { }
-                  routeConfigName: outbound:api-http
+                  - name: envoy.filters.http.router
+                routeConfig:
+                  name: outbound:api-http
+                  validateClusters: false
+                  requestHeadersToAdd:
+                    - header:
+                        key: x-kuma-tags
+                        value: '&kuma.io/service=gateway&'
+                  virtualHosts:
+                    - domains:
+                        - '*'
+                      name: api-http
+                      routes:
+                        - match:
+                            prefix: /
+                          route:
+                            cluster: api-http
                 statPrefix: api-http
       name: outbound:127.0.0.1:40001
       trafficDirection: OUTBOUND
@@ -323,11 +281,11 @@ resources:
           portValue: 40002
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 accessLog:
-                  - name: envoy.http_grpc_access_log
+                  - name: envoy.access_loggers.http_grpc
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
                       commonConfig:
@@ -350,15 +308,27 @@ resources:
           portValue: 40003
       filterChains:
         - filters:
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
-                  - name: envoy.router
-                rds:
-                  configSource:
-                    ads: { }
-                  routeConfigName: outbound:api-http2
+                  - name: envoy.filters.http.router
+                routeConfig:
+                  name: outbound:api-http2
+                  validateClusters: false
+                  requestHeadersToAdd:
+                    - header:
+                        key: x-kuma-tags
+                        value: '&kuma.io/service=gateway&'
+                  virtualHosts:
+                    - domains:
+                        - '*'
+                      name: api-http2
+                      routes:
+                        - match:
+                            prefix: /
+                          route:
+                            cluster: api-http2
                 statPrefix: api-http2
       name: outbound:127.0.0.1:40003
       trafficDirection: OUTBOUND
@@ -371,7 +341,7 @@ resources:
           portValue: 40004
       filterChains:
         - filters:
-            - name: envoy.http_connection_manager
+            - name: envoy.filters.network.http_connection_manager
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                 httpFilters:
@@ -380,11 +350,23 @@ resources:
                       '@type': type.googleapis.com/envoy.config.filter.http.grpc_stats.v2alpha.FilterConfig
                       emitFilterState: true
                       statsForAllMethods: true
-                  - name: envoy.router
-                rds:
-                  configSource:
-                    ads: { }
-                  routeConfigName: outbound:api-grpc
+                  - name: envoy.filters.http.router
+                routeConfig:
+                  name: outbound:api-grpc
+                  validateClusters: false
+                  requestHeadersToAdd:
+                    - header:
+                        key: x-kuma-tags
+                        value: '&kuma.io/service=gateway&'
+                  virtualHosts:
+                    - domains:
+                        - '*'
+                      name: api-grpc
+                      routes:
+                        - match:
+                            prefix: /
+                          route:
+                            cluster: api-grpc
                 statPrefix: api-grpc
       name: outbound:127.0.0.1:40004
       trafficDirection: OUTBOUND
@@ -397,7 +379,7 @@ resources:
           portValue: 54321
       filterChains:
         - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 statPrefix: db

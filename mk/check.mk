@@ -7,7 +7,7 @@ fmt: fmt/go fmt/proto ## Dev: Run various format tools
 fmt/go: ## Dev: Run go fmt
 	go fmt $(GOFLAGS) ./...
 	@# apparently, it's not possible to simply use `go fmt ./pkg/plugins/resources/k8s/native/...`
-	make fmt -C pkg/plugins/resources/k8s/native
+	$(MAKE) fmt -C pkg/plugins/resources/k8s/native
 
 .PHONY: fmt/proto
 fmt/proto: ## Dev: Run clang-format on .proto files
@@ -17,7 +17,7 @@ fmt/proto: ## Dev: Run clang-format on .proto files
 vet: ## Dev: Run go vet
 	go vet $(GOFLAGS) ./...
 	@# for consistency with `fmt`
-	make vet -C pkg/plugins/resources/k8s/native
+	$(MAKE) vet -C pkg/plugins/resources/k8s/native
 
 .PHONY: tidy
 tidy:
@@ -47,5 +47,5 @@ imports: ## Dev: Runs goimports in order to organize imports
 
 .PHONY: check
 check: generate fmt vet docs helm-lint golangci-lint imports tidy ## Dev: Run code checks (go fmt, go vet, ...)
-	make generate manifests -C pkg/plugins/resources/k8s/native
+	$(MAKE) generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty

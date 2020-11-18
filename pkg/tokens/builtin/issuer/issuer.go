@@ -9,10 +9,18 @@ import (
 
 type Token = string
 
+type DpType = string
+
+const (
+	DpTypeDataplane = "dataplane"
+	DpTypeIngress   = "ingress"
+)
+
 type DataplaneIdentity struct {
 	Name string
 	Mesh string
 	Tags mesh_proto.MultiValueTagSet
+	Type DpType
 }
 
 // DataplaneTokenIssuer issues Dataplane Tokens used then for proving identity of the dataplanes.
@@ -20,17 +28,18 @@ type DataplaneIdentity struct {
 // See pkg/sds/auth/universal/authenticator.go to check algorithm for authentication
 type DataplaneTokenIssuer interface {
 	Generate(identity DataplaneIdentity) (Token, error)
-	Validate(token Token) (DataplaneIdentity, error)
+	Validate(token Token, meshName string) (DataplaneIdentity, error)
 }
 
 type claims struct {
 	Name string
 	Mesh string
 	Tags map[string][]string
+	Type string
 	jwt.StandardClaims
 }
 
-type SigningKeyAccessor func() ([]byte, error)
+type SigningKeyAccessor func(meshName string) ([]byte, error)
 
 func NewDataplaneTokenIssuer(signingKeyAccessor SigningKeyAccessor) DataplaneTokenIssuer {
 	return &jwtTokenIssuer{signingKeyAccessor}
@@ -42,19 +51,19 @@ type jwtTokenIssuer struct {
 	signingKeyAccessor SigningKeyAccessor
 }
 
-func (i *jwtTokenIssuer) signingKey() ([]byte, error) {
-	signingKey, err := i.signingKeyAccessor()
+func (i *jwtTokenIssuer) signingKey(meshName string) ([]byte, error) {
+	signingKey, err := i.signingKeyAccessor(meshName)
 	if err != nil {
 		return nil, err
 	}
 	if len(signingKey) == 0 {
-		return nil, SigningKeyNotFound
+		return nil, SigningKeyNotFound(meshName)
 	}
 	return signingKey, nil
 }
 
 func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (Token, error) {
-	signingKey, err := i.signingKey()
+	signingKey, err := i.signingKey(identity.Mesh)
 	if err != nil {
 		return "", err
 	}
@@ -68,6 +77,7 @@ func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (Token, error) {
 		Name:           identity.Name,
 		Mesh:           identity.Mesh,
 		Tags:           tags,
+		Type:           identity.Type,
 		StandardClaims: jwt.StandardClaims{},
 	}
 
@@ -79,8 +89,8 @@ func (i *jwtTokenIssuer) Generate(identity DataplaneIdentity) (Token, error) {
 	return tokenString, nil
 }
 
-func (i *jwtTokenIssuer) Validate(rawToken Token) (DataplaneIdentity, error) {
-	signingKey, err := i.signingKey()
+func (i *jwtTokenIssuer) Validate(rawToken Token, meshName string) (DataplaneIdentity, error) {
+	signingKey, err := i.signingKey(meshName)
 	if err != nil {
 		return DataplaneIdentity{}, err
 	}
@@ -101,6 +111,7 @@ func (i *jwtTokenIssuer) Validate(rawToken Token) (DataplaneIdentity, error) {
 		Mesh: c.Mesh,
 		Name: c.Name,
 		Tags: mesh_proto.MultiValueTagSetFrom(c.Tags),
+		Type: c.Type,
 	}
 	return id, nil
 }

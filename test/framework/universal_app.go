@@ -21,10 +21,11 @@ import (
 type AppMode string
 
 const (
-	AppModeCP         = "kuma-cp"
-	AppIngress        = "ingress"
-	AppModeEchoServer = "echo-server"
-	sshPort           = "22"
+	AppModeCP              = "kuma-cp"
+	AppIngress             = "ingress"
+	AppModeEchoServer      = "echo-server"
+	AppModeHttpsEchoServer = "https-echo-server"
+	sshPort                = "22"
 
 	IngressDataplane = `
 type: Dataplane
@@ -32,9 +33,11 @@ mesh: default
 name: dp-ingress
 networking:
   address: {{ address }}
-  ingress: {}
+  ingress:
+    publicAddress: %s
+    publicPort: %d
   inbound:
-  - port: %d	
+  - port: %d
     tags:
       kuma.io/service: ingress
 `
@@ -70,6 +73,9 @@ networking:
   - port: 4001
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
+  - port: 5000
+    tags:
+      kuma.io/service: external-service
 `
 )
 
@@ -91,10 +97,10 @@ var defaultDockerOptions = docker.RunOptions{
 
 type UniversalApp struct {
 	t            testing.TestingT
-	mainApp      *sshApp
+	mainApp      *SshApp
 	mainAppEnv   []string
 	mainAppArgs  []string
-	dpApp        *sshApp
+	dpApp        *SshApp
 	ports        map[string]string
 	lastUsedPort uint32
 	container    string
@@ -113,14 +119,14 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 	app.allocatePublicPortsFor("22")
 
 	if mode == AppModeCP {
-		app.allocatePublicPortsFor("5678", "5679", "5680", "5681", "5682", "5684", "5685")
+		app.allocatePublicPortsFor("5678", "5680", "5681", "5682", "5685")
 	}
 
 	opts := defaultDockerOptions
 	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
 	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
-	container, err := docker.RunAndGetIDE(t, kumaUniversalImage, &opts)
+	container, err := docker.RunAndGetIDE(t, KumaUniversalImage, &opts)
 	if err != nil {
 		return nil, err
 	}
@@ -137,10 +143,6 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 		})
 
 	fmt.Printf("Node IP %s\n", app.ip)
-
-	if mode == AppModeCP {
-		env = append([]string{"KUMA_GENERAL_ADVERTISED_HOSTNAME=" + app.ip}, env...)
-	}
 
 	app.CreateMainApp(env, args)
 
@@ -227,7 +229,7 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 }
 
 func (s *UniversalApp) getIP() (string, error) {
-	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "hosts", s.container[:12]})
+	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "ahosts", s.container[:12]})
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
 		return "invalid", errors.Wrapf(err, "getent failed with %s", string(bytes))
@@ -236,15 +238,15 @@ func (s *UniversalApp) getIP() (string, error) {
 	return split[0], nil
 }
 
-type sshApp struct {
+type SshApp struct {
 	cmd    *exec.Cmd
 	stdout bytes.Buffer
 	stderr bytes.Buffer
 	port   string
 }
 
-func NewSshApp(verbose bool, port string, env []string, args []string) *sshApp {
-	app := &sshApp{
+func NewSshApp(verbose bool, port string, env []string, args []string) *SshApp {
+	app := &SshApp{
 		port: port,
 	}
 	app.cmd = app.SshCmd(env, args)
@@ -260,17 +262,17 @@ func NewSshApp(verbose bool, port string, env []string, args []string) *sshApp {
 	return app
 }
 
-func (s *sshApp) Run() error {
+func (s *SshApp) Run() error {
 	fmt.Printf("Running %v\n", s.cmd)
 	return s.cmd.Run()
 }
 
-func (s *sshApp) Start() error {
+func (s *SshApp) Start() error {
 	fmt.Printf("Starting %v\n", s.cmd)
 	return s.cmd.Start()
 }
 
-func (s *sshApp) Stop() error {
+func (s *SshApp) Stop() error {
 	if err := s.cmd.Process.Kill(); err != nil {
 		return err
 	}
@@ -280,19 +282,19 @@ func (s *sshApp) Stop() error {
 	return nil
 }
 
-func (s *sshApp) Wait() error {
+func (s *SshApp) Wait() error {
 	return s.cmd.Wait()
 }
 
-func (s *sshApp) Out() string {
+func (s *SshApp) Out() string {
 	return s.stdout.String()
 }
 
-func (s *sshApp) Err() string {
+func (s *SshApp) Err() string {
 	return s.stderr.String()
 }
 
-func (s *sshApp) SshCmd(env []string, args []string) *exec.Cmd {
+func (s *SshApp) SshCmd(env []string, args []string) *exec.Cmd {
 	return SshCmd(s.port, env, args)
 }
 

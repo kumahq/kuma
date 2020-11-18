@@ -58,7 +58,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": null,
-  "iteration": 1600160094475,
+  "iteration": 1605541874479,
   "links": [],
   "panels": [
     {
@@ -779,13 +779,237 @@
       }
     },
     {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Cache protects ClusterLoadAssignments resources by sharing them between many goroutines which reconcile Dataplanes.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 0,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 70,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "percentage": true,
+      "pluginVersion": "7.1.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(cla_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Hit",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(cla_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Hit Wait",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(cla_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Miss",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Endpoints cache performance",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:645",
+          "decimals": null,
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:646",
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
+      "aliasColors": {},
+      "bars": false,
+      "dashLength": 10,
+      "dashes": false,
+      "datasource": "${DS_PROMETHEUS}",
+      "description": "Mesh Cache protects hashes calculated periodically for each Mesh in order to avoid the excessive generation of xDS resources.\n\nhit - request was retrieved from the cache.\n\nhit-wait - request was retrieved from the cache after waiting for a concurrent request to fetch it from the database.\n\nmiss - request was fetched from the database\n\nRefer to https://kuma.io/docs/latest/documentation/fine-tuning/#snapshot-generation",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {}
+        },
+        "overrides": []
+      },
+      "fill": 1,
+      "fillGradient": 0,
+      "gridPos": {
+        "h": 7,
+        "w": 12,
+        "x": 12,
+        "y": 18
+      },
+      "hiddenSeries": false,
+      "id": 71,
+      "legend": {
+        "alignAsTable": false,
+        "avg": false,
+        "current": false,
+        "hideEmpty": true,
+        "hideZero": true,
+        "max": false,
+        "min": false,
+        "rightSide": false,
+        "show": true,
+        "total": false,
+        "values": false
+      },
+      "lines": true,
+      "linewidth": 1,
+      "nullPointMode": "null",
+      "percentage": true,
+      "pluginVersion": "7.1.4",
+      "pointradius": 2,
+      "points": false,
+      "renderer": "flot",
+      "seriesOverrides": [],
+      "spaceLength": 10,
+      "stack": true,
+      "steppedLine": false,
+      "targets": [
+        {
+          "expr": "sum(rate(mesh_cache{result=\"hit\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Hit",
+          "refId": "A"
+        },
+        {
+          "expr": "sum(rate(mesh_cache{result=\"hit-wait\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Hit Wait",
+          "refId": "C"
+        },
+        {
+          "expr": "sum(rate(mesh_cache{result=\"miss\",instance=~\"$instance\"}[1m]))",
+          "interval": "",
+          "legendFormat": "Miss",
+          "refId": "B"
+        }
+      ],
+      "thresholds": [],
+      "timeFrom": null,
+      "timeRegions": [],
+      "timeShift": null,
+      "title": "Mesh resources hash cache performance",
+      "tooltip": {
+        "shared": true,
+        "sort": 0,
+        "value_type": "individual"
+      },
+      "type": "graph",
+      "xaxis": {
+        "buckets": null,
+        "mode": "time",
+        "name": null,
+        "show": true,
+        "values": []
+      },
+      "yaxes": [
+        {
+          "$$hashKey": "object:645",
+          "decimals": null,
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        },
+        {
+          "$$hashKey": "object:646",
+          "format": "ops",
+          "label": null,
+          "logBase": 1,
+          "max": null,
+          "min": "0",
+          "show": true
+        }
+      ],
+      "yaxis": {
+        "align": false,
+        "alignLevel": null
+      }
+    },
+    {
       "collapsed": false,
       "datasource": "${DS_PROMETHEUS}",
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 18
+        "y": 25
       },
       "id": 5,
       "panels": [],
@@ -807,10 +1031,10 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 16,
         "x": 0,
-        "y": 19
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 2,
@@ -906,10 +1130,10 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 9,
+        "h": 8,
         "w": 8,
         "x": 16,
-        "y": 19
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 9,
@@ -1009,11 +1233,11 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 28
+        "y": 34
       },
       "id": 54,
       "panels": [],
-      "title": "Bootstrap Server - Initial configuration for Dataplane",
+      "title": "Dataplane Server: CP-DP communication",
       "type": "row"
     },
     {
@@ -1022,6 +1246,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
+      "description": "XDS and SDS requests are not taken into account because they are long-running requests",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1031,10 +1256,10 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 9,
+        "h": 7,
         "w": 16,
         "x": 0,
-        "y": 29
+        "y": 35
       },
       "hiddenSeries": false,
       "id": 55,
@@ -1064,7 +1289,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(bootstrap_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[1m])))",
+          "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(dp_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[1m])))",
           "interval": "",
           "legendFormat": "{{handler}}",
           "refId": "A"
@@ -1074,7 +1299,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Latency of Bootstrap Server Requests (99th percentile)",
+      "title": "Latency of Dataplane Server Requests (99th percentile)",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1120,7 +1345,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "",
+      "description": "XDS and SDS requests are not taken into account because they are long-running requests",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -1130,10 +1355,10 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 9,
+        "h": 7,
         "w": 8,
         "x": 16,
-        "y": 29
+        "y": 35
       },
       "hiddenSeries": false,
       "id": 56,
@@ -1176,7 +1401,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum by (code) (rate(bootstrap_server_http_response_size_bytes_count{instance=~\"$instance\"}[1m]))",
+          "expr": "sum by (code) (rate(dp_server_http_response_size_bytes_count{instance=~\"$instance\"}[1m]))",
           "interval": "",
           "legendFormat": "{{code}}",
           "refId": "A"
@@ -1233,7 +1458,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 38
+        "y": 42
       },
       "id": 22,
       "panels": [],
@@ -1259,7 +1484,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 39
+        "y": 43
       },
       "hiddenSeries": false,
       "id": 52,
@@ -1399,7 +1624,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 39
+        "y": 43
       },
       "hiddenSeries": false,
       "id": 50,
@@ -1494,7 +1719,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 39
+        "y": 43
       },
       "hiddenSeries": false,
       "id": 42,
@@ -1601,7 +1826,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 39
+        "y": 43
       },
       "hiddenSeries": false,
       "id": 19,
@@ -1684,7 +1909,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 47
+        "y": 51
       },
       "id": 26,
       "panels": [],
@@ -1710,7 +1935,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 48
+        "y": 52
       },
       "hiddenSeries": false,
       "id": 61,
@@ -1807,7 +2032,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 48
+        "y": 52
       },
       "hiddenSeries": false,
       "id": 66,
@@ -1904,7 +2129,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 56
+        "y": 60
       },
       "hiddenSeries": false,
       "id": 57,
@@ -2046,7 +2271,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 56
+        "y": 60
       },
       "hiddenSeries": false,
       "id": 58,
@@ -2128,7 +2353,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTICLUSTER_GLOBAL_KDS_REFRESH_INTERVAL",
+      "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2141,7 +2366,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 56
+        "y": 60
       },
       "hiddenSeries": false,
       "id": 59,
@@ -2248,7 +2473,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 56
+        "y": 60
       },
       "hiddenSeries": false,
       "id": 60,
@@ -2343,7 +2568,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 64
+        "y": 68
       },
       "hiddenSeries": false,
       "id": 62,
@@ -2485,7 +2710,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 64
+        "y": 68
       },
       "hiddenSeries": false,
       "id": 63,
@@ -2567,7 +2792,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTICLUSTER_REMOTE_KDS_REFRESH_INTERVAL",
+      "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2580,7 +2805,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 64
+        "y": 68
       },
       "hiddenSeries": false,
       "id": 64,
@@ -2687,7 +2912,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 64
+        "y": 68
       },
       "hiddenSeries": false,
       "id": 65,
@@ -2770,212 +2995,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 72
-      },
-      "id": 7,
-      "panels": [],
-      "title": "Admin Server - Administrative management of the Control Plane",
-      "type": "row"
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 9,
-        "w": 16,
-        "x": 0,
-        "y": 73
-      },
-      "hiddenSeries": false,
-      "id": 8,
-      "legend": {
-        "alignAsTable": true,
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "rightSide": true,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "percentage": false,
-      "pluginVersion": "7.1.4",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(admin_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[5m])))",
-          "interval": "",
-          "legendFormat": "{{handler}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Latency of Admin Server Requests (99th percentile)",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "$$hashKey": "object:1757",
-          "decimals": null,
-          "format": "s",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "$$hashKey": "object:1758",
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "aliasColors": {},
-      "bars": false,
-      "dashLength": 10,
-      "dashes": false,
-      "datasource": "${DS_PROMETHEUS}",
-      "description": "",
-      "fieldConfig": {
-        "defaults": {
-          "custom": {}
-        },
-        "overrides": []
-      },
-      "fill": 1,
-      "fillGradient": 0,
-      "gridPos": {
-        "h": 9,
-        "w": 8,
-        "x": 16,
-        "y": 73
-      },
-      "hiddenSeries": false,
-      "id": 3,
-      "legend": {
-        "avg": false,
-        "current": false,
-        "max": false,
-        "min": false,
-        "show": true,
-        "total": false,
-        "values": false
-      },
-      "lines": true,
-      "linewidth": 1,
-      "nullPointMode": "null",
-      "percentage": false,
-      "pluginVersion": "7.1.4",
-      "pointradius": 2,
-      "points": false,
-      "renderer": "flot",
-      "seriesOverrides": [],
-      "spaceLength": 10,
-      "stack": false,
-      "steppedLine": false,
-      "targets": [
-        {
-          "expr": "sum by (code) (rate(admin_server_http_request_duration_seconds_count[1m]))",
-          "interval": "",
-          "legendFormat": "{{code}}",
-          "refId": "A"
-        }
-      ],
-      "thresholds": [],
-      "timeFrom": null,
-      "timeRegions": [],
-      "timeShift": null,
-      "title": "Response Codes",
-      "tooltip": {
-        "shared": true,
-        "sort": 0,
-        "value_type": "individual"
-      },
-      "type": "graph",
-      "xaxis": {
-        "buckets": null,
-        "mode": "time",
-        "name": null,
-        "show": true,
-        "values": []
-      },
-      "yaxes": [
-        {
-          "decimals": null,
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        },
-        {
-          "format": "short",
-          "label": null,
-          "logBase": 1,
-          "max": null,
-          "min": null,
-          "show": true
-        }
-      ],
-      "yaxis": {
-        "align": false,
-        "alignLevel": null
-      }
-    },
-    {
-      "collapsed": false,
-      "datasource": "${DS_PROMETHEUS}",
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 82
+        "y": 76
       },
       "id": 46,
       "panels": [],
@@ -3000,7 +3020,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 83
+        "y": 77
       },
       "hiddenSeries": false,
       "id": 48,
@@ -3094,7 +3114,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 83
+        "y": 77
       },
       "hiddenSeries": false,
       "id": 49,
@@ -3185,7 +3205,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 91
+        "y": 85
       },
       "id": 11,
       "panels": [],
@@ -3211,7 +3231,7 @@
         "h": 9,
         "w": 7,
         "x": 0,
-        "y": 92
+        "y": 86
       },
       "hiddenSeries": false,
       "id": 12,
@@ -3307,7 +3327,7 @@
         "h": 9,
         "w": 5,
         "x": 7,
-        "y": 92
+        "y": 86
       },
       "hiddenSeries": false,
       "id": 14,
@@ -3419,7 +3439,7 @@
         "h": 9,
         "w": 12,
         "x": 12,
-        "y": 92
+        "y": 86
       },
       "hiddenSeries": false,
       "id": 13,
@@ -3505,7 +3525,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 101
+        "y": 95
       },
       "id": 35,
       "panels": [],
@@ -3530,7 +3550,7 @@
         "h": 8,
         "w": 6,
         "x": 0,
-        "y": 102
+        "y": 96
       },
       "hiddenSeries": false,
       "id": 30,
@@ -3624,7 +3644,7 @@
         "h": 8,
         "w": 6,
         "x": 6,
-        "y": 102
+        "y": 96
       },
       "hiddenSeries": false,
       "id": 31,
@@ -3718,7 +3738,7 @@
         "h": 8,
         "w": 6,
         "x": 12,
-        "y": 102
+        "y": 96
       },
       "hiddenSeries": false,
       "id": 33,
@@ -3812,7 +3832,7 @@
         "h": 8,
         "w": 6,
         "x": 18,
-        "y": 102
+        "y": 96
       },
       "hiddenSeries": false,
       "id": 32,
@@ -3962,5 +3982,5 @@
   "timezone": "",
   "title": "Kuma CP",
   "uid": "z6C1v-NGk",
-  "version": 7
+  "version": 1
 }

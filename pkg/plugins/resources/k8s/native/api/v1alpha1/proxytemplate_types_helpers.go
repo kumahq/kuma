@@ -33,7 +33,7 @@ func (pt *ProxyTemplate) SetSpec(spec map[string]interface{}) {
 }
 
 func (l *ProxyTemplate) Scope() model.Scope {
-	return model.ScopeNamespace
+	return model.ScopeCluster
 }
 
 func (l *ProxyTemplateList) GetItems() []model.KubernetesObject {
