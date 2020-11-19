@@ -135,6 +135,10 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	} else {
 		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)
 	}
+
+	// Install the custom WS
+	GlobalCustomWsList.InstallAll(container)
+
 	return newApiServer, nil
 }
 
