@@ -40,7 +40,7 @@ var _ = Describe("kumactl delete ", func() {
 					},
 				},
 			}
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			rootCmd = cmd.NewRootCmd(rootCtx)
 			outbuf = &bytes.Buffer{}

@@ -8,7 +8,7 @@ spec:
   names:
     kind: TrafficTrace
     plural: traffictraces
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficTrace is the Schema for the traffictraces API

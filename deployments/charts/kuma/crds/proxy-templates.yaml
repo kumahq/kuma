@@ -8,7 +8,7 @@ spec:
   names:
     kind: ProxyTemplate
     plural: proxytemplates
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: ProxyTemplate is the Schema for the proxytemplates API

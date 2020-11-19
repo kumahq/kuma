@@ -24,8 +24,6 @@ var _ = Describe("Standalone Postgres test", func() {
 	})
 
 	RunSmokeTest(StaticConfig(`
-xdsServer:
-  diagnosticsPort: %d
 apiServer:
   http:
     port: 0
@@ -36,5 +34,7 @@ dnsServer:
 environment: universal
 store:
   type: postgres
+diagnostics:
+  serverPort: %d
 `))
 })

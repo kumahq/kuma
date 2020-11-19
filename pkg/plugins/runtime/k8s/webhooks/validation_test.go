@@ -79,7 +79,6 @@ var _ = Describe("Validation", func() {
               "kind":"TrafficRoute",
               "mesh":"demo",
               "metadata":{
-                "namespace":"example",
                 "name":"empty",
                 "creationTimestamp":null
               },
@@ -98,7 +97,8 @@ var _ = Describe("Validation", func() {
                     }
                   }
                 ],
-                "conf":[
+                "conf":{
+                 "split":[
                   {
                     "weight":100,
                     "destination":{
@@ -106,6 +106,7 @@ var _ = Describe("Validation", func() {
                     }
                   }
                 ]
+                }
               }
             }`,
 			resp: kube_admission.Response{
@@ -151,7 +152,6 @@ var _ = Describe("Validation", func() {
               "kind":"TrafficRoute",
               "mesh":"demo",
               "metadata":{
-                "namespace":"example",
                 "name":"empty",
                 "creationTimestamp":null,
                 "annotations": {
@@ -173,7 +173,8 @@ var _ = Describe("Validation", func() {
                     }
                   }
                 ],
-                "conf":[
+                "conf":{
+                 "split":[
                   {
                     "weight":100,
                     "destination":{
@@ -181,6 +182,7 @@ var _ = Describe("Validation", func() {
                     }
                   }
                 ]
+                }
               }
             }`,
 			resp: kube_admission.Response{
@@ -279,7 +281,6 @@ var _ = Describe("Validation", func() {
 			  "kind": "TrafficRoute",
 			  "mesh": "demo",
 			  "metadata": {
-				"namespace": "example",
 				"name": "empty",
 				"creationTimestamp": null
 			  },
@@ -293,7 +294,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "spec.sources: must have at least one element; spec.destinations: must have at least one element; spec.conf: must have at least one element",
+						Message: "spec.sources: must have at least one element; spec.destinations: must have at least one element; spec.conf: must have split; spec.conf.split: must have at least one element",
 						Reason:  "Invalid",
 						Details: &kube_meta.StatusDetails{
 							Name: "empty",
@@ -311,8 +312,13 @@ var _ = Describe("Validation", func() {
 								},
 								{
 									Type:    "FieldValueInvalid",
-									Message: "must have at least one element",
+									Message: "must have split",
 									Field:   "spec.conf",
+								},
+								{
+									Type:    "FieldValueInvalid",
+									Message: "must have at least one element",
+									Field:   "spec.conf.split",
 								},
 							},
 						},
@@ -330,7 +336,6 @@ var _ = Describe("Validation", func() {
 			  "kind": "TrafficRoute",
 			  "mesh": "demo",
 			  "metadata": {
-				"namespace": "example",
 				"name": "empty",
 				"creationTimestamp": null
 			  }

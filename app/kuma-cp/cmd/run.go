@@ -6,6 +6,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/pkg/dns"
+
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/clusterid"
 	"github.com/kumahq/kuma/pkg/config"
@@ -15,9 +17,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/bootstrap"
 	"github.com/kumahq/kuma/pkg/defaults"
 	"github.com/kumahq/kuma/pkg/diagnostics"
-	"github.com/kumahq/kuma/pkg/dns/components"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server"
 	"github.com/kumahq/kuma/pkg/gc"
+	"github.com/kumahq/kuma/pkg/insights"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
@@ -79,8 +81,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
-				if err := components.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up DNS server")
+				if err := dns.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up DNS")
 					return err
 				}
 				if err := gc.Setup(rt); err != nil {
@@ -95,6 +97,14 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up DP Server")
 					return err
 				}
+				if err := insights.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up Insights resyncer")
+					return err
+				}
+				if err := defaults.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up Defaults")
+					return err
+				}
 			case config_core.Remote:
 				if err := mads_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
@@ -104,8 +114,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up KDS Remote")
 					return err
 				}
-				if err := components.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up DNS server")
+				if err := dns.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up DNS")
 					return err
 				}
 				if err := gc.Setup(rt); err != nil {
@@ -125,6 +135,14 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up clusterID")
 					return err
 				}
+				if err := insights.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up Insights resyncer")
+					return err
+				}
+				if err := defaults.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up Defaults")
+					return err
+				}
 			}
 
 			if err := diagnostics.SetupServer(rt); err != nil {
@@ -135,14 +153,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "unable to set up API server")
 				return err
 			}
-
 			if err := metrics.Setup(rt); err != nil {
 				runLog.Error(err, "unable to set up Metrics")
-				return err
-			}
-
-			if err := defaults.Setup(rt); err != nil {
-				runLog.Error(err, "unable to set up Defaults")
 				return err
 			}
 

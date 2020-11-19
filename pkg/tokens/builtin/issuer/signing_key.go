@@ -5,6 +5,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
+	"fmt"
+	"strings"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -22,11 +24,22 @@ var log = core.Log.WithName("tokens")
 
 const defaultRsaBits = 2048
 
-var SigningKeyNotFound = errors.New("there is no Signing Key in the Control Plane. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens.")
+func SigningKeyNotFound(meshName string) error {
+	return errors.Errorf("there is no Signing Key in the Control Plane for Mesh %q. Make sure the Mesh exist. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens.", meshName)
+}
 
-var SigningKeyResourceKey = model.ResourceKey{
-	Mesh: "default",
-	Name: "dataplane-token-signing-key",
+func IsSigningKeyNotFoundErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.HasPrefix(err.Error(), "there is no Signing Key in the Control Plane for Mesh")
+}
+
+func SigningKeyResourceKey(meshName string) model.ResourceKey {
+	return model.ResourceKey{
+		Mesh: meshName,
+		Name: fmt.Sprintf("dataplane-token-signing-key-%s", meshName),
+	}
 }
 
 func CreateSigningKey() (system.SecretResource, error) {
@@ -42,11 +55,11 @@ func CreateSigningKey() (system.SecretResource, error) {
 	}
 	return res, nil
 }
-func GetSigningKey(manager manager.ReadOnlyResourceManager) ([]byte, error) {
+func GetSigningKey(manager manager.ReadOnlyResourceManager, meshName string) ([]byte, error) {
 	resource := system.SecretResource{}
-	if err := manager.Get(context.Background(), &resource, store.GetBy(SigningKeyResourceKey)); err != nil {
+	if err := manager.Get(context.Background(), &resource, store.GetBy(SigningKeyResourceKey(meshName))); err != nil {
 		if store.IsResourceNotFound(err) {
-			return nil, SigningKeyNotFound
+			return nil, SigningKeyNotFound(meshName)
 		}
 		return nil, errors.Wrap(err, "could not retrieve signing key from secret manager")
 	}

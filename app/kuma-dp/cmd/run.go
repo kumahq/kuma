@@ -8,13 +8,13 @@ import (
 	"path/filepath"
 	"time"
 
+	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
-	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/kumahq/kuma/pkg/catalog/client"
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
@@ -25,8 +25,6 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-type CatalogClientFactory func(string) (client.CatalogClient, error)
-
 var (
 	runLog = dataplaneLog.WithName("run")
 	// overridable by tests
@@ -35,7 +33,6 @@ var (
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	},
 	)
-	catalogClientFactory = client.NewCatalogClient
 )
 
 func newRunCmd() *cobra.Command {
@@ -92,11 +89,6 @@ func newRunCmd() *cobra.Command {
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
 
-			if cfg.DataplaneRuntime.TokenPath != "" {
-				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
-					return err
-				}
-			}
 			if cfg.DataplaneRuntime.Token != "" {
 				path := filepath.Join(cfg.DataplaneRuntime.ConfigDir, cfg.Dataplane.Name)
 				if err := writeFile(path, []byte(cfg.DataplaneRuntime.Token), 0600); err != nil {
@@ -104,6 +96,12 @@ func newRunCmd() *cobra.Command {
 					return err
 				}
 				cfg.DataplaneRuntime.TokenPath = path
+			}
+
+			if cfg.DataplaneRuntime.TokenPath != "" {
+				if err := kumadp_config.ValidateTokenPath(cfg.DataplaneRuntime.TokenPath); err != nil {
+					return err
+				}
 			}
 
 			if cfg.ControlPlane.CaCert == "" && cfg.ControlPlane.CaCertFile != "" {
@@ -144,7 +142,7 @@ func newRunCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
 	cmd.PersistentFlags().Var(&cfg.Dataplane.AdminPort, "admin-port", `Port (or range of ports to choose from) for Envoy Admin API to listen on. Empty value indicates that Envoy Admin API should not be exposed over TCP. Format: "9901 | 9901-9999 | 9901- | -9901"`)
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
-	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane API Server")
+	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane Dataplane Server. Example: https://localhost:5678")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCert, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")

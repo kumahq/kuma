@@ -3,8 +3,9 @@ package controllers
 import (
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/dns/vips"
+
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/dns"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
@@ -36,7 +37,7 @@ func (p *PodConverter) PodToDataplane(
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	vips dns.VIPList,
+	vips vips.List,
 ) error {
 	dataplane.Mesh = MeshFor(pod)
 	dataplaneProto, err := p.DataplaneFor(pod, services, externalServices, others, vips)
@@ -53,11 +54,15 @@ func (p *PodConverter) PodToDataplane(
 
 func (p *PodConverter) PodToIngress(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service) error {
 	dataplane.Mesh = MeshFor(pod)
-	ingressProto, err := p.IngressFor(pod, services)
-	if err != nil {
+	dataplaneProto := &mesh_proto.Dataplane{}
+	if err := util_proto.FromMap(dataplane.Spec, dataplaneProto); err != nil {
 		return err
 	}
-	spec, err := util_proto.ToMap(ingressProto)
+	// Pass the current dataplane so we won't override available services in Ingress section
+	if err := p.IngressFor(dataplaneProto, pod, services); err != nil {
+		return err
+	}
+	spec, err := util_proto.ToMap(dataplaneProto)
 	if err != nil {
 		return err
 	}
@@ -78,7 +83,7 @@ func (p *PodConverter) DataplaneFor(
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	vips dns.VIPList,
+	vips vips.List,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},

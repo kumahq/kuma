@@ -6,6 +6,12 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+
+	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
+
+	"github.com/kumahq/kuma/pkg/events"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
@@ -29,9 +35,7 @@ import (
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/metrics"
-	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 )
 
 func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
@@ -70,7 +74,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ResourceManager()))
+	builder.WithDataSourceLoader(datasource.NewDataSourceLoader(builder.ReadOnlyResourceManager()))
 
 	if err := initializeCaManagers(builder); err != nil {
 		return nil, err
@@ -171,16 +175,26 @@ func initializeResourceStore(cfg kuma_cp.Config, builder *core_runtime.Builder) 
 	if err != nil {
 		return errors.Wrapf(err, "could not retrieve store %s plugin", pluginName)
 	}
-	if rs, err := plugin.NewResourceStore(builder, pluginConfig); err != nil {
+
+	rs, err := plugin.NewResourceStore(builder, pluginConfig)
+	if err != nil {
 		return err
-	} else {
-		meteredStore, err := metrics_store.NewMeteredStore(rs, builder.Metrics())
-		if err != nil {
-			return err
-		}
-		builder.WithResourceStore(meteredStore)
-		return nil
 	}
+	builder.WithResourceStore(rs)
+	eventBus := events.NewEventBus()
+	if err := plugin.EventListener(builder, eventBus); err != nil {
+		return err
+	}
+	builder.WithEventReaderFactory(eventBus)
+
+	paginationStore := core_store.NewPaginationStore(rs)
+	meteredStore, err := metrics_store.NewMeteredStore(paginationStore, builder.Metrics())
+	if err != nil {
+		return err
+	}
+
+	builder.WithResourceStore(meteredStore)
+	return nil
 }
 
 func initializeSecretStore(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
@@ -298,7 +312,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 }
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	builder.WithDNSResolver(dns.NewDNSResolver(cfg.DNSServer.Domain))
+	builder.WithDNSResolver(resolver.NewDNSResolver(cfg.DNSServer.Domain))
 	return nil
 }
 

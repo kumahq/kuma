@@ -44,7 +44,7 @@ var _ = Describe("kumactl apply", func() {
 				},
 			},
 		}
-		store = memory_resources.NewStore()
+		store = core_store.NewPaginationStore(memory_resources.NewStore())
 		rootCmd = cmd.NewRootCmd(rootCtx)
 	})
 
@@ -483,6 +483,10 @@ networking:
   inbound: 0 # should be a string
 `,
 			err: "YAML contains invalid resource: json: cannot unmarshal number into Go value of type []json.RawMessage",
+		}),
+		Entry("no resource", testCase{
+			resource: ``,
+			err:      "no resource(s) passed to apply",
 		}),
 	)
 })

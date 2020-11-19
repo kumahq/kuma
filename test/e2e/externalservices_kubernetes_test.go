@@ -35,22 +35,6 @@ spec:
       passthrough: %s
 `
 
-	trafficPermissionAll := `
-apiVersion: kuma.io/v1alpha1
-kind: TrafficPermission
-mesh: default
-metadata:
-  namespace: default
-  name: allow-all-traffic
-spec:
-  sources:
-    - match:
-        kuma.io/service: '*'
-  destinations:
-    - match:
-        kuma.io/service: '*'
-`
-
 	trafficRoute := `
 apiVersion: kuma.io/v1alpha1
 kind: TrafficRoute
@@ -66,6 +50,7 @@ spec:
   - match:
       kuma.io/service: external-service
   conf:
+    split:
     - weight: 1
       destination:
         kuma.io/service: external-service
@@ -130,9 +115,6 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlK8s(trafficPermissionAll)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		externalServiceAddress := externalservice.From(cluster, externalservice.HttpServer).GetExternalAppAddress()

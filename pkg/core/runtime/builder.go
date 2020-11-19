@@ -5,6 +5,10 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/events"
+
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core"
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
@@ -16,7 +20,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -31,10 +34,11 @@ type BuilderContext interface {
 	Config() kuma_cp.Config
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
-	DNSResolver() dns.DNSResolver
+	DNSResolver() resolver.DNSResolver
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	Metrics() metrics.Metrics
+	EventReaderFactory() events.ListenerFactory
 }
 
 var _ BuilderContext = &Builder{}
@@ -52,11 +56,12 @@ type Builder struct {
 	xds      core_xds.XdsContext
 	dsl      datasource.Loader
 	ext      context.Context
-	dns      dns.DNSResolver
+	dns      resolver.DNSResolver
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
+	erf      events.ListenerFactory
 	*runtimeInfo
 }
 
@@ -131,7 +136,7 @@ func (b *Builder) WithExtension(key interface{}, value interface{}) *Builder {
 	return b
 }
 
-func (b *Builder) WithDNSResolver(dns dns.DNSResolver) *Builder {
+func (b *Builder) WithDNSResolver(dns resolver.DNSResolver) *Builder {
 	b.dns = dns
 	return b
 }
@@ -153,6 +158,11 @@ func (b *Builder) WithLookupIP(lif lookup.LookupIPFunc) *Builder {
 
 func (b *Builder) WithMetrics(metrics metrics.Metrics) *Builder {
 	b.metrics = metrics
+	return b
+}
+
+func (b *Builder) WithEventReaderFactory(erf events.ListenerFactory) *Builder {
+	b.erf = erf
 	return b
 }
 
@@ -190,6 +200,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.metrics == nil {
 		return nil, errors.Errorf("Metrics has not been configured")
 	}
+	if b.erf == nil {
+		return nil, errors.Errorf("EventReaderFactory has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -200,12 +213,14 @@ func (b *Builder) Build() (Runtime, error) {
 			ss:       b.ss,
 			cam:      b.cam,
 			xds:      b.xds,
+			dsl:      b.dsl,
 			ext:      b.ext,
 			dns:      b.dns,
 			configm:  b.configm,
 			leadInfo: b.leadInfo,
 			lif:      b.lif,
 			metrics:  b.metrics,
+			erf:      b.erf,
 		},
 		Manager: b.cm,
 	}, nil
@@ -244,7 +259,7 @@ func (b *Builder) DataSourceLoader() datasource.Loader {
 func (b *Builder) Extensions() context.Context {
 	return b.ext
 }
-func (b *Builder) DNSResolver() dns.DNSResolver {
+func (b *Builder) DNSResolver() resolver.DNSResolver {
 	return b.dns
 }
 func (b *Builder) ConfigManager() config_manager.ConfigManager {
@@ -258,4 +273,7 @@ func (b *Builder) LookupIP() lookup.LookupIPFunc {
 }
 func (b *Builder) Metrics() metrics.Metrics {
 	return b.metrics
+}
+func (b *Builder) EventReaderFactory() events.ListenerFactory {
+	return b.erf
 }

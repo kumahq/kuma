@@ -74,15 +74,15 @@ NOTE:
 
 ## Consideration Notes 
 
-* L4 load-balancing in `Envoy` is implemented by `envoy.tcp_proxy` network filter
-* `envoy.tcp_proxy` does support weighted routing to multiple destination clusters, BUT it does NOT support routing to a subset of endpoints within that cluster. E.g.
+* L4 load-balancing in `Envoy` is implemented by `envoy.filters.network.tcp_proxy` network filter
+* `envoy.filters.network.tcp_proxy` does support weighted routing to multiple destination clusters, BUT it does NOT support routing to a subset of endpoints within that cluster. E.g.
   ```
     destination:
       service: backend
       region: us-east-1
       version: 2
   ```
-  is a subset of endpoints inside the cluster for `service` "*backend*", but `envoy.tcp_proxy` can only balance to the while cluster `service` "*backend*"
+  is a subset of endpoints inside the cluster for `service` "*backend*", but `envoy.filters.network.tcp_proxy` can only balance to the while cluster `service` "*backend*"
 
   * possible solutions:
     1. create an "ad-hoc" cluster that includes only those endpoints that match `destination` (this way we're effectively ignoring subset-based load balancing in Envoy) - `Istio` does that
@@ -106,9 +106,9 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
    * if there is no "best match" `rule`
      * => generate `Cluster` for `service` tag of that *outbound* interface
      * => generate `ClusterLoadAssignment` with all `Dataplanes` that have the same `service` tag
-     * => generate `envoy.tcp_proxy` filter that has only 1 destination `Cluster` (no weight is necessary)
+     * => generate `envoy.filters.network.tcp_proxy` filter that has only 1 destination `Cluster` (no weight is necessary)
    * if there is a "best match" `rule`
-     * => generate `envoy.tcp_proxy` filter with weighted `Clusters` filled in as follows:
+     * => generate `envoy.filters.network.tcp_proxy` filter with weighted `Clusters` filled in as follows:
        * For each *destination* in `rule.conf`:
          * if *destination* has only `service` tag
            * => generate `Cluster` for `service` tag of that *destination*
@@ -116,7 +116,7 @@ In order to generate `Cluster`s and `ClusterLoadAssignment`s for a given `Datapl
          * if *destination* has tags other than `service`
            * => generate "ad-hoc" `Cluster` for all tags of that *destination*
            * => generate `ClusterLoadAssignment` with all `Dataplanes` that have *inbound* interface that matces all tags of that *destination*
-         * add generated `Cluster` to `envoy.tcp_proxy` filter with the weight of that *destination*
+         * add generated `Cluster` to `envoy.filters.network.tcp_proxy` filter with the weight of that *destination*
 
 ## Implementation notes
 

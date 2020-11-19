@@ -77,7 +77,7 @@ var _ = Describe("kumactl get secrets", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, pt := range sampleSecrets {
 				key := core_model.ResourceKey{

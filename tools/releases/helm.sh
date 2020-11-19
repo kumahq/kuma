@@ -49,10 +49,8 @@ function package {
       continue
     fi
 
-    helm package \
-      --app-version "${KUMA_VERSION}" \
-      --destination "${CHARTS_PACKAGE_PATH}" \
-      --dependency-update \
+    cr package \
+      --package-path "${CHARTS_PACKAGE_PATH}" \
       "$dir"
   done
 }

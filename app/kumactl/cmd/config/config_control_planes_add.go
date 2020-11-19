@@ -75,7 +75,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	// flags
 	cmd.Flags().StringVar(&args.name, "name", "", "reference name for the Control Plane (required)")
 	_ = cmd.MarkFlagRequired("name")
-	cmd.Flags().StringVar(&args.apiServerURL, "address", "", "URL of the Control Plane API Server (required)")
+	cmd.Flags().StringVar(&args.apiServerURL, "address", "", "URL of the Control Plane API Server (required). Example: http://localhost:5681 or https://localhost:5682)")
 	_ = cmd.MarkFlagRequired("address")
 	cmd.Flags().BoolVar(&args.overwrite, "overwrite", false, "overwrite existing Control Plane with the same reference name")
 	cmd.Flags().StringVar(&args.clientCertFile, "client-cert-file", "", "path to the certificate of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)")

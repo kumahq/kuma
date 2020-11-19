@@ -181,8 +181,6 @@ Resources:
           Environment:
             - Name: KUMA_MODE
               Value: global
-            - Name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              Value: global-controlplane.kuma.io
           Command:
             - "run"
           LogConfiguration:

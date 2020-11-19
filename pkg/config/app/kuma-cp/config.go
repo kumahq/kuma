@@ -39,6 +39,7 @@ func (d *Defaults) Validate() error {
 type Metrics struct {
 	Dataplane *DataplaneMetrics `yaml:"dataplane"`
 	Zone      *ZoneMetrics      `yaml:"zone"`
+	Mesh      *MeshMetrics      `yaml:"mesh"`
 }
 
 func (m *Metrics) Sanitize() {
@@ -77,6 +78,23 @@ func (d *ZoneMetrics) Sanitize() {
 func (d *ZoneMetrics) Validate() error {
 	if d.SubscriptionLimit < 0 {
 		return errors.New("SubscriptionLimit should be positive or equal 0")
+	}
+	return nil
+}
+
+type MeshMetrics struct {
+	// MinResyncTimeout is a minimal time that should pass between MeshInsight resync
+	MinResyncTimeout time.Duration `yaml:"minResyncTimeout" envconfig:"kuma_metrics_mesh_min_resync_timeout"`
+	// MaxResyncTimeout is a maximum time that MeshInsight could spend without resync
+	MaxResyncTimeout time.Duration `yaml:"maxResyncTimeout" envconfig:"kuma_metrics_mesh_max_resync_timeout"`
+}
+
+func (d *MeshMetrics) Sanitize() {
+}
+
+func (d *MeshMetrics) Validate() error {
+	if d.MaxResyncTimeout <= d.MinResyncTimeout {
+		return errors.New("MaxResyncTimeout should be greater than MinResyncTimeout")
 	}
 	return nil
 }
@@ -164,6 +182,10 @@ func DefaultConfig() Config {
 			Zone: &ZoneMetrics{
 				Enabled:           true,
 				SubscriptionLimit: 10,
+			},
+			Mesh: &MeshMetrics{
+				MinResyncTimeout: 1 * time.Second,
+				MaxResyncTimeout: 20 * time.Second,
 			},
 		},
 		Reports: &Reports{
@@ -260,9 +282,6 @@ func (c *Config) Validate() error {
 }
 
 type GeneralConfig struct {
-	// Hostname that other components should use in order to connect to the Control Plane.
-	// Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
-	AdvertisedHostname string `yaml:"advertisedHostname" envconfig:"kuma_general_advertised_hostname"`
 	// DNSCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
 	DNSCacheTTL time.Duration `yaml:"dnsCacheTTL" envconfig:"kuma_general_dns_cache_ttl"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert that will be used across all the Kuma Servers.
@@ -288,7 +307,6 @@ func (g *GeneralConfig) Validate() error {
 
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
-		AdvertisedHostname: "localhost",
-		DNSCacheTTL:        10 * time.Second,
+		DNSCacheTTL: 10 * time.Second,
 	}
 }

@@ -18,12 +18,12 @@ type Loader interface {
 }
 
 type loader struct {
-	secretManager manager.ResourceManager
+	secretManager manager.ReadOnlyResourceManager
 }
 
 var _ Loader = &loader{}
 
-func NewDataSourceLoader(secretManager manager.ResourceManager) Loader {
+func NewDataSourceLoader(secretManager manager.ReadOnlyResourceManager) Loader {
 	return &loader{
 		secretManager: secretManager,
 	}

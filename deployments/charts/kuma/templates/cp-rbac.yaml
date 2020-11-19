@@ -9,7 +9,7 @@ metadata:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "kuma.name" . }}:control-plane
+  name: {{ include "kuma.name" . }}-control-plane
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 rules:
@@ -40,18 +40,10 @@ rules:
       - meshes
       - zones
       - zoneinsights
-    verbs:
-      - get
-      - list
-      - watch
-      - create
-      - update
-      - patch
-      - delete
-  - apiGroups:
-      - kuma.io
-    resources:
+      - meshinsights
       - proxytemplates
+      - trafficpermissions
+      - trafficroutes
     verbs:
       - get
       - list
@@ -60,14 +52,6 @@ rules:
       - update
       - patch
       - delete
-  - apiGroups:
-      - kuma.io
-    resources:
-      - proxytemplates/status
-    verbs:
-      - get
-      - update
-      - patch
   - apiGroups:
       - kuma.io
     resources:
@@ -75,9 +59,7 @@ rules:
       - externalservices
       - faultinjections
       - healthchecks
-      - trafficpermissions
       - trafficlogs
-      - trafficroutes
       - traffictraces
     verbs:
       - get
@@ -130,13 +112,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "kuma.name" . }}:control-plane
+  name: {{ include "kuma.name" . }}-control-plane
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "kuma.name" . }}:control-plane
+  name: {{ include "kuma.name" . }}-control-plane
 subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-control-plane
@@ -145,7 +127,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "kuma.name" . }}:control-plane
+  name: {{ include "kuma.name" . }}-control-plane
   namespace: {{ .Release.Namespace }}
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
@@ -178,12 +160,12 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "kuma.name" . }}:control-plane
+  name: {{ include "kuma.name" . }}-control-plane
   namespace: {{ .Release.Namespace }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: {{ include "kuma.name" . }}:control-plane
+  name: {{ include "kuma.name" . }}-control-plane
 subjects:
   - kind: ServiceAccount
     name: {{ include "kuma.name" . }}-control-plane

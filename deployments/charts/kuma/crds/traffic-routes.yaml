@@ -8,7 +8,7 @@ spec:
   names:
     kind: TrafficRoute
     plural: trafficroutes
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: TrafficRoute is the Schema for the trafficroutes API

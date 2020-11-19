@@ -24,7 +24,7 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 	hasher, cache := newKDSContext(log)
 	generator := reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), providedTypes, filter)
 	versioner := util_xds.SnapshotAutoVersioner{UUID: core.NewUUID}
-	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner)
+	reconciler := reconcile.NewReconciler(hasher, cache, generator, versioner, rt.Config().Mode)
 	syncTracker, err := newSyncTracker(log, reconciler, refresh, rt.Metrics())
 	if err != nil {
 		return nil, err

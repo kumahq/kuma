@@ -3,7 +3,6 @@ package clusters
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -83,7 +82,7 @@ func (c *clientSideMTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 }
 
 func (c *clientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_core.TransportSocket, error) {
-	tlsContext, err := envoy.CreateUpstreamTlsContext(c.ctx, c.metadata, c.clientService, sni)
+	tlsContext, err := tls.CreateUpstreamTlsContext(c.ctx, c.metadata, c.clientService, sni)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +94,7 @@ func (c *clientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_cor
 		return nil, err
 	}
 	transportSocket := &envoy_core.TransportSocket{
-		Name: envoy_wellknown.TransportSocketTls,
+		Name: "envoy.transport_sockets.tls",
 		ConfigType: &envoy_core.TransportSocket_TypedConfig{
 			TypedConfig: pbst,
 		},

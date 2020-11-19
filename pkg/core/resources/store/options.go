@@ -164,10 +164,13 @@ func (g *GetOptions) HashCode() string {
 	return fmt.Sprintf("%s:%s", g.Name, g.Mesh)
 }
 
+type ListFilterFunc func(rs core_model.Resource) bool
+
 type ListOptions struct {
 	Mesh       string
 	PageSize   int
 	PageOffset string
+	FilterFunc ListFilterFunc
 }
 
 type ListOptionsFunc func(*ListOptions)
@@ -178,6 +181,15 @@ func NewListOptions(fs ...ListOptionsFunc) *ListOptions {
 		f(opts)
 	}
 	return opts
+}
+
+// Filter returns true if the item passes the filtering criteria
+func (l *ListOptions) Filter(rs core_model.Resource) bool {
+	if l.FilterFunc == nil {
+		return true
+	}
+
+	return l.FilterFunc(rs)
 }
 
 func ListByMesh(mesh string) ListOptionsFunc {

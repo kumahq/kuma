@@ -18,7 +18,6 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/tcp_proxy/v2"
-	envoy_wellknown "github.com/envoyproxy/go-control-plane/pkg/wellknown"
 
 	util_error "github.com/kumahq/kuma/pkg/util/error"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -50,7 +49,7 @@ var _ = Describe("UpdateFilterConfig()", func() {
 			},
 			Entry("0 filters", testCase{
 				filterChain: &envoy_listener.FilterChain{},
-				filterName:  envoy_wellknown.TCPProxy,
+				filterName:  "envoy.filters.network.tcp_proxy",
 				updateFunc:  func(proto.Message) error { return errors.New("should never happen") },
 				expected:    `{}`,
 			}),
@@ -60,13 +59,13 @@ var _ = Describe("UpdateFilterConfig()", func() {
 				return testCase{
 					filterChain: &envoy_listener.FilterChain{
 						Filters: []*envoy_listener.Filter{{
-							Name: envoy_wellknown.TCPProxy,
+							Name: "envoy.filters.network.tcp_proxy",
 							ConfigType: &envoy_listener.Filter_TypedConfig{
 								TypedConfig: pbst,
 							},
 						}},
 					},
-					filterName: envoy_wellknown.TCPProxy,
+					filterName: "envoy.filters.network.tcp_proxy",
 					updateFunc: func(filterConfig proto.Message) error {
 						proxy := filterConfig.(*envoy_tcp.TcpProxy)
 						proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
@@ -76,7 +75,7 @@ var _ = Describe("UpdateFilterConfig()", func() {
 					},
 					expected: `
                     filters:
-                    - name: envoy.tcp_proxy
+                    - name: envoy.filters.network.tcp_proxy
                       typedConfig:
                         '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                         cluster: backend
@@ -90,17 +89,17 @@ var _ = Describe("UpdateFilterConfig()", func() {
 					filterChain: &envoy_listener.FilterChain{
 						Filters: []*envoy_listener.Filter{
 							{
-								Name: envoy_wellknown.RoleBasedAccessControl,
+								Name: "envoy.filters.network.rbac",
 							},
 							{
-								Name: envoy_wellknown.TCPProxy,
+								Name: "envoy.filters.network.tcp_proxy",
 								ConfigType: &envoy_listener.Filter_TypedConfig{
 									TypedConfig: pbst,
 								},
 							},
 						},
 					},
-					filterName: envoy_wellknown.TCPProxy,
+					filterName: "envoy.filters.network.tcp_proxy",
 					updateFunc: func(filterConfig proto.Message) error {
 						proxy := filterConfig.(*envoy_tcp.TcpProxy)
 						proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
@@ -111,7 +110,7 @@ var _ = Describe("UpdateFilterConfig()", func() {
 					expected: `
                     filters:
                     - name: envoy.filters.network.rbac
-                    - name: envoy.tcp_proxy
+                    - name: envoy.filters.network.tcp_proxy
                       typedConfig:
                         '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                         cluster: backend
@@ -142,10 +141,10 @@ var _ = Describe("UpdateFilterConfig()", func() {
 			Entry("1 filter without config", testCase{
 				filterChain: &envoy_listener.FilterChain{
 					Filters: []*envoy_listener.Filter{{
-						Name: envoy_wellknown.TCPProxy,
+						Name: "envoy.filters.network.tcp_proxy",
 					}},
 				},
-				filterName:  envoy_wellknown.TCPProxy,
+				filterName:  "envoy.filters.network.tcp_proxy",
 				updateFunc:  func(proto.Message) error { return errors.New("should never happen") },
 				expectedErr: `filters[0]: config cannot be 'nil'`,
 			}),
@@ -155,13 +154,13 @@ var _ = Describe("UpdateFilterConfig()", func() {
 				return testCase{
 					filterChain: &envoy_listener.FilterChain{
 						Filters: []*envoy_listener.Filter{{
-							Name: envoy_wellknown.TCPProxy,
+							Name: "envoy.filters.network.tcp_proxy",
 							ConfigType: &envoy_listener.Filter_TypedConfig{
 								TypedConfig: pbst,
 							},
 						}},
 					},
-					filterName:  envoy_wellknown.TCPProxy,
+					filterName:  "envoy.filters.network.tcp_proxy",
 					updateFunc:  func(proto.Message) error { return errors.New("wrong config type") },
 					expectedErr: `wrong config type`,
 				}

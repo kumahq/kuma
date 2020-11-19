@@ -3,7 +3,6 @@ package routes
 import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
-	"github.com/golang/protobuf/ptypes/wrappers"
 )
 
 func Route(matchPath, newPath, cluster string, allowGetOnly bool) VirtualHostBuilderOpt {
@@ -48,9 +47,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 				RegexRewrite: &envoy_type_matcher.RegexMatchAndSubstitute{
 					Pattern: &envoy_type_matcher.RegexMatcher{
 						EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-							GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{
-								MaxProgramSize: &wrappers.UInt32Value{Value: 500},
-							},
+							GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
 						},
 						Regex: `.*`,
 					},

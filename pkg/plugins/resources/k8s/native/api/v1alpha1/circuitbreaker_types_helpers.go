@@ -33,7 +33,7 @@ func (cb *CircuitBreaker) SetSpec(spec map[string]interface{}) {
 }
 
 func (cb *CircuitBreaker) Scope() model.Scope {
-	return model.ScopeNamespace
+	return model.ScopeCluster
 }
 
 func (l *CircuitBreakerList) GetItems() []model.KubernetesObject {
