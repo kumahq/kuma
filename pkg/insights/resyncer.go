@@ -102,6 +102,10 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 			// because that's how we find online/offline Dataplane's status
 			continue
 		}
+		if resourceChanged.Type == core_mesh.MeshType || resourceChanged.Type == core_mesh.MeshInsightType {
+			// when don't count Mesh itself, we coun't Mesh resources, so there is no need to react on this event
+			continue
+		}
 		if !p.rateLimiter.Allow() {
 			continue
 		}
