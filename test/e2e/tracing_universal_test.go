@@ -66,6 +66,9 @@ selectors:
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})

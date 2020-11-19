@@ -155,6 +155,9 @@ metadata:
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		_ = k8s.KubectlDeleteFromStringE(remote_1.GetTesting(), remote_1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
 		err := remote_1.DeleteKuma(optsRemote1...)
 		Expect(err).ToNot(HaveOccurred())
