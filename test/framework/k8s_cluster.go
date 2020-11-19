@@ -293,12 +293,13 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	}
 
 	values := map[string]string{
-		"controlPlane.mode":              mode,
-		"global.image.tag":               kuma_version.Build.Version,
-		"global.image.registry":          KumaImageRegistry,
-		"controlPlane.image.repository":  KumaCPImageRepo,
-		"dataPlane.image.repository":     KumaDPImageRepo,
-		"dataPlane.initImage.repository": KumaInitImageRepo,
+		"controlPlane.mode":                      mode,
+		"global.image.tag":                       kuma_version.Build.Version,
+		"global.image.registry":                  KumaImageRegistry,
+		"controlPlane.image.repository":          KumaCPImageRepo,
+		"dataPlane.image.repository":             KumaDPImageRepo,
+		"dataPlane.initImage.repository":         KumaInitImageRepo,
+		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(opts.skipDefaultMesh),
 	}
 	for opt, value := range opts.helmOpts {
 		values[opt] = value
@@ -379,16 +380,18 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 		}
 	}
 
-	// wait for the mesh
-	_, err = retry.DoWithRetryE(c.t,
-		"get default mesh",
-		DefaultRetries,
-		DefaultTimeout,
-		func() (s string, err error) {
-			return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
-		})
-	if err != nil {
-		return err
+	if !opts.skipDefaultMesh {
+		// wait for the mesh
+		_, err = retry.DoWithRetryE(c.t,
+			"get default mesh",
+			DefaultRetries,
+			DefaultTimeout,
+			func() (s string, err error) {
+				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+			})
+		if err != nil {
+			return err
+		}
 	}
 
 	err = c.controlplane.FinalizeAdd()
