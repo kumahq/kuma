@@ -63,7 +63,7 @@ controlPlane:
 
 #  config: |
 #    xdsServer:
-#      dataplaneStatusFlushInterval: 2s
+#      dataplaneConfigurationRefreshInterval: 2s
 
 cni:
   enabled: false
