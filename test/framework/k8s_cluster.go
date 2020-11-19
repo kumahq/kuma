@@ -320,8 +320,13 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
 	}
 
+	prefixedValues := map[string]string{}
+	for k, v := range values {
+		prefixedValues[HelmSubChartPrefix+k] = v
+	}
+
 	helmOpts := &helm.Options{
-		SetValues:      values,
+		SetValues:      prefixedValues,
 		KubectlOptions: c.GetKubectlOptions(KumaNamespace),
 	}
 
@@ -333,9 +338,11 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		)
 	}
 
-	// first create the namespace
-	if err := k8s.CreateNamespaceE(c.t, c.GetKubectlOptions(), KumaNamespace); err != nil {
-		return err
+	// create the namespace if it does not exist
+	if _, err = k8s.GetNamespaceE(c.t, c.GetKubectlOptions(), KumaNamespace); err != nil {
+		if err = k8s.CreateNamespaceE(c.t, c.GetKubectlOptions(), KumaNamespace); err != nil {
+			return err
+		}
 	}
 
 	return helm.InstallE(c.t, helmOpts, helmChartPath, releaseName)
