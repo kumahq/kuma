@@ -1,4 +1,4 @@
-package e2e
+package e2e_test
 
 import (
 	"strings"
@@ -65,6 +65,9 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		err := globalCluster.DeleteKuma(optsGlobal...)
 		Expect(err).ToNot(HaveOccurred())
 		err = globalCluster.DismissCluster()
