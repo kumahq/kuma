@@ -28,7 +28,7 @@ func (p *plugin) NewResourceStore(pc core_plugins.PluginContext, config core_plu
 	if !migrated {
 		return nil, errors.New(`database is not migrated. Run "kuma-cp migrate up" to update database to the newest schema`)
 	}
-	return NewStore(*cfg)
+	return NewStore(pc, *cfg)
 }
 
 func (p *plugin) Migrate(pc core_plugins.PluginContext, config core_plugins.PluginConfig) (core_plugins.DbVersion, error) {

@@ -8,12 +8,15 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 
 	_ "github.com/lib/pq"
 	"github.com/pkg/errors"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -21,15 +24,46 @@ import (
 
 const duplicateKeyErrorMsg = "duplicate key value violates unique constraint"
 
+var (
+	postgresConnectionMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "store_postgres_connections",
+		Help: "Current number of postgres store connections",
+	}, []string{"type"})
+
+	postgresClosedConnectionMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_closed",
+		Help: "Current number of closed postgres store connections",
+	}, []string{"type"})
+
+	postgresMaxConnectionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "store_postgres_connections_max",
+		Help: "Max postgres store open connections",
+	})
+
+	postgresWaitConnectionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_wait_count",
+		Help: "Current waiting postgres store connections",
+	})
+
+	postgresWaitConnectionDurationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_wait_duration",
+		Help: "Time Blocked waiting for new connection in seconds",
+	})
+)
+
 type postgresResourceStore struct {
 	db *sql.DB
 }
 
 var _ store.ResourceStore = &postgresResourceStore{}
 
-func NewStore(config config.PostgresStoreConfig) (store.ResourceStore, error) {
+func NewStore(pc core_plugins.PluginContext, config config.PostgresStoreConfig) (store.ResourceStore, error) {
 	db, err := common_postgres.ConnectToDb(config)
 	if err != nil {
+		return nil, err
+	}
+
+	if err := registerAndCollectMetrics(pc, db.Stats()); err != nil {
 		return nil, err
 	}
 
@@ -315,4 +349,40 @@ func (r *resourceMetaObject) GetCreationTime() time.Time {
 
 func (r *resourceMetaObject) GetModificationTime() time.Time {
 	return r.ModificationTime
+}
+
+func registerAndCollectMetrics(pc core_plugins.PluginContext, dbStats sql.DBStats) error {
+
+	if err := pc.Metrics().Register(postgresConnectionMetric); err != nil {
+		return err
+	}
+
+	if err := pc.Metrics().Register(postgresMaxConnectionMetric); err != nil {
+		return err
+	}
+	if err := pc.Metrics().Register(postgresClosedConnectionMetric); err != nil {
+		return err
+	}
+	if err := pc.Metrics().Register(postgresWaitConnectionMetric); err != nil {
+		return err
+	}
+	if err := pc.Metrics().Register(postgresWaitConnectionDurationMetric); err != nil {
+		return err
+	}
+
+	postgresConnectionMetric.WithLabelValues("open_connections").Set(float64(dbStats.OpenConnections))
+	postgresConnectionMetric.WithLabelValues("in_use").Set(float64(dbStats.InUse))
+	postgresConnectionMetric.WithLabelValues("idle").Set(float64(dbStats.Idle))
+
+	postgresMaxConnectionMetric.Set(float64(dbStats.MaxOpenConnections))
+
+	postgresClosedConnectionMetric.WithLabelValues("max_idle_conns").Set(float64(dbStats.MaxIdleClosed))
+	postgresClosedConnectionMetric.WithLabelValues("conn_max_idle_time").Set(float64(dbStats.MaxIdleTimeClosed))
+	postgresClosedConnectionMetric.WithLabelValues("conn_max_life_time").Set(float64(dbStats.MaxLifetimeClosed))
+
+	postgresWaitConnectionMetric.Set(float64(dbStats.WaitCount))
+
+	postgresWaitConnectionDurationMetric.Set(dbStats.WaitDuration.Seconds())
+
+	return nil
 }
