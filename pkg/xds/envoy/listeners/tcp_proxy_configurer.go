@@ -25,6 +25,9 @@ type TcpProxyConfigurer struct {
 }
 
 func (c *TcpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+	if len(c.clusters) == 0 {
+		return nil
+	}
 	tcpProxy := c.tcpProxy()
 
 	pbst, err := proto.MarshalAnyDeterministic(tcpProxy)
