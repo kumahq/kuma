@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 
+	"github.com/kumahq/kuma/pkg/api-server/customization"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/dns/resolver"
@@ -46,7 +48,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeMetrics(builder); err != nil {
 		return nil, err
 	}
-	if err := initializeBootstrap(cfg, builder); err != nil {
+	if err := initializeBeforeBootstrap(cfg, builder); err != nil {
 		return nil, err
 	}
 	if err := initializeResourceStore(cfg, builder); err != nil {
@@ -86,6 +88,11 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
+	builder.WithCustomWsManager(customization.NewCustomWsList())
+
+	if err := initializeAfterBootstrap(cfg, builder); err != nil {
+		return nil, err
+	}
 
 	rt, err := builder.Build()
 	if err != nil {
@@ -142,13 +149,26 @@ func startReporter(runtime core_runtime.Runtime) error {
 	}))
 }
 
-func initializeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+func initializeBeforeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	for name, plugin := range core_plugins.Plugins().BootstrapPlugins() {
 		if (cfg.Environment == config_core.KubernetesEnvironment && name == core_plugins.Universal) ||
 			(cfg.Environment == config_core.UniversalEnvironment && name == core_plugins.Kubernetes) {
 			continue
 		}
-		if err := plugin.Bootstrap(builder, nil); err != nil {
+		if err := plugin.BeforeBootstrap(builder, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func initializeAfterBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	for name, plugin := range core_plugins.Plugins().BootstrapPlugins() {
+		if (cfg.Environment == config_core.KubernetesEnvironment && name == core_plugins.Universal) ||
+			(cfg.Environment == config_core.UniversalEnvironment && name == core_plugins.Kubernetes) {
+			continue
+		}
+		if err := plugin.BeforeBootstrap(builder, nil); err != nil {
 			return err
 		}
 	}

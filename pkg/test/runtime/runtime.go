@@ -3,6 +3,8 @@ package runtime
 import (
 	"net"
 
+	"github.com/kumahq/kuma/pkg/api-server/customization"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -65,6 +67,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 	builder.WithLookupIP(net.LookupIP)
 	builder.WithEventReaderFactory(events.NewEventBus())
+	builder.WithCustomWsManager(customization.NewCustomWsList())
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)

@@ -3,6 +3,8 @@ package runtime
 import (
 	"context"
 
+	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/events"
@@ -39,6 +41,7 @@ type BuilderContext interface {
 	LeaderInfo() component.LeaderInfo
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
+	APIManager() api_server.APIManager
 }
 
 var _ BuilderContext = &Builder{}
@@ -62,6 +65,7 @@ type Builder struct {
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
+	cws      api_server.APIManager
 	*runtimeInfo
 }
 
@@ -166,6 +170,11 @@ func (b *Builder) WithEventReaderFactory(erf events.ListenerFactory) *Builder {
 	return b
 }
 
+func (b *Builder) WithCustomWsManager(cws api_server.APIManager) *Builder {
+	b.cws = cws
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -203,6 +212,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.erf == nil {
 		return nil, errors.Errorf("EventReaderFactory has not been configured")
 	}
+	if b.cws == nil {
+		return nil, errors.Errorf("CustomWsManager has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -221,6 +233,7 @@ func (b *Builder) Build() (Runtime, error) {
 			lif:      b.lif,
 			metrics:  b.metrics,
 			erf:      b.erf,
+			cws:      b.cws,
 		},
 		Manager: b.cm,
 	}, nil
@@ -276,4 +289,8 @@ func (b *Builder) Metrics() metrics.Metrics {
 }
 func (b *Builder) EventReaderFactory() events.ListenerFactory {
 	return b.erf
+}
+
+func (b *Builder) APIManager() api_server.APIManager {
+	return b.cws
 }
