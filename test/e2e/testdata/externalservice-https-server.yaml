@@ -36,25 +36,16 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: kuma-universal
+          image: mendhak/http-https-echo
           imagePullPolicy: IfNotPresent
           readinessProbe:
             httpGet:
-              scheme: HTTPS
               path: /
-              port: 443
+              port: 80
             initialDelaySeconds: 3
             periodSeconds: 3
           ports:
             - containerPort: 443
-          command: [ "ncat" ]
-          args:
-            - -lk
-            - -p
-            - "443"
-            - --ssl
-            - --sh-exec
-            - '/usr/bin/printf "HTTP/1.1 200 OK\n\n HTTPS Echo\n"'
           resources:
             limits:
               cpu: 50m
