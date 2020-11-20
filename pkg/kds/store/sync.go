@@ -60,7 +60,8 @@ func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) Resou
 func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFunc) error {
 	opts := NewSyncOptions(fs...)
 	ctx := context.Background()
-	s.log.V(1).Info("sync", "upstream", upstream)
+	log := s.log.WithValues("type", upstream.GetItemType())
+	log.V(1).Info("sync", "upstream", upstream)
 	downstream, err := registry.Global().NewList(upstream.GetItemType())
 	if err != nil {
 		return err
@@ -68,7 +69,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	if err := s.resourceStore.List(ctx, downstream); err != nil {
 		return err
 	}
-	s.log.V(1).Info("before filtering", "downstream", downstream)
+	log.V(1).Info("before filtering", "downstream", downstream)
 
 	if opts.Predicate != nil {
 		if filtered, err := filter(downstream, opts.Predicate); err != nil {
@@ -77,7 +78,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 			downstream = filtered
 		}
 	}
-	s.log.V(1).Info("after filtering", "downstream", downstream)
+	log.V(1).Info("after filtering", "downstream", downstream)
 
 	indexedUpstream := newIndexed(upstream)
 	indexedDownstream := newIndexed(downstream)
@@ -109,7 +110,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 
 	for _, r := range onDelete {
 		rk := model.MetaToResourceKey(r.GetMeta())
-		s.log.Info("deleting a resource since it's no longer available in the upstream", "resourceKey", rk)
+		log.Info("deleting a resource since it's no longer available in the upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
 			return err
 		}
@@ -117,7 +118,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 
 	for _, r := range onCreate {
 		rk := model.MetaToResourceKey(r.GetMeta())
-		s.log.Info("creating a new resource from upstream", "resourceKey", rk)
+		log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		creationTime := r.GetMeta().GetCreationTime()
 		// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
 		r.SetMeta(nil)
@@ -127,7 +128,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	}
 
 	for _, r := range onUpdate {
-		s.log.Info("updating a resource", "resourceKey", model.MetaToResourceKey(r.GetMeta()))
+		log.Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		now := time.Now()
 		// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 		// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime
