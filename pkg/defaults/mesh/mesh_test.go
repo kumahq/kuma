@@ -33,7 +33,7 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		err := mesh.EnsureDefaultMeshResources(resManager, model.DefaultMesh)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then
+		// then default TrafficPermission for the mesh exist
 		err = resManager.Get(context.Background(), &core_mesh.TrafficPermissionResource{}, core_store.GetByKey("allow-all-default", model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -55,6 +55,14 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		err = mesh.EnsureDefaultMeshResources(resManager, model.DefaultMesh)
 
 		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		// and all resources are in place
+		err = resManager.Get(context.Background(), &core_mesh.TrafficPermissionResource{}, core_store.GetByKey("allow-all-default", model.DefaultMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = resManager.Get(context.Background(), &core_mesh.TrafficRouteResource{}, core_store.GetByKey("route-all-default", model.DefaultMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = resManager.Get(context.Background(), &system.SecretResource{}, core_store.GetBy(issuer.SigningKeyResourceKey(model.DefaultMesh)))
 		Expect(err).ToNot(HaveOccurred())
 	})
 })

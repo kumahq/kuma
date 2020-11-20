@@ -10,21 +10,21 @@ import (
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
 
-func ensureSigningKey(resManager manager.ResourceManager, meshName string) (err error, created bool) {
+func ensureSigningKey(resManager manager.ResourceManager, meshName string) (created bool, err error) {
 	signingKey, err := issuer.CreateSigningKey()
 	if err != nil {
-		return errors.Wrap(err, "could not create a signing key"), false
+		return false, errors.Wrap(err, "could not create a signing key")
 	}
 	key := issuer.SigningKeyResourceKey(meshName)
 	err = resManager.Get(context.Background(), &signingKey, core_store.GetBy(key))
 	if err == nil {
-		return nil, false
+		return false, nil
 	}
 	if !core_store.IsResourceNotFound(err) {
-		return errors.Wrap(err, "could not retrieve a resource"), false
+		return false, errors.Wrap(err, "could not retrieve a resource")
 	}
 	if err := resManager.Create(context.Background(), &signingKey, core_store.CreateBy(key)); err != nil {
-		return errors.Wrap(err, "could not create a resource"), false
+		return false, errors.Wrap(err, "could not create a resource")
 	}
-	return nil, true
+	return true, nil
 }

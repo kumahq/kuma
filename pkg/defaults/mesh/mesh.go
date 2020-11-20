@@ -33,7 +33,7 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default TrafficRoute already exist", "mesh", meshName, "name", defaultTrafficRouteKey(meshName).Name)
 	}
 
-	err, created = ensureSigningKey(resManager, meshName)
+	created, err = ensureSigningKey(resManager, meshName)
 	if err != nil {
 		return errors.Wrap(err, "could not create default Signing Key")
 	}
