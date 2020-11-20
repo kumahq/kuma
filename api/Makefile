@@ -58,8 +58,8 @@ PROTOC_GO := protoc \
 	--proto_path=$(PROTOBUF_WKT_DIR)/include \
 	--proto_path=. \
 	$(protoc_search_go_paths) \
-	--go_out=plugins=grpc,$(go_mapping):. \
-	--validate_out=lang=go:.
+	--go_opt=paths=source_relative \
+	--go_out=plugins=grpc,$(go_mapping):.
 
 PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)
