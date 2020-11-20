@@ -171,7 +171,7 @@ metadata:
 			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
+		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
 	})
 
 	It("should route to external-service over tls", func() {
@@ -182,7 +182,7 @@ metadata:
 			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).To(ContainSubstring("HTTPS"))
+		Expect(stdout).To(ContainSubstring("externalservice-https-server"))
 	})
 
 	It("should disable passthrough", func() {
