@@ -18,7 +18,7 @@ type APIList struct {
 	list []*restful.WebService
 }
 
-func NewCustomWsList() *APIList {
+func NewAPIList() *APIList {
 	return &APIList{
 		list: []*restful.WebService{},
 	}

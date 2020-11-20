@@ -67,7 +67,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 	builder.WithLookupIP(net.LookupIP)
 	builder.WithEventReaderFactory(events.NewEventBus())
-	builder.WithCustomWsManager(customization.NewCustomWsList())
+	builder.WithAPIManager(customization.NewAPIList())
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)

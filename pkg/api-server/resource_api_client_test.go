@@ -119,7 +119,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 
 	defs := append(definitions.All, SampleTrafficRouteWsDefinition)
 	resources := manager.NewResourceManager(store)
-	wsManager := customization.NewCustomWsList()
+	wsManager := customization.NewAPIList()
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
 	apiServer, err := api_server.NewApiServer(resources, wsManager, defs, &cfg, enableGUI, metrics)

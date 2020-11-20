@@ -65,7 +65,7 @@ type Builder struct {
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
-	cws      api_server.APIManager
+	apim     api_server.APIManager
 	*runtimeInfo
 }
 
@@ -170,8 +170,8 @@ func (b *Builder) WithEventReaderFactory(erf events.ListenerFactory) *Builder {
 	return b
 }
 
-func (b *Builder) WithCustomWsManager(cws api_server.APIManager) *Builder {
-	b.cws = cws
+func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
+	b.apim = apim
 	return b
 }
 
@@ -212,8 +212,8 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.erf == nil {
 		return nil, errors.Errorf("EventReaderFactory has not been configured")
 	}
-	if b.cws == nil {
-		return nil, errors.Errorf("CustomWsManager has not been configured")
+	if b.apim == nil {
+		return nil, errors.Errorf("APIManager has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
@@ -233,7 +233,7 @@ func (b *Builder) Build() (Runtime, error) {
 			lif:      b.lif,
 			metrics:  b.metrics,
 			erf:      b.erf,
-			cws:      b.cws,
+			apim:     b.apim,
 		},
 		Manager: b.cm,
 	}, nil
@@ -292,5 +292,5 @@ func (b *Builder) EventReaderFactory() events.ListenerFactory {
 }
 
 func (b *Builder) APIManager() api_server.APIManager {
-	return b.cws
+	return b.apim
 }

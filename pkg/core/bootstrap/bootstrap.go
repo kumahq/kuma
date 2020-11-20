@@ -88,7 +88,7 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
-	builder.WithCustomWsManager(customization.NewCustomWsList())
+	builder.WithAPIManager(customization.NewAPIList())
 
 	if err := initializeAfterBootstrap(cfg, builder); err != nil {
 		return nil, err
@@ -168,7 +168,7 @@ func initializeAfterBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder)
 			(cfg.Environment == config_core.UniversalEnvironment && name == core_plugins.Kubernetes) {
 			continue
 		}
-		if err := plugin.BeforeBootstrap(builder, nil); err != nil {
+		if err := plugin.AfterBootstrap(builder, nil); err != nil {
 			return err
 		}
 	}

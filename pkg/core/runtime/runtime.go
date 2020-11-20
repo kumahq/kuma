@@ -110,7 +110,7 @@ type runtimeContext struct {
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
-	cws      api_server.APIInstaller
+	apim     api_server.APIInstaller
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -177,5 +177,5 @@ func (rc *runtimeContext) LookupIP() lookup.LookupIPFunc {
 	return rc.lif
 }
 func (rc *runtimeContext) APIInstaller() api_server.APIInstaller {
-	return rc.cws
+	return rc.apim
 }
