@@ -60,6 +60,11 @@ controlPlane:
   # secrets: {}
 
   envVars: {}
+
+#  config: |
+#    xdsServer:
+#      dataplaneConfigurationRefreshInterval: 2s
+
 cni:
   enabled: false
   chained: false

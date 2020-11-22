@@ -6375,7 +6375,6 @@ status:
     plural: ""
   conditions: []
   storedVersions: []
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -6640,7 +6639,7 @@ spec:
         # priority scheduling and that its resources are reserved
         # if it ever gets evicted.
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        checksum/config: 606dd0cc0def09bca466644a0fc6062d60526dd5beaa5a4b5f1fba8ed39148f7
+        checksum/config: 6142312cadfe3bbcd151541c2299e7bf36379071614436e965300e7b3dd26099
     spec:
       nodeSelector:
 
@@ -6717,8 +6716,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 8db352a0efe11201b4c69a2f5d2c28a0255246c13c7f617b579fed223107288a
-        checksum/tls-secrets: 687ff2885db59f6ada611e0dbc31ea4cd2ee71528684f9532467c16f9cd9aef1
+        checksum/config: b94139ab6b00162188a7a5ae97cbd3cccd3bd81676ab62411899a49fcfcc9d14
+        checksum/tls-secrets: fae47669c2e6f0ae384d8bfb5e92b076c065a61e2ba4d247e07c45c740a5ea28
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma

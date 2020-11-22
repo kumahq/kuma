@@ -104,7 +104,7 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string) error {
 
 	updated, updError := UpdateMeshedVIPs(global, meshed, d.ipam, serviceSet)
 	if !updated {
-		return err
+		return updError
 	}
 
 	if err := d.persistence.Set(mesh, meshed); err != nil {

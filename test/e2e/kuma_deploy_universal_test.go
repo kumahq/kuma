@@ -95,6 +95,9 @@ routing:
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		err := remote_1.DeleteKuma(optsRemote1...)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.DeleteKuma(optsRemote2...)
