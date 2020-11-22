@@ -16,40 +16,13 @@ import (
 	"github.com/pkg/errors"
 
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
-	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
 const duplicateKeyErrorMsg = "duplicate key value violates unique constraint"
-
-var (
-	postgresConnectionMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "store_postgres_connections",
-		Help: "Current number of postgres store connections",
-	}, []string{"type"})
-
-	postgresClosedConnectionMetric = prometheus.NewGaugeVec(prometheus.GaugeOpts{
-		Name: "store_postgres_connection_closed",
-		Help: "Current number of closed postgres store connections",
-	}, []string{"type"})
-
-	postgresMaxConnectionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "store_postgres_connections_max",
-		Help: "Max postgres store open connections",
-	})
-
-	postgresWaitConnectionMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "store_postgres_connection_wait_count",
-		Help: "Current waiting postgres store connections",
-	})
-
-	postgresWaitConnectionDurationMetric = prometheus.NewGauge(prometheus.GaugeOpts{
-		Name: "store_postgres_connection_wait_duration",
-		Help: "Time Blocked waiting for new connection in seconds",
-	})
-)
 
 type postgresResourceStore struct {
 	db *sql.DB
@@ -57,13 +30,13 @@ type postgresResourceStore struct {
 
 var _ store.ResourceStore = &postgresResourceStore{}
 
-func NewStore(pc core_plugins.PluginContext, config config.PostgresStoreConfig) (store.ResourceStore, error) {
+func NewStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (store.ResourceStore, error) {
 	db, err := common_postgres.ConnectToDb(config)
 	if err != nil {
 		return nil, err
 	}
 
-	if err := registerAndCollectMetrics(pc, db.Stats()); err != nil {
+	if err := registerAndCollectMetrics(metrics, db.Stats()); err != nil {
 		return nil, err
 	}
 
@@ -302,38 +275,93 @@ func (r *resourceMetaObject) GetModificationTime() time.Time {
 	return r.ModificationTime
 }
 
-func registerAndCollectMetrics(pc core_plugins.PluginContext, dbStats sql.DBStats) error {
+func registerAndCollectMetrics(metrics core_metrics.Metrics, dbStats sql.DBStats) error {
+	postgresCurrentConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connections",
+		Help: "Current number of postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "open_connections",
+		},
+	}, func() float64 {
+		return float64(dbStats.OpenConnections)
+	})
 
-	if err := pc.Metrics().Register(postgresConnectionMetric); err != nil {
+	postgresInUseConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connections",
+		Help: "Current number of postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "in_use",
+		},
+	}, func() float64 {
+		return float64(dbStats.InUse)
+	})
+
+	postgresIdleConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connections",
+		Help: "Current number of postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "idle",
+		},
+	}, func() float64 {
+		return float64(dbStats.Idle)
+	})
+
+	postgresMaxOpenConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connections_max",
+		Help: "Max postgres store open connections",
+	}, func() float64 {
+		return float64(dbStats.MaxOpenConnections)
+	})
+
+	postgresWaitConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_wait_count",
+		Help: "Current waiting postgres store connections",
+	}, func() float64 {
+		return float64(dbStats.WaitCount)
+	})
+
+	postgresWaitConnectionDurationMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_wait_duration",
+		Help: "Time Blocked waiting for new connection in seconds",
+	}, func() float64 {
+		return dbStats.WaitDuration.Seconds()
+	})
+
+	postgresMaxIdleClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_closed",
+		Help: "Current number of closed postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "max_idle_conns",
+		},
+	}, func() float64 {
+		return float64(dbStats.MaxIdleClosed)
+	})
+
+	postgresMaxIdleTimeClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_closed",
+		Help: "Current number of closed postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "conn_max_idle_time",
+		},
+	}, func() float64 {
+		return float64(dbStats.MaxIdleTimeClosed)
+	})
+
+	postgresMaxLifeTimeClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_closed",
+		Help: "Current number of closed postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "conn_max_life_time",
+		},
+	}, func() float64 {
+		return float64(dbStats.MaxLifetimeClosed)
+	})
+
+	if err := metrics.
+		BulkRegister(postgresCurrentConnectionMetric, postgresInUseConnectionMetric, postgresIdleConnectionMetric,
+			postgresMaxOpenConnectionMetric, postgresWaitConnectionMetric, postgresWaitConnectionDurationMetric,
+			postgresMaxIdleClosedConnectionMetric, postgresMaxIdleTimeClosedConnectionMetric, postgresMaxLifeTimeClosedConnectionMetric); err != nil {
 		return err
 	}
-
-	if err := pc.Metrics().Register(postgresMaxConnectionMetric); err != nil {
-		return err
-	}
-	if err := pc.Metrics().Register(postgresClosedConnectionMetric); err != nil {
-		return err
-	}
-	if err := pc.Metrics().Register(postgresWaitConnectionMetric); err != nil {
-		return err
-	}
-	if err := pc.Metrics().Register(postgresWaitConnectionDurationMetric); err != nil {
-		return err
-	}
-
-	postgresConnectionMetric.WithLabelValues("open_connections").Set(float64(dbStats.OpenConnections))
-	postgresConnectionMetric.WithLabelValues("in_use").Set(float64(dbStats.InUse))
-	postgresConnectionMetric.WithLabelValues("idle").Set(float64(dbStats.Idle))
-
-	postgresMaxConnectionMetric.Set(float64(dbStats.MaxOpenConnections))
-
-	postgresClosedConnectionMetric.WithLabelValues("max_idle_conns").Set(float64(dbStats.MaxIdleClosed))
-	postgresClosedConnectionMetric.WithLabelValues("conn_max_idle_time").Set(float64(dbStats.MaxIdleTimeClosed))
-	postgresClosedConnectionMetric.WithLabelValues("conn_max_life_time").Set(float64(dbStats.MaxLifetimeClosed))
-
-	postgresWaitConnectionMetric.Set(float64(dbStats.WaitCount))
-
-	postgresWaitConnectionDurationMetric.Set(dbStats.WaitDuration.Seconds())
-
 	return nil
 }
