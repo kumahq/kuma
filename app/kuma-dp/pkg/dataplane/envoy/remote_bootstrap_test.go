@@ -2,6 +2,7 @@ package envoy
 
 import (
 	"fmt"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -28,6 +29,15 @@ var _ = Describe("Remote Bootstrap", func() {
 		expectedBootstrapRequest string
 	}
 
+	BeforeEach(func() {
+		kuma_version.Build = kuma_version.BuildInfo{
+			Version:   "0.0.1",
+			GitTag:    "v0.0.1",
+			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+			BuildDate: "2019-08-07T11:26:06Z",
+		}
+	})
+
 	DescribeTable("should generate bootstrap configuration", func(given testCase) {
 		// given
 		mux := http.NewServeMux()
@@ -51,7 +61,10 @@ var _ = Describe("Remote Bootstrap", func() {
 		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
 
 		// when
-		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, given.dataplane)
+		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, given.dataplane, EnvoyVersion{
+			Build: "hash/1.15.0/RELEASE",
+			Version: "1.15.0",
+		})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -74,15 +87,26 @@ var _ = Describe("Remote Bootstrap", func() {
 							Name: "sample",
 						},
 					},
-					expectedBootstrapRequest: `
-                    {
-                      "mesh": "demo",
-                      "name": "sample",
-                      "adminPort": 4321,
-                      "dataplaneTokenPath": "/tmp/token",
-                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}"
-                    }
-`,
+					expectedBootstrapRequest: flatJson(`
+					{
+					  "mesh": "demo",
+					  "name": "sample",
+					  "adminPort": 4321,
+					  "dataplaneTokenPath": "/tmp/token",
+					  "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
+					  "version": {
+						"kumaDp": {
+						  "version": "0.0.1",
+						  "gitTag": "v0.0.1",
+						  "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+						  "buildDate": "2019-08-07T11:26:06Z"
+						},
+						"envoy": {
+						  "version": "1.15.0",
+						  "build": "hash/1.15.0/RELEASE"
+						}
+					  }
+					}`),
 				}
 			}()),
 
@@ -103,15 +127,26 @@ var _ = Describe("Remote Bootstrap", func() {
 							Name: "sample",
 						},
 					},
-					expectedBootstrapRequest: `
+					expectedBootstrapRequest: flatJson(`
                     {
                       "mesh": "demo",
                       "name": "sample",
                       "adminPort": 4321,
                       "dataplaneTokenPath": "/tmp/token",
-                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}"
-                    }
-`,
+                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
+					  "version": {
+						"kumaDp": {
+						  "version": "0.0.1",
+						  "gitTag": "v0.0.1",
+						  "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+						  "buildDate": "2019-08-07T11:26:06Z"
+						},
+						"envoy": {
+						  "version": "1.15.0",
+						  "build": "hash/1.15.0/RELEASE"
+						}
+					  }
+                    }`),
 				}
 			}()),
 		Entry("should support empty port range",
@@ -131,14 +166,25 @@ var _ = Describe("Remote Bootstrap", func() {
 							Name: "sample",
 						},
 					},
-					expectedBootstrapRequest: `
+					expectedBootstrapRequest: flatJson(`
                     {
                       "mesh": "demo",
                       "name": "sample",
                       "dataplaneTokenPath": "/tmp/token",
-                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}"
-                    }
-`,
+                      "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
+					  "version": {
+						"kumaDp": {
+						  "version": "0.0.1",
+						  "gitTag": "v0.0.1",
+						  "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+						  "buildDate": "2019-08-07T11:26:06Z"
+						},
+						"envoy": {
+						  "version": "1.15.0",
+						  "build": "hash/1.15.0/RELEASE"
+						}
+					  }
+                    }`),
 				}
 			}()),
 	)
@@ -176,7 +222,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				Mesh: "default",
 				Name: "dp-1",
 			},
-		})
+		}, EnvoyVersion{})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -204,9 +250,15 @@ var _ = Describe("Remote Bootstrap", func() {
 		config.ControlPlane.Retry.MaxDuration = 100 * time.Millisecond
 		_, err = generator(fmt.Sprintf("http://localhost:%d", port), config, &rest.Resource{
 			Meta: rest.ResourceMeta{Mesh: "default", Name: "dp-1"},
-		})
+		}, EnvoyVersion{})
 
 		// then
 		Expect(err).To(MatchError("retryable: Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))
 	})
 })
+
+func flatJson(s string) string {
+	noNewLines := strings.Trim(s, "\n")
+	noSpaces := strings.Trim(noNewLines, " ")
+	return noSpaces
+}

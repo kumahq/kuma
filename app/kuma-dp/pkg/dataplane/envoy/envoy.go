@@ -7,6 +7,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strings"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -23,7 +25,7 @@ var (
 	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 )
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource) (proto.Message, error)
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource, ev EnvoyVersion) (proto.Message, error)
 
 type Opts struct {
 	Config    kuma_dp.Config
@@ -45,6 +47,11 @@ var _ component.Component = &Envoy{}
 
 type Envoy struct {
 	opts Opts
+}
+
+type EnvoyVersion struct {
+	Build	string
+	Version string
 }
 
 func (e *Envoy) NeedLeaderElection() bool {
@@ -96,7 +103,11 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
 	runLog.Info("generating bootstrap configuration")
-	bootstrapConfig, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, e.opts.Dataplane)
+	envoyVersion, err := e.version()
+	if err != nil {
+		return errors.Errorf("Failed to get Envoy version. %v", err)
+	}
+	bootstrapConfig, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, e.opts.Dataplane, *envoyVersion)
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 	}
@@ -155,4 +166,28 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		}
 		return err
 	}
+}
+
+func (e *Envoy) version() (*EnvoyVersion, error) {
+	binaryPathConfig := e.opts.Config.DataplaneRuntime.BinaryPath
+	resolvedPath, err := lookupEnvoyPath(binaryPathConfig)
+	if err != nil {
+		return nil, err
+	}
+	arg := "--version"
+	command := exec.Command(resolvedPath, arg)
+	runLog.Info("getting version of Envoy")
+	output, err := command.Output()
+	if err != nil {
+		runLog.Error(err, fmt.Sprintf("the envoy excutable was found at %s but an error occurred when executing it with arg %s", resolvedPath, arg))
+		return nil, err
+	}
+	build := strings.Trim(string(output), "\n")
+	r := regexp.MustCompile(`/([0-9.]+)/`)
+	matchedVersion := r.FindString(build)
+	version := strings.Trim(matchedVersion, "/")
+	return &EnvoyVersion{
+		Build:   build,
+		Version: version,
+	}, nil
 }
