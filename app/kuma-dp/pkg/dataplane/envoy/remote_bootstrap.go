@@ -20,10 +20,10 @@ import (
 	"github.com/sethvargo/go-retry"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/core"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
@@ -126,8 +126,8 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		DataplaneResource:  dataplaneResource,
 		Version: types.Version{
 			KumaDp: types.KumaDpVersion{
-				Version: kuma_version.Build.Version,
-				GitTag: kuma_version.Build.GitTag,
+				Version:   kuma_version.Build.Version,
+				GitTag:    kuma_version.Build.GitTag,
 				GitCommit: kuma_version.Build.GitCommit,
 				BuildDate: kuma_version.Build.BuildDate,
 			},

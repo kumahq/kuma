@@ -62,7 +62,7 @@ var _ = Describe("Remote Bootstrap", func() {
 
 		// when
 		config, err := generator(fmt.Sprintf("http://localhost:%d", port), given.config, given.dataplane, EnvoyVersion{
-			Build: "hash/1.15.0/RELEASE",
+			Build:   "hash/1.15.0/RELEASE",
 			Version: "1.15.0",
 		})
 

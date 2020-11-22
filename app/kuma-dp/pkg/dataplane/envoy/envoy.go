@@ -50,7 +50,7 @@ type Envoy struct {
 }
 
 type EnvoyVersion struct {
-	Build	string
+	Build   string
 	Version string
 }
 
