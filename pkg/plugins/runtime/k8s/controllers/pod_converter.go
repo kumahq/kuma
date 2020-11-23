@@ -150,7 +150,7 @@ func (p *PodConverter) DataplaneFor(
 	}
 	dataplane.Metrics = metrics
 
-	probes, err := ProbesFor(pod, dataplane.Networking.Inbound)
+	probes, err := ProbesFor(pod)
 	if err != nil {
 		return nil, err
 	}
