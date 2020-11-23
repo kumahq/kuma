@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
 )
 
-func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
+func ProbesFor(pod *kube_core.Pod, inbounds []*mesh_proto.Dataplane_Networking_Inbound) (*mesh_proto.Dataplane_Probes, error) {
 	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation)
 	if err != nil {
 		return nil, err
@@ -29,8 +29,16 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 	dpProbes := &mesh_proto.Dataplane_Probes{
 		Port: port,
 	}
+	//portSet := map[uint32]bool{}
+	//for _, inbound := range inbounds {
+	//	portSet[inbound.Port] = true
+	//}
 	for _, c := range pod.Spec.Containers {
 		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
+			//if !portSet[probes.KumaProbe(*c.LivenessProbe).Port()] {
+			//	continue
+			//	//return nil, noInboundError("LivenessProbe", probes.KumaProbe(*c.LivenessProbe).Port())
+			//}
 			if endpoint, err := ProbeFor(c.LivenessProbe, port); err != nil {
 				return nil, err
 			} else {
@@ -38,6 +46,10 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 			}
 		}
 		if c.ReadinessProbe != nil && c.ReadinessProbe.HTTPGet != nil {
+			//if !portSet[probes.KumaProbe(*c.ReadinessProbe).Port()] {
+			//	continue
+			//	//return nil, noInboundError("ReadinessProbe", probes.KumaProbe(*c.LivenessProbe).Port())
+			//}
 			if endpoint, err := ProbeFor(c.ReadinessProbe, port); err != nil {
 				return nil, err
 			} else {

@@ -29,7 +29,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 		Configure(envoy_routes.CommonVirtualHost("probe"))
 	for _, endpoint := range probes.Endpoints {
 		virtualHostBuilder.Configure(
-			envoy_routes.Route(endpoint.Path, endpoint.InboundPath, names.GetLocalClusterName(endpoint.InboundPort), true))
+			envoy_routes.Route(endpoint.Path, endpoint.InboundPath, names.GetLocalClusterName(endpoint.InboundPort), true, endpoint.InboundPort))
 	}
 
 	probeListener, err := envoy_listeners.NewListenerBuilder().
