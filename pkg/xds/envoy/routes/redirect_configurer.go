@@ -4,35 +4,26 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 )
 
-func Route(matchPath, newPath, cluster string, allowGetOnly bool, port uint32) VirtualHostBuilderOpt {
+// Redirect for paths that match to matchPath returns 301 status code with new port and path
+func Redirect(matchPath, newPath string, allowGetOnly bool, port uint32) VirtualHostBuilderOpt {
 	return VirtualHostBuilderOptFunc(func(config *VirtualHostBuilderConfig) {
-		config.Add(&RoutesConfigurer{
+		config.Add(&RedirectConfigurer{
 			matchPath:    matchPath,
 			newPath:      newPath,
-			cluster:      cluster,
 			port:         port,
 			allowGetOnly: allowGetOnly,
 		})
 	})
 }
 
-type RoutesConfigurer struct {
+type RedirectConfigurer struct {
 	matchPath    string
 	newPath      string
-	cluster      string
 	port         uint32
 	allowGetOnly bool
 }
 
-// InboundPort: 8080
-// InboundPath: /status
-// Path: /8080/status
-
-// InboundPort: 8080
-// InboundPath: /status
-// Path: /8080/status
-
-func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
+func (c RedirectConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	var headersMatcher []*envoy_route.HeaderMatcher
 	if c.allowGetOnly {
 		headersMatcher = []*envoy_route.HeaderMatcher{
@@ -54,30 +45,11 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 		Action: &envoy_route.Route_Redirect{
 			Redirect: &envoy_route.RedirectAction{
 				PortRedirect: c.port,
-				//PathRewriteSpecifier: &envoy_route.RedirectAction_P{
-				//	PathRedirect: c.newPath,
-				//},
 				PathRewriteSpecifier: &envoy_route.RedirectAction_PathRedirect{
 					PathRedirect: c.newPath,
 				},
 			},
 		},
-		//Action: &envoy_route.Route_Route{
-		//	Route: &envoy_route.RouteAction{
-		//		RegexRewrite: &envoy_type_matcher.RegexMatchAndSubstitute{
-		//			Pattern: &envoy_type_matcher.RegexMatcher{
-		//				EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
-		//					GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
-		//				},
-		//				Regex: `.*`,
-		//			},
-		//			Substitution: c.newPath,
-		//		},
-		//		ClusterSpecifier: &envoy_route.RouteAction_Cluster{
-		//			Cluster: c.cluster,
-		//		},
-		//	},
-		//},
 	})
 	return nil
 }
