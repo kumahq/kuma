@@ -102,10 +102,6 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 			// because that's how we find online/offline Dataplane's status
 			continue
 		}
-		if resourceChanged.Type == core_mesh.MeshType || resourceChanged.Type == core_mesh.MeshInsightType {
-			// when don't count Mesh itself, we coun't Mesh resources, so there is no need to react on this event
-			continue
-		}
 		if !p.rateLimiter.Allow() {
 			continue
 		}
@@ -176,10 +172,17 @@ func (p *resyncer) resyncMesh(mesh string) error {
 	}
 	insight.Dataplanes.Offline = insight.Dataplanes.Total - insight.Dataplanes.Online
 
-	if err := manager.Upsert(p.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
+	err := manager.Upsert(p.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
 		_ = resource.SetSpec(insight)
-	}); err != nil {
+	})
+	if err != nil {
+		if manager.IsMeshNotFound(err) {
+			log.V(1).Info("MeshInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
+			// handle the situation when the mesh is deleted and then all the resources connected with the Mesh all deleted.
+			// Mesh no longer exist so we cannot upsert the insight for it.
+			return nil
+		}
 		return err
 	}
 	return nil
