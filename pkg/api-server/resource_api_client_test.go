@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"path/filepath"
 
+	"github.com/kumahq/kuma/pkg/api-server/customization"
+
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
@@ -117,9 +119,10 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 
 	defs := append(definitions.All, SampleTrafficRouteWsDefinition)
 	resources := manager.NewResourceManager(store)
+	wsManager := customization.NewAPIList()
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, defs, &cfg, enableGUI, metrics)
+	apiServer, err := api_server.NewApiServer(resources, wsManager, defs, &cfg, enableGUI, metrics)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

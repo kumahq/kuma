@@ -24,7 +24,8 @@ type MutablePluginContext = core_runtime.Builder
 // Unlike other plugins, can mutate plugin context directly.
 type BootstrapPlugin interface {
 	Plugin
-	Bootstrap(*MutablePluginContext, PluginConfig) error
+	BeforeBootstrap(*MutablePluginContext, PluginConfig) error
+	AfterBootstrap(*MutablePluginContext, PluginConfig) error
 }
 
 // ResourceStorePlugin is responsible for instantiating a particular ResourceStore.
