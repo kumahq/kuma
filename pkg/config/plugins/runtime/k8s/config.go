@@ -108,7 +108,7 @@ type Injector struct {
 	// i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
 	VirtualProbesEnabled bool `yaml:"virtualProbesEnabled" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
 	// VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
-	VirtualProbesPort uint32 `yaml:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
+	VirtualProbesPort uint32 `yaml:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_port"`
 	// SidecarTraffic is a configuration for a traffic that is intercepted by sidecar
 	SidecarTraffic SidecarTraffic `yaml:"sidecarTraffic"`
 	// Exceptions defines list of exceptions for Kuma injection
