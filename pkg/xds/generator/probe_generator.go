@@ -37,6 +37,10 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 			virtualHostBuilder.Configure(
 				envoy_routes.Route(endpoint.Path, endpoint.InboundPath, names.GetLocalClusterName(endpoint.InboundPort), true))
 		} else {
+			// On Kubernetes we are overriding probes for every container, but there is no guarantee that given
+			// probe will have an equivalent in inbound interface (ex. sidecar that is not selected by any service).
+			// In this situation there is no local cluster therefore we are sending redirect to a real destination.
+			// System responsible for using virtual probes needs to support redirect (kubelet on K8S supports it).
 			virtualHostBuilder.Configure(
 				envoy_routes.Redirect(endpoint.Path, endpoint.InboundPath, true, endpoint.InboundPort))
 		}
