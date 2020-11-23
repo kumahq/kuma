@@ -23,7 +23,7 @@ func init() {
 	core_plugins.Register(core_plugins.Kubernetes, &plugin{})
 }
 
-func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
+func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
 	scheme := kube_runtime.NewScheme()
 	mgr, err := kube_ctrl.NewManager(
 		kube_ctrl.GetConfigOrDie(),
@@ -49,6 +49,10 @@ func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig)
 	} else {
 		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter()))
 	}
+	return nil
+}
+
+func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
 	return nil
 }
 

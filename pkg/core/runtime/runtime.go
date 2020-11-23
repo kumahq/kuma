@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
+
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 
@@ -53,6 +55,7 @@ type RuntimeContext interface {
 	LookupIP() lookup.LookupIPFunc
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
+	APIInstaller() api_server.APIInstaller
 }
 
 var _ Runtime = &runtime{}
@@ -107,6 +110,7 @@ type runtimeContext struct {
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
+	apim     api_server.APIInstaller
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -171,4 +175,7 @@ func (rc *runtimeContext) LeaderInfo() component.LeaderInfo {
 
 func (rc *runtimeContext) LookupIP() lookup.LookupIPFunc {
 	return rc.lif
+}
+func (rc *runtimeContext) APIInstaller() api_server.APIInstaller {
+	return rc.apim
 }
