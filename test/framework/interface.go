@@ -21,6 +21,7 @@ type deployOptions struct {
 	// cp specific
 	globalAddress    string
 	installationMode InstallationMode
+	skipDefaultMesh  bool
 	helmReleaseName  string
 	helmOpts         map[string]string
 	ctlOpts          map[string]string
@@ -40,6 +41,12 @@ type DeployOptionsFunc func(*deployOptions)
 func WithGlobalAddress(address string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.globalAddress = address
+	}
+}
+
+func WithSkipDefaultMesh(skip bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.skipDefaultMesh = skip
 	}
 }
 
