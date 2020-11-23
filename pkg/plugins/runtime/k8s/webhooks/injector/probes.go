@@ -55,7 +55,7 @@ func overrideHTTPProbe(probe *kube_core.Probe, virtualPort uint32) error {
 	return nil
 }
 
-func virtualProbesEnabled(annotations metadata.Annotations, pod *kube_core.Pod, cfg runtime_k8s.Injector) error {
+func setVirtualProbesEnabledAnnotation(annotations metadata.Annotations, pod *kube_core.Pod, cfg runtime_k8s.Injector) error {
 	str := func(b bool) string {
 		if b {
 			return metadata.AnnotationEnabled
@@ -88,7 +88,7 @@ func virtualProbesEnabled(annotations metadata.Annotations, pod *kube_core.Pod, 
 	return nil
 }
 
-func virtualProbesPort(annotations metadata.Annotations, pod *kube_core.Pod, cfg runtime_k8s.Injector) error {
+func setVirtualProbesPortAnnotation(annotations metadata.Annotations, pod *kube_core.Pod, cfg runtime_k8s.Injector) error {
 	port, exist, err := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation)
 	if err != nil {
 		return err

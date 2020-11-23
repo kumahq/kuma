@@ -410,11 +410,11 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
 
-	if err := virtualProbesEnabled(annotations, pod, i.cfg); err != nil {
-		return nil, err
+	if err := setVirtualProbesEnabledAnnotation(annotations, pod, i.cfg); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
 	}
-	if err := virtualProbesPort(annotations, pod, i.cfg); err != nil {
-		return nil, err
+	if err := setVirtualProbesPortAnnotation(annotations, pod, i.cfg); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation))
 	}
 
 	if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts); exist {

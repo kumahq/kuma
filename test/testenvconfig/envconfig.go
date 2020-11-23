@@ -18,6 +18,8 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
 
+// Modified copy of the https://github.com/kelseyhightower/envconfig/blob/master/envconfig.go
+
 package testenvconfig
 
 import (

@@ -78,7 +78,7 @@ var _ = Describe("Config loader", func() {
 					testEnvs[key] = true
 				}
 
-				Expect(testEnvs).To(Equal(configEnvs))
+				Expect(testEnvs).To(Equal(configEnvs), "config values are not overridden in the test. Add overrides for them with a value that is different than default.")
 			}
 
 			// then
