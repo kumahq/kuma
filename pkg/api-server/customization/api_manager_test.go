@@ -30,9 +30,11 @@ var _ = Describe("API Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 		wsManager := customization.NewAPIList()
 
-		wsManager.AddRouteFunction("foo", "baz", func(request *restful.Request, response *restful.Response) {
+		ws := new(restful.WebService).Path("foo")
+		ws.Route(ws.GET("baz").To(func(request *restful.Request, response *restful.Response) {
 			_ = response.WriteAsJson("bar")
-		})
+		}))
+		wsManager.Add(ws)
 
 		apiServer := createTestApiServer(resourceStore, cfg, true, metrics, wsManager)
 
@@ -60,5 +62,6 @@ var _ = Describe("API Manager", func() {
 
 		// when
 		Expect(string(body)).To(Equal("\"bar\"\n"))
+		close(stop)
 	})
 })

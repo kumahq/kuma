@@ -4,20 +4,18 @@ import (
 	"path/filepath"
 	"testing"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
 	config_api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/test"
-	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 func TestWs(t *testing.T) {
@@ -41,7 +39,7 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 		config.Auth.ClientCertsDir = filepath.Join("..", "..", "..", "test", "certs", "client")
 	}
 
-	defs := append(definitions.All, SampleTrafficRouteWsDefinition)
+	defs := definitions.All
 	resources := manager.NewResourceManager(store)
 
 	if wsManager == nil {
@@ -52,16 +50,4 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	apiServer, err := api_server.NewApiServer(resources, wsManager, defs, &cfg, enableGUI, metrics)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
-}
-
-var SampleTrafficRouteWsDefinition = definitions.ResourceWsDefinition{
-	Name: "Sample Traffic Route",
-	Path: "sample-traffic-routes",
-	ResourceFactory: func() model.Resource {
-		return &sample_model.TrafficRouteResource{}
-	},
-	ResourceListFactory: func() model.ResourceList {
-		return &sample_model.TrafficRouteResourceList{}
-	},
-	ReadOnly: false,
 }

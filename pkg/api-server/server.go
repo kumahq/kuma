@@ -73,8 +73,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, wsManager customization.APIInstaller,
-	defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, wsManager customization.APIInstaller, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 
@@ -139,7 +138,6 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)
 	}
 
-	// Install the custom WS
 	wsManager.Install(container)
 
 	return newApiServer, nil
