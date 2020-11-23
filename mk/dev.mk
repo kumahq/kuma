@@ -182,8 +182,8 @@ dev/install/goimports: ## Bootstrap: Install goimports
 dev/install/helm3: ## Bootstrap: Install Helm 3
 	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
-GEN_CHANGELOG_START_TAG ?= 0.7.2
-GEN_CHANGELOG_BRANCH ?= master
+GEN_CHANGELOG_START_TAG ?= 1.0.0
+GEN_CHANGELOG_BRANCH ?= release-1.0
 GEN_CHANGELOG_MD ?= changelog.generated.md
 .PHONY: changelog
 changelog:
