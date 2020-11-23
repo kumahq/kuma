@@ -80,7 +80,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
-	if err := defaults_mesh.CreateDefaultMeshResources(m.otherManagers, opts.Name); err != nil {
+	if err := defaults_mesh.EnsureDefaultMeshResources(m.otherManagers, opts.Name); err != nil {
 		return err
 	}
 	return nil
