@@ -13,6 +13,7 @@ type Metrics interface {
 	RegisterGRPC(*grpc.Server)
 	GRPCServerInterceptors() []grpc.ServerOption
 	GRPCClientInterceptors() []grpc.DialOption
+	BulkRegister(...prometheus.Collector) error
 }
 
 type metrics struct {
@@ -67,4 +68,13 @@ func NewMetrics(zone string) (Metrics, error) {
 		grpcClientMetrics: grpcClientMetrics,
 	}
 	return m, nil
+}
+
+func (m *metrics) BulkRegister(cs ...prometheus.Collector) error {
+	for _, c := range cs {
+		if err := m.Register(c); err != nil {
+			return err
+		}
+	}
+	return nil
 }
