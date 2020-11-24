@@ -36,8 +36,8 @@ func NewStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (
 		return nil, err
 	}
 
-	if err := registerAndCollectMetrics(metrics, db.Stats()); err != nil {
-		return nil, err
+	if err := registerMetrics(metrics, db); err != nil {
+		return nil, errors.Wrapf(err, "could not register DB metrics")
 	}
 
 	return &postgresResourceStore{
@@ -275,7 +275,7 @@ func (r *resourceMetaObject) GetModificationTime() time.Time {
 	return r.ModificationTime
 }
 
-func registerAndCollectMetrics(metrics core_metrics.Metrics, dbStats sql.DBStats) error {
+func registerMetrics(metrics core_metrics.Metrics, db *sql.DB) error {
 	postgresCurrentConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connections",
 		Help: "Current number of postgres store connections",
@@ -283,7 +283,7 @@ func registerAndCollectMetrics(metrics core_metrics.Metrics, dbStats sql.DBStats
 			"type": "open_connections",
 		},
 	}, func() float64 {
-		return float64(dbStats.OpenConnections)
+		return float64(db.Stats().OpenConnections)
 	})
 
 	postgresInUseConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -293,7 +293,7 @@ func registerAndCollectMetrics(metrics core_metrics.Metrics, dbStats sql.DBStats
 			"type": "in_use",
 		},
 	}, func() float64 {
-		return float64(dbStats.InUse)
+		return float64(db.Stats().InUse)
 	})
 
 	postgresIdleConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -303,28 +303,28 @@ func registerAndCollectMetrics(metrics core_metrics.Metrics, dbStats sql.DBStats
 			"type": "idle",
 		},
 	}, func() float64 {
-		return float64(dbStats.Idle)
+		return float64(db.Stats().Idle)
 	})
 
 	postgresMaxOpenConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connections_max",
 		Help: "Max postgres store open connections",
 	}, func() float64 {
-		return float64(dbStats.MaxOpenConnections)
+		return float64(db.Stats().MaxOpenConnections)
 	})
 
 	postgresWaitConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connection_wait_count",
 		Help: "Current waiting postgres store connections",
 	}, func() float64 {
-		return float64(dbStats.WaitCount)
+		return float64(db.Stats().WaitCount)
 	})
 
 	postgresWaitConnectionDurationMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Name: "store_postgres_connection_wait_duration",
 		Help: "Time Blocked waiting for new connection in seconds",
 	}, func() float64 {
-		return dbStats.WaitDuration.Seconds()
+		return db.Stats().WaitDuration.Seconds()
 	})
 
 	postgresMaxIdleClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -334,7 +334,7 @@ func registerAndCollectMetrics(metrics core_metrics.Metrics, dbStats sql.DBStats
 			"type": "max_idle_conns",
 		},
 	}, func() float64 {
-		return float64(dbStats.MaxIdleClosed)
+		return float64(db.Stats().MaxIdleClosed)
 	})
 
 	postgresMaxIdleTimeClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -344,7 +344,7 @@ func registerAndCollectMetrics(metrics core_metrics.Metrics, dbStats sql.DBStats
 			"type": "conn_max_idle_time",
 		},
 	}, func() float64 {
-		return float64(dbStats.MaxIdleTimeClosed)
+		return float64(db.Stats().MaxIdleTimeClosed)
 	})
 
 	postgresMaxLifeTimeClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
@@ -354,7 +354,7 @@ func registerAndCollectMetrics(metrics core_metrics.Metrics, dbStats sql.DBStats
 			"type": "conn_max_life_time",
 		},
 	}, func() float64 {
-		return float64(dbStats.MaxLifetimeClosed)
+		return float64(db.Stats().MaxLifetimeClosed)
 	})
 
 	if err := metrics.
