@@ -2,11 +2,12 @@
 global:
   namespace: "kuma-system"
   image:
+    # -- Default registry for all Kuma Images
     registry: "kong-docker-kuma-docker.bintray.io"
     # Defaults to .Chart.AppVersion
     # tag: ""
 
-# Whether or not to patch the target namespace with the system label
+# --- Whether or not to patch the target namespace with the system label
 patchSystemNamespace: true
 
 controlPlane:
@@ -79,16 +80,18 @@ cni:
 
   image:
     registry: "docker.io"
+    # -- Docker image name for the cni instance
     repository: "lobkovilya/install-cni"
+    # -- Docker tag for the cni instance
     tag: "0.0.2"
 
-# Configuration for the kuma dataplane sidecar
+# --- Configuration for the kuma dataplane sidecar
 dataPlane:
   image:
     repository: "kuma-dp"
     pullPolicy: IfNotPresent
 
-  # Configuration for the kuma init phase in the sidecar
+  # --- Configuration for the kuma init phase in the sidecar
   initImage:
     repository: "kuma-init"
 

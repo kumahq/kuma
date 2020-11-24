@@ -50,7 +50,8 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/kubectl dev/install/kind dev/install/minikube \
 	dev/install/golangci-lint \
 	dev/install/goimports \
-	dev/install/helm3
+	dev/install/helm3 \
+	dev/install/helm-docs
 
 .PHONY: dev/install/protoc
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
@@ -181,6 +182,10 @@ dev/install/goimports: ## Bootstrap: Install goimports
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
 	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+.PHONY: dev/install/helm-docs
+dev/install/helm-docs: ## Bootstrap: Install Helm Docs
+	go get github.com/norwoodj/helm-docs/cmd/helm-docs
 
 GEN_CHANGELOG_START_TAG ?= 0.7.2
 GEN_CHANGELOG_BRANCH ?= master
