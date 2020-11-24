@@ -2,7 +2,6 @@ package envoy
 
 import (
 	"fmt"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -10,6 +9,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
