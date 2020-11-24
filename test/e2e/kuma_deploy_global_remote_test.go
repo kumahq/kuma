@@ -99,6 +99,10 @@ metadata:
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
+
 		defer func() {
 			// restore the original namespace
 			KumaNamespace = originalKumaNamespace

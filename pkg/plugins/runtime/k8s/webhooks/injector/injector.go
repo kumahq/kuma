@@ -94,7 +94,12 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
-	for key, value := range i.NewAnnotations(pod, mesh) {
+
+	annotations, err := i.NewAnnotations(pod, mesh)
+	if err != nil {
+		return errors.Wrap(err, "could not generate annotations for pod")
+	}
+	for key, value := range annotations {
 		pod.Annotations[key] = value
 	}
 
@@ -393,7 +398,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	}, nil
 }
 
-func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) map[string]string {
+func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) (map[string]string, error) {
 	annotations := map[string]string{
 		metadata.KumaMeshAnnotation:                            mesh.GetMeta().GetName(), // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:                 fmt.Sprintf("%t", true),
@@ -405,18 +410,13 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
 
-	// By default always set 'kuma.io/virtual-probes: enabled' if it's not set yet.
-	if _, exist, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation); !exist {
-		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationEnabled
+	if err := setVirtualProbesEnabledAnnotation(annotations, pod, i.cfg); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
 	}
-	// Disable virtual probes if pod has 'kuma.io/gateway' annotation, because we don't intercept inbound traffic
-	if enabled, exist, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation); exist && enabled {
-		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationDisabled
+	if err := setVirtualProbesPortAnnotation(annotations, pod, i.cfg); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation))
 	}
 
-	if _, exist, _ := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation); !exist {
-		annotations[metadata.KumaVirtualProbesPortAnnotation] = fmt.Sprintf("%d", i.cfg.VirtualProbesPort)
-	}
 	if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts); exist {
 		annotations[metadata.KumaTrafficExcludeInboundPorts] = val
 	} else if len(i.cfg.SidecarTraffic.ExcludeInboundPorts) > 0 {
@@ -427,7 +427,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 	} else if len(i.cfg.SidecarTraffic.ExcludeOutboundPorts) > 0 {
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts)
 	}
-	return annotations
+	return annotations, nil
 }
 
 func portsToAnnotationValue(ports []uint32) string {

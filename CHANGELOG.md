@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## [1.0.1]
+> Released on  2020/11/23
+
+* chore: update GUI to the newest version [#1202](https://github.com//kumahq/kuma/pull/1202)
+* fix: probes without inbound [#1199](https://github.com//kumahq/kuma/pull/1199)
+* fix: create default mesh resources when default mesh is skipped [#1178](https://github.com//kumahq/kuma/pull/1178)
+* chore: handle mesh delete more gracefully [#1185](https://github.com//kumahq/kuma/pull/1185)
+* fix: fix virtual probes disabling and envs [#1171](https://github.com//kumahq/kuma/pull/1171)
+* feat: parametrize Kuma CP config via HELM [#1175](https://github.com//kumahq/kuma/pull/1175)
+* fix: handle missing TrafficRoute [#1188](https://github.com//kumahq/kuma/pull/1188)
+
 ## [1.0.0]
 > Released on  2020/11/17
 

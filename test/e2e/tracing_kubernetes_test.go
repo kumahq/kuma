@@ -80,6 +80,9 @@ spec:
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 		Expect(k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())

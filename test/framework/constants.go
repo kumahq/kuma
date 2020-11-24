@@ -41,6 +41,8 @@ const (
 )
 
 var HelmChartPath = "../../deployments/charts/kuma"
+var HelmSubChartPrefix = ""
+
 var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
 

@@ -59,6 +59,9 @@ var _ = Describe("ProbeGenerator", func() {
 		},
 		Entry("base probes", testCase{
 			dataplane: `
+            networking:
+              inbound:
+              - port: 8080
             probes:
               port: 9000
               endpoints:
@@ -71,6 +74,20 @@ var _ = Describe("ProbeGenerator", func() {
 		Entry("empty probes", testCase{
 			dataplane: ``,
 			expected:  "02.envoy.golden.yaml",
+		}),
+		Entry("no inbound for probe", testCase{
+			dataplane: `
+            networking:
+              inbound:
+              - port: 1010
+            probes:
+              port: 9000
+              endpoints:
+              - inboundPort: 8080
+                inboundPath: /healthz/probe
+                path: /8080/healthz/probe
+`,
+			expected: "03.envoy.golden.yaml",
 		}),
 	)
 })

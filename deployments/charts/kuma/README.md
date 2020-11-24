@@ -38,6 +38,7 @@ The chart supports Helm v3+.
 | `controlPlane.image.repository`                    | Kuma CP image repository                                                                            | `kuma-cp`                                                |
 | `controlPlane.image.tag`                           | Kuma CP image tag                                                                                   | nil, uses global                                         |
 | `controlPlane.envVars`                             | Additional environment variables that will be passed to the control plane                           | {}                                                       |
+| `controlPlane.config`                              | Config overrides for Kuma CP (YAML encoded as string)                                               |                                                          |
 | `cni.enabled`                                      | Install Kuma with CNI instead of proxy init container                                               | `false`                                                  |
 | `cni.chained`                                      | Install CNI in chained mode                                                                         | `false`                                                  |
 | `cni.netDir`                                       | Set the CNI install directory                                                                       | `/etc/cni/multus/net.d`                                  |

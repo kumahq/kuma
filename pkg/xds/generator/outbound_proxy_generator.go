@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 
@@ -20,6 +21,8 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 )
+
+var outboundLog = core.Log.WithName("outbound-proxy-generator")
 
 // OriginOutbound is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginOutbound = "outbound"
@@ -212,8 +215,9 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
 	route := proxy.TrafficRoutes[oface]
-	if route == nil { // should not happen since we always generate default route if TrafficRoute is not found
-		return nil, errors.Errorf("no TrafficRoute for outbound %s", oface)
+	if route == nil {
+		outboundLog.Info("there is no selected TrafficRoute for the outbound interface, which means that the traffic won't be routed. Visit https://kuma.io/docs/latest/policies/traffic-route/ to check how to introduce the routing.", "dataplane", proxy.Dataplane.Meta.GetName(), "mesh", proxy.Dataplane.Meta.GetMesh(), "outbound", oface)
+		return nil, nil
 	}
 
 	for j, destination := range route.Spec.GetConf().GetSplit() {
