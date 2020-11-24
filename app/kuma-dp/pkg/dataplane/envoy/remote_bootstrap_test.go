@@ -88,7 +88,7 @@ var _ = Describe("Remote Bootstrap", func() {
 							Name: "sample",
 						},
 					},
-					expectedBootstrapRequest: flatJson(`
+					expectedBootstrapRequest: `
 					{
 					  "mesh": "demo",
 					  "name": "sample",
@@ -107,7 +107,7 @@ var _ = Describe("Remote Bootstrap", func() {
 						  "build": "hash/1.15.0/RELEASE"
 						}
 					  }
-					}`),
+					}`,
 				}
 			}()),
 
@@ -128,7 +128,7 @@ var _ = Describe("Remote Bootstrap", func() {
 							Name: "sample",
 						},
 					},
-					expectedBootstrapRequest: flatJson(`
+					expectedBootstrapRequest: `
                     {
                       "mesh": "demo",
                       "name": "sample",
@@ -147,7 +147,7 @@ var _ = Describe("Remote Bootstrap", func() {
 						  "build": "hash/1.15.0/RELEASE"
 						}
 					  }
-                    }`),
+                    }`,
 				}
 			}()),
 		Entry("should support empty port range",
@@ -167,7 +167,7 @@ var _ = Describe("Remote Bootstrap", func() {
 							Name: "sample",
 						},
 					},
-					expectedBootstrapRequest: flatJson(`
+					expectedBootstrapRequest: `
                     {
                       "mesh": "demo",
                       "name": "sample",
@@ -185,7 +185,7 @@ var _ = Describe("Remote Bootstrap", func() {
 						  "build": "hash/1.15.0/RELEASE"
 						}
 					  }
-                    }`),
+                    }`,
 				}
 			}()),
 	)
@@ -257,9 +257,3 @@ var _ = Describe("Remote Bootstrap", func() {
 		Expect(err).To(MatchError("retryable: Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))
 	})
 })
-
-func flatJson(s string) string {
-	noNewLines := strings.Trim(s, "\n")
-	noSpaces := strings.Trim(noNewLines, " ")
-	return noSpaces
-}
