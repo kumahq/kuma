@@ -180,8 +180,7 @@ func (e *Envoy) version() (*EnvoyVersion, error) {
 	command := exec.Command(resolvedPath, arg)
 	output, err := command.Output()
 	if err != nil {
-		runLog.Error(err, fmt.Sprintf("the envoy excutable was found at %s but an error occurred when executing it with arg %s", resolvedPath, arg))
-		return nil, err
+		return nil, errors.Wrap(err, fmt.Sprintf("the envoy excutable was found at %s but an error occurred when executing it with arg %s", resolvedPath, arg))
 	}
 	build := strings.Trim(string(output), "\n")
 	r := regexp.MustCompile(`/([0-9.]+)/`)
