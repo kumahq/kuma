@@ -105,8 +105,10 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	runLog.Info("generating bootstrap configuration")
 	envoyVersion, err := e.version()
 	if err != nil {
-		return errors.Errorf("Failed to get Envoy version. %v", err)
+		return errors.Wrap(err, "failed to get Envoy version")
 	}
+	runLog.Info("fetched Envoy version", "version", envoyVersion)
+	runLog.Info("generating bootstrap configuration")
 	bootstrapConfig, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, e.opts.Dataplane, *envoyVersion)
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
@@ -176,7 +178,6 @@ func (e *Envoy) version() (*EnvoyVersion, error) {
 	}
 	arg := "--version"
 	command := exec.Command(resolvedPath, arg)
-	runLog.Info("getting version of Envoy")
 	output, err := command.Output()
 	if err != nil {
 		runLog.Error(err, fmt.Sprintf("the envoy excutable was found at %s but an error occurred when executing it with arg %s", resolvedPath, arg))
