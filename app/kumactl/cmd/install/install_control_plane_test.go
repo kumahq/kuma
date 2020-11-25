@@ -22,9 +22,11 @@ var _ = Describe("kumactl install control-plane", func() {
 	var backupNewSelfSignedCert func(string, tls.CertType, ...string) (tls.KeyPair, error)
 	BeforeEach(func() {
 		backupNewSelfSignedCert = install.NewSelfSignedCert
+		install.InstallWithConnectionToKubernetes = false
 	})
 	AfterEach(func() {
 		install.NewSelfSignedCert = backupNewSelfSignedCert
+		install.InstallWithConnectionToKubernetes = true
 	})
 
 	BeforeEach(func() {

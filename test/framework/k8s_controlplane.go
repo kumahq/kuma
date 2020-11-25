@@ -176,6 +176,12 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 }
 
 func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
+	// store the kumactl environment
+	oldEnv := c.kumactl.Env
+	c.kumactl.Env["KUBECONFIG"] = c.GetKubectlOptions().ConfigPath
+	defer func() {
+		c.kumactl.Env = oldEnv // restore kumactl environment
+	}()
 	return c.kumactl.KumactlInstallCP(c.mode, args...)
 }
 

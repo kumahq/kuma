@@ -219,6 +219,7 @@ Use "kumactl install [command] --help" for more information about a command.
 
 ```
 Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.
+This command requires that the KUBECONFIG environment is set
 
 Usage:
   kumactl install control-plane [flags]
