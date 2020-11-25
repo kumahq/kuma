@@ -27,6 +27,7 @@ type VIPsAllocator struct {
 	persistence *vips.Persistence
 	resolver    resolver.DNSResolver
 	newTicker   func() *time.Ticker
+	synced      bool
 }
 
 // NewVIPsAllocator creates new object of VIPsAllocator. You can either
@@ -61,6 +62,9 @@ func (d *VIPsAllocator) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
+			if err := d.Sync(); err != nil {
+				vipsAllocatorLog.Error(err, "unable to sync VIPs allocator")
+			}
 			if err := d.createOrUpdateVIPConfigs(); err != nil {
 				vipsAllocatorLog.Error(err, "unable to create or update VIP configs")
 			}
@@ -69,6 +73,26 @@ func (d *VIPsAllocator) Start(stop <-chan struct{}) error {
 			return nil
 		}
 	}
+}
+
+// Sync fetches existing VIPs from 'persistence' and reserves IPs in IPAM. Sync works once
+// per Kuma Control Plane execution. If it finishes with an error then Sync could be re-run
+func (d *VIPsAllocator) Sync() error {
+	if d.synced {
+		return nil
+	}
+	vips, err := d.persistence.Get()
+	if err != nil {
+		return err
+	}
+	for _, vip := range vips {
+		if err := d.ipam.ReserveIP(vip); err != nil && !IsAddressAlreadyAllocated(err) {
+			return err
+		}
+	}
+	d.synced = true
+	vipsAllocatorLog.Info("IPAM successfully synchronized")
+	return nil
 }
 
 func (d *VIPsAllocator) createOrUpdateVIPConfigs() error {
@@ -178,12 +202,14 @@ func UpdateMeshedVIPs(global, meshed vips.List, ipam IPAM, serviceSet ServiceSet
 		}
 		meshed[service] = ip
 		updated = true
+		vipsAllocatorLog.Info("adding", "service", service, "ip", ip)
 	}
 	for service, ip := range meshed {
 		if _, found := serviceSet[service]; !found {
 			updated = true
 			_ = ipam.FreeIP(ip)
 			delete(meshed, service)
+			vipsAllocatorLog.Info("deleting", "service", service, "ip", ip)
 		}
 	}
 	return

@@ -41,6 +41,10 @@ func (r *ConfigMapReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 		return kube_ctrl.Result{}, nil
 	}
 
+	if err := r.VIPsAllocator.Sync(); err != nil {
+		r.Log.Error(err, "failed to sync VIPs allocator")
+	}
+
 	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh); err != nil {
 		return kube_ctrl.Result{}, err
 	}
