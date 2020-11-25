@@ -47,7 +47,7 @@ imports: ## Dev: Runs goimports in order to organize imports
 
 .PHONY: helm-docs
 helm-docs: ## Dev: Runs helm-docs generator
-	helm-docs
+	$(HELM_DOCS_PATH) -s="file" --chart-search-root=./deployments/charts
 
 .PHONY: check
 check: generate fmt vet docs helm-lint golangci-lint imports tidy helm-docs ## Dev: Run code checks (go fmt, go vet, ...)
