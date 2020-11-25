@@ -2,6 +2,7 @@ package insights
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/go-kit/kit/ratelimit"
@@ -34,12 +35,14 @@ type Config struct {
 }
 
 type resyncer struct {
-	rm               manager.ResourceManager
-	eventFactory     events.ListenerFactory
-	minResyncTimeout time.Duration
-	maxResyncTimeout time.Duration
-	tick             func(d time.Duration) <-chan time.Time
-	rateLimiter      ratelimit.Allower
+	rm                manager.ResourceManager
+	eventFactory      events.ListenerFactory
+	minResyncTimeout  time.Duration
+	maxResyncTimeout  time.Duration
+	tick              func(d time.Duration) <-chan time.Time
+	rateLimiter       ratelimit.Allower
+	meshInsightMux    sync.Mutex
+	serviceInsightMux sync.Mutex
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -127,6 +130,9 @@ func meshScoped(t model.ResourceType) bool {
 }
 
 func (p *resyncer) createOrUpdateServiceInsights() error {
+	p.serviceInsightMux.Lock()
+	defer p.serviceInsightMux.Unlock()
+
 	meshes := &core_mesh.MeshResourceList{}
 	if err := p.rm.List(context.Background(), meshes); err != nil {
 		return err
@@ -188,6 +194,9 @@ func (p *resyncer) createOrUpdateServiceInsight(mesh string) error {
 }
 
 func (p *resyncer) createOrUpdateMeshInsights() error {
+	p.meshInsightMux.Lock()
+	defer p.meshInsightMux.Unlock()
+
 	meshes := &core_mesh.MeshResourceList{}
 	if err := p.rm.List(context.Background(), meshes); err != nil {
 		return err
