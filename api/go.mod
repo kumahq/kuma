@@ -1,6 +1,6 @@
 module github.com/kumahq/kuma/api
 
-go 1.14
+go 1.15
 
 require (
 	github.com/envoyproxy/go-control-plane v0.9.5
