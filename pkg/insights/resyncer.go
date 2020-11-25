@@ -240,10 +240,17 @@ func (p *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	}
 	insight.Dataplanes.Offline = insight.Dataplanes.Total - insight.Dataplanes.Online
 
-	if err := manager.Upsert(p.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
+	err := manager.Upsert(p.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
 		_ = resource.SetSpec(insight)
-	}); err != nil {
+	})
+	if err != nil {
+		if manager.IsMeshNotFound(err) {
+			log.V(1).Info("MeshInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
+			// handle the situation when the mesh is deleted and then all the resources connected with the Mesh all deleted.
+			// Mesh no longer exist so we cannot upsert the insight for it.
+			return nil
+		}
 		return err
 	}
 	return nil

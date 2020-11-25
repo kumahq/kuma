@@ -277,6 +277,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							},
 						},
 					},
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 4040,
+					}: nil,
 				},
 				OutboundSelectors: model.DestinationMap{
 					"api-http": model.TagSelectorSet{
@@ -456,6 +460,22 @@ var _ = Describe("OutboundProxyGenerator", func() {
                 redirectPortInbound: 15006
 `,
 			expected: "06.envoy.golden.yaml",
+		}),
+		Entry("07. no TrafficRoute", testCase{
+			ctx: mtlsCtx,
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              inbound:
+              - port: 8080
+                tags:
+                  kuma.io/service: web
+              outbound:
+              - port: 4040
+                tags:
+                  kuma.io/service: service-without-traffic-route
+`,
+			expected: "07.envoy.golden.yaml",
 		}),
 	)
 

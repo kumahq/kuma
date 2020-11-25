@@ -222,7 +222,10 @@ func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.
 		c.eventWriter.Send(events.ResourceChangedEvent{
 			Operation: events.Delete,
 			Type:      r.GetType(),
-			Key:       model.MetaToResourceKey(r.GetMeta()),
+			Key: model.ResourceKey{
+				Mesh: opts.Mesh,
+				Name: opts.Name,
+			},
 		})
 	}
 	return nil
