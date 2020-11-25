@@ -12,50 +12,49 @@ A Helm chart for the Kuma Control Plane
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| cni.binDir | string | `"/var/lib/cni/bin"` |  |
-| cni.chained | bool | `false` |  |
-| cni.confName | string | `"kuma-cni.conf"` |  |
-| cni.enabled | bool | `false` |  |
-| cni.image.registry | string | `"docker.io"` |  |
-| cni.image.repository | string | `"lobkovilya/install-cni"` | Docker image name for the cni instance |
-| cni.image.tag | string | `"0.0.2"` | Docker tag for the cni instance |
-| cni.logLevel | string | `"info"` |  |
-| cni.netDir | string | `"/etc/cni/multus/net.d"` |  |
-| cni.nodeSelector."kubernetes.io/arch" | string | `"amd64"` |  |
-| cni.nodeSelector."kubernetes.io/os" | string | `"linux"` |  |
-| controlPlane.defaults.skipMeshCreation | bool | `false` |  |
-| controlPlane.envVars | object | `{}` |  |
-| controlPlane.globalRemoteSyncService.annotations | object | `{}` |  |
-| controlPlane.globalRemoteSyncService.port | int | `5685` |  |
-| controlPlane.globalRemoteSyncService.type | string | `"LoadBalancer"` |  |
-| controlPlane.image.pullPolicy | string | `"IfNotPresent"` |  |
-| controlPlane.image.repository | string | `"kuma-cp"` |  |
-| controlPlane.injectorFailurePolicy | string | `"Ignore"` |  |
-| controlPlane.kdsGlobalAddress | string | `""` |  |
-| controlPlane.logLevel | string | `"info"` |  |
-| controlPlane.mode | string | `"standalone"` |  |
-| controlPlane.nodeSelector."kubernetes.io/arch" | string | `"amd64"` |  |
-| controlPlane.nodeSelector."kubernetes.io/os" | string | `"linux"` |  |
-| controlPlane.service.annotations | object | `{}` |  |
-| controlPlane.service.type | string | `"ClusterIP"` |  |
-| controlPlane.tls.apiServer.clientCertsSecretName | string | `""` |  |
-| controlPlane.tls.apiServer.secretName | string | `""` |  |
-| controlPlane.tls.general.caBundle | string | `""` |  |
-| controlPlane.tls.general.secretName | string | `""` |  |
-| controlPlane.tls.kdsGlobalServer.secretName | string | `""` |  |
-| controlPlane.tls.kdsRemoteClient.secretName | string | `""` |  |
-| dataPlane.image.pullPolicy | string | `"IfNotPresent"` |  |
-| dataPlane.image.repository | string | `"kuma-dp"` |  |
-| dataPlane.initImage.repository | string | `"kuma-init"` |  |
+| global.namespace | string | `"kuma-system"` | Default namespace for kuma |
 | global.image.registry | string | `"kong-docker-kuma-docker.bintray.io"` | Default registry for all Kuma Images |
-| global.namespace | string | `"kuma-system"` |  |
-| ingress.drainTime | string | `"30s"` |  |
-| ingress.enabled | bool | `false` |  |
-| ingress.mesh | string | `"default"` |  |
-| ingress.service.annotations | object | `{}` |  |
-| ingress.service.port | int | `10001` |  |
-| ingress.service.type | string | `"LoadBalancer"` |  |
-| patchSystemNamespace | bool | `true` |  |
+| patchSystemNamespace | bool | `true` | Whether or not to patch the target namespace with the system label |
+| controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
+| controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone|remote|global |
+| controlPlane.kdsGlobalAddress | string | `""` |  |
+| controlPlane.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
+| controlPlane.injectorFailurePolicy | string | `"Ignore"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
+| controlPlane.service.type | string | `"ClusterIP"` | Service type of the Kuma Control Plane |
+| controlPlane.service.annotations | object | `{}` | Additional annotations to put on the Kuma Control Plane |
+| controlPlane.globalRemoteSyncService | object | `{"annotations":{},"port":5685,"type":"LoadBalancer"}` | URL of Global Kuma CP |
+| controlPlane.globalRemoteSyncService.type | string | `"LoadBalancer"` | Service type of the Global-Remote sync |
+| controlPlane.globalRemoteSyncService.annotations | object | `{}` | Additional annotations to put on the Global Remote Sync Service |
+| controlPlane.globalRemoteSyncService.port | int | `5685` | Port on which Global Remote Sync Service is exposed |
+| controlPlane.defaults.skipMeshCreation | bool | `false` | Whether or not to skip creating the default Mesh |
+| controlPlane.tls.general.secretName | string | `""` | Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication |
+| controlPlane.tls.general.caBundle | string | `""` | Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt) |
+| controlPlane.tls.apiServer.secretName | string | `""` | Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS |
+| controlPlane.tls.apiServer.clientCertsSecretName | string | `""` | Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS |
+| controlPlane.tls.kdsGlobalServer.secretName | string | `""` | Secret that contains tls.crt, key.crt for protecting cross cluster communication |
+| controlPlane.tls.kdsRemoteClient.secretName | string | `""` | Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification |
+| controlPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma CP ImagePullPolicy |
+| controlPlane.image.repository | string | `"kuma-cp"` | Kuma CP image repository |
+| controlPlane.envVars | object | `{}` | Additional environment variables that will be passed to the control plane |
+| cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |
+| cni.chained | bool | `false` | Install CNI in chained mode |
+| cni.netDir | string | `"/etc/cni/multus/net.d"` | Set the CNI install directory |
+| cni.binDir | string | `"/var/lib/cni/bin"` | Set the CNI bin directory |
+| cni.confName | string | `"kuma-cni.conf"` | Set the CNI configuration name |
+| cni.logLevel | string | `"info"` | CNI log level: one of off info debug |
+| cni.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
+| cni.image.registry | string | `"docker.io"` | CNI image registry |
+| cni.image.repository | string | `"lobkovilya/install-cni"` | CNI image repository |
+| cni.image.tag | string | `"0.0.2"` | CNI image tag |
+| dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
+| dataPlane.image.pullPolicy | string | `"IfNotPresent"` |  |
+| dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
+| ingress.enabled | bool | `false` | If true, it deploys Ingress for cross cluster communication |
+| ingress.mesh | string | `"default"` | Mesh to which Dataplane Ingress belongs to |
+| ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
+| ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
+| ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
+| ingress.service.port | int | `10001` | Port on which Ingress is exposed |
 
 ## Custom Resource Definitions
 
