@@ -13,9 +13,8 @@ patchSystemNamespace: true
 controlPlane:
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
-  # -- Kuma CP modes: one of standalone|remote|global
+  # -- Kuma CP modes: one of standalone,remote,global
   mode: "standalone"
-  # -- (string) Kuma zone name
   # zone: ""
 
   kdsGlobalAddress: ""
@@ -90,7 +89,7 @@ cni:
   binDir: /var/lib/cni/bin
   # -- Set the CNI configuration name
   confName: kuma-cni.conf
-  # -- CNI log level: one of off info debug
+  # -- CNI log level: one of off,info,debug
   logLevel: info
   # -- Node Selector for the CNI pods
   nodeSelector:
@@ -110,6 +109,7 @@ dataPlane:
   image:
     # -- The Kuma DP image repository
     repository: "kuma-dp"
+    # -- Kuma DP ImagePullPolicy
     pullPolicy: IfNotPresent
 
   initImage:

@@ -187,19 +187,19 @@ dev/install/helm3: ## Bootstrap: Install Helm 3
 	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
 .PHONY: dev/install/helm-docs
-dev/install/helm-docs: ## Bootstrap: Install Helm Docs
+dev/install/helm-docs: ## Bootstrap: Install helm-docs
 	@if [ -e $(HELM_DOCS_PATH) ]; then echo "Helm Docs $$( $(HELM_DOCS_PATH) version ) is already installed at $(HELM_DOCS_PATH)" ; fi
 	@if [ ! -e $(HELM_DOCS_PATH) ]; then \
-		echo "Installing Helm Docs ...." \
+		echo "Installing helm-docs ...." \
 		&& set -x \
 		&& curl -Lo helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz https://github.com/norwoodj/helm-docs/releases/download/v$(HELM_DOCS_VERSION)/helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz \
-		&& tar -zxvf helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz helm-docs \
+		&& tar -xf helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz helm-docs \
 		&& rm helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz \
 		&& chmod +x helm-docs \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv helm-docs $(HELM_DOCS_PATH) \
 		&& set +x \
-		&& echo "Helm-docs $(HELM_DOCS_VERSION) has been installed at $(HELM_DOCS_PATH)" ; fi
+		&& echo "helm-docs $(HELM_DOCS_VERSION) has been installed at $(HELM_DOCS_PATH)" ; fi
 
 GEN_CHANGELOG_START_TAG ?= 0.7.2
 GEN_CHANGELOG_BRANCH ?= master

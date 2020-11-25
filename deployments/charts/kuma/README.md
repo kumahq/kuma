@@ -2,9 +2,7 @@
 
 A Helm chart for the Kuma Control Plane
 
-![Version: 0.4.1](https://img.shields.io/badge/Version-0.4.1-informational?style=flat-square)
-![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square)
-![AppVersion: 1.0.1](https://img.shields.io/badge/AppVersion-1.0.1-informational?style=flat-square)
+![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.4.1](https://img.shields.io/badge/Version-0.4.1-informational?style=flat-square) ![AppVersion: 1.0.1](https://img.shields.io/badge/AppVersion-1.0.1-informational?style=flat-square)
 
 **Homepage:** <https://github.com/kumahq/kuma>
 
@@ -16,7 +14,7 @@ A Helm chart for the Kuma Control Plane
 | global.image.registry | string | `"kong-docker-kuma-docker.bintray.io"` | Default registry for all Kuma Images |
 | patchSystemNamespace | bool | `true` | Whether or not to patch the target namespace with the system label |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
-| controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone|remote|global |
+| controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,remote,global |
 | controlPlane.kdsGlobalAddress | string | `""` |  |
 | controlPlane.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
 | controlPlane.injectorFailurePolicy | string | `"Ignore"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
@@ -41,13 +39,13 @@ A Helm chart for the Kuma Control Plane
 | cni.netDir | string | `"/etc/cni/multus/net.d"` | Set the CNI install directory |
 | cni.binDir | string | `"/var/lib/cni/bin"` | Set the CNI bin directory |
 | cni.confName | string | `"kuma-cni.conf"` | Set the CNI configuration name |
-| cni.logLevel | string | `"info"` | CNI log level: one of off info debug |
+| cni.logLevel | string | `"info"` | CNI log level: one of off,info,debug |
 | cni.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
 | cni.image.registry | string | `"docker.io"` | CNI image registry |
 | cni.image.repository | string | `"lobkovilya/install-cni"` | CNI image repository |
 | cni.image.tag | string | `"0.0.2"` | CNI image tag |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
-| dataPlane.image.pullPolicy | string | `"IfNotPresent"` |  |
+| dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
 | ingress.enabled | bool | `false` | If true, it deploys Ingress for cross cluster communication |
 | ingress.mesh | string | `"default"` | Mesh to which Dataplane Ingress belongs to |
