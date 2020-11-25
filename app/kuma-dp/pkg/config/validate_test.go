@@ -62,7 +62,7 @@ var _ = Describe("ValidateTokenPath", func() {
 		invalidTokenFile, err := ioutil.TempFile("", "")
 		Expect(err).ToNot(HaveOccurred())
 
-		_, err = invalidTokenFile.Write([]byte("invalid.token.file"))
+		_, err = invalidTokenFile.Write([]byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJOYW1lIjoiIiwiTWVzaCI6ImRlZmF1bHQiLCJUYWdzIjp7fSwiVHlwZSI6ImluZ3Jlc3MifQ.9zCvMQfn_j79VuLV-FgPHgSbOaKQXpKXroRdw8Q7e6s"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
