@@ -188,7 +188,7 @@ dev/install/helm3: ## Bootstrap: Install Helm 3
 
 .PHONY: dev/install/helm-docs
 dev/install/helm-docs: ## Bootstrap: Install helm-docs
-	@if [ -e $(HELM_DOCS_PATH) ]; then echo "Helm Docs $$( $(HELM_DOCS_PATH) version ) is already installed at $(HELM_DOCS_PATH)" ; fi
+	@if [ -e $(HELM_DOCS_PATH) ]; then echo "Helm Docs $$( $(HELM_DOCS_PATH) --version ) is already installed at $(HELM_DOCS_PATH)" ; fi
 	@if [ ! -e $(HELM_DOCS_PATH) ]; then \
 		echo "Installing helm-docs ...." \
 		&& set -x \
