@@ -49,14 +49,17 @@ message DiscoverySubscription {
 
   // Time when a given Dataplane connected to the Control Plane.
   google.protobuf.Timestamp connect_time = 3
-      [ (validate.rules).timestamp.required = true ];
+  [ (validate.rules).timestamp.required = true ];
 
   // Time when a given Dataplane disconnected from the Control Plane.
   google.protobuf.Timestamp disconnect_time = 4;
 
   // Status of the ADS subscription.
   DiscoverySubscriptionStatus status = 5
-      [ (validate.rules).message.required = true ];
+  [ (validate.rules).message.required = true ];
+
+  // Version of Envoy and Kuma dataplane
+  Version version = 6;
 }
 
 // DiscoverySubscriptionStatus defines status of an ADS subscription.
@@ -92,4 +95,21 @@ message DiscoveryServiceStats {
 
   // Number of xDS responses NACKed by the Dataplane.
   uint64 responses_rejected = 3;
+}
+
+message Version {
+  KumaDpVersion dpVersion = 1;
+  EnvoyVersion envoy = 2;
+}
+
+message KumaDpVersion {
+  string version = 1;
+  string gitTag = 2;
+  string gitCommit = 3;
+  string buildDate = 4;
+}
+
+message EnvoyVersion {
+  string version = 1;
+  string build = 2;
 }
