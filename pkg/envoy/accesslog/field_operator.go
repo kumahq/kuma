@@ -59,6 +59,8 @@ func (f FieldOperator) FormatHttpLogEntry(entry *accesslog_data.HTTPAccessLogEnt
 		return f.formatDuration(entry.GetCommonProperties().GetTimeToFirstUpstreamRxByte())
 	case CMD_RESPONSE_TX_DURATION:
 		return f.formatDurationDelta(entry.GetCommonProperties().GetTimeToLastDownstreamTxByte(), entry.GetCommonProperties().GetTimeToFirstUpstreamRxByte())
+	case CMD_GRPC_STATUS:
+		return f.formatgRPCStatus(entry.GetResponse())
 	default:
 		return f.formatAccessLogCommon(entry.GetCommonProperties())
 	}
@@ -82,6 +84,8 @@ func (f FieldOperator) FormatTcpLogEntry(entry *accesslog_data.TCPAccessLogEntry
 		return "", nil // replicate Envoy's behaviour
 	case CMD_RESPONSE_TX_DURATION:
 		return "", nil // replicate Envoy's behaviour
+	case CMD_GRPC_STATUS:
+		return "", nil // replace Envoy's behaviour
 	default:
 		return f.formatAccessLogCommon(entry.GetCommonProperties())
 	}
@@ -304,5 +308,19 @@ func (f FieldOperator) formatTlsVersion(value accesslog_data.TLSProperties_TLSVe
 		return "TLSv1.3", nil
 	default:
 		return value.String(), nil
+	}
+}
+
+func (f FieldOperator) formatgRPCStatus(responseProperties *accesslog_data.HTTPResponseProperties) (string, error) {
+	responseTrailers := responseProperties.GetResponseTrailers()
+	value, ok := responseTrailers["grpc-status"]
+	if !ok {
+		return "", nil
+	}
+	switch value {
+	case "0":
+		return "OK", nil
+	default:
+		return "InvalidCode", nil
 	}
 }
