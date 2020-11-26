@@ -21,7 +21,7 @@ func (in *ServiceInsight) GetMesh() string {
 }
 
 func (in *ServiceInsight) SetMesh(mesh string) {
-	in.Name = mesh
+	in.Mesh = mesh
 }
 
 func (in *ServiceInsight) GetSpec() map[string]interface{} {

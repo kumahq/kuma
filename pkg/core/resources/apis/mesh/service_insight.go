@@ -50,7 +50,7 @@ func (m *ServiceInsightResource) Validate() error {
 }
 
 func (m *ServiceInsightResource) Scope() model.ResourceScope {
-	return model.ScopeGlobal
+	return model.ScopeMesh
 }
 
 var _ model.ResourceList = &ServiceInsightResourceList{}

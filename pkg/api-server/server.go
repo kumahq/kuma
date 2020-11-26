@@ -158,6 +158,22 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	zoneOverviewEndpoints.addFindEndpoint(ws)
 	zoneOverviewEndpoints.addListEndpoint(ws)
 
+	serviceInsightEndpoints := serviceInsightEndpoints{
+		resourceEndpoints: resourceEndpoints{
+			mode:                 cfg.Mode,
+			resManager:           resManager,
+			ResourceWsDefinition: definitions.ServiceInsightWsDefinition,
+			adminAuth: authz.AdminAuth{
+				AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost,
+			},
+		},
+	}
+	serviceInsightEndpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addListEndpoint(ws, "/"+definitions.ServiceInsightWsDefinition.Path) // listing all resources in all meshes
+
 	for _, definition := range defs {
 		if config.ReadOnly {
 			definition.ReadOnly = true

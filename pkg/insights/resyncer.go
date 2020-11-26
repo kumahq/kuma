@@ -2,6 +2,7 @@ package insights
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
@@ -24,6 +25,10 @@ import (
 var (
 	log = core.Log.WithName("mesh-insight-resyncer")
 )
+
+func ServiceInsightName(mesh string) string {
+	return fmt.Sprintf("all-services-%s", mesh)
+}
 
 type Config struct {
 	ResourceManager    manager.ResourceManager
@@ -138,10 +143,10 @@ func (p *resyncer) createOrUpdateServiceInsights() error {
 		return err
 	}
 	for _, mesh := range meshes.Items {
-		if need, err := p.needResync(mesh.GetMeta().GetName()); err != nil || !need {
+		if need, err := p.needResyncServiceInsight(mesh.GetMeta().GetName()); err != nil || !need {
 			continue
 		}
-		err := p.createOrUpdateMeshInsight(mesh.GetMeta().GetName())
+		err := p.createOrUpdateServiceInsight(mesh.GetMeta().GetName())
 		if err != nil {
 			log.Error(err, "unable to resync resources", "mesh", mesh.GetMeta().GetName())
 			continue
@@ -184,13 +189,13 @@ func (p *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	for _, stat := range insight.Services {
 		stat.Offline = stat.Total - stat.Online
 	}
-	err := manager.Upsert(p.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.ServiceInsightResource{}, func(resource model.Resource) {
+	err := manager.Upsert(p.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, &core_mesh.ServiceInsightResource{}, func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
 		_ = resource.SetSpec(insight)
 	})
 	if err != nil {
 		if manager.IsMeshNotFound(err) {
-			log.V(1).Info("MeshInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
+			log.V(1).Info("ServiceInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
 			// handle the situation when the mesh is deleted and then all the resources connected with the Mesh all deleted.
 			// Mesh no longer exist so we cannot upsert the insight for it.
 			return nil
@@ -209,7 +214,7 @@ func (p *resyncer) createOrUpdateMeshInsights() error {
 		return err
 	}
 	for _, mesh := range meshes.Items {
-		if need, err := p.needResync(mesh.GetMeta().GetName()); err != nil || !need {
+		if need, err := p.needResyncMeshInsight(mesh.GetMeta().GetName()); err != nil || !need {
 			continue
 		}
 		err := p.createOrUpdateMeshInsight(mesh.GetMeta().GetName())
@@ -262,7 +267,7 @@ func (p *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	})
 	if err != nil {
 		if manager.IsMeshNotFound(err) {
-			log.V(1).Info("ServiceInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
+			log.V(1).Info("MeshInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
 			// handle the situation when the mesh is deleted and then all the resources connected with the Mesh all deleted.
 			// Mesh no longer exist so we cannot upsert the insight for it.
 			return nil
@@ -272,7 +277,25 @@ func (p *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	return nil
 }
 
-func (p *resyncer) needResync(mesh string) (bool, error) {
+func (p *resyncer) needResyncServiceInsight(mesh string) (bool, error) {
+	serviceInsight := &core_mesh.ServiceInsightResource{}
+	if err := p.rm.Get(context.Background(), serviceInsight, store.GetByKey(ServiceInsightName(mesh), mesh)); err != nil {
+		if !store.IsResourceNotFound(err) {
+			return false, errors.Wrap(err, "failed to get ServiceInsight")
+		}
+		return true, nil
+	}
+	lastSync, err := ptypes.Timestamp(serviceInsight.Spec.LastSync)
+	if err != nil {
+		return false, errors.Wrapf(err, "lastSync has wrong value: %s", serviceInsight.Spec.LastSync)
+	}
+	if core.Now().Sub(lastSync) < p.minResyncTimeout {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (p *resyncer) needResyncMeshInsight(mesh string) (bool, error) {
 	meshInsight := &core_mesh.MeshInsightResource{}
 	if err := p.rm.Get(context.Background(), meshInsight, store.GetByKey(mesh, model.NoMesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
