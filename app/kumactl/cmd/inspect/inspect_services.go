@@ -8,10 +8,11 @@ import (
 
 	"github.com/spf13/cobra"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
@@ -35,20 +36,29 @@ func newInspectServicesCmd(pctx *inspectContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			insights := &mesh.ServiceInsightResource{}
-			if err := client.Get(context.Background(), insights, store.GetByKey(ctx.mesh, model.NoMesh)); err != nil {
+			insights := &mesh.ServiceInsightResourceList{}
+			if err := client.List(context.Background(), insights, store.ListByMesh(ctx.mesh)); err != nil {
 				return err
+			}
+
+			serviceInsight := &mesh.ServiceInsightResource{
+				Spec: mesh_proto.ServiceInsight{
+					Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{},
+				},
+			}
+			if len(insights.Items) != 0 {
+				serviceInsight = insights.Items[0]
 			}
 
 			switch format := output.Format(ctx.args.outputFormat); format {
 			case output.TableFormat:
-				return printServiceInsights(insights, cmd.OutOrStdout())
+				return printServiceInsights(serviceInsight, cmd.OutOrStdout())
 			default:
 				printer, err := printers.NewGenericPrinter(format)
 				if err != nil {
 					return err
 				}
-				return printer.Print(rest_types.From.Resource(insights), cmd.OutOrStdout())
+				return printer.Print(rest_types.From.Resource(serviceInsight), cmd.OutOrStdout())
 			}
 		},
 	}

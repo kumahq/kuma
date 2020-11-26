@@ -348,7 +348,7 @@ func SetupServer(rt runtime.Runtime) error {
 			}
 		}
 	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), definitions.All, &cfg, enableGUI, rt.Metrics())
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), definitions.DefaultCRUDLEndpoints, &cfg, enableGUI, rt.Metrics())
 	if err != nil {
 		return err
 	}
