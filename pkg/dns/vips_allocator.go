@@ -115,6 +115,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		return updError
 	}
 
+<<<<<<< HEAD
 	for _, mesh := range meshes {
 		meshed, ok := byMesh[mesh]
 		if !ok {
@@ -123,6 +124,11 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		if err := forEachMesh(mesh, meshed); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, "errors during updating VIP config for mesh %s", mesh))
 		}
+=======
+	updated, updError := UpdateMeshedVIPs(global, meshed, d.ipam, serviceSet)
+	if !updated {
+		return updError
+>>>>>>> c6617747... feat(kuma-cp) service insights (#1163)
 	}
 
 	return errs

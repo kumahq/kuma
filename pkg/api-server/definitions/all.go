@@ -1,6 +1,11 @@
 package definitions
 
-var All = []ResourceWsDefinition{
+var All = append(
+	DefaultCRUDLEndpoints,
+	ServiceInsightWsDefinition,
+)
+
+var DefaultCRUDLEndpoints = []ResourceWsDefinition{
 	MeshWsDefinition,
 	MeshInsightWsDefinition,
 	DataplaneWsDefinition,
