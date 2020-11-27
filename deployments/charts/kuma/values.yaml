@@ -16,6 +16,8 @@ controlPlane:
 
   kdsGlobalAddress: ""
 
+  replicas: 1
+
   nodeSelector:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
@@ -96,6 +98,7 @@ ingress:
   enabled: false
   mesh: default
   drainTime: 30s
+  replicas: 1
   service:
     # name: ""
     type: LoadBalancer
