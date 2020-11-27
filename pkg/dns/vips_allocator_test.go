@@ -51,49 +51,68 @@ var _ = Describe("VIP Allocator", func() {
 		err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
+		err = rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh-2", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("backend")}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("frontend")}, store.CreateByKey("dp-2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
+		Expect(err).ToNot(HaveOccurred())
+
 		allocator, err = dns.NewVIPsAllocator(rm, cm, "240.0.0.0/24", resolver.NewDNSResolver("mesh"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	Context("Sync", func() {
-		var persistence *vips.Persistence
-		BeforeEach(func() {
-			persistence = vips.NewPersistence(rm, cm)
-			// we add VIPs directly to the 'persistence' object
-			// that emulates situation when IPAM is fresh and doesn't aware of allocated VIPs
-			err := persistence.Set("mesh-1", vips.List{
-				"frontend": "240.0.0.0",
-				"backend":  "240.0.0.1",
-			})
-			Expect(err).ToNot(HaveOccurred())
+	It("should create VIP config for each mesh", func() {
+		// when
+		err := allocator.CreateOrUpdateVIPConfigs()
+		Expect(err).ToNot(HaveOccurred())
 
-			err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
-			Expect(err).ToNot(HaveOccurred())
-		})
+		persistence := vips.NewPersistence(rm, cm)
 
-		It("should respect already allocated VIPs in case of IPAM restarts", func() {
-			err := allocator.Sync()
-			Expect(err).ToNot(HaveOccurred())
+		// then
+		vipList, err := persistence.GetByMesh("mesh-1")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(vipList).To(HaveLen(2))
 
-			err = allocator.CreateOrUpdateVIPConfig("mesh-1")
-			Expect(err).ToNot(HaveOccurred())
+		vipList, err = persistence.GetByMesh("mesh-2")
+		Expect(err).ToNot(HaveOccurred())
 
-			vipList, err := persistence.GetByMesh("mesh-1")
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(vipList).To(Equal(vips.List{
-				"frontend": "240.0.0.0",
-				"backend":  "240.0.0.1",
-				"database": "240.0.0.2",
-			}))
-		})
+		Expect(vipList).To(HaveLen(1))
 	})
+
+	It("should respect already allocated VIPs in case of IPAM restarts", func() {
+		// setup
+		persistence := vips.NewPersistence(rm, cm)
+		// we add VIPs directly to the 'persistence' object
+		// that emulates situation when IPAM is fresh and doesn't aware of allocated VIPs
+		err := persistence.Set("mesh-1", vips.List{
+			"frontend": "240.0.0.0",
+			"backend":  "240.0.0.1",
+		})
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		// when
+		err = allocator.CreateOrUpdateVIPConfig("mesh-1")
+		Expect(err).ToNot(HaveOccurred())
+
+		vipList, err := persistence.GetByMesh("mesh-1")
+		Expect(err).ToNot(HaveOccurred())
+		// then
+		Expect(vipList).To(Equal(vips.List{
+			"frontend": "240.0.0.0",
+			"backend":  "240.0.0.1",
+			"database": "240.0.0.2",
+		}))
+	})
+
 })
 
 var _ = Describe("BuildServiceSet", func() {
