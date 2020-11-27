@@ -6,6 +6,7 @@ import (
 	"os"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/config"
@@ -57,18 +58,40 @@ var _ = Describe("ValidateTokenPath", func() {
 		Expect(err).To(MatchError(fmt.Sprintf("token under file %s is empty", tokenFile.Name())))
 	})
 
-	It("should fail for invalid token", func() {
-		// setup
-		invalidTokenFile, err := ioutil.TempFile("", "")
-		Expect(err).ToNot(HaveOccurred())
+	Context("should valicate token", func() {
+		type testCase struct {
+			token    string
+			expected string
+		}
+		DescribeTable("should fail with invalid token",
+			func(given testCase) {
+				// setup
+				invalidTokenFile, err := ioutil.TempFile("", "")
+				Expect(err).ToNot(HaveOccurred())
 
-		_, err = invalidTokenFile.Write([]byte("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJOYW1lIjoiIiwiTWVzaCI6ImRlZmF1bHQiLCJUYWdzIjp7fSwiVHlwZSI6ImluZ3Jlc3MifQ.9zCvMQfn_j79VuLV-FgPHgSbOaKQXpKXroRdw8Q7e6s"))
-		Expect(err).ToNot(HaveOccurred())
+				_, err = invalidTokenFile.Write([]byte(given.token))
+				Expect(err).ToNot(HaveOccurred())
 
-		// when
-		err = config.ValidateTokenPath(invalidTokenFile.Name())
+				// when
+				err = config.ValidateTokenPath(invalidTokenFile.Name())
 
-		// then
-		Expect(err).To(HaveOccurred())
+				// then
+				Expect(err).To(HaveOccurred())
+				Expect(err.Error()).To(Equal(given.expected))
+			},
+			Entry("can't parse token", testCase{
+				token:    "yJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJOYW1lIjoidGVzdCIsIk1lc2giOiJkZWZhdWx0IiwiVGFncyI6e30sIlR5cGUiOiIifQ.rdQ6l_6hzT93Kbk9kO-kZYY7BaexUH8QknvbdRy_f6s",
+				expected: "not valid JWT token. Can't parse it.: invalid character 'È' looking for beginning of value",
+			}),
+			Entry("need 3 segments", testCase{
+				token:    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJOYW1lIjoidGVzdCIsIk1lc2giOiJkZWZhdWx0IiwiVGFncyI6e30sIlR5cGUiOiIifQ",
+				expected: "not valid JWT token. Can't parse it.: token contains an invalid number of segments",
+			}),
+			Entry("new line in the end ", testCase{
+				token:    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJOYW1lIjoidGVzdCIsIk1lc2giOiJkZWZhdWx0IiwiVGFncyI6e30sIlR5cGUiOiIifQ.rdQ6l_6hzT93Kbk9kO-kZYY7BaexUH8QknvbdRy_f6s\n",
+				expected: "The file cannot have blank characters like empty lines. Example how to get rid of non-printable characters: sed -i '' '/^$/d' token.file",
+			}),
+		)
+
 	})
 })
