@@ -6567,6 +6567,7 @@ spec:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: kuma
@@ -6672,6 +6673,7 @@ spec:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
+  replicas: 1
   selector:
     matchLabels:
       app.kubernetes.io/name: kuma
