@@ -13,7 +13,8 @@ type generateDataplaneTokenContext struct {
 	*kumactl_cmd.RootContext
 
 	args struct {
-		dataplane string
+		dataplane string // Deprecated: remove in next major version of Kuma 1.1
+		name      string
 		dpType    string
 		tags      map[string]string
 	}
@@ -48,7 +49,11 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 			for k, v := range ctx.args.tags {
 				tags[k] = strings.Split(v, ",")
 			}
-			token, err := client.Generate(ctx.args.dataplane, pctx.Args.Mesh, tags, ctx.args.dpType)
+			name := ctx.args.name
+			if name == "" {
+				name = ctx.args.dataplane
+			}
+			token, err := client.Generate(name, pctx.Args.Mesh, tags, ctx.args.dpType)
 			if err != nil {
 				return errors.Wrap(err, "failed to generate a dataplane token")
 			}
@@ -57,6 +62,10 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 		},
 	}
 	cmd.Flags().StringVar(&ctx.args.dataplane, "dataplane", "", "name of the Dataplane")
+	if err := cmd.Flags().MarkDeprecated("dataplane", "please use 'name' instead"); err != nil {
+		panic(err)
+	}
+	cmd.Flags().StringVar(&ctx.args.name, "name", "", "name of the Dataplane")
 	cmd.Flags().StringVar(&ctx.args.dpType, "type", "", `type of the Dataplane ("dataplane", "ingress")`)
 	cmd.Flags().StringToStringVar(&ctx.args.tags, "tag", nil, "required tag values for dataplane (split values by comma to provide multiple values)")
 	return cmd
