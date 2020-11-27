@@ -23,10 +23,10 @@ var vipsAllocatorLog = core.Log.WithName("dns-vips-allocator")
 
 type VIPsAllocator struct {
 	rm          manager.ReadOnlyResourceManager
-	ipam        IPAM
 	persistence *vips.Persistence
 	resolver    resolver.DNSResolver
 	newTicker   func() *time.Ticker
+	cidr        string
 }
 
 // NewVIPsAllocator creates new object of VIPsAllocator. You can either
@@ -34,14 +34,10 @@ type VIPsAllocator struct {
 // In the latter scenario it will call CreateOrUpdateVIPConfig every 'tickInterval'
 // for all meshes in the store.
 func NewVIPsAllocator(rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, cidr string, resolver resolver.DNSResolver) (*VIPsAllocator, error) {
-	ipam, err := NewSimpleIPAM(cidr)
-	if err != nil {
-		return nil, err
-	}
 	return &VIPsAllocator{
 		rm:          rm,
 		persistence: vips.NewPersistence(rm, configManager),
-		ipam:        ipam,
+		cidr:        cidr,
 		resolver:    resolver,
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(tickInterval)
@@ -61,8 +57,8 @@ func (d *VIPsAllocator) Start(stop <-chan struct{}) error {
 	for {
 		select {
 		case <-ticker.C:
-			if err := d.createOrUpdateVIPConfigs(); err != nil {
-				vipsAllocatorLog.Error(err, "unable to create or update VIP configs")
+			if err := d.CreateOrUpdateVIPConfigs(); err != nil {
+				vipsAllocatorLog.Error(err, "errors during updating VIP configs")
 			}
 		case <-stop:
 			vipsAllocatorLog.Info("stopping")
@@ -71,49 +67,80 @@ func (d *VIPsAllocator) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (d *VIPsAllocator) createOrUpdateVIPConfigs() error {
-	meshes := core_mesh.MeshResourceList{}
-	err := d.rm.List(context.Background(), &meshes)
-	if err != nil {
+func (d *VIPsAllocator) CreateOrUpdateVIPConfigs() error {
+	meshRes := core_mesh.MeshResourceList{}
+	if err := d.rm.List(context.Background(), &meshRes); err != nil {
 		return err
 	}
 
-	for _, mesh := range meshes.Items {
-		if err := d.CreateOrUpdateVIPConfig(mesh.GetMeta().GetName()); err != nil {
-			vipsAllocatorLog.Error(err, "unable to create or update VIP config", "mesh", mesh.GetMeta().GetName())
-		}
+	meshes := []string{}
+	for _, mesh := range meshRes.Items {
+		meshes = append(meshes, mesh.GetMeta().GetName())
 	}
-	return nil
+
+	return d.createOrUpdateVIPConfigs(meshes...)
 }
 
 func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string) error {
-	serviceSet, err := BuildServiceSet(d.rm, mesh)
+	return d.createOrUpdateVIPConfigs(mesh)
+}
+
+func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) {
+	global, byMesh, err := d.persistence.Get()
 	if err != nil {
 		return err
 	}
 
-	global, err := d.persistence.Get()
+	ipam, err := d.newIPAM(global)
 	if err != nil {
 		return err
 	}
 
-	meshed, err := d.persistence.GetByMesh(mesh)
-	if err != nil {
-		return err
-	}
+	forEachMesh := func(mesh string, meshed vips.List) error {
+		serviceSet, err := BuildServiceSet(d.rm, mesh)
+		if err != nil {
+			return err
+		}
 
-	updated, updError := UpdateMeshedVIPs(global, meshed, d.ipam, serviceSet)
-	if !updated {
+		updated, updError := UpdateMeshedVIPs(global, meshed, ipam, serviceSet)
+		if !updated {
+			return updError
+		}
+
+		if err := d.persistence.Set(mesh, meshed); err != nil {
+			return multierr.Append(updError, err)
+		}
+
+		d.resolver.SetVIPs(meshed)
 		return updError
 	}
 
-	if err := d.persistence.Set(mesh, meshed); err != nil {
-		return multierr.Append(updError, err)
+	for _, mesh := range meshes {
+		meshed, ok := byMesh[mesh]
+		if !ok {
+			meshed = vips.List{}
+		}
+		if err := forEachMesh(mesh, meshed); err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, "errors during updating VIP config for mesh %s", mesh))
+		}
 	}
 
-	d.resolver.SetVIPs(meshed)
+	return errs
+}
 
-	return updError
+func (d *VIPsAllocator) newIPAM(initialVIPs vips.List) (IPAM, error) {
+	ipam, err := NewSimpleIPAM(d.cidr)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, vip := range initialVIPs {
+		if err := ipam.ReserveIP(vip); err != nil && !IsAddressAlreadyAllocated(err) {
+			return nil, err
+		}
+	}
+
+	return ipam, nil
 }
 
 type ServiceSet map[string]bool
@@ -178,12 +205,14 @@ func UpdateMeshedVIPs(global, meshed vips.List, ipam IPAM, serviceSet ServiceSet
 		}
 		meshed[service] = ip
 		updated = true
+		vipsAllocatorLog.Info("adding", "service", service, "ip", ip)
 	}
 	for service, ip := range meshed {
 		if _, found := serviceSet[service]; !found {
 			updated = true
 			_ = ipam.FreeIP(ip)
 			delete(meshed, service)
+			vipsAllocatorLog.Info("deleting", "service", service, "ip", ip)
 		}
 	}
 	return
