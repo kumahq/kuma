@@ -56,6 +56,7 @@ metadata:
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
 			WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
+			WithCPReplicas(3),         // test HA capability
 			WithCNI(),
 		}
 

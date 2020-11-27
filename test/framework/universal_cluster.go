@@ -104,10 +104,6 @@ func (c *UniversalCluster) VerifyKuma() error {
 	return c.controlplane.kumactl.RunKumactl("get", "dataplanes")
 }
 
-func (c *UniversalCluster) RestartKuma() error {
-	return c.apps[AppModeCP].ReStart()
-}
-
 func (c *UniversalCluster) DeleteKuma(opts ...DeployOptionsFunc) error {
 	err := c.apps[AppModeCP].Stop()
 	delete(c.apps, AppModeCP)

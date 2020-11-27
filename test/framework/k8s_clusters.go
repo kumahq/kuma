@@ -96,16 +96,6 @@ func (cs *K8sClusters) GetKuma() ControlPlane {
 	panic("Not supported at this level.")
 }
 
-func (cs *K8sClusters) RestartKuma() error {
-	for name, c := range cs.clusters {
-		if err := c.RestartKuma(); err != nil {
-			return errors.Wrapf(err, "Restart Kuma on %s failed: %v", name, err)
-		}
-	}
-
-	return nil
-}
-
 func (cs *K8sClusters) VerifyKuma() error {
 	for name, c := range cs.clusters {
 		if err := c.VerifyKuma(); err != nil {
