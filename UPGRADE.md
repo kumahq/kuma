@@ -43,6 +43,11 @@ This release introduces a number of breaking changes. If Kuma is being deployed 
  * Improved control plane communication security
    
     Kuma Control Plane exposed ports are reduced, please revise the [documentation](https://kuma.io/docs/1.0.0/documentation/networking/#kuma-cp-ports) for detailed list.
+    Consider reinstalling the metrics due to the port changes in Kuma Prometheus SD.
+ 
+ * Traffic route format
+ 
+    The format of the [TrafficRoute](https://kuma.io/docs/1.0.0/policies/traffic-route) has changed. Please check the documentation and adapt your resources. 
 
 ### Suggested Upgrade Path on Universal
  * Get rid of advertised hostname
@@ -68,6 +73,11 @@ This release introduces a number of breaking changes. If Kuma is being deployed 
    
     `kuma-dp` invocation has changed and now [allows](https://kuma.io/docs/1.0.1/documentation/dps-and-data-model/#dataplane-entity) for a more flexible usage leveraging automated, template based Dataplane resource creation, customizable data-plane token boundaries and additional CA ceritficate validation for the Kuma Control plane boostrap server.
     Kuma Control Plane exposed ports are reduced, please revise the [documentation](https://kuma.io/docs/1.0.0/documentation/networking/#kuma-cp-ports) for detailed list.
+ 
+  * Traffic route format
+  
+     The format of the [TrafficRoute](https://kuma.io/docs/1.0.0/policies/traffic-route) has changed. Please check the documentation and adapt your resources. 
+
  
 ## Upgrade to `0.7.0`
 Support for `kuma.io/sidecar-injection` annotation. On Kubernetes change the namespace resources that host Kuma mesh services with the aforementioned annotation and delete the label. 
