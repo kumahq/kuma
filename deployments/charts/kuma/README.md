@@ -16,6 +16,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,remote,global |
 | controlPlane.kdsGlobalAddress | string | `""` |  |
+| controlPlane.replicas | int | `1` | Number of replicas of the Kuma CP |
 | controlPlane.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the Kuma Control Plane pods |
 | controlPlane.injectorFailurePolicy | string | `"Ignore"` | Failure policy of the mutating webhook implemented by the Kuma Injector component |
 | controlPlane.service.type | string | `"ClusterIP"` | Service type of the Kuma Control Plane |
@@ -50,6 +51,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.enabled | bool | `false` | If true, it deploys Ingress for cross cluster communication |
 | ingress.mesh | string | `"default"` | Mesh to which Dataplane Ingress belongs to |
 | ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
+| ingress.replicas | int | `1` | Number of replicas of the Ingress |
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |

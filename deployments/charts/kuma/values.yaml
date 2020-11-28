@@ -18,6 +18,8 @@ controlPlane:
   # zone: ""
 
   kdsGlobalAddress: ""
+  # -- Number of replicas of the Kuma CP
+  replicas: 1
   # -- Node selector for the Kuma Control Plane pods
   nodeSelector:
     kubernetes.io/os: linux
@@ -123,6 +125,7 @@ ingress:
   mesh: default
   # -- Time for which old listener will still be active as draining
   drainTime: 30s
+  # -- Number of replicas of the Ingress
   replicas: 1
   service:
     # -- Service type of the Ingress
