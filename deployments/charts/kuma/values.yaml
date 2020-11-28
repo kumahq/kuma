@@ -123,6 +123,7 @@ ingress:
   mesh: default
   # -- Time for which old listener will still be active as draining
   drainTime: 30s
+  replicas: 1
   service:
     # -- Service type of the Ingress
     type: LoadBalancer
