@@ -71,6 +71,7 @@ func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int6
 		ControlPlaneInstanceId: c.runtimeInfo.GetInstanceId(),
 		ConnectTime:            util_proto.MustTimestampProto(now()),
 		Status:                 mesh_proto.NewSubscriptionStatus(),
+		Version:                mesh_proto.NewVersion(),
 	}
 	// initialize state per ADS stream
 	state := &streamState{
@@ -120,6 +121,9 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.Disc
 	if state.dataplaneId == (core_model.ResourceKey{}) {
 		if id, err := core_xds.ParseProxyId(req.Node); err == nil {
 			state.dataplaneId = core_model.ResourceKey{Mesh: id.Mesh, Name: id.Name}
+			if err := util_proto.ToTyped(req.Node.Metadata, state.subscription.Version); err != nil {
+				xdsServerLog.Error(err, "failed to parse Node.Metadata out of DiscoveryRequest", "streamid", streamID, "req", req)
+			}
 			// kick off async Dataplane status flusher
 			go c.createStatusSink(state).Start(state.stop)
 		} else {

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -89,6 +91,9 @@ var _ = Describe("DataplaneStatusTracker", func() {
               lds: {}
               rds: {}
               total: {}
+            version:
+              dpVersion: {}
+              envoy: {}
 `))
 
 		By("simulating end of ADS subscription")
@@ -111,6 +116,9 @@ var _ = Describe("DataplaneStatusTracker", func() {
               lds: {}
               rds: {}
               total: {}
+            version:
+              dpVersion: {}
+              envoy: {}
 `))
 	})
 
@@ -153,6 +161,9 @@ var _ = Describe("DataplaneStatusTracker", func() {
           lds: {}
           rds: {}
           total: {}
+        version:
+          dpVersion: {}
+          envoy: {}
 `))
 	})
 
@@ -167,6 +178,18 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		func(given testCase) {
 			// given
 			streamID := int64(1)
+			version := util_proto.MustToStruct(&mesh_proto.Version{
+				DpVersion: &mesh_proto.KumaDpVersion{
+					Version:   "0.0.1",
+					GitTag:    "v0.0.1",
+					GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+					BuildDate: "2019-08-07T11:26:06Z",
+				},
+				Envoy: &mesh_proto.EnvoyVersion{
+					Version: "1.15.0",
+					Build:   "hash/1.15.0/RELEASE",
+				},
+			})
 
 			By("simulating start of subscription")
 			// when
@@ -183,7 +206,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			// when
 			discoveryRequest := &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
-					Id: "default.example-001",
+					Id:       "default.example-001",
+					Metadata: version,
 				},
 				TypeUrl: given.TypeUrl,
 			}
@@ -209,6 +233,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
           lds: {}
           rds: {}
           total: {}
+        version:
+          dpVersion:
+            buildDate: "2019-08-07T11:26:06Z"
+            gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+            gitTag: v0.0.1
+            version: 0.0.1
+          envoy:
+            build: hash/1.15.0/RELEASE
+            version: 1.15.0
 `))
 
 			By("simulating initial xDS response")
@@ -285,6 +318,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               rds: {}
               total:
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -301,6 +343,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesAcknowledged: "1"
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterNACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -319,6 +370,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesRejected: "1"
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 		}),
 		Entry("should properly handle RDS flow", testCase{
@@ -336,6 +396,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesSent: "1"
               total:
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -352,6 +421,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesAcknowledged: "1"
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterNACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -370,6 +448,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesRejected: "1"
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 		}),
 		Entry("should properly handle CDS flow", testCase{
@@ -387,6 +474,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               rds: {}
               total:
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -403,6 +499,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesAcknowledged: "1"
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterNACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -421,6 +526,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesRejected: "1"
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 		}),
 		Entry("should properly handle EDS flow", testCase{
@@ -438,6 +552,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               rds: {}
               total:
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -454,6 +577,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesAcknowledged: "1"
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterNACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -472,6 +604,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesRejected: "1"
                 responsesSent: "1"
+            version:
+              dpVersion:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 		}),
 	)

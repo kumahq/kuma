@@ -49,14 +49,14 @@ message DiscoverySubscription {
 
   // Time when a given Dataplane connected to the Control Plane.
   google.protobuf.Timestamp connect_time = 3
-  [ (validate.rules).timestamp.required = true ];
+      [ (validate.rules).timestamp.required = true ];
 
   // Time when a given Dataplane disconnected from the Control Plane.
   google.protobuf.Timestamp disconnect_time = 4;
 
   // Status of the ADS subscription.
   DiscoverySubscriptionStatus status = 5
-  [ (validate.rules).message.required = true ];
+      [ (validate.rules).message.required = true ];
 
   // Version of Envoy and Kuma dataplane
   Version version = 6;
