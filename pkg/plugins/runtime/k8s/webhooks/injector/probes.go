@@ -31,18 +31,32 @@ func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
 	for _, c := range pod.Spec.Containers {
 		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
 			log.V(1).Info("overriding liveness probe", "container", c.Name)
+			resolveNamedPort(c, c.LivenessProbe)
 			if err := overrideHTTPProbe(c.LivenessProbe, port); err != nil {
 				return err
 			}
 		}
 		if c.ReadinessProbe != nil && c.ReadinessProbe.HTTPGet != nil {
 			log.V(1).Info("overriding readiness probe", "container", c.Name)
+			resolveNamedPort(c, c.ReadinessProbe)
 			if err := overrideHTTPProbe(c.ReadinessProbe, port); err != nil {
 				return err
 			}
 		}
 	}
 	return nil
+}
+
+func resolveNamedPort(container kube_core.Container, probe *kube_core.Probe) {
+	port := probe.HTTPGet.Port
+	if port.IntValue() != 0 {
+		return
+	}
+	for _, containerPort := range container.Ports {
+		if containerPort.Name != "" && containerPort.Name == port.String() {
+			probe.HTTPGet.Port = intstr.FromInt(int(containerPort.ContainerPort))
+		}
+	}
 }
 
 func overrideHTTPProbe(probe *kube_core.Probe, virtualPort uint32) error {
