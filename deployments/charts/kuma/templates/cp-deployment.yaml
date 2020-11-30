@@ -7,6 +7,7 @@ metadata:
     {{- include "kuma.labels" . | nindent 4 }}
     app: kuma-control-plane
 spec:
+  replicas: {{ .Values.controlPlane.replicas }}
   strategy:
     rollingUpdate:
       maxSurge: 1
