@@ -3,6 +3,8 @@ package install
 import (
 	"net/url"
 
+	"k8s.io/client-go/rest"
+
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 
@@ -60,6 +62,7 @@ type InstallControlPlaneArgs struct {
 	Ingress_mesh                                 string            `helm:"ingress.mesh"`
 	Ingress_drainTime                            string            `helm:"ingress.drainTime"`
 	Ingress_service_type                         string            `helm:"ingress.service.type"`
+	WithoutKubernetesConnection                  bool              // there is no HELM equivalent, HELM always require connection to Kubernetes
 }
 
 type ImageEnvSecret struct {
@@ -109,7 +112,8 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "control-plane",
 		Short: "Install Kuma Control Plane on Kubernetes",
-		Long:  `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.`,
+		Long: `Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.
+This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateArgs(args); err != nil {
 				return err
@@ -123,12 +127,21 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				args.Ingress_service_type = "NodePort"
 			}
 
+			var kubeClientConfig *rest.Config
+			if !args.WithoutKubernetesConnection {
+				var err error
+				kubeClientConfig, err = k8s.DefaultClientConfig()
+				if err != nil {
+					return errors.Wrap(err, "could not detect Kubernetes configuration")
+				}
+			}
+
 			templateFiles, err := InstallCpTemplateFilesFn(args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
 			}
 
-			renderedFiles, err := renderHelmFiles(templateFiles, args)
+			renderedFiles, err := renderHelmFiles(templateFiles, args, kubeClientConfig)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render helm template files")
 			}
@@ -183,6 +196,7 @@ func newInstallControlPlaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().BoolVar(&args.Ingress_enabled, "ingress-enabled", args.Cni_enabled, "install Kuma with an Ingress deployment, using the Data Plane image")
 	cmd.Flags().StringVar(&args.Ingress_drainTime, "ingress-drain-time", args.Ingress_drainTime, "drain time for Envoy proxy")
 	cmd.Flags().BoolVar(&ingressUseNodePort, "ingress-use-node-port", false, "use NodePort instead of LoadBalancer for the Ingress Service")
+	cmd.Flags().BoolVar(&args.WithoutKubernetesConnection, "without-kubernetes-connection", false, "install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades")
 	return cmd
 }
 

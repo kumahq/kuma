@@ -12,6 +12,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/engine"
+	"k8s.io/client-go/rest"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
@@ -37,7 +38,7 @@ metadata:
 `, namespace)
 }
 
-func renderHelmFiles(templates []data.File, args interface{}) ([]data.File, error) {
+func renderHelmFiles(templates []data.File, args interface{}, kubeClientConfig *rest.Config) ([]data.File, error) {
 	chart, err := loadCharts(templates)
 	if err != nil {
 		return nil, errors.Errorf("Failed to load charts: %s", err)
@@ -56,7 +57,12 @@ func renderHelmFiles(templates []data.File, args interface{}) ([]data.File, erro
 		return nil, errors.Errorf("Failed to render values: %s", err)
 	}
 
-	files, err := engine.Render(chart, valuesToRender)
+	var files map[string]string
+	if kubeClientConfig == nil {
+		files, err = engine.Render(chart, valuesToRender)
+	} else {
+		files, err = engine.RenderWithClient(chart, valuesToRender, kubeClientConfig)
+	}
 	if err != nil {
 		return nil, errors.Errorf("Failed to render templates: %s", err)
 	}
