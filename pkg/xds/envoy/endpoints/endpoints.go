@@ -64,10 +64,27 @@ func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoi
 		})
 	}
 
+	for _, lbEndpoints := range localityLbEndpoints {
+		// sort the slice to ensure stable Envoy configuration
+		sortLbEndpoints(lbEndpoints.LbEndpoints)
+	}
+
 	return &envoy_api.ClusterLoadAssignment{
 		ClusterName: clusterName,
 		Endpoints:   localityLbEndpoints.AsSlice(),
 	}
+}
+
+func sortLbEndpoints(lbEndpoints []*envoy_endpoint.LbEndpoint) {
+	sort.Slice(lbEndpoints, func(i, j int) bool {
+		left, right := lbEndpoints[i], lbEndpoints[j]
+		leftAddr := left.GetEndpoint().GetAddress().GetSocketAddress().GetAddress()
+		rightAddr := right.GetEndpoint().GetAddress().GetSocketAddress().GetAddress()
+		if leftAddr == rightAddr {
+			return left.GetEndpoint().GetAddress().GetSocketAddress().GetPortValue() < right.GetEndpoint().GetAddress().GetSocketAddress().GetPortValue()
+		}
+		return leftAddr < rightAddr
+	})
 }
 
 type LocalityLbEndpointsMap map[string]*envoy_endpoint.LocalityLbEndpoints
