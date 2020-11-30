@@ -631,6 +631,50 @@ var _ = Describe("DataplaneStatusTracker", func() {
 `,
 		}),
 	)
+
+	type versionTestCase struct {
+		version *pstruct.Value
+	}
+
+	DescribeTable("should read node.metadata without error",
+		func(given versionTestCase) {
+			// given
+			version := mesh_proto.NewVersion()
+			node := &envoy_core.Node{
+				Metadata: &pstruct.Struct{
+					Fields: map[string]*pstruct.Value{
+						"dataplaneTokenPath": {
+							Kind: &pstruct.Value_StringValue{
+								StringValue: "/tmp/token",
+							},
+						},
+						"version": given.version,
+					},
+				},
+			}
+
+			// when
+			err := readVersion(node.Metadata, version)
+
+			// then
+			Expect(err).To(BeNil())
+			Expect(version).To(Equal(mesh_proto.NewVersion()))
+		},
+		Entry("when version is a nil struct", versionTestCase{
+			version: &pstruct.Value{
+				Kind: &pstruct.Value_StructValue{
+					StructValue: nil,
+				},
+			},
+		}),
+		Entry("when version is not a struct", versionTestCase{
+			version: &pstruct.Value{
+				Kind: &pstruct.Value_StringValue{
+					StringValue: "v1.0.0",
+				},
+			},
+		}),
+	)
 })
 
 type DataplaneInsightSinkFunc func(stop <-chan struct{})
