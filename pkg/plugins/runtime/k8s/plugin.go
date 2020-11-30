@@ -153,7 +153,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		return nil
 	}
 	vipsAllocator, err := dns.NewVIPsAllocator(
-		rt.ReadOnlyResourceManager(),
+		rt.ResourceManager(),
 		rt.ConfigManager(),
 		rt.Config().DNSServer.CIDR,
 		rt.DNSResolver(),

@@ -48,16 +48,17 @@ func NewPersistence(resourceManager manager.ReadOnlyResourceManager, configManag
 	}
 }
 
-func (m *Persistence) Get() (List, error) {
+func (m *Persistence) Get() (global List, meshed map[string]List, errs error) {
 	resourceList := &config_model.ConfigResourceList{}
 	if err := m.configManager.List(context.Background(), resourceList); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	var errs error
-	vips := List{}
+	global = List{}
+	meshed = map[string]List{}
 	for _, resource := range resourceList.Items {
-		if _, ok := MeshFromConfigKey(resource.Meta.GetName()); !ok {
+		mesh, ok := MeshFromConfigKey(resource.Meta.GetName())
+		if !ok {
 			continue
 		}
 		if resource.Spec.Config == "" {
@@ -68,9 +69,10 @@ func (m *Persistence) Get() (List, error) {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		vips.Append(v)
+		global.Append(v)
+		meshed[mesh] = v
 	}
-	return vips, nil
+	return
 }
 
 func (m *Persistence) GetByMesh(mesh string) (List, error) {
