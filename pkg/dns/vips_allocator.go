@@ -96,11 +96,6 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		return err
 	}
 
-<<<<<<< HEAD
-	updated, updError := UpdateMeshedVIPs(global, meshed, d.ipam, serviceSet)
-	if !updated {
-		return err
-=======
 	forEachMesh := func(mesh string, meshed vips.List) error {
 		serviceSet, err := BuildServiceSet(d.rm, mesh)
 		if err != nil {
@@ -118,7 +113,6 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 
 		d.resolver.SetVIPs(meshed)
 		return updError
->>>>>>> 7d745d5c... fix(kuma-cp) resync IPAM in case of Kuma CP restart (#1213)
 	}
 
 	for _, mesh := range meshes {
