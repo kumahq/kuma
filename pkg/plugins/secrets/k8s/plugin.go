@@ -26,5 +26,9 @@ func (p *plugin) NewSecretStore(pc core_plugins.PluginContext, _ core_plugins.Pl
 	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
 	}
-	return NewStore(mgr.GetAPIReader(), mgr.GetClient(), pc.Config().Store.Kubernetes.SystemNamespace)
+	client, ok := k8s_extensions.FromNonCachedClientContext(pc.Extensions())
+	if !ok {
+		return nil, errors.Errorf("non cached client hasn't been configured")
+	}
+	return NewStore(client, client, pc.Config().Store.Kubernetes.SystemNamespace)
 }

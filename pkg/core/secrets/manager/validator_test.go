@@ -109,9 +109,17 @@ var _ = Describe("Secret Validator", func() {
 		}),
 	)
 
-	It("should validate that secret is not in use", func() {
+	It("should pass validation of secrets that are not in use", func() {
 		// when
 		err := validator.ValidateDelete(context.Background(), "some-not-used-secret", "default")
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should pass validation of secrets in mesh that non exist", func() {
+		// when
+		err := validator.ValidateDelete(context.Background(), "some-not-used-secret", "non-existing-mesh")
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

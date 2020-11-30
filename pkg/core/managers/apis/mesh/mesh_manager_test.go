@@ -212,6 +212,34 @@ var _ = Describe("Mesh Manager", func() {
 		})
 	})
 
+	Describe("Delete()", func() {
+		It("should delete secrets within one mesh", func() {
+			// given two meshes
+			err := resManager.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("demo-1", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+			err = resManager.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("demo-2", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when demo-1 is deleted
+			err = resManager.Delete(context.Background(), &core_mesh.MeshResource{}, store.DeleteByKey("demo-1", model.NoMesh))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// and all secrets are deleted
+			secrets := &system.SecretResourceList{}
+			err = secretManager.List(context.Background(), secrets, store.ListByMesh("demo-1"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secrets.Items).To(BeEmpty())
+
+			// and all secrets from other mesh are preserved
+			secrets = &system.SecretResourceList{}
+			err = secretManager.List(context.Background(), secrets, store.ListByMesh("demo-2"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secrets.Items).To(HaveLen(1)) // default signing key
+		})
+	})
+
 	Describe("Update()", func() {
 		It("should not allow to change CA when mTLS is enabled", func() {
 			// given
