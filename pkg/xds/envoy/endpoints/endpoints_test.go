@@ -87,6 +87,38 @@ var _ = Describe("Endpoints", func() {
                     loadBalancingWeight: 1
 `,
 			}),
+			Entry("stable output", testCase{
+				cluster: "127.0.0.1:8080",
+				endpoints: []core_xds.Endpoint{ // endpoints in different order, but result is the same as in previous test
+					{
+						Target: "192.168.0.2",
+						Port:   8082,
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.1",
+						Port:   8081,
+						Weight: 2,
+					},
+				},
+				expected: `
+                clusterName: 127.0.0.1:8080
+                endpoints:
+                - lbEndpoints:
+                  - endpoint:
+                      address:
+                        socketAddress:
+                          address: 192.168.0.1
+                          portValue: 8081
+                    loadBalancingWeight: 2
+                  - endpoint:
+                      address:
+                        socketAddress:
+                          address: 192.168.0.2
+                          portValue: 8082
+                    loadBalancingWeight: 1
+`,
+			}),
 			Entry("with tags", testCase{
 				cluster: "127.0.0.1:8080",
 				endpoints: []core_xds.Endpoint{
