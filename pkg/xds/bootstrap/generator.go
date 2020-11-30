@@ -114,7 +114,7 @@ func SANMismatchErr(host string, sans []string) error {
 		"3) Restart the control plane to read the new certificate and start kuma-dp.", host, sans, host)
 }
 
-func ISSanMismatchErr(err error) bool {
+func ISSANMismatchErr(err error) bool {
 	if err == nil {
 		return false
 	}

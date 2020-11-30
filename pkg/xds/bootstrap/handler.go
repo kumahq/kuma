@@ -80,7 +80,7 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 		}
 		return
 	}
-	if ISSanMismatchErr(err) {
+	if ISSANMismatchErr(err) {
 		resp.WriteHeader(http.StatusBadRequest)
 		_, err = resp.Write([]byte(err.Error()))
 		if err != nil {
