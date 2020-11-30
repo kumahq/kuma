@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "google/protobuf/timestamp.proto";
+
+message ServiceInsight {
+  google.protobuf.Timestamp last_sync = 1;
+  message DataplaneStat {
+    uint32 total = 1;
+    uint32 online = 2;
+    uint32 offline = 3;
+  }
+  map<string, DataplaneStat> services = 2;
+}

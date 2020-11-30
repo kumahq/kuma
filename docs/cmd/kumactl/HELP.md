@@ -335,27 +335,39 @@ Global Flags:
   -m, --mesh string          mesh to use (default "default")
 ```
 
-### kumactl generate dp-token
+### kumactl generate dataplane-token
 
 ```
-Generate resources, tokens, etc.
+Generate Dataplane Token that is used to prove Dataplane identity.
 
 Usage:
-  kumactl generate [command]
+  kumactl generate dataplane-token [flags]
 
-Available Commands:
-  dataplane-token Generate Dataplane Token
-  tls-certificate Generate a TLS certificate
+Examples:
+
+Generate token bound by name and mesh
+$ kumactl generate dataplane-token --mesh demo --dataplane demo-01
+
+Generate token bound by mesh
+$ kumactl generate dataplane-token --mesh demo
+
+Generate Ingress token
+$ kumactl generate dataplane-token --type ingress
+
+Generate token bound by tag
+$ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
+
 
 Flags:
-  -h, --help   help for generate
+  -h, --help                 help for dataplane-token
+      --name string          name of the Dataplane
+      --tag stringToString   required tag values for dataplane (split values by comma to provide multiple values) (default [])
+      --type string          type of the Dataplane ("dataplane", "ingress")
 
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
-
-Use "kumactl generate [command] --help" for more information about a command.
 ```
 
 ## kumactl get
@@ -670,6 +682,7 @@ Usage:
 Available Commands:
   dataplanes  Inspect Dataplanes
   meshes      Inspect Meshes
+  services    Inspect Services
   zones       Inspect Zones
 
 Flags:

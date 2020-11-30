@@ -71,16 +71,6 @@ func (cs *UniversalClusters) GetKuma() ControlPlane {
 	panic("Not supported at this level.")
 }
 
-func (cs *UniversalClusters) RestartKuma() error {
-	for name, c := range cs.clusters {
-		if err := c.RestartKuma(); err != nil {
-			return errors.Wrapf(err, "Restart Kuma on %s failed: %v", name, err)
-		}
-	}
-
-	return nil
-}
-
 func (cs *UniversalClusters) VerifyKuma() error {
 	for name, c := range cs.clusters {
 		if err := c.VerifyKuma(); err != nil {

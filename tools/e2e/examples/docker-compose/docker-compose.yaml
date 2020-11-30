@@ -332,7 +332,7 @@ services:
   # Notice that we're using Envoy as a simple HTTP server with predefined responses.
   #
   kuma-example-backend-v1:
-    image: envoyproxy/envoy-alpine:v1.16.0
+    image: envoyproxy/envoy-alpine:v1.16.1
     command:
     - sh
     - -c
@@ -398,7 +398,7 @@ services:
   # Notice that we're using Envoy as a simple HTTP server with predefined responses.
   #
   kuma-example-backend-v2:
-    image: envoyproxy/envoy-alpine:v1.16.0
+    image: envoyproxy/envoy-alpine:v1.16.1
     command:
     - sh
     - -c

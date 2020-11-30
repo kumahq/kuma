@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 	test_store "github.com/kumahq/kuma/pkg/test/store"
 )
@@ -19,6 +20,9 @@ var _ = Describe("PostgresStore template", func() {
 		err := config.Load("", &cfg)
 		Expect(err).ToNot(HaveOccurred())
 
+		metrics, err := core_metrics.NewMetrics("Standalone")
+		Expect(err).ToNot(HaveOccurred())
+
 		dbName, err := common_postgres.CreateRandomDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 		cfg.DbName = dbName
@@ -26,7 +30,7 @@ var _ = Describe("PostgresStore template", func() {
 		_, err = migrateDb(cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		pStore, err := NewStore(cfg)
+		pStore, err := NewStore(metrics, cfg)
 		Expect(err).ToNot(HaveOccurred())
 
 		return pStore
