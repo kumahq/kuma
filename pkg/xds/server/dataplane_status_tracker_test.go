@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	pstruct "github.com/golang/protobuf/ptypes/struct"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	. "github.com/onsi/ginkgo"
@@ -206,8 +208,21 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			// when
 			discoveryRequest := &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
-					Id:       "default.example-001",
-					Metadata: version,
+					Id: "default.example-001",
+					Metadata: &pstruct.Struct{
+						Fields: map[string]*pstruct.Value{
+							"dataplaneTokenPath": {
+								Kind: &pstruct.Value_StringValue{
+									StringValue: "/tmp/token",
+								},
+							},
+							"version": {
+								Kind: &pstruct.Value_StructValue{
+									StructValue: version,
+								},
+							},
+						},
+					},
 				},
 				TypeUrl: given.TypeUrl,
 			}

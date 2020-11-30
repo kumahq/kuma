@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	pstruct "github.com/golang/protobuf/ptypes/struct"
+
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/golang/protobuf/proto"
@@ -121,8 +123,8 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.Disc
 	if state.dataplaneId == (core_model.ResourceKey{}) {
 		if id, err := core_xds.ParseProxyId(req.Node); err == nil {
 			state.dataplaneId = core_model.ResourceKey{Mesh: id.Mesh, Name: id.Name}
-			if err := util_proto.ToTyped(req.Node.Metadata, state.subscription.Version); err != nil {
-				xdsServerLog.Error(err, "failed to parse Node.Metadata out of DiscoveryRequest", "streamid", streamID, "req", req)
+			if err := readVersion(req.Node.Metadata, state.subscription.Version); err != nil {
+				xdsServerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Node.Metadata)
 			}
 			// kick off async Dataplane status flusher
 			go c.createStatusSink(state).Start(state.stop)
@@ -191,4 +193,15 @@ func (s *streamState) GetStatus() (core_model.ResourceKey, *mesh_proto.Discovery
 
 func (s *streamState) Close() {
 	close(s.stop)
+}
+
+func readVersion(metadata *pstruct.Struct, version *mesh_proto.Version) error {
+	rawVersion := metadata.Fields["version"].GetStructValue()
+	if rawVersion != nil {
+		err := util_proto.ToTyped(rawVersion, version)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
