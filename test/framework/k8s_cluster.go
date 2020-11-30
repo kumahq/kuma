@@ -24,7 +24,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/onsi/gomega"
 	"go.uber.org/multierr"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -301,6 +300,9 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		"dataPlane.initImage.repository":         KumaInitImageRepo,
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(opts.skipDefaultMesh),
 	}
+	if opts.cpReplicas != 0 {
+		values["controlPlane.replicas"] = strconv.Itoa(opts.cpReplicas)
+	}
 	for opt, value := range opts.helmOpts {
 		values[opt] = value
 	}
@@ -350,10 +352,13 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 }
 
 func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
-	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig,
-		c, c.loPort, c.hiPort, c.verbose)
-
 	opts := newDeployOpt(fs...)
+	replicas := 1
+	if opts.cpReplicas != 0 {
+		replicas = opts.cpReplicas
+	}
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.loPort, c.hiPort, c.verbose, replicas)
+
 	switch mode {
 	case core.Remote:
 		if opts.globalAddress == "" {
@@ -375,13 +380,13 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 		return err
 	}
 
-	err = c.WaitApp(KumaServiceName, KumaNamespace)
+	err = c.WaitApp(KumaServiceName, KumaNamespace, replicas)
 	if err != nil {
 		return err
 	}
 
 	if opts.cni {
-		err = c.WaitApp(cniApp, cniNamespace)
+		err = c.WaitApp(cniApp, cniNamespace, 1)
 		if err != nil {
 			return err
 		}
@@ -411,73 +416,6 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 
 func (c *K8sCluster) GetKuma() ControlPlane {
 	return c.controlplane
-}
-
-func (c *K8sCluster) RestartKuma() error {
-	c.CleanupPortForwards()
-
-	kumacpPods := c.controlplane.GetKumaCPPods()
-	if len(kumacpPods) != 1 {
-		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
-	}
-	oldPod := kumacpPods[0]
-
-	// creates the clientset
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
-	if err != nil {
-		return errors.Wrapf(err, "error in getting access to K8S")
-	}
-
-	// delete the pod
-	err = clientset.CoreV1().Pods(oldPod.Namespace).Delete(context.TODO(), oldPod.Name, metav1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-
-	// wait for pod to terminate
-	retry.DoWithRetry(c.t,
-		"Wait the Kuma CP pod to terminate.",
-		DefaultRetries,
-		DefaultTimeout,
-		func() (string, error) {
-			_, err := k8s.GetPodE(c.t,
-				c.GetKubectlOptions(oldPod.Namespace),
-				oldPod.Name)
-			if err != nil {
-				return "Pod " + oldPod.Name + " deleted", nil
-			}
-			return "Pod available " + oldPod.Name, fmt.Errorf("Pod %s still active", oldPod.Name)
-		})
-
-	k8s.WaitUntilNumPodsCreated(c.t,
-		c.GetKubectlOptions(KumaNamespace),
-		metav1.ListOptions{
-			LabelSelector: "app=" + KumaServiceName,
-		},
-		1,
-		DefaultRetries,
-		DefaultTimeout)
-
-	kumacpPods = c.controlplane.GetKumaCPPods()
-	if len(kumacpPods) != 1 {
-		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
-	}
-
-	newPod := kumacpPods[0]
-	gomega.Expect(oldPod.Name).ToNot(gomega.Equal(newPod.Name))
-
-	k8s.WaitUntilPodAvailable(c.t,
-		c.GetKubectlOptions(KumaNamespace),
-		newPod.Name,
-		DefaultRetries,
-		DefaultTimeout)
-
-	err = c.controlplane.FinalizeAdd()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (c *K8sCluster) VerifyKuma() error {
@@ -674,13 +612,13 @@ func (c *K8sCluster) Deploy(deployment Deployment) error {
 	return deployment.Deploy(c)
 }
 
-func (c *K8sCluster) WaitApp(name, namespace string) error {
+func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 	k8s.WaitUntilNumPodsCreated(c.t,
 		c.GetKubectlOptions(namespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + name,
 		},
-		1,
+		replicas,
 		DefaultRetries,
 		DefaultTimeout)
 
@@ -690,14 +628,16 @@ func (c *K8sCluster) WaitApp(name, namespace string) error {
 			LabelSelector: "app=" + name,
 		},
 	)
-	if len(pods) < 1 {
-		return errors.Errorf("%s pods: %d", name, len(pods))
+	if len(pods) < replicas {
+		return errors.Errorf("%s pods: %d. expected %d", name, len(pods), replicas)
 	}
 
-	k8s.WaitUntilPodAvailable(c.t,
-		c.GetKubectlOptions(namespace),
-		pods[0].Name,
-		DefaultRetries,
-		DefaultTimeout)
+	for i := 0; i < replicas; i++ {
+		k8s.WaitUntilPodAvailable(c.t,
+			c.GetKubectlOptions(namespace),
+			pods[i].Name,
+			DefaultRetries,
+			DefaultTimeout)
+	}
 	return nil
 }
