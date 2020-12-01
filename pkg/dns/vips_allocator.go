@@ -108,11 +108,12 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		if !updated {
 			return updError
 		}
+		updateResolver = updateResolver || updated
+		global.Append(meshed)
 
 		if err := d.persistence.Set(mesh, meshed); err != nil {
 			return multierr.Append(updError, err)
 		}
-		updateResolver = updateResolver || updated
 		return updError
 	}
 
@@ -127,11 +128,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 	}
 
 	if updateResolver {
-		if global, _, err := d.persistence.Get(); err != nil {
-			errs = multierr.Append(errs, err)
-		} else {
-			d.resolver.SetVIPs(global)
-		}
+		d.resolver.SetVIPs(global)
 	}
 
 	return errs
