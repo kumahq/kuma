@@ -44,6 +44,9 @@ func NewDefaultBootstrapGenerator(
 	if err != nil {
 		return nil, err
 	}
+	if config.XdsHost != "" && !hostsAndIps[config.XdsHost] {
+		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", config.XdsHost, hostsAndIps.slice())
+	}
 	return &bootstrapGenerator{
 		resManager:    resManager,
 		config:        config,
@@ -53,33 +56,12 @@ func NewDefaultBootstrapGenerator(
 	}, nil
 }
 
-func hostsAndIPsFromCertFile(dpServerCertFile string) (map[string]bool, error) {
-	certBytes, err := ioutil.ReadFile(dpServerCertFile)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not read certificate")
-	}
-	pemCert, _ := pem.Decode(certBytes)
-	cert, err := x509.ParseCertificate(pemCert.Bytes)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not parse certificate")
-	}
-
-	hostsAndIps := map[string]bool{}
-	for _, dnsName := range cert.DNSNames {
-		hostsAndIps[dnsName] = true
-	}
-	for _, ip := range cert.IPAddresses {
-		hostsAndIps[ip.String()] = true
-	}
-	return hostsAndIps, nil
-}
-
 type bootstrapGenerator struct {
 	resManager    core_manager.ResourceManager
 	config        *bootstrap_config.BootstrapParamsConfig
 	dpAuthEnabled bool
 	xdsCertFile   string
-	hostsAndIps   map[string]bool
+	hostsAndIps   SANSet
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
@@ -125,14 +107,10 @@ func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) err
 	if b.dpAuthEnabled && request.DataplaneTokenPath == "" {
 		return DpTokenRequired
 	}
-	host := b.xdsHost(request)
-	if !b.hostsAndIps[host] {
-		sans := []string{}
-		for san := range b.hostsAndIps {
-			sans = append(sans, san)
+	if b.config.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
+		if !b.hostsAndIps[request.Host] {
+			return SANMismatchErr(request.Host, b.hostsAndIps.slice())
 		}
-		sort.Strings(sans)
-		return SANMismatchErr(host, sans)
 	}
 	return nil
 }
@@ -225,7 +203,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 }
 
 func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
-	if b.config.XdsHost != "" {
+	if b.config.XdsHost != "" { // XdsHost from config takes precedence over Host from request
 		return b.config.XdsHost
 	} else {
 		return request.Host
@@ -261,4 +239,36 @@ func (b *bootstrapGenerator) configForParameters(params configParameters) (*envo
 		return nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
 	}
 	return config, nil
+}
+
+type SANSet map[string]bool
+
+func (s SANSet) slice() []string {
+	sans := []string{}
+	for san := range s {
+		sans = append(sans, san)
+	}
+	sort.Strings(sans)
+	return sans
+}
+
+func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
+	certBytes, err := ioutil.ReadFile(dpServerCertFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not read certificate")
+	}
+	pemCert, _ := pem.Decode(certBytes)
+	cert, err := x509.ParseCertificate(pemCert.Bytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not parse certificate")
+	}
+
+	hostsAndIps := map[string]bool{}
+	for _, dnsName := range cert.DNSNames {
+		hostsAndIps[dnsName] = true
+	}
+	for _, ip := range cert.IPAddresses {
+		hostsAndIps[ip.String()] = true
+	}
+	return hostsAndIps, nil
 }
