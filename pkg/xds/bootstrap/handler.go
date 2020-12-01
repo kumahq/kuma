@@ -80,6 +80,14 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 		}
 		return
 	}
+	if ISSANMismatchErr(err) {
+		resp.WriteHeader(http.StatusBadRequest)
+		_, err = resp.Write([]byte(err.Error()))
+		if err != nil {
+			logger.Error(err, "Error while writing the response")
+		}
+		return
+	}
 	if store.IsResourceNotFound(err) {
 		resp.WriteHeader(http.StatusNotFound)
 		return
