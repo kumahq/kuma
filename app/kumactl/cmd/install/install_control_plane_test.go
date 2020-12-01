@@ -106,7 +106,9 @@ var _ = Describe("kumactl install control-plane", func() {
 			}
 		},
 		Entry("should generate Kubernetes resources with default settings", testCase{
-			extraArgs:  nil,
+			extraArgs: []string{
+				"--without-kubernetes-connection",
+			},
 			goldenFile: "install-control-plane.defaults.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources with custom settings", testCase{
@@ -129,18 +131,21 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--zone", "zone-1",
 				"--use-node-port",
+				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.overrides.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources with CNI plugin", testCase{
 			extraArgs: []string{
 				"--cni-enabled",
+				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.cni-enabled.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources for Global", testCase{
 			extraArgs: []string{
 				"--mode", "global",
+				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.global.golden.yaml",
 		}),
@@ -149,6 +154,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--mode", "remote",
 				"--zone", "zone-1",
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
+				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.remote.golden.yaml",
 		}),
@@ -157,6 +163,7 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--ingress-enabled",
 				"--ingress-drain-time", "60s",
 				"--ingress-use-node-port",
+				"--without-kubernetes-connection",
 			},
 			goldenFile: "install-control-plane.with-ingress.golden.yaml",
 		}),

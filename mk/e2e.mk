@@ -313,7 +313,7 @@ load/example/minikube: ## Minikube: Load Docker images into Minikube
 
 deploy/kuma/minikube: ## Minikube: Deploy Kuma with no demo app
 	eval $$(minikube docker-env) && $(call pull_docker_images)
-	eval $$(minikube docker-env) && docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | kubectl apply -f -
+	eval $$(minikube docker-env) && docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) --without-kubernetes-connection | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
 

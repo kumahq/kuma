@@ -4,6 +4,7 @@ import (
 	"context"
 
 	kube_ctrl "sigs.k8s.io/controller-runtime"
+	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 )
@@ -31,5 +32,16 @@ func NewResourceConverterContext(ctx context.Context, converter k8s_common.Conve
 
 func FromResourceConverterContext(ctx context.Context) (converter k8s_common.Converter, ok bool) {
 	converter, ok = ctx.Value(converterKey{}).(k8s_common.Converter)
+	return
+}
+
+type nonCachedClient struct{}
+
+func NewNonCachedClientContext(ctx context.Context, client kube_client.Client) context.Context {
+	return context.WithValue(ctx, nonCachedClient{}, client)
+}
+
+func FromNonCachedClientContext(ctx context.Context) (client kube_client.Client, ok bool) {
+	client, ok = ctx.Value(nonCachedClient{}).(kube_client.Client)
 	return
 }
