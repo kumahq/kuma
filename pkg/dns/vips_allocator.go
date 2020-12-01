@@ -130,7 +130,6 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		if global, _, err := d.persistence.Get(); err != nil {
 			errs = multierr.Append(errs, err)
 		} else {
-			vipsAllocatorLog.Info("setting resolver", "vips", global)
 			d.resolver.SetVIPs(global)
 		}
 	}
