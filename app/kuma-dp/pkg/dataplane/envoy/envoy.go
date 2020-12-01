@@ -102,7 +102,6 @@ func lookupEnvoyPath(configuredPath string) (string, error) {
 }
 
 func (e *Envoy) Start(stop <-chan struct{}) error {
-	runLog.Info("generating bootstrap configuration")
 	envoyVersion, err := e.version()
 	if err != nil {
 		return errors.Wrap(err, "failed to get Envoy version")
