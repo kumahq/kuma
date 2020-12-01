@@ -178,6 +178,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.PollTimeout).To(Equal(750 * time.Millisecond))
 			Expect(cfg.Multizone.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
 			Expect(cfg.Multizone.Global.KDS.RefreshInterval).To(Equal(time.Second * 2))
+			Expect(cfg.Multizone.Global.KDS.ZoneInsightFlushInterval).To(Equal(time.Second * 5))
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.Multizone.Remote.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
@@ -337,6 +338,7 @@ multizone:
     kds:
       grpcPort: 1234
       refreshInterval: 2s
+      zoneInsightFlushInterval: 5s
       tlsCertFile: /cert
       tlsKeyFile: /key
   remote:
@@ -469,6 +471,7 @@ sdsServer:
 				"KUMA_MULTIZONE_REMOTE_ZONE":                                                               "zone-1",
 				"KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE":                                                   "/rootCa",
 				"KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL":                                               "9s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",

@@ -34,6 +34,6 @@ func (x *XdsServerConfig) Validate() error {
 func DefaultXdsServerConfig() *XdsServerConfig {
 	return &XdsServerConfig{
 		DataplaneConfigurationRefreshInterval: 1 * time.Second,
-		DataplaneStatusFlushInterval:          1 * time.Second,
+		DataplaneStatusFlushInterval:          10 * time.Second,
 	}
 }
