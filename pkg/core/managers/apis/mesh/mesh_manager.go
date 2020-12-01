@@ -80,7 +80,7 @@ func (m *meshManager) Create(ctx context.Context, resource core_model.Resource, 
 	if err := m.store.Create(ctx, mesh, append(fs, core_store.CreatedAt(time.Now()))...); err != nil {
 		return err
 	}
-	if err := defaults_mesh.CreateDefaultMeshResources(m.otherManagers, opts.Name); err != nil {
+	if err := defaults_mesh.EnsureDefaultMeshResources(m.otherManagers, opts.Name); err != nil {
 		return err
 	}
 	return nil
@@ -103,7 +103,7 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	}
 	opts := core_store.NewDeleteOptions(fs...)
 	// delete all secrets
-	if err := m.otherManagers.DeleteAll(ctx, &system.SecretResourceList{}, core_store.DeleteAllByMesh(opts.Mesh)); err != nil {
+	if err := m.otherManagers.DeleteAll(ctx, &system.SecretResourceList{}, core_store.DeleteAllByMesh(opts.Name)); err != nil {
 		return errors.Wrap(err, "could not delete associated secrets")
 	}
 	return notFoundErr

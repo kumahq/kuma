@@ -284,7 +284,7 @@ function _kumactl_generate {
 
 function _kumactl_generate_dataplane-token {
   _arguments \
-    '--dataplane[name of the Dataplane]:' \
+    '--name[name of the Dataplane]:' \
     '--tag[required tag values for dataplane (split values by comma to provide multiple values)]:' \
     '--type[type of the Dataplane ("dataplane", "ingress")]:' \
     '--config-file[path to the configuration file to use]:' \
@@ -687,6 +687,7 @@ function _kumactl_inspect {
     commands=(
       "dataplanes:Inspect Dataplanes"
       "meshes:Inspect Meshes"
+      "services:Inspect Services"
       "zones:Inspect Zones"
     )
     _describe "command" commands
@@ -699,6 +700,9 @@ function _kumactl_inspect {
     ;;
   meshes)
     _kumactl_inspect_meshes
+    ;;
+  services)
+    _kumactl_inspect_services
     ;;
   zones)
     _kumactl_inspect_zones
@@ -718,6 +722,14 @@ function _kumactl_inspect_dataplanes {
 }
 
 function _kumactl_inspect_meshes {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_inspect_services {
   _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
@@ -812,6 +824,7 @@ function _kumactl_install_control-plane {
     '--tls-kds-global-server-secret[Secret that contains tls.crt, key.crt for protecting cross cluster communication]:' \
     '--tls-kds-remote-client-secret[Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification]:' \
     '--use-node-port[use NodePort instead of LoadBalancer]' \
+    '--without-kubernetes-connection[install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades]' \
     '--zone[set the Kuma zone name]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \

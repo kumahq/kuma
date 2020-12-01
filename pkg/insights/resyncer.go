@@ -2,6 +2,8 @@ package insights
 
 import (
 	"context"
+	"fmt"
+	"sync"
 	"time"
 
 	"github.com/go-kit/kit/ratelimit"
@@ -24,22 +26,29 @@ var (
 	log = core.Log.WithName("mesh-insight-resyncer")
 )
 
+func ServiceInsightName(mesh string) string {
+	return fmt.Sprintf("all-services-%s", mesh)
+}
+
 type Config struct {
 	ResourceManager    manager.ResourceManager
 	EventReaderFactory events.ListenerFactory
 	MinResyncTimeout   time.Duration
 	MaxResyncTimeout   time.Duration
 	Tick               func(d time.Duration) <-chan time.Time
-	RateLimiter        ratelimit.Allower
+	RateLimiterFactory func() ratelimit.Allower
 }
 
 type resyncer struct {
-	rm               manager.ResourceManager
-	eventFactory     events.ListenerFactory
-	minResyncTimeout time.Duration
-	maxResyncTimeout time.Duration
-	tick             func(d time.Duration) <-chan time.Time
-	rateLimiter      ratelimit.Allower
+	rm                 manager.ResourceManager
+	eventFactory       events.ListenerFactory
+	minResyncTimeout   time.Duration
+	maxResyncTimeout   time.Duration
+	tick               func(d time.Duration) <-chan time.Time
+	rateLimiterFactory func() ratelimit.Allower
+	meshInsightMux     sync.Mutex
+	serviceInsightMux  sync.Mutex
+	rateLimiters       map[string]ratelimit.Allower
 }
 
 // NewResyncer creates a new Component that periodically updates insights
@@ -52,11 +61,12 @@ type resyncer struct {
 // resync every t = MaxResyncTimeout - MinResyncTimeout.
 func NewResyncer(config *Config) component.Component {
 	r := &resyncer{
-		minResyncTimeout: config.MinResyncTimeout,
-		maxResyncTimeout: config.MaxResyncTimeout,
-		eventFactory:     config.EventReaderFactory,
-		rm:               config.ResourceManager,
-		rateLimiter:      config.RateLimiter,
+		minResyncTimeout:   config.MinResyncTimeout,
+		maxResyncTimeout:   config.MaxResyncTimeout,
+		eventFactory:       config.EventReaderFactory,
+		rm:                 config.ResourceManager,
+		rateLimiterFactory: config.RateLimiterFactory,
+		rateLimiters:       map[string]ratelimit.Allower{},
 	}
 
 	r.tick = config.Tick
@@ -67,15 +77,17 @@ func NewResyncer(config *Config) component.Component {
 	return r
 }
 
-func (p *resyncer) Start(stop <-chan struct{}) error {
+func (r *resyncer) Start(stop <-chan struct{}) error {
 	go func(stop <-chan struct{}) {
-		ticker := p.tick(p.maxResyncTimeout - p.minResyncTimeout)
+		ticker := r.tick(r.maxResyncTimeout - r.minResyncTimeout)
 		for {
 			select {
 			case <-ticker:
-				if err := p.resync(); err != nil {
-					log.Error(err, "unable to resync resources")
-					continue
+				if err := r.createOrUpdateMeshInsights(); err != nil {
+					log.Error(err, "unable to resync MeshInsight")
+				}
+				if err := r.createOrUpdateServiceInsights(); err != nil {
+					log.Error(err, "unable to resync ServiceInsight")
 				}
 			case <-stop:
 				log.Info("stop")
@@ -84,7 +96,7 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		}
 	}(stop)
 
-	eventReader := p.eventFactory.New()
+	eventReader := r.eventFactory.New()
 	for {
 		event, err := eventReader.Recv(stop)
 		if err != nil {
@@ -94,6 +106,14 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 		if !ok {
 			continue
 		}
+		if resourceChanged.Type == core_mesh.MeshType && resourceChanged.Operation == events.Delete {
+			r.deleteRateLimiter(resourceChanged.Key.Name)
+		}
+		if resourceChanged.Type == core_mesh.DataplaneType || resourceChanged.Type == core_mesh.DataplaneInsightType {
+			if err := r.createOrUpdateServiceInsight(resourceChanged.Key.Mesh); err != nil {
+				log.Error(err, "unable to resync ServiceInsight", "mesh", resourceChanged.Key.Mesh)
+			}
+		}
 		if !meshScoped(resourceChanged.Type) {
 			continue
 		}
@@ -102,14 +122,28 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 			// because that's how we find online/offline Dataplane's status
 			continue
 		}
-		if !p.rateLimiter.Allow() {
+		if !r.getRateLimiter(resourceChanged.Key.Mesh).Allow() {
 			continue
 		}
-		if err := p.resyncMesh(resourceChanged.Key.Mesh); err != nil {
-			log.Error(err, "unable to resync resources")
+		if err := r.createOrUpdateMeshInsight(resourceChanged.Key.Mesh); err != nil {
+			log.Error(err, "unable to resync MeshInsight", "mesh", resourceChanged.Key.Mesh)
 			continue
 		}
 	}
+}
+
+func (r *resyncer) getRateLimiter(mesh string) ratelimit.Allower {
+	if _, ok := r.rateLimiters[mesh]; !ok {
+		r.rateLimiters[mesh] = r.rateLimiterFactory()
+	}
+	return r.rateLimiters[mesh]
+}
+
+func (r *resyncer) deleteRateLimiter(mesh string) {
+	if _, ok := r.rateLimiters[mesh]; !ok {
+		return
+	}
+	delete(r.rateLimiters, mesh)
 }
 
 func meshScoped(t model.ResourceType) bool {
@@ -119,16 +153,16 @@ func meshScoped(t model.ResourceType) bool {
 	return true
 }
 
-func (p *resyncer) resync() error {
+func (r *resyncer) createOrUpdateServiceInsights() error {
 	meshes := &core_mesh.MeshResourceList{}
-	if err := p.rm.List(context.Background(), meshes); err != nil {
+	if err := r.rm.List(context.Background(), meshes); err != nil {
 		return err
 	}
 	for _, mesh := range meshes.Items {
-		if need, err := p.needResync(mesh.GetMeta().GetName()); err != nil || !need {
+		if need, err := r.needResyncServiceInsight(mesh.GetMeta().GetName()); err != nil || !need {
 			continue
 		}
-		err := p.resyncMesh(mesh.GetMeta().GetName())
+		err := r.createOrUpdateServiceInsight(mesh.GetMeta().GetName())
 		if err != nil {
 			log.Error(err, "unable to resync resources", "mesh", mesh.GetMeta().GetName())
 			continue
@@ -137,7 +171,84 @@ func (p *resyncer) resync() error {
 	return nil
 }
 
-func (p *resyncer) resyncMesh(mesh string) error {
+func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
+	r.serviceInsightMux.Lock()
+	defer r.serviceInsightMux.Unlock()
+
+	insight := &mesh_proto.ServiceInsight{
+		Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{},
+	}
+	dpList := &core_mesh.DataplaneResourceList{}
+	if err := r.rm.List(context.Background(), dpList, store.ListByMesh(mesh)); err != nil {
+		return err
+	}
+	dpMap := map[model.ResourceKey][]string{}
+	for _, dp := range dpList.Items {
+		if dp.Spec.IsIngress() {
+			continue // ingress does not represent any service
+		}
+		dpKey := model.MetaToResourceKey(dp.Meta)
+		for _, inbound := range dp.Spec.Networking.Inbound {
+			svc := inbound.GetService()
+			dpMap[dpKey] = append(dpMap[dpKey], svc)
+			if _, ok := insight.Services[svc]; !ok {
+				insight.Services[svc] = &mesh_proto.ServiceInsight_DataplaneStat{}
+			}
+			insight.Services[svc].Total++
+		}
+	}
+	dpInsights := &core_mesh.DataplaneInsightResourceList{}
+	if err := r.rm.List(context.Background(), dpInsights, store.ListByMesh(mesh)); err != nil {
+		return err
+	}
+	for _, dpInsight := range dpInsights.Items {
+		if dpInsight.Spec.IsOnline() {
+			for _, svc := range dpMap[model.MetaToResourceKey(dpInsight.Meta)] {
+				insight.Services[svc].Online++
+			}
+		}
+	}
+	for _, stat := range insight.Services {
+		stat.Offline = stat.Total - stat.Online
+	}
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, &core_mesh.ServiceInsightResource{}, func(resource model.Resource) {
+		insight.LastSync = proto.MustTimestampProto(core.Now())
+		_ = resource.SetSpec(insight)
+	})
+	if err != nil {
+		if manager.IsMeshNotFound(err) {
+			log.V(1).Info("ServiceInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
+			// handle the situation when the mesh is deleted and then all the resources connected with the Mesh all deleted.
+			// Mesh no longer exist so we cannot upsert the insight for it.
+			return nil
+		}
+		return err
+	}
+	return nil
+}
+
+func (r *resyncer) createOrUpdateMeshInsights() error {
+	meshes := &core_mesh.MeshResourceList{}
+	if err := r.rm.List(context.Background(), meshes); err != nil {
+		return err
+	}
+	for _, mesh := range meshes.Items {
+		if need, err := r.needResyncMeshInsight(mesh.GetMeta().GetName()); err != nil || !need {
+			continue
+		}
+		err := r.createOrUpdateMeshInsight(mesh.GetMeta().GetName())
+		if err != nil {
+			log.Error(err, "unable to resync resources", "mesh", mesh.GetMeta().GetName())
+			continue
+		}
+	}
+	return nil
+}
+
+func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
+	r.meshInsightMux.Lock()
+	defer r.meshInsightMux.Unlock()
+
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
 		Policies:   map[string]*mesh_proto.MeshInsight_PolicyStat{},
@@ -150,7 +261,7 @@ func (p *resyncer) resyncMesh(mesh string) error {
 		if err != nil {
 			return err
 		}
-		if err := p.rm.List(context.Background(), list, store.ListByMesh(mesh)); err != nil {
+		if err := r.rm.List(context.Background(), list, store.ListByMesh(mesh)); err != nil {
 			return err
 		}
 		switch resType {
@@ -172,18 +283,43 @@ func (p *resyncer) resyncMesh(mesh string) error {
 	}
 	insight.Dataplanes.Offline = insight.Dataplanes.Total - insight.Dataplanes.Online
 
-	if err := manager.Upsert(p.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
 		_ = resource.SetSpec(insight)
-	}); err != nil {
+	})
+	if err != nil {
+		if manager.IsMeshNotFound(err) {
+			log.V(1).Info("MeshInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
+			// handle the situation when the mesh is deleted and then all the resources connected with the Mesh all deleted.
+			// Mesh no longer exist so we cannot upsert the insight for it.
+			return nil
+		}
 		return err
 	}
 	return nil
 }
 
-func (p *resyncer) needResync(mesh string) (bool, error) {
+func (r *resyncer) needResyncServiceInsight(mesh string) (bool, error) {
+	serviceInsight := &core_mesh.ServiceInsightResource{}
+	if err := r.rm.Get(context.Background(), serviceInsight, store.GetByKey(ServiceInsightName(mesh), mesh)); err != nil {
+		if !store.IsResourceNotFound(err) {
+			return false, errors.Wrap(err, "failed to get ServiceInsight")
+		}
+		return true, nil
+	}
+	lastSync, err := ptypes.Timestamp(serviceInsight.Spec.LastSync)
+	if err != nil {
+		return false, errors.Wrapf(err, "lastSync has wrong value: %s", serviceInsight.Spec.LastSync)
+	}
+	if core.Now().Sub(lastSync) < r.minResyncTimeout {
+		return false, nil
+	}
+	return true, nil
+}
+
+func (r *resyncer) needResyncMeshInsight(mesh string) (bool, error) {
 	meshInsight := &core_mesh.MeshInsightResource{}
-	if err := p.rm.Get(context.Background(), meshInsight, store.GetByKey(mesh, model.NoMesh)); err != nil {
+	if err := r.rm.Get(context.Background(), meshInsight, store.GetByKey(mesh, model.NoMesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
 			return false, errors.Wrap(err, "failed to get MeshInsight")
 		}
@@ -193,12 +329,12 @@ func (p *resyncer) needResync(mesh string) (bool, error) {
 	if err != nil {
 		return false, errors.Wrapf(err, "lastSync has wrong value: %s", meshInsight.Spec.LastSync)
 	}
-	if core.Now().Sub(lastSync) < p.minResyncTimeout {
+	if core.Now().Sub(lastSync) < r.minResyncTimeout {
 		return false, nil
 	}
 	return true, nil
 }
 
-func (p *resyncer) NeedLeaderElection() bool {
+func (r *resyncer) NeedLeaderElection() bool {
 	return true
 }

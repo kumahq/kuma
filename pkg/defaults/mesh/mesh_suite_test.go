@@ -1,4 +1,4 @@
-package k8s_test
+package mesh_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestK8s(t *testing.T) {
+func TestMesh(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "K8s Suite")
+	RunSpecs(t, "Defaults Mesh")
 }

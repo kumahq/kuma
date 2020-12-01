@@ -21,12 +21,14 @@ type deployOptions struct {
 	// cp specific
 	globalAddress    string
 	installationMode InstallationMode
+	skipDefaultMesh  bool
 	helmReleaseName  string
 	helmOpts         map[string]string
 	ctlOpts          map[string]string
 	env              map[string]string
 	ingress          bool
 	cni              bool
+	cpReplicas       int
 
 	// app specific
 	namespace string
@@ -40,6 +42,20 @@ type DeployOptionsFunc func(*deployOptions)
 func WithGlobalAddress(address string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.globalAddress = address
+	}
+}
+
+// WithCPReplicas works only with HELM now
+func WithCPReplicas(cpReplicas int) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.cpReplicas = cpReplicas
+	}
+}
+
+// WithSkipDefaultMesh works only with HELM now
+func WithSkipDefaultMesh(skip bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.skipDefaultMesh = skip
 	}
 }
 
@@ -142,7 +158,6 @@ type Cluster interface {
 	DeployKuma(mode string, opts ...DeployOptionsFunc) error
 	GetKuma() ControlPlane
 	VerifyKuma() error
-	RestartKuma() error
 	DeleteKuma(opts ...DeployOptionsFunc) error
 	InjectDNS(namespace ...string) error
 	GetKumactlOptions() *KumactlOptions

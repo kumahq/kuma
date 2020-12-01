@@ -17,6 +17,7 @@ The chart supports Helm v3+.
 | `controlPlane.zone`                                | Kuma zone name                                                                                      | nil                                                      |
 | `controlPlane.kdsGlobalAddress`                    | URL of Global Kuma CP                                                                               |                                                          |
 | `controlPlane.nodeSelector`                        | Node Selector for the Kuma Control Plane pods                                                       | `{ kubernetes.io/os: linux, kubernetes.io/arch: amd64 }` |
+| `controlPlane.replicas`                            | Number of replicas of the Kuma CP                                                                   | 1                                                        |
 | `controlPlane.injectorFailurePolicy`               | Failure policy of the mutating webhook implemented by the Kuma Injector component                   | `Ignore`                                                 |
 | `controlPlane.service.name`                        | Service name of the Kuma Control Plane                                                              | nil                                                      |
 | `controlPlane.service.type`                        | Service type of the Kuma Control Plane                                                              | ClusterIP                                                |
@@ -56,6 +57,7 @@ The chart supports Helm v3+.
 | `dataPlane.initImage.repository`                   | The Kuma DP init image repository                                                                   | `kuma-init`                                              |
 | `dataPlane.initImage.tag`                          | The Kuma DP init image tag                                                                          | nil, uses global                                         |
 | `ingress.enabled`                                  | If true, it deploys Ingress for cross cluster communication                                         | false                                                    |
+| `ingress.replicas`                                 | Number of replicas of the Ingress                                                                   | 1                                                        |
 | `ingress.drainTime`                                | Time for which old listener will still be active as draining                                        | 30s                                                      |
 | `ingress.service.name`                             | Service name of the Ingress                                                                         | nil                                                      |
 | `ingress.service.type`                             | Service type of the Ingress                                                                         | LoadBalancer                                             |

@@ -109,7 +109,7 @@ var _ = Describe("Meshed Persistence", func() {
 		})
 
 		It("should merge vips from several configs", func() {
-			actual, err := meshedPersistence.Get()
+			actual, _, err := meshedPersistence.Get()
 			Expect(err).ToNot(HaveOccurred())
 
 			expected := vips.List{

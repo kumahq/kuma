@@ -13,6 +13,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/api-server/customization"
+
 	"github.com/emicklei/go-restful"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
@@ -71,7 +73,7 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, wsManager customization.APIInstaller, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
 
@@ -135,6 +137,9 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	} else {
 		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)
 	}
+
+	wsManager.Install(container)
+
 	return newApiServer, nil
 }
 
@@ -152,6 +157,22 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	}
 	zoneOverviewEndpoints.addFindEndpoint(ws)
 	zoneOverviewEndpoints.addListEndpoint(ws)
+
+	serviceInsightEndpoints := serviceInsightEndpoints{
+		resourceEndpoints: resourceEndpoints{
+			mode:                 cfg.Mode,
+			resManager:           resManager,
+			ResourceWsDefinition: definitions.ServiceInsightWsDefinition,
+			adminAuth: authz.AdminAuth{
+				AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost,
+			},
+		},
+	}
+	serviceInsightEndpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addListEndpoint(ws, "/"+definitions.ServiceInsightWsDefinition.Path) // listing all resources in all meshes
 
 	for _, definition := range defs {
 		if config.ReadOnly {
@@ -327,7 +348,7 @@ func SetupServer(rt runtime.Runtime) error {
 			}
 		}
 	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, &cfg, enableGUI, rt.Metrics())
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), definitions.DefaultCRUDLEndpoints, &cfg, enableGUI, rt.Metrics())
 	if err != nil {
 		return err
 	}

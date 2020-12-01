@@ -33,12 +33,20 @@ type K8sControlPlane struct {
 	cluster    *K8sCluster
 	portFwd    PortFwd
 	verbose    bool
+	replicas   int
 }
 
-func NewK8sControlPlane(t testing.TestingT, mode core.CpMode, clusterName string,
-	kubeconfig string, cluster *K8sCluster,
-	loPort, hiPort uint32,
-	verbose bool) *K8sControlPlane {
+func NewK8sControlPlane(
+	t testing.TestingT,
+	mode core.CpMode,
+	clusterName string,
+	kubeconfig string,
+	cluster *K8sCluster,
+	loPort uint32,
+	hiPort uint32,
+	verbose bool,
+	replicas int,
+) *K8sControlPlane {
 	name := clusterName + "-" + mode
 	kumactl, _ := NewKumactlOptions(t, name, verbose)
 	return &K8sControlPlane{
@@ -51,7 +59,8 @@ func NewK8sControlPlane(t testing.TestingT, mode core.CpMode, clusterName string
 		portFwd: PortFwd{
 			localAPIPort: loPort,
 		},
-		verbose: verbose,
+		verbose:  verbose,
+		replicas: replicas,
 	}
 }
 
@@ -73,7 +82,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 
 func (c *K8sControlPlane) PortForwardKumaCP() error {
 	kumacpPods := c.GetKumaCPPods()
-	if len(kumacpPods) != 1 {
+	if len(kumacpPods) < 1 {
 		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
 	}
 
@@ -176,6 +185,12 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 }
 
 func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
+	// store the kumactl environment
+	oldEnv := c.kumactl.Env
+	c.kumactl.Env["KUBECONFIG"] = c.GetKubectlOptions().ConfigPath
+	defer func() {
+		c.kumactl.Env = oldEnv // restore kumactl environment
+	}()
 	return c.kumactl.KumactlInstallCP(c.mode, args...)
 }
 
@@ -183,14 +198,14 @@ func (c *K8sControlPlane) InjectDNS(args ...string) error {
 	// store the kumactl environment
 	oldEnv := c.kumactl.Env
 	c.kumactl.Env["KUBECONFIG"] = c.GetKubectlOptions().ConfigPath
+	defer func() {
+		c.kumactl.Env = oldEnv // restore kumactl environment
+	}()
 
 	yaml, err := c.kumactl.KumactlInstallDNS(args...)
 	if err != nil {
 		return err
 	}
-
-	// restore kumactl environment
-	c.kumactl.Env = oldEnv
 
 	return k8s.KubectlApplyFromStringE(c.t,
 		c.GetKubectlOptions(),

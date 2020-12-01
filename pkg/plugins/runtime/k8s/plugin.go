@@ -153,7 +153,7 @@ func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		return nil
 	}
 	vipsAllocator, err := dns.NewVIPsAllocator(
-		rt.ReadOnlyResourceManager(),
+		rt.ResourceManager(),
 		rt.ConfigManager(),
 		rt.Config().DNSServer.CIDR,
 		rt.DNSResolver(),
@@ -222,8 +222,12 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
 	log.Info("Registering a validation webhook for v1/Service", "path", "/validate-v1-service")
 
+	client, ok := k8s_extensions.FromNonCachedClientContext(rt.Extensions())
+	if !ok {
+		return errors.Errorf("non cached client hasn't been configured")
+	}
 	secretValidator := &k8s_webhooks.SecretValidator{
-		Client:    mgr.GetClient(),
+		Client:    client,
 		Validator: manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
