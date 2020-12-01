@@ -1,6 +1,8 @@
 package mesh
 
 import (
+	"sync"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -10,7 +12,16 @@ import (
 
 var log = core.Log.WithName("defaults").WithName("mesh")
 
+// ensureMux protects concurrent EnsureDefaultMeshResources invocation.
+// On Kubernetes, EnsureDefaultMeshResources is called both from MeshManager when creating default Mesh and from the MeshController
+// When they run concurrently:
+// 1 invocation can check that TrafficPermission is absent and then create it.
+// 2 invocation can check that TrafficPermission is absent, but it was just created, so it tries to created it which results in error
+var ensureMux = sync.Mutex{}
+
 func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName string) error {
+	ensureMux.Lock()
+	defer ensureMux.Unlock()
 	log.Info("ensuring default resources for Mesh exist", "mesh", meshName)
 
 	err, created := ensureDefaultTrafficPermission(resManager, meshName)
