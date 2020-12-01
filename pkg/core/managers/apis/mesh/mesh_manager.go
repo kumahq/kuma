@@ -103,7 +103,7 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	}
 	opts := core_store.NewDeleteOptions(fs...)
 	// delete all secrets
-	if err := m.otherManagers.DeleteAll(ctx, &system.SecretResourceList{}, core_store.DeleteAllByMesh(opts.Mesh)); err != nil {
+	if err := m.otherManagers.DeleteAll(ctx, &system.SecretResourceList{}, core_store.DeleteAllByMesh(opts.Name)); err != nil {
 		return errors.Wrap(err, "could not delete associated secrets")
 	}
 	return notFoundErr
