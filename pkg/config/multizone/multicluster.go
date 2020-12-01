@@ -33,8 +33,9 @@ func DefaultGlobalConfig() *GlobalConfig {
 	return &GlobalConfig{
 		PollTimeout: 500 * time.Millisecond,
 		KDS: &KdsServerConfig{
-			GrpcPort:        5685,
-			RefreshInterval: 1 * time.Second,
+			GrpcPort:                 5685,
+			RefreshInterval:          1 * time.Second,
+			ZoneInsightFlushInterval: 10 * time.Second,
 		},
 	}
 }
