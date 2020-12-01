@@ -3,9 +3,13 @@ package bootstrap
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"sort"
+	"strings"
 	"text/template"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -33,15 +37,23 @@ type BootstrapGenerator interface {
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
 	config *bootstrap_config.BootstrapParamsConfig,
-	cacertFile string,
+	dpServerCertFile string,
 	dpAuthEnabled bool,
-) BootstrapGenerator {
+) (BootstrapGenerator, error) {
+	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
+	if err != nil {
+		return nil, err
+	}
+	if config.XdsHost != "" && !hostsAndIps[config.XdsHost] {
+		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", config.XdsHost, hostsAndIps.slice())
+	}
 	return &bootstrapGenerator{
 		resManager:    resManager,
 		config:        config,
-		xdsCertFile:   cacertFile,
+		xdsCertFile:   dpServerCertFile,
 		dpAuthEnabled: dpAuthEnabled,
-	}
+		hostsAndIps:   hostsAndIps,
+	}, nil
 }
 
 type bootstrapGenerator struct {
@@ -49,6 +61,7 @@ type bootstrapGenerator struct {
 	config        *bootstrap_config.BootstrapParamsConfig
 	dpAuthEnabled bool
 	xdsCertFile   string
+	hostsAndIps   SANSet
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
@@ -75,9 +88,29 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 var DpTokenRequired = errors.New("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
 
+func SANMismatchErr(host string, sans []string) error {
+	return errors.Errorf("A data plane proxy is trying to connect to the control plane using %q address, but the certificate in the control plane has the following SANs %q. "+
+		"Either change the --cp-address in kuma-dp to one of those or execute the following steps:\n"+
+		"1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --cp-hostname=%s'\n"+
+		"2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.\n"+
+		"3) Restart the control plane to read the new certificate and start kuma-dp.", host, sans, host)
+}
+
+func ISSANMismatchErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.HasPrefix(err.Error(), "A data plane proxy is trying to connect to the control plane using")
+}
+
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
 	if b.dpAuthEnabled && request.DataplaneTokenPath == "" {
 		return DpTokenRequired
+	}
+	if b.config.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
+		if !b.hostsAndIps[request.Host] {
+			return SANMismatchErr(request.Host, b.hostsAndIps.slice())
+		}
 	}
 	return nil
 }
@@ -142,13 +175,6 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		return nil, err
 	}
 
-	xdsHost := ""
-	if b.config.XdsHost != "" {
-		xdsHost = b.config.XdsHost
-	} else {
-		xdsHost = request.Host
-	}
-
 	var certBytes string = ""
 	if b.xdsCertFile != "" {
 		cert, err := ioutil.ReadFile(b.xdsCertFile)
@@ -164,7 +190,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		AdminAddress:       b.config.AdminAddress,
 		AdminPort:          adminPort,
 		AdminAccessLogPath: b.config.AdminAccessLogPath,
-		XdsHost:            xdsHost,
+		XdsHost:            b.xdsHost(request),
 		XdsPort:            b.config.XdsPort,
 		XdsConnectTimeout:  b.config.XdsConnectTimeout,
 		AccessLogPipe:      accessLogPipe,
@@ -174,6 +200,14 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params)
+}
+
+func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
+	if b.config.XdsHost != "" { // XdsHost from config takes precedence over Host from request
+		return b.config.XdsHost
+	} else {
+		return request.Host
+	}
 }
 
 func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_mesh.DataplaneResource) error {
@@ -205,4 +239,36 @@ func (b *bootstrapGenerator) configForParameters(params configParameters) (*envo
 		return nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
 	}
 	return config, nil
+}
+
+type SANSet map[string]bool
+
+func (s SANSet) slice() []string {
+	sans := []string{}
+	for san := range s {
+		sans = append(sans, san)
+	}
+	sort.Strings(sans)
+	return sans
+}
+
+func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
+	certBytes, err := ioutil.ReadFile(dpServerCertFile)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not read certificate")
+	}
+	pemCert, _ := pem.Decode(certBytes)
+	cert, err := x509.ParseCertificate(pemCert.Bytes)
+	if err != nil {
+		return nil, errors.Wrap(err, "could not parse certificate")
+	}
+
+	hostsAndIps := map[string]bool{}
+	for _, dnsName := range cert.DNSNames {
+		hostsAndIps[dnsName] = true
+	}
+	for _, ip := range cert.IPAddresses {
+		hostsAndIps[ip.String()] = true
+	}
+	return hostsAndIps, nil
 }

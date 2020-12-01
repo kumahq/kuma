@@ -77,7 +77,8 @@ var _ = Describe("bootstrapGenerator", func() {
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled)
+			Expect(err).ToNot(HaveOccurred())
 
 			// when
 			bootstrapConfig, err := generator.Generate(context.Background(), given.request)
@@ -101,7 +102,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			dpAuthEnabled: false,
 			config: func() *bootstrap_config.BootstrapParamsConfig {
 				cfg := bootstrap_config.DefaultBootstrapParamsConfig()
-				cfg.XdsHost = "127.0.0.1"
+				cfg.XdsHost = "localhost"
 				cfg.XdsPort = 5678
 				return cfg
 			},
@@ -115,7 +116,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			dpAuthEnabled: true,
 			config: func() *bootstrap_config.BootstrapParamsConfig {
 				cfg := bootstrap_config.DefaultBootstrapParamsConfig()
-				cfg.XdsHost = "127.0.0.1"
+				cfg.XdsHost = "localhost"
 				cfg.XdsPort = 5678
 				return cfg
 			},
@@ -134,7 +135,7 @@ var _ = Describe("bootstrapGenerator", func() {
 					AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
 					AdminPort:          9902,          // by default, turn off Admin interface of Envoy
 					AdminAccessLogPath: "/var/log",
-					XdsHost:            "kuma-control-plane.internal",
+					XdsHost:            "localhost",
 					XdsPort:            15678,
 					XdsConnectTimeout:  2 * time.Second,
 				}
@@ -152,7 +153,7 @@ var _ = Describe("bootstrapGenerator", func() {
 					AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
 					AdminPort:          9902,          // by default, turn off Admin interface of Envoy
 					AdminAccessLogPath: "/var/log",
-					XdsHost:            "kuma-control-plane.internal",
+					XdsHost:            "localhost",
 					XdsPort:            15678,
 					XdsConnectTimeout:  2 * time.Second,
 				}
@@ -228,10 +229,11 @@ var _ = Describe("bootstrapGenerator", func() {
 
 		// given
 		params := bootstrap_config.DefaultBootstrapParamsConfig()
-		params.XdsHost = "127.0.0.1"
+		params.XdsHost = "localhost"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params, "", false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, params, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
 			Name:      "name-1.namespace",
@@ -292,10 +294,11 @@ var _ = Describe("bootstrapGenerator", func() {
 
 		// given
 		params := bootstrap_config.DefaultBootstrapParamsConfig()
-		params.XdsHost = "127.0.0.1"
+		params.XdsHost = "localhost"
 		params.XdsPort = 5678
 
-		generator := NewDefaultBootstrapGenerator(resManager, params, "", false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, params, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
 			Name:      "name-3.namespace",
@@ -308,6 +311,29 @@ var _ = Describe("bootstrapGenerator", func() {
 		Expect(err).To(HaveOccurred())
 		// and
 		Expect(err.Error()).To(Equal("Resource precondition failed: Port 9901 requested as both admin and outbound port."))
+	})
 
+	It("should fail bootstrap due to invalid hostname", func() {
+		// given
+		params := bootstrap_config.DefaultBootstrapParamsConfig()
+
+		generator, err := NewDefaultBootstrapGenerator(resManager, params, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		Expect(err).ToNot(HaveOccurred())
+		request := types.BootstrapRequest{
+			Mesh:      "mesh",
+			Name:      "name-3.namespace",
+			AdminPort: 9901,
+			Host:      "kuma.internal",
+		}
+
+		// when
+		_, err = generator.Generate(context.Background(), request)
+		// then
+		Expect(err).To(HaveOccurred())
+		// and
+		Expect(err.Error()).To(Equal(`A data plane proxy is trying to connect to the control plane using "kuma.internal" address, but the certificate in the control plane has the following SANs ["localhost"]. Either change the --cp-address in kuma-dp to one of those or execute the following steps:
+1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --cp-hostname=kuma.internal'
+2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.
+3) Restart the control plane to read the new certificate and start kuma-dp.`))
 	})
 })
