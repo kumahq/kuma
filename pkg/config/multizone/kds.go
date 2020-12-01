@@ -14,6 +14,8 @@ type KdsServerConfig struct {
 	GrpcPort uint32 `yaml:"grpcPort" envconfig:"kuma_multizone_global_kds_grpc_port"`
 	// Interval for refreshing state of the world
 	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_multizone_global_kds_refresh_interval"`
+	// Interval for flushing Zone Insights (stats of multi-zone communication)
+	ZoneInsightFlushInterval time.Duration `yaml:"zoneInsightFlushInterval" envconfig:"kuma_multizone_global_kds_zone_insight_flush_interval"`
 	// TlsCertFile defines a path to a file with PEM-encoded TLS cert.
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_multizone_global_kds_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.
@@ -31,6 +33,9 @@ func (c *KdsServerConfig) Validate() (errs error) {
 	}
 	if c.RefreshInterval <= 0 {
 		return errors.New(".RefreshInterval must be positive")
+	}
+	if c.ZoneInsightFlushInterval <= 0 {
+		return errors.New(".ZoneInsightFlushInterval must be positive")
 	}
 	if c.TlsCertFile == "" && c.TlsKeyFile != "" {
 		return errors.New("TlsCertFile cannot be empty if TlsKeyFile has been set")
