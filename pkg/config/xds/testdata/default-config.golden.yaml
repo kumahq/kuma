@@ -1,2 +1,2 @@
 dataplaneConfigurationRefreshInterval: 1s
-dataplaneStatusFlushInterval: 1s
+dataplaneStatusFlushInterval: 10s
