@@ -36,16 +36,20 @@ type Config struct {
 	MinResyncTimeout   time.Duration
 	MaxResyncTimeout   time.Duration
 	Tick               func(d time.Duration) <-chan time.Time
-	RateLimiter        ratelimit.Allower
+	NewRateLimiter     func() ratelimit.Allower
 }
 
 type resyncer struct {
-	rm                manager.ResourceManager
-	eventFactory      events.ListenerFactory
-	minResyncTimeout  time.Duration
-	maxResyncTimeout  time.Duration
-	tick              func(d time.Duration) <-chan time.Time
-	rateLimiter       ratelimit.Allower
+	rm               manager.ResourceManager
+	eventFactory     events.ListenerFactory
+	minResyncTimeout time.Duration
+	maxResyncTimeout time.Duration
+	tick             func(d time.Duration) <-chan time.Time
+
+	rateLimitersMux    sync.Mutex                   // protects rateLimiterForMesh
+	rateLimiterForMesh map[string]ratelimit.Allower // we need to rate limit events but only for given Mesh
+	newRateLimiter     func() ratelimit.Allower
+
 	meshInsightMux    sync.Mutex
 	serviceInsightMux sync.Mutex
 }
@@ -60,11 +64,12 @@ type resyncer struct {
 // resync every t = MaxResyncTimeout - MinResyncTimeout.
 func NewResyncer(config *Config) component.Component {
 	r := &resyncer{
-		minResyncTimeout: config.MinResyncTimeout,
-		maxResyncTimeout: config.MaxResyncTimeout,
-		eventFactory:     config.EventReaderFactory,
-		rm:               config.ResourceManager,
-		rateLimiter:      config.RateLimiter,
+		minResyncTimeout:   config.MinResyncTimeout,
+		maxResyncTimeout:   config.MaxResyncTimeout,
+		eventFactory:       config.EventReaderFactory,
+		rm:                 config.ResourceManager,
+		newRateLimiter:     config.NewRateLimiter,
+		rateLimiterForMesh: map[string]ratelimit.Allower{},
 	}
 
 	r.tick = config.Tick
@@ -117,7 +122,7 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 			// because that's how we find online/offline Dataplane's status
 			continue
 		}
-		if !p.rateLimiter.Allow() {
+		if !p.rateLimiter(resourceChanged.Key.Mesh).Allow() {
 			continue
 		}
 		if err := p.createOrUpdateMeshInsight(resourceChanged.Key.Mesh); err != nil {
@@ -125,6 +130,17 @@ func (p *resyncer) Start(stop <-chan struct{}) error {
 			continue
 		}
 	}
+}
+
+func (p *resyncer) rateLimiter(meshName string) ratelimit.Allower {
+	p.rateLimitersMux.Lock()
+	defer p.rateLimitersMux.Unlock()
+	limiter, exist := p.rateLimiterForMesh[meshName]
+	if !exist {
+		limiter = p.newRateLimiter()
+		p.rateLimiterForMesh[meshName] = limiter
+	}
+	return limiter
 }
 
 func meshScoped(t model.ResourceType) bool {
@@ -135,9 +151,6 @@ func meshScoped(t model.ResourceType) bool {
 }
 
 func (p *resyncer) createOrUpdateServiceInsights() error {
-	p.serviceInsightMux.Lock()
-	defer p.serviceInsightMux.Unlock()
-
 	meshes := &core_mesh.MeshResourceList{}
 	if err := p.rm.List(context.Background(), meshes); err != nil {
 		return err
@@ -156,6 +169,8 @@ func (p *resyncer) createOrUpdateServiceInsights() error {
 }
 
 func (p *resyncer) createOrUpdateServiceInsight(mesh string) error {
+	p.serviceInsightMux.Lock()
+	defer p.serviceInsightMux.Unlock()
 	insight := &mesh_proto.ServiceInsight{
 		Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{},
 	}
@@ -165,6 +180,9 @@ func (p *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	}
 	dpMap := map[model.ResourceKey][]string{}
 	for _, dp := range dpList.Items {
+		if dp.Spec.IsIngress() {
+			continue // ingress does not represent any service
+		}
 		dpKey := model.MetaToResourceKey(dp.Meta)
 		for _, inbound := range dp.Spec.Networking.Inbound {
 			svc := inbound.GetService()
@@ -206,9 +224,6 @@ func (p *resyncer) createOrUpdateServiceInsight(mesh string) error {
 }
 
 func (p *resyncer) createOrUpdateMeshInsights() error {
-	p.meshInsightMux.Lock()
-	defer p.meshInsightMux.Unlock()
-
 	meshes := &core_mesh.MeshResourceList{}
 	if err := p.rm.List(context.Background(), meshes); err != nil {
 		return err
@@ -227,6 +242,8 @@ func (p *resyncer) createOrUpdateMeshInsights() error {
 }
 
 func (p *resyncer) createOrUpdateMeshInsight(mesh string) error {
+	p.meshInsightMux.Lock()
+	defer p.meshInsightMux.Unlock()
 	insight := &mesh_proto.MeshInsight{
 		Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{},
 		Policies:   map[string]*mesh_proto.MeshInsight_PolicyStat{},

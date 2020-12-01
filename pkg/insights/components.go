@@ -1,6 +1,7 @@
 package insights
 
 import (
+	"github.com/go-kit/kit/ratelimit"
 	"golang.org/x/time/rate"
 
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -13,7 +14,9 @@ func Setup(rt runtime.Runtime) error {
 		EventReaderFactory: rt.EventReaderFactory(),
 		MinResyncTimeout:   rt.Config().Metrics.Mesh.MinResyncTimeout,
 		MaxResyncTimeout:   rt.Config().Metrics.Mesh.MaxResyncTimeout,
-		RateLimiter:        rate.NewLimiter(rate.Every(rt.Config().Metrics.Mesh.MinResyncTimeout), 50),
+		NewRateLimiter: func() ratelimit.Allower {
+			return rate.NewLimiter(rate.Every(rt.Config().Metrics.Mesh.MinResyncTimeout), 50)
+		},
 	})
 	return rt.Add(component.NewResilientComponent(log, resyncer))
 }
