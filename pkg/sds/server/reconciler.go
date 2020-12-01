@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	"github.com/pkg/errors"
@@ -43,6 +44,7 @@ type DataplaneReconciler struct {
 	meshCaProvider     sds_provider.SecretProvider
 	identityProvider   sds_provider.SecretProvider
 	cache              envoy_cache.SnapshotCache
+	upsertConfig       store.UpsertConfig
 
 	sync.RWMutex
 	certGenerated int
@@ -177,24 +179,14 @@ func (d *DataplaneReconciler) updateInsights(dataplaneId core_model.ResourceKey,
 		return err
 	}
 
-	create := false
-	dataplaneInsight := &mesh_core.DataplaneInsightResource{}
-	err = d.resManager.Get(context.Background(), dataplaneInsight, core_store.GetBy(dataplaneId))
-	if err != nil {
-		if core_store.IsResourceNotFound(err) {
-			create = true
-		} else {
-			return err
+	conflictRetry := core_manager.ConflictRetry{ // retry because DataplaneInsight could be updated from other parts of the code
+		BaseBackoff: d.upsertConfig.ConflictRetryBaseBackoff,
+		MaxTimes:    d.upsertConfig.ConflictRetryMaxTimes,
+	}
+	return core_manager.Upsert(d.resManager, dataplaneId, &mesh_core.DataplaneInsightResource{}, conflictRetry, func(resource core_model.Resource) {
+		insight := resource.(*mesh_core.DataplaneInsightResource)
+		if err := insight.Spec.UpdateCert(core.Now(), cert.NotAfter); err != nil {
+			sdsServerLog.Error(err, "could not update the certificate", "dataplaneId", dataplaneId)
 		}
-	}
-
-	if err := dataplaneInsight.Spec.UpdateCert(core.Now(), cert.NotAfter); err != nil {
-		return err
-	}
-
-	if create {
-		return d.resManager.Create(context.Background(), dataplaneInsight, core_store.CreateBy(dataplaneId))
-	} else {
-		return d.resManager.Update(context.Background(), dataplaneInsight)
-	}
+	})
 }

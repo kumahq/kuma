@@ -57,7 +57,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			var latestUpsert *DataplaneInsightUpsert
 
 			// given
-			sink := NewDataplaneInsightSink(accessor, func() *time.Ticker { return ticker }, recorder)
+			sink := NewDataplaneInsightSink(accessor, func() *time.Ticker { return ticker }, 1 * time.Millisecond, recorder)
 			go sink.Start(stop)
 
 			// when

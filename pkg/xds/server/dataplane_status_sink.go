@@ -9,6 +9,7 @@ import (
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
 type DataplaneInsightSink interface {
@@ -22,8 +23,14 @@ type DataplaneInsightStore interface {
 func NewDataplaneInsightSink(
 	accessor SubscriptionStatusAccessor,
 	newTicker func() *time.Ticker,
+	flushBackoff time.Duration,
 	store DataplaneInsightStore) DataplaneInsightSink {
-	return &dataplaneInsightSink{newTicker, accessor, store}
+	return &dataplaneInsightSink{
+		newTicker: newTicker,
+		accessor: accessor,
+		flushBackoff: flushBackoff,
+		store: store,
+	}
 }
 
 var _ DataplaneInsightSink = &dataplaneInsightSink{}
@@ -32,6 +39,7 @@ type dataplaneInsightSink struct {
 	newTicker func() *time.Ticker
 	accessor  SubscriptionStatusAccessor
 	store     DataplaneInsightStore
+	flushBackoff time.Duration
 }
 
 func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
@@ -56,11 +64,13 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 				// We could build a synchronous mechanism that waits for Sink to be stopped before moving on to next Callbacks, but this is potentially dangerous
 				// that we could block waiting for storage instead of executing next callbacks.
 				xdsServerLog.V(1).Info("failed to flush Dataplane status on stream close. It can happen when Dataplane is deleted at the same time", "dataplaneid", dataplaneId, "err", err)
+			} else if store.IsResourceConflict(err) {
+				xdsServerLog.V(1).Info("failed to flush DataplaneInsight because it was updated in other place. Will retry in the next tick", "dataplaneid", dataplaneId)
 			} else {
-				xdsServerLog.Error(err, "failed to flush Dataplane status", "dataplaneid", dataplaneId)
+				xdsServerLog.Error(err, "failed to flush DataplaneInsight", "dataplaneid", dataplaneId)
 			}
 		} else {
-			xdsServerLog.V(1).Info("saved Dataplane status", "dataplaneid", dataplaneId, "subscription", currentState)
+			xdsServerLog.V(1).Info("DataplaneInsight saved", "dataplaneid", dataplaneId, "subscription", currentState)
 			lastStoredState = currentState
 		}
 	}
@@ -69,6 +79,9 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		select {
 		case <-ticker.C:
 			flush(false)
+			// On Kubernetes, because of the cache subsequent Get, Update requests can fail, because the cache is not strongly consistent.
+			// We handle the Resource Conflict logging on V1, but we can try to avoid the situation with backoff
+			time.Sleep(s.flushBackoff)
 		case <-stop:
 			flush(true)
 			return
@@ -77,18 +90,20 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 }
 
 func NewDataplaneInsightStore(resManager manager.ResourceManager) DataplaneInsightStore {
-	return &dataplaneInsightStore{resManager}
+	return &dataplaneInsightStore{
+		resManager:   resManager,
+	}
 }
 
 var _ DataplaneInsightStore = &dataplaneInsightStore{}
 
 type dataplaneInsightStore struct {
-	resManager manager.ResourceManager
+	resManager   manager.ResourceManager
 }
 
 func (s *dataplaneInsightStore) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
-	insight := &mesh_core.DataplaneInsightResource{}
-	return manager.Upsert(s.resManager, dataplaneId, insight, func(resource core_model.Resource) {
+	return manager.Upsert(s.resManager, dataplaneId, &mesh_core.DataplaneInsightResource{}, manager.ConflictRetry{}, func(resource core_model.Resource) {
+		insight := resource.(*mesh_core.DataplaneInsightResource)
 		insight.Spec.UpdateSubscription(subscription)
 	})
 }

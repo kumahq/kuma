@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sethvargo/go-retry"
+
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -95,22 +97,43 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(time.Now()))...)
 }
 
-func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource)) error {
-	create := false
-	err := manager.Get(context.Background(), resource, store.GetBy(key))
-	if err != nil {
-		if store.IsResourceNotFound(err) {
-			create = true
+type ConflictRetry struct {
+	BaseBackoff time.Duration
+	MaxTimes    uint
+}
+
+func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, conflictRetry ConflictRetry, fn func(resource model.Resource)) error {
+	upsert := func() error {
+		create := false
+		err := manager.Get(context.Background(), resource, store.GetBy(key))
+		if err != nil {
+			if store.IsResourceNotFound(err) {
+				create = true
+			} else {
+				return err
+			}
+		}
+		fn(resource)
+		if create {
+			return manager.Create(context.Background(), resource, store.CreateBy(key))
 		} else {
-			return err
+			return manager.Update(context.Background(), resource)
 		}
 	}
-	fn(resource)
-	if create {
-		return manager.Create(context.Background(), resource, store.CreateBy(key))
-	} else {
-		return manager.Update(context.Background(), resource)
+	if conflictRetry.BaseBackoff <= 0 || conflictRetry.MaxTimes == 0 {
+		return upsert()
 	}
+	backoff, _ := retry.NewExponential(conflictRetry.BaseBackoff) // we can ignore error because RetryBaseBackoff > 0
+	backoff = retry.WithMaxRetries(uint64(conflictRetry.MaxTimes), backoff)
+	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+		resource.SetMeta(nil)
+		resource.GetSpec().Reset()
+		err := upsert()
+		if store.IsResourceConflict(err) {
+			return retry.RetryableError(err)
+		}
+		return err
+	})
 }
 
 type MeshNotFoundError struct {

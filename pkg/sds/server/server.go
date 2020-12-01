@@ -47,6 +47,7 @@ func RegisterSDS(rt core_runtime.Runtime, server *grpc.Server) error {
 		meshCaProvider:     caProvider,
 		identityProvider:   identityProvider,
 		cache:              cache,
+		upsertConfig:       rt.Config().Store.Upsert,
 	}
 	certGenerationsMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
 		Help: "Number of generated certificates",

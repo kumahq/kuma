@@ -211,7 +211,7 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	for _, stat := range insight.Services {
 		stat.Offline = stat.Total - stat.Online
 	}
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, &core_mesh.ServiceInsightResource{}, func(resource model.Resource) {
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, &core_mesh.ServiceInsightResource{}, manager.ConflictRetry{}, func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
 		_ = resource.SetSpec(insight)
 	})
@@ -283,7 +283,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	}
 	insight.Dataplanes.Offline = insight.Dataplanes.Total - insight.Dataplanes.Online
 
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, manager.ConflictRetry{}, func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
 		_ = resource.SetSpec(insight)
 	})

@@ -93,7 +93,7 @@ func (d *DataplaneLifecycle) streamProcessed(streamID int64) bool {
 func (d *DataplaneLifecycle) registerDataplane(dp *core_mesh.DataplaneResource) error {
 	key := model.MetaToResourceKey(dp.GetMeta())
 	existing := &core_mesh.DataplaneResource{}
-	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) {
+	return manager.Upsert(d.resManager, key, existing, manager.ConflictRetry{}, func(resource model.Resource) {
 		_ = existing.SetSpec(dp.GetSpec()) // ignore error because the spec type is the same
 	})
 }
