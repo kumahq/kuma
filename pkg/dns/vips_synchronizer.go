@@ -63,7 +63,7 @@ func (d *vipsSynchronizer) synchronize() error {
 	if d.leadInfo.IsLeader() {
 		return nil // when CP is leader we skip this because VIP allocator updates DNSResolver
 	}
-	vipList, err := d.persistence.Get()
+	vipList, _, err := d.persistence.Get()
 	if err != nil {
 		return err
 	}
