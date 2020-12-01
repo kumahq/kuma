@@ -184,6 +184,9 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	}
 	dpMap := map[model.ResourceKey][]string{}
 	for _, dp := range dpList.Items {
+		if dp.Spec.IsIngress() {
+			continue // ingress does not represent any service
+		}
 		dpKey := model.MetaToResourceKey(dp.Meta)
 		for _, inbound := range dp.Spec.Networking.Inbound {
 			svc := inbound.GetService()
