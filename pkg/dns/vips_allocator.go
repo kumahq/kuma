@@ -96,6 +96,8 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		return err
 	}
 
+	updateResolver := false
+
 	forEachMesh := func(mesh string, meshed vips.List) error {
 		serviceSet, err := BuildServiceSet(d.rm, mesh)
 		if err != nil {
@@ -110,8 +112,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		if err := d.persistence.Set(mesh, meshed); err != nil {
 			return multierr.Append(updError, err)
 		}
-
-		d.resolver.SetVIPs(meshed)
+		updateResolver = updateResolver || updated
 		return updError
 	}
 
@@ -122,6 +123,15 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		}
 		if err := forEachMesh(mesh, meshed); err != nil {
 			errs = multierr.Append(errs, errors.Wrapf(err, "errors during updating VIP config for mesh %s", mesh))
+		}
+	}
+
+	if updateResolver {
+		if global, _, err := d.persistence.Get(); err != nil {
+			errs = multierr.Append(errs, err)
+		} else {
+			vipsAllocatorLog.Info("setting resolver", "vips", global)
+			d.resolver.SetVIPs(global)
 		}
 	}
 
