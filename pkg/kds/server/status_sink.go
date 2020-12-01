@@ -31,10 +31,10 @@ func NewZoneInsightSink(
 	store ZoneInsightStore,
 	log logr.Logger) ZoneInsightSink {
 	return &zoneInsightSink{
-		newTicker: newTicker,
+		newTicker:    newTicker,
 		flushBackoff: flushBackoff,
-		accessor: accessor,
-		store: store,
+		accessor:     accessor,
+		store:        store,
 	}
 }
 
@@ -99,7 +99,7 @@ func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSub
 		Name: zone,
 	}
 	zoneInsight := &system.ZoneInsightResource{}
-	return manager.Upsert(s.resManager, key, zoneInsight, manager.ConflictRetry{}, func(resource core_model.Resource) {
+	return manager.Upsert(s.resManager, key, zoneInsight, func(resource core_model.Resource) {
 		zoneInsight.Spec.UpdateSubscription(subscription)
 	})
 }

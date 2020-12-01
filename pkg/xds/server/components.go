@@ -369,7 +369,7 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) (DataplaneStatusTrac
 			func() *time.Ticker {
 				return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval)
 			},
-			rt.Config().XdsServer.DataplaneStatusFlushInterval / 10,
+			rt.Config().XdsServer.DataplaneStatusFlushInterval/10,
 			NewDataplaneInsightStore(rt.ResourceManager()),
 		)
 	})

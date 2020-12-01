@@ -26,19 +26,19 @@ func NewDataplaneInsightSink(
 	flushBackoff time.Duration,
 	store DataplaneInsightStore) DataplaneInsightSink {
 	return &dataplaneInsightSink{
-		newTicker: newTicker,
-		accessor: accessor,
+		newTicker:    newTicker,
+		accessor:     accessor,
 		flushBackoff: flushBackoff,
-		store: store,
+		store:        store,
 	}
 }
 
 var _ DataplaneInsightSink = &dataplaneInsightSink{}
 
 type dataplaneInsightSink struct {
-	newTicker func() *time.Ticker
-	accessor  SubscriptionStatusAccessor
-	store     DataplaneInsightStore
+	newTicker    func() *time.Ticker
+	accessor     SubscriptionStatusAccessor
+	store        DataplaneInsightStore
 	flushBackoff time.Duration
 }
 
@@ -55,7 +55,8 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 		}
 		copy := proto.Clone(currentState).(*mesh_proto.DiscoverySubscription)
 		if err := s.store.Upsert(dataplaneId, copy); err != nil {
-			if closing {
+			switch {
+			case closing:
 				// When XDS stream is closed, Dataplane Status Tracker executes OnStreamClose which closes stop channel
 				// The problem is that close() does not wait for this sink to do it's final work
 				// In the meantime Dataplane Lifecycle executes OnStreamClose which can remove Dataplane entity (and Insights due to ownership). Therefore both scenarios can happen:
@@ -64,9 +65,9 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 				// We could build a synchronous mechanism that waits for Sink to be stopped before moving on to next Callbacks, but this is potentially dangerous
 				// that we could block waiting for storage instead of executing next callbacks.
 				xdsServerLog.V(1).Info("failed to flush Dataplane status on stream close. It can happen when Dataplane is deleted at the same time", "dataplaneid", dataplaneId, "err", err)
-			} else if store.IsResourceConflict(err) {
+			case store.IsResourceConflict(err):
 				xdsServerLog.V(1).Info("failed to flush DataplaneInsight because it was updated in other place. Will retry in the next tick", "dataplaneid", dataplaneId)
-			} else {
+			default:
 				xdsServerLog.Error(err, "failed to flush DataplaneInsight", "dataplaneid", dataplaneId)
 			}
 		} else {
@@ -91,18 +92,18 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 
 func NewDataplaneInsightStore(resManager manager.ResourceManager) DataplaneInsightStore {
 	return &dataplaneInsightStore{
-		resManager:   resManager,
+		resManager: resManager,
 	}
 }
 
 var _ DataplaneInsightStore = &dataplaneInsightStore{}
 
 type dataplaneInsightStore struct {
-	resManager   manager.ResourceManager
+	resManager manager.ResourceManager
 }
 
 func (s *dataplaneInsightStore) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
-	return manager.Upsert(s.resManager, dataplaneId, &mesh_core.DataplaneInsightResource{}, manager.ConflictRetry{}, func(resource core_model.Resource) {
+	return manager.Upsert(s.resManager, dataplaneId, &mesh_core.DataplaneInsightResource{}, func(resource core_model.Resource) {
 		insight := resource.(*mesh_core.DataplaneInsightResource)
 		insight.Spec.UpdateSubscription(subscription)
 	})

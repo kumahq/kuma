@@ -102,7 +102,28 @@ type ConflictRetry struct {
 	MaxTimes    uint
 }
 
-func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, conflictRetry ConflictRetry, fn func(resource model.Resource)) error {
+type UpsertOpts struct {
+	ConflictRetry ConflictRetry
+}
+
+type UpsertFunc func(opts *UpsertOpts)
+
+func WithConflictRetry(baseBackoff time.Duration, maxTimes uint) UpsertFunc {
+	return func(opts *UpsertOpts) {
+		opts.ConflictRetry.BaseBackoff = baseBackoff
+		opts.ConflictRetry.MaxTimes = maxTimes
+	}
+}
+
+func NewUpsertOpts(fs ...UpsertFunc) UpsertOpts {
+	opts := UpsertOpts{}
+	for _, f := range fs {
+		f(&opts)
+	}
+	return opts
+}
+
+func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource), fs ...UpsertFunc) error {
 	upsert := func() error {
 		create := false
 		err := manager.Get(context.Background(), resource, store.GetBy(key))
@@ -120,11 +141,13 @@ func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resou
 			return manager.Update(context.Background(), resource)
 		}
 	}
-	if conflictRetry.BaseBackoff <= 0 || conflictRetry.MaxTimes == 0 {
+
+	opts := NewUpsertOpts(fs...)
+	if opts.ConflictRetry.BaseBackoff <= 0 || opts.ConflictRetry.MaxTimes == 0 {
 		return upsert()
 	}
-	backoff, _ := retry.NewExponential(conflictRetry.BaseBackoff) // we can ignore error because RetryBaseBackoff > 0
-	backoff = retry.WithMaxRetries(uint64(conflictRetry.MaxTimes), backoff)
+	backoff, _ := retry.NewExponential(opts.ConflictRetry.BaseBackoff) // we can ignore error because RetryBaseBackoff > 0
+	backoff = retry.WithMaxRetries(uint64(opts.ConflictRetry.MaxTimes), backoff)
 	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		resource.SetMeta(nil)
 		resource.GetSpec().Reset()
