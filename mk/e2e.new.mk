@@ -55,7 +55,7 @@ test/e2e/debug: build/kumactl images docker/build/universal test/e2e/kind/start
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 	GINKGO_EDITOR_INTEGRATION=true \
-		ginkgo --failFast ./test/e2e/...
+		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) ./test/e2e/...
 	$(MAKE) test/e2e/kind/stop
 
 .PHONY: test/e2e

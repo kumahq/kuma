@@ -42,11 +42,13 @@ var _ = Describe("VIP Allocator", func() {
 	var rm manager.ResourceManager
 	var cm config_manager.ConfigManager
 	var allocator *dns.VIPsAllocator
+	var r resolver.DNSResolver
 
 	BeforeEach(func() {
 		s := memory.NewStore()
 		rm = manager.NewResourceManager(s)
 		cm = config_manager.NewConfigManager(s)
+		r = resolver.NewDNSResolver("mesh")
 
 		err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -63,7 +65,7 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
-		allocator, err = dns.NewVIPsAllocator(rm, cm, "240.0.0.0/24", resolver.NewDNSResolver("mesh"))
+		allocator, err = dns.NewVIPsAllocator(rm, cm, "240.0.0.0/24", r)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -81,6 +83,12 @@ var _ = Describe("VIP Allocator", func() {
 
 		vipList, err = persistence.GetByMesh("mesh-2")
 		Expect(err).ToNot(HaveOccurred())
+
+		for _, service := range []string{"backend", "frontend", "web"} {
+			ip, err := r.ForwardLookup(service)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(ip).To(HavePrefix("240.0.0"))
+		}
 
 		Expect(vipList).To(HaveLen(1))
 	})
