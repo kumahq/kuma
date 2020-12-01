@@ -2,6 +2,7 @@ package config
 
 import (
 	"io/ioutil"
+	"unicode"
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/pkg/errors"
@@ -26,10 +27,32 @@ func ValidateTokenPath(path string) error {
 		return errors.Wrapf(err, "could not read the token in the file %s", path)
 	}
 
-	_, _, err = new(jwt.Parser).ParseUnverified(string(rawToken), &jwt.MapClaims{})
+	token, parts, err := new(jwt.Parser).ParseUnverified(string(rawToken), &jwt.MapClaims{})
 	if err != nil {
-		return errors.Wrapf(err, "token in the file %s is not valid JWT token. Double check blank characters in the file", path)
+		return errors.Wrap(err, "not valid JWT token. Can't parse it.")
+	}
+
+	if token.Method.Alg() == "" {
+		return errors.New("not valid JWT token. No Alg.")
+	}
+
+	if token.Header == nil {
+		return errors.New("not valid JWT token. No Header.")
+	}
+	for _, part := range parts {
+		if !isASCII(part) {
+			return errors.New("The file cannot have blank characters like empty lines. Example how to get rid of non-printable characters: sed -i '' '/^$/d' token.file")
+		}
 	}
 
 	return nil
+}
+
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if !unicode.IsPrint(rune(s[i])) {
+			return false
+		}
+	}
+	return true
 }
