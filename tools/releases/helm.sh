@@ -75,8 +75,11 @@ function release {
     --index-path "${GH_REPO}/${CHARTS_INDEX_FILE}"
 
   pushd ${GH_REPO}
+  # tell git who we are before adding the index file
+  git config user.email "helm@kuma.io"
+  git config user.name "Helm Releaser"
   git add "${CHARTS_INDEX_FILE}"
-  git commit -m "ci(helm) publish charts for version ${KUMA_VERSION}@${KUMA_COMMIT}"
+  git commit -m "ci(helm) publish charts for version ${KUMA_VERSION}"
   git push
   popd
   rm -rf ${GH_REPO}
@@ -106,10 +109,6 @@ function main {
         KUMA_VERSION=$2
         shift
         ;;
-      --sha)
-        KUMA_COMMIT=$2
-        shift
-        ;;
       *)
         usage
         break
@@ -120,7 +119,6 @@ function main {
 
   [ -z "${GH_TOKEN}" ] && msg_err "GH_TOKEN required"
   [ -z "${KUMA_VERSION}" ] && msg_err "Error: --version required"
-  [ -z "${KUMA_COMMIT}" ] && msg_err "Error: --sha required"
 
   case $op in
     package)
