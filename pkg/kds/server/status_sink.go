@@ -35,6 +35,7 @@ func NewZoneInsightSink(
 		flushBackoff: flushBackoff,
 		accessor:     accessor,
 		store:        store,
+		log:          log,
 	}
 }
 
