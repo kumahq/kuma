@@ -78,7 +78,7 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		log.V(1).Info("skip injecting Kuma", "name", pod.Name, "namespace", pod.Namespace)
 		return nil
 	}
-	log.Info("injecting Kuma", "name", pod.Name, "namespace", pod.Namespace)
+	log.Info("injecting Kuma", "name", pod.GenerateName, "namespace", pod.Namespace)
 	// sidecar container
 	if pod.Spec.Containers == nil {
 		pod.Spec.Containers = []kube_core.Container{}
