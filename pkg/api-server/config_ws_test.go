@@ -244,6 +244,10 @@ var _ = Describe("Config WS", func() {
               "enabled": true,
               "expirationTime": "1s"
             },
+            "upsert": {
+              "conflictRetryBaseBackoff": "100ms",
+              "conflictRetryMaxTimes": 5
+            },
             "type": "memory"
           },
           "xdsServer": {
