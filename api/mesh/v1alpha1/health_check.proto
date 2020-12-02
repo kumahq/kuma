@@ -7,6 +7,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 import "mesh/v1alpha1/selector.proto";
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
 // HealthCheck defines configuration for health checking.
@@ -39,6 +40,20 @@ message HealthCheck {
 
     // Number of consecutive healthy checks before considering a host healthy.
     uint32 healthy_threshold = 4 [ (validate.rules).uint32 = {gt : 0} ];
+
+    // Tcp defines optional configuration for specifying bytes to send and
+    // expected response during the health check
+    message Tcp {
+      // Bytes which will be send during the health check to the target
+      google.protobuf.BytesValue send = 1;
+
+      // Bytes blocks expected as a response. When checking the response,
+      // “fuzzy” matching is performed such that each block must be found, and
+      // in the order specified, but not necessarily contiguous.
+      repeated google.protobuf.BytesValue receive = 2;
+    }
+
+    Tcp tcp = 5;
   }
 
   // Configuration for various types of health checking.
