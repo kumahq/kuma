@@ -18,6 +18,25 @@ controlPlane:
   kdsGlobalAddress: ""
   # -- Number of replicas of the Kuma CP
   replicas: 1
+
+  autoscaling:
+    # Requires the Metrics Server in the cluster
+    # see: https://github.com/kubernetes-sigs/metrics-server
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+
+    ## targetCPUUtilizationPercentage only used if the cluster doesn't support autoscaling/v2beta
+    ## Otherwise for clusters that do support autoscaling/v2beta, use metrics
+    targetCPUUtilizationPercentage: 80
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+
   # -- Node selector for the Kuma Control Plane pods
   nodeSelector:
     kubernetes.io/os: linux

@@ -116,6 +116,13 @@ kind/deploy/metrics: build/kumactl
 	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install metrics $(KUMACTL_INSTALL_METRICS_IMAGES) | kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-metrics pods -l app=prometheus
 
+.PHONY: kind/deploy/metrics-server
+kind/deploy/metrics-server:
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.4.1/components.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl patch -n kube-system deployment/metrics-server \
+		--patch='{"spec":{"template":{"spec":{"containers":[{"name":"metrics-server","args":["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-insecure-tls", "--kubelet-preferred-address-types=InternalIP"]}]}}}}'
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kube-system deployment/metrics-server
+
 .PHONY: kind/deploy/example-app
 kind/deploy/example-app:
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
