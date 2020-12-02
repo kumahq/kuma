@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	kube_apierrs "k8s.io/apimachinery/pkg/api/errors"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_record "k8s.io/client-go/tools/record"
@@ -42,6 +43,10 @@ func (r *ConfigMapReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 	}
 
 	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh); err != nil {
+		if kube_apierrs.IsConflict(err) {
+			r.Log.V(1).Info("resource conflict", "err", err)
+			return kube_ctrl.Result{Requeue: true}, nil
+		}
 		return kube_ctrl.Result{}, err
 	}
 

@@ -78,14 +78,17 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfigs() error {
 		meshes = append(meshes, mesh.GetMeta().GetName())
 	}
 
-	return d.createOrUpdateVIPConfigs(meshes...)
+	return d.createOrUpdateVIPConfigs(false, meshes...)
 }
 
 func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string) error {
-	return d.createOrUpdateVIPConfigs(mesh)
+	return d.createOrUpdateVIPConfigs(true, mesh)
 }
 
-func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) {
+// createOrUpdateVIPConfigs updates VIP configs for provided meshes.
+// - fastFail - if 'true' return the first occurred error, stop processing meshes.
+//              if 'false' then process all meshes, return the list of errors
+func (d *VIPsAllocator) createOrUpdateVIPConfigs(fastFail bool, meshes ...string) (errs error) {
 	global, byMesh, err := d.persistence.Get()
 	if err != nil {
 		return err
@@ -104,17 +107,19 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 			return err
 		}
 
-		updated, updError := UpdateMeshedVIPs(global, meshed, ipam, serviceSet)
-		if !updated {
-			return updError
+		changed, err := UpdateMeshedVIPs(global, meshed, ipam, serviceSet)
+		if err != nil {
+			// Error might occur only if we run out of VIPs. There is no point to pass it through,
+			// we must notify user in logs and proceed
+			vipsAllocatorLog.Error(err, "failed to allocate new VIPs")
 		}
-		updateResolver = updateResolver || updated
+		if !changed {
+			return nil
+		}
+		updateResolver = updateResolver || changed
 		global.Append(meshed)
 
-		if err := d.persistence.Set(mesh, meshed); err != nil {
-			return multierr.Append(updError, err)
-		}
-		return updError
+		return d.persistence.Set(mesh, meshed)
 	}
 
 	for _, mesh := range meshes {
@@ -123,6 +128,10 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 			meshed = vips.List{}
 		}
 		if err := forEachMesh(mesh, meshed); err != nil {
+			if fastFail {
+				errs = err
+				break
+			}
 			errs = multierr.Append(errs, errors.Wrapf(err, "errors during updating VIP config for mesh %s", mesh))
 		}
 	}

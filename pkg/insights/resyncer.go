@@ -222,6 +222,10 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 			// Mesh no longer exist so we cannot upsert the insight for it.
 			return nil
 		}
+		if store.IsResourceConflict(err) {
+			log.V(1).Info("ServiceInsight resource conflict")
+			return nil
+		}
 		return err
 	}
 	return nil
@@ -292,6 +296,10 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			log.V(1).Info("MeshInsight is not updated because mesh no longer exist. This can happen when Mesh is being deleted.")
 			// handle the situation when the mesh is deleted and then all the resources connected with the Mesh all deleted.
 			// Mesh no longer exist so we cannot upsert the insight for it.
+			return nil
+		}
+		if store.IsResourceConflict(err) {
+			log.V(1).Info("MeshInsight resource conflict")
 			return nil
 		}
 		return err
