@@ -79,7 +79,7 @@ function release {
   git config user.email "helm@kuma.io"
   git config user.name "Helm Releaser"
   git add "${CHARTS_INDEX_FILE}"
-  git commit -m "ci(helm) publish charts for version ${KUMA_VERSION}"
+  git commit -m "ci(helm) publish charts"
   git push
   popd
   rm -rf ${GH_REPO}
@@ -105,10 +105,6 @@ function main {
       --release)
         op="release"
         ;;
-      --version)
-        KUMA_VERSION=$2
-        shift
-        ;;
       *)
         usage
         break
@@ -118,7 +114,6 @@ function main {
   done
 
   [ -z "${GH_TOKEN}" ] && msg_err "GH_TOKEN required"
-  [ -z "${KUMA_VERSION}" ] && msg_err "Error: --version required"
 
   case $op in
     package)

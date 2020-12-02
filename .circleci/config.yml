@@ -575,11 +575,11 @@ jobs:
     - run:
         name: "Package Helm Charts"
         command: |
-          ./tools/releases/helm.sh --package --version $CIRCLE_TAG
+          ./tools/releases/helm.sh --package
     - run:
         name: "Release Helm Charts"
         command: |
-          ./tools/releases/helm.sh --release --version $CIRCLE_TAG
+          ./tools/releases/helm.sh --release
 
 
 #
