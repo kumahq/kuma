@@ -15,7 +15,9 @@ func SetupServer(rt runtime.Runtime) error {
 	if err := xds_server.RegisterXDS(rt, dpServer.grpcServer); err != nil {
 		return err
 	}
-	bootstrap.RegisterBootstrap(rt, dpServer.httpMux)
+	if err := bootstrap.RegisterBootstrap(rt, dpServer.httpMux); err != nil {
+		return err
+	}
 	if err := rt.Add(dpServer); err != nil {
 		return err
 	}
