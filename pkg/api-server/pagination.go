@@ -7,8 +7,6 @@ import (
 	"github.com/kumahq/kuma/pkg/api-server/types"
 
 	"github.com/emicklei/go-restful"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 const maxPageSize = 1000
@@ -38,13 +36,13 @@ func pagination(request *restful.Request) (page, error) {
 	}, nil
 }
 
-func nextLink(request *restful.Request, list model.ResourceList) *string {
-	if list.GetPagination().NextOffset == "" {
+func nextLink(request *restful.Request, nextOffset string) *string {
+	if nextOffset == "" {
 		return nil
 	}
 
 	query := request.Request.URL.Query()
-	query.Set("offset", list.GetPagination().NextOffset)
+	query.Set("offset", nextOffset)
 
 	nextURL := &url.URL{}
 	if request.Request.TLS == nil {
