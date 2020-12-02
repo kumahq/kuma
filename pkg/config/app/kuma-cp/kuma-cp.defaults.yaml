@@ -52,9 +52,16 @@ store:
   # Cache for read only operations. This cache is local to the instance of the control plane.
   cache:
     # If true then cache is enabled
-    enabled: true
+    enabled: true # ENV: KUMA_STORE_CACHE_ENABLED
     # Expiration time for elements in cache.
-    expirationTime: 1s
+    expirationTime: 1s # ENV: KUMA_STORE_CACHE_EXPIRATION_TIME
+
+  # Upsert configuration
+  upsert:
+    # Base time for exponential backoff on upsert (get and update) operations when retry is enabled
+    conflictRetryBaseBackoff: 100ms # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF
+    # Max retries on upsert (get and update) operation when retry is enabled
+    conflictRetryMaxTimes: 5 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES
 
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
