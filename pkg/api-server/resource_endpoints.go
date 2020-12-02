@@ -93,7 +93,7 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 		rest_errors.HandleError(response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)
-		restList.Next = nextLink(request, list)
+		restList.Next = nextLink(request, list.GetPagination().NextOffset)
 		if err := response.WriteAsJson(restList); err != nil {
 			rest_errors.HandleError(response, err, "Could not list resources")
 		}
