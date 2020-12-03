@@ -214,6 +214,7 @@ resources:
                             prefix: /
                           route:
                             cluster: localhost:8080
+                            timeout: 0s
                 statPrefix: localhost_8080
           transportSocket:
             name: envoy.transport_sockets.tls
