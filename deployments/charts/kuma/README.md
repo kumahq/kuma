@@ -2,7 +2,7 @@
 
 A Helm chart for the Kuma Control Plane
 
-![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.4.2](https://img.shields.io/badge/Version-0.4.2-informational?style=flat-square) ![AppVersion: 1.0.1](https://img.shields.io/badge/AppVersion-1.0.1-informational?style=flat-square)
+![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.4.3](https://img.shields.io/badge/Version-0.4.3-informational?style=flat-square) ![AppVersion: 1.0.2](https://img.shields.io/badge/AppVersion-1.0.2-informational?style=flat-square)
 
 **Homepage:** <https://github.com/kumahq/kuma>
 
@@ -10,7 +10,6 @@ A Helm chart for the Kuma Control Plane
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| global.namespace | string | `"kuma-system"` | Default namespace for kuma |
 | global.image.registry | string | `"kong-docker-kuma-docker.bintray.io"` | Default registry for all Kuma Images |
 | patchSystemNamespace | bool | `true` | Whether or not to patch the target namespace with the system label |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
