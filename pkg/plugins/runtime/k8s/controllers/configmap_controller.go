@@ -44,7 +44,7 @@ func (r *ConfigMapReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 
 	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh); err != nil {
 		if kube_apierrs.IsConflict(err) {
-			r.Log.V(1).Info("resource conflict", "err", err)
+			r.Log.V(1).Info("VIPs were updated in the other place. Retrying")
 			return kube_ctrl.Result{Requeue: true}, nil
 		}
 		return kube_ctrl.Result{}, err

@@ -223,7 +223,7 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 			return nil
 		}
 		if store.IsResourceConflict(err) {
-			log.V(1).Info("ServiceInsight resource conflict")
+			log.V(1).Info("ServiceInsight was updated in other place. Retrying")
 			return nil
 		}
 		return err
@@ -299,7 +299,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			return nil
 		}
 		if store.IsResourceConflict(err) {
-			log.V(1).Info("MeshInsight resource conflict")
+			log.V(1).Info("MeshInsight was updated in other place. Retrying")
 			return nil
 		}
 		return err
