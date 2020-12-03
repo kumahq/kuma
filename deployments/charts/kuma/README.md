@@ -11,7 +11,7 @@ A Helm chart for the Kuma Control Plane
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | global.image.registry | string | `"kong-docker-kuma-docker.bintray.io"` | Default registry for all Kuma Images |
-| global.image.tag | string | `nil` | The default tag Defaults to .Chart.AppVersion |
+| global.image.tag | string | `nil` | The default tag for all Kuma images, which itself defaults to .Chart.AppVersion |
 | patchSystemNamespace | bool | `true` | Whether or not to patch the target namespace with the system label |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,remote,global |
