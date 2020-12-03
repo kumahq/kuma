@@ -48,6 +48,7 @@ var (
 	meshResources = meshResourceTypes(map[core_model.ResourceType]bool{
 		core_mesh.DataplaneInsightType:  true,
 		core_mesh.DataplaneOverviewType: true,
+		core_mesh.ServiceInsightType:    true,
 		core_system.ConfigType:          true,
 	})
 )
@@ -368,7 +369,9 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) (DataplaneStatusTrac
 			func() *time.Ticker {
 				return time.NewTicker(rt.Config().XdsServer.DataplaneStatusFlushInterval)
 			},
-			NewDataplaneInsightStore(rt.ResourceManager()))
+			rt.Config().XdsServer.DataplaneStatusFlushInterval/10,
+			NewDataplaneInsightStore(rt.ResourceManager()),
+		)
 	})
 	return tracker, nil
 }

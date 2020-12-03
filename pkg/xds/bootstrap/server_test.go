@@ -45,7 +45,7 @@ var _ = Describe("Bootstrap Server", func() {
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
 		config = bootstrap_config.DefaultBootstrapParamsConfig()
-		config.XdsHost = "127.0.0.1"
+		config.XdsHost = "localhost"
 		config.XdsPort = 5678
 
 		port, err := test.GetFreePort()
@@ -61,8 +61,10 @@ var _ = Describe("Bootstrap Server", func() {
 		}
 		dpServer := dp_server.NewDpServer(dpServerCfg, metrics)
 
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true)
+		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
-			Generator: bootstrap.NewDefaultBootstrapGenerator(resManager, config, "", true),
+			Generator: generator,
 		}
 		dpServer.HTTPMux().HandleFunc("/bootstrap", bootstrapHandler.Handle)
 

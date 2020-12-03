@@ -4,9 +4,11 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -83,26 +85,27 @@ var _ = Describe("Service Insight Endpoints", func() {
 		It("should return an existing resource", func() {
 			expected := `
 {
-  "total": 1,
+  "total": 2,
   "items": [
 	{
 	  "type": "ServiceInsight",
 	  "mesh": "mesh-1",
-	  "name": "all-services-mesh-1",
+	  "name": "backend",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "services": {
-		"backend": {
-		  "total": 100,
-		  "online": 70,
-		  "offline": 30
-		},
-		"frontend": {
-		  "total": 20,
-		  "online": 19,
-		  "offline": 1
-		}
-	  }
+	  "total": 100,
+	  "online": 70,
+	  "offline": 30
+	},
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-1",
+	  "name": "frontend",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+	  "total": 20,
+	  "online": 19,
+	  "offline": 1
 	}
   ],
   "next": null
@@ -122,6 +125,11 @@ var _ = Describe("Service Insight Endpoints", func() {
 		It("should return stat for specific service", func() {
 			expected := `
 {
+  "type": "ServiceInsight",
+  "mesh": "mesh-1",
+  "name": "backend",
+  "creationTime": "2018-07-17T16:05:36.995Z",
+  "modificationTime": "2018-07-17T16:05:36.995Z",
   "total": 100,
   "online": 70,
   "offline": 30
@@ -137,56 +145,16 @@ var _ = Describe("Service Insight Endpoints", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(expected))
 		})
+	})
 
-		It("should list resources", func() {
-			expected := `
-{
-  "total": 2,
-  "items": [
-	{
-	  "type": "ServiceInsight",
-	  "mesh": "mesh-1",
-	  "name": "all-services-mesh-1",
-	  "creationTime": "2018-07-17T16:05:36.995Z",
-	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "services": {
-		"backend": {
-		  "total": 100,
-		  "online": 70,
-		  "offline": 30
-		},
-		"frontend": {
-		  "total": 20,
-		  "online": 19,
-		  "offline": 1
-		}
-	  }
-	},
-	{
-	  "type": "ServiceInsight",
-	  "mesh": "mesh-2",
-	  "name": "all-services-mesh-2",
-	  "creationTime": "2018-07-17T16:05:36.995Z",
-	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "services": {
-		"db": {
-		  "total": 10,
-		  "online": 9,
-		  "offline": 1
-		},
-		"redis": {
-		  "total": 22,
-		  "online": 19,
-		  "offline": 3
-		}
-	  }
+	type testCase struct {
+		params   string
+		expected string
 	}
-  ],
-  "next": null
-}`
-
+	DescribeTable("should paginate a list",
+		func(given testCase) {
 			// when
-			response, err := http.Get("http://" + apiServer.Address() + "/service-insights")
+			response, err := http.Get("http://" + apiServer.Address() + "/service-insights" + given.params)
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -194,7 +162,121 @@ var _ = Describe("Service Insight Endpoints", func() {
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 
+			expected := strings.ReplaceAll(given.expected, "{{address}}", apiServer.Address())
 			Expect(string(body)).To(MatchJSON(expected))
-		})
-	})
+		},
+		Entry("without pagination", testCase{
+			params: "",
+			expected: `
+{
+  "total": 4,
+  "items": [
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-1",
+	  "name": "backend",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+	  "total": 100,
+	  "online": 70,
+	  "offline": 30
+	},
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-1",
+	  "name": "frontend",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+	  "total": 20,
+	  "online": 19,
+	  "offline": 1
+	},
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-2",
+	  "name": "db",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+	  "total": 10,
+	  "online": 9,
+	  "offline": 1
+	},
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-2",
+	  "name": "redis",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+	  "total": 22,
+	  "online": 19,
+	  "offline": 3
+	}
+  ],
+  "next": null
+}
+`,
+		}),
+		Entry("with initial page", testCase{
+			params: "?size=2",
+			expected: `
+{
+  "total": 4,
+  "items": [
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-1",
+	  "name": "backend",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+	  "total": 100,
+	  "online": 70,
+	  "offline": 30
+	},
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-1",
+	  "name": "frontend",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+	  "total": 20,
+	  "online": 19,
+	  "offline": 1
+	}
+  ],
+  "next": "http://{{address}}/service-insights?offset=2&size=2"
+}
+`,
+		}),
+		Entry("with second page", testCase{
+			params: "?offset=2&size=2",
+			expected: `
+{
+  "total": 4,
+  "items": [
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-2",
+	  "name": "db",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+	  "total": 10,
+	  "online": 9,
+	  "offline": 1
+	},
+	{
+	  "type": "ServiceInsight",
+	  "mesh": "mesh-2",
+	  "name": "redis",
+	  "creationTime": "2018-07-17T16:05:36.995Z",
+	  "modificationTime": "2018-07-17T16:05:36.995Z",
+	  "total": 22,
+	  "online": 19,
+	  "offline": 3
+	}
+  ],
+  "next": null
+}
+`,
+		}),
+	)
 })

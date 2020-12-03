@@ -107,6 +107,9 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Cache.Enabled).To(BeFalse())
 			Expect(cfg.Store.Cache.ExpirationTime).To(Equal(3 * time.Second))
 
+			Expect(cfg.Store.Upsert.ConflictRetryBaseBackoff).To(Equal(4 * time.Second))
+			Expect(cfg.Store.Upsert.ConflictRetryMaxTimes).To(Equal(uint(10)))
+
 			Expect(cfg.Store.Postgres.TLS.Mode).To(Equal(postgres.VerifyFull))
 			Expect(cfg.Store.Postgres.TLS.CertPath).To(Equal("/path/to/cert"))
 			Expect(cfg.Store.Postgres.TLS.KeyPath).To(Equal("/path/to/key"))
@@ -178,6 +181,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.PollTimeout).To(Equal(750 * time.Millisecond))
 			Expect(cfg.Multizone.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
 			Expect(cfg.Multizone.Global.KDS.RefreshInterval).To(Equal(time.Second * 2))
+			Expect(cfg.Multizone.Global.KDS.ZoneInsightFlushInterval).To(Equal(time.Second * 5))
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
 			Expect(cfg.Multizone.Remote.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
@@ -237,6 +241,9 @@ store:
   cache:
     enabled: false
     expirationTime: 3s
+  upsert:
+    conflictRetryBaseBackoff: 4s
+    conflictRetryMaxTimes: 10
 bootstrapServer:
   params:
     adminPort: 1234
@@ -337,6 +344,7 @@ multizone:
     kds:
       grpcPort: 1234
       refreshInterval: 2s
+      zoneInsightFlushInterval: 5s
       tlsCertFile: /cert
       tlsKeyFile: /key
   remote:
@@ -403,6 +411,8 @@ sdsServer:
 				"KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE":                                                   "test-namespace",
 				"KUMA_STORE_CACHE_ENABLED":                                                                 "false",
 				"KUMA_STORE_CACHE_EXPIRATION_TIME":                                                         "3s",
+				"KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF":                                            "4s",
+				"KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES":                                               "10",
 				"KUMA_API_SERVER_READ_ONLY":                                                                "true",
 				"KUMA_API_SERVER_HTTP_PORT":                                                                "15681",
 				"KUMA_API_SERVER_HTTP_INTERFACE":                                                           "192.168.0.1",
@@ -469,6 +479,7 @@ sdsServer:
 				"KUMA_MULTIZONE_REMOTE_ZONE":                                                               "zone-1",
 				"KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE":                                                   "/rootCa",
 				"KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL":                                               "9s",
+				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",

@@ -1,6 +1,4 @@
 global:
-  # -- Default namespace for kuma
-  namespace: "kuma-system"
   image:
     # -- Default registry for all Kuma Images
     registry: "kong-docker-kuma-docker.bintray.io"

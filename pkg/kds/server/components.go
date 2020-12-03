@@ -49,8 +49,9 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 		return NewZoneInsightSink(
 			accessor,
 			func() *time.Ticker {
-				return time.NewTicker(1 * time.Second)
+				return time.NewTicker(rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval)
 			},
+			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval/10,
 			NewDataplaneInsightStore(rt.ResourceManager()),
 			l)
 	}, log)

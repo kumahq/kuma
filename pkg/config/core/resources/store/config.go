@@ -30,6 +30,8 @@ type StoreConfig struct {
 	Kubernetes *k8s.KubernetesStoreConfig `yaml:"kubernetes"`
 	// Cache configuration
 	Cache CacheStoreConfig `yaml:"cache"`
+	// Upsert configuration
+	Upsert UpsertConfig `yaml:"upsert"`
 }
 
 func DefaultStoreConfig() *StoreConfig {
@@ -38,6 +40,7 @@ func DefaultStoreConfig() *StoreConfig {
 		Postgres:   postgres.DefaultPostgresStoreConfig(),
 		Kubernetes: k8s.DefaultKubernetesStoreConfig(),
 		Cache:      DefaultCacheStoreConfig(),
+		Upsert:     DefaultUpsertConfig(),
 	}
 }
 
@@ -89,3 +92,29 @@ func DefaultCacheStoreConfig() CacheStoreConfig {
 		ExpirationTime: time.Second,
 	}
 }
+
+func DefaultUpsertConfig() UpsertConfig {
+	return UpsertConfig{
+		ConflictRetryBaseBackoff: 100 * time.Millisecond,
+		ConflictRetryMaxTimes:    5,
+	}
+}
+
+type UpsertConfig struct {
+	// Base time for exponential backoff on upsert (get and update) operations when retry is enabled
+	ConflictRetryBaseBackoff time.Duration `yaml:"conflictRetryBaseBackoff" envconfig:"kuma_store_upsert_conflict_retry_base_backoff"`
+	// Max retries on upsert (get and update) operation when retry is enabled
+	ConflictRetryMaxTimes uint `yaml:"conflictRetryMaxTimes" envconfig:"kuma_store_upsert_conflict_retry_max_times"`
+}
+
+func (u *UpsertConfig) Sanitize() {
+}
+
+func (u *UpsertConfig) Validate() error {
+	if u.ConflictRetryBaseBackoff < 0 {
+		return errors.New("RetryBaseBackoff cannot be lower than 0")
+	}
+	return nil
+}
+
+var _ config.Config = &UpsertConfig{}
