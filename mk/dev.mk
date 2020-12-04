@@ -186,10 +186,6 @@ dev/install/goimports: ## Bootstrap: Install goimports
 dev/install/helm3: ## Bootstrap: Install Helm 3
 	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
 
-<<<<<<< HEAD
-GEN_CHANGELOG_START_TAG ?= 1.0.0
-GEN_CHANGELOG_BRANCH ?= release-1.0
-=======
 .PHONY: dev/install/helm-docs
 dev/install/helm-docs: ## Bootstrap: Install helm-docs
 	@if [ -e $(HELM_DOCS_PATH) ]; then echo "Helm Docs $$( $(HELM_DOCS_PATH) --version ) is already installed at $(HELM_DOCS_PATH)" ; fi
@@ -205,9 +201,8 @@ dev/install/helm-docs: ## Bootstrap: Install helm-docs
 		&& set +x \
 		&& echo "helm-docs $(HELM_DOCS_VERSION) has been installed at $(HELM_DOCS_PATH)" ; fi
 
-GEN_CHANGELOG_START_TAG ?= 0.7.2
-GEN_CHANGELOG_BRANCH ?= master
->>>>>>> 56550e05... feat(kuma-cp) automatic readme generation for chart (#1209)
+GEN_CHANGELOG_START_TAG ?= 1.0.0
+GEN_CHANGELOG_BRANCH ?= release-1.0
 GEN_CHANGELOG_MD ?= changelog.generated.md
 .PHONY: changelog
 changelog:
