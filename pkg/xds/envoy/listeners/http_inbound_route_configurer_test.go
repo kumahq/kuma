@@ -76,6 +76,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                           prefix: /
                         route:
                           cluster: localhost:8080
+                          timeout: 0s
                   statPrefix: localhost_8080
 `,
 		}),
