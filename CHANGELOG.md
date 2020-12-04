@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.0.3]
+> Released on  2020/12/03
+
+Changes:
+* chore: disable timeout on route level [#1275](https://github.com//kumahq/kuma/pull/1275)
+
 ## [1.0.2]
 > Released on  2020/12/02
 

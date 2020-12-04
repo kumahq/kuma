@@ -63,6 +63,7 @@ resources:
                               filterMetadata:
                                 envoy.lb:
                                   kuma.io/protocol: http
+                            timeout: 0s
                 statPrefix: es
       name: outbound:127.0.0.1:18081
       trafficDirection: OUTBOUND
