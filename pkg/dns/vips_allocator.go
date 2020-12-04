@@ -78,17 +78,14 @@ func (d *VIPsAllocator) CreateOrUpdateVIPConfigs() error {
 		meshes = append(meshes, mesh.GetMeta().GetName())
 	}
 
-	return d.createOrUpdateVIPConfigs(false, meshes...)
+	return d.createOrUpdateVIPConfigs(meshes...)
 }
 
 func (d *VIPsAllocator) CreateOrUpdateVIPConfig(mesh string) error {
-	return d.createOrUpdateVIPConfigs(true, mesh)
+	return d.createOrUpdateVIPConfigs(mesh)
 }
 
-// createOrUpdateVIPConfigs updates VIP configs for provided meshes.
-// - fastFail - if 'true' return the first occurred error, stop processing meshes.
-//              if 'false' then process all meshes, return the list of errors
-func (d *VIPsAllocator) createOrUpdateVIPConfigs(fastFail bool, meshes ...string) (errs error) {
+func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) {
 	global, byMesh, err := d.persistence.Get()
 	if err != nil {
 		return err
@@ -128,11 +125,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(fastFail bool, meshes ...string
 			meshed = vips.List{}
 		}
 		if err := forEachMesh(mesh, meshed); err != nil {
-			if fastFail {
-				errs = err
-				break
-			}
-			errs = multierr.Append(errs, errors.Wrapf(err, "errors during updating VIP config for mesh %s", mesh))
+			errs = multierr.Append(errs, err)
 		}
 	}
 
