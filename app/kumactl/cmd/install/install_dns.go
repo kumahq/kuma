@@ -30,15 +30,15 @@ const (
 var resourceHeader = []byte("---\napiVersion: v1\nkind: ConfigMap\n")
 
 type InstallDNSArgs struct {
-	namespace string
-	service   string
-	port      string
+	Namespace string
+	Service   string
+	Port      string
 }
 
 var DefaultInstallDNSArgs = InstallDNSArgs{
-	namespace: "kuma-system",
-	service:   "kuma-control-plane",
-	port:      "5653",
+	Namespace: "kuma-system",
+	Service:   "kuma-control-plane",
+	Port:      "5653",
 }
 
 func newInstallDNS() *cobra.Command {
@@ -60,13 +60,13 @@ This command requires that the KUBECONFIG environment is set`,
 				return err
 			}
 
-			kumaCPSVC, err := clientset.CoreV1().Services(args.namespace).Get(context.TODO(),
-				args.service, metav1.GetOptions{})
+			kumaCPSVC, err := clientset.CoreV1().Services(args.Namespace).Get(context.TODO(),
+				args.Service, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 
-			kumaDNSAddress := fmt.Sprintf("%s:%s", kumaCPSVC.Spec.ClusterIP, args.port)
+			kumaDNSAddress := fmt.Sprintf("%s:%s", kumaCPSVC.Spec.ClusterIP, args.Port)
 
 			var errs error
 			generated := false
@@ -99,8 +99,8 @@ This command requires that the KUBECONFIG environment is set`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&args.namespace, "namespace", args.namespace, "namespace to look for Kuma Control Plane service")
-	cmd.Flags().StringVar(&args.port, "port", args.port, "port of the Kuma DNS server")
+	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to look for Kuma Control Plane service")
+	cmd.Flags().StringVar(&args.Port, "port", args.Port, "port of the Kuma DNS server")
 
 	return cmd
 }

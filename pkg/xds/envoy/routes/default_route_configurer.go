@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
@@ -43,7 +44,11 @@ type RouteConfigurer struct {
 }
 
 func (c RouteConfigurer) routeAction() *envoy_route.RouteAction {
-	routeAction := envoy_route.RouteAction{}
+	routeAction := envoy_route.RouteAction{
+		// This disable the timeout of the response. As Envoy docs suggest
+		// disabling this solves problems with long lived and streaming requests.
+		Timeout: &duration.Duration{Seconds: 0, Nanos: 0},
+	}
 	if len(c.subsets) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
 			Cluster: c.subsets[0].ClusterName,

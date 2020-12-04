@@ -44,6 +44,7 @@ var _ = Describe("DefaultRouteConfigurer", func() {
                 prefix: /
               route:
                 cluster: backend
+                timeout: 0s
 `,
 		}),
 		Entry("basic VirtualHost with weighted destination clusters", testCase{
@@ -71,6 +72,7 @@ var _ = Describe("DefaultRouteConfigurer", func() {
                     name: backend
                     weight: 70
                   totalWeight: 100
+                timeout: 0s
 `,
 		}),
 		Entry("basic VirtualHost with weighted destination clusters with totalWeight less than 100", testCase{
@@ -98,6 +100,7 @@ var _ = Describe("DefaultRouteConfigurer", func() {
                     name: backend
                     weight: 60
                   totalWeight: 90
+                timeout: 0s
 `,
 		}),
 	)
