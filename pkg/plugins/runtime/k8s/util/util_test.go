@@ -165,7 +165,7 @@ var _ = Describe("Util", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err := FindPort(&pod, &svcPort)
+					actual, _, err := FindPort(&pod, &svcPort)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					// and
@@ -188,7 +188,7 @@ var _ = Describe("Util", func() {
 				}),
 				Entry("Service with `targetPort` as a number (UDP)", testCase{
 					pod: `
-                    spec:
+                    spec:d
                       containers:
                       - name: container-1
                         ports: [] # notice that actual container ports become irrelevant when Service has 'targetPort' as a number
@@ -346,7 +346,7 @@ var _ = Describe("Util", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err := FindPort(&pod, &svcPort)
+					actual, _, err := FindPort(&pod, &svcPort)
 					// then
 					Expect(err).To(HaveOccurred())
 					// and

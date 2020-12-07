@@ -67,6 +67,10 @@ message Dataplane {
       // e.g. kuma.io/service=web, version=1.0.
       // `kuma.io/service` tag is mandatory.
       map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
+
+      message Health { bool ready = 1; }
+
+      Health health = 7;
     }
 
     // Outbound describes a service consumed by the dataplane.
