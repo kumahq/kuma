@@ -111,9 +111,17 @@ var _ = Describe("HealthCheck", func() {
                   timeout: 0s
                   unhealthyThreshold: 0
                   healthyThreshold: 0
+                  tcp: {}
+                  http:
+                    path: ""
+                    expected_statuses:
+                    - 99
+                    - 600
 `,
 				expected: `
                 violations:
+                - field: conf.[tcp|http]
+                  message: only one allowed
                 - field: conf.interval
                   message: must have a positive value
                 - field: conf.timeout
@@ -122,6 +130,37 @@ var _ = Describe("HealthCheck", func() {
                   message: must have a positive value
                 - field: conf.healthyThreshold
                   message: must have a positive value
+                - field: conf.http.path
+                  message: cannot be empty
+                - field: conf.http.expected_statuses[0]
+                  message: must be in range [100, 600)
+                - field: conf.http.expected_statuses[1]
+                  message: must be in range [100, 600)
+`,
+			}),
+			Entry("invalid active checks http configuration", testCase{
+				healthCheck: `
+                sources:
+                - match:
+                    kuma.io/service: web
+                    region: eu
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  interval: 3s
+                  timeout: 10s
+                  unhealthyThreshold: 3
+                  healthyThreshold: 1
+                  http:
+                    expected_statuses: []
+`,
+				expected: `
+                violations:
+                - field: conf.http.path
+                  message: has to be defined
+                - field: conf.http.expected_statuses
+                  message: cannot be empty
 `,
 			}),
 		)

@@ -5,8 +5,10 @@ import (
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
@@ -22,42 +24,110 @@ type healthCheckConfigurer struct {
 	healthCheck *mesh_core.HealthCheckResource
 }
 
+func mapUInt32ToInt64Range(value uint32) *envoy_type.Int64Range {
+	return &envoy_type.Int64Range{
+		Start: int64(value),
+		End:   int64(value),
+	}
+}
+
+func mapHttpHeaders(
+	headers []*v1alpha1.HealthCheck_Conf_Http_HeaderValueOption,
+) []*envoy_core.HeaderValueOption {
+	var envoyHeaders []*envoy_core.HeaderValueOption
+	for _, header := range headers {
+		envoyHeaders = append(envoyHeaders, &envoy_core.HeaderValueOption{
+			Header: &envoy_core.HeaderValue{
+				Key:   header.Header.Key.Value,
+				Value: header.Header.Value.Value,
+			},
+			Append: header.Append,
+		})
+	}
+	return envoyHeaders
+}
+
+func tcpHealthCheck(
+	tcpConf *v1alpha1.HealthCheck_Conf_Tcp,
+) *envoy_core.HealthCheck_TcpHealthCheck_ {
+	tcpHealthCheck := envoy_core.HealthCheck_TcpHealthCheck{}
+
+	if tcpConf.Send != nil {
+		tcpHealthCheck.Send = &envoy_core.HealthCheck_Payload{
+			Payload: &envoy_core.HealthCheck_Payload_Text{
+				Text: hex.EncodeToString(tcpConf.Send.Value),
+			},
+		}
+	}
+
+	if tcpConf.Receive != nil {
+		var receive []*envoy_core.HealthCheck_Payload
+		for _, r := range tcpConf.Receive {
+			receive = append(receive, &envoy_core.HealthCheck_Payload{
+				Payload: &envoy_core.HealthCheck_Payload_Text{
+					Text: hex.EncodeToString(r.Value),
+				},
+			})
+		}
+		tcpHealthCheck.Receive = receive
+	}
+
+	return &envoy_core.HealthCheck_TcpHealthCheck_{
+		TcpHealthCheck: &tcpHealthCheck,
+	}
+}
+
+func httpHealthCheck(
+	httpConf *v1alpha1.HealthCheck_Conf_Http,
+) *envoy_core.HealthCheck_HttpHealthCheck_ {
+	codecType := envoy_type.CodecClientType_HTTP2
+	if httpConf.UseHttp1 {
+		codecType = envoy_type.CodecClientType_HTTP1
+	}
+
+	var expectedStatuses []*envoy_type.Int64Range
+	for _, status := range httpConf.ExpectedStatuses {
+		expectedStatuses = append(
+			expectedStatuses,
+			mapUInt32ToInt64Range(status.Value),
+		)
+	}
+
+	httpHealthCheck := envoy_core.HealthCheck_HttpHealthCheck{
+		Path:                httpConf.Path.Value,
+		RequestHeadersToAdd: mapHttpHeaders(httpConf.RequestHeadersToAdd),
+		ExpectedStatuses:    expectedStatuses,
+		CodecClientType:     codecType,
+	}
+
+	return &envoy_core.HealthCheck_HttpHealthCheck_{
+		HttpHealthCheck: &httpHealthCheck,
+	}
+}
+
 func (e *healthCheckConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	if e.healthCheck == nil || e.healthCheck.Spec.Conf == nil {
 		return nil
 	}
 	activeChecks := e.healthCheck.Spec.Conf
-	tcpHealthCheck := &envoy_core.HealthCheck_TcpHealthCheck{}
-
-	if activeChecks.Tcp != nil {
-		if activeChecks.Tcp.Send != nil {
-			tcpHealthCheck.Send = &envoy_core.HealthCheck_Payload{
-				Payload: &envoy_core.HealthCheck_Payload_Text{
-					Text: hex.EncodeToString(activeChecks.Tcp.Send.Value),
-				},
-			}
-		}
-		if activeChecks.Tcp.Receive != nil {
-			var receive []*envoy_core.HealthCheck_Payload
-			for _, r := range activeChecks.Tcp.Receive {
-				receive = append(receive, &envoy_core.HealthCheck_Payload{
-					Payload: &envoy_core.HealthCheck_Payload_Text{
-						Text: hex.EncodeToString(r.Value),
-					},
-				})
-			}
-			tcpHealthCheck.Receive = receive
-		}
-	}
-
-	cluster.HealthChecks = append(cluster.HealthChecks, &envoy_core.HealthCheck{
+	healthCheck := envoy_core.HealthCheck{
 		HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
-			TcpHealthCheck: tcpHealthCheck,
+			TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
 		},
 		Interval:           activeChecks.Interval,
 		Timeout:            activeChecks.Timeout,
 		UnhealthyThreshold: &wrappers.UInt32Value{Value: activeChecks.UnhealthyThreshold},
 		HealthyThreshold:   &wrappers.UInt32Value{Value: activeChecks.HealthyThreshold},
-	})
+	}
+
+	if activeChecks.Tcp != nil {
+		healthCheck.HealthChecker = tcpHealthCheck(activeChecks.Tcp)
+	}
+
+	if activeChecks.Http != nil {
+		healthCheck.HealthChecker = httpHealthCheck(activeChecks.Http)
+	}
+
+	cluster.HealthChecks = append(cluster.HealthChecks, &healthCheck)
 	return nil
 }
