@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
@@ -16,6 +15,8 @@ import (
 	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
+
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 
 	"github.com/kumahq/kuma/pkg/dns/vips"
 

@@ -4,10 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+
+	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
