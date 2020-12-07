@@ -98,7 +98,7 @@ var _ = Describe("Rest Resource", func() {
 				// when
 				rsr := &rest.ResourceListReceiver{
 					NewResource: func() model.Resource {
-						return &sample_core.TrafficRouteResource{}
+						return sample_core.NewTrafficRouteResource()
 					},
 				}
 				err := json.Unmarshal([]byte(content), rsr)

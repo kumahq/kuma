@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -38,11 +39,13 @@ var _ = Describe("TrafficRoute", func() {
 				Meta: &test_model.ResourceMeta{
 					Name: "demo",
 				},
+				Spec: &mesh_proto.Mesh{},
 			}
 			otherMesh := &mesh_core.MeshResource{ // mesh that is irrelevant to this test case
 				Meta: &test_model.ResourceMeta{
 					Name: "default",
 				},
+				Spec: &mesh_proto.Mesh{},
 			}
 			backend := &mesh_core.DataplaneResource{ // dataplane that is a source of traffic
 				Meta: &test_model.ResourceMeta{
@@ -205,12 +208,12 @@ var _ = Describe("TrafficRoute", func() {
 				Expect(routes).Should(Equal(expectedRoutes))
 			},
 			Entry("Dataplane without outbound interfaces and no routes", testCase{
-				dataplane: &mesh_core.DataplaneResource{},
+				dataplane: mesh_core.NewDataplaneResource(),
 				routes:    nil,
 				expected:  nil,
 			}),
 			Entry("Dataplane without outbound interfaces", testCase{
-				dataplane: &mesh_core.DataplaneResource{},
+				dataplane: mesh_core.NewDataplaneResource(),
 				routes: []*mesh_core.TrafficRouteResource{
 					{
 						Spec: &mesh_proto.TrafficRoute{
@@ -828,7 +831,7 @@ var _ = Describe("TrafficRoute", func() {
 				Expect(destinations).Should(Equal(given.expected))
 			},
 			Entry("Dataplane without outbound interfaces", testCase{
-				dataplane: &mesh_core.DataplaneResource{},
+				dataplane: mesh_core.NewDataplaneResource(),
 				routes:    nil,
 				expected:  core_xds.DestinationMap{},
 			}),

@@ -82,7 +82,7 @@ var _ = Describe("Insight Persistence", func() {
 	})
 
 	It("should sync more often than MaxResyncTimeout", func() {
-		err := rm.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &core_mesh.TrafficPermissionResource{Spec: samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))
@@ -93,7 +93,7 @@ var _ = Describe("Insight Persistence", func() {
 		nowMtx.Unlock()
 		tickCh <- now
 
-		insight := &core_mesh.MeshInsightResource{}
+		insight := core_mesh.NewMeshInsightResource()
 		Eventually(func() error {
 			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 		}, "10s", "100ms").Should(BeNil())

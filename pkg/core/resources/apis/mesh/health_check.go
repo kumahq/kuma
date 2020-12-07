@@ -19,6 +19,12 @@ type HealthCheckResource struct {
 	Spec *mesh_proto.HealthCheck
 }
 
+func NewHealthCheckResource() *HealthCheckResource {
+	return &HealthCheckResource{
+		Spec: &mesh_proto.HealthCheck{},
+	}
+}
+
 func (r *HealthCheckResource) GetType() model.ResourceType {
 	return HealthCheckType
 }
@@ -68,7 +74,7 @@ func (l *HealthCheckResourceList) GetItemType() model.ResourceType {
 	return HealthCheckType
 }
 func (l *HealthCheckResourceList) NewItem() model.Resource {
-	return &HealthCheckResource{}
+	return NewHealthCheckResource()
 }
 func (l *HealthCheckResourceList) AddItem(r model.Resource) error {
 	if item, ok := r.(*HealthCheckResource); ok {
@@ -83,6 +89,6 @@ func (l *HealthCheckResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&HealthCheckResource{})
+	registry.RegisterType(NewHealthCheckResource())
 	registry.RegistryListType(&HealthCheckResourceList{})
 }

@@ -135,7 +135,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 
 		BeforeEach(func() {
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
-			err := store.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
+			err := store.Create(context.Background(), mesh_core.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -148,7 +148,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 				ConnectTime:            util_proto.MustTimestampProto(t0),
 				Status:                 mesh_proto.NewSubscriptionStatus(),
 			}
-			dataplaneInsight := &mesh_core.DataplaneInsightResource{}
+			dataplaneInsight := mesh_core.NewDataplaneInsightResource()
 			lastSeenVersion := ""
 
 			// given

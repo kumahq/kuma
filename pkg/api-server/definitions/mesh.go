@@ -9,7 +9,7 @@ var MeshWsDefinition = ResourceWsDefinition{
 	Name: "Mesh",
 	Path: "meshes",
 	ResourceFactory: func() model.Resource {
-		return &mesh.MeshResource{}
+		return mesh.NewMeshResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.MeshResourceList{}

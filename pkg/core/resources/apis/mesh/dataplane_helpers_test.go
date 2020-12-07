@@ -283,6 +283,7 @@ var _ = Describe("Dataplane", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: given.meshName,
 						},
+						Spec: &mesh_proto.Mesh{},
 					}
 					Expect(util_proto.FromYAML([]byte(given.meshSpec), mesh.Spec)).To(Succeed())
 				}

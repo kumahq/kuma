@@ -78,13 +78,13 @@ var _ = Describe("Meshed Persistence", func() {
 
 	BeforeEach(func() {
 		rm = manager.NewResourceManager(memory.NewStore())
-		err := rm.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey("mesh-1", core_model.NoMesh))
+		err := rm.Create(context.Background(), mesh_core.NewMeshResource(), core_store.CreateByKey("mesh-1", core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey("mesh-2", core_model.NoMesh))
+		err = rm.Create(context.Background(), mesh_core.NewMeshResource(), core_store.CreateByKey("mesh-2", core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey("mesh-3", core_model.NoMesh))
+		err = rm.Create(context.Background(), mesh_core.NewMeshResource(), core_store.CreateByKey("mesh-3", core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

@@ -18,3 +18,9 @@ linters-settings:
   gocritic:
     disabled-checks:
       - singleCaseSwitch
+
+issues:
+  exclude-rules:
+    - linters:
+        - staticcheck
+      text: "SA9003:"

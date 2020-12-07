@@ -43,6 +43,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
+							Spec: &mesh_proto.Mesh{},
 						},
 					},
 				}

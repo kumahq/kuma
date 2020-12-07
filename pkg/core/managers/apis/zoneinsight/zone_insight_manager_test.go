@@ -28,7 +28,7 @@ var _ = Describe("ZoneInsight Manager", func() {
 		}
 		manager := zoneinsight.NewZoneInsightManager(s, cfg)
 
-		err := s.Create(context.Background(), &system.ZoneResource{}, store.CreateByKey("di1", model.NoMesh))
+		err := s.Create(context.Background(), system.NewZoneResource(), store.CreateByKey("di1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		input := system.ZoneInsightResource{}
@@ -61,7 +61,7 @@ var _ = Describe("ZoneInsight Manager", func() {
 		}
 		manager := zoneinsight.NewZoneInsightManager(s, cfg)
 
-		err := s.Create(context.Background(), &system.ZoneResource{}, store.CreateByKey("di1", model.NoMesh))
+		err := s.Create(context.Background(), system.NewZoneResource(), store.CreateByKey("di1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		input := system.ZoneInsightResource{}

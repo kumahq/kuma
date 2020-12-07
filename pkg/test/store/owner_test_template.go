@@ -32,8 +32,8 @@ func ExecuteOwnerTests(
 
 	It("should delete resource when its owner is deleted", func() {
 		// setup
-		meshRes := core_mesh.MeshResource{}
-		err := s.Create(context.Background(), &meshRes, store.CreateByKey(mesh, model.NoMesh))
+		meshRes := core_mesh.NewMeshResource()
+		err := s.Create(context.Background(), meshRes, store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		name := "resource-1"
@@ -45,11 +45,11 @@ func ExecuteOwnerTests(
 		err = s.Create(context.Background(), &trRes,
 			store.CreateByKey(name, mesh),
 			store.CreatedAt(time.Now()),
-			store.CreateWithOwner(&meshRes))
+			store.CreateWithOwner(meshRes))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = s.Delete(context.Background(), &meshRes, store.DeleteByKey(mesh, model.NoMesh))
+		err = s.Delete(context.Background(), meshRes, store.DeleteByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -60,8 +60,8 @@ func ExecuteOwnerTests(
 
 	It("should delete several resources when their owner is deleted", func() {
 		// setup
-		meshRes := core_mesh.MeshResource{}
-		err := s.Create(context.Background(), &meshRes, store.CreateByKey(mesh, model.NoMesh))
+		meshRes := core_mesh.NewMeshResource()
+		err := s.Create(context.Background(), meshRes, store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		for i := 0; i < 10; i++ {
@@ -73,7 +73,7 @@ func ExecuteOwnerTests(
 			err = s.Create(context.Background(), &tr,
 				store.CreateByKey(fmt.Sprintf("resource-%d", i), mesh),
 				store.CreatedAt(time.Now()),
-				store.CreateWithOwner(&meshRes))
+				store.CreateWithOwner(meshRes))
 			Expect(err).ToNot(HaveOccurred())
 		}
 		actual := sample_model.TrafficRouteResourceList{}
@@ -82,7 +82,7 @@ func ExecuteOwnerTests(
 		Expect(actual.Items).To(HaveLen(10))
 
 		// when
-		err = s.Delete(context.Background(), &meshRes, store.DeleteByKey(mesh, model.NoMesh))
+		err = s.Delete(context.Background(), meshRes, store.DeleteByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -94,11 +94,11 @@ func ExecuteOwnerTests(
 
 	It("should delete owners chain", func() {
 		// setup
-		meshRes := core_mesh.MeshResource{}
-		err := s.Create(context.Background(), &meshRes, store.CreateByKey(mesh, model.NoMesh))
+		meshRes := core_mesh.NewMeshResource()
+		err := s.Create(context.Background(), meshRes, store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		var prev model.Resource = &meshRes
+		var prev model.Resource = meshRes
 		for i := 0; i < 10; i++ {
 			curr := &sample_model.TrafficRouteResource{
 				Spec: &sample_proto.TrafficRoute{
@@ -119,7 +119,7 @@ func ExecuteOwnerTests(
 		Expect(actual.Items).To(HaveLen(10))
 
 		// when
-		err = s.Delete(context.Background(), &meshRes, store.DeleteByKey(mesh, model.NoMesh))
+		err = s.Delete(context.Background(), meshRes, store.DeleteByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

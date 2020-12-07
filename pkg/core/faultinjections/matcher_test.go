@@ -73,7 +73,7 @@ var _ = Describe("Match", func() {
 			manager := core_manager.NewResourceManager(memory.NewStore())
 			matcher := FaultInjectionMatcher{ResourceManager: manager}
 
-			mesh := &mesh.MeshResource{}
+			mesh := mesh.NewMeshResource()
 			err := manager.Create(context.Background(), mesh, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 

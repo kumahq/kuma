@@ -31,7 +31,7 @@ var _ = Describe("Defaulter", func() {
 
 	BeforeEach(func() {
 		factory = func() core_model.Resource {
-			return &sample_core.TrafficRouteResource{}
+			return sample_core.NewTrafficRouteResource()
 		}
 	})
 

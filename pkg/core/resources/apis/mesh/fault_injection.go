@@ -20,6 +20,12 @@ type FaultInjectionResource struct {
 	Spec *mesh_proto.FaultInjection
 }
 
+func NewFaultInjectionResource() *FaultInjectionResource {
+	return &FaultInjectionResource{
+		Spec: &mesh_proto.FaultInjection{},
+	}
+}
+
 func (f *FaultInjectionResource) GetType() model.ResourceType {
 	return FaultInjectionType
 }
@@ -70,7 +76,7 @@ func (l *FaultInjectionResourceList) GetItemType() model.ResourceType {
 }
 
 func (l *FaultInjectionResourceList) NewItem() model.Resource {
-	return &FaultInjectionResource{}
+	return NewFaultInjectionResource()
 }
 
 func (l *FaultInjectionResourceList) AddItem(r model.Resource) error {
@@ -87,7 +93,7 @@ func (l *FaultInjectionResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&FaultInjectionResource{})
+	registry.RegisterType(NewFaultInjectionResource())
 	registry.RegistryListType(&FaultInjectionResourceList{})
 }
 

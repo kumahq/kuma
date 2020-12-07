@@ -76,7 +76,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 	BeforeEach(func() {
 		mesh := "mesh-0"
-		err := s.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey(mesh, core_model.NoMesh))
+		err := s.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = s.Create(context.Background(), &core_mesh.DataplaneResource{
@@ -121,7 +121,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		Expect(countingManager.listQueries).To(Equal(2))
 
 		By("updating Dataplane in store and waiting until cache invalidation")
-		dp := &core_mesh.DataplaneResource{}
+		dp := core_mesh.NewDataplaneResource()
 		err = s.Get(context.Background(), dp, core_store.GetByKey("dp2", "mesh-0"))
 		Expect(err).ToNot(HaveOccurred())
 		dp.Spec.Networking.Address = "1.1.1.1"

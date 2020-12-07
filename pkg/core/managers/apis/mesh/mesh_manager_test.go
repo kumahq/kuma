@@ -95,22 +95,22 @@ var _ = Describe("Mesh Manager", func() {
 			}
 
 			// when
-			mesh := &core_mesh.MeshResource{}
+			mesh := core_mesh.NewMeshResource()
 			err := resManager.Create(context.Background(), mesh, store.CreateBy(resKey))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// and default TrafficPermission for the mesh exists
-			err = resStore.Get(context.Background(), &core_mesh.TrafficPermissionResource{}, store.GetByKey("allow-all-mesh-1", meshName))
+			err = resStore.Get(context.Background(), core_mesh.NewTrafficPermissionResource(), store.GetByKey("allow-all-mesh-1", meshName))
 			Expect(err).ToNot(HaveOccurred())
 
 			// and default TrafficRoute for the mesh exists
-			err = resStore.Get(context.Background(), &core_mesh.TrafficRouteResource{}, store.GetByKey("route-all-mesh-1", meshName))
+			err = resStore.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey("route-all-mesh-1", meshName))
 			Expect(err).ToNot(HaveOccurred())
 
 			// and Signing Key for the mesh exists
-			err = secretManager.Get(context.Background(), &system.SecretResource{}, store.GetBy(issuer.SigningKeyResourceKey(meshName)))
+			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(meshName)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -125,7 +125,7 @@ var _ = Describe("Mesh Manager", func() {
 				func(given testCase) {
 					// given
 					key := model.ResourceKey{Name: "demo"}
-					mesh := core_mesh.MeshResource{}
+					mesh := core_mesh.NewMeshResource()
 
 					// when
 					err := util_proto.FromYAML([]byte(given.input), mesh.Spec)
@@ -133,7 +133,7 @@ var _ = Describe("Mesh Manager", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					err = resManager.Create(context.Background(), &mesh, store.CreateBy(key))
+					err = resManager.Create(context.Background(), mesh, store.CreateBy(key))
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
@@ -145,10 +145,10 @@ var _ = Describe("Mesh Manager", func() {
 
 					By("fetching a fresh Mesh object")
 
-					new := core_mesh.MeshResource{}
+					new := core_mesh.NewMeshResource()
 
 					// when
-					err = resManager.Get(context.Background(), &new, store.GetBy(key))
+					err = resManager.Get(context.Background(), new, store.GetBy(key))
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
@@ -215,13 +215,13 @@ var _ = Describe("Mesh Manager", func() {
 	Describe("Delete()", func() {
 		It("should delete secrets within one mesh", func() {
 			// given two meshes
-			err := resManager.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("demo-1", model.NoMesh))
+			err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("demo-1", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
-			err = resManager.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("demo-2", model.NoMesh))
+			err = resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("demo-2", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when demo-1 is deleted
-			err = resManager.Delete(context.Background(), &core_mesh.MeshResource{}, store.DeleteByKey("demo-1", model.NoMesh))
+			err = resManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("demo-1", model.NoMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -337,7 +337,7 @@ var _ = Describe("Mesh Manager", func() {
 				func(given testCase) {
 					// given
 					key := model.ResourceKey{Name: "demo"}
-					mesh := core_mesh.MeshResource{}
+					mesh := core_mesh.NewMeshResource()
 
 					// when
 					err := util_proto.FromYAML([]byte(given.initial), mesh.Spec)
@@ -346,7 +346,7 @@ var _ = Describe("Mesh Manager", func() {
 
 					By("creating a new Mesh")
 					// when
-					err = resManager.Create(context.Background(), &mesh, store.CreateBy(key))
+					err = resManager.Create(context.Background(), mesh, store.CreateBy(key))
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
@@ -359,7 +359,7 @@ var _ = Describe("Mesh Manager", func() {
 
 					By("updating the Mesh with new Prometheus settings")
 					// when
-					err = resManager.Update(context.Background(), &mesh)
+					err = resManager.Update(context.Background(), mesh)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
@@ -371,10 +371,10 @@ var _ = Describe("Mesh Manager", func() {
 
 					By("fetching a fresh Mesh object")
 
-					new := core_mesh.MeshResource{}
+					new := core_mesh.NewMeshResource()
 
 					// when
-					err = resManager.Get(context.Background(), &new, store.GetBy(key))
+					err = resManager.Get(context.Background(), new, store.GetBy(key))
 					// then
 					Expect(err).ToNot(HaveOccurred())
 

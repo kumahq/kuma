@@ -19,6 +19,12 @@ type TrafficTraceResource struct {
 	Spec *mesh_proto.TrafficTrace
 }
 
+func NewTrafficTraceResource() *TrafficTraceResource {
+	return &TrafficTraceResource{
+		Spec: &mesh_proto.TrafficTrace{},
+	}
+}
+
 func (t *TrafficTraceResource) GetType() model.ResourceType {
 	return TrafficTraceType
 }
@@ -62,7 +68,7 @@ func (l *TrafficTraceResourceList) GetItemType() model.ResourceType {
 	return TrafficTraceType
 }
 func (l *TrafficTraceResourceList) NewItem() model.Resource {
-	return &TrafficTraceResource{}
+	return NewTrafficTraceResource()
 }
 func (l *TrafficTraceResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*TrafficTraceResource); ok {
@@ -77,7 +83,7 @@ func (l *TrafficTraceResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&TrafficTraceResource{})
+	registry.RegisterType(NewTrafficTraceResource())
 	registry.RegistryListType(&TrafficTraceResourceList{})
 }
 

@@ -24,7 +24,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			// given
 			ctx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{},
+					Resource: mesh_core.NewMeshResource(),
 				},
 			}
 			metadata := &core_xds.DataplaneMetadata{}
@@ -228,7 +228,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			// given
 			ctx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{},
+					Resource: mesh_core.NewMeshResource(),
 				},
 			}
 			metadata := &core_xds.DataplaneMetadata{}

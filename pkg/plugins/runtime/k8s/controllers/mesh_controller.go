@@ -45,7 +45,7 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 		if kube_apierrs.IsNotFound(err) {
 			// Force delete associated resources. It will return an error ErrorResourceNotFound because Mesh was already deleted but we still need to cleanup resources
 			// Remove this part after https://github.com/kumahq/kuma/issues/1137 is implemented.
-			err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(req.Name, req.Name))
+			err := r.ResourceManager.Delete(ctx, mesh_core.NewMeshResource(), store.DeleteByKey(req.Name, req.Name))
 			if err == nil || store.IsResourceNotFound(err) {
 				return kube_ctrl.Result{}, nil
 			}
@@ -55,7 +55,7 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 		return kube_ctrl.Result{}, err
 	}
 
-	meshResource := &mesh_core.MeshResource{}
+	meshResource := mesh_core.NewMeshResource()
 	if err := r.Converter.ToCoreResource(mesh, meshResource); err != nil {
 		log.Error(err, "unable to convert Mesh k8s object into core model")
 		return kube_ctrl.Result{}, err

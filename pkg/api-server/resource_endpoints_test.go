@@ -58,7 +58,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 	BeforeEach(func() {
 		// create default mesh
-		err := resourceStore.Create(context.Background(), &mesh_res.MeshResource{}, store.CreateByKey(mesh, model.NoMesh))
+		err := resourceStore.Create(context.Background(), mesh_res.NewMeshResource(), store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -563,7 +563,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 		It("should return 400 when mesh does not exist", func() {
 			// setup
-			err := resourceStore.Delete(context.Background(), &mesh_res.MeshResource{}, store.DeleteByKey(model.DefaultMesh, model.NoMesh))
+			err := resourceStore.Delete(context.Background(), mesh_res.NewMeshResource(), store.DeleteByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// given

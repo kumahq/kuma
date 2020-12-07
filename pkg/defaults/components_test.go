@@ -40,7 +40,7 @@ var _ = Describe("Defaults Component", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), &mesh_core.MeshResource{}, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
+			err = manager.Get(context.Background(), mesh_core.NewMeshResource(), core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -66,7 +66,7 @@ var _ = Describe("Defaults Component", func() {
 			err = component.Start(nil)
 
 			// then
-			mesh = &mesh_core.MeshResource{}
+			mesh = mesh_core.NewMeshResource()
 			Expect(err).ToNot(HaveOccurred())
 			err = manager.Get(context.Background(), mesh, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
@@ -94,7 +94,7 @@ var _ = Describe("Defaults Component", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), &mesh_core.MeshResource{}, core_store.GetByKey("default", "default"))
+			err = manager.Get(context.Background(), mesh_core.NewMeshResource(), core_store.GetByKey("default", "default"))
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 		})
 	})

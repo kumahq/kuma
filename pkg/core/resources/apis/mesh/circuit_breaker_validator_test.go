@@ -15,7 +15,7 @@ var _ = Describe("CircuitBreaker", func() {
 		DescribeTable("should pass validation",
 			func(circuitBreakerYAML string) {
 				// setup
-				circuitBreaker := core_mesh.CircuitBreakerResource{}
+				circuitBreaker := core_mesh.NewCircuitBreakerResource()
 
 				// when
 				err := util_proto.FromYAML([]byte(circuitBreakerYAML), circuitBreaker.Spec)
@@ -76,7 +76,7 @@ var _ = Describe("CircuitBreaker", func() {
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
-				circuitBreaker := core_mesh.CircuitBreakerResource{}
+				circuitBreaker := core_mesh.NewCircuitBreakerResource()
 
 				// when
 				err := util_proto.FromYAML([]byte(given.circuitBreaker), circuitBreaker.Spec)

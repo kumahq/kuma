@@ -18,6 +18,12 @@ type DataplaneOverviewResource struct {
 	Spec *mesh_proto.DataplaneOverview
 }
 
+func NewDataplaneOverviewResource() *DataplaneOverviewResource {
+	return &DataplaneOverviewResource{
+		Spec: &mesh_proto.DataplaneOverview{},
+	}
+}
+
 func (t *DataplaneOverviewResource) GetType() model.ResourceType {
 	return DataplaneOverviewType
 }
@@ -71,7 +77,7 @@ func (l *DataplaneOverviewResourceList) GetItemType() model.ResourceType {
 	return DataplaneOverviewType
 }
 func (l *DataplaneOverviewResourceList) NewItem() model.Resource {
-	return &DataplaneOverviewResource{}
+	return NewDataplaneOverviewResource()
 }
 func (l *DataplaneOverviewResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*DataplaneOverviewResource); ok {

@@ -150,12 +150,12 @@ func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh strin
 }
 
 func (b *builtinCaManager) getCa(ctx context.Context, mesh string, backendName string) (core_ca.KeyPair, error) {
-	certSecret := &core_system.SecretResource{}
+	certSecret := core_system.NewSecretResource()
 	if err := b.secretManager.Get(ctx, certSecret, core_store.GetBy(certSecretResKey(mesh, backendName))); err != nil {
 		return core_ca.KeyPair{}, err
 	}
 
-	keySecret := &core_system.SecretResource{}
+	keySecret := core_system.NewSecretResource()
 	if err := b.secretManager.Get(ctx, keySecret, core_store.GetBy(keySecretResKey(mesh, backendName))); err != nil {
 		return core_ca.KeyPair{}, err
 	}

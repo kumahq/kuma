@@ -19,6 +19,12 @@ type ZoneResource struct {
 	Spec *system_proto.Zone
 }
 
+func NewZoneResource() *ZoneResource {
+	return &ZoneResource{
+		Spec: &system_proto.Zone{},
+	}
+}
+
 func (t *ZoneResource) GetType() model.ResourceType {
 	return ZoneType
 }
@@ -62,7 +68,7 @@ func (l *ZoneResourceList) GetItemType() model.ResourceType {
 	return ZoneType
 }
 func (l *ZoneResourceList) NewItem() model.Resource {
-	return &ZoneResource{}
+	return NewZoneResource()
 }
 func (l *ZoneResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ZoneResource); ok {
@@ -77,6 +83,6 @@ func (l *ZoneResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&ZoneResource{})
+	registry.RegisterType(NewZoneResource())
 	registry.RegistryListType(&ZoneResourceList{})
 }

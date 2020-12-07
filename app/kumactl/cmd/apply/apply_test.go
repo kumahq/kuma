@@ -49,8 +49,8 @@ var _ = Describe("kumactl apply", func() {
 	})
 
 	ValidatePersistedResource := func() {
-		resource := mesh.DataplaneResource{}
-		err := store.Get(context.Background(), &resource, core_store.GetByKey("sample", "default"))
+		resource := mesh.NewDataplaneResource()
+		err := store.Get(context.Background(), resource, core_store.GetByKey("sample", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -181,9 +181,9 @@ var _ = Describe("kumactl apply", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		resource := mesh.MeshResource{}
+		resource := mesh.NewMeshResource()
 		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
-		err = store.Get(context.Background(), &resource, core_store.GetByKey("sample", ""))
+		err = store.Get(context.Background(), resource, core_store.GetByKey("sample", ""))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -268,9 +268,9 @@ var _ = Describe("kumactl apply", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		resource := mesh.MeshResource{}
+		resource := mesh.NewMeshResource()
 		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
-		err = store.Get(context.Background(), &resource, core_store.GetByKey("meshinit", ""))
+		err = store.Get(context.Background(), resource, core_store.GetByKey("meshinit", ""))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -312,8 +312,8 @@ var _ = Describe("kumactl apply", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		dataplaneResource := mesh.DataplaneResource{}
-		err = store.Get(context.Background(), &dataplaneResource, core_store.GetByKey("sample1", "default"))
+		dataplaneResource := mesh.NewDataplaneResource()
+		err = store.Get(context.Background(), dataplaneResource, core_store.GetByKey("sample1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(dataplaneResource.Meta.GetName()).To(Equal("sample1"))
@@ -430,8 +430,8 @@ type: Dataplane
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		resource := mesh.DataplaneResource{}
-		err = store.Get(context.Background(), &resource, core_store.GetByKey("sample", "default"))
+		resource := mesh.NewDataplaneResource()
+		err = store.Get(context.Background(), resource, core_store.GetByKey("sample", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

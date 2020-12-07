@@ -32,7 +32,7 @@ var _ = Describe("Match", func() {
 			manager := core_manager.NewResourceManager(memory.NewStore())
 			matcher := permissions.TrafficPermissionsMatcher{ResourceManager: manager}
 
-			err := manager.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
+			err := manager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, p := range given.policies {

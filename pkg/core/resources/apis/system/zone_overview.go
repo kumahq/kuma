@@ -18,6 +18,12 @@ type ZoneOverviewResource struct {
 	Spec *system_proto.ZoneOverview
 }
 
+func NewZoneOverviewResource() *ZoneOverviewResource {
+	return &ZoneOverviewResource{
+		Spec: &system_proto.ZoneOverview{},
+	}
+}
+
 func (t *ZoneOverviewResource) GetType() model.ResourceType {
 	return ZoneOverviewType
 }
@@ -71,7 +77,7 @@ func (l *ZoneOverviewResourceList) GetItemType() model.ResourceType {
 	return ZoneOverviewType
 }
 func (l *ZoneOverviewResourceList) NewItem() model.Resource {
-	return &ZoneOverviewResource{}
+	return NewZoneOverviewResource()
 }
 func (l *ZoneOverviewResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ZoneOverviewResource); ok {

@@ -19,6 +19,12 @@ type ZoneInsightResource struct {
 	Spec *system_proto.ZoneInsight
 }
 
+func NewZoneInsightResource() *ZoneInsightResource {
+	return &ZoneInsightResource{
+		Spec: &system_proto.ZoneInsight{},
+	}
+}
+
 func (t *ZoneInsightResource) GetType() model.ResourceType {
 	return ZoneInsightType
 }
@@ -73,7 +79,7 @@ func (l *ZoneInsightResourceList) GetItemType() model.ResourceType {
 }
 
 func (l *ZoneInsightResourceList) NewItem() model.Resource {
-	return &ZoneInsightResource{}
+	return NewZoneInsightResource()
 }
 
 func (l *ZoneInsightResourceList) AddItem(r model.Resource) error {
@@ -90,6 +96,6 @@ func (l *ZoneInsightResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&ZoneInsightResource{})
+	registry.RegisterType(NewZoneInsightResource())
 	registry.RegistryListType(&ZoneInsightResourceList{})
 }

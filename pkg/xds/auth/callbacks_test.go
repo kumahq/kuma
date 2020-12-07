@@ -72,7 +72,7 @@ var _ = Describe("Auth Callbacks", func() {
 		testAuth = &testAuthenticator{}
 		callbacks = auth.NewCallbacks(resManager, testAuth)
 
-		err := resManager.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 		err = resManager.Create(context.Background(), dpRes, core_store.CreateByKey("web-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
@@ -112,7 +112,7 @@ var _ = Describe("Auth Callbacks", func() {
 		// given mesh without web-01 dataplane
 		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "pass"}))
 		streamID := int64(1)
-		err := resManager.Delete(context.Background(), &core_mesh.DataplaneResource{}, core_store.DeleteByKey("web-01", "default"))
+		err := resManager.Delete(context.Background(), core_mesh.NewDataplaneResource(), core_store.DeleteByKey("web-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

@@ -262,13 +262,13 @@ func ExecuteStoreTests(
 			res := createResource(name)
 
 			// when trying to retrieve resource with proper version
-			err := s.Get(context.Background(), &sample_model.TrafficRouteResource{}, store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
+			err := s.Get(context.Background(), sample_model.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
 
 			// then resource is found
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to retrieve resource with different version
-			err = s.Get(context.Background(), &sample_model.TrafficRouteResource{}, store.GetByKey(name, mesh), store.GetByVersion("9999999"))
+			err = s.Get(context.Background(), sample_model.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion("9999999"))
 
 			// then resource precondition failed error occurred
 			Expect(store.IsResourcePreconditionFailed(err)).To(BeTrue())

@@ -247,7 +247,7 @@ func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out *secret_m
 func (c *SimpleConverter) ToCoreList(in *kube_core.SecretList, out *secret_model.SecretResourceList) error {
 	out.Items = make([]*secret_model.SecretResource, len(in.Items))
 	for i, secret := range in.Items {
-		r := &secret_model.SecretResource{}
+		r := secret_model.NewSecretResource()
 		if err := c.ToCoreResource(&secret, r); err != nil {
 			return err
 		}

@@ -74,6 +74,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
+						Spec: &mesh_proto.Mesh{},
 					},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{

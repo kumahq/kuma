@@ -50,7 +50,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

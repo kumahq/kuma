@@ -240,12 +240,12 @@ var _ = Describe("SDS Server", func() {
 
 		It("should return pair when CA is changed", func(done Done) {
 			// when
-			meshRes := mesh_core.MeshResource{}
-			Expect(resManager.Get(context.Background(), &meshRes, core_store.GetByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
+			meshRes := mesh_core.NewMeshResource()
+			Expect(resManager.Get(context.Background(), meshRes, core_store.GetByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "" // we need to first disable mTLS
-			Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
+			Expect(resManager.Update(context.Background(), meshRes)).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "ca-2"
-			Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
+			Expect(resManager.Update(context.Background(), meshRes)).To(Succeed())
 
 			// and when send a request with version previously fetched
 			req := newRequestForSecrets()

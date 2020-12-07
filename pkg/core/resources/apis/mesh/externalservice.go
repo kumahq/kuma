@@ -19,6 +19,12 @@ type ExternalServiceResource struct {
 	Spec *mesh_proto.ExternalService
 }
 
+func NewExternalServiceResource() *ExternalServiceResource {
+	return &ExternalServiceResource{
+		Spec: &mesh_proto.ExternalService{},
+	}
+}
+
 func (t *ExternalServiceResource) GetType() model.ResourceType {
 	return ExternalServiceType
 }
@@ -64,7 +70,7 @@ func (l *ExternalServiceResourceList) GetItemType() model.ResourceType {
 	return ExternalServiceType
 }
 func (l *ExternalServiceResourceList) NewItem() model.Resource {
-	return &ExternalServiceResource{}
+	return NewExternalServiceResource()
 }
 func (l *ExternalServiceResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ExternalServiceResource); ok {
@@ -79,6 +85,6 @@ func (l *ExternalServiceResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&ExternalServiceResource{})
+	registry.RegisterType(NewExternalServiceResource())
 	registry.RegistryListType(&ExternalServiceResourceList{})
 }

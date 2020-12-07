@@ -55,7 +55,7 @@ var _ = Describe("Components", func() {
 
 			// and example mesh
 			opts := core_store.CreateByKey("demo", core_model.NoMesh)
-			err = runtime.ResourceManager().Create(context.Background(), &mesh_core.MeshResource{}, opts)
+			err = runtime.ResourceManager().Create(context.Background(), mesh_core.NewMeshResource(), opts)
 			Expect(err).ToNot(HaveOccurred())
 
 			// setup

@@ -56,7 +56,7 @@ var _ = Describe("Dataplane Collector", func() {
 
 	BeforeEach(func() {
 		rm = manager.NewResourceManager(memory.NewStore())
-		err := rm.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

@@ -15,7 +15,7 @@ var _ = Describe("Dataplane", func() {
 	DescribeTable("should pass validation",
 		func(dpYAML string) {
 			// given
-			dataplane := &core_mesh.DataplaneResource{}
+			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
 			err := util_proto.FromYAML([]byte(dpYAML), dataplane.Spec)
@@ -207,7 +207,7 @@ var _ = Describe("Dataplane", func() {
 	DescribeTable("should validate all fields and return as much individual errors as possible",
 		func(given testCase) {
 			// setup
-			dataplane := core_mesh.DataplaneResource{}
+			dataplane := core_mesh.NewDataplaneResource()
 
 			// when
 			err := util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)

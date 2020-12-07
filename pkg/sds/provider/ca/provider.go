@@ -32,7 +32,7 @@ func (s *meshCaProvider) RequiresIdentity() bool {
 func (s *meshCaProvider) Get(ctx context.Context, resource string, requestor sds_provider.Identity) (sds_provider.Secret, error) {
 	meshName := requestor.Mesh
 
-	meshRes := &core_mesh.MeshResource{}
+	meshRes := core_mesh.NewMeshResource()
 	if err := s.resourceManager.Get(ctx, meshRes, core_store.GetByKey(meshName, model.NoMesh)); err != nil {
 		return nil, errors.Wrapf(err, "failed to find a Mesh %q", meshName)
 	}

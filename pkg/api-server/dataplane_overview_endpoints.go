@@ -59,8 +59,8 @@ func (r *dataplaneOverviewEndpoints) inspectDataplane(request *restful.Request, 
 }
 
 func (r *dataplaneOverviewEndpoints) fetchOverview(ctx context.Context, name string, meshName string) (*mesh.DataplaneOverviewResource, error) {
-	dataplane := mesh.DataplaneResource{}
-	if err := r.resManager.Get(ctx, &dataplane, store.GetByKey(name, meshName)); err != nil {
+	dataplane := mesh.NewDataplaneResource()
+	if err := r.resManager.Get(ctx, dataplane, store.GetByKey(name, meshName)); err != nil {
 		return nil, err
 	}
 

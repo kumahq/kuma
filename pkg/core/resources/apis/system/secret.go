@@ -19,6 +19,12 @@ type SecretResource struct {
 	Spec *system_proto.Secret
 }
 
+func NewSecretResource() *SecretResource {
+	return &SecretResource{
+		Spec: &system_proto.Secret{},
+	}
+}
+
 func (t *SecretResource) GetType() model.ResourceType {
 	return SecretType
 }
@@ -65,7 +71,7 @@ func (l *SecretResourceList) GetItemType() model.ResourceType {
 	return SecretType
 }
 func (l *SecretResourceList) NewItem() model.Resource {
-	return &SecretResource{}
+	return NewSecretResource()
 }
 func (l *SecretResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*SecretResource); ok {
@@ -80,6 +86,6 @@ func (l *SecretResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&SecretResource{})
+	registry.RegisterType(NewSecretResource())
 	registry.RegistryListType(&SecretResourceList{})
 }

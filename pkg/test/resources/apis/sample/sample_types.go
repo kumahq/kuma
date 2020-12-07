@@ -20,6 +20,12 @@ type TrafficRouteResource struct {
 	Spec *proto.TrafficRoute
 }
 
+func NewTrafficRouteResource() *TrafficRouteResource {
+	return &TrafficRouteResource{
+		Spec: &proto.TrafficRoute{},
+	}
+}
+
 func (t *TrafficRouteResource) GetType() model.ResourceType {
 	return TrafficRouteType
 }
@@ -73,7 +79,7 @@ func (l *TrafficRouteResourceList) GetItemType() model.ResourceType {
 }
 
 func (l *TrafficRouteResourceList) NewItem() model.Resource {
-	return &TrafficRouteResource{}
+	return NewTrafficRouteResource()
 }
 func (l *TrafficRouteResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*TrafficRouteResource); ok {
@@ -88,6 +94,6 @@ func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&TrafficRouteResource{})
+	registry.RegisterType(NewTrafficRouteResource())
 	registry.RegistryListType(&TrafficRouteResourceList{})
 }

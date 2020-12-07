@@ -19,6 +19,12 @@ type MeshResource struct {
 	Spec *mesh_proto.Mesh
 }
 
+func NewMeshResource() *MeshResource {
+	return &MeshResource{
+		Spec: &mesh_proto.Mesh{},
+	}
+}
+
 func (t *MeshResource) GetType() model.ResourceType {
 	return MeshType
 }
@@ -62,7 +68,7 @@ func (l *MeshResourceList) GetItemType() model.ResourceType {
 	return MeshType
 }
 func (l *MeshResourceList) NewItem() model.Resource {
-	return &MeshResource{}
+	return NewMeshResource()
 }
 func (l *MeshResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*MeshResource); ok {
@@ -77,6 +83,6 @@ func (l *MeshResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&MeshResource{})
+	registry.RegisterType(NewMeshResource())
 	registry.RegistryListType(&MeshResourceList{})
 }

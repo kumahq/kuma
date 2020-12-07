@@ -140,7 +140,7 @@ var _ = Describe("KubernetesStore", func() {
     `, ns)).(*kube_core.ConfigMap)
 
 			// given
-			config := &system_model.ConfigResource{}
+			config := system_model.NewConfigResource()
 
 			// when
 			err := s.Get(context.Background(), config, core_store.GetByKey("kuma-internal-config", ""))
@@ -169,7 +169,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&kube_core.ConfigMap{}, ns, "kuma-internal-config")
 
 			// when
-			err := s.Get(context.Background(), &system_model.ConfigResource{}, core_store.GetByKey("kuma-internal-config", ""))
+			err := s.Get(context.Background(), system_model.NewConfigResource(), core_store.GetByKey("kuma-internal-config", ""))
 
 			// then
 			Expect(err).To(HaveOccurred())

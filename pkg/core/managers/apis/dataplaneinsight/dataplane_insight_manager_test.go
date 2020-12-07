@@ -26,7 +26,7 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		}
 		manager := dataplaneinsight.NewDataplaneInsightManager(s, cfg)
 
-		err := s.Create(context.Background(), &mesh_core.DataplaneResource{}, store.CreateByKey("di1", "default"))
+		err := s.Create(context.Background(), mesh_core.NewDataplaneResource(), store.CreateByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		input := mesh_core.DataplaneInsightResource{}
@@ -59,7 +59,7 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		}
 		manager := dataplaneinsight.NewDataplaneInsightManager(s, cfg)
 
-		err := s.Create(context.Background(), &mesh_core.DataplaneResource{}, store.CreateByKey("di1", "default"))
+		err := s.Create(context.Background(), mesh_core.NewDataplaneResource(), store.CreateByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		input := mesh_core.DataplaneInsightResource{}

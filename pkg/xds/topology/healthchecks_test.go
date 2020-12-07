@@ -40,11 +40,13 @@ var _ = Describe("HealthCheck", func() {
 				Meta: &test_model.ResourceMeta{
 					Name: "demo",
 				},
+				Spec: &mesh_proto.Mesh{},
 			}
 			otherMesh := &mesh_core.MeshResource{ // mesh that is irrelevant to this test case
 				Meta: &test_model.ResourceMeta{
 					Name: "default",
 				},
+				Spec: &mesh_proto.Mesh{},
 			}
 			backend := &mesh_core.DataplaneResource{ // dataplane that is a source of traffic
 				Meta: &test_model.ResourceMeta{
@@ -199,7 +201,7 @@ var _ = Describe("HealthCheck", func() {
 				Expect(healthChecks).Should(Equal(expectedHealthChecks))
 			},
 			Entry("Dataplane without outbound interfaces (and therefore no destinations)", testCase{
-				dataplane:    &mesh_core.DataplaneResource{},
+				dataplane:    mesh_core.NewDataplaneResource(),
 				destinations: nil,
 				healthChecks: nil,
 				expected:     nil,

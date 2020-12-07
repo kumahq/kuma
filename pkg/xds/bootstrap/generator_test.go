@@ -57,8 +57,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		}
 
 		// when
-		meshRes := mesh.MeshResource{}
-		err := resManager.Create(context.Background(), &meshRes, store.CreateByKey("mesh", model.NoMesh))
+		err := resManager.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh", model.NoMesh))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 

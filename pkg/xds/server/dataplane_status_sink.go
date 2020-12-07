@@ -103,7 +103,7 @@ type dataplaneInsightStore struct {
 }
 
 func (s *dataplaneInsightStore) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
-	return manager.Upsert(s.resManager, dataplaneId, &mesh_core.DataplaneInsightResource{}, func(resource core_model.Resource) {
+	return manager.Upsert(s.resManager, dataplaneId, mesh_core.NewDataplaneInsightResource(), func(resource core_model.Resource) {
 		insight := resource.(*mesh_core.DataplaneInsightResource)
 		insight.Spec.UpdateSubscription(subscription)
 	})

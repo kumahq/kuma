@@ -40,7 +40,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		},
 		Entry("HealthCheck with neither active nor passive checks", testCase{
 			clusterName: "testCluster",
-			healthCheck: &mesh_core.HealthCheckResource{},
+			healthCheck: mesh_core.NewHealthCheckResource(),
 			expected: `
             connectTimeout: 5s
             edsClusterConfig:

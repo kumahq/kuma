@@ -9,7 +9,7 @@ var ExternalServiceWsDefinition = ResourceWsDefinition{
 	Name: "ExternalService",
 	Path: "external-services",
 	ResourceFactory: func() model.Resource {
-		return &mesh.ExternalServiceResource{}
+		return mesh.NewExternalServiceResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.ExternalServiceResourceList{}

@@ -50,10 +50,10 @@ var _ = Describe("Service Insight Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh-1", core_model.NoMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey("mesh-1", core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh-2", core_model.NoMesh), store.CreatedAt(t1))
+		err = resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey("mesh-2", core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

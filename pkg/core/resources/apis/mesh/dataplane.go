@@ -19,6 +19,12 @@ type DataplaneResource struct {
 	Spec *mesh_proto.Dataplane
 }
 
+func NewDataplaneResource() *DataplaneResource {
+	return &DataplaneResource{
+		Spec: &mesh_proto.Dataplane{},
+	}
+}
+
 func (t *DataplaneResource) GetType() model.ResourceType {
 	return DataplaneType
 }
@@ -64,7 +70,7 @@ func (l *DataplaneResourceList) GetItemType() model.ResourceType {
 	return DataplaneType
 }
 func (l *DataplaneResourceList) NewItem() model.Resource {
-	return &DataplaneResource{}
+	return NewDataplaneResource()
 }
 func (l *DataplaneResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*DataplaneResource); ok {
@@ -79,6 +85,6 @@ func (l *DataplaneResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&DataplaneResource{})
+	registry.RegisterType(NewDataplaneResource())
 	registry.RegistryListType(&DataplaneResourceList{})
 }

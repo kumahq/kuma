@@ -47,7 +47,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			// given
 
 			// dataplane
-			dataplane := &core_mesh.DataplaneResource{}
+			dataplane := core_mesh.NewDataplaneResource()
 			bytes, err := ioutil.ReadFile(filepath.Join("testdata", "direct-access", given.dataplaneFile))
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, dataplane)
@@ -58,13 +58,13 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			dpYamls := util_yaml.SplitYAML(string(dpsBytes))
 			for _, dpYAML := range dpYamls {
-				dataplane := &core_mesh.DataplaneResource{}
+				dataplane := core_mesh.NewDataplaneResource()
 				parseResource([]byte(dpYAML), dataplane)
 				dataplanes = append(dataplanes, dataplane)
 			}
 
 			// mesh
-			mesh := &core_mesh.MeshResource{}
+			mesh := core_mesh.NewMeshResource()
 			bytes, err = ioutil.ReadFile(filepath.Join("testdata", "direct-access", given.meshFile))
 			Expect(err).ToNot(HaveOccurred())
 			parseResource(bytes, mesh)

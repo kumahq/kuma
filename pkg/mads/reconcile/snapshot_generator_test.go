@@ -80,6 +80,7 @@ var _ = Describe("snapshotGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
+						Spec: &mesh_proto.Mesh{},
 					},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
@@ -110,6 +111,7 @@ var _ = Describe("snapshotGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
+						Spec: &mesh_proto.Mesh{},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
@@ -160,6 +162,7 @@ var _ = Describe("snapshotGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
+						Spec: &mesh_proto.Mesh{},
 					},
 					{
 						Meta: &test_model.ResourceMeta{

@@ -42,7 +42,7 @@ var _ = Describe("Ingress Dataplane", func() {
 			dataplanes := []*core_mesh.DataplaneResource{}
 
 			for i, dp := range given.dataplanes {
-				dpRes := &core_mesh.DataplaneResource{}
+				dpRes := core_mesh.NewDataplaneResource()
 				err := util_proto.FromYAML([]byte(dp), dpRes.Spec)
 				Expect(err).ToNot(HaveOccurred())
 				dpRes.SetMeta(&model2.ResourceMeta{Name: fmt.Sprintf("dp-%d", i), Mesh: "default"})

@@ -85,12 +85,12 @@ var _ = Describe("Dataplane matcher", func() {
 				}
 			},
 			Entry("there are no policies", testCase{
-				proxy:    &model.Proxy{Dataplane: &mesh_core.DataplaneResource{}},
+				proxy:    &model.Proxy{Dataplane: mesh_core.NewDataplaneResource()},
 				policies: nil,
 				expected: nil,
 			}),
 			Entry("policies have no selectors (latest should be selected)", testCase{
-				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{}},
+				proxy: &model.Proxy{Dataplane: mesh_core.NewDataplaneResource()},
 				policies: []policy.DataplanePolicy{
 					&mesh_core.ProxyTemplateResource{
 						Meta: &test_model.ResourceMeta{
@@ -116,7 +116,7 @@ var _ = Describe("Dataplane matcher", func() {
 				},
 			}),
 			Entry("policies have empty selectors (latest should be selected)", testCase{
-				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{}},
+				proxy: &model.Proxy{Dataplane: mesh_core.NewDataplaneResource()},
 				policies: []policy.DataplanePolicy{
 					&mesh_core.ProxyTemplateResource{
 						Meta: &test_model.ResourceMeta{
@@ -357,7 +357,7 @@ var _ = Describe("Dataplane matcher", func() {
 				},
 			}),
 			Entry("none of policies have matching selectors", testCase{
-				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{}},
+				proxy: &model.Proxy{Dataplane: mesh_core.NewDataplaneResource()},
 				policies: []policy.DataplanePolicy{
 					&mesh_core.ProxyTemplateResource{
 						Meta: &test_model.ResourceMeta{

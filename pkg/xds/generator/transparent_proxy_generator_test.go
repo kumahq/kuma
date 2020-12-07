@@ -32,6 +32,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
+						Spec: &mesh_proto.Mesh{},
 					},
 				},
 			}

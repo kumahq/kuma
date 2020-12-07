@@ -103,8 +103,8 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			resource := mesh.MeshResource{}
-			err := store.Get(context.Background(), &resource, core_store.GetByKey(meshName, core_model.NoMesh))
+			resource := mesh.NewMeshResource()
+			err := store.Get(context.Background(), resource, core_store.GetByKey(meshName, core_model.NoMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -125,8 +125,8 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			resource := mesh.MeshResource{}
-			err := store.Get(context.Background(), &resource, core_store.GetByKey("test", "test"))
+			resource := mesh.NewMeshResource()
+			err := store.Get(context.Background(), resource, core_store.GetByKey("test", "test"))
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -147,8 +147,8 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(404, json)
 
 			// when
-			resource := mesh.MeshResource{}
-			err := store.Get(context.Background(), &resource, core_store.GetByKey("test", "test"))
+			resource := mesh.NewMeshResource()
+			err := store.Get(context.Background(), resource, core_store.GetByKey("test", "test"))
 
 			// then
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
@@ -214,7 +214,7 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			err := store.Create(context.Background(), &mesh.MeshResource{}, core_store.CreateByKey("test", core_model.NoMesh))
+			err := store.Create(context.Background(), mesh.NewMeshResource(), core_store.CreateByKey("test", core_model.NoMesh))
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -332,6 +332,7 @@ var _ = Describe("RemoteStore", func() {
 				Meta: &model.ResourceMeta{
 					Name: "test",
 				},
+				Spec: &v1alpha1.Mesh{},
 			}
 			err := store.Update(context.Background(), &resource)
 
@@ -494,8 +495,8 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			resource := mesh.MeshResource{}
-			err := store.Delete(context.Background(), &resource, core_store.DeleteByKey(meshName, meshName))
+			resource := mesh.NewMeshResource()
+			err := store.Delete(context.Background(), resource, core_store.DeleteByKey(meshName, meshName))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

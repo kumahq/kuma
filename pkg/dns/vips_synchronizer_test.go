@@ -53,8 +53,7 @@ var _ = Describe("DNS sync", func() {
 	Describe("should allocate VIPs and synchronize to DNS Resolver", func() {
 		BeforeEach(func() {
 			// given a mesh and one service
-			mesh := core_mesh.MeshResource{}
-			err := resManager.Create(context.Background(), &mesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
+			err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			webDp := core_mesh.DataplaneResource{
@@ -143,7 +142,7 @@ var _ = Describe("DNS sync", func() {
 
 		It("should remove web from DNS resolver when service is deleted", func() {
 			// when service "web" is deleted
-			err := resManager.Delete(context.Background(), &core_mesh.DataplaneResource{}, core_store.DeleteByKey("dp-1", "default"))
+			err := resManager.Delete(context.Background(), core_mesh.NewDataplaneResource(), core_store.DeleteByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 
 			// then service "web" is removed from DNS Resolver

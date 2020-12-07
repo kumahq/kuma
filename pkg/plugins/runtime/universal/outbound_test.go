@@ -36,7 +36,7 @@ var _ = Describe("UpdateOutbound", func() {
 	BeforeEach(func() {
 		rm = &countingManager{ResourceManager: core_manager.NewResourceManager(memory.NewStore())}
 
-		err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err := rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -87,7 +87,7 @@ var _ = Describe("UpdateOutbound", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			dp1 := &mesh.DataplaneResource{}
+			dp1 := mesh.NewDataplaneResource()
 			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(1))
@@ -97,7 +97,7 @@ var _ = Describe("UpdateOutbound", func() {
 
 		It("should not update dataplane outbounds when new service is added to another mesh", func() {
 			// when
-			err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("another-mesh", model.NoMesh))
+			err := rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("another-mesh", model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			err = rm.Create(context.Background(), &mesh.DataplaneResource{
@@ -120,7 +120,7 @@ var _ = Describe("UpdateOutbound", func() {
 			err = universal.UpdateOutbounds(context.Background(), rm, vips)
 			Expect(err).ToNot(HaveOccurred())
 			// then
-			dp1 := &mesh.DataplaneResource{}
+			dp1 := mesh.NewDataplaneResource()
 			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(0))
@@ -160,14 +160,14 @@ var _ = Describe("UpdateOutbound", func() {
 
 			It("should delete outbounds when service is deleted", func() {
 				// when
-				err := rm.Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-2", "default"))
+				err := rm.Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-2", "default"))
 				Expect(err).ToNot(HaveOccurred())
 				// and
 				err = universal.UpdateOutbounds(context.Background(), rm, vips)
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
-				dp1 := &mesh.DataplaneResource{}
+				dp1 := mesh.NewDataplaneResource()
 				err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
 				Expect(err).ToNot(HaveOccurred())
 				Expect(dp1.Spec.Networking.Outbound).To(HaveLen(0))
@@ -236,7 +236,7 @@ var _ = Describe("UpdateOutbound", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			dp1 := &mesh.DataplaneResource{}
+			dp1 := mesh.NewDataplaneResource()
 			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(1))
@@ -244,7 +244,7 @@ var _ = Describe("UpdateOutbound", func() {
 			Expect(dp1.Spec.Networking.Outbound[0].Port).To(Equal(uint32(81)))
 
 			// and then
-			dp2 := &mesh.DataplaneResource{}
+			dp2 := mesh.NewDataplaneResource()
 			err = rm.Get(context.Background(), dp2, store.GetByKey("dp-2", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(dp2.Spec.Networking.Outbound).To(HaveLen(1))

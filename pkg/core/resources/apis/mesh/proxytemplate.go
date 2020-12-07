@@ -19,6 +19,12 @@ type ProxyTemplateResource struct {
 	Spec *mesh_proto.ProxyTemplate
 }
 
+func NewProxyTemplateResource() *ProxyTemplateResource {
+	return &ProxyTemplateResource{
+		Spec: &mesh_proto.ProxyTemplate{},
+	}
+}
+
 func (t *ProxyTemplateResource) GetType() model.ResourceType {
 	return ProxyTemplateType
 }
@@ -62,7 +68,7 @@ func (l *ProxyTemplateResourceList) GetItemType() model.ResourceType {
 	return ProxyTemplateType
 }
 func (l *ProxyTemplateResourceList) NewItem() model.Resource {
-	return &ProxyTemplateResource{}
+	return NewProxyTemplateResource()
 }
 func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ProxyTemplateResource); ok {
@@ -77,7 +83,7 @@ func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&ProxyTemplateResource{})
+	registry.RegisterType(NewProxyTemplateResource())
 	registry.RegistryListType(&ProxyTemplateResourceList{})
 }
 

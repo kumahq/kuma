@@ -160,8 +160,8 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 
 			// then
-			resource := mesh.MeshResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, model.NoMesh))
+			resource := mesh.NewMeshResource()
+			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Tracing.Backends[0].Name).To(Equal("zipkin-us"))
 		})
@@ -228,8 +228,8 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 
 			// and
-			resource := mesh.MeshResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, name))
+			resource := mesh.NewMeshResource()
+			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, name))
 			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, name)))
 		})
 
@@ -244,7 +244,6 @@ var _ = Describe("Resource Endpoints", func() {
 })
 
 func putMeshIntoStore(resourceStore store.ResourceStore, name string, createdAt time.Time) {
-	resource := mesh.MeshResource{}
-	err := resourceStore.Create(context.Background(), &resource, store.CreateByKey(name, model.NoMesh), store.CreatedAt(createdAt))
+	err := resourceStore.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey(name, model.NoMesh), store.CreatedAt(createdAt))
 	Expect(err).NotTo(HaveOccurred())
 }

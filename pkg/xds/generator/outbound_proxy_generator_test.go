@@ -28,6 +28,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		Mesh: xds_context.MeshContext{
 			Resource: &mesh_core.MeshResource{
 				Meta: meta,
+				Spec: &mesh_proto.Mesh{},
 			},
 		},
 	}

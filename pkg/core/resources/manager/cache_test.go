@@ -81,9 +81,9 @@ var _ = Describe("Cached Resource Manager", func() {
 
 	It("should cache Get() queries", func() {
 		// when fetched resources multiple times
-		fetch := func() core_mesh.DataplaneResource {
-			fetched := core_mesh.DataplaneResource{}
-			err := cachedManager.Get(context.Background(), &fetched, core_store.GetByKey("dp-1", "default"))
+		fetch := func() *core_mesh.DataplaneResource {
+			fetched := core_mesh.NewDataplaneResource()
+			err := cachedManager.Get(context.Background(), fetched, core_store.GetByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			return fetched
 		}

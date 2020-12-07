@@ -50,10 +50,10 @@ var _ = Describe("VIP Allocator", func() {
 		cm = config_manager.NewConfigManager(s)
 		r = resolver.NewDNSResolver("mesh")
 
-		err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh-2", model.NoMesh))
+		err = rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-2", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("backend")}, store.CreateByKey("dp-1", "mesh-1"))
@@ -132,10 +132,10 @@ var _ = Describe("BuildServiceSet", func() {
 
 	It("should build service set for mesh", func() {
 		// setup meshes
-		err := rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh-1", model.NoMesh))
+		err := rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh-2", model.NoMesh))
+		err = rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-2", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup dataplanes
