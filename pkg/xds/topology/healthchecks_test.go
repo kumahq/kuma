@@ -51,7 +51,7 @@ var _ = Describe("HealthCheck", func() {
 					Mesh: "demo",
 					Name: "backend",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -82,7 +82,7 @@ var _ = Describe("HealthCheck", func() {
 					Mesh: "demo",
 					Name: "healthcheck-redis",
 				},
-				Spec: mesh_proto.HealthCheck{
+				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "frontend"}},
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
@@ -103,7 +103,7 @@ var _ = Describe("HealthCheck", func() {
 					Mesh: "demo",
 					Name: "healthcheck-elastic",
 				},
-				Spec: mesh_proto.HealthCheck{
+				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 					},
@@ -123,7 +123,7 @@ var _ = Describe("HealthCheck", func() {
 					Mesh: "default", // other mesh
 					Name: "healthcheck-everything",
 				},
-				Spec: mesh_proto.HealthCheck{
+				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 					},
@@ -206,7 +206,7 @@ var _ = Describe("HealthCheck", func() {
 			}),
 			Entry("if a destination service has no matching HealthChecks, none should be used", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend"}},
@@ -227,7 +227,7 @@ var _ = Describe("HealthCheck", func() {
 			}),
 			Entry("due to TrafficRoutes, a Dataplane might have more destinations than outbound interfaces", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend"}},
@@ -247,7 +247,7 @@ var _ = Describe("HealthCheck", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "healthcheck-elastic",
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -266,7 +266,7 @@ var _ = Describe("HealthCheck", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "healthcheck-redis",
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -297,7 +297,7 @@ var _ = Describe("HealthCheck", func() {
 			}),
 			Entry("HealthChecks should be picked by latest creation time given two equally specific HealthChecks", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend"}},
@@ -317,7 +317,7 @@ var _ = Describe("HealthCheck", func() {
 							Name:         "healthcheck-everything-passive",
 							CreationTime: time.Unix(1, 1),
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -337,7 +337,7 @@ var _ = Describe("HealthCheck", func() {
 							Name:         "healthcheck-everything-active",
 							CreationTime: time.Unix(0, 0),
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -363,7 +363,7 @@ var _ = Describe("HealthCheck", func() {
 			}),
 			Entry("HealthCheck with a `source` selector by 2 tags should win over a HealthCheck with a `source` selector by 1 tag", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
@@ -382,7 +382,7 @@ var _ = Describe("HealthCheck", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 							},
@@ -401,7 +401,7 @@ var _ = Describe("HealthCheck", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend", "region": "eu"}},
 							},
@@ -427,7 +427,7 @@ var _ = Describe("HealthCheck", func() {
 			}),
 			Entry("HealthCheck with a `source` selector by an exact value should win over a HealthCheck with a `source` selector by a wildcard value", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
@@ -446,7 +446,7 @@ var _ = Describe("HealthCheck", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -465,7 +465,7 @@ var _ = Describe("HealthCheck", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 							},
@@ -491,7 +491,7 @@ var _ = Describe("HealthCheck", func() {
 			}),
 			Entry("HealthCheck with a `destination` selector by an exact value should win over a HealthCheck with a `destination` selector by a wildcard value", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
@@ -510,7 +510,7 @@ var _ = Describe("HealthCheck", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -529,7 +529,7 @@ var _ = Describe("HealthCheck", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -555,7 +555,7 @@ var _ = Describe("HealthCheck", func() {
 			}),
 			Entry("in case if HealthChecks have equal aggregate ranks, most specific one should be selected based on last creation time", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
@@ -575,7 +575,7 @@ var _ = Describe("HealthCheck", func() {
 							Name:         "equally-specific-2",
 							CreationTime: time.Unix(1, 1),
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -595,7 +595,7 @@ var _ = Describe("HealthCheck", func() {
 							Name:         "equally-specific-1",
 							CreationTime: time.Unix(0, 0),
 						},
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 							},

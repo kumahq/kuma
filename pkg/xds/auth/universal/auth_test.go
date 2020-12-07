@@ -31,7 +31,7 @@ var _ = Describe("Authentication flow", func() {
 			Mesh: "dp-1",
 			Name: "default",
 		},
-		Spec: mesh_proto.Dataplane{
+		Spec: &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -61,7 +61,7 @@ var _ = Describe("Authentication flow", func() {
 			Mesh: "ingress-1",
 			Name: "default",
 		},
-		Spec: mesh_proto.Dataplane{
+		Spec: &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

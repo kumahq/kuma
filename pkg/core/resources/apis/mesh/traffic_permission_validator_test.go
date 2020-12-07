@@ -22,7 +22,7 @@ var _ = Describe("TrafficPermission", func() {
 				permission := TrafficPermissionResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.permission), &permission.Spec)
+				err := util_proto.FromYAML([]byte(given.permission), permission.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

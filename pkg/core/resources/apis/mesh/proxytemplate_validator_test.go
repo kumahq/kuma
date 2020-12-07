@@ -18,7 +18,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate := mesh.ProxyTemplateResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(spec), &proxyTemplate.Spec)
+				err := util_proto.FromYAML([]byte(spec), proxyTemplate.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -313,7 +313,7 @@ var _ = Describe("ProxyTemplate", func() {
 				proxyTemplate := mesh.ProxyTemplateResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.proxyTemplate), &proxyTemplate.Spec)
+				err := util_proto.FromYAML([]byte(given.proxyTemplate), proxyTemplate.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

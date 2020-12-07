@@ -18,7 +18,7 @@ var _ = Describe("Dataplane", func() {
 			dataplane := &core_mesh.DataplaneResource{}
 
 			// when
-			err := util_proto.FromYAML([]byte(dpYAML), &dataplane.Spec)
+			err := util_proto.FromYAML([]byte(dpYAML), dataplane.Spec)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -210,7 +210,7 @@ var _ = Describe("Dataplane", func() {
 			dataplane := core_mesh.DataplaneResource{}
 
 			// when
-			err := util_proto.FromYAML([]byte(given.dataplane), &dataplane.Spec)
+			err := util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

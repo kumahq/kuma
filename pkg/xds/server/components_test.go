@@ -96,7 +96,7 @@ var _ = Describe("Components", func() {
 			By("creating Dataplane definition")
 			// when
 			resource := &mesh_core.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

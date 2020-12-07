@@ -133,7 +133,7 @@ var _ = Describe("kumactl apply", func() {
 	It("should apply an updated Dataplane resource", func() {
 		// setup
 		newResource := mesh.DataplaneResource{
-			Spec: v1alpha1.Dataplane{
+			Spec: &v1alpha1.Dataplane{
 				Networking: &v1alpha1.Dataplane_Networking{
 					Address: "8.8.8.8",
 					Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
@@ -379,7 +379,7 @@ var _ = Describe("kumactl apply", func() {
 				Name: "sample",
 				Mesh: "default",
 			},
-			Spec: v1alpha1.Dataplane{
+			Spec: &v1alpha1.Dataplane{
 				Networking: &v1alpha1.Dataplane_Networking{
 					Address: "1.1.1.1",
 				},

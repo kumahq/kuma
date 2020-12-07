@@ -32,7 +32,7 @@ var _ = Describe("Dataplane", func() {
 				dataplane := &DataplaneResource{}
 
 				// when
-				Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane.Spec)).To(Succeed())
+				Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
 				// then
 				Expect(dataplane.UsesInterface(net.ParseIP(given.address), given.port)).To(Equal(given.expected))
 			},
@@ -273,7 +273,7 @@ var _ = Describe("Dataplane", func() {
 							Mesh: given.dataplaneMesh,
 						},
 					}
-					Expect(util_proto.FromYAML([]byte(given.dataplaneSpec), &dataplane.Spec)).To(Succeed())
+					Expect(util_proto.FromYAML([]byte(given.dataplaneSpec), dataplane.Spec)).To(Succeed())
 				}
 
 				// given
@@ -284,7 +284,7 @@ var _ = Describe("Dataplane", func() {
 							Name: given.meshName,
 						},
 					}
-					Expect(util_proto.FromYAML([]byte(given.meshSpec), &mesh.Spec)).To(Succeed())
+					Expect(util_proto.FromYAML([]byte(given.meshSpec), mesh.Spec)).To(Succeed())
 				}
 
 				// then
@@ -396,7 +396,7 @@ var _ = Describe("Dataplane", func() {
 				var dataplane *DataplaneResource
 				if given.dataplane != "" {
 					dataplane = &DataplaneResource{}
-					Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane.Spec)).To(Succeed())
+					Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
 				}
 
 				// expect

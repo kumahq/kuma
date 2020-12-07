@@ -25,7 +25,7 @@ var _ = Describe("Dataplane Manager", func() {
 
 		// given
 		input := mesh_core.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "10.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -63,7 +63,7 @@ var _ = Describe("Dataplane Manager", func() {
 
 		// given
 		input := mesh_core.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "10.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -111,7 +111,7 @@ var _ = Describe("Dataplane Manager", func() {
 
 		// given
 		input := mesh_core.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "10.0.0.1",
 					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
@@ -145,7 +145,7 @@ var _ = Describe("Dataplane Manager", func() {
 
 		// given
 		input := mesh_core.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "10.0.0.1",
 					Gateway: &mesh_proto.Dataplane_Networking_Gateway{

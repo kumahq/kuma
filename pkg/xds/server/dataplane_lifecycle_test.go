@@ -92,7 +92,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				Mesh: "default",
 				Name: "backend-01",
 			},
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

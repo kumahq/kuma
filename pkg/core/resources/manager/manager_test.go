@@ -28,14 +28,14 @@ var _ = Describe("Resource Manager", func() {
 
 	createSampleMesh := func(name string) error {
 		meshRes := mesh.MeshResource{
-			Spec: mesh_proto.Mesh{},
+			Spec: &mesh_proto.Mesh{},
 		}
 		return resManager.Create(context.Background(), &meshRes, store.CreateByKey(name, model.NoMesh))
 	}
 
 	createSampleResource := func(mesh string) (*sample.TrafficRouteResource, error) {
 		trRes := sample.TrafficRouteResource{
-			Spec: v1alpha1.TrafficRoute{
+			Spec: &v1alpha1.TrafficRoute{
 				Path: "/some",
 			},
 		}
@@ -82,7 +82,7 @@ var _ = Describe("Resource Manager", func() {
 				Name: "tl-1",
 			}
 			trafficLog := &mesh.TrafficLogResource{
-				Spec: mesh_proto.TrafficLog{
+				Spec: &mesh_proto.TrafficLog{
 					Sources: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{

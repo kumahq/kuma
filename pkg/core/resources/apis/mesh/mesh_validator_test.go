@@ -73,7 +73,7 @@ var _ = Describe("Mesh", func() {
 			mesh := MeshResource{}
 
 			// when
-			err := util_proto.FromYAML([]byte(spec), &mesh.Spec)
+			err := util_proto.FromYAML([]byte(spec), mesh.Spec)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -90,7 +90,7 @@ var _ = Describe("Mesh", func() {
 				mesh := MeshResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.mesh), &mesh.Spec)
+				err := util_proto.FromYAML([]byte(given.mesh), mesh.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

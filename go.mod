@@ -54,6 +54,7 @@ require (
 	golang.org/x/tools v0.0.0-20201206230334-368bee879bfd // indirect
 	google.golang.org/genproto v0.0.0-20200108215221-bd8f9a0ef82f
 	google.golang.org/grpc v1.30.0
+	google.golang.org/protobuf v1.23.0
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.3.4
 	k8s.io/api v0.18.9

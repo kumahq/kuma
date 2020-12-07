@@ -30,7 +30,7 @@ var _ = Describe("kumactl get meshes", func() {
 
 	sampleMeshes := []*mesh.MeshResource{
 		{
-			Spec: mesh_proto.Mesh{
+			Spec: &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: "builtin-1",
 					Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -110,7 +110,7 @@ var _ = Describe("kumactl get meshes", func() {
 			},
 		},
 		{
-			Spec: mesh_proto.Mesh{
+			Spec: &mesh_proto.Mesh{
 				Metrics: &mesh_proto.Metrics{
 					Backends: []*mesh_proto.MetricsBackend{},
 				},

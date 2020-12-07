@@ -58,7 +58,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 					Name: "tp-1",
 					Mesh: "default",
 				},
-				Spec: mesh_proto.TrafficPermission{
+				Spec: &mesh_proto.TrafficPermission{
 					Sources: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
@@ -118,7 +118,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 					Name: "tp-1",
 					Mesh: "default",
 				},
-				Spec: mesh_proto.TrafficPermission{
+				Spec: &mesh_proto.TrafficPermission{
 					Sources: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{

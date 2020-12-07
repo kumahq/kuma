@@ -47,7 +47,7 @@ var _ = Describe("Defaults Component", func() {
 		It("should not override already created mesh", func() {
 			// given
 			mesh := &mesh_core.MeshResource{
-				Spec: v1alpha1.Mesh{
+				Spec: &v1alpha1.Mesh{
 					Mtls: &v1alpha1.Mesh_Mtls{
 						EnabledBackend: "builtin",
 						Backends: []*v1alpha1.CertificateAuthorityBackend{

@@ -79,7 +79,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Metrics: &mesh_proto.MetricsBackend{
 							Name: "prometheus-1",
 							Type: mesh_proto.MetricsPrometheusType,
@@ -99,7 +99,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -124,7 +124,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Metrics: &mesh_proto.MetricsBackend{
 							Name: "prometheus-1",
 							Type: mesh_proto.MetricsPrometheusType,
@@ -145,7 +145,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -170,7 +170,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Metrics: &mesh_proto.MetricsBackend{
 							Name: "prometheus-1",
 							Type: mesh_proto.MetricsPrometheusType,
@@ -216,7 +216,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -245,7 +245,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "192.168.0.1",
 						},
@@ -264,7 +264,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -289,7 +289,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "192.168.0.1",
 						},
@@ -322,7 +322,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
 								Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -360,7 +360,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "192.168.0.1",
 						},
@@ -385,7 +385,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
 								Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -422,7 +422,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "192.168.0.1",
 						},
@@ -447,7 +447,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
 								Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -485,7 +485,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "192.168.0.1",
 						},
@@ -514,7 +514,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
-							Spec: mesh_proto.Mesh{
+							Spec: &mesh_proto.Mesh{
 								Metrics: &mesh_proto.Metrics{
 									EnabledBackend: "prometheus-1",
 									Backends: []*mesh_proto.MetricsBackend{
@@ -544,7 +544,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						AdminPort: 9902,
 					},
 				}
-				Expect(util_proto.FromYAML([]byte(given.dataplane), &proxy.Dataplane.Spec)).To(Succeed())
+				Expect(util_proto.FromYAML([]byte(given.dataplane), proxy.Dataplane.Spec)).To(Succeed())
 
 				// setup
 				gen := &generator.PrometheusEndpointGenerator{}

@@ -67,7 +67,7 @@ func (s *secretValidator) secretUsedByMTLSBackend(name string, mesh string, back
 	if caManager == nil { // this should be caught earlier by validator
 		return false, errors.Errorf("manager of type %q does not exist", backend.Type)
 	}
-	secrets, err := caManager.UsedSecrets(mesh, *backend)
+	secrets, err := caManager.UsedSecrets(mesh, backend)
 	if err != nil {
 		return false, errors.Wrapf(err, "could not retrieve secrets in use by backend %q", backend.Name)
 	}

@@ -52,7 +52,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 		Entry("HealthCheck with active checks", testCase{
 			clusterName: "testCluster",
 			healthCheck: &mesh_core.HealthCheckResource{
-				Spec: mesh_proto.HealthCheck{
+				Spec: &mesh_proto.HealthCheck{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 					},

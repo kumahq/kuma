@@ -58,7 +58,7 @@ var _ = Describe("DNS sync", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			webDp := core_mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -97,7 +97,7 @@ var _ = Describe("DNS sync", func() {
 		It("should sync another service", func() {
 			// when "backend" service is up
 			backendDp := core_mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.1",
 						Ingress: &mesh_proto.Dataplane_Networking_Ingress{

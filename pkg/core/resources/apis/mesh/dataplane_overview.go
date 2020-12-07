@@ -15,7 +15,7 @@ var _ model.Resource = &DataplaneOverviewResource{}
 
 type DataplaneOverviewResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.DataplaneOverview
+	Spec *mesh_proto.DataplaneOverview
 }
 
 func (t *DataplaneOverviewResource) GetType() model.ResourceType {
@@ -31,7 +31,7 @@ func (t *DataplaneOverviewResource) SetMeta(m model.ResourceMeta) {
 }
 
 func (t *DataplaneOverviewResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 
 func (t *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
@@ -39,7 +39,7 @@ func (t *DataplaneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *dataplaneOverview
+		t.Spec = dataplaneOverview
 		return nil
 	}
 }
@@ -96,7 +96,7 @@ func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneI
 	for _, dataplane := range dataplanes.Items {
 		overview := DataplaneOverviewResource{
 			Meta: dataplane.Meta,
-			Spec: mesh_proto.DataplaneOverview{
+			Spec: &mesh_proto.DataplaneOverview{
 				Dataplane:        dataplane.Spec,
 				DataplaneInsight: nil,
 			},

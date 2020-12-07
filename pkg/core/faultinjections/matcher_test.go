@@ -28,7 +28,7 @@ var _ = Describe("Match", func() {
 				Mesh: "default",
 				Name: "dp1",
 			},
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Inbound: inbounds,
 				},
@@ -42,7 +42,7 @@ var _ = Describe("Match", func() {
 				Name:         name,
 				CreationTime: creationTime,
 			},
-			Spec: mesh_proto.FaultInjection{
+			Spec: &mesh_proto.FaultInjection{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
@@ -120,7 +120,7 @@ var _ = Describe("Match", func() {
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8080,
-				}: &policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
+				}: policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
 							"service":          "*",
@@ -164,7 +164,7 @@ var _ = Describe("Match", func() {
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8081,
-				}: &policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+				}: policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
 							"service":          "web-api",

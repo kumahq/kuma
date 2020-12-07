@@ -31,7 +31,7 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 
 	circuitBreakerResources := []*mesh.CircuitBreakerResource{
 		{
-			Spec: kuma_mesh.CircuitBreaker{
+			Spec: &kuma_mesh.CircuitBreaker{
 				Sources: []*kuma_mesh.Selector{
 					{
 						Match: map[string]string{
@@ -67,7 +67,7 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 			},
 		},
 		{
-			Spec: kuma_mesh.CircuitBreaker{
+			Spec: &kuma_mesh.CircuitBreaker{
 				Sources: []*kuma_mesh.Selector{
 					{
 						Match: map[string]string{

@@ -59,8 +59,8 @@ var _ = Describe("Global Sync", func() {
 		}
 	})
 
-	dataplaneFunc := func(zone, service string) mesh_proto.Dataplane {
-		return mesh_proto.Dataplane{
+	dataplaneFunc := func(zone, service string) *mesh_proto.Dataplane {
+		return &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{

@@ -18,7 +18,7 @@ var _ = Describe("CircuitBreaker", func() {
 				circuitBreaker := core_mesh.CircuitBreakerResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(circuitBreakerYAML), &circuitBreaker.Spec)
+				err := util_proto.FromYAML([]byte(circuitBreakerYAML), circuitBreaker.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -79,7 +79,7 @@ var _ = Describe("CircuitBreaker", func() {
 				circuitBreaker := core_mesh.CircuitBreakerResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.circuitBreaker), &circuitBreaker.Spec)
+				err := util_proto.FromYAML([]byte(given.circuitBreaker), circuitBreaker.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

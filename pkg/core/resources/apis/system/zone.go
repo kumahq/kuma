@@ -16,7 +16,7 @@ var _ model.Resource = &ZoneResource{}
 
 type ZoneResource struct {
 	Meta model.ResourceMeta
-	Spec system_proto.Zone
+	Spec *system_proto.Zone
 }
 
 func (t *ZoneResource) GetType() model.ResourceType {
@@ -29,14 +29,14 @@ func (t *ZoneResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *ZoneResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
 	value, ok := spec.(*system_proto.Zone)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *value
+		t.Spec = value
 		return nil
 	}
 }

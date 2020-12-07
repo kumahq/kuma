@@ -50,7 +50,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should create a CA", func() {
 			//given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
 			}
@@ -88,7 +88,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should create a configured CA", func() {
 			//given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
 				Conf: proto.MustToStruct(&config.BuiltinCertificateAuthorityConfig{
@@ -122,7 +122,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should retrieve created certs", func() {
 			//given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
 			}
@@ -141,7 +141,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should throw an error on retrieving certs on CA that was not created", func() {
 			// given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-non-existent",
 				Type: "builtin",
 			}
@@ -158,7 +158,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should generate dataplane certs", func() {
 			//given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
 				DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
@@ -191,7 +191,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should throw an error on generate dataplane certs on non-existing CA", func() {
 			// given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-non-existent",
 				Type: "builtin",
 			}

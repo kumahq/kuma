@@ -22,7 +22,7 @@ var _ = Describe("TrafficLog", func() {
 				trafficLog := TrafficLogResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.trafficLog), &trafficLog.Spec)
+				err := util_proto.FromYAML([]byte(given.trafficLog), trafficLog.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

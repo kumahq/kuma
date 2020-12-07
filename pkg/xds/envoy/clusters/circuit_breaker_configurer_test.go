@@ -37,7 +37,7 @@ var _ = ginkgo.Describe("OutlierDetectionConfigurer", func() {
 		},
 		Entry("CircuitBreaker with TotalError detector, default values", testCase{
 			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: mesh_proto.CircuitBreaker{
+				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 							TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
@@ -60,7 +60,7 @@ var _ = ginkgo.Describe("OutlierDetectionConfigurer", func() {
 		}),
 		Entry("CircuitBreaker with GatewayError detector, default values", testCase{
 			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: mesh_proto.CircuitBreaker{
+				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 							GatewayErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
@@ -83,7 +83,7 @@ var _ = ginkgo.Describe("OutlierDetectionConfigurer", func() {
 		}),
 		Entry("CircuitBreaker with LocalError detector, default values", testCase{
 			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: mesh_proto.CircuitBreaker{
+				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 							LocalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
@@ -106,7 +106,7 @@ var _ = ginkgo.Describe("OutlierDetectionConfigurer", func() {
 		}),
 		Entry("CircuitBreaker with all error detectors, custom values", testCase{
 			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: mesh_proto.CircuitBreaker{
+				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 							TotalErrors:   &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 21}},
@@ -134,7 +134,7 @@ var _ = ginkgo.Describe("OutlierDetectionConfigurer", func() {
 		}),
 		Entry("CircuitBreaker with StandardDeviation detector, default values", testCase{
 			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: mesh_proto.CircuitBreaker{
+				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 							StandardDeviation: &mesh_proto.CircuitBreaker_Conf_Detectors_StandardDeviation{},
@@ -158,7 +158,7 @@ var _ = ginkgo.Describe("OutlierDetectionConfigurer", func() {
 		}),
 		Entry("CircuitBreaker with StandardDeviation detector, custom values", testCase{
 			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: mesh_proto.CircuitBreaker{
+				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 							StandardDeviation: &mesh_proto.CircuitBreaker_Conf_Detectors_StandardDeviation{
@@ -189,7 +189,7 @@ var _ = ginkgo.Describe("OutlierDetectionConfigurer", func() {
 		}),
 		Entry("CircuitBreaker with Failure detector, default values", testCase{
 			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: mesh_proto.CircuitBreaker{
+				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 							Failure: &mesh_proto.CircuitBreaker_Conf_Detectors_Failure{},
@@ -213,7 +213,7 @@ var _ = ginkgo.Describe("OutlierDetectionConfigurer", func() {
 		}),
 		Entry("CircuitBreaker with Failure detector, custom values", testCase{
 			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: mesh_proto.CircuitBreaker{
+				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
 							Failure: &mesh_proto.CircuitBreaker_Conf_Detectors_Failure{

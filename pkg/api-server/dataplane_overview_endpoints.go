@@ -72,7 +72,7 @@ func (r *dataplaneOverviewEndpoints) fetchOverview(ctx context.Context, name str
 
 	return &mesh.DataplaneOverviewResource{
 		Meta: dataplane.Meta,
-		Spec: mesh_proto.DataplaneOverview{
+		Spec: &mesh_proto.DataplaneOverview{
 			Dataplane:        dataplane.Spec,
 			DataplaneInsight: insight.Spec,
 		},

@@ -22,7 +22,7 @@ var _ = Describe("TrafficRoute", func() {
 				route := TrafficRouteResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.route), &route.Spec)
+				err := util_proto.FromYAML([]byte(given.route), route.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

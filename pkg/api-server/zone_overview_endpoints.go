@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/emicklei/go-restful"
-	"github.com/golang/protobuf/proto"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -62,9 +61,9 @@ func (r *zoneOverviewEndpoints) fetchOverview(ctx context.Context, name string) 
 
 	return &system.ZoneOverviewResource{
 		Meta: zone.Meta,
-		Spec: system_proto.ZoneOverview{
-			Zone:        proto.Clone(&zone.Spec).(*system_proto.Zone),
-			ZoneInsight: proto.Clone(&insight.Spec).(*system_proto.ZoneInsight),
+		Spec: &system_proto.ZoneOverview{
+			Zone:        zone.Spec,
+			ZoneInsight: insight.Spec,
 		},
 	}, nil
 }

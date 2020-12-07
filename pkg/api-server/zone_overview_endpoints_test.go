@@ -54,7 +54,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	createZoneWithInsights := func(name string, zone system_proto.Zone) {
+	createZoneWithInsights := func(name string, zone *system_proto.Zone) {
 		zoneResource := system.ZoneResource{
 			Spec: zone,
 		}
@@ -63,7 +63,7 @@ var _ = Describe("Zone Overview Endpoints", func() {
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
 		insightResource := system.ZoneInsightResource{
-			Spec: system_proto.ZoneInsight{
+			Spec: &system_proto.ZoneInsight{
 				Subscriptions: []*system_proto.KDSSubscription{
 					{
 						Id:               "stream-id-1",
@@ -79,11 +79,11 @@ var _ = Describe("Zone Overview Endpoints", func() {
 	}
 
 	BeforeEach(func() {
-		createZoneWithInsights("zone-1", system_proto.Zone{})
+		createZoneWithInsights("zone-1", &system_proto.Zone{})
 
-		createZoneWithInsights("zone-2", system_proto.Zone{})
+		createZoneWithInsights("zone-2", &system_proto.Zone{})
 
-		createZoneWithInsights("zone-3", system_proto.Zone{})
+		createZoneWithInsights("zone-3", &system_proto.Zone{})
 	})
 
 	zone1Json := `

@@ -168,7 +168,7 @@ var _ = Describe("RemoteStore", func() {
 
 			// when
 			resource := sample_core.TrafficRouteResource{
-				Spec: sample_api.TrafficRoute{
+				Spec: &sample_api.TrafficRoute{
 					Path: "/some-path",
 				},
 			}
@@ -190,7 +190,7 @@ var _ = Describe("RemoteStore", func() {
 
 			// when
 			resource := mesh.MeshResource{
-				Spec: v1alpha1.Mesh{},
+				Spec: &v1alpha1.Mesh{},
 			}
 			err := store.Create(context.Background(), &resource, core_store.CreateByKey(meshName, core_model.NoMesh))
 
@@ -244,7 +244,7 @@ var _ = Describe("RemoteStore", func() {
 
 			// when
 			resource := sample_core.TrafficRouteResource{
-				Spec: sample_api.TrafficRoute{
+				Spec: &sample_api.TrafficRoute{
 					Path: "/some-path",
 				},
 				Meta: &model.ResourceMeta{
@@ -270,7 +270,7 @@ var _ = Describe("RemoteStore", func() {
 
 			// when
 			resource := mesh.MeshResource{
-				Spec: v1alpha1.Mesh{
+				Spec: &v1alpha1.Mesh{
 					Mtls: &v1alpha1.Mesh_Mtls{
 						EnabledBackend: "builtin",
 						Backends: []*v1alpha1.CertificateAuthorityBackend{
@@ -297,7 +297,7 @@ var _ = Describe("RemoteStore", func() {
 
 			// when
 			resource := mesh.MeshResource{
-				Spec: v1alpha1.Mesh{},
+				Spec: &v1alpha1.Mesh{},
 				Meta: &model.ResourceMeta{
 					Name: "default",
 				},

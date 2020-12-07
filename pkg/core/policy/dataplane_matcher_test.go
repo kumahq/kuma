@@ -124,7 +124,7 @@ var _ = Describe("Dataplane matcher", func() {
 							Name:         "b",
 							CreationTime: time.Unix(1, 1),
 						},
-						Spec: mesh_proto.ProxyTemplate{
+						Spec: &mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
 								{},
 							},
@@ -136,7 +136,7 @@ var _ = Describe("Dataplane matcher", func() {
 							Name:         "a",
 							CreationTime: time.Unix(0, 0),
 						},
-						Spec: mesh_proto.ProxyTemplate{
+						Spec: &mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
 								{},
 							},
@@ -149,7 +149,7 @@ var _ = Describe("Dataplane matcher", func() {
 						Name:         "b",
 						CreationTime: time.Unix(1, 1),
 					},
-					Spec: mesh_proto.ProxyTemplate{
+					Spec: &mesh_proto.ProxyTemplate{
 						Selectors: []*mesh_proto.Selector{
 							{},
 						},
@@ -158,7 +158,7 @@ var _ = Describe("Dataplane matcher", func() {
 			}),
 			Entry("policies have non-empty selectors (the one with the highest number of matching key-value pairs should become the best match)", testCase{
 				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{
@@ -183,7 +183,7 @@ var _ = Describe("Dataplane matcher", func() {
 							Mesh: "demo",
 							Name: "last",
 						},
-						Spec: mesh_proto.ProxyTemplate{
+						Spec: &mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
@@ -199,7 +199,7 @@ var _ = Describe("Dataplane matcher", func() {
 							Mesh: "demo",
 							Name: "first",
 						},
-						Spec: mesh_proto.ProxyTemplate{
+						Spec: &mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
@@ -222,7 +222,7 @@ var _ = Describe("Dataplane matcher", func() {
 						Mesh: "demo",
 						Name: "first",
 					},
-					Spec: mesh_proto.ProxyTemplate{
+					Spec: &mesh_proto.ProxyTemplate{
 						Selectors: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
@@ -242,7 +242,7 @@ var _ = Describe("Dataplane matcher", func() {
 			}),
 			Entry("two policies with the same rank (latest should be picked)", testCase{
 				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{
@@ -263,7 +263,7 @@ var _ = Describe("Dataplane matcher", func() {
 							Name:         "b",
 							CreationTime: time.Unix(1, 1),
 						},
-						Spec: mesh_proto.ProxyTemplate{
+						Spec: &mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
@@ -279,7 +279,7 @@ var _ = Describe("Dataplane matcher", func() {
 							Name:         "a",
 							CreationTime: time.Unix(0, 0),
 						},
-						Spec: mesh_proto.ProxyTemplate{
+						Spec: &mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
@@ -296,7 +296,7 @@ var _ = Describe("Dataplane matcher", func() {
 						Name:         "b",
 						CreationTime: time.Unix(1, 1),
 					},
-					Spec: mesh_proto.ProxyTemplate{
+					Spec: &mesh_proto.ProxyTemplate{
 						Selectors: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
@@ -309,7 +309,7 @@ var _ = Describe("Dataplane matcher", func() {
 			}),
 			Entry("gateway dataplane matches policies", testCase{
 				proxy: &model.Proxy{Dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 								Tags: map[string]string{
@@ -328,7 +328,7 @@ var _ = Describe("Dataplane matcher", func() {
 							Name:         "first",
 							CreationTime: time.Unix(1, 1),
 						},
-						Spec: mesh_proto.ProxyTemplate{
+						Spec: &mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
@@ -345,7 +345,7 @@ var _ = Describe("Dataplane matcher", func() {
 						Name:         "first",
 						CreationTime: time.Unix(1, 1),
 					},
-					Spec: mesh_proto.ProxyTemplate{
+					Spec: &mesh_proto.ProxyTemplate{
 						Selectors: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
@@ -364,7 +364,7 @@ var _ = Describe("Dataplane matcher", func() {
 							Mesh: "demo",
 							Name: "last",
 						},
-						Spec: mesh_proto.ProxyTemplate{
+						Spec: &mesh_proto.ProxyTemplate{
 							Selectors: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{

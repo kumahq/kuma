@@ -89,7 +89,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should create a new secret", func() {
 			// given
 			secret := &secret_model.SecretResource{
-				Spec: system_proto.Secret{
+				Spec: &system_proto.Secret{
 					Data: &wrappers.BytesValue{
 						Value: []byte("example"),
 					},
@@ -262,7 +262,7 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			secret1.Spec = system_proto.Secret{
+			secret1.Spec = &system_proto.Secret{
 				Data: &wrappers.BytesValue{
 					Value: []byte("example"),
 				},
@@ -272,7 +272,7 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			secret2.Spec = system_proto.Secret{
+			secret2.Spec = &system_proto.Secret{
 				Data: &wrappers.BytesValue{
 					Value: []byte("another"),
 				},

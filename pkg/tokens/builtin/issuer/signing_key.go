@@ -48,7 +48,7 @@ func CreateSigningKey() (system.SecretResource, error) {
 	if err != nil {
 		return res, errors.Wrap(err, "failed to generate rsa key")
 	}
-	res.Spec = system_proto.Secret{
+	res.Spec = &system_proto.Secret{
 		Data: &wrappers.BytesValue{
 			Value: x509.MarshalPKCS1PrivateKey(key),
 		},

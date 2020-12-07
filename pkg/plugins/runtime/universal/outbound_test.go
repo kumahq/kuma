@@ -43,7 +43,7 @@ var _ = Describe("UpdateOutbound", func() {
 	Context("transparentProxying enabled", func() {
 		BeforeEach(func() {
 			err := rm.Create(context.Background(), &mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -67,7 +67,7 @@ var _ = Describe("UpdateOutbound", func() {
 		It("should update dataplane outbounds when new service is added", func() {
 			// when
 			err := rm.Create(context.Background(), &mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -101,7 +101,7 @@ var _ = Describe("UpdateOutbound", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			err = rm.Create(context.Background(), &mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -129,7 +129,7 @@ var _ = Describe("UpdateOutbound", func() {
 		Context("outbounds already updated", func() {
 			BeforeEach(func() {
 				err := rm.Create(context.Background(), &mesh.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "127.0.0.1",
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -178,7 +178,7 @@ var _ = Describe("UpdateOutbound", func() {
 	Context("transparentProxying disabled", func() {
 		BeforeEach(func() {
 			err := rm.Create(context.Background(), &mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -204,7 +204,7 @@ var _ = Describe("UpdateOutbound", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			err = rm.Create(context.Background(), &mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

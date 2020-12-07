@@ -40,7 +40,7 @@ var _ = Describe("bootstrapGenerator", func() {
 	BeforeEach(func() {
 		// given
 		dataplane := mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -192,7 +192,7 @@ var _ = Describe("bootstrapGenerator", func() {
 	It("should fail bootstrap configuration due to conflicting port in inbound", func() {
 		// setup
 		dataplane := mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -265,7 +265,7 @@ var _ = Describe("bootstrapGenerator", func() {
 	It("should fail bootstrap configuration due to conflicting port in outbound", func() {
 		// setup
 		dataplane := mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

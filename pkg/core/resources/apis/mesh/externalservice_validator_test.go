@@ -18,7 +18,7 @@ var _ = Describe("ExternalService", func() {
 			externalService := &core_mesh.ExternalServiceResource{}
 
 			// when
-			err := util_proto.FromYAML([]byte(dpYAML), &externalService.Spec)
+			err := util_proto.FromYAML([]byte(dpYAML), externalService.Spec)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -71,7 +71,7 @@ var _ = Describe("ExternalService", func() {
 			externalService := core_mesh.ExternalServiceResource{}
 
 			// when
-			err := util_proto.FromYAML([]byte(given.dataplane), &externalService.Spec)
+			err := util_proto.FromYAML([]byte(given.dataplane), externalService.Spec)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

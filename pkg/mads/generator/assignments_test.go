@@ -52,7 +52,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Name: "backend-01",
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -82,7 +82,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Name: "backend-01",
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -112,7 +112,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -135,7 +135,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Name: "gateway-01",
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Gateway: &mesh_proto.Dataplane_Networking_Gateway{
 									Tags: map[string]string{
@@ -179,7 +179,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -202,7 +202,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Name: "backend-01",
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -264,7 +264,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -287,7 +287,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Name: "backend-01",
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -336,7 +336,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -359,7 +359,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Name: "backend-01",
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -409,7 +409,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -430,7 +430,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Name: "demo",
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -453,7 +453,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Name: "backend-01",
 							Mesh: "default",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -472,7 +472,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							Name: "web-02",
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -550,7 +550,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -577,7 +577,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 							},
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{

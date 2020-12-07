@@ -47,7 +47,7 @@ var _ = Describe("Reconcile", func() {
 					Meta: &test_model.ResourceMeta{
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{
@@ -66,7 +66,7 @@ var _ = Describe("Reconcile", func() {
 					Mesh: "demo",
 					Name: "expected",
 				},
-				Spec: mesh_proto.ProxyTemplate{
+				Spec: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
 						Imports: []string{"custom-template"},
 					},
@@ -78,7 +78,7 @@ var _ = Describe("Reconcile", func() {
 					Mesh: "default",
 					Name: "other",
 				},
-				Spec: mesh_proto.ProxyTemplate{
+				Spec: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
 						Imports: []string{"irrelevant-template"},
 					},

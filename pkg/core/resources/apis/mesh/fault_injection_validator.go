@@ -21,17 +21,17 @@ func (f *FaultInjectionResource) Validate() error {
 
 func (f *FaultInjectionResource) HasFaultDelay() bool {
 	faultDelay := f.Spec.Conf.GetDelay()
-	return faultDelay != nil && !reflect.DeepEqual(*faultDelay, v1alpha1.FaultInjection_Conf_Delay{})
+	return faultDelay != nil && !reflect.DeepEqual(faultDelay, &v1alpha1.FaultInjection_Conf_Delay{})
 }
 
 func (f *FaultInjectionResource) HasFaultAbort() bool {
 	faultAbort := f.Spec.Conf.GetAbort()
-	return faultAbort != nil && !reflect.DeepEqual(*faultAbort, v1alpha1.FaultInjection_Conf_Abort{})
+	return faultAbort != nil && !reflect.DeepEqual(faultAbort, &v1alpha1.FaultInjection_Conf_Abort{})
 }
 
 func (f *FaultInjectionResource) HasFaultResponseBandwidth() bool {
 	faultResponseBandwidth := f.Spec.Conf.GetResponseBandwidth()
-	return faultResponseBandwidth != nil && !reflect.DeepEqual(*faultResponseBandwidth, v1alpha1.FaultInjection_Conf_ResponseBandwidth{})
+	return faultResponseBandwidth != nil && !reflect.DeepEqual(faultResponseBandwidth, &v1alpha1.FaultInjection_Conf_ResponseBandwidth{})
 }
 
 func (f *FaultInjectionResource) validateSources() validators.ValidationError {

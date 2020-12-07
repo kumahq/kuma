@@ -71,7 +71,7 @@ var _ = Describe("SDS Server", func() {
 
 		// setup default mesh with active mTLS and 2 CA
 		meshRes := mesh_core.MeshResource{
-			Spec: mesh_proto.Mesh{
+			Spec: &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: "ca-1",
 					Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -102,7 +102,7 @@ var _ = Describe("SDS Server", func() {
 
 		// setup backend dataplane
 		dpRes := mesh_core.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

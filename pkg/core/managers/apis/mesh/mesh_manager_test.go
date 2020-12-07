@@ -61,7 +61,7 @@ var _ = Describe("Mesh Manager", func() {
 
 			// when
 			mesh := core_mesh.MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "builtin-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -83,7 +83,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and enabled CA is created
-			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, *mesh.Spec.Mtls.Backends[0])
+			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, mesh.Spec.Mtls.Backends[0])
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -128,7 +128,7 @@ var _ = Describe("Mesh Manager", func() {
 					mesh := core_mesh.MeshResource{}
 
 					// when
-					err := util_proto.FromYAML([]byte(given.input), &mesh.Spec)
+					err := util_proto.FromYAML([]byte(given.input), mesh.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
@@ -138,7 +138,7 @@ var _ = Describe("Mesh Manager", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err := util_proto.ToYAML(&mesh.Spec)
+					actual, err := util_proto.ToYAML(mesh.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
@@ -153,7 +153,7 @@ var _ = Describe("Mesh Manager", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err = util_proto.ToYAML(&new.Spec)
+					actual, err = util_proto.ToYAML(new.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
@@ -189,7 +189,7 @@ var _ = Describe("Mesh Manager", func() {
 
 			// when
 			mesh := core_mesh.MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "ca-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -250,7 +250,7 @@ var _ = Describe("Mesh Manager", func() {
 
 			// when
 			mesh := core_mesh.MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "builtin-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -296,7 +296,7 @@ var _ = Describe("Mesh Manager", func() {
 
 			// when
 			mesh := core_mesh.MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -340,7 +340,7 @@ var _ = Describe("Mesh Manager", func() {
 					mesh := core_mesh.MeshResource{}
 
 					// when
-					err := util_proto.FromYAML([]byte(given.initial), &mesh.Spec)
+					err := util_proto.FromYAML([]byte(given.initial), mesh.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
@@ -352,8 +352,8 @@ var _ = Describe("Mesh Manager", func() {
 
 					By("changing Prometheus settings")
 					// when
-					mesh.Spec = mesh_proto.Mesh{}
-					err = util_proto.FromYAML([]byte(given.updated), &mesh.Spec)
+					mesh.Spec = &mesh_proto.Mesh{}
+					err = util_proto.FromYAML([]byte(given.updated), mesh.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
@@ -364,7 +364,7 @@ var _ = Describe("Mesh Manager", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err := util_proto.ToYAML(&mesh.Spec)
+					actual, err := util_proto.ToYAML(mesh.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
@@ -379,7 +379,7 @@ var _ = Describe("Mesh Manager", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err = util_proto.ToYAML(&new.Spec)
+					actual, err = util_proto.ToYAML(new.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))

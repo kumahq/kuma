@@ -42,7 +42,7 @@ func ExecuteStoreTests(
 
 	createResource := func(name string) *sample_model.TrafficRouteResource {
 		res := sample_model.TrafficRouteResource{
-			Spec: sample_proto.TrafficRoute{
+			Spec: &sample_proto.TrafficRoute{
 				Path: "demo",
 			},
 		}

@@ -49,7 +49,7 @@ var _ = Describe("Auth Callbacks", func() {
 			Name: "web-01",
 			Mesh: "default",
 		},
-		Spec: mesh_proto.Dataplane{
+		Spec: &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

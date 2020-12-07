@@ -106,7 +106,7 @@ var _ = Describe("Bootstrap Server", func() {
 		func(given testCase) {
 			// given
 			res := mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "8.8.8.8",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -177,7 +177,7 @@ var _ = Describe("Bootstrap Server", func() {
 	It("should return 422 for the lack of the dataplane token", func() {
 		// given
 		res := mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -217,7 +217,7 @@ var _ = Describe("Bootstrap Server", func() {
 	It("should publish metrics", func() {
 		// given
 		res := mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

@@ -94,15 +94,15 @@ var _ = Describe("Meshed Persistence", func() {
 				configs: map[string]*system.ConfigResource{
 					"kuma-mesh-1-dns-vips": {
 						Meta: &model.ResourceMeta{Name: "kuma-mesh-1-dns-vips"},
-						Spec: config_proto.Config{Config: `{"backend":"240.0.0.1","frontend":"240.0.0.3","postgres":"240.0.0.0","redis":"240.0.0.2"}`},
+						Spec: &config_proto.Config{Config: `{"backend":"240.0.0.1","frontend":"240.0.0.3","postgres":"240.0.0.0","redis":"240.0.0.2"}`},
 					},
 					"kuma-mesh-2-dns-vips": {
 						Meta: &model.ResourceMeta{Name: "kuma-mesh-2-dns-vips"},
-						Spec: config_proto.Config{Config: `{"backend_2":"240.0.1.1","frontend_2":"240.0.1.3","postgres_2":"240.0.1.0","redis_2":"240.0.1.2"}`},
+						Spec: &config_proto.Config{Config: `{"backend_2":"240.0.1.1","frontend_2":"240.0.1.3","postgres_2":"240.0.1.0","redis_2":"240.0.1.2"}`},
 					},
 					"kuma-mesh-3-dns-vips": {
 						Meta: &model.ResourceMeta{Name: "kuma-mesh-3-dns-vips"},
-						Spec: config_proto.Config{Config: `{"backend_3":"240.0.2.1","frontend_3":"240.0.2.3","postgres_3":"240.0.2.0","redis_3":"240.0.2.2"}`},
+						Spec: &config_proto.Config{Config: `{"backend_3":"240.0.2.1","frontend_3":"240.0.2.3","postgres_3":"240.0.2.0","redis_3":"240.0.2.2"}`},
 					},
 				},
 			})

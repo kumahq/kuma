@@ -3,8 +3,6 @@ package system
 import (
 	"errors"
 
-	"github.com/golang/protobuf/proto"
-
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
@@ -17,7 +15,7 @@ var _ model.Resource = &ZoneOverviewResource{}
 
 type ZoneOverviewResource struct {
 	Meta model.ResourceMeta
-	Spec system_proto.ZoneOverview
+	Spec *system_proto.ZoneOverview
 }
 
 func (t *ZoneOverviewResource) GetType() model.ResourceType {
@@ -33,7 +31,7 @@ func (t *ZoneOverviewResource) SetMeta(m model.ResourceMeta) {
 }
 
 func (t *ZoneOverviewResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 
 func (t *ZoneOverviewResource) SetSpec(spec model.ResourceSpec) error {
@@ -41,7 +39,7 @@ func (t *ZoneOverviewResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *zoneOverview
+		t.Spec = zoneOverview
 		return nil
 	}
 }
@@ -98,14 +96,14 @@ func NewZoneOverviews(zones ZoneResourceList, insights ZoneInsightResourceList) 
 	for _, zone := range zones.Items {
 		overview := ZoneOverviewResource{
 			Meta: zone.Meta,
-			Spec: system_proto.ZoneOverview{
-				Zone:        proto.Clone(&zone.Spec).(*system_proto.Zone),
+			Spec: &system_proto.ZoneOverview{
+				Zone:        zone.Spec,
 				ZoneInsight: nil,
 			},
 		}
 		insight, exists := insightsByKey[model.MetaToResourceKey(overview.Meta)]
 		if exists {
-			overview.Spec.ZoneInsight = proto.Clone(&insight.Spec).(*system_proto.ZoneInsight)
+			overview.Spec.ZoneInsight = insight.Spec
 		}
 		items = append(items, &overview)
 	}

@@ -117,7 +117,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should create a new resource", func() {
 			// given
 			tr := &sample_core.TrafficRouteResource{
-				Spec: sample_proto.TrafficRoute{
+				Spec: &sample_proto.TrafficRoute{
 					Path: "/example",
 				},
 			}
@@ -152,7 +152,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should create a new Mesh", func() {
 			// given
 			mesh := core_mesh.MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "builtin-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -221,7 +221,7 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			tr := sample_core.TrafficRouteResource{
-				Spec: sample_proto.TrafficRoute{
+				Spec: &sample_proto.TrafficRoute{
 					Path: "/example",
 				},
 			}

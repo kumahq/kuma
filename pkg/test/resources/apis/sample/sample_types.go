@@ -17,7 +17,7 @@ var _ model.Resource = &TrafficRouteResource{}
 
 type TrafficRouteResource struct {
 	Meta model.ResourceMeta
-	Spec proto.TrafficRoute
+	Spec *proto.TrafficRoute
 }
 
 func (t *TrafficRouteResource) GetType() model.ResourceType {
@@ -30,14 +30,14 @@ func (t *TrafficRouteResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *TrafficRouteResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 	route, ok := spec.(*proto.TrafficRoute)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *route
+		t.Spec = route
 		return nil
 	}
 }

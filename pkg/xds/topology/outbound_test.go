@@ -24,7 +24,7 @@ var _ = Describe("TrafficRoute", func() {
 		Meta: &test_model.ResourceMeta{
 			Name: defaultMeshName,
 		},
-		Spec: mesh_proto.Mesh{
+		Spec: &mesh_proto.Mesh{
 			Mtls: &mesh_proto.Mesh_Mtls{
 				EnabledBackend: "ca-1",
 			},
@@ -34,7 +34,7 @@ var _ = Describe("TrafficRoute", func() {
 		Meta: &test_model.ResourceMeta{
 			Name: defaultMeshName,
 		},
-		Spec: mesh_proto.Mesh{
+		Spec: &mesh_proto.Mesh{
 			Mtls: &mesh_proto.Mesh_Mtls{
 				EnabledBackend: "",
 			},
@@ -44,7 +44,7 @@ var _ = Describe("TrafficRoute", func() {
 		Meta: &test_model.ResourceMeta{
 			Name: defaultMeshName,
 		},
-		Spec: mesh_proto.Mesh{
+		Spec: &mesh_proto.Mesh{
 			Routing: &mesh_proto.Routing{
 				LocalityAwareLoadBalancing: true,
 			},
@@ -67,7 +67,7 @@ var _ = Describe("TrafficRoute", func() {
 					Mesh: "demo",
 					Name: "backend",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -94,7 +94,7 @@ var _ = Describe("TrafficRoute", func() {
 					Mesh: "demo",
 					Name: "redis-v1",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.2",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -112,7 +112,7 @@ var _ = Describe("TrafficRoute", func() {
 					Mesh: "demo",
 					Name: "redis-v3",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.4",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -130,7 +130,7 @@ var _ = Describe("TrafficRoute", func() {
 					Mesh: "demo",
 					Name: "elastic-eu",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.5",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -148,7 +148,7 @@ var _ = Describe("TrafficRoute", func() {
 					Mesh: "demo",
 					Name: "elastic-us",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.6",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -254,7 +254,7 @@ var _ = Describe("TrafficRoute", func() {
 				dataplanes: []*mesh_core.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -268,7 +268,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 					{
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "10.20.1.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -297,7 +297,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 					{
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "10.20.1.3", // another instance of the same ingress will be ignored
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -326,7 +326,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 					{
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "10.20.1.4",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -395,7 +395,7 @@ var _ = Describe("TrafficRoute", func() {
 				dataplanes: []*mesh_core.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -409,7 +409,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 					{
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "10.20.1.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -460,7 +460,7 @@ var _ = Describe("TrafficRoute", func() {
 				dataplanes: []*mesh_core.DataplaneResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -474,7 +474,7 @@ var _ = Describe("TrafficRoute", func() {
 						},
 					},
 					{
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "10.20.1.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -518,7 +518,7 @@ var _ = Describe("TrafficRoute", func() {
 				externalServices: []*mesh_core.ExternalServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: mesh_proto.ExternalService{
+						Spec: &mesh_proto.ExternalService{
 							Networking: &mesh_proto.ExternalService_Networking{
 								Address: "httpbin.org:80",
 								Tls:     nil,
@@ -545,7 +545,7 @@ var _ = Describe("TrafficRoute", func() {
 				externalServices: []*mesh_core.ExternalServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: mesh_proto.ExternalService{
+						Spec: &mesh_proto.ExternalService{
 							Networking: &mesh_proto.ExternalService_Networking{
 								Address: "httpbin.org:80",
 								Tls: &mesh_proto.ExternalService_Networking_TLS{
@@ -574,7 +574,7 @@ var _ = Describe("TrafficRoute", func() {
 				externalServices: []*mesh_core.ExternalServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: mesh_proto.ExternalService{
+						Spec: &mesh_proto.ExternalService{
 							Networking: &mesh_proto.ExternalService_Networking{
 								Address: "httpbin.org:80",
 								Tls: &mesh_proto.ExternalService_Networking_TLS{
@@ -603,7 +603,7 @@ var _ = Describe("TrafficRoute", func() {
 				externalServices: []*mesh_core.ExternalServiceResource{
 					{
 						Meta: &test_model.ResourceMeta{Mesh: defaultMeshName},
-						Spec: mesh_proto.ExternalService{
+						Spec: &mesh_proto.ExternalService{
 							Networking: &mesh_proto.ExternalService_Networking{
 								Address: "httpbin.org:80",
 								Tls: &mesh_proto.ExternalService_Networking_TLS{

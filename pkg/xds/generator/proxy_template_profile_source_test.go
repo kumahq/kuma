@@ -65,10 +65,10 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				},
 			}
 
-			Expect(util_proto.FromYAML([]byte(given.mesh), &ctx.Mesh.Resource.Spec)).To(Succeed())
+			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
 
-			dataplane := mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
+			dataplane := &mesh_proto.Dataplane{}
+			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			outboundTargets := model.EndpointMap{
 				"db": []model.Endpoint{
@@ -104,7 +104,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 54321,
 					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
@@ -119,7 +119,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 59200,
 					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
@@ -134,7 +134,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				OutboundTargets: outboundTargets,
 				HealthChecks: model.HealthCheckMap{
 					"elastic": &mesh_core.HealthCheckResource{
-						Spec: mesh_proto.HealthCheck{
+						Spec: &mesh_proto.HealthCheck{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},

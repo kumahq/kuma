@@ -63,7 +63,7 @@ var _ = Describe("Cached Resource Manager", func() {
 
 		// and created resources
 		res = &core_mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "127.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

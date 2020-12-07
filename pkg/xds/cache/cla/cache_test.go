@@ -80,7 +80,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = s.Create(context.Background(), &core_mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
+			Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 					Port: 1010, ServicePort: 2020, Tags: map[string]string{"kuma.io/service": "backend"},
@@ -90,7 +90,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = s.Create(context.Background(), &core_mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
+			Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.2",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 					Port: 1011, ServicePort: 2021, Tags: map[string]string{"kuma.io/service": "backend"},

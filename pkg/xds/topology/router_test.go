@@ -49,7 +49,7 @@ var _ = Describe("TrafficRoute", func() {
 					Mesh: "demo",
 					Name: "backend",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -76,7 +76,7 @@ var _ = Describe("TrafficRoute", func() {
 					Mesh: "demo",
 					Name: "route-to-redis",
 				},
-				Spec: mesh_proto.TrafficRoute{
+				Spec: &mesh_proto.TrafficRoute{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "frontend"}},
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
@@ -103,7 +103,7 @@ var _ = Describe("TrafficRoute", func() {
 					Mesh: "demo",
 					Name: "route-to-elastic",
 				},
-				Spec: mesh_proto.TrafficRoute{
+				Spec: &mesh_proto.TrafficRoute{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 					},
@@ -129,7 +129,7 @@ var _ = Describe("TrafficRoute", func() {
 					Mesh: "default", // other mesh
 					Name: "route-to-blackhole",
 				},
-				Spec: mesh_proto.TrafficRoute{
+				Spec: &mesh_proto.TrafficRoute{
 					Sources: []*mesh_proto.Selector{
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 					},
@@ -213,7 +213,7 @@ var _ = Describe("TrafficRoute", func() {
 				dataplane: &mesh_core.DataplaneResource{},
 				routes: []*mesh_core.TrafficRouteResource{
 					{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -235,7 +235,7 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("TrafficRoutes should be picked by latest creation time given two equally specific routes", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend"}},
@@ -255,7 +255,7 @@ var _ = Describe("TrafficRoute", func() {
 							Name:         "everything-to-hollygrail",
 							CreationTime: time.Unix(1, 1),
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -277,7 +277,7 @@ var _ = Describe("TrafficRoute", func() {
 							Name:         "everything-to-blackhole",
 							CreationTime: time.Unix(0, 0),
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -308,7 +308,7 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("TrafficRoute with a `source` selector by 2 tags should win over a TrafficRoute with a `source` selector by 1 tag", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
@@ -327,7 +327,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 							},
@@ -348,7 +348,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend", "region": "eu"}},
 							},
@@ -379,7 +379,7 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("TrafficRoute with a `source` selector by an exact value should win over a TrafficRoute with a `source` selector by a wildcard value", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
@@ -398,7 +398,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -419,7 +419,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 							},
@@ -450,7 +450,7 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("TrafficRoute with a `destination` selector by an exact value should win over a TrafficRoute with a `destination` selector by a wildcard value", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
@@ -469,7 +469,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "less-specific",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -490,7 +490,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "more-specific",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -521,7 +521,7 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("in case if TrafficRoutes have equal aggregate ranks, most specific one should be selected based on last creation time", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu"}},
@@ -541,7 +541,7 @@ var _ = Describe("TrafficRoute", func() {
 							Name:         "equally-specific-2",
 							CreationTime: time.Unix(1, 1),
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -563,7 +563,7 @@ var _ = Describe("TrafficRoute", func() {
 							Name:         "equally-specific-1",
 							CreationTime: time.Unix(0, 0),
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
 							},
@@ -602,7 +602,7 @@ var _ = Describe("TrafficRoute", func() {
 			},
 			Entry("if an outbound interface has no matching TrafficRoute, the default route should be used", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend"}},
@@ -625,7 +625,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &PseudoMeta{
 							Name: "route-all-default",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.MatchAnyService(),
 							},
@@ -652,7 +652,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &PseudoMeta{
 							Name: "route-all-default",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.TagSelector{"kuma.io/service": "*"},
 							}},
@@ -676,7 +676,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &PseudoMeta{
 							Name: "route-all-default",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.TagSelector{"kuma.io/service": "*"},
 							}},
@@ -697,7 +697,7 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("the default route should only be used if there is matching TrafficRoute for a given outbound interface", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{Tags: map[string]string{"kuma.io/service": "backend"}},
@@ -720,7 +720,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &PseudoMeta{
 							Name: "route-all-default",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.MatchAnyService(),
 							},
@@ -742,7 +742,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "everything-to-elastic-v1",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
@@ -768,7 +768,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &PseudoMeta{
 							Name: "route-all-default",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.TagSelector{"kuma.io/service": "*"},
 							}},
@@ -792,7 +792,7 @@ var _ = Describe("TrafficRoute", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "everything-to-elastic-v1",
 						},
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.TagSelector{"kuma.io/service": "*"},
 							}},
@@ -834,7 +834,7 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("Dataplane with outbound interfaces but no TrafficRoutes", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{Service: "redis", Port: 10001},
@@ -855,7 +855,7 @@ var _ = Describe("TrafficRoute", func() {
 			}),
 			Entry("Dataplane with outbound interfaces and TrafficRoutes", testCase{
 				dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 								{Service: "redis", Port: 10001},
@@ -869,7 +869,7 @@ var _ = Describe("TrafficRoute", func() {
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 10001,
 					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
@@ -888,7 +888,7 @@ var _ = Describe("TrafficRoute", func() {
 						DataplaneIP:   "127.0.0.1",
 						DataplanePort: 10002,
 					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{

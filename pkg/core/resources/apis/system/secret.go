@@ -16,7 +16,7 @@ var _ model.Resource = &SecretResource{}
 
 type SecretResource struct {
 	Meta model.ResourceMeta
-	Spec system_proto.Secret
+	Spec *system_proto.Secret
 }
 
 func (t *SecretResource) GetType() model.ResourceType {
@@ -29,14 +29,14 @@ func (t *SecretResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *SecretResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
 	value, ok := spec.(*system_proto.Secret)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *value
+		t.Spec = value
 		return nil
 	}
 }

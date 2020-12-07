@@ -86,7 +86,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should create a new config", func() {
 			// given
 			config := &system_model.ConfigResource{
-				Spec: system_proto.Config{
+				Spec: &system_proto.Config{
 					Config: "test",
 				},
 			}

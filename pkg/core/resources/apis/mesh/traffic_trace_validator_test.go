@@ -18,7 +18,7 @@ var _ = Describe("TrafficTrace", func() {
 				trafficTrace := TrafficTraceResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(trafficTraceYAML), &trafficTrace.Spec)
+				err := util_proto.FromYAML([]byte(trafficTraceYAML), trafficTrace.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -59,7 +59,7 @@ var _ = Describe("TrafficTrace", func() {
 				trafficTrace := TrafficTraceResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.trafficTrace), &trafficTrace.Spec)
+				err := util_proto.FromYAML([]byte(given.trafficTrace), trafficTrace.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

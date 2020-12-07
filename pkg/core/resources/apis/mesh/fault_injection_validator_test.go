@@ -18,7 +18,7 @@ var _ = Describe("FaultInjection", func() {
 				faultInjection := FaultInjectionResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(faultInjectionYAML), &faultInjection.Spec)
+				err := util_proto.FromYAML([]byte(faultInjectionYAML), faultInjection.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -80,7 +80,7 @@ var _ = Describe("FaultInjection", func() {
 				faultInjection := FaultInjectionResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.faultInjection), &faultInjection.Spec)
+				err := util_proto.FromYAML([]byte(given.faultInjection), faultInjection.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

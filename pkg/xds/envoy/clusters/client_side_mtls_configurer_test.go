@@ -56,7 +56,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
 								Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -129,7 +129,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
 								Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -255,7 +255,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
 								Backends: []*mesh_proto.CertificateAuthorityBackend{

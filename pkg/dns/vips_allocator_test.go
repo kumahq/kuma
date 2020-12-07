@@ -56,13 +56,13 @@ var _ = Describe("VIP Allocator", func() {
 		err = rm.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey("mesh-2", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("backend")}, store.CreateByKey("dp-1", "mesh-1"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("backend")}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("frontend")}, store.CreateByKey("dp-2", "mesh-1"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("frontend")}, store.CreateByKey("dp-2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("web")}, store.CreateByKey("dp-3", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
 		allocator, err = dns.NewVIPsAllocator(rm, cm, "240.0.0.0/24", r)
@@ -104,7 +104,7 @@ var _ = Describe("VIP Allocator", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -139,23 +139,23 @@ var _ = Describe("BuildServiceSet", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup dataplanes
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("backend")}, store.CreateByKey("backend-1", "mesh-1"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("backend")}, store.CreateByKey("backend-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("frontend")}, store.CreateByKey("frontend-1", "mesh-1"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("frontend")}, store.CreateByKey("frontend-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("frontend")}, store.CreateByKey("frontend-2", "mesh-1"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("frontend")}, store.CreateByKey("frontend-2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("database", "metrics")}, store.CreateByKey("db-m-1", "mesh-1"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database", "metrics")}, store.CreateByKey("db-m-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("another-mesh-svc")}, store.CreateByKey("another-mesh-dp-1", "mesh-2"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("another-mesh-svc")}, store.CreateByKey("another-mesh-dp-1", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup ingress
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: mesh_proto.Dataplane{
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 					{
@@ -196,10 +196,10 @@ var _ = Describe("BuildServiceSet", func() {
 			}
 		}
 
-		err = rm.Create(context.Background(), &mesh.ExternalServiceResource{Spec: *es("es-backend")}, store.CreateByKey("es-backend-1", "mesh-1"))
+		err = rm.Create(context.Background(), &mesh.ExternalServiceResource{Spec: es("es-backend")}, store.CreateByKey("es-backend-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.ExternalServiceResource{Spec: *es("another-mesh-es")}, store.CreateByKey("es-backend-1", "mesh-2"))
+		err = rm.Create(context.Background(), &mesh.ExternalServiceResource{Spec: es("another-mesh-es")}, store.CreateByKey("es-backend-1", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

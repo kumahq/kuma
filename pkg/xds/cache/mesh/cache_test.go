@@ -47,7 +47,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		for i := 0; i < n; i++ {
 			resources = append(resources, &mesh_core.DataplaneResource{
 				Meta: &model.ResourceMeta{Mesh: mesh, Name: fmt.Sprintf("dp-%d", i), Version: version},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: address,
 					},

@@ -22,7 +22,7 @@ var _ = Describe("HealthCheck", func() {
 				healthCheck := HealthCheckResource{}
 
 				// when
-				err := util_proto.FromYAML([]byte(given.healthCheck), &healthCheck.Spec)
+				err := util_proto.FromYAML([]byte(given.healthCheck), healthCheck.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

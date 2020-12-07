@@ -38,7 +38,7 @@ func ExecuteOwnerTests(
 
 		name := "resource-1"
 		trRes := sample_model.TrafficRouteResource{
-			Spec: sample_proto.TrafficRoute{
+			Spec: &sample_proto.TrafficRoute{
 				Path: "demo",
 			},
 		}
@@ -66,7 +66,7 @@ func ExecuteOwnerTests(
 
 		for i := 0; i < 10; i++ {
 			tr := sample_model.TrafficRouteResource{
-				Spec: sample_proto.TrafficRoute{
+				Spec: &sample_proto.TrafficRoute{
 					Path: "demo",
 				},
 			}
@@ -101,7 +101,7 @@ func ExecuteOwnerTests(
 		var prev model.Resource = &meshRes
 		for i := 0; i < 10; i++ {
 			curr := &sample_model.TrafficRouteResource{
-				Spec: sample_proto.TrafficRoute{
+				Spec: &sample_proto.TrafficRoute{
 					Path: "demo",
 				},
 			}

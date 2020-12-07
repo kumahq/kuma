@@ -29,7 +29,7 @@ var _ = Describe("SyncResourceStore", func() {
 			Meta: &model2.ResourceMeta{
 				Name: meshName,
 			},
-			Spec: mesh_proto.Mesh{
+			Spec: &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: ca,
 					Backends: []*mesh_proto.CertificateAuthorityBackend{

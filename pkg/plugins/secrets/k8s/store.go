@@ -235,7 +235,7 @@ func (c *SimpleConverter) ToKubernetesObject(r *secret_model.SecretResource) (*k
 func (c *SimpleConverter) ToCoreResource(secret *kube_core.Secret, out *secret_model.SecretResource) error {
 	out.SetMeta(&KubernetesMetaAdapter{secret.ObjectMeta})
 	if secret.Data != nil {
-		out.Spec = system_proto.Secret{
+		out.Spec = &system_proto.Secret{
 			Data: &wrappers.BytesValue{
 				Value: secret.Data["value"],
 			},

@@ -93,7 +93,7 @@ func waitForServer(client *resourceApiClient) {
 
 func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, mesh string) {
 	resource := sample_model.TrafficRouteResource{
-		Spec: sample_proto.TrafficRoute{
+		Spec: &sample_proto.TrafficRoute{
 			Path: "/sample-path",
 		},
 	}
