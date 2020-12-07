@@ -17,7 +17,7 @@ var _ model.Resource = &FaultInjectionResource{}
 
 type FaultInjectionResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.FaultInjection
+	Spec *mesh_proto.FaultInjection
 }
 
 func (f *FaultInjectionResource) GetType() model.ResourceType {
@@ -33,7 +33,7 @@ func (f *FaultInjectionResource) SetMeta(m model.ResourceMeta) {
 }
 
 func (f *FaultInjectionResource) GetSpec() model.ResourceSpec {
-	return &f.Spec
+	return f.Spec
 }
 
 func (f *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
@@ -41,7 +41,7 @@ func (f *FaultInjectionResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		f.Spec = *faultInjection
+		f.Spec = faultInjection
 		return nil
 	}
 }

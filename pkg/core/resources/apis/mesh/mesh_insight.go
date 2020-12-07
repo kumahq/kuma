@@ -16,7 +16,7 @@ var _ model.Resource = &MeshInsightResource{}
 
 type MeshInsightResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.MeshInsight
+	Spec *mesh_proto.MeshInsight
 }
 
 func (m *MeshInsightResource) GetType() model.ResourceType {
@@ -32,7 +32,7 @@ func (m *MeshInsightResource) SetMeta(meta model.ResourceMeta) {
 }
 
 func (m *MeshInsightResource) GetSpec() model.ResourceSpec {
-	return &m.Spec
+	return m.Spec
 }
 
 func (m *MeshInsightResource) SetSpec(spec model.ResourceSpec) error {
@@ -40,7 +40,7 @@ func (m *MeshInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		m.Spec = *meshInsight
+		m.Spec = meshInsight
 		return nil
 	}
 }

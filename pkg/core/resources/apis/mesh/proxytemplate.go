@@ -16,7 +16,7 @@ var _ model.Resource = &ProxyTemplateResource{}
 
 type ProxyTemplateResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.ProxyTemplate
+	Spec *mesh_proto.ProxyTemplate
 }
 
 func (t *ProxyTemplateResource) GetType() model.ResourceType {
@@ -29,14 +29,14 @@ func (t *ProxyTemplateResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *ProxyTemplateResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 	template, ok := spec.(*mesh_proto.ProxyTemplate)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *template
+		t.Spec = template
 		return nil
 	}
 }

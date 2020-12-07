@@ -17,7 +17,7 @@ var _ model.Resource = &CircuitBreakerResource{}
 
 type CircuitBreakerResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.CircuitBreaker
+	Spec *mesh_proto.CircuitBreaker
 }
 
 func (c *CircuitBreakerResource) GetType() model.ResourceType {
@@ -33,7 +33,7 @@ func (c *CircuitBreakerResource) SetMeta(m model.ResourceMeta) {
 }
 
 func (c *CircuitBreakerResource) GetSpec() model.ResourceSpec {
-	return &c.Spec
+	return c.Spec
 }
 
 func (c *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
@@ -41,7 +41,7 @@ func (c *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		c.Spec = *circuitBreaker
+		c.Spec = circuitBreaker
 		return nil
 	}
 }

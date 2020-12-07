@@ -16,7 +16,7 @@ var _ model.Resource = &TrafficPermissionResource{}
 
 type TrafficPermissionResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.TrafficPermission
+	Spec *mesh_proto.TrafficPermission
 }
 
 func (t *TrafficPermissionResource) GetType() model.ResourceType {
@@ -29,14 +29,14 @@ func (t *TrafficPermissionResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *TrafficPermissionResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
 	status, ok := spec.(*mesh_proto.TrafficPermission)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *status
+		t.Spec = status
 		return nil
 	}
 }

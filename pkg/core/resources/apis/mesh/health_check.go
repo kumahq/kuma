@@ -16,7 +16,7 @@ var _ model.Resource = &HealthCheckResource{}
 
 type HealthCheckResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.HealthCheck
+	Spec *mesh_proto.HealthCheck
 }
 
 func (r *HealthCheckResource) GetType() model.ResourceType {
@@ -29,14 +29,14 @@ func (r *HealthCheckResource) SetMeta(m model.ResourceMeta) {
 	r.Meta = m
 }
 func (r *HealthCheckResource) GetSpec() model.ResourceSpec {
-	return &r.Spec
+	return r.Spec
 }
 func (r *HealthCheckResource) SetSpec(value model.ResourceSpec) error {
 	spec, ok := value.(*mesh_proto.HealthCheck)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		r.Spec = *spec
+		r.Spec = spec
 		return nil
 	}
 }

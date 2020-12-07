@@ -3,8 +3,6 @@ package mesh
 import (
 	"errors"
 
-	"github.com/golang/protobuf/proto"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
@@ -99,13 +97,13 @@ func NewDataplaneOverviews(dataplanes DataplaneResourceList, insights DataplaneI
 		overview := DataplaneOverviewResource{
 			Meta: dataplane.Meta,
 			Spec: mesh_proto.DataplaneOverview{
-				Dataplane:        proto.Clone(&dataplane.Spec).(*mesh_proto.Dataplane),
+				Dataplane:        dataplane.Spec,
 				DataplaneInsight: nil,
 			},
 		}
 		insight, exists := insightsByKey[model.MetaToResourceKey(overview.Meta)]
 		if exists {
-			overview.Spec.DataplaneInsight = proto.Clone(&insight.Spec).(*mesh_proto.DataplaneInsight)
+			overview.Spec.DataplaneInsight = insight.Spec
 		}
 		items = append(items, &overview)
 	}

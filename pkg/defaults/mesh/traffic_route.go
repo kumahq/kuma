@@ -41,7 +41,7 @@ func defaultTrafficRouteKey(meshName string) model.ResourceKey {
 
 func ensureDefaultTrafficRoute(resManager manager.ResourceManager, meshName string) (err error, created bool) {
 	tr := &core_mesh.TrafficRouteResource{
-		Spec: defaultTrafficRoute,
+		Spec: &defaultTrafficRoute,
 	}
 	key := defaultTrafficRouteKey(meshName)
 	err = resManager.Get(context.Background(), tr, store.GetBy(key))

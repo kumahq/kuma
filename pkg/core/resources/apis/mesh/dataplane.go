@@ -16,7 +16,7 @@ var _ model.Resource = &DataplaneResource{}
 
 type DataplaneResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.Dataplane
+	Spec *mesh_proto.Dataplane
 }
 
 func (t *DataplaneResource) GetType() model.ResourceType {
@@ -29,14 +29,14 @@ func (t *DataplaneResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *DataplaneResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *DataplaneResource) SetSpec(spec model.ResourceSpec) error {
 	dataplane, ok := spec.(*mesh_proto.Dataplane)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *dataplane
+		t.Spec = dataplane
 		return nil
 	}
 }

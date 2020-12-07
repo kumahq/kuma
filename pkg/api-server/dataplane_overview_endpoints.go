@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 
 	"github.com/emicklei/go-restful"
-	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -74,8 +73,8 @@ func (r *dataplaneOverviewEndpoints) fetchOverview(ctx context.Context, name str
 	return &mesh.DataplaneOverviewResource{
 		Meta: dataplane.Meta,
 		Spec: mesh_proto.DataplaneOverview{
-			Dataplane:        proto.Clone(&dataplane.Spec).(*mesh_proto.Dataplane),
-			DataplaneInsight: proto.Clone(&insight.Spec).(*mesh_proto.DataplaneInsight),
+			Dataplane:        dataplane.Spec,
+			DataplaneInsight: insight.Spec,
 		},
 	}, nil
 }

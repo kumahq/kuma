@@ -16,7 +16,7 @@ var _ model.Resource = &ExternalServiceResource{}
 
 type ExternalServiceResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.ExternalService
+	Spec *mesh_proto.ExternalService
 }
 
 func (t *ExternalServiceResource) GetType() model.ResourceType {
@@ -29,14 +29,14 @@ func (t *ExternalServiceResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *ExternalServiceResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *ExternalServiceResource) SetSpec(spec model.ResourceSpec) error {
 	externalService, ok := spec.(*mesh_proto.ExternalService)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *externalService
+		t.Spec = externalService
 		return nil
 	}
 }
