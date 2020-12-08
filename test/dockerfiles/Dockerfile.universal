@@ -1,9 +1,41 @@
 # using Envoy's base to copy the Envoy binary
 FROM envoyproxy/envoy-alpine:v1.16.1 as envoy
 
+FROM ubuntu:bionic as builder
+
+ENV GOVERSION 1.15.5
+ENV GOROOT /opt/go
+ENV GOPATH /root/.go
+
+RUN apt-get update
+RUN apt-get -y install wget
+
+RUN cd /opt && wget https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz && \
+    tar zxf go${GOVERSION}.linux-amd64.tar.gz && rm go${GOVERSION}.linux-amd64.tar.gz && \
+    ln -s /opt/go/bin/go /usr/bin/ && \
+    mkdir $GOPATH
+
+RUN GO111MODULE=on go get istio.io/istio/tools/istio-iptables@1.8.0
+RUN GO111MODULE=on go get istio.io/istio/tools/istio-clean-iptables@1.8.0
+
 FROM ubuntu:20.04
 
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
+COPY --from=builder /root/.go/bin/istio-iptables /root/kuma-iptables
+COPY --from=builder /root/.go/bin/istio-clean-iptables /root/kuma-clean-iptables
+
+RUN echo '#!/bin/sh \n\
+/root/kuma-iptables \
+-p 15001 \
+-z 15006 \
+-u 5678 \
+-g 5678 \
+-d 22,80 \
+-o 12345,23456 \
+-m REDIRECT\
+-i * \
+-b 8080 \
+' >> /root/run-iptables.sh && chmod a+x /root/run-iptables.sh
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
@@ -15,7 +47,7 @@ RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /k
 
 RUN apt update \
   && apt dist-upgrade -y \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata openssh-server curl ncat vim net-tools \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata openssh-server curl ncat vim net-tools iptables dnsutils \
   && rm -rf /var/lib/apt/lists/*
 
 RUN ssh-keygen -A \
