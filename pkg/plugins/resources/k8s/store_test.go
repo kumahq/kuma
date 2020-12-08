@@ -145,7 +145,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Get(&actual, ns, name)
 
 			// then
-			Expect(actual.Spec).To(MatchProto(expected.Spec))
+			Expect(actual.Spec).To(Equal(expected.Spec))
 			// and
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(tr.Meta.GetVersion()))
 		})
@@ -190,7 +190,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Get(&actual, ns, name)
 
 			// then
-			Expect(actual.Spec).To(MatchProto(expected.Spec))
+			Expect(actual.Spec).To(Equal(expected.Spec))
 			// and
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(mesh.Meta.GetVersion()))
 		})
@@ -288,7 +288,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Get(&actual, ns, name)
 
 			// then
-			Expect(actual.Spec).To(MatchProto(expected.Spec))
+			Expect(actual.Spec).To(Equal(expected.Spec))
 			// and
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(tr.Meta.GetVersion()))
 		})
@@ -349,7 +349,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Get(&actual, ns, name)
 
 			// then
-			Expect(actual.Spec).To(MatchProto(expected.Spec))
+			Expect(actual.Spec).To(Equal(expected.Spec))
 			// and
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(mesh.Meta.GetVersion()))
 		})
@@ -502,7 +502,7 @@ var _ = Describe("KubernetesStore", func() {
 				"k8s.kuma.io/name":      name,
 			}))
 			// and
-			Expect(actual.Spec).To(Equal(mesh_proto.Mesh{
+			Expect(actual.Spec).To(MatchProto(&mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: "builtin",
 					Backends: []*mesh_proto.CertificateAuthorityBackend{

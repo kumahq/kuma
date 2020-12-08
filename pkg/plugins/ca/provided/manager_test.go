@@ -93,10 +93,10 @@ var _ = Describe("Provided CA", func() {
               secret:`,
 				expected: `
             violations:
-            - field: cert.secret
-              message: cannot be empty
-            - field: key.secret
-              message: cannot be empty`,
+            - field: cert
+              message: 'data source has to be chosen. Available sources: secret, file, inline'
+            - field: key
+              message: 'data source has to be chosen. Available sources: secret, file, inline'`,
 			}),
 			Entry("config with empty secret", testCase{
 				configYAML: `

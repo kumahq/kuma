@@ -17,6 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/insights"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -98,6 +99,6 @@ var _ = Describe("Insight Persistence", func() {
 			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
 		}, "10s", "100ms").Should(BeNil())
 		Expect(insight.Spec.Policies[string(core_mesh.TrafficPermissionType)].Total).To(Equal(uint32(1)))
-		Expect(insight.Spec.LastSync).To(Equal(proto.MustTimestampProto(now)))
+		Expect(insight.Spec.LastSync).To(MatchProto(proto.MustTimestampProto(now)))
 	})
 })
