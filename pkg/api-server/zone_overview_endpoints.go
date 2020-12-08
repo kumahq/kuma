@@ -48,8 +48,8 @@ func (r *zoneOverviewEndpoints) inspectZone(request *restful.Request, response *
 }
 
 func (r *zoneOverviewEndpoints) fetchOverview(ctx context.Context, name string) (*system.ZoneOverviewResource, error) {
-	zone := system.ZoneResource{}
-	if err := r.resManager.Get(ctx, &zone, store.GetByKey(name, model.NoMesh)); err != nil {
+	zone := system.NewZoneResource()
+	if err := r.resManager.Get(ctx, zone, store.GetByKey(name, model.NoMesh)); err != nil {
 		return nil, err
 	}
 

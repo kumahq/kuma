@@ -62,13 +62,13 @@ var _ = Describe("Builtin CA Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and key+cert are stored as a secrets
-			secretRes := system.SecretResource{}
-			err = secretManager.Get(context.Background(), &secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-1", "default"))
+			secretRes := system.NewSecretResource()
+			err = secretManager.Get(context.Background(), secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(secretRes.Spec.GetData().GetValue()).ToNot(BeEmpty())
 
-			keyRes := system.SecretResource{}
-			err = secretManager.Get(context.Background(), &keyRes, core_store.GetByKey("default.ca-builtin-key-builtin-1", "default"))
+			keyRes := system.NewSecretResource()
+			err = secretManager.Get(context.Background(), keyRes, core_store.GetByKey("default.ca-builtin-key-builtin-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(keyRes.Spec.GetData().GetValue()).ToNot(BeEmpty())
 
@@ -108,8 +108,8 @@ var _ = Describe("Builtin CA Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and CA has configured parameters
-			secretRes := system.SecretResource{}
-			err = secretManager.Get(context.Background(), &secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-1", "default"))
+			secretRes := system.NewSecretResource()
+			err = secretManager.Get(context.Background(), secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			block, _ := pem.Decode(secretRes.Spec.Data.Value)
 			cert, err := x509.ParseCertificate(block.Bytes)
