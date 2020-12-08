@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/protobuf/proto" //lint:ignore SA1019 go-control-plane did not migrate yet
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"

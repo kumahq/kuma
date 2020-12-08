@@ -6,7 +6,7 @@ import (
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/ghodss/yaml"
-	"github.com/golang/protobuf/jsonpb" //lint:ignore SA1019 go-control-plane did not migrate yet
+	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/any"

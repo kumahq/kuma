@@ -15,7 +15,7 @@ import (
 	// import only limited proto definitions from Go Control Plane to save kuma-dp size
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
 	_ "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
-	"github.com/golang/protobuf/proto" //lint:ignore SA1019 go-control-plane did not migrate yet
+	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
