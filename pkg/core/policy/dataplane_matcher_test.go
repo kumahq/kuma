@@ -98,6 +98,7 @@ var _ = Describe("Dataplane matcher", func() {
 							Name:         "b",
 							CreationTime: time.Unix(1, 1),
 						},
+						Spec: &mesh_proto.ProxyTemplate{},
 					},
 					&mesh_core.ProxyTemplateResource{
 						Meta: &test_model.ResourceMeta{
@@ -105,6 +106,7 @@ var _ = Describe("Dataplane matcher", func() {
 							Name:         "a",
 							CreationTime: time.Unix(0, 0),
 						},
+						Spec: &mesh_proto.ProxyTemplate{},
 					},
 				},
 				expected: &mesh_core.ProxyTemplateResource{
@@ -113,6 +115,7 @@ var _ = Describe("Dataplane matcher", func() {
 						Name:         "b",
 						CreationTime: time.Unix(1, 1),
 					},
+					Spec: &mesh_proto.ProxyTemplate{},
 				},
 			}),
 			Entry("policies have empty selectors (latest should be selected)", testCase{

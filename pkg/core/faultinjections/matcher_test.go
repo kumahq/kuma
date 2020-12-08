@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -84,7 +85,10 @@ var _ = Describe("Match", func() {
 
 			bestMatched, err := matcher.Match(context.Background(), given.dataplane, mesh)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bestMatched).To(Equal(given.expected))
+			Expect(len(bestMatched)).To(Equal(len(given.expected)))
+			for key := range bestMatched {
+				Expect(bestMatched[key]).To(MatchProto(given.expected[key]))
+			}
 		},
 		Entry("1 inbound dataplane, 2 policies", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
