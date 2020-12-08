@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
@@ -265,13 +266,14 @@ var _ = Describe("Dataplane", func() {
 		DescribeTable("should correctly determine effective Prometheus config for given Dataplane and Mesh",
 			func(given testCase) {
 				// given
-				var dataplane *DataplaneResource
+				dataplane := NewDataplaneResource()
 				if given.dataplaneName != "" {
 					dataplane = &DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Name: given.dataplaneName,
 							Mesh: given.dataplaneMesh,
 						},
+						Spec: &mesh_proto.Dataplane{},
 					}
 					Expect(util_proto.FromYAML([]byte(given.dataplaneSpec), dataplane.Spec)).To(Succeed())
 				}
@@ -291,7 +293,7 @@ var _ = Describe("Dataplane", func() {
 				// then
 				endpoint, err := dataplane.GetPrometheusEndpoint(mesh)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(endpoint).To(Equal(given.expected))
+				Expect(endpoint).To(matchers.MatchProto(given.expected))
 			},
 			Entry("dataplane == `nil` && mesh == `nil`", testCase{
 				expected: nil,

@@ -143,7 +143,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		// then real manager should be called only once
 		list := fetch()
 		Expect(list.Items).To(HaveLen(1))
-		Expect(list.Items[0].GetSpec()).To(MatchProto(&res.Spec))
+		Expect(list.Items[0].GetSpec()).To(MatchProto(res.Spec))
 		Expect(countingManager.listQueries).To(Equal(1))
 
 		// when
@@ -152,7 +152,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		// then
 		list = fetch()
 		Expect(list.Items).To(HaveLen(1))
-		Expect(list.Items[0].GetSpec()).To(MatchProto(&res.Spec))
+		Expect(list.Items[0].GetSpec()).To(MatchProto(res.Spec))
 		Expect(countingManager.listQueries).To(Equal(2))
 
 		// and metrics are published
