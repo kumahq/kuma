@@ -145,7 +145,7 @@ func EchoServerUniversal(id, token string, fs ...DeployOptionsFunc) InstallFunc 
 func IngressUniversal(token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
-		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, true, []string{}, []string{})
+		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, true, []string{})
 		if err != nil {
 			return err
 		}
@@ -157,7 +157,7 @@ func IngressUniversal(token string) InstallFunc {
 
 		publicAddress := uniCluster.apps[AppIngress].ip
 		dpyaml := fmt.Sprintf(IngressDataplane, publicAddress, kdsPort, kdsPort)
-		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token)
+		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token, false)
 	}
 }
 
@@ -171,9 +171,10 @@ func DemoClientK8s() InstallFunc {
 	)
 }
 
-func DemoClientUniversal(token string) InstallFunc {
+func DemoClientUniversal(token string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp(WithAppname(AppModeDemoClient), WithToken(token))
+		fs = append(fs, WithAppname(AppModeDemoClient), WithToken(token))
+		return cluster.DeployApp(fs...)
 	}
 }
 
