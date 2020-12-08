@@ -188,7 +188,7 @@ var _ = Describe("Util", func() {
 				}),
 				Entry("Service with `targetPort` as a number (UDP)", testCase{
 					pod: `
-                    spec:d
+                    spec:
                       containers:
                       - name: container-1
                         ports: [] # notice that actual container ports become irrelevant when Service has 'targetPort' as a number
