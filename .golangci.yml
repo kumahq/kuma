@@ -23,4 +23,4 @@ issues:
   exclude-rules:
     - linters:
         - staticcheck
-      text: "SA9003:"
+      text: "SA1019:" # ignore deprecation of proto library. We don't want to migrate yet because go-control-plane is not ready
