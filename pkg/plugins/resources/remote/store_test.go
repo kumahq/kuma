@@ -83,8 +83,8 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			resource := sample_core.TrafficRouteResource{}
-			err := store.Get(context.Background(), &resource, core_store.GetByKey(name, "default"))
+			resource := sample_core.NewTrafficRouteResource()
+			err := store.Get(context.Background(), resource, core_store.GetByKey(name, "default"))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -480,8 +480,8 @@ var _ = Describe("RemoteStore", func() {
 			})
 
 			// when
-			resource := sample_core.TrafficRouteResource{}
-			err := store.Delete(context.Background(), &resource, core_store.DeleteByKey(name, meshName))
+			resource := sample_core.NewTrafficRouteResource()
+			err := store.Delete(context.Background(), resource, core_store.DeleteByKey(name, meshName))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -507,8 +507,8 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, "some error from the server")
 
 			// when
-			resource := sample_core.TrafficRouteResource{}
-			err := store.Delete(context.Background(), &resource, core_store.DeleteByKey("tr-1", "mesh-1"))
+			resource := sample_core.NewTrafficRouteResource()
+			err := store.Delete(context.Background(), resource, core_store.DeleteByKey("tr-1", "mesh-1"))
 
 			// then
 			Expect(err).To(MatchError("(400): some error from the server"))
@@ -524,8 +524,8 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(404, json)
 
 			// when
-			resource := sample_core.TrafficRouteResource{}
-			err := store.Delete(context.Background(), &resource, core_store.DeleteByKey("tr-1", "mesh-1"))
+			resource := sample_core.NewTrafficRouteResource()
+			err := store.Delete(context.Background(), resource, core_store.DeleteByKey("tr-1", "mesh-1"))
 
 			// then
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
@@ -540,8 +540,8 @@ var _ = Describe("RemoteStore", func() {
 			store := setupErrorStore(400, json)
 
 			// when
-			resource := sample_core.TrafficRouteResource{}
-			err := store.Delete(context.Background(), &resource, core_store.DeleteByKey("tr-1", "mesh-1"))
+			resource := sample_core.NewTrafficRouteResource()
+			err := store.Delete(context.Background(), resource, core_store.DeleteByKey("tr-1", "mesh-1"))
 
 			// then
 			Expect(err).To(HaveOccurred())

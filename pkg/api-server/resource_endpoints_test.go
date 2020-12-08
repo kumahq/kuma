@@ -374,8 +374,8 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 
 			// then
-			resource := sample_model.TrafficRouteResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			resource := sample_model.NewTrafficRouteResource()
+			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Path).To(Equal("/update-sample-path"))
 		})
@@ -614,8 +614,8 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 
 			// and
-			resource := sample_model.TrafficRouteResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			resource := sample_model.NewTrafficRouteResource()
+			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
 			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
 		})
 

@@ -15,7 +15,7 @@ var _ = Describe("TrafficTrace", func() {
 		DescribeTable("should pass validation",
 			func(trafficTraceYAML string) {
 				// setup
-				trafficTrace := TrafficTraceResource{}
+				trafficTrace := NewTrafficTraceResource()
 
 				// when
 				err := util_proto.FromYAML([]byte(trafficTraceYAML), trafficTrace.Spec)
@@ -56,7 +56,7 @@ var _ = Describe("TrafficTrace", func() {
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
-				trafficTrace := TrafficTraceResource{}
+				trafficTrace := NewTrafficTraceResource()
 
 				// when
 				err := util_proto.FromYAML([]byte(given.trafficTrace), trafficTrace.Spec)

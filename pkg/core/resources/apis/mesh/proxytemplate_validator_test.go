@@ -15,7 +15,7 @@ var _ = Describe("ProxyTemplate", func() {
 	Describe("Validate()", func() {
 		DescribeTable("should pass validation",
 			func(spec string) {
-				proxyTemplate := mesh.ProxyTemplateResource{}
+				proxyTemplate := mesh.NewProxyTemplateResource()
 
 				// when
 				err := util_proto.FromYAML([]byte(spec), proxyTemplate.Spec)
@@ -310,7 +310,7 @@ var _ = Describe("ProxyTemplate", func() {
 		DescribeTable("should validate fields",
 			func(given testCase) {
 				// given
-				proxyTemplate := mesh.ProxyTemplateResource{}
+				proxyTemplate := mesh.NewProxyTemplateResource()
 
 				// when
 				err := util_proto.FromYAML([]byte(given.proxyTemplate), proxyTemplate.Spec)

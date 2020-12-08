@@ -53,8 +53,8 @@ func ExecuteOwnerTests(
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		actual := sample_model.TrafficRouteResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey(name, mesh))
+		actual := sample_model.NewTrafficRouteResource()
+		err = s.Get(context.Background(), actual, store.GetByKey(name, mesh))
 		Expect(store.IsResourceNotFound(err)).To(BeTrue())
 	})
 

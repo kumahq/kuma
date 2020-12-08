@@ -520,10 +520,10 @@ var _ = Describe("KubernetesStore", func() {
 		It("should return en error if resource is not found", func() {
 			// setup
 			backend.AssertNotExists(&sample_k8s.SampleTrafficRoute{}, ns, name)
-			resource := sample_core.TrafficRouteResource{}
+			resource := sample_core.NewTrafficRouteResource()
 
 			// when
-			err := s.Delete(context.Background(), &resource, store.DeleteByKey(coreName, mesh))
+			err := s.Delete(context.Background(), resource, store.DeleteByKey(coreName, mesh))
 
 			// then
 			Expect(err).To(HaveOccurred())

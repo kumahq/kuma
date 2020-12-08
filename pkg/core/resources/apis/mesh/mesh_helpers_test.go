@@ -31,7 +31,7 @@ var _ = Describe("MeshResource", func() {
 				expected: false,
 			}),
 			Entry("mesh.metrics == nil", testCase{
-				mesh:     &MeshResource{},
+				mesh:     NewMeshResource(),
 				expected: false,
 			}),
 			Entry("mesh.metrics.prometheus == nil", testCase{

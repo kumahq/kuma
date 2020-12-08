@@ -53,8 +53,8 @@ func (r *zoneOverviewEndpoints) fetchOverview(ctx context.Context, name string) 
 		return nil, err
 	}
 
-	insight := system.ZoneInsightResource{}
-	err := r.resManager.Get(ctx, &insight, store.GetByKey(name, model.NoMesh))
+	insight := system.NewZoneInsightResource()
+	err := r.resManager.Get(ctx, insight, store.GetByKey(name, model.NoMesh))
 	if err != nil && !store.IsResourceNotFound(err) { // It's fine to have zone without insight
 		return nil, err
 	}

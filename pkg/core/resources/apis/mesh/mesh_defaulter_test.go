@@ -21,7 +21,7 @@ var _ = Describe("MeshResource", func() {
 
 		applyDefaultsScenario := func(given testCase) {
 			// given
-			mesh := &MeshResource{}
+			mesh := NewMeshResource()
 			err := util_proto.FromYAML([]byte(given.input), mesh.Spec)
 			Expect(err).ToNot(HaveOccurred())
 

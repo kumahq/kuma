@@ -70,7 +70,7 @@ var _ = Describe("Mesh", func() {
                   port: 5670
                   path: /metrics
 `
-			mesh := MeshResource{}
+			mesh := NewMeshResource()
 
 			// when
 			err := util_proto.FromYAML([]byte(spec), mesh.Spec)
@@ -87,7 +87,7 @@ var _ = Describe("Mesh", func() {
 		DescribeTable("should validate fields",
 			func(given testCase) {
 				// given
-				mesh := MeshResource{}
+				mesh := NewMeshResource()
 
 				// when
 				err := util_proto.FromYAML([]byte(given.mesh), mesh.Spec)

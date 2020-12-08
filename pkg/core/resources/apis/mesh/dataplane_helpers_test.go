@@ -29,7 +29,7 @@ var _ = Describe("Dataplane", func() {
 		DescribeTable("should correctly determine whether a given (ip, port) endpoint would overshadow one of Dataplane interfaces",
 			func(given testCase) {
 				// given
-				dataplane := &DataplaneResource{}
+				dataplane := NewDataplaneResource()
 
 				// when
 				Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
@@ -396,7 +396,7 @@ var _ = Describe("Dataplane", func() {
 				// given
 				var dataplane *DataplaneResource
 				if given.dataplane != "" {
-					dataplane = &DataplaneResource{}
+					dataplane = NewDataplaneResource()
 					Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
 				}
 

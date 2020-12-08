@@ -64,8 +64,8 @@ func (r *dataplaneOverviewEndpoints) fetchOverview(ctx context.Context, name str
 		return nil, err
 	}
 
-	insight := mesh.DataplaneInsightResource{}
-	err := r.resManager.Get(ctx, &insight, store.GetByKey(name, meshName))
+	insight := mesh.NewDataplaneInsightResource()
+	err := r.resManager.Get(ctx, insight, store.GetByKey(name, meshName))
 	if err != nil && !store.IsResourceNotFound(err) { // It's fine to have dataplane without insight
 		return nil, err
 	}

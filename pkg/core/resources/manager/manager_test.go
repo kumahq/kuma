@@ -109,16 +109,16 @@ var _ = Describe("Resource Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and resource from mesh-1 is deleted
-			res1 := sample.TrafficRouteResource{}
-			err = resManager.Get(context.Background(), &res1, store.GetByKey("tr-1", "mesh-1"))
+			res1 := sample.NewTrafficRouteResource()
+			err = resManager.Get(context.Background(), res1, store.GetByKey("tr-1", "mesh-1"))
 			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 
 			// and only TrafficRoutes are deleted
 			Expect(resManager.Get(context.Background(), mesh.NewTrafficLogResource(), store.GetBy(tlKey))).To(Succeed())
 
 			// and resource from mesh-2 is retained
-			res2 := sample.TrafficRouteResource{}
-			err = resManager.Get(context.Background(), &res2, store.GetByKey("tr-1", "mesh-2"))
+			res2 := sample.NewTrafficRouteResource()
+			err = resManager.Get(context.Background(), res2, store.GetByKey("tr-1", "mesh-2"))
 			Expect(err).ToNot(HaveOccurred())
 
 		})
