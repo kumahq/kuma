@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/kumahq/kuma/pkg/xds/topology"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -157,11 +158,11 @@ var _ = Describe("HealthCheck", func() {
 			// and
 			Expect(healthChecks).To(HaveKey("redis"))
 			Expect(healthChecks["redis"].Meta.GetName()).To(Equal(healthCheckRedis.Meta.GetName()))
-			Expect(healthChecks["redis"].Spec).To(Equal(healthCheckRedis.Spec))
+			Expect(healthChecks["redis"].Spec).To(MatchProto(healthCheckRedis.Spec))
 			// and
 			Expect(healthChecks).To(HaveKey("elastic"))
 			Expect(healthChecks["elastic"].Meta.GetName()).To(Equal(healthCheckElastic.Meta.GetName()))
-			Expect(healthChecks["elastic"].Spec).To(Equal(healthCheckElastic.Spec))
+			Expect(healthChecks["elastic"].Spec).To(MatchProto(healthCheckElastic.Spec))
 		})
 	})
 

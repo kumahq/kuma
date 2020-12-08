@@ -24,6 +24,7 @@ import (
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 	util_k8s "github.com/kumahq/kuma/pkg/util/k8s"
 )
@@ -144,7 +145,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Get(&actual, ns, name)
 
 			// then
-			Expect(actual.Spec).To(Equal(expected.Spec))
+			Expect(actual.Spec).To(MatchProto(expected.Spec))
 			// and
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(tr.Meta.GetVersion()))
 		})
@@ -189,7 +190,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Get(&actual, ns, name)
 
 			// then
-			Expect(actual.Spec).To(Equal(expected.Spec))
+			Expect(actual.Spec).To(MatchProto(expected.Spec))
 			// and
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(mesh.Meta.GetVersion()))
 		})
@@ -287,7 +288,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Get(&actual, ns, name)
 
 			// then
-			Expect(actual.Spec).To(Equal(expected.Spec))
+			Expect(actual.Spec).To(MatchProto(expected.Spec))
 			// and
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(tr.Meta.GetVersion()))
 		})
@@ -348,7 +349,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Get(&actual, ns, name)
 
 			// then
-			Expect(actual.Spec).To(Equal(expected.Spec))
+			Expect(actual.Spec).To(MatchProto(expected.Spec))
 			// and
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(mesh.Meta.GetVersion()))
 		})

@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/kumahq/kuma/pkg/xds/topology"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -167,12 +167,12 @@ var _ = Describe("TrafficRoute", func() {
 			out1 := mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: 10001}
 			Expect(routes).To(HaveKey(out1))
 			Expect(routes[out1].Meta.GetName()).To(Equal(routeRedis.Meta.GetName()))
-			Expect(routes[out1].Spec).To(Equal(routeRedis.Spec))
+			Expect(routes[out1].Spec).To(MatchProto(routeRedis.Spec))
 			// and
 			out2 := mesh_proto.OutboundInterface{DataplaneIP: "127.0.0.1", DataplanePort: 10002}
 			Expect(routes).To(HaveKey(out2))
 			Expect(routes[out2].Meta.GetName()).To(Equal(routeElastic.Meta.GetName()))
-			Expect(routes[out2].Spec).To(Equal(routeElastic.Spec))
+			Expect(routes[out2].Spec).To(MatchProto(routeElastic.Spec))
 		})
 	})
 

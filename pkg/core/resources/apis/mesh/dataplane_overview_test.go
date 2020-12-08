@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -38,9 +39,9 @@ var _ = Describe("DataplaneOverview", func() {
 
 			overviews := NewDataplaneOverviews(dataplanes, insights)
 			Expect(overviews.Items).To(HaveLen(2))
-			Expect(overviews.Items[0].Spec.Dataplane).To(Equal(&dataplanes.Items[0].Spec))
-			Expect(overviews.Items[0].Spec.DataplaneInsight).To(Equal(&insights.Items[0].Spec))
-			Expect(overviews.Items[1].Spec.Dataplane).To(Equal(&dataplanes.Items[1].Spec))
+			Expect(overviews.Items[0].Spec.Dataplane).To(MatchProto(&dataplanes.Items[0].Spec))
+			Expect(overviews.Items[0].Spec.DataplaneInsight).To(MatchProto(&insights.Items[0].Spec))
+			Expect(overviews.Items[1].Spec.Dataplane).To(MatchProto(&dataplanes.Items[1].Spec))
 			Expect(overviews.Items[1].Spec.DataplaneInsight).To(BeNil())
 		})
 	})

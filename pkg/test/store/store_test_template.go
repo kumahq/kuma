@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
@@ -72,7 +73,7 @@ func ExecuteStoreTests(
 			Expect(resource.Meta.GetVersion()).ToNot(BeEmpty())
 			Expect(resource.Meta.GetCreationTime().Unix()).ToNot(Equal(0))
 			Expect(resource.Meta.GetCreationTime()).To(Equal(resource.Meta.GetModificationTime()))
-			Expect(resource.Spec).To(Equal(created.Spec))
+			Expect(resource.Spec).To(MatchProto(created.Spec))
 		})
 
 		It("should not create a duplicate record", func() {
@@ -253,7 +254,7 @@ func ExecuteStoreTests(
 			// and
 			Expect(res.Meta.GetName()).To(Equal(name))
 			Expect(res.Meta.GetVersion()).ToNot(BeEmpty())
-			Expect(res.Spec).To(Equal(createdResource.Spec))
+			Expect(res.Spec).To(MatchProto(createdResource.Spec))
 		})
 
 		It("should get resource by version", func() {
