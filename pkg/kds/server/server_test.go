@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
@@ -95,67 +96,67 @@ var _ = Describe("KDS Server", func() {
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.MeshType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.Mesh1))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.Mesh1))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.DataplaneType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.Ingress))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.Ingress))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.DataplaneInsightType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.DataplaneInsight))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.DataplaneInsight))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.ExternalServiceType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.ExternalService))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.ExternalService))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.CircuitBreakerType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.CircuitBreaker))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.CircuitBreaker))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.FaultInjectionType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.FaultInjection))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.FaultInjection))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.HealthCheckType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.HealthCheck))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.HealthCheck))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.TrafficLogType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.TrafficLog))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.TrafficLog))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.TrafficPermissionType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.TrafficPermission))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.TrafficPermission))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.TrafficRouteType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.TrafficRoute))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.TrafficRoute))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.TrafficTraceType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.TrafficTrace))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.TrafficTrace))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.ProxyTemplateType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.ProxyTemplate))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.ProxyTemplate))
 			})).
 			Exec(kds_verifier.DiscoveryRequest(node, system.SecretType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.Secret))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.Secret))
 			})).
 			Exec(kds_verifier.CloseStream())
 
@@ -237,23 +238,23 @@ var _ = Describe("KDS Server", func() {
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.MeshType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.Mesh1))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.Mesh1))
 			})).
 			Exec(kds_verifier.ACK(node, mesh.MeshType)).
 			Exec(func(tc kds_verifier.TestContext) error {
-				var meshRes mesh.MeshResource
-				if err := tc.Store().Get(ctx, &meshRes, store.GetByKey("mesh-1", "mesh-1")); err != nil {
+				meshRes := mesh.NewMeshResource()
+				if err := tc.Store().Get(ctx, meshRes, store.GetByKey("mesh-1", "mesh-1")); err != nil {
 					return err
 				}
 				meshRes.Spec = kds_samples.Mesh2
-				if err := tc.Store().Update(ctx, &meshRes); err != nil {
+				if err := tc.Store().Update(ctx, meshRes); err != nil {
 					return err
 				}
 				return nil
 			}).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
-				Expect(rs[0].GetSpec()).To(Equal(&kds_samples.Mesh2))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.Mesh2))
 			})).
 			Exec(kds_verifier.CloseStream())
 
