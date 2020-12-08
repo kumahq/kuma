@@ -29,6 +29,19 @@ var _ = Describe("bootstrapGenerator", func() {
 
 	var resManager core_manager.ResourceManager
 
+	defaultVersion := types.Version{
+		KumaDp: types.KumaDpVersion{
+			Version:   "0.0.1",
+			GitTag:    "v0.0.1",
+			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+			BuildDate: "2019-08-07T11:26:06Z",
+		},
+		Envoy: types.EnvoyVersion{
+			Build:   "hash/1.15.0/RELEASE",
+			Version: "1.15.0",
+		},
+	}
+
 	BeforeEach(func() {
 		resManager = core_manager.NewResourceManager(memory.NewStore())
 		core.Now = func() time.Time {
@@ -107,8 +120,9 @@ var _ = Describe("bootstrapGenerator", func() {
 				return cfg
 			},
 			request: types.BootstrapRequest{
-				Mesh: "mesh",
-				Name: "name.namespace",
+				Mesh:    "mesh",
+				Name:    "name.namespace",
+				Version: defaultVersion,
 			},
 			expectedConfigFile: "generator.default-config-minimal-request.golden.yaml",
 		}),
@@ -125,6 +139,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Name:               "name.namespace",
 				AdminPort:          1234,
 				DataplaneTokenPath: "/tmp/token",
+				Version:            defaultVersion,
 			},
 			expectedConfigFile: "generator.default-config.golden.yaml",
 		}),
@@ -141,8 +156,9 @@ var _ = Describe("bootstrapGenerator", func() {
 				}
 			},
 			request: types.BootstrapRequest{
-				Mesh: "mesh",
-				Name: "name.namespace",
+				Mesh:    "mesh",
+				Name:    "name.namespace",
+				Version: defaultVersion,
 			},
 			expectedConfigFile: "generator.custom-config-minimal-request.golden.yaml",
 		}),
@@ -184,6 +200,7 @@ var _ = Describe("bootstrapGenerator", func() {
     ]
   }
 }`,
+				Version: defaultVersion,
 			},
 			expectedConfigFile: "generator.custom-config.golden.yaml",
 		}),

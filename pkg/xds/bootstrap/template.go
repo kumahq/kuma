@@ -15,6 +15,12 @@ type configParameters struct {
 	DataplaneTokenPath string
 	DataplaneResource  string
 	CertBytes          string
+	KumaDpVersion      string
+	KumaDpGitTag       string
+	KumaDpGitCommit    string
+	KumaDpBuildDate    string
+	EnvoyVersion       string
+	EnvoyBuild         string
 }
 
 const configTemplate string = `
@@ -31,6 +37,15 @@ node:
 {{if .AdminPort }}
     dataplane.admin.port: "{{ .AdminPort }}"
 {{ end }}
+    version:
+      kumaDp:
+        version: "{{ .KumaDpVersion }}"
+        gitTag: "{{ .KumaDpGitTag }}"
+        gitCommit: "{{ .KumaDpGitCommit }}"
+        buildDate: "{{ .KumaDpBuildDate }}"
+      envoy:
+        version: "{{ .EnvoyVersion }}"
+        build: "{{ .EnvoyBuild }}"
 
 {{if .AdminPort }}
 admin:

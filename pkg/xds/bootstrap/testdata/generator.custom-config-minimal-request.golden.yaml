@@ -24,6 +24,15 @@ node:
   id: mesh.name.namespace
   metadata:
     dataplane.admin.port: "9902"
+    version:
+      kumaDp:
+        version: 0.0.1
+        gitTag: v0.0.1
+        gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+        buildDate: 2019-08-07T11:26:06Z
+      envoy:
+        version: 1.15.0
+        build: hash/1.15.0/RELEASE
 staticResources:
   clusters:
     - connectTimeout: 2s
