@@ -60,6 +60,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
+					Spec: &mesh_proto.Dataplane{},
 				},
 			},
 		}),
@@ -541,6 +542,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 							Name: "backend-01",
 							Mesh: "demo",
 						},
+						Spec: &mesh_proto.Dataplane{},
 					},
 					Metadata: &core_xds.DataplaneMetadata{
 						AdminPort: 9902,

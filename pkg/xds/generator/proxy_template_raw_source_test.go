@@ -66,7 +66,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 					Resource: `
 `,
 				}},
-				err: "raw.resources[0]{name=\"raw-name\"}.resource: Any JSON doesn't have '@type'",
+				err: "raw.resources[0]{name=\"raw-name\"}.resource: message type url \"\" is invalid",
 			}),
 			Entry("should fail when `resource` field is neither a YAML nor a JSON", testCase{
 				proxy: &model.Proxy{
@@ -122,7 +122,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                     '@type': type.googleapis.com/unknown.Resource
 `,
 				}},
-				err: "raw.resources[0]{name=\"raw-name\"}.resource: unknown message type \"unknown.Resource\"",
+				err: "raw.resources[0]{name=\"raw-name\"}.resource: could not resolve Any message type: type.googleapis.com/unknown.Resource",
 			}),
 			Entry("should fail when `resource` field is a YAML without '@type' field", testCase{
 				proxy: &model.Proxy{
