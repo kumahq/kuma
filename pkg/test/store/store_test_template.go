@@ -61,8 +61,8 @@ func ExecuteStoreTests(
 			created := createResource(name)
 
 			// when retrieve created object
-			resource := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			resource := sample_model.NewTrafficRouteResource()
+			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -134,8 +134,8 @@ func ExecuteStoreTests(
 			}
 
 			// when retrieve the resource
-			res := sample_model.TrafficRouteResource{}
-			err = s.Get(context.Background(), &res, store.GetByKey(name, mesh))
+			res := sample_model.NewTrafficRouteResource()
+			err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -160,10 +160,10 @@ func ExecuteStoreTests(
 		It("should throw an error if resource is not found", func() {
 			// given
 			name := "non-existent-name.demo"
-			resource := sample_model.TrafficRouteResource{}
+			resource := sample_model.NewTrafficRouteResource()
 
 			// when
-			err := s.Delete(context.TODO(), &resource, store.DeleteByKey(name, mesh))
+			err := s.Delete(context.TODO(), resource, store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -184,8 +184,8 @@ func ExecuteStoreTests(
 			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 
 			// and when getting the given resource
-			getResource := sample_model.TrafficRouteResource{}
-			err = s.Get(context.Background(), &getResource, store.GetByKey(name, mesh))
+			getResource := sample_model.NewTrafficRouteResource()
+			err = s.Get(context.Background(), getResource, store.GetByKey(name, mesh))
 
 			// then resource still exists
 			Expect(err).ToNot(HaveOccurred())
@@ -197,15 +197,15 @@ func ExecuteStoreTests(
 			createResource(name)
 
 			// when
-			resource := sample_model.TrafficRouteResource{}
-			err := s.Delete(context.TODO(), &resource, store.DeleteByKey(name, mesh))
+			resource := sample_model.NewTrafficRouteResource()
+			err := s.Delete(context.TODO(), resource, store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when query for deleted resource
-			resource = sample_model.TrafficRouteResource{}
-			err = s.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			resource = sample_model.NewTrafficRouteResource()
+			err = s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then resource cannot be found
 			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
@@ -216,10 +216,10 @@ func ExecuteStoreTests(
 		It("should return an error if resource is not found", func() {
 			// given
 			name := "non-existing-resource.demo"
-			resource := sample_model.TrafficRouteResource{}
+			resource := sample_model.NewTrafficRouteResource()
 
 			// when
-			err := s.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).To(MatchError(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
@@ -232,8 +232,8 @@ func ExecuteStoreTests(
 			createResource(name)
 
 			// when
-			resource := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			resource := sample_model.NewTrafficRouteResource()
+			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
@@ -245,8 +245,8 @@ func ExecuteStoreTests(
 			createdResource := createResource(name)
 
 			// when
-			res := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &res, store.GetByKey(name, mesh))
+			res := sample_model.NewTrafficRouteResource()
+			err := s.Get(context.Background(), res, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

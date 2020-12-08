@@ -61,6 +61,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		for i := 0; i < n; i++ {
 			resources = append(resources, &mesh_core.TrafficRouteResource{
 				Meta: &model.ResourceMeta{Mesh: mesh, Name: fmt.Sprintf("tr-%d", i), Version: version},
+				Spec: &mesh_proto.TrafficRoute{},
 			})
 		}
 		return resources
