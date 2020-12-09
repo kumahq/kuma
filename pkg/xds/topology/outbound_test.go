@@ -628,6 +628,52 @@ var _ = Describe("TrafficRoute", func() {
 					},
 				},
 			}),
+			Entry("unhealthy dataplane", testCase{
+				dataplanes: []*mesh_core.DataplaneResource{
+					{
+						Meta: &test_model.ResourceMeta{Name: "dp-1", Mesh: defaultMeshName},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.1",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+										Port:        6379,
+										ServicePort: 16379,
+									},
+								},
+							},
+						},
+					},
+					{
+						Meta: &test_model.ResourceMeta{Name: "dp-2", Mesh: defaultMeshName},
+						Spec: mesh_proto.Dataplane{
+							Networking: &mesh_proto.Dataplane_Networking{
+								Address: "192.168.0.2",
+								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+									{
+										Tags:        map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+										Port:        6379,
+										ServicePort: 16379,
+										Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
+									},
+								},
+							},
+						},
+					},
+				},
+				mesh: defaultMeshWithMTLS,
+				expected: core_xds.EndpointMap{
+					"redis": []core_xds.Endpoint{
+						{
+							Target: "192.168.0.1",
+							Port:   6379,
+							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v1"},
+							Weight: 1, // local weight is bumped to 2 to factor two instances of Ingresses
+						},
+					},
+				},
+			}),
 		)
 	})
 })
