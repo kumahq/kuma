@@ -2,10 +2,12 @@ package matchers
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/onsi/gomega/format"
 	"github.com/onsi/gomega/types"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func MatchProto(expected interface{}) types.GomegaMatcher {
@@ -20,28 +22,57 @@ type ProtoMatcher struct {
 
 func (p *ProtoMatcher) Match(actual interface{}) (success bool, err error) {
 	if actual == nil && p.Expected == nil {
-		return false, fmt.Errorf("Refusing to compare <nil> to <nil>.\nBe explicit and use BeNil() instead.  This is to avoid mistakes where both sides of an assertion are erroneously uninitialized.")
+		return true, nil
+	}
+	if actual == nil && p.Expected != nil {
+		return false, errors.New("Actual object is nil, but Expected object is not.")
+	}
+	if actual != nil && p.Expected == nil {
+		return false, errors.New("Actual object is not nil, but Expected object is.")
 	}
 
 	actualProto, ok := actual.(proto.Message)
 	if !ok {
-		return false, errors.New("you can only compare proto with this matcher")
+		return false, errors.New("You can only compare proto with this matcher. Make sure the object passed to MatchProto() implements proto.Message")
 	}
 
 	expectedProto, ok := p.Expected.(proto.Message)
 	if !ok {
-		return false, errors.New("you can only compare proto with this matcher")
+		return false, errors.New("You can only compare proto with this matcher. Make sure the object passed to Expect() implements proto.Message")
 	}
 
 	return proto.Equal(actualProto, expectedProto), nil
 }
 
 func (p *ProtoMatcher) FailureMessage(actual interface{}) (message string) {
-	return "proto are not equal" // todo
+	actualYAML, expectedYAML, err := p.yamls(actual)
+	if err != nil {
+		return err.Error()
+	}
+	return format.Message(actualYAML, "to equal", expectedYAML)
+}
+
+func (p *ProtoMatcher) yamls(actual interface{}) (string, string, error) {
+	actualProto := actual.(proto.Message)
+	actualYAML, err := util_proto.ToYAML(actualProto)
+	if err != nil {
+		return "", "", errors.New("Proto are not equal (could not parse actual proto to present differences)")
+	}
+
+	expectedProto := p.Expected.(proto.Message)
+	expectedYAML, err := util_proto.ToYAML(expectedProto)
+	if err != nil {
+		return "", "", errors.New("Proto are not equal (could not parse expected proto to present differences)")
+	}
+	return string(actualYAML), string(expectedYAML), nil
 }
 
 func (p *ProtoMatcher) NegatedFailureMessage(actual interface{}) (message string) {
-	return "proto are not equal" // todo
+	actualYAML, expectedYAML, err := p.yamls(actual)
+	if err != nil {
+		return err.Error()
+	}
+	return format.Message(actualYAML, "not to equal", expectedYAML)
 }
 
 var _ types.GomegaMatcher = &ProtoMatcher{}
