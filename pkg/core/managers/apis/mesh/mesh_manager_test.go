@@ -47,7 +47,7 @@ var _ = Describe("Mesh Manager", func() {
 		}
 
 		manager := manager.NewResourceManager(resStore)
-		validator := MeshValidator{CaManagers: caManagers}
+		validator := MeshValidator{CaManagers: caManagers, Store: resStore}
 		resManager = NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
 	})
 
@@ -237,6 +237,35 @@ var _ = Describe("Mesh Manager", func() {
 			err = secretManager.List(context.Background(), secrets, store.ListByMesh("demo-2"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(secrets.Items).To(HaveLen(1)) // default signing key
+		})
+
+		It("should not delete Mesh if there are Dataplanes attached", func() {
+			// given mesh and dataplane
+			err := resManager.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("mesh-1", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			err = resStore.Create(context.Background(), &core_mesh.DataplaneResource{
+				Spec: mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+							Port:        8080,
+							ServicePort: 80,
+							Tags: map[string]string{
+								"service": "mobile",
+								"version": "v1",
+							}},
+						},
+					},
+				},
+			}, store.CreateByKey("dp-1", "mesh-1"))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when mesh-1 is delete
+			err = resManager.Delete(context.Background(), &core_mesh.MeshResource{}, store.DeleteByKey("mesh-1", model.NoMesh))
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("mesh: unable to delete mesh, there are still some dataplanes attached"))
 		})
 	})
 
