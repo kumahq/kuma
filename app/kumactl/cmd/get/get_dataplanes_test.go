@@ -39,7 +39,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 					Mesh: "default",
 					Name: "experiment",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -68,7 +68,7 @@ var _ = Describe("kumactl get dataplanes", func() {
 					Mesh: "default",
 					Name: "example",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.2",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

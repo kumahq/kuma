@@ -19,10 +19,10 @@ var _ = Describe("TrafficLog", func() {
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
-				trafficLog := TrafficLogResource{}
+				trafficLog := NewTrafficLogResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.trafficLog), &trafficLog.Spec)
+				err := util_proto.FromYAML([]byte(given.trafficLog), trafficLog.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

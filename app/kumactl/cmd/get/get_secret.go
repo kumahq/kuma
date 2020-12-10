@@ -27,7 +27,7 @@ func newGetSecretCmd(pctx *getContext) *cobra.Command {
 			}
 			name := args[0]
 			currentMesh := pctx.CurrentMesh()
-			secret := &system.SecretResource{}
+			secret := system.NewSecretResource()
 			if err := rs.Get(context.Background(), secret, store.GetByKey(name, currentMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)

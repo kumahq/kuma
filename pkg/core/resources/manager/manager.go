@@ -54,13 +54,13 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 
 	var owner model.Resource
 	if resource.Scope() == model.ScopeMesh {
-		owner = &core_mesh.MeshResource{}
+		owner = core_mesh.NewMeshResource()
 		if err := r.Store.Get(ctx, owner, store.GetByKey(opts.Mesh, model.NoMesh)); err != nil {
 			return MeshNotFound(opts.Mesh)
 		}
 	}
 	if resource.GetType() == core_mesh.MeshInsightType {
-		owner = &core_mesh.MeshResource{}
+		owner = core_mesh.NewMeshResource()
 		if err := r.Store.Get(ctx, owner, store.GetByKey(opts.Name, model.NoMesh)); err != nil {
 			return MeshNotFound(opts.Name)
 		}

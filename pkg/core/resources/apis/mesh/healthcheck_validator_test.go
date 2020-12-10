@@ -19,10 +19,10 @@ var _ = Describe("HealthCheck", func() {
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
-				healthCheck := HealthCheckResource{}
+				healthCheck := NewHealthCheckResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.healthCheck), &healthCheck.Spec)
+				err := util_proto.FromYAML([]byte(given.healthCheck), healthCheck.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

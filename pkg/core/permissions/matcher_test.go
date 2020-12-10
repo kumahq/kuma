@@ -32,7 +32,7 @@ var _ = Describe("Match", func() {
 			manager := core_manager.NewResourceManager(memory.NewStore())
 			matcher := permissions.TrafficPermissionsMatcher{ResourceManager: manager}
 
-			err := manager.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
+			err := manager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, p := range given.policies {
@@ -52,7 +52,7 @@ var _ = Describe("Match", func() {
 				Meta: &model.ResourceMeta{
 					Name: "default",
 				},
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Metrics: &mesh_proto.Metrics{
 						EnabledBackend: "prometheus-1",
 						Backends: []*mesh_proto.MetricsBackend{
@@ -76,7 +76,7 @@ var _ = Describe("Match", func() {
 					Mesh: "default",
 					Name: "dp1",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -110,7 +110,7 @@ var _ = Describe("Match", func() {
 						Mesh: "default",
 						Name: "more-specific-kong-to-web",
 					},
-					Spec: mesh_proto.TrafficPermission{
+					Spec: &mesh_proto.TrafficPermission{
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
@@ -133,7 +133,7 @@ var _ = Describe("Match", func() {
 						Mesh: "default",
 						Name: "less-specific-kong-to-web",
 					},
-					Spec: mesh_proto.TrafficPermission{
+					Spec: &mesh_proto.TrafficPermission{
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
@@ -155,7 +155,7 @@ var _ = Describe("Match", func() {
 						Mesh: "default",
 						Name: "metrics",
 					},
-					Spec: mesh_proto.TrafficPermission{
+					Spec: &mesh_proto.TrafficPermission{
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{

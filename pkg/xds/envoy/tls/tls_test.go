@@ -24,7 +24,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 			// given
 			ctx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{},
+					Resource: mesh_core.NewMeshResource(),
 				},
 			}
 			metadata := &core_xds.DataplaneMetadata{}
@@ -60,7 +60,7 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
 							Meta: &test_model.ResourceMeta{
 								Name: "default",
 							},
-							Spec: mesh_proto.Mesh{
+							Spec: &mesh_proto.Mesh{
 								Mtls: &mesh_proto.Mesh_Mtls{
 									EnabledBackend: "builtin",
 									Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -228,7 +228,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 			// given
 			ctx := xds_context.Context{
 				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{},
+					Resource: mesh_core.NewMeshResource(),
 				},
 			}
 			metadata := &core_xds.DataplaneMetadata{}
@@ -265,7 +265,7 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
 							Meta: &test_model.ResourceMeta{
 								Name: "default",
 							},
-							Spec: mesh_proto.Mesh{
+							Spec: &mesh_proto.Mesh{
 								Mtls: &mesh_proto.Mesh_Mtls{
 									EnabledBackend: "builtin",
 									Backends: []*mesh_proto.CertificateAuthorityBackend{

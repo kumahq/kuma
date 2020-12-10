@@ -71,7 +71,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
-				Spec: mesh_proto.DataplaneOverview{
+				Spec: &mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "127.0.0.1",
@@ -139,7 +139,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
-				Spec: mesh_proto.DataplaneOverview{
+				Spec: &mesh_proto.DataplaneOverview{
 					Dataplane: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "127.0.0.1",

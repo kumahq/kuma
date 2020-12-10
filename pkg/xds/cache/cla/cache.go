@@ -83,7 +83,7 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_ap
 		if err != nil {
 			return nil, err
 		}
-		mesh := &core_mesh.MeshResource{}
+		mesh := core_mesh.NewMeshResource()
 		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, model.NoMesh)); err != nil {
 			return nil, err
 		}

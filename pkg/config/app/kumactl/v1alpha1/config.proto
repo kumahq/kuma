@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kumactl.config.v1alpha1;
 
-option go_package = "v1alpha1";
+option go_package = "github.com/kumahq/kuma/config/v1alpha1";
 
 import "validate/validate.proto";
 

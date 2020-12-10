@@ -177,7 +177,7 @@ func (i *KumaInjector) meshFor(pod *kube_core.Pod, ns *kube_core.Namespace) (*me
 	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
 		return nil, err
 	}
-	meshResource := &mesh_core.MeshResource{}
+	meshResource := mesh_core.NewMeshResource()
 	if err := i.converter.ToCoreResource(mesh, meshResource); err != nil {
 		return nil, err
 	}

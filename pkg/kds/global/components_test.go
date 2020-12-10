@@ -59,8 +59,8 @@ var _ = Describe("Global Sync", func() {
 		}
 	})
 
-	dataplaneFunc := func(zone, service string) mesh_proto.Dataplane {
-		return mesh_proto.Dataplane{
+	dataplaneFunc := func(zone, service string) *mesh_proto.Dataplane {
+		return &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -118,10 +118,10 @@ var _ = Describe("Global Sync", func() {
 			return len(actual.Items)
 		}, "3s", "100ms").Should(Equal(20))
 
-		err := remoteStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-0", "mesh-1"))
+		err := remoteStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-0", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remoteStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-1", "mesh-1"))
+		err = remoteStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {

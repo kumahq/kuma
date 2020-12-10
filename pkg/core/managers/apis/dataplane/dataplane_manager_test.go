@@ -20,12 +20,12 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
-		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err := s.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		input := mesh_core.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "10.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -45,8 +45,8 @@ var _ = Describe("Dataplane Manager", func() {
 		err = manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		actual := mesh_core.DataplaneResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey("dp1", "default"))
+		actual := mesh_core.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -58,12 +58,12 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
-		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err := s.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		input := mesh_core.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "10.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -82,8 +82,8 @@ var _ = Describe("Dataplane Manager", func() {
 		err = s.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		actual := mesh_core.DataplaneResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey("dp1", "default"))
+		actual := mesh_core.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(len(actual.Spec.Networking.Inbound[0].Tags)).To(Equal(1))
 		_, ok := actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]
@@ -95,8 +95,8 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		actual = mesh_core.DataplaneResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey("dp1", "default"))
+		actual = mesh_core.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(actual.Spec.Networking.Inbound).To(HaveLen(1))
 		Expect(actual.Spec.Networking.Inbound[0].Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
@@ -106,12 +106,12 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
-		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err := s.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		input := mesh_core.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "10.0.0.1",
 					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
@@ -127,8 +127,8 @@ var _ = Describe("Dataplane Manager", func() {
 		err = manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		actual := mesh_core.DataplaneResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey("dp1", "default"))
+		actual := mesh_core.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -140,12 +140,12 @@ var _ = Describe("Dataplane Manager", func() {
 		// setup
 		s := memory.NewStore()
 		manager := dataplane.NewDataplaneManager(s, "zone-1")
-		err := s.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err := s.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
 		input := mesh_core.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "10.0.0.1",
 					Gateway: &mesh_proto.Dataplane_Networking_Gateway{
@@ -160,8 +160,8 @@ var _ = Describe("Dataplane Manager", func() {
 		err = s.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		actual := mesh_core.DataplaneResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey("dp1", "default"))
+		actual := mesh_core.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(len(actual.Spec.Networking.Gateway.Tags)).To(Equal(1))
 		_, ok := actual.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag]
@@ -173,8 +173,8 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		actual = mesh_core.DataplaneResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey("dp1", "default"))
+		actual = mesh_core.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 		// then
 		Expect(len(actual.Spec.Networking.Gateway.Tags)).To(Equal(2))
