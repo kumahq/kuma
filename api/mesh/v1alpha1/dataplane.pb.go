@@ -316,9 +316,10 @@ type Dataplane_Networking_Inbound struct {
 	// e.g. kuma.io/service=web, version=1.0.
 	// `kuma.io/service` tag is mandatory.
 	Tags map[string]string `protobuf:"bytes,2,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Health is an optional field filled automatically by Kuma Control Plane on Kubernetes
-	// if Pod has ReadinessProbe configured. If 'health' is equal to nil we consider dataplane
-	// as healthy. Unhealthy dataplanes will be excluded from Endpoints Discovery Service (EDS)
+	// Health is an optional field filled automatically by Kuma Control Plane
+	// on Kubernetes if Pod has ReadinessProbe configured. If 'health' is
+	// equal to nil we consider dataplane as healthy. Unhealthy dataplanes
+	// will be excluded from Endpoints Discovery Service (EDS)
 	Health               *Dataplane_Networking_Inbound_Health `protobuf:"bytes,7,opt,name=health,proto3" json:"health,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                             `json:"-"`
 	XXX_unrecognized     []byte                               `json:"-"`
