@@ -94,7 +94,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
               rds: {}
               total: {}
             version:
-              dpVersion: {}
+              kumaDp: {}
               envoy: {}
 `))
 
@@ -119,7 +119,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
               rds: {}
               total: {}
             version:
-              dpVersion: {}
+              kumaDp: {}
               envoy: {}
 `))
 	})
@@ -164,7 +164,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
           rds: {}
           total: {}
         version:
-          dpVersion: {}
+          kumaDp: {}
           envoy: {}
 `))
 	})
@@ -181,7 +181,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			// given
 			streamID := int64(1)
 			version := util_proto.MustToStruct(&mesh_proto.Version{
-				DpVersion: &mesh_proto.KumaDpVersion{
+				KumaDp: &mesh_proto.KumaDpVersion{
 					Version:   "0.0.1",
 					GitTag:    "v0.0.1",
 					GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
@@ -249,7 +249,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
           rds: {}
           total: {}
         version:
-          dpVersion:
+          kumaDp:
             buildDate: "2019-08-07T11:26:06Z"
             gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
             gitTag: v0.0.1
@@ -334,7 +334,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -359,7 +359,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -386,7 +386,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesRejected: "1"
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -412,7 +412,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -437,7 +437,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -464,7 +464,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesRejected: "1"
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -490,7 +490,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -515,7 +515,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -542,7 +542,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesRejected: "1"
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -568,7 +568,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -593,7 +593,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
@@ -620,7 +620,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesRejected: "1"
                 responsesSent: "1"
             version:
-              dpVersion:
+              kumaDp:
                 buildDate: "2019-08-07T11:26:06Z"
                 gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
                 gitTag: v0.0.1
