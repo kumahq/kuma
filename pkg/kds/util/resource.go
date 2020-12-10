@@ -6,6 +6,7 @@ import (
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/any"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -18,12 +19,21 @@ func ToCoreResourceList(response *envoy.DiscoveryResponse) (model.ResourceList, 
 	krs := []*mesh_proto.KumaResource{}
 	for _, r := range response.Resources {
 		kr := &mesh_proto.KumaResource{}
-		if err := ptypes.UnmarshalAny(r, kr); err != nil {
+		if err := unmarshallKumaResource(kr, r); err != nil {
 			return nil, err
 		}
 		krs = append(krs, kr)
 	}
 	return toResources(model.ResourceType(response.TypeUrl), krs)
+}
+
+func unmarshallKumaResource(kumaResource *mesh_proto.KumaResource, any *any.Any) error {
+	originalURL := any.TypeUrl
+	any.TypeUrl = "kuma.mesh.v1alpha1.KumaResource" // todo extract this from KumaResource
+	defer func() {
+		any.TypeUrl = originalURL
+	}()
+	return ptypes.UnmarshalAny(any, kumaResource)
 }
 
 func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) {
