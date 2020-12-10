@@ -12,7 +12,6 @@ require (
 	github.com/emicklei/go-restful v2.14.2+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.5
 	github.com/envoyproxy/protoc-gen-validate v0.3.0-java.0.20200311152155-ab56c3dd1cf9
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
 	github.com/go-kit/kit v0.10.0
@@ -23,17 +22,12 @@ require (
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/gruntwork-io/terratest v0.27.5
-	github.com/hashicorp/golang-lru v0.5.4 // indirect
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
-	github.com/iancoleman/strcase v0.1.2 // indirect
-	github.com/imdario/mergo v0.3.9 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/lib/pq v1.7.0
-	github.com/lyft/protoc-gen-star v0.5.2 // indirect
 	github.com/miekg/dns v1.1.29
-	github.com/nxadm/tail v1.4.4 // indirect
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.3
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -60,7 +54,6 @@ require (
 	k8s.io/api v0.18.9
 	k8s.io/apimachinery v0.18.9
 	k8s.io/client-go v10.0.0+incompatible
-	k8s.io/utils v0.0.0-20200603063816-c1c6865ac451 // indirect
 	// migrating to v0.6.2 fails integration tests with:
 	// failed to convert core list model of type SampleTrafficRoute into k8s counterpart
 	sigs.k8s.io/controller-runtime v0.6.1
