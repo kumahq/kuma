@@ -3,9 +3,7 @@ package proto
 import (
 	"bytes"
 	"encoding/json"
-	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 
 	"github.com/ghodss/yaml"
@@ -80,14 +78,14 @@ func ToTyped(protoStruct *pstruct.Struct, message proto.Message) error {
 }
 
 // Converts loosely typed Struct to strongly typed Message
-func ToStruct(message proto.Message) (pstruct.Struct, error) {
+func ToStruct(message proto.Message) (*pstruct.Struct, error) {
 	configBytes, err := ToJSON(message)
 	if err != nil {
-		return pstruct.Struct{}, err
+		return nil, err
 	}
-	str := pstruct.Struct{}
-	if err := FromJSON(configBytes, &str); err != nil {
-		return pstruct.Struct{}, err
+	str := &pstruct.Struct{}
+	if err := FromJSON(configBytes, str); err != nil {
+		return nil, err
 	}
 	return str, nil
 }
@@ -97,9 +95,5 @@ func MustToStruct(message proto.Message) *pstruct.Struct {
 	if err != nil {
 		panic(err)
 	}
-	return &str
-}
-
-func ToDuration(duration duration.Duration) time.Duration {
-	return time.Duration(duration.Seconds) * time.Second
+	return str
 }

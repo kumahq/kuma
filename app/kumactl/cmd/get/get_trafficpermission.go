@@ -28,7 +28,7 @@ func newGetTrafficPermissionCmd(pctx *getContext) *cobra.Command {
 			}
 			name := args[0]
 			currentMesh := pctx.CurrentMesh()
-			trafficPermission := &mesh.TrafficPermissionResource{}
+			trafficPermission := mesh.NewTrafficPermissionResource()
 			if err := rs.Get(context.Background(), trafficPermission, store.GetByKey(name, currentMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)

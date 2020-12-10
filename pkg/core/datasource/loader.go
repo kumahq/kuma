@@ -49,7 +49,7 @@ func (l *loader) Load(ctx context.Context, mesh string, source *system_proto.Dat
 }
 
 func (l *loader) loadSecret(ctx context.Context, mesh string, secret string) ([]byte, error) {
-	resource := &system.SecretResource{}
+	resource := system.NewSecretResource()
 	if err := l.secretManager.Get(ctx, resource, core_store.GetByKey(secret, mesh)); err != nil {
 		return nil, err
 	}

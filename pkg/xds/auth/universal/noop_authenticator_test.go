@@ -23,7 +23,7 @@ var _ = Describe("Noop Authenticator", func() {
 	It("should allow with any token for any dataplane", func() {
 		// given
 		dpRes := core_mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "127.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

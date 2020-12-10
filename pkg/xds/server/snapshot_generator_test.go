@@ -43,7 +43,7 @@ var _ = Describe("Reconcile", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
 								Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -71,7 +71,7 @@ var _ = Describe("Reconcile", func() {
 						Mesh:    "demo",
 						Version: "1",
 					},
-					Spec: dataplane,
+					Spec: &dataplane,
 				},
 				TrafficPermissions: model.TrafficPermissionMap{
 					mesh_proto.InboundInterface{
@@ -84,7 +84,7 @@ var _ = Describe("Reconcile", func() {
 							Name: "tp-1",
 							Mesh: "default",
 						},
-						Spec: mesh_proto.TrafficPermission{
+						Spec: &mesh_proto.TrafficPermission{
 							Sources: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{

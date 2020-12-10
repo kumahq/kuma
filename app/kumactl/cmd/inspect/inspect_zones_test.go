@@ -64,7 +64,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
-				Spec: system_proto.ZoneOverview{
+				Spec: &system_proto.ZoneOverview{
 					Zone: &system_proto.Zone{},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
@@ -147,7 +147,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
-				Spec: system_proto.ZoneOverview{
+				Spec: &system_proto.ZoneOverview{
 					Zone: &system_proto.Zone{},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{

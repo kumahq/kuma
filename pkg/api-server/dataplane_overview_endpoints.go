@@ -10,7 +10,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 
 	"github.com/emicklei/go-restful"
-	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -60,22 +59,22 @@ func (r *dataplaneOverviewEndpoints) inspectDataplane(request *restful.Request, 
 }
 
 func (r *dataplaneOverviewEndpoints) fetchOverview(ctx context.Context, name string, meshName string) (*mesh.DataplaneOverviewResource, error) {
-	dataplane := mesh.DataplaneResource{}
-	if err := r.resManager.Get(ctx, &dataplane, store.GetByKey(name, meshName)); err != nil {
+	dataplane := mesh.NewDataplaneResource()
+	if err := r.resManager.Get(ctx, dataplane, store.GetByKey(name, meshName)); err != nil {
 		return nil, err
 	}
 
-	insight := mesh.DataplaneInsightResource{}
-	err := r.resManager.Get(ctx, &insight, store.GetByKey(name, meshName))
+	insight := mesh.NewDataplaneInsightResource()
+	err := r.resManager.Get(ctx, insight, store.GetByKey(name, meshName))
 	if err != nil && !store.IsResourceNotFound(err) { // It's fine to have dataplane without insight
 		return nil, err
 	}
 
 	return &mesh.DataplaneOverviewResource{
 		Meta: dataplane.Meta,
-		Spec: mesh_proto.DataplaneOverview{
-			Dataplane:        proto.Clone(&dataplane.Spec).(*mesh_proto.Dataplane),
-			DataplaneInsight: proto.Clone(&insight.Spec).(*mesh_proto.DataplaneInsight),
+		Spec: &mesh_proto.DataplaneOverview{
+			Dataplane:        dataplane.Spec,
+			DataplaneInsight: insight.Spec,
 		},
 	}, nil
 }

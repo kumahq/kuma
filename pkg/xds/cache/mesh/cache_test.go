@@ -47,7 +47,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		for i := 0; i < n; i++ {
 			resources = append(resources, &mesh_core.DataplaneResource{
 				Meta: &model.ResourceMeta{Mesh: mesh, Name: fmt.Sprintf("dp-%d", i), Version: version},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: address,
 					},
@@ -61,6 +61,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		for i := 0; i < n; i++ {
 			resources = append(resources, &mesh_core.TrafficRouteResource{
 				Meta: &model.ResourceMeta{Mesh: mesh, Name: fmt.Sprintf("tr-%d", i), Version: version},
+				Spec: &mesh_proto.TrafficRoute{},
 			})
 		}
 		return resources
@@ -92,7 +93,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 	BeforeEach(func() {
 		for i := 0; i < 3; i++ {
 			mesh := fmt.Sprintf("mesh-%d", i)
-			err := s.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey(mesh, core_model.NoMesh))
+			err := s.Create(context.Background(), mesh_core.NewMeshResource(), core_store.CreateByKey(mesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, dp := range testDataplaneResources(baseLen, mesh, "v1", "192.168.0.1") {
@@ -122,7 +123,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		Expect(countingManager.listQueries).To(Equal(2)) // should be the same
 
 		By("updating Dataplane in store and waiting until cache invalidation")
-		dp := &mesh_core.DataplaneResource{}
+		dp := mesh_core.NewDataplaneResource()
 		err = s.Get(context.Background(), dp, core_store.GetByKey("dp-1", "mesh-0"))
 		Expect(err).ToNot(HaveOccurred())
 		dp.Spec.Networking.Address = "1.1.1.1"
@@ -149,7 +150,7 @@ var _ = Describe("MeshSnapshot Cache", func() {
 		hash2, err := meshCache.GetHash(context.Background(), "mesh-2")
 		Expect(err).ToNot(HaveOccurred())
 
-		dp := &mesh_core.DataplaneResource{}
+		dp := mesh_core.NewDataplaneResource()
 		err = s.Get(context.Background(), dp, core_store.GetByKey("dp-1", "mesh-0"))
 		Expect(err).ToNot(HaveOccurred())
 		dp.Spec.Networking.Address = "1.1.1.1"

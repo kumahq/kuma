@@ -27,7 +27,7 @@ func (m *MeshValidator) validateMTLSBackends(ctx context.Context, name string, r
 		if !exist {
 			verr.AddViolationAt(path.Index(idx).Field("type"), "could not find installed plugin for this type")
 			return verr.OrNil()
-		} else if err := caManager.ValidateBackend(ctx, name, *backend); err != nil {
+		} else if err := caManager.ValidateBackend(ctx, name, backend); err != nil {
 			if configErr, ok := err.(*validators.ValidationError); ok {
 				verr.AddErrorAt(path.Index(idx).Field("config"), *configErr)
 			} else {

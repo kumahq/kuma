@@ -151,7 +151,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	}
 	for _, cm := range cmlist.Items {
 		configRes.Items = append(configRes.Items, &config_model.ConfigResource{
-			Spec: system_proto.Config{
+			Spec: &system_proto.Config{
 				Config: cm.Data[configMapKey],
 			},
 			Meta: &KubernetesMetaAdapter{cm.ObjectMeta},

@@ -16,7 +16,13 @@ var _ model.Resource = &ZoneResource{}
 
 type ZoneResource struct {
 	Meta model.ResourceMeta
-	Spec system_proto.Zone
+	Spec *system_proto.Zone
+}
+
+func NewZoneResource() *ZoneResource {
+	return &ZoneResource{
+		Spec: &system_proto.Zone{},
+	}
 }
 
 func (t *ZoneResource) GetType() model.ResourceType {
@@ -29,14 +35,14 @@ func (t *ZoneResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *ZoneResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
 	value, ok := spec.(*system_proto.Zone)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *value
+		t.Spec = value
 		return nil
 	}
 }
@@ -62,7 +68,7 @@ func (l *ZoneResourceList) GetItemType() model.ResourceType {
 	return ZoneType
 }
 func (l *ZoneResourceList) NewItem() model.Resource {
-	return &ZoneResource{}
+	return NewZoneResource()
 }
 func (l *ZoneResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ZoneResource); ok {
@@ -77,6 +83,6 @@ func (l *ZoneResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&ZoneResource{})
+	registry.RegisterType(NewZoneResource())
 	registry.RegistryListType(&ZoneResourceList{})
 }

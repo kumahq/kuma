@@ -11,7 +11,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emicklei/go-restful v2.14.2+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.5
-	github.com/envoyproxy/protoc-gen-validate v0.3.0-java.0.20200311152155-ab56c3dd1cf9
+	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
 	github.com/go-kit/kit v0.10.0
@@ -45,9 +45,10 @@ require (
 	go.uber.org/multierr v1.3.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
-	golang.org/x/tools v0.0.0-20201009032223-96877f285f7e // indirect
-	google.golang.org/genproto v0.0.0-20200108215221-bd8f9a0ef82f
+	golang.org/x/tools v0.0.0-20201208233053-a543418bbed2 // indirect
+	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.30.0
+	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.3.4
 	k8s.io/api v0.18.9
@@ -61,7 +62,6 @@ require (
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible
-	github.com/golang/protobuf => github.com/golang/protobuf v1.3.2
 	github.com/kumahq/kuma/api => ./api
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
 

@@ -84,7 +84,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "192.168.0.1",
 						},

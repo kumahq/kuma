@@ -41,7 +41,7 @@ func defaultTrafficPermissionKey(meshName string) model.ResourceKey {
 func ensureDefaultTrafficPermission(resManager manager.ResourceManager, meshName string) (err error, created bool) {
 	key := defaultTrafficPermissionKey(meshName)
 	tp := &core_mesh.TrafficPermissionResource{
-		Spec: defaultTrafficPermission,
+		Spec: &defaultTrafficPermission,
 	}
 	err = resManager.Get(context.Background(), tp, store.GetBy(key))
 	if err == nil {

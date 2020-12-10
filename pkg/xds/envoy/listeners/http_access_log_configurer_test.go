@@ -38,7 +38,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 					Mesh: "example",
 				},
 				Dataplane: &mesh_core.DataplaneResource{
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "192.168.0.1",
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{

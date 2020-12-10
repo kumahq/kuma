@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
@@ -98,7 +99,7 @@ var _ = Describe("Rest Resource", func() {
 				// when
 				rsr := &rest.ResourceListReceiver{
 					NewResource: func() model.Resource {
-						return &sample_core.TrafficRouteResource{}
+						return sample_core.NewTrafficRouteResource()
 					},
 				}
 				err := json.Unmarshal([]byte(content), rsr)
@@ -109,28 +110,23 @@ var _ = Describe("Rest Resource", func() {
 				// when
 				rs := rsr.ResourceList
 				// then
-				Expect(rs.Items).To(ConsistOf(
-					&rest.Resource{
-						Meta: rest.ResourceMeta{
-							Type: "TrafficRoute",
-							Mesh: "default",
-							Name: "one",
-						},
-						Spec: &sample_proto.TrafficRoute{
-							Path: "/example",
-						},
-					},
-					&rest.Resource{
-						Meta: rest.ResourceMeta{
-							Type: "TrafficRoute",
-							Mesh: "demo",
-							Name: "two",
-						},
-						Spec: &sample_proto.TrafficRoute{
-							Path: "/another",
-						},
-					}),
-				)
+				Expect(rs.Items).To(HaveLen(2))
+				Expect(rs.Items[0].Meta).To(Equal(rest.ResourceMeta{
+					Type: "TrafficRoute",
+					Mesh: "default",
+					Name: "one",
+				}))
+				Expect(rs.Items[0].Spec).To(matchers.MatchProto(&sample_proto.TrafficRoute{
+					Path: "/example",
+				}))
+				Expect(rs.Items[1].Meta).To(Equal(rest.ResourceMeta{
+					Type: "TrafficRoute",
+					Mesh: "demo",
+					Name: "two",
+				}))
+				Expect(rs.Items[1].Spec).To(matchers.MatchProto(&sample_proto.TrafficRoute{
+					Path: "/another",
+				}))
 				Expect(*rs.Next).To(Equal("http://localhost:5681/meshes/default/traffic-routes?offset=1"))
 			})
 		})
