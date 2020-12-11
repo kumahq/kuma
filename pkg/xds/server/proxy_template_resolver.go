@@ -42,7 +42,7 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 
 	if bestMatchTemplate := core_policy.SelectDataplanePolicy(proxy.Dataplane, policies); bestMatchTemplate != nil {
 		log.V(2).Info("found the best matching ProxyTemplate", "proxytemplate", core_model.MetaToResourceKey(bestMatchTemplate.GetMeta()))
-		return &bestMatchTemplate.(*mesh_core.ProxyTemplateResource).Spec
+		return bestMatchTemplate.(*mesh_core.ProxyTemplateResource).Spec
 	}
 	log.V(2).Info("falling back to the default ProxyTemplate since there is no best match", "templates", templateList.Items)
 	return r.DefaultProxyTemplate

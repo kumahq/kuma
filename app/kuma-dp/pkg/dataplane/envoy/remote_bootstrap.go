@@ -23,6 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
@@ -48,7 +49,7 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_types.Resource) (proto.Message, error) {
+func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_types.Resource, ev EnvoyVersion) (proto.Message, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
 		return nil, err
@@ -78,7 +79,7 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 	var respBytes []byte
 	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")
-		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg, dp)
+		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg, dp, ev)
 		if err == nil {
 			return nil
 		}
@@ -105,7 +106,7 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 	return &bootstrap, nil
 }
 
-func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, dp *rest_types.Resource) ([]byte, error) {
+func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, dp *rest_types.Resource, ev EnvoyVersion) ([]byte, error) {
 	url.Path = "/bootstrap"
 	var dataplaneResource string
 	if dp != nil {
@@ -123,6 +124,18 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		AdminPort:          cfg.Dataplane.AdminPort.Lowest(),
 		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
 		DataplaneResource:  dataplaneResource,
+		Version: types.Version{
+			KumaDp: types.KumaDpVersion{
+				Version:   kuma_version.Build.Version,
+				GitTag:    kuma_version.Build.GitTag,
+				GitCommit: kuma_version.Build.GitCommit,
+				BuildDate: kuma_version.Build.BuildDate,
+			},
+			Envoy: types.EnvoyVersion{
+				Version: ev.Version,
+				Build:   ev.Build,
+			},
+		},
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {

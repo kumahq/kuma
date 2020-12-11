@@ -67,6 +67,15 @@ message Dataplane {
       // e.g. kuma.io/service=web, version=1.0.
       // `kuma.io/service` tag is mandatory.
       map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
+
+      // Health describes the status of an inbound
+      message Health { bool ready = 1; }
+
+      // Health is an optional field filled automatically by Kuma Control Plane
+      // on Kubernetes if Pod has ReadinessProbe configured. If 'health' is
+      // equal to nil we consider dataplane as healthy. Unhealthy dataplanes
+      // will be excluded from Endpoints Discovery Service (EDS)
+      Health health = 7;
     }
 
     // Outbound describes a service consumed by the dataplane.

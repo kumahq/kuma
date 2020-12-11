@@ -59,7 +59,7 @@ func (d *DataplaneReconciler) GeneratedCerts() int {
 func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) error {
 	proxyID := core_xds.FromResourceKey(dataplaneId).String()
 
-	dataplane := &mesh_core.DataplaneResource{}
+	dataplane := mesh_core.NewDataplaneResource()
 	if err := d.readOnlyResManager.Get(context.Background(), dataplane, core_store.GetBy(dataplaneId)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			sdsServerLog.V(1).Info("Dataplane not found. Clearing the Snapshot.", "dataplaneId", dataplaneId)
@@ -69,7 +69,7 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 		return err
 	}
 
-	mesh := &mesh_core.MeshResource{}
+	mesh := mesh_core.NewMeshResource()
 	if err := d.readOnlyResManager.Get(context.Background(), mesh, core_store.GetByKey(dataplane.GetMeta().GetMesh(), core_model.NoMesh)); err != nil {
 		return errors.Wrap(err, "could not retrieve a mesh")
 	}
@@ -179,7 +179,7 @@ func (d *DataplaneReconciler) updateInsights(dataplaneId core_model.ResourceKey,
 		return err
 	}
 
-	return core_manager.Upsert(d.resManager, dataplaneId, &mesh_core.DataplaneInsightResource{}, func(resource core_model.Resource) {
+	return core_manager.Upsert(d.resManager, dataplaneId, mesh_core.NewDataplaneInsightResource(), func(resource core_model.Resource) {
 		insight := resource.(*mesh_core.DataplaneInsightResource)
 		if err := insight.Spec.UpdateCert(core.Now(), cert.NotAfter); err != nil {
 			sdsServerLog.Error(err, "could not update the certificate", "dataplaneId", dataplaneId)

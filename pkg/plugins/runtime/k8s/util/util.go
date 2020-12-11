@@ -49,7 +49,7 @@ func FindServices(svcs *kube_core.ServiceList, predicates ...ServicePredicate) [
 // targetPort is a number, use that.  If the targetPort is a string, look that
 // string up in all named ports in all containers in the target pod.  If no
 // match is found, fail.
-func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, error) {
+func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, *kube_core.Container, error) {
 	givenOrDefault := func(value kube_core.Protocol) kube_core.Protocol {
 		if value != "" {
 			return value
@@ -64,7 +64,7 @@ func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, error) {
 		for _, container := range pod.Spec.Containers {
 			for _, port := range container.Ports {
 				if port.Name == name && givenOrDefault(port.Protocol) == givenOrDefault(svcPort.Protocol) {
-					return int(port.ContainerPort), nil
+					return int(port.ContainerPort), &container, nil
 				}
 			}
 		}
@@ -74,10 +74,26 @@ func FindPort(pod *kube_core.Pod, svcPort *kube_core.ServicePort) (int, error) {
 		// Not specifying a port here DOES NOT prevent that port from being exposed. Any port which is listening on the default "0.0.0.0" address inside a container will be accessible from the network
 		//
 		// Therefore we cannot match service port to the container port.
-		return portName.IntValue(), nil
+		for _, container := range pod.Spec.Containers {
+			for _, port := range container.Ports {
+				if port.ContainerPort == portName.IntVal && givenOrDefault(port.Protocol) == givenOrDefault(svcPort.Protocol) {
+					return int(port.ContainerPort), &container, nil
+				}
+			}
+		}
+		return portName.IntValue(), nil, nil
 	}
 
-	return 0, fmt.Errorf("no suitable port for manifest: %s", pod.UID)
+	return 0, nil, fmt.Errorf("no suitable port for manifest: %s", pod.UID)
+}
+
+func FindContainerStatus(pod *kube_core.Pod, containerName string) *kube_core.ContainerStatus {
+	for _, cs := range pod.Status.ContainerStatuses {
+		if cs.Name == containerName {
+			return &cs
+		}
+	}
+	return nil
 }
 
 func CopyStringMap(in map[string]string) map[string]string {

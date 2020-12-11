@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	config_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -29,7 +30,9 @@ func (c *clusterID) NeedLeaderElection() bool {
 }
 
 func createClusterID(runtime core_runtime.Runtime) error {
-	resource := &config_model.ConfigResource{}
+	resource := &config_model.ConfigResource{
+		Spec: &config_proto.Config{},
+	}
 
 	err := runtime.ConfigManager().Get(context.Background(), resource, store.GetByKey(config_manager.ClusterIdConfigKey, ""))
 	if err != nil {

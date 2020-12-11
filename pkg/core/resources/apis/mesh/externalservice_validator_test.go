@@ -15,10 +15,10 @@ var _ = Describe("ExternalService", func() {
 	DescribeTable("should pass validation",
 		func(dpYAML string) {
 			// given
-			externalService := &core_mesh.ExternalServiceResource{}
+			externalService := core_mesh.NewExternalServiceResource()
 
 			// when
-			err := util_proto.FromYAML([]byte(dpYAML), &externalService.Spec)
+			err := util_proto.FromYAML([]byte(dpYAML), externalService.Spec)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -68,10 +68,10 @@ var _ = Describe("ExternalService", func() {
 	DescribeTable("should validate all fields and return as much individual errors as possible",
 		func(given testCase) {
 			// setup
-			externalService := core_mesh.ExternalServiceResource{}
+			externalService := core_mesh.NewExternalServiceResource()
 
 			// when
-			err := util_proto.FromYAML([]byte(given.dataplane), &externalService.Spec)
+			err := util_proto.FromYAML([]byte(given.dataplane), externalService.Spec)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 

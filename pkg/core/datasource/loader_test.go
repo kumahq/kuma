@@ -37,7 +37,7 @@ var _ = Describe("DataSource Loader", func() {
 		It("should load secret", func() {
 			// given
 			secretResource := system.SecretResource{
-				Spec: system_proto.Secret{
+				Spec: &system_proto.Secret{
 					Data: &wrappers.BytesValue{
 						Value: []byte("abc"),
 					},

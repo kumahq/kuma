@@ -28,7 +28,7 @@ func newGetCircuitBreakerCmd(pctx *getContext) *cobra.Command {
 			}
 			name := args[0]
 			currentMesh := pctx.CurrentMesh()
-			circuitBreaker := &core_mesh.CircuitBreakerResource{}
+			circuitBreaker := core_mesh.NewCircuitBreakerResource()
 			if err := rs.Get(context.Background(), circuitBreaker, store.GetByKey(name, currentMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)

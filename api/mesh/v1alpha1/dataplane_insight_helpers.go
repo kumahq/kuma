@@ -17,6 +17,21 @@ func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
 	}
 }
 
+func NewVersion() *Version {
+	return &Version{
+		KumaDp: &KumaDpVersion{
+			Version:   "",
+			GitTag:    "",
+			GitCommit: "",
+			BuildDate: "",
+		},
+		Envoy: &EnvoyVersion{
+			Version: "",
+			Build:   "",
+		},
+	}
+}
+
 func (ds *DataplaneInsight) IsOnline() bool {
 	for _, s := range ds.GetSubscriptions() {
 		if s.ConnectTime != nil && s.DisconnectTime == nil {

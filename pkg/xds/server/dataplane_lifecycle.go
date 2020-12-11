@@ -92,14 +92,14 @@ func (d *DataplaneLifecycle) streamProcessed(streamID int64) bool {
 
 func (d *DataplaneLifecycle) registerDataplane(dp *core_mesh.DataplaneResource) error {
 	key := model.MetaToResourceKey(dp.GetMeta())
-	existing := &core_mesh.DataplaneResource{}
+	existing := core_mesh.NewDataplaneResource()
 	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) {
 		_ = existing.SetSpec(dp.GetSpec()) // ignore error because the spec type is the same
 	})
 }
 
 func (d *DataplaneLifecycle) unregisterDataplane(key model.ResourceKey) error {
-	return d.resManager.Delete(context.Background(), &core_mesh.DataplaneResource{}, store.DeleteBy(key))
+	return d.resManager.Delete(context.Background(), core_mesh.NewDataplaneResource(), store.DeleteBy(key))
 }
 
 func (d *DataplaneLifecycle) OnStreamResponse(_ int64, _ *envoy_api_v2.DiscoveryRequest, _ *envoy_api_v2.DiscoveryResponse) {

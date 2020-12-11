@@ -29,7 +29,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		resManager = core_manager.NewResourceManager(store)
 		dpLifecycle = server.NewDataplaneLifecycle(resManager)
 
-		err := resManager.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
+		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -74,14 +74,14 @@ var _ = Describe("Dataplane Lifecycle", func() {
 
 		// then dp is created
 		Expect(err).ToNot(HaveOccurred())
-		err = resManager.Get(context.Background(), &core_mesh.DataplaneResource{}, core_store.GetByKey("backend-01", "default"))
+		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
 		dpLifecycle.OnStreamClosed(streamId)
 
 		// then dataplane should be deleted
-		err = resManager.Get(context.Background(), &core_mesh.DataplaneResource{}, core_store.GetByKey("backend-01", "default"))
+		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
 		Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 	})
 
@@ -92,7 +92,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 				Mesh: "default",
 				Name: "backend-01",
 			},
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -127,7 +127,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		dpLifecycle.OnStreamClosed(streamId)
 
 		// then DP is not deleted because it was not carried in metadata
-		err = resManager.Get(context.Background(), &core_mesh.DataplaneResource{}, core_store.GetByKey("backend-01", "default"))
+		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 	})
 })

@@ -3,8 +3,9 @@ package ingress
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"sort"
+
+	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -57,7 +58,7 @@ func (s tagSets) toAvailableServices() []*mesh_proto.Dataplane_Networking_Ingres
 
 func UpdateAvailableServices(ctx context.Context, rm manager.ResourceManager, ingress *core_mesh.DataplaneResource, others []*core_mesh.DataplaneResource) error {
 	availableServices := GetIngressAvailableServices(others)
-	if reflect.DeepEqual(availableServices, ingress.Spec.GetNetworking().GetIngress().GetAvailableServices()) {
+	if availableServicesEqual(availableServices, ingress.Spec.GetNetworking().GetIngress().GetAvailableServices()) {
 		return nil
 	}
 	ingress.Spec.Networking.Ingress.AvailableServices = availableServices
@@ -65,6 +66,18 @@ func UpdateAvailableServices(ctx context.Context, rm manager.ResourceManager, in
 		return err
 	}
 	return nil
+}
+
+func availableServicesEqual(services []*mesh_proto.Dataplane_Networking_Ingress_AvailableService, other []*mesh_proto.Dataplane_Networking_Ingress_AvailableService) bool {
+	if len(services) != len(other) {
+		return false
+	}
+	for i := range services {
+		if !proto.Equal(services[i], other[i]) {
+			return false
+		}
+	}
+	return true
 }
 
 func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_proto.Dataplane_Networking_Ingress_AvailableService {

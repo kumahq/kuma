@@ -19,10 +19,10 @@ var _ = Describe("TrafficPermission", func() {
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
-				permission := TrafficPermissionResource{}
+				permission := NewTrafficPermissionResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.permission), &permission.Spec)
+				err := util_proto.FromYAML([]byte(given.permission), permission.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 

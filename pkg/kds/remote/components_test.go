@@ -37,8 +37,8 @@ var _ = Describe("Remote Sync", func() {
 			_ = comp.Start(stop)
 		}()
 	}
-	ingressFunc := func(zone string) mesh_proto.Dataplane {
-		return mesh_proto.Dataplane{
+	ingressFunc := func(zone string) *mesh_proto.Dataplane {
+		return &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Ingress: &mesh_proto.Dataplane_Networking_Ingress{

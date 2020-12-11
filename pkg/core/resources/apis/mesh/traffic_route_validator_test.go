@@ -19,10 +19,10 @@ var _ = Describe("TrafficRoute", func() {
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
-				route := TrafficRouteResource{}
+				route := NewTrafficRouteResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.route), &route.Spec)
+				err := util_proto.FromYAML([]byte(given.route), route.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
