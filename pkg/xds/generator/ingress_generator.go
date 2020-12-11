@@ -92,7 +92,7 @@ func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, dest
 			sniUsed[sni] = true
 			inboundListenerBuilder = inboundListenerBuilder.
 				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
-					Configure(envoy_listeners.FilterChainMatch(i.sni(service, destination))).
+					Configure(envoy_listeners.FilterChainMatch(sni)).
 					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
 						ClusterName: service,
 						Tags:        destination,
