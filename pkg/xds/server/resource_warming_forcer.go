@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"sync"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 var warmingForcerLog = xdsServerLog.WithName("warming-forcer")
@@ -55,6 +55,7 @@ var warmingForcerLog = xdsServerLog.WithName("warming-forcer")
 // The same problem is with Listeners and Routes (change of the Listener that uses RDS requires RDS DiscoveryResponse), but since we don't use RDS now, the implementation is for EDS only.
 // More reading of how Envoy is trying to solve it https://github.com/envoyproxy/envoy/issues/13009
 type resourceWarmingForcer struct {
+	util_xds.NoopCallbacks
 	cache  envoy_cache.SnapshotCache
 	hasher envoy_cache.NodeHash
 
@@ -70,17 +71,6 @@ func newResourceWarmingForcer(cache envoy_cache.SnapshotCache, hasher envoy_cach
 		lastEndpointNonces: map[xds.StreamID]string{},
 		nodeIDs:            map[xds.StreamID]string{},
 	}
-}
-
-func (r *resourceWarmingForcer) OnFetchRequest(ctx context.Context, request *envoy_api.DiscoveryRequest) error {
-	return nil
-}
-
-func (r *resourceWarmingForcer) OnFetchResponse(request *envoy_api.DiscoveryRequest, response *envoy_api.DiscoveryResponse) {
-}
-
-func (r *resourceWarmingForcer) OnStreamOpen(ctx context.Context, streamID int64, typeURL string) error {
-	return nil
 }
 
 func (r *resourceWarmingForcer) OnStreamClosed(streamID int64) {
@@ -129,9 +119,6 @@ func (r *resourceWarmingForcer) forceNewEndpointsVersion(nodeID string) error {
 		return errors.Wrap(err, "could not set snapshot")
 	}
 	return nil
-}
-
-func (r *resourceWarmingForcer) OnStreamResponse(streamID int64, request *envoy_api.DiscoveryRequest, response *envoy_api.DiscoveryResponse) {
 }
 
 var _ envoy_xds.Callbacks = &resourceWarmingForcer{}

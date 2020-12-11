@@ -1,16 +1,17 @@
 package server
 
 import (
-	"context"
 	"sync"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	go_cp_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 type DataplaneMetadataTracker struct {
+	util_xds.NoopCallbacks
 	mutex             sync.RWMutex
 	metadataForStream map[int64]*xds.DataplaneMetadata
 }
@@ -35,10 +36,6 @@ func (d *DataplaneMetadataTracker) Metadata(streamId int64) *xds.DataplaneMetada
 
 var _ go_cp_server.Callbacks = &DataplaneMetadataTracker{}
 
-func (d *DataplaneMetadataTracker) OnStreamOpen(context.Context, int64, string) error {
-	return nil
-}
-
 func (d *DataplaneMetadataTracker) OnStreamClosed(stream int64) {
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
@@ -60,14 +57,4 @@ func (d *DataplaneMetadataTracker) OnStreamRequest(stream int64, req *envoy.Disc
 	defer d.mutex.Unlock()
 	d.metadataForStream[stream] = xds.DataplaneMetadataFromNode(req.Node)
 	return nil
-}
-
-func (d *DataplaneMetadataTracker) OnStreamResponse(int64, *envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {
-}
-
-func (d *DataplaneMetadataTracker) OnFetchRequest(context.Context, *envoy.DiscoveryRequest) error {
-	return nil
-}
-
-func (d *DataplaneMetadataTracker) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {
 }

@@ -34,10 +34,11 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 		return nil, err
 	}
 	callbacks := util_xds.CallbacksChain{
+		&typeAdjustCallbacks{},
+		util_xds.NewControlPlanIdCallbacks(serverID),
 		util_xds.LoggingCallbacks{Log: log},
 		statsCallbacks,
 		syncTracker,
-		util_xds.NewControlPlanIdCallbacks(serverID),
 	}
 	if insight {
 		callbacks = append(callbacks, DefaultStatusTracker(rt, log))
