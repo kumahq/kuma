@@ -99,6 +99,8 @@ type SnapshotCache interface {
 	GetStatusKeys() []string
 }
 
+// The part below is a exact copy of snapshotCache and statusInfo of go-control-plane with exception marked with `Kuma modification start`
+
 type snapshotCache struct {
 	// watchCount is an atomic counter incremented for each watch. This needs to
 	// be the first field in the struct to guarantee that it is 64-bit aligned,
@@ -235,10 +237,12 @@ func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request) (chan envo
 	value := make(chan envoy_cache.Response, 1)
 
 	snapshot, exists := cache.snapshots[nodeID]
+	// Kuma modification start (we use interface and snapshot can be nil, in the original code it's a struct so it's never nil)
 	version := ""
 	if exists {
 		version = snapshot.GetVersion(request.TypeUrl)
 	}
+	// Kuma modification end
 
 	// if the requested version is up-to-date or missing a response, leave an open watch
 	if !exists || request.VersionInfo == version {
