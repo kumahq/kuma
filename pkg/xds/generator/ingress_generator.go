@@ -4,6 +4,7 @@ import (
 	"sort"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
