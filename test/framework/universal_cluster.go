@@ -2,8 +2,9 @@ package framework
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/config/core"
 	"strings"
+
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/go-errors/errors"
 	"github.com/gruntwork-io/terratest/modules/k8s"
@@ -134,10 +135,10 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string, transparent bool) error {
+func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string) error {
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + cpIp + ":5678"
-	app.CreateDP(token, cpIp, cpAddress, appname, ip, dpyaml, transparent)
+	app.CreateDP(token, cpAddress, appname, ip, dpyaml)
 	return app.dpApp.Start()
 }
 
@@ -168,6 +169,10 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		return err
 	}
 
+	if transparent {
+		app.setupTransparent(c.apps[AppModeCP].ip)
+	}
+
 	ip := app.ip
 
 	dpyaml := ""
@@ -186,7 +191,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		}
 	}
 
-	err = c.CreateDP(app, appname, ip, dpyaml, token, transparent)
+	err = c.CreateDP(app, appname, ip, dpyaml, token)
 	if err != nil {
 		return err
 	}

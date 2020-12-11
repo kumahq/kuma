@@ -2,10 +2,11 @@ package e2e_test
 
 import (
 	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 var _ = Describe("Test Universal Transparent Proxy deployment", func() {
