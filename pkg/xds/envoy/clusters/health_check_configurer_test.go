@@ -97,13 +97,15 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						Timeout:            ptypes.DurationProto(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
-						Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
-							Send: &wrappers.BytesValue{
-								Value: []byte("foo"),
-							},
-							Receive: []*wrappers.BytesValue{
-								{Value: []byte("bar")},
-								{Value: []byte("baz")},
+						Protocol: &mesh_proto.HealthCheck_Conf_Tcp_{
+							Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
+								Send: &wrappers.BytesValue{
+									Value: []byte("foo"),
+								},
+								Receive: []*wrappers.BytesValue{
+									{Value: []byte("bar")},
+									{Value: []byte("baz")},
+								},
 							},
 						},
 					},
@@ -143,9 +145,11 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						Timeout:            ptypes.DurationProto(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
-						Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
-							Send: &wrappers.BytesValue{
-								Value: []byte("foo"),
+						Protocol: &mesh_proto.HealthCheck_Conf_Tcp_{
+							Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
+								Send: &wrappers.BytesValue{
+									Value: []byte("foo"),
+								},
 							},
 						},
 					},
@@ -182,30 +186,24 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						Timeout:            ptypes.DurationProto(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
-						Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
-							Send: &wrappers.BytesValue{
-								Value: []byte("foo"),
-							},
-						},
-						Http: &mesh_proto.HealthCheck_Conf_Http{
-							Path: &wrappers.StringValue{
-								Value: "/foo",
-							},
-							RequestHeadersToAdd: []*mesh_proto.
-								HealthCheck_Conf_Http_HeaderValueOption{
-								{
-									Header: &mesh_proto.HealthCheck_Conf_Http_HeaderValue{
-										Key:   &wrappers.StringValue{Value: "foobar"},
-										Value: &wrappers.StringValue{Value: "foobaz"},
+						Protocol: &mesh_proto.HealthCheck_Conf_Http_{
+							Http: &mesh_proto.HealthCheck_Conf_Http{
+								Path: "/foo",
+								RequestHeadersToAdd: []*mesh_proto.
+									HealthCheck_Conf_Http_HeaderValueOption{
+									{
+										Header: &mesh_proto.HealthCheck_Conf_Http_HeaderValue{
+											Key:   "foobar",
+											Value: "foobaz",
+										},
+										Append: &wrappers.BoolValue{Value: false},
 									},
-									Append: &wrappers.BoolValue{Value: false},
+								},
+								ExpectedStatuses: []*wrappers.UInt32Value{
+									{Value: 200},
+									{Value: 201},
 								},
 							},
-							ExpectedStatuses: []*wrappers.UInt32Value{
-								{Value: 200},
-								{Value: 201},
-							},
-							UseHttp1: true,
 						},
 					},
 				},
@@ -219,10 +217,11 @@ var _ = Describe("HealthCheckConfigurer", func() {
             - healthyThreshold: 2
               interval: 5s
               httpHealthCheck:
+                codecClientType: HTTP2
                 expectedStatuses:
-                - end: "200"
-                  start: "200"
                 - end: "201"
+                  start: "200"
+                - end: "202"
                   start: "201"
                 path: /foo
                 requestHeadersToAdd:

@@ -111,17 +111,18 @@ var _ = Describe("HealthCheck", func() {
                   timeout: 0s
                   unhealthyThreshold: 0
                   healthyThreshold: 0
-                  tcp: {}
                   http:
                     path: ""
-                    expected_statuses:
+                    requestHeadersToAdd:
+                    - header:
+                        value: foo
+                    - append: false
+                    expectedStatuses:
                     - 99
                     - 600
 `,
 				expected: `
                 violations:
-                - field: conf.[tcp|http]
-                  message: only one allowed
                 - field: conf.interval
                   message: must have a positive value
                 - field: conf.timeout
@@ -131,11 +132,15 @@ var _ = Describe("HealthCheck", func() {
                 - field: conf.healthyThreshold
                   message: must have a positive value
                 - field: conf.http.path
+                  message: has to be defined and cannot be empty
+                - field: conf.http.expectedStatuses[0]
+                  message: must be in range [100, 600)
+                - field: conf.http.expectedStatuses[1]
+                  message: must be in range [100, 600)
+                - field: conf.http.requestHeadersToAdd[0].header.key
                   message: cannot be empty
-                - field: conf.http.expected_statuses[0]
-                  message: must be in range [100, 600)
-                - field: conf.http.expected_statuses[1]
-                  message: must be in range [100, 600)
+                - field: conf.http.requestHeadersToAdd[1].header
+                  message: has to be defined
 `,
 			}),
 			Entry("invalid active checks http configuration", testCase{
@@ -152,15 +157,12 @@ var _ = Describe("HealthCheck", func() {
                   timeout: 10s
                   unhealthyThreshold: 3
                   healthyThreshold: 1
-                  http:
-                    expected_statuses: []
+                  http: {}
 `,
 				expected: `
                 violations:
                 - field: conf.http.path
-                  message: has to be defined
-                - field: conf.http.expected_statuses
-                  message: cannot be empty
+                  message: has to be defined and cannot be empty
 `,
 			}),
 		)

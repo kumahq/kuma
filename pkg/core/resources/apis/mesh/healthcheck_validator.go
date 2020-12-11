@@ -29,10 +29,31 @@ func (d *HealthCheckResource) validateDestinations() (err validators.ValidationE
 func (d *HealthCheckResource) validateConfHttpPath(
 	path validators.PathBuilder,
 ) (err validators.ValidationError) {
-	if d.Spec.Conf.Http.Path == nil {
-		err.AddViolationAt(path, "has to be defined")
-	} else if d.Spec.Conf.Http.Path.Value == "" {
-		err.AddViolationAt(path, "cannot be empty")
+	httpConf := d.Spec.Conf.GetHttp()
+
+	if httpConf.Path == "" {
+		err.AddViolationAt(path, "has to be defined and cannot be empty")
+	}
+
+	return
+}
+
+func (d *HealthCheckResource) validateConfHttpRequestHeadersToAdd(
+	path validators.PathBuilder,
+) (err validators.ValidationError) {
+	httpConf := d.Spec.Conf.GetHttp()
+
+	for i, header := range httpConf.RequestHeadersToAdd {
+		path := path.Index(i).Field("header")
+
+		if header.Header == nil {
+			err.AddViolationAt(path, "has to be defined")
+			continue
+		}
+
+		if header.Header.Key == "" {
+			err.AddViolationAt(path.Field("key"), "cannot be empty")
+		}
 	}
 
 	return
@@ -41,18 +62,16 @@ func (d *HealthCheckResource) validateConfHttpPath(
 func (d *HealthCheckResource) validateConfHttpExpectedStatuses(
 	path validators.PathBuilder,
 ) (err validators.ValidationError) {
-	if d.Spec.Conf.Http.ExpectedStatuses != nil &&
-		len(d.Spec.Conf.Http.ExpectedStatuses) == 0 {
-		err.AddViolationAt(path, "cannot be empty")
-		return
-	}
+	httpConf := d.Spec.Conf.GetHttp()
 
-	for i, status := range d.Spec.Conf.Http.ExpectedStatuses {
-		if status.Value < 100 || status.Value >= 600 {
-			err.AddViolationAt(
-				path.Index(i),
-				"must be in range [100, 600)",
-			)
+	if httpConf.ExpectedStatuses != nil {
+		for i, status := range httpConf.ExpectedStatuses {
+			if status.Value < 100 || status.Value >= 600 {
+				err.AddViolationAt(
+					path.Index(i),
+					"must be in range [100, 600)",
+				)
+			}
 		}
 	}
 
@@ -63,7 +82,8 @@ func (d *HealthCheckResource) validateConfHttp(
 	path validators.PathBuilder,
 ) (err validators.ValidationError) {
 	err.Add(d.validateConfHttpPath(path.Field("path")))
-	err.Add(d.validateConfHttpExpectedStatuses(path.Field("expected_statuses")))
+	err.Add(d.validateConfHttpExpectedStatuses(path.Field("expectedStatuses")))
+	err.Add(d.validateConfHttpRequestHeadersToAdd(path.Field("requestHeadersToAdd")))
 	return
 }
 
@@ -73,14 +93,11 @@ func (d *HealthCheckResource) validateConf() (err validators.ValidationError) {
 		err.AddViolationAt(path, "has to be defined")
 		return
 	}
-	if d.Spec.Conf.Tcp != nil && d.Spec.Conf.Http != nil {
-		err.AddViolationAt(path.Field("[tcp|http]"), "only one allowed")
-	}
 	err.Add(ValidateDuration(path.Field("interval"), d.Spec.Conf.Interval))
 	err.Add(ValidateDuration(path.Field("timeout"), d.Spec.Conf.Timeout))
 	err.Add(ValidateThreshold(path.Field("unhealthyThreshold"), d.Spec.Conf.UnhealthyThreshold))
 	err.Add(ValidateThreshold(path.Field("healthyThreshold"), d.Spec.Conf.HealthyThreshold))
-	if d.Spec.Conf.Http != nil {
+	if d.Spec.Conf.GetHttp() != nil {
 		err.Add(d.validateConfHttp(path.Field("http")))
 	}
 	return
