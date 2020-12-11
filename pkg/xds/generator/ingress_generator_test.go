@@ -111,7 +111,7 @@ var _ = Describe("IngressGenerator", func() {
 			trafficRoutes: &mesh_core.TrafficRouteResourceList{
 				Items: []*mesh_core.TrafficRouteResource{
 					{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.MatchAnyService(),
 							}},
@@ -142,7 +142,7 @@ var _ = Describe("IngressGenerator", func() {
 			trafficRoutes: &mesh_core.TrafficRouteResourceList{
 				Items: []*mesh_core.TrafficRouteResource{
 					{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.MatchAnyService(),
 							}},
@@ -209,7 +209,7 @@ var _ = Describe("IngressGenerator", func() {
 			trafficRoutes: &mesh_core.TrafficRouteResourceList{
 				Items: []*mesh_core.TrafficRouteResource{
 					{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.MatchAnyService(),
 							}},
@@ -225,7 +225,7 @@ var _ = Describe("IngressGenerator", func() {
 						},
 					},
 					{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.MatchAnyService(),
 							}},
@@ -364,7 +364,7 @@ var _ = Describe("IngressGenerator", func() {
 			trafficRoutes: &mesh_core.TrafficRouteResourceList{
 				Items: []*mesh_core.TrafficRouteResource{
 					{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.MatchAnyService(),
 							}},
@@ -380,7 +380,7 @@ var _ = Describe("IngressGenerator", func() {
 						},
 					},
 					{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.MatchAnyService(),
 							}},
@@ -399,7 +399,7 @@ var _ = Describe("IngressGenerator", func() {
 						},
 					},
 					{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.MatchAnyService(),
 							}},
@@ -427,7 +427,7 @@ var _ = Describe("IngressGenerator", func() {
 						},
 					},
 					{
-						Spec: mesh_proto.TrafficRoute{
+						Spec: &mesh_proto.TrafficRoute{
 							Sources: []*mesh_proto.Selector{{
 								Match: mesh_proto.MatchAnyService(),
 							}},
