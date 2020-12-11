@@ -149,6 +149,9 @@ func IngressUniversal(token string) InstallFunc {
 		if err != nil {
 			return err
 		}
+
+		app.CreateMainApp([]string{}, []string{})
+
 		err = app.mainApp.Start()
 		if err != nil {
 			return err
