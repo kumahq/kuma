@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -234,8 +235,16 @@ func (s *UniversalApp) getIP() (string, error) {
 	if err != nil {
 		return "invalid", errors.Wrapf(err, "getent failed with %s", string(bytes))
 	}
-	split := strings.Split(string(bytes), " ")
-	return split[0], nil
+	lines := strings.Split(string(bytes), "\n")
+	// search ipv4
+	for _, line := range lines {
+		split := strings.Split(line, " ")
+		testInput := net.ParseIP(split[0])
+		if testInput.To4() != nil {
+			return split[0], nil
+		}
+	}
+	return "", errors.Errorf("No IPv4 address found")
 }
 
 type SshApp struct {
