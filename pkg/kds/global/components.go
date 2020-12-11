@@ -84,12 +84,12 @@ func Setup(rt runtime.Runtime) (err error) {
 }
 
 func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
-	if err := resManager.Get(context.Background(), &system.ZoneResource{}, store.GetByKey(name, model.NoMesh)); err != nil {
+	if err := resManager.Get(context.Background(), system.NewZoneResource(), store.GetByKey(name, model.NoMesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
 			return err
 		}
 		kdsGlobalLog.Info("creating Zone", "name", name)
-		err := resManager.Create(context.Background(), &system.ZoneResource{}, store.CreateByKey(name, model.NoMesh))
+		err := resManager.Create(context.Background(), system.NewZoneResource(), store.CreateByKey(name, model.NoMesh))
 		if err != nil {
 			return err
 		}

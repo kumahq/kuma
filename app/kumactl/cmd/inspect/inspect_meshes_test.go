@@ -30,7 +30,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 	meshInsightResources := []*mesh.MeshInsightResource{
 		{
 			Meta: &model.ResourceMeta{Name: "default"},
-			Spec: mesh_proto.MeshInsight{
+			Spec: &mesh_proto.MeshInsight{
 				Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{
 					Total:   100,
 					Online:  90,
@@ -51,7 +51,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 		},
 		{
 			Meta: &model.ResourceMeta{Name: "mesh-1"},
-			Spec: mesh_proto.MeshInsight{
+			Spec: &mesh_proto.MeshInsight{
 				Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{
 					Total:   100,
 					Online:  90,

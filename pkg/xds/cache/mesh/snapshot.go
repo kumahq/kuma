@@ -32,7 +32,7 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 		ipFunc:    ipFunc,
 	}
 
-	mesh := &core_mesh.MeshResource{}
+	mesh := core_mesh.NewMeshResource()
 	if err := rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
 		return nil, err
 	}

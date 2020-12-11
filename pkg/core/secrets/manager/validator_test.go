@@ -45,7 +45,7 @@ var _ = Describe("Secret Validator", func() {
 		caManagers["provided"] = ca_provided.NewProvidedCaManager(core_datasource.NewDataSourceLoader(secManager))
 
 		mesh := &mesh_core.MeshResource{
-			Spec: mesh_proto.Mesh{
+			Spec: &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: "ca-1",
 					Backends: []*mesh_proto.CertificateAuthorityBackend{

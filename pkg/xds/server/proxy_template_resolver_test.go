@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -47,7 +48,7 @@ var _ = Describe("Reconcile", func() {
 					Meta: &test_model.ResourceMeta{
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 								{
@@ -66,7 +67,7 @@ var _ = Describe("Reconcile", func() {
 					Mesh: "demo",
 					Name: "expected",
 				},
-				Spec: mesh_proto.ProxyTemplate{
+				Spec: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
 						Imports: []string{"custom-template"},
 					},
@@ -78,7 +79,7 @@ var _ = Describe("Reconcile", func() {
 					Mesh: "default",
 					Name: "other",
 				},
-				Spec: mesh_proto.ProxyTemplate{
+				Spec: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
 						Imports: []string{"irrelevant-template"},
 					},
@@ -101,7 +102,7 @@ var _ = Describe("Reconcile", func() {
 			actual := resolver.GetTemplate(proxy)
 
 			// then
-			Expect(actual).To(Equal(&mesh_proto.ProxyTemplate{
+			Expect(actual).To(MatchProto(&mesh_proto.ProxyTemplate{
 				Conf: &mesh_proto.ProxyTemplate_Conf{
 					Imports: []string{"custom-template"},
 				},

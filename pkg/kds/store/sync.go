@@ -2,10 +2,10 @@ package store
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/golang/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -100,7 +100,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 			onCreate = append(onCreate, r)
 			continue
 		}
-		if !reflect.DeepEqual(existing.GetSpec(), r.GetSpec()) {
+		if !proto.Equal(existing.GetSpec(), r.GetSpec()) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())

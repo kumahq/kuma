@@ -216,7 +216,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				}()
 
 				ctx := context.Background()
-				dataplane := &core_mesh.DataplaneResource{}
+				dataplane := core_mesh.NewDataplaneResource()
 				proxyID := xds.FromResourceKey(key)
 
 				if err := rt.ReadOnlyResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
@@ -266,7 +266,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				log.V(1).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)
 				prevHash = snapshotHash
 
-				mesh := &core_mesh.MeshResource{}
+				mesh := core_mesh.NewMeshResource()
 				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, core_model.NoMesh)); err != nil {
 					return err
 				}

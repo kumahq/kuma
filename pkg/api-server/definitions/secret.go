@@ -9,7 +9,7 @@ var SecretWsDefinition = ResourceWsDefinition{
 	Name: "Secret",
 	Path: "secrets",
 	ResourceFactory: func() model.Resource {
-		return &system.SecretResource{}
+		return system.NewSecretResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &system.SecretResourceList{}

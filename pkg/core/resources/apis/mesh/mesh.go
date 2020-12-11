@@ -16,7 +16,13 @@ var _ model.Resource = &MeshResource{}
 
 type MeshResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.Mesh
+	Spec *mesh_proto.Mesh
+}
+
+func NewMeshResource() *MeshResource {
+	return &MeshResource{
+		Spec: &mesh_proto.Mesh{},
+	}
 }
 
 func (t *MeshResource) GetType() model.ResourceType {
@@ -29,14 +35,14 @@ func (t *MeshResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *MeshResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *MeshResource) SetSpec(spec model.ResourceSpec) error {
 	mesh, ok := spec.(*mesh_proto.Mesh)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *mesh
+		t.Spec = mesh
 		return nil
 	}
 }
@@ -62,7 +68,7 @@ func (l *MeshResourceList) GetItemType() model.ResourceType {
 	return MeshType
 }
 func (l *MeshResourceList) NewItem() model.Resource {
-	return &MeshResource{}
+	return NewMeshResource()
 }
 func (l *MeshResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*MeshResource); ok {
@@ -77,6 +83,6 @@ func (l *MeshResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&MeshResource{})
+	registry.RegisterType(NewMeshResource())
 	registry.RegistryListType(&MeshResourceList{})
 }

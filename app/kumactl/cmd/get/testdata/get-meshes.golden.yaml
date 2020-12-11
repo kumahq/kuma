@@ -47,13 +47,10 @@ items:
           url: http://zipkin.eu:8080/v1/spans
   type: Mesh
 - creationTime: "0001-01-01T00:00:00Z"
-  logging:
-    backends: []
-  metrics:
-    backends: []
+  logging: {}
+  metrics: {}
   modificationTime: "0001-01-01T00:00:00Z"
   name: mesh2
-  tracing:
-    backends: []
+  tracing: {}
   type: Mesh
 next: null

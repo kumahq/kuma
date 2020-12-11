@@ -101,7 +101,7 @@ func (a *authCallbacks) credential(streamID core_xds.StreamID) (Credential, erro
 }
 
 func (a *authCallbacks) authenticate(credential Credential, req *envoy_api.DiscoveryRequest) error {
-	dataplane := &core_mesh.DataplaneResource{}
+	dataplane := core_mesh.NewDataplaneResource()
 	md := core_xds.DataplaneMetadataFromNode(req.Node)
 	if md.DataplaneResource != nil {
 		dataplane = md.DataplaneResource

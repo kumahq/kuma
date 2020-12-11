@@ -33,7 +33,7 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 	service := request.PathParameter("service")
 	meshName := s.meshFromRequest(request)
 
-	serviceInsight := &mesh.ServiceInsightResource{}
+	serviceInsight := mesh.NewServiceInsightResource()
 	err := s.resManager.Get(request.Request.Context(), serviceInsight, store.GetByKey(insights.ServiceInsightName(meshName), meshName))
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve a resource")

@@ -28,7 +28,7 @@ func newGetTrafficRouteCmd(pctx *getContext) *cobra.Command {
 			}
 			name := args[0]
 			currentMesh := pctx.CurrentMesh()
-			trafficRoute := &mesh.TrafficRouteResource{}
+			trafficRoute := mesh.NewTrafficRouteResource()
 			if err := rs.Get(context.Background(), trafficRoute, store.GetByKey(name, currentMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)

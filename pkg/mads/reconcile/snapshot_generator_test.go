@@ -80,6 +80,7 @@ var _ = Describe("snapshotGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
+						Spec: &mesh_proto.Mesh{},
 					},
 				},
 				dataplanes: []*mesh_core.DataplaneResource{
@@ -88,7 +89,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Name: "backend-01",
 							Mesh: "default",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -110,12 +111,13 @@ var _ = Describe("snapshotGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
+						Spec: &mesh_proto.Mesh{},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -138,7 +140,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Name: "backend-01",
 							Mesh: "default",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -160,12 +162,13 @@ var _ = Describe("snapshotGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
+						Spec: &mesh_proto.Mesh{},
 					},
 					{
 						Meta: &test_model.ResourceMeta{
 							Name: "demo",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Metrics: &mesh_proto.Metrics{
 								EnabledBackend: "prometheus-1",
 								Backends: []*mesh_proto.MetricsBackend{
@@ -188,7 +191,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Name: "backend-01",
 							Mesh: "default",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -207,7 +210,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Name: "backend-02",
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.2",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -226,7 +229,7 @@ var _ = Describe("snapshotGenerator", func() {
 							Name: "web-01",
 							Mesh: "demo",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.3",
 								Gateway: &mesh_proto.Dataplane_Networking_Gateway{

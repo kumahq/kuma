@@ -17,7 +17,13 @@ var _ model.Resource = &CircuitBreakerResource{}
 
 type CircuitBreakerResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.CircuitBreaker
+	Spec *mesh_proto.CircuitBreaker
+}
+
+func NewCircuitBreakerResource() *CircuitBreakerResource {
+	return &CircuitBreakerResource{
+		Spec: &mesh_proto.CircuitBreaker{},
+	}
 }
 
 func (c *CircuitBreakerResource) GetType() model.ResourceType {
@@ -33,7 +39,7 @@ func (c *CircuitBreakerResource) SetMeta(m model.ResourceMeta) {
 }
 
 func (c *CircuitBreakerResource) GetSpec() model.ResourceSpec {
-	return &c.Spec
+	return c.Spec
 }
 
 func (c *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
@@ -41,7 +47,7 @@ func (c *CircuitBreakerResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		c.Spec = *circuitBreaker
+		c.Spec = circuitBreaker
 		return nil
 	}
 }
@@ -70,7 +76,7 @@ func (l *CircuitBreakerResourceList) GetItemType() model.ResourceType {
 }
 
 func (l *CircuitBreakerResourceList) NewItem() model.Resource {
-	return &CircuitBreakerResource{}
+	return NewCircuitBreakerResource()
 }
 
 func (l *CircuitBreakerResourceList) AddItem(r model.Resource) error {
@@ -87,7 +93,7 @@ func (l *CircuitBreakerResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&CircuitBreakerResource{})
+	registry.RegisterType(NewCircuitBreakerResource())
 	registry.RegistryListType(&CircuitBreakerResourceList{})
 }
 
