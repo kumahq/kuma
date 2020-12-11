@@ -8,10 +8,13 @@ import (
 )
 
 func SNIFromTags(tags envoy.Tags) string {
-	extraTags := tags.WithoutTag(mesh_proto.ServiceTag).String()
-	service := tags[mesh_proto.ServiceTag]
-	if extraTags == "" {
+	return SNIFromServiceAndTags(tags[mesh_proto.ServiceTag], tags.WithoutTag(mesh_proto.ServiceTag))
+}
+
+func SNIFromServiceAndTags(service string, tags envoy.Tags) string {
+	tagsStr := tags.String()
+	if tagsStr == "" {
 		return service
 	}
-	return fmt.Sprintf("%s{%s}", service, extraTags)
+	return fmt.Sprintf("%s{%s}", service, tagsStr)
 }

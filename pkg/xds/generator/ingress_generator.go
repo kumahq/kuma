@@ -1,11 +1,10 @@
 package generator
 
 import (
-	"fmt"
 	"sort"
-	"strings"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -61,6 +60,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 // Ingress Listener assumes that mTLS is on. Using TLSInspector we sniff SNI value.
 // SNI value has service name and tag values specified with the following format: "backend{cluster=2,version=1}"
 // We take all possible destinations from TrafficRoutes and generate FilterChainsMatcher for each unique destination.
+// This approach has a limitation: additional tags on outbound in Universal mode won't work across different zones.
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
 func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, destinationsPerService map[string][]envoy_common.Tags) (*envoy_api_v2.Listener, error) {
 	inbound := ingress.Spec.Networking.Inbound[0]
@@ -85,7 +85,7 @@ func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, dest
 			destination := destination.
 				WithoutTag(mesh_proto.ServiceTag).
 				WithTags("mesh", inbound.GetMesh())
-			sni := i.sni(service, destination)
+			sni := tls.SNIFromServiceAndTags(service, destination)
 			if sniUsed[sni] {
 				continue
 			}
@@ -112,15 +112,6 @@ func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList) 
 		}
 	}
 	return destinations
-}
-
-func (_ IngressGenerator) sni(service string, tags envoy_common.Tags) string {
-	pairs := []string{}
-	for k, v := range tags {
-		pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
-	}
-	sort.Strings(pairs)
-	return fmt.Sprintf("%s{%s}", service, strings.Join(pairs, ","))
 }
 
 func (_ IngressGenerator) services(proxy *model.Proxy) []string {
