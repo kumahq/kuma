@@ -3,6 +3,7 @@ package bootstrap_test
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -37,6 +38,20 @@ var _ = Describe("Bootstrap Server", func() {
 	var config *bootstrap_config.BootstrapParamsConfig
 	var baseUrl string
 	var metrics core_metrics.Metrics
+
+	version := `
+	"version": {
+	  "kumaDp": {
+	    "version": "0.0.1",
+	    "gitTag": "v0.0.1",
+	    "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+	    "buildDate": "2019-08-07T11:26:06Z"
+	  },
+	  "envoy": {
+	    "version": "1.15.0",
+	    "build": "hash/1.15.0/RELEASE"
+	  }
+	}`
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
@@ -142,17 +157,17 @@ var _ = Describe("Bootstrap Server", func() {
 		},
 		Entry("minimal data provided (universal)", testCase{
 			dataplaneName:      "dp-1",
-			body:               `{ "mesh": "default", "name": "dp-1", "dataplaneTokenPath": "/tmp/token" }`,
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneTokenPath": "/tmp/token", %s }`, version),
 			expectedConfigFile: "bootstrap.universal.golden.yaml",
 		}),
 		Entry("minimal data provided (k8s)", testCase{
 			dataplaneName:      "dp-1.default",
-			body:               `{ "mesh": "default", "name": "dp-1.default", "dataplaneTokenPath": "/tmp/token" }`,
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneTokenPath": "/tmp/token", %s }`, version),
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
 			dataplaneName:      "dp-1.default",
-			body:               `{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneTokenPath": "/tmp/token" }`,
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneTokenPath": "/tmp/token", %s }`, version),
 			expectedConfigFile: "bootstrap.overridden.golden.yaml",
 		}),
 	)

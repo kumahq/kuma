@@ -34,6 +34,15 @@ node:
     dataplane.admin.port: "1234"
     dataplane.resource: ' { "type": "Dataplane", "mesh": "mesh", "name": "name.namespace", "creationTime": "1970-01-01T00:00:00Z", "modificationTime": "1970-01-01T00:00:00Z", "networking": { "address": "127.0.0.1", "inbound": [ { "port": 22022, "servicePort": 8443, "tags": { "kuma.io/protocol": "http2", "kuma.io/service": "backend" } }, ] } }'
     dataplaneTokenPath: /tmp/token
+    version:
+      kumaDp:
+        version: 0.0.1
+        gitTag: v0.0.1
+        gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+        buildDate: 2019-08-07T11:26:06Z
+      envoy:
+        version: 1.15.0
+        build: hash/1.15.0/RELEASE
 staticResources:
   clusters:
     - connectTimeout: 2s

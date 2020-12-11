@@ -36,7 +36,7 @@ var _ = Describe("run", func() {
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
-		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource) (proto.Message, error) {
+		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource, version envoy.EnvoyVersion) (proto.Message, error) {
 			bootstrap := envoy_bootstrap.Bootstrap{}
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
@@ -152,13 +152,14 @@ var _ = Describe("run", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			actualArgs := strings.Split(string(cmdline), "\n")
-			Expect(actualArgs[0]).To(Equal("-c"))
-			actualConfigFile := actualArgs[1]
+			Expect(actualArgs[0]).To(Equal("--version"))
+			Expect(actualArgs[1]).To(Equal("-c"))
+			actualConfigFile := actualArgs[2]
 			Expect(actualConfigFile).To(BeARegularFile())
 
 			// then
 			if given.expectedFile != "" {
-				Expect(actualArgs[1]).To(Equal(given.expectedFile))
+				Expect(actualArgs[2]).To(Equal(given.expectedFile))
 			}
 
 			// when
