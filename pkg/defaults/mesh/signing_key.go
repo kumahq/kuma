@@ -16,14 +16,14 @@ func ensureSigningKey(resManager manager.ResourceManager, meshName string) (crea
 		return false, errors.Wrap(err, "could not create a signing key")
 	}
 	key := issuer.SigningKeyResourceKey(meshName)
-	err = resManager.Get(context.Background(), &signingKey, core_store.GetBy(key))
+	err = resManager.Get(context.Background(), signingKey, core_store.GetBy(key))
 	if err == nil {
 		return false, nil
 	}
 	if !core_store.IsResourceNotFound(err) {
 		return false, errors.Wrap(err, "could not retrieve a resource")
 	}
-	if err := resManager.Create(context.Background(), &signingKey, core_store.CreateBy(key)); err != nil {
+	if err := resManager.Create(context.Background(), signingKey, core_store.CreateBy(key)); err != nil {
 		return false, errors.Wrap(err, "could not create a resource")
 	}
 	return true, nil

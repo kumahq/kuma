@@ -9,7 +9,7 @@ var DataplaneInsightWsDefinition = ResourceWsDefinition{
 	Name: "Dataplane Insight",
 	Path: "dataplane-insights",
 	ResourceFactory: func() model.Resource {
-		return &mesh.DataplaneInsightResource{}
+		return mesh.NewDataplaneInsightResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.DataplaneInsightResourceList{}

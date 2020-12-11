@@ -16,7 +16,13 @@ var _ model.Resource = &SecretResource{}
 
 type SecretResource struct {
 	Meta model.ResourceMeta
-	Spec system_proto.Secret
+	Spec *system_proto.Secret
+}
+
+func NewSecretResource() *SecretResource {
+	return &SecretResource{
+		Spec: &system_proto.Secret{},
+	}
 }
 
 func (t *SecretResource) GetType() model.ResourceType {
@@ -29,14 +35,14 @@ func (t *SecretResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *SecretResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
 	value, ok := spec.(*system_proto.Secret)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *value
+		t.Spec = value
 		return nil
 	}
 }
@@ -65,7 +71,7 @@ func (l *SecretResourceList) GetItemType() model.ResourceType {
 	return SecretType
 }
 func (l *SecretResourceList) NewItem() model.Resource {
-	return &SecretResource{}
+	return NewSecretResource()
 }
 func (l *SecretResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*SecretResource); ok {
@@ -80,6 +86,6 @@ func (l *SecretResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&SecretResource{})
+	registry.RegisterType(NewSecretResource())
 	registry.RegistryListType(&SecretResourceList{})
 }

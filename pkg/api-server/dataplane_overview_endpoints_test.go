@@ -50,11 +50,11 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh1", model.NoMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey("mesh1", model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	createDpWithInsights := func(name string, dp v1alpha1.Dataplane) {
+	createDpWithInsights := func(name string, dp *v1alpha1.Dataplane) {
 		dpResource := mesh_core.DataplaneResource{
 			Spec: dp,
 		}
@@ -63,7 +63,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
 		insightResource := mesh_core.DataplaneInsightResource{
-			Spec: v1alpha1.DataplaneInsight{
+			Spec: &v1alpha1.DataplaneInsight{
 				Subscriptions: []*v1alpha1.DiscoverySubscription{
 					{
 						Id:                     "stream-id-1",
@@ -80,7 +80,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 	BeforeEach(func() {
 		// given
-		createDpWithInsights("dp-1", v1alpha1.Dataplane{
+		createDpWithInsights("dp-1", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Gateway: &v1alpha1.Dataplane_Networking_Gateway{
@@ -91,7 +91,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			},
 		})
 
-		createDpWithInsights("dp-2", v1alpha1.Dataplane{
+		createDpWithInsights("dp-2", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
@@ -106,7 +106,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			},
 		})
 
-		createDpWithInsights("dp-3", v1alpha1.Dataplane{
+		createDpWithInsights("dp-3", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Ingress: &v1alpha1.Dataplane_Networking_Ingress{},

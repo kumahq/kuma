@@ -26,7 +26,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	dataplanes := []*core_mesh.DataplaneResource{}
 	for _, other := range others {
-		dp := &core_mesh.DataplaneResource{}
+		dp := core_mesh.NewDataplaneResource()
 		if err := p.ResourceConverter.ToCoreResource(other, dp); err != nil {
 			converterLog.Error(err, "failed to parse Dataplane", "dataplane", other.Spec)
 			continue // one invalid Dataplane definition should not break the entire mesh
@@ -35,7 +35,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 	}
 	externalServicesRes := []*core_mesh.ExternalServiceResource{}
 	for _, es := range externalServices {
-		res := &core_mesh.ExternalServiceResource{}
+		res := core_mesh.NewExternalServiceResource()
 		if err := p.ResourceConverter.ToCoreResource(es, res); err != nil {
 			converterLog.Error(err, "failed to parse ExternalService", "externalService", es.Spec)
 			continue // one invalid ExternalService definition should not break the entire mesh

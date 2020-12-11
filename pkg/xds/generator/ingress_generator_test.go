@@ -29,8 +29,8 @@ var _ = Describe("IngressGenerator", func() {
 		func(given testCase) {
 			gen := generator.IngressGenerator{}
 
-			dataplane := mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
+			dataplane := &mesh_proto.Dataplane{}
+			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			proxy := &core_xds.Proxy{
 				Id: core_xds.ProxyId{Name: "ingress", Mesh: "default"},

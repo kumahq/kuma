@@ -28,7 +28,7 @@ func newGetMeshCmd(pctx *getContext) *cobra.Command {
 				return err
 			}
 			name := args[0]
-			mesh := &core_mesh.MeshResource{}
+			mesh := core_mesh.NewMeshResource()
 			if err := rs.Get(context.Background(), mesh, store.GetByKey(name, model.NoMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", name)

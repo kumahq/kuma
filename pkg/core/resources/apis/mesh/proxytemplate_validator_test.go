@@ -15,10 +15,10 @@ var _ = Describe("ProxyTemplate", func() {
 	Describe("Validate()", func() {
 		DescribeTable("should pass validation",
 			func(spec string) {
-				proxyTemplate := mesh.ProxyTemplateResource{}
+				proxyTemplate := mesh.NewProxyTemplateResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(spec), &proxyTemplate.Spec)
+				err := util_proto.FromYAML([]byte(spec), proxyTemplate.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -310,10 +310,10 @@ var _ = Describe("ProxyTemplate", func() {
 		DescribeTable("should validate fields",
 			func(given testCase) {
 				// given
-				proxyTemplate := mesh.ProxyTemplateResource{}
+				proxyTemplate := mesh.NewProxyTemplateResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.proxyTemplate), &proxyTemplate.Spec)
+				err := util_proto.FromYAML([]byte(given.proxyTemplate), proxyTemplate.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -443,7 +443,7 @@ var _ = Describe("ProxyTemplate", func() {
 				expected: `
                 violations:
                 - field: conf.resources[0].resource
-                  message: 'native Envoy resource is not valid: json: cannot unmarshal string into Go value of type map[string]*json.RawMessage'`,
+                  message: 'native Envoy resource is not valid: json: cannot unmarshal string into Go value of type map[string]json.RawMessage'`,
 			}),
 			Entry("invalid cluster modifications", testCase{
 				proxyTemplate: `

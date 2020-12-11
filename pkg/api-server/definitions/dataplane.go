@@ -9,7 +9,7 @@ var DataplaneWsDefinition = ResourceWsDefinition{
 	Name: "Dataplane",
 	Path: "dataplanes",
 	ResourceFactory: func() model.Resource {
-		return &mesh.DataplaneResource{}
+		return mesh.NewDataplaneResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.DataplaneResourceList{}

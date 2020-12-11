@@ -16,7 +16,7 @@ func EnsureEnabledCA(ctx context.Context, caManagers core_ca.Managers, mesh *mes
 		if !exist { // this should be caught by validator earlier
 			return errors.Errorf("CA manager for type %s does not exist", backend.Type)
 		}
-		if err := caManager.Ensure(ctx, meshName, *backend); err != nil {
+		if err := caManager.Ensure(ctx, meshName, backend); err != nil {
 			return errors.Wrapf(err, "could not create CA of backend name %s", backend.Name)
 		}
 	}

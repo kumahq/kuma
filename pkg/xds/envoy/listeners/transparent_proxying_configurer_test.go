@@ -18,7 +18,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 		listenerName        string
 		listenerAddress     string
 		listenerPort        uint32
-		transparentProxying mesh_proto.Dataplane_Networking_TransparentProxying
+		transparentProxying *mesh_proto.Dataplane_Networking_TransparentProxying
 		expected            string
 	}
 
@@ -27,7 +27,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder().
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
-				Configure(TransparentProxying(&given.transparentProxying)).
+				Configure(TransparentProxying(given.transparentProxying)).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -42,7 +42,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			listenerName:    "inbound:192.168.0.1:8080",
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
-			transparentProxying: mesh_proto.Dataplane_Networking_TransparentProxying{
+			transparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 				RedirectPortOutbound: 12345,
 				RedirectPortInbound:  12346,
 			},
@@ -61,7 +61,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			listenerName:        "inbound:192.168.0.1:8080",
 			listenerAddress:     "192.168.0.1",
 			listenerPort:        8080,
-			transparentProxying: mesh_proto.Dataplane_Networking_TransparentProxying{},
+			transparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{},
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND

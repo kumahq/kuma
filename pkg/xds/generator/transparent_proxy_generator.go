@@ -23,7 +23,7 @@ type TransparentProxyGenerator struct {
 }
 
 func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
-	redirectPortOutbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortOutbound()
+	redirectPortOutbound := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetRedirectPortOutbound()
 	resources := model.NewResourceSet()
 	if redirectPortOutbound == 0 {
 		return resources, nil
