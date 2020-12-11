@@ -83,10 +83,10 @@ func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, dest
 		destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
 
 		for _, destination := range destinations {
-			destination := destination.
-				WithoutTag(mesh_proto.ServiceTag).
+			meshDestination := destination.
+				WithTags(mesh_proto.ServiceTag, service).
 				WithTags("mesh", inbound.GetMesh())
-			sni := tls.SNIFromServiceAndTags(service, destination)
+			sni := tls.SNIFromTags(meshDestination)
 			if sniUsed[sni] {
 				continue
 			}
@@ -96,7 +96,7 @@ func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, dest
 					Configure(envoy_listeners.FilterChainMatch(sni)).
 					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
 						ClusterName: service,
-						Tags:        destination,
+						Tags:        meshDestination.WithoutTag(mesh_proto.ServiceTag),
 					}))))
 		}
 	}

@@ -29,16 +29,4 @@ var _ = Describe("SNI", func() {
 		actual := tls.SNIFromTags(tags)
 		Expect(actual).To(Equal(expected))
 	})
-
-	It("should create SNI by tags and service", func() {
-		tags := map[string]string{
-			"version": "v1",
-			"env":     "prod",
-			"region":  "eu",
-			"app":     "backend-app",
-		}
-		expected := "backend{app=backend-app,env=prod,region=eu,version=v1}"
-		actual := tls.SNIFromServiceAndTags("backend", tags)
-		Expect(actual).To(Equal(expected))
-	})
 })
