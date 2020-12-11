@@ -8,7 +8,7 @@ import (
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 )
 
@@ -32,7 +32,7 @@ func mapUInt32ToInt64Range(value uint32) *envoy_type.Int64Range {
 }
 
 func mapHttpHeaders(
-	headers []*v1alpha1.HealthCheck_Conf_Http_HeaderValueOption,
+	headers []*mesh_proto.HealthCheck_Conf_Http_HeaderValueOption,
 ) []*envoy_core.HeaderValueOption {
 	var envoyHeaders []*envoy_core.HeaderValueOption
 	for _, header := range headers {
@@ -48,7 +48,7 @@ func mapHttpHeaders(
 }
 
 func tcpHealthCheck(
-	tcpConf *v1alpha1.HealthCheck_Conf_Tcp,
+	tcpConf *mesh_proto.HealthCheck_Conf_Tcp,
 ) *envoy_core.HealthCheck_TcpHealthCheck_ {
 	tcpHealthCheck := envoy_core.HealthCheck_TcpHealthCheck{}
 
@@ -78,7 +78,7 @@ func tcpHealthCheck(
 }
 
 func httpHealthCheck(
-	httpConf *v1alpha1.HealthCheck_Conf_Http,
+	httpConf *mesh_proto.HealthCheck_Conf_Http,
 ) *envoy_core.HealthCheck_HttpHealthCheck_ {
 	codecType := envoy_type.CodecClientType_HTTP2
 	if httpConf.UseHttp1 {
