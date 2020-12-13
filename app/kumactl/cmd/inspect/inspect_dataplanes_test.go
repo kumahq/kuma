@@ -109,14 +109,14 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 								},
 								Version: &mesh_proto.Version{
 									KumaDp: &mesh_proto.KumaDpVersion{
-										Version: "1.0.0",
-										GitTag: "v1.0.0",
+										Version:   "1.0.0",
+										GitTag:    "v1.0.0",
 										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
 										BuildDate: "2019-08-07T11:26:06Z",
 									},
 									Envoy: &mesh_proto.EnvoyVersion{
 										Version: "1.16.0",
-										Build: "hash/1.16.0/RELEASE",
+										Build:   "hash/1.16.0/RELEASE",
 									},
 								},
 							},
@@ -132,14 +132,14 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 								},
 								Version: &mesh_proto.Version{
 									KumaDp: &mesh_proto.KumaDpVersion{
-										Version: "1.0.2",
-										GitTag: "v1.0.2",
+										Version:   "1.0.2",
+										GitTag:    "v1.0.2",
 										GitCommit: "9d868cd8681c4021bb4a10bf2306ca613ba4de42",
 										BuildDate: "2020-08-07T11:26:06Z",
 									},
 									Envoy: &mesh_proto.EnvoyVersion{
 										Version: "1.16.1",
-										Build: "hash/1.16.1/RELEASE",
+										Build:   "hash/1.16.1/RELEASE",
 									},
 								},
 							},
