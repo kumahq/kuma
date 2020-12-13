@@ -66,7 +66,7 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 
 func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "DP VERSION", "ENVOY VERSION"},
+		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "KUMA-DP VERSION", "ENVOY VERSION"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -125,7 +125,7 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 					table.Ago(lastCertGeneration, now),   // CERT REGENERATED AGO
 					table.Date(certExpiration),           // CERT EXPIRATION
 					certRegenerations,                    // CERT REGENERATIONS
-					kumaDpVersion,                        // DP VERSION
+					kumaDpVersion,                        // KUMA-DP VERSION
 					envoyVersion,                         // ENVOY VERSION
 				}
 			}
