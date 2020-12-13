@@ -107,6 +107,14 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 										ResponsesRejected: 1,
 									},
 								},
+								Version: &mesh_proto.Version{
+									KumaDp: &mesh_proto.KumaDpVersion{
+										Version: "1.0.0",
+									},
+									Envoy: &mesh_proto.EnvoyVersion{
+										Version: "1.16.0",
+									},
+								},
 							},
 							{
 								Id:                     "2",
@@ -116,6 +124,14 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									Total: &mesh_proto.DiscoveryServiceStats{
 										ResponsesSent:     20,
 										ResponsesRejected: 2,
+									},
+								},
+								Version: &mesh_proto.Version{
+									KumaDp: &mesh_proto.KumaDpVersion{
+										Version: "1.0.2",
+									},
+									Envoy: &mesh_proto.EnvoyVersion{
+										Version: "1.16.1",
 									},
 								},
 							},
