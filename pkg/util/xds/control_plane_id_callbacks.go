@@ -6,21 +6,21 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 )
 
-// controlPlanIdCallbacks adds Control Plane ID to the DiscoveryResponse
-type controlPlanIdCallbacks struct {
+// controlPlaneIdCallbacks adds Control Plane ID to the DiscoveryResponse
+type controlPlaneIdCallbacks struct {
 	NoopCallbacks
 	id string
 }
 
-var _ envoy_xds.Callbacks = &controlPlanIdCallbacks{}
+var _ envoy_xds.Callbacks = &controlPlaneIdCallbacks{}
 
-func NewControlPlanIdCallbacks(id string) envoy_xds.Callbacks {
-	return &controlPlanIdCallbacks{
+func NewControlPlaneIdCallbacks(id string) envoy_xds.Callbacks {
+	return &controlPlaneIdCallbacks{
 		id: id,
 	}
 }
 
-func (c *controlPlanIdCallbacks) OnStreamResponse(streamID int64, request *envoy_api.DiscoveryRequest, response *envoy_api.DiscoveryResponse) {
+func (c *controlPlaneIdCallbacks) OnStreamResponse(streamID int64, request *envoy_api.DiscoveryRequest, response *envoy_api.DiscoveryResponse) {
 	if c.id != "" {
 		response.ControlPlane = &envoy_core.ControlPlane{
 			Identifier: c.id,

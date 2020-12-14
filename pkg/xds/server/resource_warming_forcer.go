@@ -87,6 +87,9 @@ func (r *resourceWarmingForcer) OnStreamRequest(streamID xds.StreamID, request *
 	if request.ResponseNonce == "" {
 		return nil // initial request, no need to force warming
 	}
+	if request.ErrorDetail != nil {
+		return nil // we only care about ACKs, otherwise we can get 2 Nonces with multiple NACKs
+	}
 
 	r.Lock()
 	lastEndpointNonce := r.lastEndpointNonces[streamID]
