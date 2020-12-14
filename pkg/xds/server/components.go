@@ -99,6 +99,9 @@ func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 	if err != nil {
 		return err
 	}
+
+	controlPlaneInstanceIdCallbacks := util_xds.NewControlPlaneIdCallbacks(rt.GetInstanceId())
+
 	callbacks := util_xds.CallbacksChain{
 		statsCallbacks,
 		connectionInfoTracker,
@@ -108,6 +111,7 @@ func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 		lifecycle,
 		statusTracker,
 		forcer,
+		controlPlaneInstanceIdCallbacks,
 	}
 
 	srv := envoy_server.NewServer(context.Background(), rt.XDS().Cache(), callbacks)
