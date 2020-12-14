@@ -271,20 +271,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
-				// Need to get dataplane again after counting hash. Because the following situation is possible:
-				// 1. Get Dataplane(version 1)
-				// 2. Dataplane is externally updated to version 2
-				// 3. Calculate hash in meshSnapshotCache.GetHash. This function list all resources and hash will be built based on Dataplane(version 2)
-				// 4. Use Dataplane(version 1) when generate Envoy resources
-				//
-				// So update from version 1 to version 2 is effectively lost.
-				if err := rt.ReadOnlyResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
-					if core_store.IsResourceNotFound(err) {
-						return reconciler.Clear(&proxyID)
-					}
-					return err
-				}
-
 				dataplanes, err := xds_topology.GetDataplanes(log, ctx, rt.ReadOnlyResourceManager(), rt.LookupIP(), dataplane.Meta.GetMesh())
 				if err != nil {
 					return err
