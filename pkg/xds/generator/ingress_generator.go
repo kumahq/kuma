@@ -1,11 +1,11 @@
 package generator
 
 import (
-	"fmt"
 	"sort"
-	"strings"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -16,7 +16,6 @@ import (
 	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 const (
@@ -32,7 +31,9 @@ type IngressGenerator struct {
 func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 
-	listener, err := i.generateLDS(proxy.Dataplane)
+	destinationsPerService := i.destinations(proxy.TrafficRouteList)
+
+	listener, err := i.generateLDS(proxy.Dataplane, destinationsPerService)
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 
 	services := i.services(proxy)
 
-	cdsResources, err := i.generateCDS(services, proxy)
+	cdsResources, err := i.generateCDS(services, destinationsPerService)
 	if err != nil {
 		return nil, err
 	}
@@ -59,9 +60,10 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 // generateLDS generates one Ingress Listener
 // Ingress Listener assumes that mTLS is on. Using TLSInspector we sniff SNI value.
 // SNI value has service name and tag values specified with the following format: "backend{cluster=2,version=1}"
-// Given every unique permutation of tags in available services in the cluster we generate filter chain match based on the SNI and then use subset load balancing to pick endpoints with tags from SNI
+// We take all possible destinations from TrafficRoutes and generate FilterChainsMatcher for each unique destination.
+// This approach has a limitation: additional tags on outbound in Universal mode won't work across different zones.
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
-func (_ IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource) (*envoy_api_v2.Listener, error) {
+func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, destinationsPerService map[string][]envoy_common.Tags) (*envoy_api_v2.Listener, error) {
 	inbound := ingress.Spec.Networking.Inbound[0]
 	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), inbound.Port)
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder().
@@ -72,27 +74,45 @@ func (_ IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource) (*en
 		inboundListenerBuilder = inboundListenerBuilder.
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder()))
 	}
-	permUsed := map[string]bool{}
+
+	sniUsed := map[string]bool{}
+
 	for _, inbound := range ingress.Spec.GetNetworking().GetIngress().GetAvailableServices() {
 		service := inbound.Tags[mesh_proto.ServiceTag]
-		withoutService := mesh_proto.SingleValueTagSet(inbound.GetTags()).Exclude(mesh_proto.ServiceTag)
-		permutations := TagPermutations(service, withoutService, "mesh", inbound.GetMesh())
-		for _, perm := range permutations {
-			if permUsed[perm] {
+		destinations := destinationsPerService[service]
+		destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
+
+		for _, destination := range destinations {
+			meshDestination := destination.
+				WithTags(mesh_proto.ServiceTag, service).
+				WithTags("mesh", inbound.GetMesh())
+			sni := tls.SNIFromTags(meshDestination)
+			if sniUsed[sni] {
 				continue
 			}
-			permUsed[perm] = true
+			sniUsed[sni] = true
 			inboundListenerBuilder = inboundListenerBuilder.
 				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
-					Configure(envoy_listeners.FilterChainMatch(perm)).
+					Configure(envoy_listeners.FilterChainMatch(sni)).
 					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
 						ClusterName: service,
-						Tags:        envoy_common.Tags(envoy_tls.TagsFromSNI(perm)).WithTags("mesh", inbound.GetMesh()),
+						Tags:        meshDestination.WithoutTag(mesh_proto.ServiceTag),
 					}))))
 		}
 	}
 
 	return inboundListenerBuilder.Build()
+}
+
+func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList) map[string][]envoy_common.Tags {
+	destinations := map[string][]envoy_common.Tags{}
+	for _, tr := range trs.Items {
+		for _, split := range tr.Spec.Conf.Split {
+			service := split.Destination[mesh_proto.ServiceTag]
+			destinations[service] = append(destinations[service], split.Destination)
+		}
+	}
+	return destinations
 }
 
 func (_ IngressGenerator) services(proxy *model.Proxy) []string {
@@ -104,11 +124,11 @@ func (_ IngressGenerator) services(proxy *model.Proxy) []string {
 	return services
 }
 
-func (i IngressGenerator) generateCDS(services []string, proxy *model.Proxy) (resources []*model.Resource, _ error) {
+func (i IngressGenerator) generateCDS(services []string, destinationsPerService map[string][]envoy_common.Tags) (resources []*model.Resource, _ error) {
 	for _, service := range services {
 		edsCluster, err := envoy_clusters.NewClusterBuilder().
 			Configure(envoy_clusters.EdsCluster(service)).
-			Configure(envoy_clusters.LbSubset(i.lbSubsets(proxy.OutboundTargets[service]))).
+			Configure(envoy_clusters.LbSubset(i.lbSubsets(service, destinationsPerService))).
 			Build()
 		if err != nil {
 			return nil, err
@@ -121,27 +141,16 @@ func (i IngressGenerator) generateCDS(services []string, proxy *model.Proxy) (re
 	}
 	return
 }
+func (_ IngressGenerator) lbSubsets(service string, destinationsPerService map[string][]envoy_common.Tags) [][]string {
+	selectors := [][]string{}
+	destinations := destinationsPerService[service]
+	destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
 
-// lbSubsets generate subsets given endpoints list.
-// Example:
-// given endpoints:
-// - service: backend, cloud: aws, version: 1
-// - service: backend, cloud: gcp
-// we generate permutations: [[backend], [cloud], [version], [backend, cloud], [backend, version], [cloud, version], [backend, version, cloud]]
-// because we don't know by which tags will be used in SNI by the client
-func (_ IngressGenerator) lbSubsets(endpoints model.EndpointList) [][]string {
-	uniqueKeys := map[string]bool{}
-	for _, endpoint := range endpoints {
-		for key := range envoy_common.Tags(endpoint.Tags).WithoutTag(mesh_proto.ServiceTag) {
-			uniqueKeys[key] = true
-		}
+	for _, destination := range destinations {
+		keys := append(destination.WithoutTag(mesh_proto.ServiceTag).Keys(), "mesh")
+		selectors = append(selectors, keys)
 	}
-	var keys []string
-	for key := range uniqueKeys {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	return Permutation(keys)
+	return selectors
 }
 
 func (_ IngressGenerator) generateEDS(proxy *model.Proxy, services []string) (resources []*model.Resource) {
@@ -154,29 +163,4 @@ func (_ IngressGenerator) generateEDS(proxy *model.Proxy, services []string) (re
 		})
 	}
 	return
-}
-
-func TagPermutations(service string, tags map[string]string, keysAndValues ...string) []string {
-	pairs := []string{}
-	for k, v := range tags {
-		pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
-	}
-	sort.Strings(pairs)
-	rv := []string{}
-	additionalPairs := []string{}
-	for i := 0; i < len(keysAndValues); {
-		key, value := keysAndValues[i], keysAndValues[i+1]
-		additionalPairs = append(additionalPairs, fmt.Sprintf("%s=%s", key, value))
-		i += 2
-	}
-	for _, tagSet := range Permutation(pairs) {
-		tags := append(additionalPairs, tagSet...)
-		sort.Strings(tags)
-		if len(tags) != 0 {
-			rv = append(rv, fmt.Sprintf("%s{%s}", service, strings.Join(tags, ",")))
-		} else {
-			rv = append(rv, service)
-		}
-	}
-	return rv
 }
