@@ -104,7 +104,7 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 
 				var kumaDpVersion string
 				var envoyVersion string
-				if lastSubscription.Version != nil {
+				if lastSubscription.GetVersion() != nil {
 					if lastSubscription.Version.KumaDp != nil {
 						kumaDpVersion = lastSubscription.Version.KumaDp.Version
 					}
