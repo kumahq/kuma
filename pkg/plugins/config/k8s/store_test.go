@@ -176,7 +176,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.Create(initial)
 
 			// given
-			config := &system_model.ConfigResource{}
+			config := system_model.NewConfigResource()
 
 			err := s.Get(context.Background(), config, core_store.GetByKey("kuma-internal-config", ""))
 			Expect(err).ToNot(HaveOccurred())
