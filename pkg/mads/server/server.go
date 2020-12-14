@@ -21,7 +21,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 		util_xds.LoggingCallbacks{Log: madsServerLog},
 		syncTracker,
 	}
-	srv := NewServer(cache, callbacks, madsServerLog)
+	srv := NewServer(cache, callbacks)
 	return rt.Add(
 		&grpcServer{
 			server:  srv,
