@@ -10,6 +10,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -53,7 +54,7 @@ func (t TracingProxyGenerator) zipkinCluster(backend *mesh_proto.TracingBackend)
 	}
 
 	clusterName := names.GetTracingClusterName(backend.Name)
-	cluster, err := clusters.NewClusterBuilder().
+	cluster, err := clusters.NewClusterBuilder(envoy.APIV2).
 		Configure(clusters.DNSCluster(clusterName, url.Hostname(), uint32(port))).
 		Build()
 	if err != nil {
