@@ -22,6 +22,7 @@ var _ = Describe("IngressGenerator", func() {
 		dataplane       string
 		expected        string
 		outboundTargets core_xds.EndpointMap
+		trafficRoutes   *mesh_core.TrafficRouteResourceList
 	}
 
 	DescribeTable("should generate Envoy xDS resources",
@@ -39,7 +40,8 @@ var _ = Describe("IngressGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				OutboundTargets: given.outboundTargets,
+				OutboundTargets:  given.outboundTargets,
+				TrafficRouteList: given.trafficRoutes,
 			}
 
 			// when
@@ -60,7 +62,7 @@ var _ = Describe("IngressGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(expected))
 		},
-		Entry("01. basic", testCase{
+		Entry("01. default trafficroute, single mesh", testCase{
 			dataplane: `
             networking:
               address: 10.0.0.1
@@ -89,6 +91,7 @@ var _ = Describe("IngressGenerator", func() {
 							"kuma.io/service": "backend",
 							"version":         "v1",
 							"region":          "eu",
+							"mesh":            "mesh1",
 						},
 						Weight: 1,
 					},
@@ -99,13 +102,34 @@ var _ = Describe("IngressGenerator", func() {
 							"kuma.io/service": "backend",
 							"version":         "v2",
 							"region":          "us",
+							"mesh":            "mesh1",
 						},
 						Weight: 1,
 					},
 				},
 			},
+			trafficRoutes: &mesh_core.TrafficRouteResourceList{
+				Items: []*mesh_core.TrafficRouteResource{
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchAnyService(),
+								}},
+							},
+						},
+					},
+				},
+			},
 		}),
-		Entry("02. empty ingress", testCase{
+		Entry("02. default trafficroute, empty ingress", testCase{
 			dataplane: `
             networking:
               address: 10.0.0.1
@@ -115,6 +139,324 @@ var _ = Describe("IngressGenerator", func() {
 `,
 			expected:        "02.envoy.golden.yaml",
 			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{},
+			trafficRoutes: &mesh_core.TrafficRouteResourceList{
+				Items: []*mesh_core.TrafficRouteResource{
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchAnyService(),
+								}},
+							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("03. trafficroute with many destinations", testCase{
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              ingress:
+                availableServices:
+                  - mesh: mesh1
+                    tags:
+                      kuma.io/service: backend
+                      version: v1
+                      region: eu
+                  - mesh: mesh1
+                    tags:
+                      kuma.io/service: backend
+                      version: v2
+                      region: us
+              inbound:
+                - port: 10001
+`,
+			expected: "03.envoy.golden.yaml",
+			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
+				"backend": {
+					{
+						Target: "192.168.0.1",
+						Port:   2521,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+							"version":         "v1",
+							"region":          "eu",
+							"mesh":            "mesh1",
+						},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.2",
+						Port:   2521,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+							"version":         "v2",
+							"region":          "us",
+							"mesh":            "mesh1",
+						},
+						Weight: 1,
+					},
+				},
+			},
+			trafficRoutes: &mesh_core.TrafficRouteResourceList{
+				Items: []*mesh_core.TrafficRouteResource{
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchAnyService(),
+								}},
+							},
+						},
+					},
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight: 10,
+										Destination: map[string]string{
+											mesh_proto.ServiceTag: "backend",
+											"version":             "v2",
+										},
+									},
+									{
+										Weight: 90,
+										Destination: map[string]string{
+											mesh_proto.ServiceTag: "backend",
+											"region":              "eu",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("04. several services in several meshes", testCase{
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              ingress:
+                availableServices:
+                  - mesh: mesh1
+                    tags:
+                      kuma.io/service: backend
+                      version: v1
+                      region: eu
+                  - mesh: mesh1
+                    tags:
+                      kuma.io/service: backend
+                      version: v2
+                      region: us
+                  - mesh: mesh2
+                    tags:
+                      kuma.io/service: backend
+                      cloud: eks
+                      arch: ARM
+                      os: ubuntu
+                      region: asia
+                      version: v3
+                  - mesh: mesh2
+                    tags:
+                      kuma.io/service: frontend
+                      cloud: gke
+                      arch: x86
+                      os: debian
+                      region: eu
+                      version: v1
+                  - mesh: mesh2
+                    tags:
+                      kuma.io/service: frontend
+                      cloud: aks
+                      version: v2
+              inbound:
+                - port: 10001
+`,
+			expected: "04.envoy.golden.yaml",
+			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
+				"backend": {
+					{
+						Target: "192.168.0.1",
+						Port:   2521,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+							"version":         "v1",
+							"region":          "eu",
+							"mesh":            "mesh1",
+						},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.2",
+						Port:   2521,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+							"version":         "v2",
+							"region":          "us",
+							"mesh":            "mesh1",
+						},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.3",
+						Port:   2521,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+							"cloud":           "eks",
+							"arch":            "ARM",
+							"os":              "ubuntu",
+							"region":          "asia",
+							"version":         "v3",
+							"mesh":            "mesh2",
+						},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.4",
+						Port:   2521,
+						Tags: map[string]string{
+							"kuma.io/service": "frontend",
+							"cloud":           "gke",
+							"arch":            "x86",
+							"os":              "debian",
+							"region":          "eu",
+							"version":         "v1",
+							"mesh":            "mesh2",
+						},
+						Weight: 1,
+					},
+					{
+						Target: "192.168.0.5",
+						Port:   2521,
+						Tags: map[string]string{
+							"kuma.io/service": "frontend",
+							"cloud":           "aks",
+							"version":         "v2",
+							"mesh":            "mesh2",
+						},
+						Weight: 1,
+					},
+				},
+			},
+			trafficRoutes: &mesh_core.TrafficRouteResourceList{
+				Items: []*mesh_core.TrafficRouteResource{
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchAnyService(),
+								}},
+							},
+						},
+					},
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight: 100,
+									Destination: map[string]string{
+										mesh_proto.ServiceTag: "*",
+										"version":             "v2",
+									},
+								}},
+							},
+						},
+					},
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight: 10,
+										Destination: map[string]string{
+											mesh_proto.ServiceTag: "backend",
+											"version":             "v2",
+										},
+									},
+									{
+										Weight: 90,
+										Destination: map[string]string{
+											mesh_proto.ServiceTag: "backend",
+											"region":              "eu",
+										},
+									},
+								},
+							},
+						},
+					},
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{
+									{
+										Weight: 10,
+										Destination: map[string]string{
+											mesh_proto.ServiceTag: "frontend",
+											"region":              "eu",
+											"cloud":               "gke",
+										},
+									},
+									{
+										Weight: 90,
+										Destination: map[string]string{
+											mesh_proto.ServiceTag: "frontend",
+											"cloud":               "aks",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		}),
 	)
 })

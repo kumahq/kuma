@@ -248,11 +248,18 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					}
 					destinations := ingress.BuildDestinationMap(dataplane)
 					endpoints := ingress.BuildEndpointMap(destinations, allMeshDataplanes.Items)
+
+					routes := &core_mesh.TrafficRouteResourceList{}
+					if err := rt.ReadOnlyResourceManager().List(ctx, routes); err != nil {
+						return err
+					}
+
 					proxy := xds.Proxy{
-						Id:              proxyID,
-						Dataplane:       dataplane,
-						OutboundTargets: endpoints,
-						Metadata:        metadataTracker.Metadata(streamId),
+						Id:               proxyID,
+						Dataplane:        dataplane,
+						OutboundTargets:  endpoints,
+						Metadata:         metadataTracker.Metadata(streamId),
+						TrafficRouteList: routes,
 					}
 					envoyCtx := xds_context.Context{
 						ControlPlane: envoyCpCtx,
