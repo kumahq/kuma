@@ -278,7 +278,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				// 4. Use Dataplane(version 1) when generate Envoy resources
 				//
 				// So update from version 1 to version 2 is effectively lost.
-				if err := rt.ReadOnlyResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
+				if err := rt.ResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
 					if core_store.IsResourceNotFound(err) {
 						return reconciler.Clear(&proxyID)
 					}
