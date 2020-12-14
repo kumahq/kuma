@@ -29,7 +29,7 @@ var _ = Describe("kumactl get traffic-permissions", func() {
 
 	trafficPermissionResources := []*mesh.TrafficPermissionResource{
 		{
-			Spec: v1alpha1.TrafficPermission{
+			Spec: &v1alpha1.TrafficPermission{
 				Sources: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
@@ -53,7 +53,7 @@ var _ = Describe("kumactl get traffic-permissions", func() {
 			},
 		},
 		{
-			Spec: v1alpha1.TrafficPermission{
+			Spec: &v1alpha1.TrafficPermission{
 				Sources: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{

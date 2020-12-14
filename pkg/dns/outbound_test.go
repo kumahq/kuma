@@ -23,7 +23,7 @@ var _ = Describe("VIPOutbounds", func() {
 				Name: "dp1",
 				Mesh: "default",
 			},
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -52,7 +52,7 @@ var _ = Describe("VIPOutbounds", func() {
 					Name: "dp" + strconv.Itoa(i),
 					Mesh: "default",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
 							{

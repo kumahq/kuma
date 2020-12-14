@@ -27,8 +27,8 @@ var _ = Describe("ProbeGenerator", func() {
 		func(given testCase) {
 			gen := generator.ProbeProxyGenerator{}
 
-			dataplane := mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
+			dataplane := &mesh_proto.Dataplane{}
+			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			proxy := &core_xds.Proxy{
 				Dataplane: &mesh_core.DataplaneResource{

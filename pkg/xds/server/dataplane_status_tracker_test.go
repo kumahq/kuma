@@ -4,6 +4,10 @@ import (
 	"context"
 	"time"
 
+	pstruct "github.com/golang/protobuf/ptypes/struct"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -89,6 +93,9 @@ var _ = Describe("DataplaneStatusTracker", func() {
               lds: {}
               rds: {}
               total: {}
+            version:
+              kumaDp: {}
+              envoy: {}
 `))
 
 		By("simulating end of ADS subscription")
@@ -111,6 +118,9 @@ var _ = Describe("DataplaneStatusTracker", func() {
               lds: {}
               rds: {}
               total: {}
+            version:
+              kumaDp: {}
+              envoy: {}
 `))
 	})
 
@@ -153,6 +163,9 @@ var _ = Describe("DataplaneStatusTracker", func() {
           lds: {}
           rds: {}
           total: {}
+        version:
+          kumaDp: {}
+          envoy: {}
 `))
 	})
 
@@ -167,6 +180,18 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		func(given testCase) {
 			// given
 			streamID := int64(1)
+			version := util_proto.MustToStruct(&mesh_proto.Version{
+				KumaDp: &mesh_proto.KumaDpVersion{
+					Version:   "0.0.1",
+					GitTag:    "v0.0.1",
+					GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+					BuildDate: "2019-08-07T11:26:06Z",
+				},
+				Envoy: &mesh_proto.EnvoyVersion{
+					Version: "1.15.0",
+					Build:   "hash/1.15.0/RELEASE",
+				},
+			})
 
 			By("simulating start of subscription")
 			// when
@@ -184,6 +209,20 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			discoveryRequest := &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
 					Id: "default.example-001",
+					Metadata: &pstruct.Struct{
+						Fields: map[string]*pstruct.Value{
+							"dataplaneTokenPath": {
+								Kind: &pstruct.Value_StringValue{
+									StringValue: "/tmp/token",
+								},
+							},
+							"version": {
+								Kind: &pstruct.Value_StructValue{
+									StructValue: version,
+								},
+							},
+						},
+					},
 				},
 				TypeUrl: given.TypeUrl,
 			}
@@ -209,6 +248,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
           lds: {}
           rds: {}
           total: {}
+        version:
+          kumaDp:
+            buildDate: "2019-08-07T11:26:06Z"
+            gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+            gitTag: v0.0.1
+            version: 0.0.1
+          envoy:
+            build: hash/1.15.0/RELEASE
+            version: 1.15.0
 `))
 
 			By("simulating initial xDS response")
@@ -285,6 +333,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               rds: {}
               total:
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -301,6 +358,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesAcknowledged: "1"
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterNACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -319,6 +385,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesRejected: "1"
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 		}),
 		Entry("should properly handle RDS flow", testCase{
@@ -336,6 +411,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesSent: "1"
               total:
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -352,6 +436,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesAcknowledged: "1"
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterNACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -370,6 +463,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesRejected: "1"
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 		}),
 		Entry("should properly handle CDS flow", testCase{
@@ -387,6 +489,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               rds: {}
               total:
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -403,6 +514,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesAcknowledged: "1"
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterNACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -421,6 +541,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesRejected: "1"
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 		}),
 		Entry("should properly handle EDS flow", testCase{
@@ -438,6 +567,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               rds: {}
               total:
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -454,6 +592,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
               total:
                 responsesAcknowledged: "1"
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
 			ExpectedStatsAfterNACK: `
             connectTime: "2019-07-01T00:00:00Z"
@@ -472,7 +619,60 @@ var _ = Describe("DataplaneStatusTracker", func() {
                 responsesAcknowledged: "1"
                 responsesRejected: "1"
                 responsesSent: "1"
+            version:
+              kumaDp:
+                buildDate: "2019-08-07T11:26:06Z"
+                gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+                gitTag: v0.0.1
+                version: 0.0.1
+              envoy:
+                build: hash/1.15.0/RELEASE
+                version: 1.15.0
 `,
+		}),
+	)
+
+	type versionTestCase struct {
+		version *pstruct.Value
+	}
+
+	DescribeTable("should read node.metadata without error",
+		func(given versionTestCase) {
+			// given
+			version := mesh_proto.NewVersion()
+			node := &envoy_core.Node{
+				Metadata: &pstruct.Struct{
+					Fields: map[string]*pstruct.Value{
+						"dataplaneTokenPath": {
+							Kind: &pstruct.Value_StringValue{
+								StringValue: "/tmp/token",
+							},
+						},
+						"version": given.version,
+					},
+				},
+			}
+
+			// when
+			err := readVersion(node.Metadata, version)
+
+			// then
+			Expect(err).To(BeNil())
+			Expect(version).To(Equal(mesh_proto.NewVersion()))
+		},
+		Entry("when version is a nil struct", versionTestCase{
+			version: &pstruct.Value{
+				Kind: &pstruct.Value_StructValue{
+					StructValue: nil,
+				},
+			},
+		}),
+		Entry("when version is not a struct", versionTestCase{
+			version: &pstruct.Value{
+				Kind: &pstruct.Value_StringValue{
+					StringValue: "v1.0.0",
+				},
+			},
 		}),
 	)
 })

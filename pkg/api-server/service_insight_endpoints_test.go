@@ -50,14 +50,14 @@ var _ = Describe("Service Insight Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh-1", core_model.NoMesh), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey("mesh-1", core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh-2", core_model.NoMesh), store.CreatedAt(t1))
+		err = resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey("mesh-2", core_model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	createServiceInsight := func(name, mesh string, serviceInsight mesh_proto.ServiceInsight) {
+	createServiceInsight := func(name, mesh string, serviceInsight *mesh_proto.ServiceInsight) {
 		serviceInsightResource := mesh_core.ServiceInsightResource{
 			Spec: serviceInsight,
 		}
@@ -66,14 +66,14 @@ var _ = Describe("Service Insight Endpoints", func() {
 	}
 
 	BeforeEach(func() {
-		createServiceInsight("all-services-mesh-1", "mesh-1", mesh_proto.ServiceInsight{
+		createServiceInsight("all-services-mesh-1", "mesh-1", &mesh_proto.ServiceInsight{
 			Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{
 				"backend":  {Total: 100, Online: 70, Offline: 30},
 				"frontend": {Total: 20, Online: 19, Offline: 1},
 			},
 		})
 
-		createServiceInsight("all-services-mesh-2", "mesh-2", mesh_proto.ServiceInsight{
+		createServiceInsight("all-services-mesh-2", "mesh-2", &mesh_proto.ServiceInsight{
 			Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{
 				"db":    {Total: 10, Online: 9, Offline: 1},
 				"redis": {Total: 22, Online: 19, Offline: 3},

@@ -142,7 +142,7 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 		}
 		return dp, nil
 	} else {
-		dataplane := &core_mesh.DataplaneResource{}
+		dataplane := core_mesh.NewDataplaneResource()
 		if err := b.resManager.Get(ctx, dataplane, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
 			return nil, err
 		}
@@ -151,7 +151,7 @@ func (b *bootstrapGenerator) dataplaneFor(ctx context.Context, request types.Boo
 }
 
 func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string) error {
-	if err := b.resManager.Get(ctx, &core_mesh.MeshResource{}, core_store.GetByKey(mesh, model.NoMesh)); err != nil {
+	if err := b.resManager.Get(ctx, core_mesh.NewMeshResource(), core_store.GetByKey(mesh, model.NoMesh)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			verr := validators.ValidationError{}
 			verr.AddViolation("mesh", fmt.Sprintf("mesh %q does not exist", mesh))
@@ -197,6 +197,12 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		DataplaneTokenPath: request.DataplaneTokenPath,
 		DataplaneResource:  request.DataplaneResource,
 		CertBytes:          certBytes,
+		KumaDpVersion:      request.Version.KumaDp.Version,
+		KumaDpGitTag:       request.Version.KumaDp.GitTag,
+		KumaDpGitCommit:    request.Version.KumaDp.GitCommit,
+		KumaDpBuildDate:    request.Version.KumaDp.BuildDate,
+		EnvoyVersion:       request.Version.Envoy.Version,
+		EnvoyBuild:         request.Version.Envoy.Build,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params)

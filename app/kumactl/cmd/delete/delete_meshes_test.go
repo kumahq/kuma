@@ -10,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -27,11 +28,13 @@ var _ = Describe("kumactl delete mesh", func() {
 			Meta: &test_model.ResourceMeta{
 				Name: "mesh1",
 			},
+			Spec: &mesh_proto.Mesh{},
 		},
 		{
 			Meta: &test_model.ResourceMeta{
 				Name: "mesh2",
 			},
+			Spec: &mesh_proto.Mesh{},
 		},
 	}
 
@@ -125,13 +128,13 @@ var _ = Describe("kumactl delete mesh", func() {
 
 			By("verifying that resource under test was actually deleted")
 			// when
-			err = store.Get(context.Background(), &mesh.MeshResource{}, core_store.GetBy(core_model.ResourceKey{Name: "mesh2"}))
+			err = store.Get(context.Background(), mesh.NewMeshResource(), core_store.GetBy(core_model.ResourceKey{Name: "mesh2"}))
 			// then
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 
 			By("verifying that another mesh wasn't affected")
 			// when
-			err = store.Get(context.Background(), &mesh.MeshResource{}, core_store.GetBy(core_model.ResourceKey{Name: "mesh1"}))
+			err = store.Get(context.Background(), mesh.NewMeshResource(), core_store.GetBy(core_model.ResourceKey{Name: "mesh1"}))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		})

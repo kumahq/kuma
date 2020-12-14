@@ -2,8 +2,10 @@ package universal
 
 import (
 	"context"
-	"reflect"
 
+	"github.com/golang/protobuf/proto"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -31,7 +33,8 @@ func UpdateOutbounds(ctx context.Context, rm manager.ResourceManager, vips vips.
 				continue
 			}
 			newOutbounds := dns.VIPOutbounds(dp.Meta.GetName(), dpList.Items, vips, externalServices.Items)
-			if reflect.DeepEqual(newOutbounds, dp.Spec.Networking.Outbound) {
+
+			if outboundsEqual(newOutbounds, dp.Spec.Networking.Outbound) {
 				continue
 			}
 			dp.Spec.Networking.Outbound = newOutbounds
@@ -45,4 +48,16 @@ func UpdateOutbounds(ctx context.Context, rm manager.ResourceManager, vips vips.
 		log.Info("outbounds updated due to VIP changes", "mesh", m.Meta.GetName(), "dpsUpdated", dpsUpdated)
 	}
 	return nil
+}
+
+func outboundsEqual(outbounds []*mesh_proto.Dataplane_Networking_Outbound, other []*mesh_proto.Dataplane_Networking_Outbound) bool {
+	if len(outbounds) != len(other) {
+		return false
+	}
+	for i := range outbounds {
+		if !proto.Equal(outbounds[i], other[i]) {
+			return false
+		}
+	}
+	return true
 }

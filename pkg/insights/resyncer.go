@@ -211,7 +211,7 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	for _, stat := range insight.Services {
 		stat.Offline = stat.Total - stat.Online
 	}
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, &core_mesh.ServiceInsightResource{}, func(resource model.Resource) {
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, core_mesh.NewServiceInsightResource(), func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
 		_ = resource.SetSpec(insight)
 	})
@@ -287,7 +287,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 	}
 	insight.Dataplanes.Offline = insight.Dataplanes.Total - insight.Dataplanes.Online
 
-	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, &core_mesh.MeshInsightResource{}, func(resource model.Resource) {
+	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
 		_ = resource.SetSpec(insight)
 	})
@@ -308,7 +308,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 }
 
 func (r *resyncer) needResyncServiceInsight(mesh string) (bool, error) {
-	serviceInsight := &core_mesh.ServiceInsightResource{}
+	serviceInsight := core_mesh.NewServiceInsightResource()
 	if err := r.rm.Get(context.Background(), serviceInsight, store.GetByKey(ServiceInsightName(mesh), mesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
 			return false, errors.Wrap(err, "failed to get ServiceInsight")
@@ -326,7 +326,7 @@ func (r *resyncer) needResyncServiceInsight(mesh string) (bool, error) {
 }
 
 func (r *resyncer) needResyncMeshInsight(mesh string) (bool, error) {
-	meshInsight := &core_mesh.MeshInsightResource{}
+	meshInsight := core_mesh.NewMeshInsightResource()
 	if err := r.rm.Get(context.Background(), meshInsight, store.GetByKey(mesh, model.NoMesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
 			return false, errors.Wrap(err, "failed to get MeshInsight")

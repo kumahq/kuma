@@ -55,7 +55,7 @@ var _ = Describe("Components", func() {
 
 			// and example mesh
 			opts := core_store.CreateByKey("demo", core_model.NoMesh)
-			err = runtime.ResourceManager().Create(context.Background(), &mesh_core.MeshResource{}, opts)
+			err = runtime.ResourceManager().Create(context.Background(), mesh_core.NewMeshResource(), opts)
 			Expect(err).ToNot(HaveOccurred())
 
 			// setup
@@ -96,7 +96,7 @@ var _ = Describe("Components", func() {
 			By("creating Dataplane definition")
 			// when
 			resource := &mesh_core.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "127.0.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

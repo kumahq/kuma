@@ -39,7 +39,7 @@ var _ = Describe("kumactl get secrets", func() {
 					Mesh: "default",
 					Name: "sec-1",
 				},
-				Spec: system_proto.Secret{
+				Spec: &system_proto.Secret{
 					Data: &wrappers.BytesValue{
 						Value: []byte("test"),
 					},
@@ -50,7 +50,7 @@ var _ = Describe("kumactl get secrets", func() {
 					Mesh: "default",
 					Name: "sec-2",
 				},
-				Spec: system_proto.Secret{
+				Spec: &system_proto.Secret{
 					Data: &wrappers.BytesValue{
 						Value: []byte("test2"),
 					},

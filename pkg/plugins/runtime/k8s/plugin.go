@@ -183,7 +183,7 @@ func addDefaulters(mgr kube_ctrl.Manager, converter k8s_common.Converter) error 
 
 	addDefaulter(mgr, mesh_k8s.GroupVersion.WithKind("Mesh"),
 		func() core_model.Resource {
-			return &mesh_core.MeshResource{}
+			return mesh_core.NewMeshResource()
 		}, converter)
 
 	return nil

@@ -54,7 +54,7 @@ var _ = Describe("Provided CA", func() {
 				Expect(err).ToNot(HaveOccurred())
 
 				// when
-				verr := caManager.ValidateBackend(context.Background(), "default", mesh_proto.CertificateAuthorityBackend{
+				verr := caManager.ValidateBackend(context.Background(), "default", &mesh_proto.CertificateAuthorityBackend{
 					Name: "provided-1",
 					Type: "provided",
 					Conf: &str,
@@ -93,10 +93,10 @@ var _ = Describe("Provided CA", func() {
               secret:`,
 				expected: `
             violations:
-            - field: cert.secret
-              message: cannot be empty
-            - field: key.secret
-              message: cannot be empty`,
+            - field: cert
+              message: 'data source has to be chosen. Available sources: secret, file, inline'
+            - field: key
+              message: 'data source has to be chosen. Available sources: secret, file, inline'`,
 			}),
 			Entry("config with empty secret", testCase{
 				configYAML: `
@@ -125,8 +125,8 @@ var _ = Describe("Provided CA", func() {
 		)
 	})
 
-	var backendWithTestCerts mesh_proto.CertificateAuthorityBackend
-	var backendWithInvalidCerts mesh_proto.CertificateAuthorityBackend
+	var backendWithTestCerts *mesh_proto.CertificateAuthorityBackend
+	var backendWithInvalidCerts *mesh_proto.CertificateAuthorityBackend
 
 	BeforeEach(func() {
 		cfg := provided_config.ProvidedCertificateAuthorityConfig{
@@ -144,10 +144,10 @@ var _ = Describe("Provided CA", func() {
 		str, err := proto.ToStruct(&cfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		backendWithTestCerts = mesh_proto.CertificateAuthorityBackend{
+		backendWithTestCerts = &mesh_proto.CertificateAuthorityBackend{
 			Name: "provided-1",
 			Type: "provided",
-			Conf: &str,
+			Conf: str,
 			DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
 				Rotation: &mesh_proto.CertificateAuthorityBackend_DpCert_Rotation{
 					Expiration: "1s",
@@ -170,10 +170,10 @@ var _ = Describe("Provided CA", func() {
 		invalidStr, err := proto.ToStruct(&invalidCfg)
 		Expect(err).ToNot(HaveOccurred())
 
-		backendWithInvalidCerts = mesh_proto.CertificateAuthorityBackend{
+		backendWithInvalidCerts = &mesh_proto.CertificateAuthorityBackend{
 			Name: "provided-2",
 			Type: "provided",
-			Conf: &invalidStr,
+			Conf: invalidStr,
 		}
 	})
 
@@ -242,7 +242,7 @@ var _ = Describe("Provided CA", func() {
 
 		It("should return list of secrets", func() {
 			// given
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "provided-1",
 				Type: "provided",
 				Conf: proto.MustToStruct(&provided_config.ProvidedCertificateAuthorityConfig{

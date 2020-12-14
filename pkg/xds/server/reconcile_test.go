@@ -11,6 +11,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_model "github.com/kumahq/kuma/pkg/core/xds"
@@ -97,6 +98,7 @@ var _ = Describe("Reconcile", func() {
 					Name:    "example",
 					Version: "abcdefg",
 				},
+				Spec: &mesh_proto.Dataplane{},
 			}
 
 			By("simulating discovery event")

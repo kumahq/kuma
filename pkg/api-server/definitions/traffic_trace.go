@@ -9,7 +9,7 @@ var TrafficTraceWsDefinition = ResourceWsDefinition{
 	Name: "Traffic Trace",
 	Path: "traffic-traces",
 	ResourceFactory: func() model.Resource {
-		return &mesh.TrafficTraceResource{}
+		return mesh.NewTrafficTraceResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.TrafficTraceResourceList{}

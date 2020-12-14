@@ -1,0 +1,30 @@
+---
+metadata:
+  namespace: demo
+  name: example
+  annotations:
+    80.service.kuma.io/protocol: http
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - # protocol defaults to TCP
+      port: 80
+      targetPort: 8080
+    - kuma.io/protocol: TCP
+      port: 443
+      targetPort: 8443
+---
+metadata:
+  namespace: playground
+  name: sample
+  annotations:
+    7071.service.kuma.io/protocol: MONGO
+spec:
+  clusterIP: 192.168.0.1
+  ports:
+    - kuma.io/protocol: TCP
+      port: 7071
+      targetPort: 7070
+    - kuma.io/protocol: TCP
+      port: 6061
+      targetPort: metrics
