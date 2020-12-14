@@ -3,6 +3,8 @@ KIND_KUBECONFIG_DIR ?= $(HOME)/.kube
 KIND_KUBECONFIG ?= $(KIND_KUBECONFIG_DIR)/kind-kuma-config
 KIND_CLUSTER_NAME ?= kuma
 
+METRICS_SERVER_VERSION := 0.4.1
+
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-registry=$(DOCKER_REGISTRY) --dataplane-registry=$(DOCKER_REGISTRY) --dataplane-init-registry=$(DOCKER_REGISTRY)
 else
@@ -115,6 +117,13 @@ kind/deploy/kuma/local: kind/deploy/kuma
 kind/deploy/metrics: build/kumactl
 	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install metrics $(KUMACTL_INSTALL_METRICS_IMAGES) | kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-metrics pods -l app=prometheus
+
+.PHONY: kind/deploy/metrics-server
+kind/deploy/metrics-server:
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v$(METRICS_SERVER_VERSION)/components.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl patch -n kube-system deployment/metrics-server \
+		--patch='{"spec":{"template":{"spec":{"containers":[{"name":"metrics-server","args":["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-insecure-tls", "--kubelet-preferred-address-types=InternalIP"]}]}}}}'
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kube-system deployment/metrics-server
 
 .PHONY: kind/deploy/example-app
 kind/deploy/example-app:
