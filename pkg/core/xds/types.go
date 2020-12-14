@@ -105,6 +105,10 @@ type Proxy struct {
 	Metadata           *DataplaneMetadata
 	FaultInjections    FaultInjectionMap
 	CLACache           CLACache
+
+	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
+	// TrafficRouteList is used only for generating configs for Ingress.
+	TrafficRouteList *mesh_core.TrafficRouteResourceList
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {

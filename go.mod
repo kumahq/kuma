@@ -10,7 +10,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emicklei/go-restful v2.14.2+incompatible
-	github.com/envoyproxy/go-control-plane v0.9.5
+	github.com/envoyproxy/go-control-plane v0.9.8
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
@@ -38,6 +38,7 @@ require (
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
 	github.com/sethvargo/go-retry v0.1.0
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749
+	github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546 // indirect
 	github.com/slok/go-http-metrics v0.9.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
@@ -45,7 +46,7 @@ require (
 	go.uber.org/multierr v1.3.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
-	golang.org/x/tools v0.0.0-20201208233053-a543418bbed2 // indirect
+	golang.org/x/tools v0.0.0-20201210164618-f31efc5a5c28 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.30.0
 	google.golang.org/protobuf v1.25.0

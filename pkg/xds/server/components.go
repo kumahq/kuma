@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"google.golang.org/grpc"
 
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
@@ -92,6 +93,8 @@ func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 		return err
 	}
 
+	forcer := newResourceWarmingForcer(rt.XDS().Cache(), rt.XDS().Hasher())
+
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
 	if err != nil {
 		return err
@@ -104,9 +107,10 @@ func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 		metadataTracker,
 		lifecycle,
 		statusTracker,
+		forcer,
 	}
 
-	srv := NewServer(rt.XDS().Cache(), callbacks)
+	srv := envoy_server.NewServer(context.Background(), rt.XDS().Cache(), callbacks)
 
 	xdsServerLog.Info("registering Aggregated Discovery Service in Dataplane Server")
 	envoy_service_discovery_v2.RegisterAggregatedDiscoveryServiceServer(server, srv)
@@ -244,11 +248,18 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					}
 					destinations := ingress.BuildDestinationMap(dataplane)
 					endpoints := ingress.BuildEndpointMap(destinations, allMeshDataplanes.Items)
+
+					routes := &core_mesh.TrafficRouteResourceList{}
+					if err := rt.ReadOnlyResourceManager().List(ctx, routes); err != nil {
+						return err
+					}
+
 					proxy := xds.Proxy{
-						Id:              proxyID,
-						Dataplane:       dataplane,
-						OutboundTargets: endpoints,
-						Metadata:        metadataTracker.Metadata(streamId),
+						Id:               proxyID,
+						Dataplane:        dataplane,
+						OutboundTargets:  endpoints,
+						Metadata:         metadataTracker.Metadata(streamId),
+						TrafficRouteList: routes,
 					}
 					envoyCtx := xds_context.Context{
 						ControlPlane: envoyCpCtx,
