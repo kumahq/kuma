@@ -34,6 +34,8 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 		return nil, err
 	}
 	callbacks := util_xds.CallbacksChain{
+		&typeAdjustCallbacks{},
+		util_xds.NewControlPlaneIdCallbacks(serverID),
 		util_xds.LoggingCallbacks{Log: log},
 		statsCallbacks,
 		syncTracker,
@@ -41,7 +43,7 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 	if insight {
 		callbacks = append(callbacks, DefaultStatusTracker(rt, log))
 	}
-	return NewServer(cache, callbacks, log, serverID), nil
+	return NewServer(cache, callbacks, log), nil
 }
 
 func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracker {
