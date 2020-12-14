@@ -142,7 +142,7 @@ var _ = Describe("VIP Allocator", func() {
 		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1")
@@ -158,10 +158,10 @@ var _ = Describe("VIP Allocator", func() {
 		err = errAllocator.CreateOrUpdateVIPConfigs()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: *dp("payment")}, store.CreateByKey("dp-4", "mesh-2"))
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("payment")}, store.CreateByKey("dp-4", "mesh-2"))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = errAllocator.CreateOrUpdateVIPConfigs()
