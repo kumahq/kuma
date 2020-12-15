@@ -12,6 +12,7 @@ type SimpleWatchdog struct {
 	NewTicker func() *time.Ticker
 	OnTick    func() error
 	OnError   func(error)
+	OnStop    func()
 }
 
 func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
@@ -25,6 +26,9 @@ func (w *SimpleWatchdog) Start(stop <-chan struct{}) {
 				w.OnError(err)
 			}
 		case <-stop:
+			if w.OnStop != nil {
+				w.OnStop()
+			}
 			return
 		}
 	}

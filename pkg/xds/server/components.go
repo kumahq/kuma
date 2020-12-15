@@ -6,6 +6,8 @@ import (
 
 	"google.golang.org/grpc"
 
+	"github.com/kumahq/kuma/pkg/xds/ingress"
+
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -37,7 +39,6 @@ import (
 	k8s_auth "github.com/kumahq/kuma/pkg/xds/auth/k8s"
 	universal_auth "github.com/kumahq/kuma/pkg/xds/auth/universal"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
@@ -205,6 +206,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
 		prevHash := ""
+		var prevError error
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(rt.Config().XdsServer.DataplaneConfigurationRefreshInterval)
@@ -216,22 +218,30 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				}()
 
 				ctx := context.Background()
-				dataplane := core_mesh.NewDataplaneResource()
 				proxyID := xds.FromResourceKey(key)
 
-				if err := rt.ReadOnlyResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
+				// first of all calculate Hash before fetching any resources,
+				// otherwise we can have lost updates
+				snapshotHash, err := meshSnapshotCache.GetHash(ctx, proxyID.Mesh)
+				if err != nil {
+					return err
+				}
+
+				dataplane := core_mesh.NewDataplaneResource()
+				if err := rt.ResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
 					if core_store.IsResourceNotFound(err) {
 						return reconciler.Clear(&proxyID)
 					}
 					return err
 				}
-
 				resolvedDp, err := xds_topology.ResolveAddress(rt.LookupIP(), dataplane)
 				if err != nil {
 					return err
 				}
 				dataplane = resolvedDp
 
+				// hash for Ingress should be calculated based on all dataplanes in all meshes,
+				// we don't do that now, so just ignore existing `snapshotHash` and always reconcile Ingress
 				if dataplane.Spec.IsIngress() {
 					// update Ingress
 					allMeshDataplanes := &core_mesh.DataplaneResourceList{}
@@ -263,32 +273,16 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return ingressReconciler.Reconcile(envoyCtx, &proxy)
 				}
 
-				snapshotHash, err := meshSnapshotCache.GetHash(ctx, dataplane.GetMeta().GetMesh())
-				if err != nil {
-					return err
-				}
-				if prevHash != "" && snapshotHash == prevHash {
+				// if previous reconciliation was without an error AND current hash is equal to previous hash
+				// then we don't reconcile
+				if prevError == nil && prevHash != "" && snapshotHash == prevHash {
 					return nil
 				}
 				log.V(1).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)
 				prevHash = snapshotHash
 
-				mesh := core_mesh.NewMeshResource()
-				if err := rt.ReadOnlyResourceManager().Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, core_model.NoMesh)); err != nil {
-					return err
-				}
-
-				// Need to get dataplane again after counting hash. Because the following situation is possible:
-				// 1. Get Dataplane(version 1)
-				// 2. Dataplane is externally updated to version 2
-				// 3. Calculate hash in meshSnapshotCache.GetHash. This function list all resources and hash will be built based on Dataplane(version 2)
-				// 4. Use Dataplane(version 1) when generate Envoy resources
-				//
-				// So update from version 1 to version 2 is effectively lost.
-				if err := rt.ResourceManager().Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
-					if core_store.IsResourceNotFound(err) {
-						return reconciler.Clear(&proxyID)
-					}
+				meshRes := core_mesh.NewMeshResource()
+				if err := rt.ReadOnlyResourceManager().Get(ctx, meshRes, core_store.GetByKey(proxyID.Mesh, core_model.NoMesh)); err != nil {
 					return err
 				}
 
@@ -303,7 +297,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				envoyCtx := xds_context.Context{
 					ControlPlane: envoyCpCtx,
 					Mesh: xds_context.MeshContext{
-						Resource:   mesh,
+						Resource:   meshRes,
 						Dataplanes: dataplanes,
 					},
 					ConnectionInfo: connectionInfoTracker.ConnectionInfo(streamId),
@@ -320,7 +314,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 
 				// resolve all endpoints that match given selectors
 				outbound := xds_topology.BuildEndpointMap(
-					mesh, rt.Config().Multizone.Remote.Zone,
+					meshRes, rt.Config().Multizone.Remote.Zone,
 					dataplanes.Items, externalServices.Items, rt.DataSourceLoader())
 
 				healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, rt.ReadOnlyResourceManager())
@@ -339,10 +333,10 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				}
 				var tracingBackend *mesh_proto.TracingBackend
 				if trafficTrace != nil {
-					tracingBackend = mesh.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
+					tracingBackend = meshRes.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
 				}
 
-				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane, mesh)
+				matchedPermissions, err := permissionsMatcher.Match(ctx, dataplane, meshRes)
 				if err != nil {
 					return err
 				}
@@ -352,7 +346,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					return err
 				}
 
-				faultInjection, err := faultInjectionMatcher.Match(ctx, dataplane, mesh)
+				faultInjection, err := faultInjectionMatcher.Match(ctx, dataplane, meshRes)
 				if err != nil {
 					return err
 				}
@@ -373,11 +367,22 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					FaultInjections:    faultInjection,
 					CLACache:           claCache,
 				}
-				return reconciler.Reconcile(envoyCtx, &proxy)
+				err = reconciler.Reconcile(envoyCtx, &proxy)
+				if err == nil {
+					prevError = nil
+				}
+				return err
 			},
 			OnError: func(err error) {
 				xdsGenerationsErrors.Inc()
 				log.Error(err, "OnTick() failed")
+				prevError = err
+			},
+			OnStop: func() {
+				proxyID := xds.FromResourceKey(key)
+				if err := reconciler.Clear(&proxyID); err != nil {
+					log.Error(err, "OnStop() failed")
+				}
 			},
 		}
 	}), nil
