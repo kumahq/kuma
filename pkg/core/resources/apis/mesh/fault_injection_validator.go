@@ -39,9 +39,6 @@ func (f *FaultInjectionResource) validateSources() validators.ValidationError {
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
 			RequireAtLeastOneTag: true,
-			ExtraSelectorValidators: []SelectorValidatorFunc{
-				ProtocolValidator("http"),
-			},
 		},
 	})
 }
