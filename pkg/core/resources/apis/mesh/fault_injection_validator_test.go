@@ -231,8 +231,6 @@ var _ = Describe("FaultInjection", func() {
                     percentage: 100`,
 				expected: `
                violations:
-               - field: sources[0].match["kuma.io/protocol"]
-                 message: must be one of the [http]
                - field: destinations[0].match
                  message: protocol must be specified`}),
 			Entry("tag value: invalid character set", testCase{
