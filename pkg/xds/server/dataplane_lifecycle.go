@@ -13,6 +13,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 // DataplaneLifecycle is responsible for creating a deleting dataplanes that are passed through metadata
@@ -25,6 +26,7 @@ import (
 //
 // This flow is optional, you may still want to go with 1. an example of this is Kubernetes deployment.
 type DataplaneLifecycle struct {
+	util_xds.NoopCallbacks
 	resManager manager.ResourceManager
 	// createdDpForStream stores map from StreamID to created ResourceKey of Dataplane.
 	// we store nil values for streams without Dataplane in metadata to avoid accessing metadata with every DiscoveryRequest
@@ -39,10 +41,6 @@ func NewDataplaneLifecycle(resManager manager.ResourceManager) *DataplaneLifecyc
 		resManager:         resManager,
 		createdDpForStream: map[xds.StreamID]*model.ResourceKey{},
 	}
-}
-
-func (d *DataplaneLifecycle) OnStreamOpen(_ context.Context, _ int64, _ string) error {
-	return nil
 }
 
 func (d *DataplaneLifecycle) OnStreamClosed(streamID int64) {
@@ -100,14 +98,4 @@ func (d *DataplaneLifecycle) registerDataplane(dp *core_mesh.DataplaneResource) 
 
 func (d *DataplaneLifecycle) unregisterDataplane(key model.ResourceKey) error {
 	return d.resManager.Delete(context.Background(), core_mesh.NewDataplaneResource(), store.DeleteBy(key))
-}
-
-func (d *DataplaneLifecycle) OnStreamResponse(_ int64, _ *envoy_api_v2.DiscoveryRequest, _ *envoy_api_v2.DiscoveryResponse) {
-}
-
-func (d *DataplaneLifecycle) OnFetchRequest(_ context.Context, _ *envoy_api_v2.DiscoveryRequest) error {
-	return nil
-}
-
-func (d *DataplaneLifecycle) OnFetchResponse(request *envoy_api_v2.DiscoveryRequest, response *envoy_api_v2.DiscoveryResponse) {
 }

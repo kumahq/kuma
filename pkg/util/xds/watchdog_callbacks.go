@@ -21,6 +21,7 @@ func NewWatchdogCallbacks(newNodeWatchdog NewNodeWatchdogFunc) envoy_xds.Callbac
 }
 
 type watchdogCallbacks struct {
+	NoopCallbacks
 	newNodeWatchdog NewNodeWatchdogFunc
 
 	mu      sync.RWMutex // protects access to the fields below
@@ -90,18 +91,4 @@ func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy.Discover
 		go runnable.Start(stopCh)
 	}
 	return nil
-}
-
-// OnStreamResponse is called immediately prior to sending a response on a stream.
-func (cb *watchdogCallbacks) OnStreamResponse(streamID int64, req *envoy.DiscoveryRequest, resp *envoy.DiscoveryResponse) {
-}
-
-// OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
-// request and respond with an error.
-func (cb *watchdogCallbacks) OnFetchRequest(context.Context, *envoy.DiscoveryRequest) error {
-	return nil
-}
-
-// OnFetchResponse is called immediately prior to sending a response.
-func (cb *watchdogCallbacks) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {
 }

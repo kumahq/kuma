@@ -10,6 +10,7 @@ import (
 )
 
 type StatsCallbacks struct {
+	NoopCallbacks
 	ResponsesSentMetric    *prometheus.CounterVec
 	RequestsReceivedMetric *prometheus.CounterVec
 	StreamsActive          int
@@ -76,13 +77,6 @@ func (s *StatsCallbacks) OnStreamRequest(stream int64, request *envoy_api.Discov
 
 func (s *StatsCallbacks) OnStreamResponse(stream int64, request *envoy_api.DiscoveryRequest, response *envoy_api.DiscoveryResponse) {
 	s.ResponsesSentMetric.WithLabelValues(response.TypeUrl).Inc()
-}
-
-func (s *StatsCallbacks) OnFetchRequest(ctx context.Context, request *envoy_api.DiscoveryRequest) error {
-	return nil
-}
-
-func (s *StatsCallbacks) OnFetchResponse(request *envoy_api.DiscoveryRequest, response *envoy_api.DiscoveryResponse) {
 }
 
 var _ envoy_xds.Callbacks = &StatsCallbacks{}
