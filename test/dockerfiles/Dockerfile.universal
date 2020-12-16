@@ -1,9 +1,28 @@
 # using Envoy's base to copy the Envoy binary
 FROM envoyproxy/envoy-alpine:v1.16.1 as envoy
 
+FROM ubuntu:bionic as builder
+
+ENV GOVERSION 1.15.5
+ENV GOROOT /opt/go
+ENV GOPATH /root/.go
+
+RUN apt-get update
+RUN apt-get -y install wget
+
+RUN cd /opt && wget https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz && \
+    tar zxf go${GOVERSION}.linux-amd64.tar.gz && rm go${GOVERSION}.linux-amd64.tar.gz && \
+    ln -s /opt/go/bin/go /usr/bin/ && \
+    mkdir $GOPATH
+
+RUN GO111MODULE=on go get istio.io/istio/tools/istio-iptables@1.8.1
+RUN GO111MODULE=on go get istio.io/istio/tools/istio-clean-iptables@1.8.1
+
 FROM ubuntu:20.04
 
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
+COPY --from=builder /root/.go/bin/istio-iptables /root/kuma-iptables
+COPY --from=builder /root/.go/bin/istio-clean-iptables /root/kuma-clean-iptables
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
@@ -15,14 +34,18 @@ RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /k
 
 RUN apt update \
   && apt dist-upgrade -y \
-  && DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata openssh-server curl ncat vim net-tools \
+  && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+  tzdata openssh-server curl ncat vim net-tools iptables dnsutils tmux \
   && rm -rf /var/lib/apt/lists/*
 
 RUN ssh-keygen -A \
   && sed -i s/#PermitRootLogin.*/PermitRootLogin\ yes/ /etc/ssh/sshd_config \
   && sed -i s/#PermitEmptyPasswords.*/PermitEmptyPasswords\ yes/ /etc/ssh/sshd_config \
   && mkdir /var/run/sshd \
-  && passwd -d root
+  && passwd -d root \
+  && chmod a+rwx /root \
+  && addgroup --gid 5678 envoy \
+  && adduser --uid 5678 --gid 5678 --disabled-password envoy
 
 # do not detach (-D), log to stderr (-e)
 ENTRYPOINT ["/usr/sbin/sshd", "-D", "-e"]

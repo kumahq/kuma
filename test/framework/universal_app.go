@@ -55,6 +55,22 @@ networking:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: http
 `
+	EchoServerDataplaneTransparentProxy = `
+type: Dataplane
+mesh: default
+name: {{ name }}
+networking:
+  address:  {{ address }}
+  inbound:
+  - port: %s
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/protocol: http
+  transparentProxying:
+    redirectPortInbound: %s
+    redirectPortOutbound: %s
+`
+
 	AppModeDemoClient   = "demo-client"
 	DemoClientDataplane = `
 type: Dataplane
@@ -77,6 +93,20 @@ networking:
   - port: 5000
     tags:
       kuma.io/service: external-service
+`
+	DemoClientDataplaneTransparentProxy = `
+type: Dataplane
+mesh: default
+name: {{ name }}
+networking:
+  address: {{ address }}
+  inbound:
+  - port: %s
+    tags:
+      kuma.io/service: demo-client
+  transparentProxying:
+    redirectPortInbound: %s
+    redirectPortOutbound: %s
 `
 )
 
@@ -109,7 +139,7 @@ type UniversalApp struct {
 	verbose      bool
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, env []string, args []string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, caps []string) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:            t,
 		ports:        map[string]string{},
@@ -121,10 +151,15 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 
 	if mode == AppModeCP {
 		app.allocatePublicPortsFor("5678", "5680", "5681", "5682", "5685")
+	} else {
+		app.allocatePublicPortsFor("30001") // the envoy admin port
 	}
 
 	opts := defaultDockerOptions
 	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
+	for _, cap := range caps {
+		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
+	}
 	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
 	container, err := docker.RunAndGetIDE(t, KumaUniversalImage, &opts)
@@ -144,8 +179,6 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 		})
 
 	fmt.Printf("Node IP %s\n", app.ip)
-
-	app.CreateMainApp(env, args)
 
 	return app, nil
 }
@@ -209,7 +242,7 @@ func (s *UniversalApp) CreateMainApp(env []string, args []string) {
 }
 
 func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
-	// and echo it to the Application Node
+	// create the token file on the app container
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
 		panic(err)
@@ -219,14 +252,47 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 	if err != nil {
 		panic(err)
 	}
-	// run the DP
-	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"kuma-dp", "run",
+
+	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
+	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"runuser", "-u", "envoy", "--",
+		"/usr/bin/kuma-dp", "run",
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
 		"--dataplane-file=/kuma/dpyaml-" + appname,
 		"--dataplane-var", "name=dp-" + appname,
 		"--dataplane-var", "address=" + ip,
-		"--binary-path", "/usr/local/bin/envoy"})
+		"--binary-path", "/usr/local/bin/envoy",
+	})
+}
+
+func (s *UniversalApp) setupTransparent(cpIp string) {
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"/root/kuma-iptables",
+		"-p", "15001", // Specify the envoy port to which redirect all TCP traffic (default $ENVOY_PORT = 15001)
+		"-z", "15006", // Port to which all inbound TCP traffic to the pod/VM should be redirected to (default $INBOUND_CAPTURE_PORT = 15006)
+		"-u", "5678", // Specify the UID of the user for which the redirection is not applied. Typically, this is the UID of the proxy container
+		"-g", "5678", // Specify the GID of the user for which the redirection is not applied. (same default value as -u param)
+		// "-d", "", // Comma separated list of inbound ports to be excluded from redirection to Envoy (optional). Only applies  when all inbound traffic (i.e. "*") is being redirected (default to $ISTIO_LOCAL_EXCLUDE_PORTS)
+		// "-o", "", // Comma separated list of outbound ports to be excluded from redirection to Envoy
+		"-m", "REDIRECT", // The mode used to redirect inbound connections to Envoy, either "REDIRECT" or "TPROXY"
+		"-i", "'*'", // Comma separated list of IP ranges in CIDR form to redirect to envoy (optional). The wildcard character "*" can be used to redirect all outbound traffic. An empty list will disable all outbound
+		"-b", "'*'", // Comma separated list of inbound ports for which traffic is to be redirected to Envoy (optional). The wildcard character "*" can be used to configure redirection for all ports. An empty list will disable
+	}).Run()
+	if err != nil {
+		panic(err)
+	}
+
+	// add kuma-cp nameserver
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{},
+		[]string{
+			"cp", "/etc/resolv.conf", "/etc/resolv.conf.orig", "&&",
+			"printf", "\"nameserver " + cpIp + "\n\"", ">", "/etc/resolv.conf", "&&",
+			"cat", "/etc/resolv.conf.orig", ">>", "/etc/resolv.conf",
+		}).Run()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (s *UniversalApp) getIP() (string, error) {

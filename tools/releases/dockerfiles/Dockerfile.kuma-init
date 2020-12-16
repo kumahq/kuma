@@ -12,7 +12,7 @@ RUN cd /opt && wget https://storage.googleapis.com/golang/go${GOVERSION}.linux-a
     ln -s /opt/go/bin/go /usr/bin/ && \
     mkdir $GOPATH
 
-RUN GO111MODULE=on go get istio.io/istio/tools/istio-iptables@1.6.5
+RUN GO111MODULE=on go get istio.io/istio/tools/istio-iptables@1.8.1
 
 FROM ubuntu:bionic
 
