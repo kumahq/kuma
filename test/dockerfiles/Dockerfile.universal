@@ -15,14 +15,9 @@ RUN cd /opt && wget https://storage.googleapis.com/golang/go${GOVERSION}.linux-a
     ln -s /opt/go/bin/go /usr/bin/ && \
     mkdir $GOPATH
 
-RUN GO111MODULE=on go get istio.io/istio/tools/istio-iptables@1.8.1
-RUN GO111MODULE=on go get istio.io/istio/tools/istio-clean-iptables@1.8.1
-
 FROM ubuntu:20.04
 
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
-COPY --from=builder /root/.go/bin/istio-iptables /root/kuma-iptables
-COPY --from=builder /root/.go/bin/istio-clean-iptables /root/kuma-clean-iptables
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin

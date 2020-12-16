@@ -268,16 +268,7 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 
 func (s *UniversalApp) setupTransparent(cpIp string) {
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
-		"/root/kuma-iptables",
-		"-p", "15001", // Specify the envoy port to which redirect all TCP traffic (default $ENVOY_PORT = 15001)
-		"-z", "15006", // Port to which all inbound TCP traffic to the pod/VM should be redirected to (default $INBOUND_CAPTURE_PORT = 15006)
-		"-u", "5678", // Specify the UID of the user for which the redirection is not applied. Typically, this is the UID of the proxy container
-		"-g", "5678", // Specify the GID of the user for which the redirection is not applied. (same default value as -u param)
-		// "-d", "", // Comma separated list of inbound ports to be excluded from redirection to Envoy (optional). Only applies  when all inbound traffic (i.e. "*") is being redirected (default to $ISTIO_LOCAL_EXCLUDE_PORTS)
-		// "-o", "", // Comma separated list of outbound ports to be excluded from redirection to Envoy
-		"-m", "REDIRECT", // The mode used to redirect inbound connections to Envoy, either "REDIRECT" or "TPROXY"
-		"-i", "'*'", // Comma separated list of IP ranges in CIDR form to redirect to envoy (optional). The wildcard character "*" can be used to redirect all outbound traffic. An empty list will disable all outbound
-		"-b", "'*'", // Comma separated list of inbound ports for which traffic is to be redirected to Envoy (optional). The wildcard character "*" can be used to configure redirection for all ports. An empty list will disable
+		"/usr/bin/kumactl", "install", "transparent-proxy",
 	}).Run()
 	if err != nil {
 		panic(err)
