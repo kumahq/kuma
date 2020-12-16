@@ -4,8 +4,6 @@ import (
 	"context"
 	"strings"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -55,7 +53,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			return nil, err
 		}
 		resources.Add(&model.Resource{
-			Name:     listener.Name,
+			Name:     listener.GetName(),
 			Origin:   OriginOutbound,
 			Resource: listener,
 		})
@@ -77,44 +75,44 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	return resources, nil
 }
 
-func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_common.ClusterSubset, outbound *kuma_mesh.Dataplane_Networking_Outbound, protocol mesh_core.Protocol) (*envoy_api_v2.Listener, error) {
+func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_common.ClusterSubset, outbound *kuma_mesh.Dataplane_Networking_Outbound, protocol mesh_core.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 	meshName := proxy.Dataplane.Meta.GetMesh()
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	serviceName := outbound.GetTagsIncludingLegacy()[kuma_mesh.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
 	filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
-		filterChainBuilder := envoy_listeners.NewFilterChainBuilder()
+		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2)
 		switch protocol {
 		case mesh_core.ProtocolGRPC:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
 				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
-				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
+				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet())).
 				Configure(envoy_listeners.GrpcStats())
 		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
 				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
-				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
+				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet()))
 		case mesh_core.ProtocolKafka:
 			filterChainBuilder.
 				Configure(envoy_listeners.Kafka(serviceName)).
 				Configure(envoy_listeners.TcpProxy(serviceName, subsets...)).
-				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy))
+				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy))
 		case mesh_core.ProtocolTCP:
 			fallthrough
 		default:
 			// configuration for non-HTTP cases
 			filterChainBuilder.
 				Configure(envoy_listeners.TcpProxy(serviceName, subsets...)).
-				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy))
+				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy))
 		}
 		return filterChainBuilder
 	}()
-	listener, err := envoy_listeners.NewListenerBuilder().
+	listener, err := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
 		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
