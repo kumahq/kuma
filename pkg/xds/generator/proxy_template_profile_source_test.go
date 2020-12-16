@@ -8,7 +8,7 @@ import (
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
+	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
 
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"

@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v2"
 )
 
 func TcpProxy(statsName string, clusters ...envoy_common.ClusterSubset) FilterChainBuilderOpt {
@@ -52,14 +53,14 @@ func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
 		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
 			Cluster: c.clusters[0].ClusterName,
 		}
-		proxy.MetadataMatch = envoy_common.LbMetadata(c.clusters[0].Tags)
+		proxy.MetadataMatch = envoy_metadata.LbMetadata(c.clusters[0].Tags)
 	} else {
 		var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
 		for _, cluster := range c.clusters {
 			weightedClusters = append(weightedClusters, &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
 				Name:          cluster.ClusterName,
 				Weight:        cluster.Weight,
-				MetadataMatch: envoy_common.LbMetadata(cluster.Tags),
+				MetadataMatch: envoy_metadata.LbMetadata(cluster.Tags),
 			})
 		}
 		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_WeightedClusters{

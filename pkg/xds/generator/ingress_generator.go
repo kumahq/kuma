@@ -13,7 +13,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -126,7 +126,7 @@ func (_ IngressGenerator) services(proxy *model.Proxy) []string {
 
 func (i IngressGenerator) generateCDS(services []string, destinationsPerService map[string][]envoy_common.Tags) (resources []*model.Resource, _ error) {
 	for _, service := range services {
-		edsCluster, err := envoy_clusters.NewClusterBuilder().
+		edsCluster, err := envoy_clusters.NewClusterBuilder(envoy_common.APIV2).
 			Configure(envoy_clusters.EdsCluster(service)).
 			Configure(envoy_clusters.LbSubset(i.lbSubsets(service, destinationsPerService))).
 			Build()
