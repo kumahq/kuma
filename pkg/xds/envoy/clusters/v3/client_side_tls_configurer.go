@@ -6,7 +6,7 @@ import (
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
-	tls_v3 "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
+	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -21,7 +21,7 @@ var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	for _, ep := range c.Endpoints {
 		if ep.ExternalService.TLSEnabled {
-			tlsContext, err := tls_v3.UpstreamTlsContextOutsideMesh(
+			tlsContext, err := envoy_tls.UpstreamTlsContextOutsideMesh(
 				ep.ExternalService.CaCert,
 				ep.ExternalService.ClientCert,
 				ep.ExternalService.ClientKey,
