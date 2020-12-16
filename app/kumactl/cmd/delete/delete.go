@@ -57,8 +57,8 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			case "zone":
 				resourceType = system.ZoneType
 			default:
-				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, " +
-					"healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, " +
+				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, "+
+					"healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, "+
 					"traffic-trace, fault-injection, circuit-breaker, retry, secret, zone",
 					resourceTypeArg)
 			}

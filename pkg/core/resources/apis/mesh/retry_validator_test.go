@@ -13,8 +13,8 @@ import (
 var _ = Describe("Retry", func() {
 	Describe("Validate()", func() {
 		type testCase struct {
-			retry string
-			expected    string
+			retry    string
+			expected string
 		}
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {

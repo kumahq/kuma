@@ -397,6 +397,8 @@ Available Commands:
   meshes              Show Meshes
   proxytemplate       Show a single Proxytemplate resource
   proxytemplates      Show ProxyTemplates
+  retries             Show Retries
+  retry               Show a single retry resource
   secret              Show a single Secret resource
   secrets             Show Secrets
   traffic-log         Show a single TrafficLog resource

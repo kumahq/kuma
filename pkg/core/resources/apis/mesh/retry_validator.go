@@ -13,9 +13,9 @@ import (
 )
 
 const (
-	EmptyFieldViolation = "field cannot be empty"
-	HasToBeDefinedViolation = "has to be defined"
-	HasToBeGreaterThan0Violation = "has to be greater than 0"
+	EmptyFieldViolation                     = "field cannot be empty"
+	HasToBeDefinedViolation                 = "has to be defined"
+	HasToBeGreaterThan0Violation            = "has to be greater than 0"
 	WhenDefinedHasToBeGreaterThan0Violation = "has to be greater than 0" +
 		" when defined"
 )
@@ -211,7 +211,7 @@ func validateConfGrpc(
 		conf.NumRetries, conf.PerTryTimeout, conf.BackOff, conf.RetryOn
 
 	if numRetries == nil && perTryTimeout == nil && backOff == nil &&
-			retryOn == nil {
+		retryOn == nil {
 		err.AddViolationAt(path, EmptyFieldViolation)
 	}
 

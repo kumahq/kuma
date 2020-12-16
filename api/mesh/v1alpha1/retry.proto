@@ -16,7 +16,8 @@ message Retry {
   repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
 
   // List of selectors to match services that need to be health checked.
-  repeated Selector destinations = 2 [ (validate.rules).repeated .min_items = 1 ];
+  repeated Selector destinations = 2
+      [ (validate.rules).repeated .min_items = 1 ];
 
   message Conf {
     message BackOff {
