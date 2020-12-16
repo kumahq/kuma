@@ -83,15 +83,11 @@ func zipkinConfig(cfgStr *structpb.Struct, backendName string) (*envoy_trace.Tra
 
 func apiVersion(zipkin *mesh_proto.ZipkinTracingBackendConfig, url *net_url.URL) envoy_trace.ZipkinConfig_CollectorEndpointVersion {
 	if zipkin.ApiVersion == "" { // try to infer it from the URL
-		if url.Path == "/api/v1/spans" {
-			return envoy_trace.ZipkinConfig_HTTP_JSON_V1
-		} else if url.Path == "/api/v2/spans" {
+		if url.Path == "/api/v2/spans" {
 			return envoy_trace.ZipkinConfig_HTTP_JSON
 		}
 	} else {
 		switch zipkin.ApiVersion {
-		case "httpJsonV1":
-			return envoy_trace.ZipkinConfig_HTTP_JSON_V1
 		case "httpJson":
 			return envoy_trace.ZipkinConfig_HTTP_JSON
 		case "httpProto":

@@ -17,6 +17,7 @@ import (
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 var (
@@ -48,6 +49,7 @@ func NewDataplaneStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
 var _ DataplaneStatusTracker = &dataplaneStatusTracker{}
 
 type dataplaneStatusTracker struct {
+	util_xds.NoopCallbacks
 	runtimeInfo      core_runtime.RuntimeInfo
 	createStatusSink DataplaneInsightSinkFactoryFunc
 	mu               sync.RWMutex // protects access to the fields below
@@ -168,15 +170,6 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req *envoy.Dis
 
 	xdsServerLog.V(1).Info("OnStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
 }
-
-// OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
-// request and respond with an error.
-func (c *dataplaneStatusTracker) OnFetchRequest(context.Context, *envoy.DiscoveryRequest) error {
-	return nil
-}
-
-// OnFetchResponse is called immediately prior to sending a response.
-func (c *dataplaneStatusTracker) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {}
 
 func (c *dataplaneStatusTracker) GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool) {
 	state, ok := c.streams[streamID]

@@ -3,7 +3,7 @@ module github.com/kumahq/kuma/api
 go 1.15
 
 require (
-	github.com/envoyproxy/go-control-plane v0.9.5
+	github.com/envoyproxy/go-control-plane v0.9.8
 	github.com/envoyproxy/protoc-gen-validate v0.3.0-java.0.20200311152155-ab56c3dd1cf9
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/protobuf v1.4.3
