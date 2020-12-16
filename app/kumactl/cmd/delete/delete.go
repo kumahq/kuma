@@ -50,12 +50,17 @@ func NewDeleteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				resourceType = core_mesh.FaultInjectionType
 			case "circuit-breaker":
 				resourceType = core_mesh.CircuitBreakerType
+			case "retry":
+				resourceType = core_mesh.RetryType
 			case "secret":
 				resourceType = system.SecretType
 			case "zone":
 				resourceType = system.ZoneType
 			default:
-				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret, zone", resourceTypeArg)
+				return errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, " +
+					"healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, " +
+					"traffic-trace, fault-injection, circuit-breaker, retry, secret, zone",
+					resourceTypeArg)
 			}
 
 			rs, err := pctx.CurrentResourceStore()
