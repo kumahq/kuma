@@ -1,9 +1,12 @@
 package e2e_test
 
 import (
+	"strings"
+
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -49,18 +52,19 @@ var _ = Describe("Test Universal Transparent Proxy deployment", func() {
 	It("should access the service using .mesh", func() {
 
 		for i := 0; i < iterations; i++ {
-			retry.DoWithRetry(cluster.GetTesting(), "check service access", DefaultRetries, DefaultTimeout, func() (string, error) {
-				// when client sends requests to server
-				_, _, err := cluster.Exec("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail",
-					"echo-server_kuma-test_svc_80.mesh",
-				)
-				if err != nil {
-					return "", err
-				}
-
-				return "", nil
-			})
+			retry.DoWithRetry(cluster.GetTesting(), "curl remote service",
+				DefaultRetries, DefaultTimeout,
+				func() (string, error) {
+					stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+						"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_80.mesh")
+					if err != nil {
+						return "should retry", err
+					}
+					if strings.Contains(stdout, "HTTP/1.1 200 OK") {
+						return "Accessing service successful", nil
+					}
+					return "should retry", errors.Errorf("should retry")
+				})
 		}
 	})
 })

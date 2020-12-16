@@ -255,7 +255,7 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 
 	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
-		"runuser", "-u", "envoy", "--",
+		"runuser", "-u", "kuma-dp", "--",
 		"/usr/bin/kuma-dp", "run",
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
@@ -268,7 +268,7 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 
 func (s *UniversalApp) setupTransparent(cpIp string) {
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
-		"/usr/bin/kumactl", "install", "transparent-proxy",
+		"/usr/bin/kumactl", "install", "transparent-proxy", "--kuma-dp-user", "kuma-dp",
 	}).Run()
 	if err != nil {
 		panic(err)

@@ -8,6 +8,8 @@ import (
 	uninstall "istio.io/istio/tools/istio-clean-iptables/pkg/cmd"
 	install "istio.io/istio/tools/istio-iptables/pkg/cmd"
 	"istio.io/istio/tools/istio-iptables/pkg/constants"
+
+	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
 
 type IstioTransparentProxy struct {
@@ -21,23 +23,29 @@ func NewIstioTransparentProxy() *IstioTransparentProxy {
 	return &IstioTransparentProxy{}
 }
 
-func (tp *IstioTransparentProxy) Setup(dryRun bool, excludeInboundPorts string) (string, error) {
-
-	viper.Set(constants.EnvoyPort, "15001")
-	viper.Set(constants.InboundCapturePort, "15006")
-	viper.Set(constants.ProxyUID, "5678")
-	viper.Set(constants.ProxyGID, "5678")
+func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (string, error) {
+	viper.Set(constants.EnvoyPort, cfg.RedirectPortOutBound)
+	viper.Set(constants.InboundCapturePort, cfg.RedirectPortInBound)
+	viper.Set(constants.ProxyUID, cfg.UID)
+	viper.Set(constants.ProxyGID, cfg.GID)
 	viper.Set(constants.InboundInterceptionMode, "REDIRECT")
 	viper.Set(constants.InboundPorts, "*")
-	viper.Set(constants.LocalExcludePorts, excludeInboundPorts)
+	viper.Set(constants.LocalExcludePorts, cfg.ExcludeInboundPorts)
 	viper.Set(constants.ServiceCidr, "*")
-	viper.Set(constants.DryRun, dryRun)
+	viper.Set(constants.LocalOutboundPortsExclude, cfg.ExcludeOutboundPorts)
+	viper.Set(constants.DryRun, cfg.DryRun)
 	viper.Set(constants.SkipRuleApply, false)
 	viper.Set(constants.RunValidation, false)
 
 	tp.redirectStdOutStdErr()
 	defer func() {
 		tp.restoreStdOutStderr()
+	}()
+
+	savedArgs := os.Args[1:]
+	os.Args = os.Args[:1]
+	defer func() {
+		os.Args = append(os.Args, savedArgs...)
 	}()
 
 	if err := install.GetCommand().Execute(); err != nil {
