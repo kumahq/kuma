@@ -32,7 +32,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
-		clusterBuilder := envoy_clusters.NewClusterBuilder().
+		clusterBuilder := envoy_clusters.NewClusterBuilder(envoy_common.APIV2).
 			Configure(envoy_clusters.StaticCluster(localClusterName, endpoint.WorkloadIP, endpoint.WorkloadPort))
 		switch protocol {
 		case mesh_core.ProtocolHTTP2, mesh_core.ProtocolGRPC:

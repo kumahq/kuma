@@ -21,7 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
+	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 

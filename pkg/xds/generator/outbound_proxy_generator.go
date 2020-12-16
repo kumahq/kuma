@@ -132,7 +132,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		tags := clusters.Tags(clusterName)
 		healthCheck := proxy.HealthChecks[serviceName]
 		circuitBreaker := proxy.CircuitBreakers[serviceName]
-		edsClusterBuilder := envoy_clusters.NewClusterBuilder().
+		edsClusterBuilder := envoy_clusters.NewClusterBuilder(envoy_common.APIV2).
 			Configure(envoy_clusters.LbSubset(o.lbSubsets(tags))).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 			Configure(envoy_clusters.HealthCheck(healthCheck))
