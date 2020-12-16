@@ -1,8 +1,8 @@
 package v3
 
 import (
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"

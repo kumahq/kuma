@@ -1,8 +1,8 @@
 package v3
 
 import (
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_api "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 )
 
 type OutboundListenerConfigurer struct {

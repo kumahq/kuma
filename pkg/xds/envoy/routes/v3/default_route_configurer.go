@@ -10,7 +10,6 @@ import (
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
 
-
 type DefaultRouteConfigurer struct {
 	// Subsets to forward traffic to.
 	Subsets []envoy_common.ClusterSubset

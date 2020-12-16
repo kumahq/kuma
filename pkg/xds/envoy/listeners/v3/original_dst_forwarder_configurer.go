@@ -11,7 +11,7 @@ var _ ListenerConfigurer = &OriginalDstForwarderConfigurer{}
 
 func (c *OriginalDstForwarderConfigurer) Configure(l *envoy_listener.Listener) error {
 	// TODO(yskopets): What is the up-to-date alternative ?
-	//l.UseOriginalDst = &wrappers.BoolValue{Value: true}
+	// l.UseOriginalDst = &wrappers.BoolValue{Value: true}
 
 	return nil
 }

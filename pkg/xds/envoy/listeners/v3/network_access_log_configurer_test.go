@@ -134,7 +134,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                   statPrefix: db
 `,
 		}),
-		XEntry("basic tcp_proxy with tcp access log", testCase{ //todo
+		XEntry("basic tcp_proxy with tcp access log", testCase{ // todo
 			listenerName:    "outbound:127.0.0.1:5432",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,

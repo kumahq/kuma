@@ -28,7 +28,7 @@ func NewListenerBuilder(apiVersion envoy.APIVersion) *ListenerBuilder {
 // by applying a series of ListenerConfigurers.
 type ListenerBuilder struct {
 	apiVersion envoy.APIVersion
-	config ListenerBuilderConfig
+	config     ListenerBuilderConfig
 }
 
 // Configure configures ListenerBuilder by adding individual ListenerConfigurers.

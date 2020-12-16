@@ -28,7 +28,7 @@ func NewVirtualHostBuilder(apiVersion envoy.APIVersion) *VirtualHostBuilder {
 // by applying a series of VirtualHostConfigurers.
 type VirtualHostBuilder struct {
 	apiVersion envoy.APIVersion
-	config VirtualHostBuilderConfig
+	config     VirtualHostBuilderConfig
 }
 
 // Configure configures VirtualHostBuilder by adding individual VirtualHostConfigurers.

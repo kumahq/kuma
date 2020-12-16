@@ -16,4 +16,3 @@ func (c CommonRouteConfigurationConfigurer) Configure(routeConfiguration *envoy_
 	}
 	return nil
 }
-

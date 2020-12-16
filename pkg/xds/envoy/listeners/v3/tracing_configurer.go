@@ -11,8 +11,8 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_trace "github.com/envoyproxy/go-control-plane/envoy/config/trace/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 )
 

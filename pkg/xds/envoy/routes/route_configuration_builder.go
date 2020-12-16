@@ -28,7 +28,7 @@ func NewRouteConfigurationBuilder(apiVersion envoy.APIVersion) *RouteConfigurati
 // by applying a series of RouteConfigurationConfigurers.
 type RouteConfigurationBuilder struct {
 	apiVersion envoy.APIVersion
-	config RouteConfigurationBuilderConfig
+	config     RouteConfigurationBuilderConfig
 }
 
 // Configure configures RouteConfigurationBuilder by adding individual RouteConfigurationConfigurers.

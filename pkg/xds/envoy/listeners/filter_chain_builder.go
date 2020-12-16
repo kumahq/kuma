@@ -29,7 +29,7 @@ func NewFilterChainBuilder(apiVersion envoy.APIVersion) *FilterChainBuilder {
 // by applying a series of FilterChainConfigurers.
 type FilterChainBuilder struct {
 	apiVersion envoy.APIVersion
-	config FilterChainBuilderConfig
+	config     FilterChainBuilderConfig
 }
 
 // Configure configures FilterChainBuilder by adding individual FilterChainConfigurers.
