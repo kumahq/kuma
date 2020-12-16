@@ -268,19 +268,10 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 
 func (s *UniversalApp) setupTransparent(cpIp string) {
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
-		"/usr/bin/kumactl", "install", "transparent-proxy", "--kuma-dp-user", "kuma-dp",
+		"/usr/bin/kumactl", "install", "transparent-proxy",
+		"--kuma-dp-user", "kuma-dp",
+		"--kuma-cp-ip", cpIp,
 	}).Run()
-	if err != nil {
-		panic(err)
-	}
-
-	// add kuma-cp nameserver
-	err = NewSshApp(s.verbose, s.ports[sshPort], []string{},
-		[]string{
-			"cp", "/etc/resolv.conf", "/etc/resolv.conf.orig", "&&",
-			"printf", "\"nameserver " + cpIp + "\n\"", ">", "/etc/resolv.conf", "&&",
-			"cat", "/etc/resolv.conf.orig", ">>", "/etc/resolv.conf",
-		}).Run()
 	if err != nil {
 		panic(err)
 	}
