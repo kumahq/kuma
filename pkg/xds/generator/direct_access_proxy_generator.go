@@ -63,7 +63,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		})
 	}
 
-	directAccessCluster, err := envoy_clusters.NewClusterBuilder().
+	directAccessCluster, err := envoy_clusters.NewClusterBuilder(envoy_common.APIV2).
 		Configure(envoy_clusters.PassThroughCluster("direct_access")).
 		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(ctx, proxy.Metadata)).
 		Build()
@@ -71,7 +71,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		return nil, errors.Wrapf(err, "could not generate cluster: direct_access")
 	}
 	resources.Add(&core_xds.Resource{
-		Name:     directAccessCluster.Name,
+		Name:     directAccessCluster.GetName(),
 		Origin:   OriginDirectAccess,
 		Resource: directAccessCluster,
 	})

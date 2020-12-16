@@ -7,6 +7,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v2"
 )
 
 func DefaultRoute(subsets ...envoy_common.ClusterSubset) VirtualHostBuilderOpt {
@@ -53,7 +54,7 @@ func (c RouteConfigurer) routeAction() *envoy_route.RouteAction {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
 			Cluster: c.subsets[0].ClusterName,
 		}
-		routeAction.MetadataMatch = envoy_common.LbMetadata(c.subsets[0].Tags)
+		routeAction.MetadataMatch = envoy_metadata.LbMetadata(c.subsets[0].Tags)
 	} else {
 		var weightedClusters []*envoy_route.WeightedCluster_ClusterWeight
 		var totalWeight uint32
@@ -61,7 +62,7 @@ func (c RouteConfigurer) routeAction() *envoy_route.RouteAction {
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
 				Name:          subset.ClusterName,
 				Weight:        &wrappers.UInt32Value{Value: subset.Weight},
-				MetadataMatch: envoy_common.LbMetadata(subset.Tags),
+				MetadataMatch: envoy_metadata.LbMetadata(subset.Tags),
 			})
 			totalWeight += subset.Weight
 		}
