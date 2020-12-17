@@ -64,7 +64,10 @@ func genGrpcRetryPolicy(
 		var retryOn []string
 
 		for _, item := range conf.RetryOn {
-			retryOn = append(retryOn, item.String())
+			// As `retryOn` is an enum value, and as in protobuf we can't use
+			// hyphens we are using underscores instead, but as envoy expect
+			// values with hyphens it's being changed here
+			retryOn = append(retryOn, strings.ReplaceAll(item.String(), "_", "-"))
 		}
 
 		policy.RetryOn = strings.Join(retryOn, ",")
