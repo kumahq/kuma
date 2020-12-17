@@ -878,8 +878,8 @@ function _kumactl_install_tracing {
 function _kumactl_install_transparent-proxy {
   _arguments \
     '--dry-run[dry run]' \
-    '--exclude-inbound-ports[inbound ports to exclude from redirect to Envoy]:' \
-    '--exclude-outbound-ports[outbound ports to exclude from redirect to Envoy]:' \
+    '--exclude-inbound-ports[a comma separated list of inbound ports to exclude from redirect to Envoy]:' \
+    '--exclude-outbound-ports[a comma separated list of outbound ports to exclude from redirect to Envoy]:' \
     '--kuma-cp-ip[the ]:' \
     '--kuma-dp-uid[the UID of the user that will run kuma-dp]:' \
     '--kuma-dp-user[the user that will run kuma-dp]:' \
