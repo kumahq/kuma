@@ -2129,6 +2129,60 @@ _kumactl_install_tracing()
     noun_aliases=()
 }
 
+_kumactl_install_transparent-proxy()
+{
+    last_command="kumactl_install_transparent-proxy"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--dry-run")
+    local_nonpersistent_flags+=("--dry-run")
+    flags+=("--exclude-inbound-ports=")
+    two_word_flags+=("--exclude-inbound-ports")
+    local_nonpersistent_flags+=("--exclude-inbound-ports=")
+    flags+=("--exclude-outbound-ports=")
+    two_word_flags+=("--exclude-outbound-ports")
+    local_nonpersistent_flags+=("--exclude-outbound-ports=")
+    flags+=("--kuma-cp-ip=")
+    two_word_flags+=("--kuma-cp-ip")
+    local_nonpersistent_flags+=("--kuma-cp-ip=")
+    flags+=("--kuma-dp-uid=")
+    two_word_flags+=("--kuma-dp-uid")
+    local_nonpersistent_flags+=("--kuma-dp-uid=")
+    flags+=("--kuma-dp-user=")
+    two_word_flags+=("--kuma-dp-user")
+    local_nonpersistent_flags+=("--kuma-dp-user=")
+    flags+=("--modify-iptables")
+    local_nonpersistent_flags+=("--modify-iptables")
+    flags+=("--modify-resolv-conf")
+    local_nonpersistent_flags+=("--modify-resolv-conf")
+    flags+=("--redirect-inbound-port=")
+    two_word_flags+=("--redirect-inbound-port")
+    local_nonpersistent_flags+=("--redirect-inbound-port=")
+    flags+=("--redirect-outbound-port=")
+    two_word_flags+=("--redirect-outbound-port")
+    local_nonpersistent_flags+=("--redirect-outbound-port=")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_install()
 {
     last_command="kumactl_install"
@@ -2141,6 +2195,64 @@ _kumactl_install()
     commands+=("logging")
     commands+=("metrics")
     commands+=("tracing")
+    commands+=("transparent-proxy")
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_uniinstall_transparent-proxy()
+{
+    last_command="kumactl_uniinstall_transparent-proxy"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--dry-run")
+    local_nonpersistent_flags+=("--dry-run")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_uniinstall()
+{
+    last_command="kumactl_uniinstall"
+
+    command_aliases=()
+
+    commands=()
+    commands+=("transparent-proxy")
 
     flags=()
     two_word_flags=()
@@ -2205,6 +2317,7 @@ _kumactl_root_command()
     commands+=("get")
     commands+=("inspect")
     commands+=("install")
+    commands+=("uniinstall")
     commands+=("version")
 
     flags=()

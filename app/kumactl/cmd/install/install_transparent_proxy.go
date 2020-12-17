@@ -50,6 +50,14 @@ func newInstallTransparentProxy() *cobra.Command {
 				return errors.Errorf("transparent proxy will work only on Linux OSes")
 			}
 
+			if args.ModifyIptables && args.User == "" && args.UID == "" {
+				return errors.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
+			}
+
+			if args.ModifyResolvConf && args.KumaCpIP.String() == net.IPv4(0, 0, 0, 0).String() {
+				return errors.Errorf("please supply a valid `--kuma-cp-ip`")
+			}
+
 			if args.ModifyIptables {
 				tp := transparentproxy.GetDefaultTransparentProxy()
 
@@ -77,10 +85,6 @@ func newInstallTransparentProxy() *cobra.Command {
 			}
 
 			if args.ModifyResolvConf {
-				if args.KumaCpIP.String() == net.IPv4(0, 0, 0, 0).String() {
-					return errors.Errorf("please supply a valid `--kuma-cp-ip`")
-				}
-
 				kumaCPLine := fmt.Sprintf("nameserver %s", args.KumaCpIP.String())
 				content, err := ioutil.ReadFile("/etc/resolv.conf")
 				if err != nil {
@@ -95,7 +99,7 @@ func newInstallTransparentProxy() *cobra.Command {
 					}
 					err = ioutil.WriteFile("/etc/resolv.conf", []byte(newcontent), 0644)
 					if err != nil {
-						return errors.Wrap(err, "unable to writes /etc/resolv.conf")
+						return errors.Wrap(err, "unable to write /etc/resolv.conf")
 					}
 				}
 
@@ -106,7 +110,7 @@ func newInstallTransparentProxy() *cobra.Command {
 					if err != nil {
 						return errors.Wrap(err, "uanble to open /etc/resolv.conf")
 					}
-					fmt.Println(content)
+					fmt.Println(string(content))
 				}
 			}
 

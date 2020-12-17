@@ -22,7 +22,8 @@ function _kumactl {
       "get:Show Kuma resources"
       "help:Help about any command"
       "inspect:Inspect Kuma resources"
-      "install:Install Kuma on Kubernetes"
+      "install:Install various Kuma components."
+      "uniinstall:Uninstall various Kuma components."
       "version:Print version"
     )
     _describe "command" commands
@@ -56,6 +57,9 @@ function _kumactl {
     ;;
   install)
     _kumactl_install
+    ;;
+  uniinstall)
+    _kumactl_uniinstall
     ;;
   version)
     _kumactl_version
@@ -764,6 +768,7 @@ function _kumactl_install {
       "logging:Install Logging backend in Kubernetes cluster (Loki)"
       "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
       "tracing:Install Tracing backend in Kubernetes cluster (Jaeger)"
+      "transparent-proxy:Install Transparent Proxy pre-requisites on the host"
     )
     _describe "command" commands
     ;;
@@ -784,6 +789,9 @@ function _kumactl_install {
     ;;
   tracing)
     _kumactl_install_tracing
+    ;;
+  transparent-proxy)
+    _kumactl_install_transparent-proxy
     ;;
   esac
 }
@@ -862,6 +870,58 @@ function _kumactl_install_metrics {
 function _kumactl_install_tracing {
   _arguments \
     '--namespace[namespace to install tracing to]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_transparent-proxy {
+  _arguments \
+    '--dry-run[dry run]' \
+    '--exclude-inbound-ports[inbound ports to exclude from redirect to Envoy]:' \
+    '--exclude-outbound-ports[outbound ports to exclude from redirect to Envoy]:' \
+    '--kuma-cp-ip[the ]:' \
+    '--kuma-dp-uid[the UID of the user that will run kuma-dp]:' \
+    '--kuma-dp-user[the user that will run kuma-dp]:' \
+    '--modify-iptables[modify the host iptables to redirect the traffic to Envoy]' \
+    '--modify-resolv-conf[modify the host `/etc/resolv.conf` to allow `.mesh` resolution through kuma-cp]' \
+    '--redirect-inbound-port[inbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortInbound`]:' \
+    '--redirect-outbound-port[outbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortOutbound`]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+
+function _kumactl_uniinstall {
+  local -a commands
+
+  _arguments -C \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "transparent-proxy:Uninstall Transparent Proxy pre-requisites on the host"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  transparent-proxy)
+    _kumactl_uniinstall_transparent-proxy
+    ;;
+  esac
+}
+
+function _kumactl_uniinstall_transparent-proxy {
+  _arguments \
+    '--dry-run[dry run]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'

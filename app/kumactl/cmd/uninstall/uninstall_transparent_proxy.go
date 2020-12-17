@@ -2,6 +2,7 @@ package uninstall
 
 import (
 	"fmt"
+	"io/ioutil"
 	"runtime"
 
 	"github.com/pkg/errors"
@@ -36,9 +37,22 @@ func newUninstallTransparentProxy() *cobra.Command {
 
 			if args.DryRun {
 				fmt.Println(output)
-			} else {
-				fmt.Println("Transparent proxy set up successfully")
 			}
+
+			content, err := ioutil.ReadFile("/etc/resolv.conf.kuma")
+			if err != nil {
+				return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma")
+			}
+
+			if !args.DryRun {
+				err = ioutil.WriteFile("/etc/resolv.conf", content, 0644)
+				if err != nil {
+					return errors.Wrap(err, "unable to write /etc/resolv.conf")
+				}
+			}
+
+			fmt.Println(string(content))
+			fmt.Println("IP proxy cleaned up successfully")
 
 			return nil
 		},
