@@ -44,7 +44,50 @@ func newInstallTransparentProxy() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
 		Short: "Install Transparent Proxy pre-requisites on the host",
-		Long:  `Install Transparent Proxy by modifying the hosts iptables and /etc/resolv.conf`,
+		Long: `Install Transparent Proxy by modifying the hosts iptables and /etc/resolv.conf.
+
+Follow the following steps to use the Kuma data plane proxy in Transparent Proxy mode:
+
+ 1) create a dedicated user for the Kuma data plane proxy, e.g. 'kuma-dp'
+ 2) run this command as a 'root' user to modify the host's iptables and /etc/resolv.conf
+    - supply the dedicated username with '--kuma-dp-'
+    - all changes are easly revertable by issuing 'kumactl uninstall transparent-proxy'
+    - by default the SSH port tcp/22 will not be redirected to Envoy, but everything else will.
+      Use '--exclude-inbound-ports' to provide a comma separated list of ports that should also be excluded
+    - this command also creates a backup copy of the modified resolv.conf under /etc/resolv.conf
+ 3) prepare a Dataplane resource yaml like this:
+
+type: Dataplane
+mesh: default
+name: {{ name }}
+networking:
+  address: {{ address }}
+  inbound:
+  - port: {{ port }}
+    tags:
+      kuma.io/service: demo-client
+  transparentProxying:
+    redirectPortInbound: 15006
+    redirectPortOutbound: 15001
+
+The values in 'transparentProxying' section are the defaults set by this command and if needed be changed by supplying 
+'--redirect-inbound-port' and '--redirect-outbound-port' respectively.
+
+ 4) the kuma-dp command shall be run with the designated user. 
+    - if using systemd to run add 'User=kuma-dp' in the '[Service]' section of the service file
+    - leverage 'runuser' similar to (assuming aforementioned yaml):
+
+runuser -u kuma-dp -- \
+  /usr/bin/kuma-dp run \
+    --cp-address=https://172.19.0.2:5678 \
+    --dataplane-token-file=/kuma/token-demo \
+    --dataplane-file=/kuma/dpyaml-demo \
+    --dataplane-var name=dp-demo \
+    --dataplane-var address=172.19.0.4 \
+    --dataplane-var port=80  \
+    --binary-path /usr/local/bin/envoy
+
+`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !args.DryRun && runtime.GOOS != "linux" {
 				return errors.Errorf("transparent proxy will work only on Linux OSes")
@@ -125,8 +168,8 @@ func newInstallTransparentProxy() *cobra.Command {
 	cmd.Flags().BoolVar(&args.ModifyIptables, "modify-iptables", args.ModifyIptables, "modify the host iptables to redirect the traffic to Envoy")
 	cmd.Flags().StringVar(&args.RedirectPortOutBound, "redirect-outbound-port", args.RedirectPortOutBound, "outbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortOutbound`")
 	cmd.Flags().StringVar(&args.RedirectPortInBound, "redirect-inbound-port", args.RedirectPortInBound, "inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInbound`")
-	cmd.Flags().StringVar(&args.ExcludeInboundPorts, "exclude-inbound-ports", args.ExcludeInboundPorts, "inbound ports to exclude from redirect to Envoy")
-	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "outbound ports to exclude from redirect to Envoy")
+	cmd.Flags().StringVar(&args.ExcludeInboundPorts, "exclude-inbound-ports", args.ExcludeInboundPorts, "a comma separated list of inbound ports to exclude from redirect to Envoy")
+	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
 	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the UID of the user that will run kuma-dp")
 	cmd.Flags().BoolVar(&args.ModifyResolvConf, "modify-resolv-conf", args.ModifyResolvConf, "modify the host `/etc/resolv.conf` to allow `.mesh` resolution through kuma-cp")
