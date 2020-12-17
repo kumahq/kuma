@@ -281,6 +281,9 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 				log.V(1).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)
 				prevHash = snapshotHash
 
+				// hacky way to be sure that Cluster Load Assignment is up to date
+				claCache.Invalidate()
+
 				meshRes := core_mesh.NewMeshResource()
 				if err := rt.ReadOnlyResourceManager().Get(ctx, meshRes, core_store.GetByKey(proxyID.Mesh, core_model.NoMesh)); err != nil {
 					return err
