@@ -1,8 +1,8 @@
 package uninstall
 
 import (
-	"fmt"
 	"io/ioutil"
+	"os"
 	"runtime"
 
 	"github.com/pkg/errors"
@@ -36,27 +36,31 @@ func newUninstallTransparentProxy() *cobra.Command {
 			}
 
 			if args.DryRun {
-				fmt.Println(output)
+				_, _ = cmd.OutOrStdout().Write([]byte(output))
+				_, _ = cmd.OutOrStdout().Write([]byte("\n"))
 			}
 
-			content, err := ioutil.ReadFile("/etc/resolv.conf.kuma")
-			if err != nil {
-				return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma")
-			}
-
-			if !args.DryRun {
-				err = ioutil.WriteFile("/etc/resolv.conf", content, 0644)
+			if _, err := os.Stat("/etc/resolv.conf.kuma"); !os.IsNotExist(err) {
+				content, err := ioutil.ReadFile("/etc/resolv.conf.kuma")
 				if err != nil {
-					return errors.Wrap(err, "unable to write /etc/resolv.conf")
+					return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma")
 				}
-			}
 
-			fmt.Println(string(content))
-			fmt.Println("IP proxy cleaned up successfully")
+				if !args.DryRun {
+					err = ioutil.WriteFile("/etc/resolv.conf", content, 0644)
+					if err != nil {
+						return errors.Wrap(err, "unable to write /etc/resolv.conf")
+					}
+				}
+
+				_, _ = cmd.OutOrStdout().Write(content)
+			}
+			_, _ = cmd.OutOrStdout().Write([]byte("\nTransparent proxy cleaned up successfully\n"))
 
 			return nil
 		},
 	}
+
 	cmd.Flags().BoolVar(&args.DryRun, "dry-run", args.DryRun, "dry run")
 	return cmd
 }

@@ -23,7 +23,7 @@ function _kumactl {
       "help:Help about any command"
       "inspect:Inspect Kuma resources"
       "install:Install various Kuma components."
-      "uniinstall:Uninstall various Kuma components."
+      "uninstall:Uninstall various Kuma components."
       "version:Print version"
     )
     _describe "command" commands
@@ -58,8 +58,8 @@ function _kumactl {
   install)
     _kumactl_install
     ;;
-  uniinstall)
-    _kumactl_uniinstall
+  uninstall)
+    _kumactl_uninstall
     ;;
   version)
     _kumactl_version
@@ -893,7 +893,7 @@ function _kumactl_install_transparent-proxy {
 }
 
 
-function _kumactl_uniinstall {
+function _kumactl_uninstall {
   local -a commands
 
   _arguments -C \
@@ -914,12 +914,12 @@ function _kumactl_uniinstall {
 
   case "$words[1]" in
   transparent-proxy)
-    _kumactl_uniinstall_transparent-proxy
+    _kumactl_uninstall_transparent-proxy
     ;;
   esac
 }
 
-function _kumactl_uniinstall_transparent-proxy {
+function _kumactl_uninstall_transparent-proxy {
   _arguments \
     '--dry-run[dry run]' \
     '--config-file[path to the configuration file to use]:' \

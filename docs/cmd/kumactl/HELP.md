@@ -16,7 +16,7 @@ Available Commands:
   help        Help about any command
   inspect     Inspect Kuma resources
   install     Install various Kuma components.
-  uniinstall  Uninstall various Kuma components.
+  uninstall   Uninstall various Kuma components.
   version     Print version
 
 Flags:

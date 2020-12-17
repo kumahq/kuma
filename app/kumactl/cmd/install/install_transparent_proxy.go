@@ -80,7 +80,7 @@ func newInstallTransparentProxy() *cobra.Command {
 				}
 
 				if args.DryRun {
-					fmt.Println(output)
+					_, _ = cmd.OutOrStdout().Write([]byte(output))
 				}
 			}
 
@@ -104,17 +104,19 @@ func newInstallTransparentProxy() *cobra.Command {
 				}
 
 				if args.DryRun {
-					fmt.Println(newcontent)
+					_, _ = cmd.OutOrStdout().Write([]byte(newcontent))
+					_, _ = cmd.OutOrStdout().Write([]byte("\n"))
 				} else {
 					content, err := ioutil.ReadFile("/etc/resolv.conf")
 					if err != nil {
 						return errors.Wrap(err, "uanble to open /etc/resolv.conf")
 					}
-					fmt.Println(string(content))
+					_, _ = cmd.OutOrStdout().Write(content)
+					_, _ = cmd.OutOrStdout().Write([]byte("\n"))
 				}
 			}
 
-			fmt.Println("Transparent proxy set up successfully")
+			_, _ = cmd.OutOrStdout().Write([]byte("Transparent proxy set up successfully\n"))
 			return nil
 		},
 	}

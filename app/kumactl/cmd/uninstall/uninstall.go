@@ -8,7 +8,7 @@ import (
 
 func NewUninstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:   "uniinstall",
+		Use:   "uninstall",
 		Short: "Uninstall various Kuma components.",
 		Long:  `Uninstall various Kuma components.`,
 	}

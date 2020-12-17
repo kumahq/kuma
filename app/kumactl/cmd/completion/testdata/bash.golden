@@ -2216,9 +2216,9 @@ _kumactl_install()
     noun_aliases=()
 }
 
-_kumactl_uniinstall_transparent-proxy()
+_kumactl_uninstall_transparent-proxy()
 {
-    last_command="kumactl_uniinstall_transparent-proxy"
+    last_command="kumactl_uninstall_transparent-proxy"
 
     command_aliases=()
 
@@ -2245,9 +2245,9 @@ _kumactl_uniinstall_transparent-proxy()
     noun_aliases=()
 }
 
-_kumactl_uniinstall()
+_kumactl_uninstall()
 {
-    last_command="kumactl_uniinstall"
+    last_command="kumactl_uninstall"
 
     command_aliases=()
 
@@ -2317,7 +2317,7 @@ _kumactl_root_command()
     commands+=("get")
     commands+=("inspect")
     commands+=("install")
-    commands+=("uniinstall")
+    commands+=("uninstall")
     commands+=("version")
 
     flags=()
