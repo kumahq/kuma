@@ -29,39 +29,36 @@ require (
 	github.com/lib/pq v1.7.0
 	github.com/miekg/dns v1.1.29
 	github.com/onsi/ginkgo v1.14.2
-	github.com/onsi/gomega v1.10.3
+	github.com/onsi/gomega v1.10.4
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.7.1
+	github.com/prometheus/client_golang v1.8.0
 	github.com/prometheus/client_model v0.2.0
-	github.com/prometheus/common v0.10.0
+	github.com/prometheus/common v0.14.0
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
 	github.com/sethvargo/go-retry v0.1.0
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749
 	github.com/slok/go-http-metrics v0.9.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
-	github.com/spiffe/spire v0.10.0
+	github.com/spiffe/spire v0.11.2
 	go.uber.org/multierr v1.3.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	golang.org/x/tools v0.0.0-20201210164618-f31efc5a5c28 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
-	google.golang.org/grpc v1.30.0
+	google.golang.org/grpc v1.32.0
 	google.golang.org/protobuf v1.25.0
-	gopkg.in/yaml.v2 v2.3.0
+	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.3.4
 	k8s.io/api v0.18.9
 	k8s.io/apimachinery v0.18.9
 	k8s.io/client-go v10.0.0+incompatible
-	// migrating to v0.6.2 fails integration tests with:
-	// failed to convert core list model of type SampleTrafficRoute into k8s counterpart
-	sigs.k8s.io/controller-runtime v0.6.1
+	sigs.k8s.io/controller-runtime v0.6.4
 	sigs.k8s.io/testing_frameworks v0.1.1
 )
 
 replace (
-	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible
 	github.com/kumahq/kuma/api => ./api
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
 
