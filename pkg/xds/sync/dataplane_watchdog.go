@@ -11,7 +11,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
@@ -24,7 +23,6 @@ type DataplaneWatchdogDependencies struct {
 	ingressReconciler     SnapshotReconciler
 	connectionInfoTracker ConnectionInfoTracker
 	envoyCpCtx            *xds_context.ControlPlaneContext
-	claCache              xds.CLACache
 	meshCache             *mesh.Cache
 }
 
@@ -97,7 +95,6 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 	if err != nil {
 		return err
 	}
-	proxy.CLACache = d.claCache // todo move to control plane context?
 	envoyCtx.Mesh = *meshCtx
 	if err := d.dataplaneReconciler.Reconcile(envoyCtx, proxy); err != nil {
 		return err

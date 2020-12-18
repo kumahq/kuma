@@ -104,7 +104,6 @@ type Proxy struct {
 	TracingBackend     *mesh_proto.TracingBackend
 	Metadata           *DataplaneMetadata
 	FaultInjections    FaultInjectionMap
-	CLACache           CLACache
 
 	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
 	// TrafficRouteList is used only for generating configs for Ingress.

@@ -5,6 +5,7 @@ import (
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/xds"
 )
 
 type Context struct {
@@ -20,6 +21,7 @@ type ConnectionInfo struct {
 
 type ControlPlaneContext struct {
 	SdsTlsCert []byte
+	CLACache       xds.CLACache
 }
 
 func (c Context) SDSLocation() string {
@@ -33,7 +35,7 @@ type MeshContext struct {
 	Hash       string
 }
 
-func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, error) {
+func BuildControlPlaneContext(config kuma_cp.Config, CLACache xds.CLACache) (*ControlPlaneContext, error) {
 	var cert []byte
 	if config.DpServer.TlsCertFile != "" {
 		c, err := ioutil.ReadFile(config.DpServer.TlsCertFile)
@@ -45,5 +47,6 @@ func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, erro
 
 	return &ControlPlaneContext{
 		SdsTlsCert: cert,
+		CLACache: CLACache,
 	}, nil
 }

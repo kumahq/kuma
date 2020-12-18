@@ -66,7 +66,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	}
 	resources.AddSet(cdsResources)
 
-	edsResources, err := g.generateEDS(ctx, proxy, clusters)
+	edsResources, err := g.generateEDS(ctx, clusters)
 	if err != nil {
 		return nil, err
 	}
@@ -178,14 +178,14 @@ func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]strin
 	return result
 }
 
-func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (*model.ResourceSet, error) {
+func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, clusters envoy_common.Clusters) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
 		// Endpoints for ExternalServices are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !clusters.Get(clusterName).HasExternalService() {
 			serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
-			loadAssignment, err := proxy.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, serviceName)
+			loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, serviceName)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not get ClusterLoadAssingment for %s", serviceName)
 			}

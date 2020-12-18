@@ -79,7 +79,7 @@ func DefaultDataplaneWatchdogFactory(
 		return nil, err
 	}
 
-	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config())
+	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache)
 	if err != nil {
 		return nil, err
 	}
@@ -92,7 +92,6 @@ func DefaultDataplaneWatchdogFactory(
 		ingressReconciler:     ingressReconciler,
 		connectionInfoTracker: connectionInfoTracker,
 		envoyCpCtx:            envoyCpCtx,
-		claCache:              claCache,
 		meshCache:             meshSnapshotCache,
 	}
 	return NewDataplaneWatchdogFactory(
