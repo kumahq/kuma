@@ -3,8 +3,6 @@ package generator
 import (
 	"sort"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -38,7 +36,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 		return nil, err
 	}
 	resources.Add(&model.Resource{
-		Name:     listener.Name,
+		Name:     listener.GetName(),
 		Origin:   OriginIngress,
 		Resource: listener,
 	})
@@ -63,16 +61,16 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 // We take all possible destinations from TrafficRoutes and generate FilterChainsMatcher for each unique destination.
 // This approach has a limitation: additional tags on outbound in Universal mode won't work across different zones.
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
-func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, destinationsPerService map[string][]envoy_common.Tags) (*envoy_api_v2.Listener, error) {
+func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, destinationsPerService map[string][]envoy_common.Tags) (envoy_common.NamedResource, error) {
 	inbound := ingress.Spec.Networking.Inbound[0]
 	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), inbound.Port)
-	inboundListenerBuilder := envoy_listeners.NewListenerBuilder().
+	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
 		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port)).
 		Configure(envoy_listeners.TLSInspector())
 
 	if !ingress.Spec.HasAvailableServices() {
 		inboundListenerBuilder = inboundListenerBuilder.
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder()))
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2)))
 	}
 
 	sniUsed := map[string]bool{}
@@ -92,7 +90,7 @@ func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, dest
 			}
 			sniUsed[sni] = true
 			inboundListenerBuilder = inboundListenerBuilder.
-				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(envoy_listeners.FilterChainMatch(sni)).
 					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
 						ClusterName: service,
