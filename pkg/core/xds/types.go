@@ -88,7 +88,7 @@ type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjectio
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResource
 
 type CLACache interface {
-	GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error)
+	GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error)
 }
 type Proxy struct {
 	Id                 ProxyId

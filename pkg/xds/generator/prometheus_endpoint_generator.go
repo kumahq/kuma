@@ -3,7 +3,6 @@ package generator
 import (
 	"net"
 
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -75,25 +74,25 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	}
 
 	iface := proxy.Dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
-	var listener *envoy_api.Listener
+	var listener envoy.NamedResource
 	if secureMetrics(prometheusEndpoint, ctx.Mesh.Resource) {
-		listener, err = envoy_listeners.NewListenerBuilder().
+		listener, err = envoy_listeners.NewListenerBuilder(envoy.APIV2).
 			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
 			// generate filter chain that does not require mTLS when DP scrapes itself (for example DP next to Prometheus Server)
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy.APIV2).
 				Configure(envoy_listeners.SourceMatcher(proxy.Dataplane.Spec.GetNetworking().Address)).
 				Configure(envoy_listeners.PrometheusEndpoint(prometheusListenerName, prometheusEndpoint.Path, envoyAdminClusterName)),
 			)).
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy.APIV2).
 				Configure(envoy_listeners.PrometheusEndpoint(prometheusListenerName, prometheusEndpoint.Path, envoyAdminClusterName)).
 				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
 				Configure(envoy_listeners.NetworkRBAC(prometheusListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.TrafficPermissions[iface])),
 			)).
 			Build()
 	} else {
-		listener, err = envoy_listeners.NewListenerBuilder().
+		listener, err = envoy_listeners.NewListenerBuilder(envoy.APIV2).
 			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy.APIV2).
 				Configure(envoy_listeners.PrometheusEndpoint(prometheusListenerName, prometheusEndpoint.Path, envoyAdminClusterName)),
 			)).
 			Build()
@@ -114,7 +113,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 		Resource: cluster,
 	})
 	resources.Add(&core_xds.Resource{
-		Name:     listener.Name,
+		Name:     listener.GetName(),
 		Origin:   OriginPrometheus,
 		Resource: listener,
 	})
