@@ -67,8 +67,8 @@ func NewCache(
 	}, nil
 }
 
-func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
-	key := fmt.Sprintf("%s:%s", meshName, service)
+func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
+	key := fmt.Sprintf("%s:%s:%s", meshName, service, meshHash)
 	value, found := c.cache.Get(key)
 	if found {
 		c.metrics.WithLabelValues("get", "hit").Inc()

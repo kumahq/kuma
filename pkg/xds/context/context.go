@@ -30,6 +30,7 @@ func (c Context) SDSLocation() string {
 type MeshContext struct {
 	Resource   *mesh_core.MeshResource
 	Dataplanes *mesh_core.DataplaneResourceList
+	Hash       string
 }
 
 func BuildControlPlaneContext(config kuma_cp.Config) (*ControlPlaneContext, error) {

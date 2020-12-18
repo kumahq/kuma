@@ -185,7 +185,7 @@ func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, proxy *mode
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !clusters.Get(clusterName).HasExternalService() {
 			serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
-			loadAssignment, err := proxy.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), serviceName)
+			loadAssignment, err := proxy.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, serviceName)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not get ClusterLoadAssingment for %s", serviceName)
 			}
