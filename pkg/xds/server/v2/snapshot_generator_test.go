@@ -1,4 +1,4 @@
-package server
+package v2
 
 import (
 	"io/ioutil"
@@ -23,7 +23,7 @@ var _ = Describe("Reconcile", func() {
 	Describe("templateSnapshotGenerator", func() {
 
 		gen := templateSnapshotGenerator{
-			ProxyTemplateResolver: &simpleProxyTemplateResolver{
+			ProxyTemplateResolver: &template.SimpleProxyTemplateResolver{
 				ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate:    template.DefaultProxyTemplate,
 			},

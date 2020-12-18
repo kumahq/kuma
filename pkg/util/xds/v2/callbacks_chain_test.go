@@ -1,4 +1,4 @@
-package xds_test
+package v2_test
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
@@ -67,7 +67,7 @@ var _ = Describe("CallbacksChain", func() {
 			streamID := int64(1)
 			typ := "xDS"
 			// setup
-			chain := CallbacksChain{first, second}
+			chain := util_xds_v2.CallbacksChain{first, second}
 
 			// when
 			err := chain.OnStreamOpen(ctx, streamID, typ)
@@ -85,7 +85,7 @@ var _ = Describe("CallbacksChain", func() {
 			// given
 			streamID := int64(1)
 			// setup
-			chain := CallbacksChain{first, second}
+			chain := util_xds_v2.CallbacksChain{first, second}
 
 			// when
 			chain.OnStreamClosed(streamID)
@@ -104,7 +104,7 @@ var _ = Describe("CallbacksChain", func() {
 			req := &envoy.DiscoveryRequest{}
 
 			// setup
-			chain := CallbacksChain{first, second}
+			chain := util_xds_v2.CallbacksChain{first, second}
 
 			// when
 			err := chain.OnStreamRequest(streamID, req)
@@ -120,7 +120,7 @@ var _ = Describe("CallbacksChain", func() {
 	Describe("OnStreamResponse", func() {
 		It("should be called in reverse order", func() {
 			// given
-			chain := CallbacksChain{first, second}
+			chain := util_xds_v2.CallbacksChain{first, second}
 			streamID := int64(1)
 			req := &envoy.DiscoveryRequest{}
 			resp := &envoy.DiscoveryResponse{}

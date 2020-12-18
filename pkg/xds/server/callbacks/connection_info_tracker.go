@@ -1,15 +1,14 @@
-package server
+package callbacks
 
 import (
 	"context"
 	"sync"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 )
 
@@ -17,9 +16,12 @@ const authorityHeader = ":authority"
 
 // ConnectionInfoTracker tracks the information about the connection itself from the data plane to the control plane
 type ConnectionInfoTracker struct {
+	util_xds.NoopCallbacks
 	sync.RWMutex
 	connectionInfos map[core_xds.StreamID]xds_context.ConnectionInfo
 }
+
+var _ util_xds.Callbacks = &ConnectionInfoTracker{}
 
 func NewConnectionInfoTracker() *ConnectionInfoTracker {
 	return &ConnectionInfoTracker{
@@ -56,19 +58,3 @@ func (c *ConnectionInfoTracker) OnStreamClosed(streamID core_xds.StreamID) {
 	delete(c.connectionInfos, streamID)
 	c.Unlock()
 }
-
-func (c *ConnectionInfoTracker) OnStreamRequest(core_xds.StreamID, *envoy_api_v2.DiscoveryRequest) error {
-	return nil
-}
-
-func (c *ConnectionInfoTracker) OnStreamResponse(core_xds.StreamID, *envoy_api_v2.DiscoveryRequest, *envoy_api_v2.DiscoveryResponse) {
-}
-
-func (c *ConnectionInfoTracker) OnFetchRequest(context.Context, *envoy_api_v2.DiscoveryRequest) error {
-	return nil
-}
-
-func (c *ConnectionInfoTracker) OnFetchResponse(*envoy_api_v2.DiscoveryRequest, *envoy_api_v2.DiscoveryResponse) {
-}
-
-var _ envoy_server.Callbacks = &ConnectionInfoTracker{}

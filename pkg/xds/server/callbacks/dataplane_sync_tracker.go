@@ -1,4 +1,4 @@
-package sync
+package callbacks
 
 import (
 	"context"
@@ -8,9 +8,7 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 var (
@@ -19,7 +17,7 @@ var (
 
 type NewDataplaneWatchdogFunc func(dataplaneId core_model.ResourceKey, streamId core_xds.StreamID) util_watchdog.Watchdog
 
-func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) envoy_xds.Callbacks {
+func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) util_xds.Callbacks {
 	return &dataplaneSyncTracker{
 		newDataplaneWatchdog: factoryFunc,
 		streamsAssociation:   make(map[core_xds.StreamID]core_model.ResourceKey),
@@ -27,7 +25,7 @@ func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) envoy_xds.Cal
 	}
 }
 
-var _ envoy_xds.Callbacks = &dataplaneSyncTracker{}
+var _ util_xds.Callbacks = &dataplaneSyncTracker{}
 
 type streams struct {
 	watchdogCancel context.CancelFunc
@@ -76,7 +74,7 @@ func (t *dataplaneSyncTracker) OnStreamClosed(streamID core_xds.StreamID) {
 
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (t *dataplaneSyncTracker) OnStreamRequest(streamID core_xds.StreamID, req *envoy.DiscoveryRequest) error {
+func (t *dataplaneSyncTracker) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
 	t.RLock()
 	_, alreadyAssociated := t.streamsAssociation[streamID]
 	t.RUnlock()
@@ -85,7 +83,7 @@ func (t *dataplaneSyncTracker) OnStreamRequest(streamID core_xds.StreamID, req *
 		return nil
 	}
 
-	if id, err := core_xds.ParseProxyId(req.Node); err == nil {
+	if id, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
 		dataplaneKey := core_model.ResourceKey{Mesh: id.Mesh, Name: id.Name}
 		t.Lock()
 		defer t.Unlock()
@@ -113,15 +111,5 @@ func (t *dataplaneSyncTracker) OnStreamRequest(streamID core_xds.StreamID, req *
 }
 
 // OnStreamResponse is called immediately prior to sending a response on a stream.
-func (t *dataplaneSyncTracker) OnStreamResponse(streamID core_xds.StreamID, req *envoy.DiscoveryRequest, resp *envoy.DiscoveryResponse) {
-}
-
-// OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
-// request and respond with an error.
-func (t *dataplaneSyncTracker) OnFetchRequest(context.Context, *envoy.DiscoveryRequest) error {
-	return nil
-}
-
-// OnFetchResponse is called immediately prior to sending a response.
-func (t *dataplaneSyncTracker) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {
+func (t *dataplaneSyncTracker) OnStreamResponse(streamID core_xds.StreamID, req util_xds.DiscoveryRequest, resp util_xds.DiscoveryResponse) {
 }

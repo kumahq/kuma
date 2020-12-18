@@ -167,6 +167,9 @@ func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {
 }
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {
+	if id == "" {
+		return nil, errors.Errorf("Envoy ID must not be nil")
+	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]
 	if mesh == "" {
