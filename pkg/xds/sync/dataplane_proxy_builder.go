@@ -33,27 +33,22 @@ type dataplaneProxyBuilder struct {
 	Zone string
 }
 
-func (p *dataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64) (*xds.Proxy, *xds_context.MeshContext, error) {
+func (p *dataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64, meshCtx *xds_context.MeshContext) (*xds.Proxy, error) {
 	ctx := context.Background()
 
 	dp, err := p.resolveDataplane(ctx, key)
 	if err != nil {
-		return nil, nil, err
-	}
-
-	meshCtx, err := p.buildMeshContext(ctx, key.Mesh)
-	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	routing, destinations, err := p.resolveRouting(ctx, meshCtx, dp)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	matchedPolicies, err := p.matchPolicies(ctx, meshCtx, dp, destinations)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 
 	proxy := &xds.Proxy{
@@ -63,7 +58,7 @@ func (p *dataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64
 		Routing:   *routing,
 		Policies:  *matchedPolicies,
 	}
-	return proxy, meshCtx, nil
+	return proxy, nil
 }
 
 func (p *dataplaneProxyBuilder) resolveDataplane(ctx context.Context, key core_model.ResourceKey) (*core_mesh.DataplaneResource, error) {
@@ -81,23 +76,6 @@ func (p *dataplaneProxyBuilder) resolveDataplane(ctx context.Context, key core_m
 		return nil, err
 	}
 	return resolvedDp, nil
-}
-
-func (p *dataplaneProxyBuilder) buildMeshContext(ctx context.Context, meshName string) (*xds_context.MeshContext, error) {
-	mesh := core_mesh.NewMeshResource()
-	if err := p.ResManager.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
-		return nil, err
-	}
-
-	dataplanes, err := xds_topology.GetDataplanes(syncLog, ctx, p.ResManager, p.LookupIP, meshName)
-	if err != nil {
-		return nil, err
-	}
-	meshCtx := xds_context.MeshContext{
-		Resource:   mesh,
-		Dataplanes: dataplanes,
-	}
-	return &meshCtx, nil
 }
 
 func (p *dataplaneProxyBuilder) resolveRouting(

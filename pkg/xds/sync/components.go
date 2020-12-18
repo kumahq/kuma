@@ -84,14 +84,15 @@ func DefaultDataplaneWatchdogFactory(
 		return nil, err
 	}
 
+	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, connectionInfoTracker, rt.ReadOnlyResourceManager(), rt.LookupIP())
+
 	deps := DataplaneWatchdogDependencies{
 		resManager:            rt.ResourceManager(),
 		dataplaneProxyBuilder: dataplaneProxyBuilder,
 		dataplaneReconciler:   dataplaneReconciler,
 		ingressProxyBuilder:   ingressProxyBuilder,
 		ingressReconciler:     ingressReconciler,
-		connectionInfoTracker: connectionInfoTracker,
-		envoyCpCtx:            envoyCpCtx,
+		xdsContextBuilder:     xdsContextBuilder,
 		meshCache:             meshSnapshotCache,
 	}
 	return NewDataplaneWatchdogFactory(
