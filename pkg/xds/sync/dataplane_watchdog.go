@@ -83,7 +83,7 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 		ControlPlane:   d.envoyCpCtx,
 		ConnectionInfo: d.connectionInfoTracker.ConnectionInfo(d.streamId),
 	}
-	proxy, meshCtx, err := d.dataplaneProxyBuilder.Build(d.key, d.streamId)
+	proxy, meshCtx, err := d.dataplaneProxyBuilder.build(d.key, d.streamId)
 	if err != nil {
 		return err
 	}
@@ -101,11 +101,11 @@ func (d *DataplaneWatchdog) syncIngress() error {
 		ControlPlane:   d.envoyCpCtx,
 		ConnectionInfo: d.connectionInfoTracker.ConnectionInfo(d.streamId),
 	}
-	proxy, err := d.ingressProxyBuilder.Build(d.key, d.streamId)
+	proxy, err := d.ingressProxyBuilder.build(d.key, d.streamId)
 	if err != nil {
 		return err
 	}
-	envoyCtx.Mesh = xds_context.MeshContext{}
+	envoyCtx.Mesh = xds_context.MeshContext{} // Ingress support multiple meshes therefore MeshContext is empty
 	return d.ingressReconciler.Reconcile(envoyCtx, proxy)
 }
 

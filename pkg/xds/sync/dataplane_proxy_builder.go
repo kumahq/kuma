@@ -33,101 +33,133 @@ type dataplaneProxyBuilder struct {
 	Zone string
 }
 
-func (p *dataplaneProxyBuilder) Build(key core_model.ResourceKey, streamId int64) (*xds.Proxy, *xds_context.MeshContext, error) {
+func (p *dataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64) (*xds.Proxy, *xds_context.MeshContext, error) {
 	ctx := context.Background()
-	dataplane := core_mesh.NewDataplaneResource()
-	proxyID := xds.FromResourceKey(key)
+	proxy := &xds.Proxy{
+		Id: xds.FromResourceKey(key),
+		Metadata: p.MetadataTracker.Metadata(streamId),
+	}
 
-	if err := p.ResManager.Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
+	if err := p.resolveDataplane(ctx, key, proxy); err != nil {
 		return nil, nil, err
+	}
+
+	meshCtx, err := p.buildMeshContext(ctx, key.Mesh)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if err := p.resolveRouting(ctx, meshCtx, proxy); err != nil {
+		return nil, nil, err
+	}
+
+	if err := p.matchPolicies(ctx, meshCtx, proxy); err != nil {
+		return nil, nil, err
+	}
+
+	return proxy, meshCtx, nil
+}
+
+func (p *dataplaneProxyBuilder) resolveDataplane(ctx context.Context, key core_model.ResourceKey, proxy *xds.Proxy) error {
+	dataplane := core_mesh.NewDataplaneResource()
+
+	// we use non-cached ResourceManager to always fetch fresh version of the Dataplane.
+	// Otherwise, technically MeshCache can use newer version because it uses List operation instead of Get
+	if err := p.ResManager.Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
+		return err
 	}
 
 	resolvedDp, err := xds_topology.ResolveAddress(p.LookupIP, dataplane)
 	if err != nil {
-		return nil, nil, err
+		return err
 	}
 	dataplane = resolvedDp
 
+	proxy.Dataplane = resolvedDp
+	return nil
+}
+
+func (p *dataplaneProxyBuilder) buildMeshContext(ctx context.Context, meshName string) (*xds_context.MeshContext, error) {
 	mesh := core_mesh.NewMeshResource()
-	if err := p.ResManager.Get(ctx, mesh, core_store.GetByKey(proxyID.Mesh, core_model.NoMesh)); err != nil {
-		return nil, nil, err
+	if err := p.ResManager.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
+		return nil, err
 	}
 
-	dataplanes, err := xds_topology.GetDataplanes(syncLog, ctx, p.ResManager, p.LookupIP, dataplane.Meta.GetMesh())
+	dataplanes, err := xds_topology.GetDataplanes(syncLog, ctx, p.ResManager, p.LookupIP, meshName)
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
-	externalServices := &core_mesh.ExternalServiceResourceList{}
-	if err := p.ResManager.List(ctx, externalServices, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
-		return nil, nil, err
-	}
-
-	// pick a single the most specific route for each outbound interface
-	routes, err := xds_topology.GetRoutes(ctx, dataplane, p.ResManager)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	// create creates a map of selectors to match other dataplanes reachable via given routes
-	destinations := xds_topology.BuildDestinationMap(dataplane, routes)
-
-	// resolve all endpoints that match given selectors
-	outbound := xds_topology.BuildEndpointMap(
-		mesh, p.Zone,
-		dataplanes.Items, externalServices.Items, p.DataSourceLoader)
-
-	healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, destinations, p.ResManager)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	circuitBreakers, err := xds_topology.GetCircuitBreakers(ctx, dataplane, destinations, p.ResManager)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	trafficTrace, err := xds_topology.GetTrafficTrace(ctx, dataplane, p.ResManager)
-	if err != nil {
-		return nil, nil, err
-	}
-	var tracingBackend *mesh_proto.TracingBackend
-	if trafficTrace != nil {
-		tracingBackend = mesh.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
-	}
-
-	matchedPermissions, err := p.PermissionMatcher.Match(ctx, dataplane, mesh)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	matchedLogs, err := p.LogsMatcher.Match(ctx, dataplane)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	faultInjection, err := p.FaultInjectionMatcher.Match(ctx, dataplane, mesh)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	meshCtx := xds_context.MeshContext{
 		Resource:   mesh,
 		Dataplanes: dataplanes,
 	}
-	proxy := xds.Proxy{
-		Id:                 proxyID,
-		Dataplane:          dataplane,
-		TrafficPermissions: matchedPermissions,
-		TrafficRoutes:      routes,
-		OutboundSelectors:  destinations,
-		OutboundTargets:    outbound,
-		HealthChecks:       healthChecks,
-		CircuitBreakers:    circuitBreakers,
-		Logs:               matchedLogs,
-		TrafficTrace:       trafficTrace,
-		TracingBackend:     tracingBackend,
-		FaultInjections:    faultInjection,
-		Metadata:           p.MetadataTracker.Metadata(streamId),
+	return &meshCtx, nil
+}
+
+func (p *dataplaneProxyBuilder) resolveRouting(ctx context.Context, meshContext *xds_context.MeshContext, proxy *xds.Proxy) error {
+	externalServices := &core_mesh.ExternalServiceResourceList{}
+	if err := p.ResManager.List(ctx, externalServices, core_store.ListByMesh(proxy.Dataplane.Meta.GetMesh())); err != nil {
+		return err
 	}
-	return &proxy, &meshCtx, nil
+
+	// pick a single the most specific route for each outbound interface
+	routes, err := xds_topology.GetRoutes(ctx, proxy.Dataplane, p.ResManager)
+	if err != nil {
+		return err
+	}
+
+	// create creates a map of selectors to match other dataplanes reachable via given routes
+	destinations := xds_topology.BuildDestinationMap(proxy.Dataplane, routes)
+	proxy.OutboundSelectors = destinations
+
+	// resolve all endpoints that match given selectors
+	outbound := xds_topology.BuildEndpointMap(meshContext.Resource, p.Zone, meshContext.Dataplanes.Items, externalServices.Items, p.DataSourceLoader)
+	proxy.OutboundTargets = outbound
+
+	return nil
+}
+
+func (p *dataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *xds_context.MeshContext, proxy *xds.Proxy) error {
+	healthChecks, err := xds_topology.GetHealthChecks(ctx, proxy.Dataplane, proxy.OutboundSelectors, p.ResManager)
+	if err != nil {
+		return err
+	}
+	proxy.HealthChecks = healthChecks
+
+	circuitBreakers, err := xds_topology.GetCircuitBreakers(ctx, proxy.Dataplane, proxy.OutboundSelectors, p.ResManager)
+	if err != nil {
+		return err
+	}
+	proxy.CircuitBreakers = circuitBreakers
+
+	trafficTrace, err := xds_topology.GetTrafficTrace(ctx, proxy.Dataplane, p.ResManager)
+	if err != nil {
+		return err
+	}
+	var tracingBackend *mesh_proto.TracingBackend
+	if trafficTrace != nil {
+		tracingBackend = meshContext.Resource.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
+	}
+	proxy.TracingBackend = tracingBackend
+	proxy.TrafficTrace = trafficTrace
+
+	matchedPermissions, err := p.PermissionMatcher.Match(ctx, proxy.Dataplane, meshContext.Resource)
+	if err != nil {
+		return err
+	}
+	proxy.TrafficPermissions = matchedPermissions
+
+	matchedLogs, err := p.LogsMatcher.Match(ctx, proxy.Dataplane)
+	if err != nil {
+		return err
+	}
+	proxy.Logs = matchedLogs
+
+	faultInjection, err := p.FaultInjectionMatcher.Match(ctx, proxy.Dataplane, meshContext.Resource)
+	if err != nil {
+		return err
+	}
+	proxy.FaultInjections = faultInjection
+
+	return nil
 }
