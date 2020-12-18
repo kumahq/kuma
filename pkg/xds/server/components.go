@@ -206,7 +206,6 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 	return xds_sync.NewDataplaneSyncTracker(func(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
 		prevHash := ""
-		var prevError error
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(rt.Config().XdsServer.DataplaneConfigurationRefreshInterval)
@@ -275,14 +274,10 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 
 				// if previous reconciliation was without an error AND current hash is equal to previous hash
 				// then we don't reconcile
-				if prevError == nil && prevHash != "" && snapshotHash == prevHash {
+				if prevHash != "" && snapshotHash == prevHash {
 					return nil
 				}
 				log.V(1).Info("snapshot hash updated, reconcile", "prev", prevHash, "current", snapshotHash)
-				prevHash = snapshotHash
-
-				// hacky way to be sure that Cluster Load Assignment is up to date
-				claCache.Invalidate()
 
 				meshRes := core_mesh.NewMeshResource()
 				if err := rt.ReadOnlyResourceManager().Get(ctx, meshRes, core_store.GetByKey(proxyID.Mesh, core_model.NoMesh)); err != nil {
@@ -302,6 +297,7 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					Mesh: xds_context.MeshContext{
 						Resource:   meshRes,
 						Dataplanes: dataplanes,
+						Hash:       snapshotHash,
 					},
 					ConnectionInfo: connectionInfoTracker.ConnectionInfo(streamId),
 				}
@@ -371,15 +367,15 @@ func DefaultDataplaneSyncTracker(rt core_runtime.Runtime, reconciler, ingressRec
 					CLACache:           claCache,
 				}
 				err = reconciler.Reconcile(envoyCtx, &proxy)
-				if err == nil {
-					prevError = nil
+				if err != nil {
+					return err
 				}
-				return err
+				prevHash = snapshotHash
+				return nil
 			},
 			OnError: func(err error) {
 				xdsGenerationsErrors.Inc()
 				log.Error(err, "OnTick() failed")
-				prevError = err
 			},
 			OnStop: func() {
 				proxyID := xds.FromResourceKey(key)

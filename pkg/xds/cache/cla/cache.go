@@ -3,7 +3,6 @@ package cla
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -41,9 +40,6 @@ type Cache struct {
 	zone    string
 	onceMap *once.Map
 	metrics *prometheus.GaugeVec
-
-	keysMux sync.RWMutex
-	keys    []string
 }
 
 func NewCache(
@@ -71,8 +67,8 @@ func NewCache(
 	}, nil
 }
 
-func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
-	key := fmt.Sprintf("%s:%s", meshName, service)
+func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
+	key := fmt.Sprintf("%s:%s:%s", meshName, service, meshHash)
 	value, found := c.cache.Get(key)
 	if found {
 		c.metrics.WithLabelValues("get", "hit").Inc()
@@ -97,10 +93,7 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_ap
 		}
 		endpointMap := topology.BuildEndpointMap(mesh, c.zone, dataplanes.Items, externalServices.Items, c.dsl)
 		cla := endpoints.CreateClusterLoadAssignment(service, endpointMap[service])
-		c.keysMux.Lock()
-		c.keys = append(c.keys, key)
 		c.cache.SetDefault(key, cla)
-		c.keysMux.Unlock()
 		c.onceMap.Delete(key)
 		return cla, nil
 	})
@@ -108,12 +101,4 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_ap
 		return nil, o.Err
 	}
 	return o.Value.(*envoy_api_v2.ClusterLoadAssignment), nil
-}
-
-func (c *Cache) Invalidate() {
-	c.keysMux.RLock()
-	defer c.keysMux.RUnlock()
-	for _, key := range c.keys {
-		c.cache.Delete(key)
-	}
 }
