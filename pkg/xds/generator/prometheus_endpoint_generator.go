@@ -11,6 +11,7 @@ import (
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -100,7 +101,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	if err != nil {
 		return nil, err
 	}
-	cluster, err := envoy_clusters.NewClusterBuilder().
+	cluster, err := envoy_clusters.NewClusterBuilder(envoy.APIV2).
 		Configure(envoy_clusters.StaticCluster(envoyAdminClusterName, adminAddress, adminPort)).
 		Build()
 	if err != nil {
@@ -108,7 +109,7 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 	}
 	resources := core_xds.NewResourceSet()
 	resources.Add(&core_xds.Resource{
-		Name:     cluster.Name,
+		Name:     cluster.GetName(),
 		Origin:   OriginPrometheus,
 		Resource: cluster,
 	})

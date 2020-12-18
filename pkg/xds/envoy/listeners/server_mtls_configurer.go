@@ -4,7 +4,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v2"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"

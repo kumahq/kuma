@@ -3,7 +3,7 @@ package listeners
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v2"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	rbac "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/rbac/v2"
