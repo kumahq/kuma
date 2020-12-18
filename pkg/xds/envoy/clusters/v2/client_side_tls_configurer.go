@@ -8,7 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v2"
-	tls_v2 "github.com/kumahq/kuma/pkg/xds/envoy/tls/v2"
+	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v2"
 )
 
 type ClientSideTLSConfigurer struct {
@@ -20,7 +20,7 @@ var _ ClusterConfigurer = &ClientSideTLSConfigurer{}
 func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	for _, ep := range c.Endpoints {
 		if ep.ExternalService.TLSEnabled {
-			tlsContext, err := tls_v2.UpstreamTlsContextOutsideMesh(
+			tlsContext, err := envoy_tls.UpstreamTlsContextOutsideMesh(
 				ep.ExternalService.CaCert,
 				ep.ExternalService.ClientCert,
 				ep.ExternalService.ClientKey,

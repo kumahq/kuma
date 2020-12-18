@@ -144,3 +144,11 @@ type NamedResource interface {
 	envoy_types.Resource
 	GetName() string
 }
+
+type TrafficDirection string
+
+const (
+	TrafficDirectionOutbound    TrafficDirection = "OUTBOUND"
+	TrafficDirectionInbound     TrafficDirection = "INBOUND"
+	TrafficDirectionUnspecified TrafficDirection = "UNSPECIFIED"
+)
