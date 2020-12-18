@@ -66,5 +66,10 @@ func (d *dataplaneWatchdogFactory) New(key core_model.ResourceKey, streamId int6
 			d.xdsGenerationsErrors.Inc()
 			log.Error(err, "OnTick() failed")
 		},
+		OnStop: func() {
+			if err := dataplaneWatchdog.Cleanup(); err != nil {
+				log.Error(err, "OnTick() failed")
+			}
+		},
 	}
 }

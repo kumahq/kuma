@@ -11,6 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
@@ -52,14 +53,24 @@ func (d *DataplaneWatchdog) Sync() error {
 		}
 	}
 	switch d.dpType {
-	case mesh_proto.RegularDpType:
-		return d.syncDataplane()
-	case mesh_proto.GatewayDpType:
+	case mesh_proto.RegularDpType, mesh_proto.GatewayDpType:
 		return d.syncDataplane()
 	case mesh_proto.IngressDpType:
 		return d.syncIngress()
 	default:
 		// It might be a case that dp type is not yet inferred because there is no Dataplane definition yet.
+		return nil
+	}
+}
+
+func (d *DataplaneWatchdog) Cleanup() error {
+	proxyID := xds.FromResourceKey(d.key)
+	switch d.dpType {
+	case mesh_proto.RegularDpType, mesh_proto.GatewayDpType:
+		return d.dataplaneReconciler.Clear(&proxyID)
+	case mesh_proto.IngressDpType:
+		return d.ingressReconciler.Clear(&proxyID)
+	default:
 		return nil
 	}
 }
