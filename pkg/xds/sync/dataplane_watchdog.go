@@ -33,7 +33,7 @@ type DataplaneWatchdog struct {
 	log      logr.Logger
 
 	// state of watchdog
-	prevHash string
+	lastHash string // last Mesh hash that was used to **successfully** generate Reconcile Envoy config
 	dpType   mesh_proto.DpType
 }
 
@@ -48,44 +48,36 @@ func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, key core_model.Res
 
 func (d *DataplaneWatchdog) Sync() error {
 	if d.dpType == "" {
-		if err := d.determineDpType(); err != nil {
+		// Dataplane type does not change over time therefore we need to figure it once per DataplaneWatchdog
+		if err := d.inferDpType(); err != nil {
 			return err
 		}
 	}
 	switch d.dpType {
-	case mesh_proto.IngressDpType:
-		return d.syncIngress()
 	case mesh_proto.RegularDpType:
 		return d.syncDataplane()
 	case mesh_proto.GatewayDpType:
 		return d.syncDataplane()
+	case mesh_proto.IngressDpType:
+		return d.syncIngress()
 	default:
+		// It might be a case that dp type is not yet infered because there is no Dataplane definition yet.
 		return nil
 	}
 }
 
-func (d *DataplaneWatchdog) syncIngress() error {
-	envoyCtx := xds_context.Context{
-		ControlPlane:   d.envoyCpCtx,
-		ConnectionInfo: d.connectionInfoTracker.ConnectionInfo(d.streamId),
-	}
-	proxy, err := d.ingressProxyBuilder.Build(d.key, d.streamId)
-	if err != nil {
-		return err
-	}
-	envoyCtx.Mesh = xds_context.MeshContext{}
-	return d.ingressReconciler.Reconcile(envoyCtx, proxy)
-}
-
+// syncDataplane syncs state of the Dataplane.
+// It uses Mesh Hash to decide if we need to regenerate configuration or not.
 func (d *DataplaneWatchdog) syncDataplane() error {
 	snapshotHash, err := d.meshCache.GetHash(context.Background(), d.key.Mesh)
 	if err != nil {
 		return err
 	}
-	if d.prevHash != "" && snapshotHash == d.prevHash {
+	if d.lastHash != "" && snapshotHash == d.lastHash {
+		// Kuma policies (including Dataplanes and Mesh) has not change therefore there is no need to regenerate configuration.
 		return nil
 	}
-	d.log.Info("snapshot hash updated, reconcile", "prev", d.prevHash, "current", snapshotHash)
+	d.log.Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", snapshotHash)
 
 	envoyCtx := xds_context.Context{
 		ControlPlane:   d.envoyCpCtx,
@@ -99,11 +91,25 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 	if err := d.dataplaneReconciler.Reconcile(envoyCtx, proxy); err != nil {
 		return err
 	}
-	d.prevHash = snapshotHash
+	d.lastHash = snapshotHash // we only update hash
 	return nil
 }
 
-func (d *DataplaneWatchdog) determineDpType() error {
+// syncIngress synces state of Ingress Dataplane. Notice that it does not use Mesh Hash yet because Ingress supports many Meshes.
+func (d *DataplaneWatchdog) syncIngress() error {
+	envoyCtx := xds_context.Context{
+		ControlPlane:   d.envoyCpCtx,
+		ConnectionInfo: d.connectionInfoTracker.ConnectionInfo(d.streamId),
+	}
+	proxy, err := d.ingressProxyBuilder.Build(d.key, d.streamId)
+	if err != nil {
+		return err
+	}
+	envoyCtx.Mesh = xds_context.MeshContext{}
+	return d.ingressReconciler.Reconcile(envoyCtx, proxy)
+}
+
+func (d *DataplaneWatchdog) inferDpType() error {
 	dataplane := core_mesh.NewDataplaneResource()
 	if err := d.resManager.Get(context.Background(), dataplane, core_store.GetBy(d.key)); err != nil {
 		if core_store.IsResourceNotFound(err) {

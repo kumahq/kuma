@@ -49,28 +49,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 
 			// given
-			ctx := xds_context.Context{
-				ConnectionInfo: xds_context.ConnectionInfo{
-					Authority: "kuma-system:5677",
-				},
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsTlsCert: []byte("12345"),
-				},
-				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "demo",
-						},
-						Spec: &mesh_proto.Mesh{},
-					},
-				},
-			}
-
-			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
-
-			dataplane := &mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
-
 			outboundTargets := model.EndpointMap{
 				"db": []model.Endpoint{
 					{
@@ -89,6 +67,29 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 				},
 			}
+			ctx := xds_context.Context{
+				ConnectionInfo: xds_context.ConnectionInfo{
+					Authority: "kuma-system:5677",
+				},
+				ControlPlane: &xds_context.ControlPlaneContext{
+					SdsTlsCert: []byte("12345"),
+					CLACache: &dummyCLACache{outboundTargets: outboundTargets},
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
+						Spec: &mesh_proto.Mesh{},
+					},
+				},
+			}
+
+			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
+
+			dataplane := &mesh_proto.Dataplane{}
+			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
+
 
 			proxy := &model.Proxy{
 				Id: model.ProxyId{Name: "demo.backend-01"},
@@ -154,7 +155,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				Metadata: &model.DataplaneMetadata{
 					AdminPort: 9902,
 				},
-				CLACache: &dummyCLACache{outboundTargets: outboundTargets},
 			}
 
 			// when

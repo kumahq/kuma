@@ -340,10 +340,11 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						},
 					},
 				},
-				CLACache: &dummyCLACache{outboundTargets: outboundTargets},
+				//CLACache: &dummyCLACache{outboundTargets: outboundTargets},
 			}
 
 			// when
+			given.ctx.ControlPlane.CLACache = &dummyCLACache{outboundTargets: outboundTargets}
 			rs, err := gen.Generate(given.ctx, proxy)
 
 			// then
@@ -556,10 +557,10 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			},
 			OutboundTargets: outboundTargets,
 			Metadata:        &model.DataplaneMetadata{},
-			CLACache:        &dummyCLACache{outboundTargets: outboundTargets},
 		}
 
 		// when
+		plainCtx.ControlPlane.CLACache = &dummyCLACache{outboundTargets: outboundTargets}
 		rs, err := gen.Generate(plainCtx, proxy)
 
 		// then
