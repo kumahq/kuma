@@ -19,7 +19,7 @@ import (
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
 )
 
-var xdsServerLog  = core.Log.WithName("xds-server")
+var xdsServerLog = core.Log.WithName("xds-server")
 
 func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 	callbacks, err := DefaultCallbacks(rt)

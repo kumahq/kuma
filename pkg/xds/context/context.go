@@ -21,7 +21,7 @@ type ConnectionInfo struct {
 
 type ControlPlaneContext struct {
 	SdsTlsCert []byte
-	CLACache       xds.CLACache
+	CLACache   xds.CLACache
 }
 
 func (c Context) SDSLocation() string {
@@ -35,7 +35,7 @@ type MeshContext struct {
 	Hash       string
 }
 
-func BuildControlPlaneContext(config kuma_cp.Config, CLACache xds.CLACache) (*ControlPlaneContext, error) {
+func BuildControlPlaneContext(config kuma_cp.Config, claCache xds.CLACache) (*ControlPlaneContext, error) {
 	var cert []byte
 	if config.DpServer.TlsCertFile != "" {
 		c, err := ioutil.ReadFile(config.DpServer.TlsCertFile)
@@ -47,6 +47,6 @@ func BuildControlPlaneContext(config kuma_cp.Config, CLACache xds.CLACache) (*Co
 
 	return &ControlPlaneContext{
 		SdsTlsCert: cert,
-		CLACache: CLACache,
+		CLACache:   claCache,
 	}, nil
 }

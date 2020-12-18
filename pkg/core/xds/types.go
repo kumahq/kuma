@@ -91,23 +91,30 @@ type CLACache interface {
 	GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error)
 }
 type Proxy struct {
-	Id                 ProxyId
-	Dataplane          *mesh_core.DataplaneResource
-	TrafficPermissions TrafficPermissionMap
-	Logs               LogMap
-	TrafficRoutes      RouteMap
-	OutboundSelectors  DestinationMap
-	OutboundTargets    EndpointMap
-	HealthChecks       HealthCheckMap
-	CircuitBreakers    CircuitBreakerMap
-	TrafficTrace       *mesh_core.TrafficTraceResource
-	TracingBackend     *mesh_proto.TracingBackend
-	Metadata           *DataplaneMetadata
-	FaultInjections    FaultInjectionMap
+	Id        ProxyId
+	Dataplane *mesh_core.DataplaneResource
+	Metadata  *DataplaneMetadata
+	Routing   Routing
+	Policies  MatchedPolicies
 
 	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
 	// TrafficRouteList is used only for generating configs for Ingress.
 	TrafficRouteList *mesh_core.TrafficRouteResourceList
+}
+
+type Routing struct {
+	TrafficRoutes   RouteMap
+	OutboundTargets EndpointMap
+}
+
+type MatchedPolicies struct {
+	TrafficPermissions TrafficPermissionMap
+	Logs               LogMap
+	HealthChecks       HealthCheckMap
+	CircuitBreakers    CircuitBreakerMap
+	TrafficTrace       *mesh_core.TrafficTraceResource
+	TracingBackend     *mesh_proto.TracingBackend
+	FaultInjections    FaultInjectionMap
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {

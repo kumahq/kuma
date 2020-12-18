@@ -73,31 +73,33 @@ var _ = Describe("Reconcile", func() {
 					},
 					Spec: &dataplane,
 				},
-				TrafficPermissions: model.TrafficPermissionMap{
-					mesh_proto.InboundInterface{
-						DataplaneIP:   "192.168.0.1",
-						DataplanePort: 80,
-						WorkloadIP:    "127.0.0.1",
-						WorkloadPort:  8080,
-					}: &mesh_core.TrafficPermissionResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "tp-1",
-							Mesh: "default",
-						},
-						Spec: &mesh_proto.TrafficPermission{
-							Sources: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "web1",
-										"version":         "1.0",
+				Policies: model.MatchedPolicies{
+					TrafficPermissions: model.TrafficPermissionMap{
+						mesh_proto.InboundInterface{
+							DataplaneIP:   "192.168.0.1",
+							DataplanePort: 80,
+							WorkloadIP:    "127.0.0.1",
+							WorkloadPort:  8080,
+						}: &mesh_core.TrafficPermissionResource{
+							Meta: &test_model.ResourceMeta{
+								Name: "tp-1",
+								Mesh: "default",
+							},
+							Spec: &mesh_proto.TrafficPermission{
+								Sources: []*mesh_proto.Selector{
+									{
+										Match: map[string]string{
+											"kuma.io/service": "web1",
+											"version":         "1.0",
+										},
 									},
 								},
-							},
-							Destinations: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "backend1",
-										"env":             "dev",
+								Destinations: []*mesh_proto.Selector{
+									{
+										Match: map[string]string{
+											"kuma.io/service": "backend1",
+											"env":             "dev",
+										},
 									},
 								},
 							},

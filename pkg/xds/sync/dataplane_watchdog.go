@@ -61,7 +61,7 @@ func (d *DataplaneWatchdog) Sync() error {
 	case mesh_proto.IngressDpType:
 		return d.syncIngress()
 	default:
-		// It might be a case that dp type is not yet infered because there is no Dataplane definition yet.
+		// It might be a case that dp type is not yet inferred because there is no Dataplane definition yet.
 		return nil
 	}
 }

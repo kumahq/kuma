@@ -73,7 +73,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				},
 				ControlPlane: &xds_context.ControlPlaneContext{
 					SdsTlsCert: []byte("12345"),
-					CLACache: &dummyCLACache{outboundTargets: outboundTargets},
+					CLACache:   &dummyCLACache{outboundTargets: outboundTargets},
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
@@ -90,7 +90,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			dataplane := &mesh_proto.Dataplane{}
 			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
-
 			proxy := &model.Proxy{
 				Id: model.ProxyId{Name: "demo.backend-01"},
 				Dataplane: &mesh_core.DataplaneResource{
@@ -101,53 +100,57 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 					Spec: dataplane,
 				},
-				TrafficRoutes: model.RouteMap{
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 54321,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: &mesh_proto.TrafficRoute{
-							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{
-									{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("db"),
+				Routing: model.Routing{
+					TrafficRoutes: model.RouteMap{
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 54321,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{
+										{
+											Weight:      100,
+											Destination: mesh_proto.MatchService("db"),
+										},
+									},
+								},
+							},
+						},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 59200,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{
+										{
+											Weight:      100,
+											Destination: mesh_proto.MatchService("elastic"),
+										},
 									},
 								},
 							},
 						},
 					},
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 59200,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: &mesh_proto.TrafficRoute{
-							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{
-									{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("elastic"),
-									},
-								},
-							},
-						},
-					},
+					OutboundTargets: outboundTargets,
 				},
-				OutboundTargets: outboundTargets,
-				HealthChecks: model.HealthCheckMap{
-					"elastic": &mesh_core.HealthCheckResource{
-						Spec: &mesh_proto.HealthCheck{
-							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
-							},
-							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
-							},
-							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
-								UnhealthyThreshold: 3,
-								HealthyThreshold:   2,
+				Policies: model.MatchedPolicies{
+					HealthChecks: model.HealthCheckMap{
+						"elastic": &mesh_core.HealthCheckResource{
+							Spec: &mesh_proto.HealthCheck{
+								Sources: []*mesh_proto.Selector{
+									{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
+								},
+								Destinations: []*mesh_proto.Selector{
+									{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
+								},
+								Conf: &mesh_proto.HealthCheck_Conf{
+									Interval:           ptypes.DurationProto(5 * time.Second),
+									Timeout:            ptypes.DurationProto(4 * time.Second),
+									UnhealthyThreshold: 3,
+									HealthyThreshold:   2,
+								},
 							},
 						},
 					},

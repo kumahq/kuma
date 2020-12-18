@@ -22,12 +22,9 @@ type ingressProxyBuilder struct {
 
 func (p *ingressProxyBuilder) build(key core_model.ResourceKey, streamId int64) (*xds.Proxy, error) {
 	ctx := context.Background()
-	proxy := &xds.Proxy{
-		Id: xds.FromResourceKey(key),
-		Metadata: p.MetadataTracker.Metadata(streamId),
-	}
 
-	if err := p.resolveDataplane(ctx, key, proxy); err != nil {
+	dp, err := p.resolveDataplane(ctx, key)
+	if err != nil {
 		return nil, err
 	}
 
@@ -38,45 +35,51 @@ func (p *ingressProxyBuilder) build(key core_model.ResourceKey, streamId int64) 
 	allMeshDataplanes.Items = xds_topology.ResolveAddresses(syncLog, p.LookupIP, allMeshDataplanes.Items)
 
 	// Update Ingress' Available Services
-	// This was placed as an operation of DataplaneWatchdog out of the convenience. Consider moving to the outside component (follow the pattern of updating VIP outbounds)
-	if err := ingress.UpdateAvailableServices(ctx, p.ResManager, proxy.Dataplane, allMeshDataplanes.Items); err != nil {
+	// This was placed as an operation of DataplaneWatchdog out of the convenience.
+	// Consider moving to the outside of this component (follow the pattern of updating VIP outbounds)
+	if err := ingress.UpdateAvailableServices(ctx, p.ResManager, dp, allMeshDataplanes.Items); err != nil {
 		return nil, err
 	}
 
-	if err := p.resolveRouting(ctx, proxy, allMeshDataplanes); err != nil {
+	routing, err := p.resolveRouting(ctx, dp, allMeshDataplanes)
+	if err != nil {
 		return nil, err
+	}
+
+	proxy := &xds.Proxy{
+		Id:        xds.FromResourceKey(key),
+		Dataplane: dp,
+		Metadata:  p.MetadataTracker.Metadata(streamId),
+		Routing:   *routing,
 	}
 	return proxy, nil
 }
 
-func (p *ingressProxyBuilder) resolveDataplane(ctx context.Context, key core_model.ResourceKey, proxy *xds.Proxy) error {
+func (p *ingressProxyBuilder) resolveDataplane(ctx context.Context, key core_model.ResourceKey) (*core_mesh.DataplaneResource, error) {
 	dataplane := core_mesh.NewDataplaneResource()
 
 	if err := p.ReadOnlyResManager.Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
-		return err
+		return nil, err
 	}
 
+	// Envoy requires IPs instead of Hostname therefore we need to resolve an address. Consider moving this outside of this component.
 	resolvedDp, err := xds_topology.ResolveAddress(p.LookupIP, dataplane)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	dataplane = resolvedDp
-
-	proxy.Dataplane = resolvedDp
-	return nil
+	return resolvedDp, nil
 }
 
-func (p *ingressProxyBuilder) resolveRouting(ctx context.Context, proxy *xds.Proxy, dataplanes *core_mesh.DataplaneResourceList) error {
-	destinations := ingress.BuildDestinationMap(proxy.Dataplane)
-
+func (p *ingressProxyBuilder) resolveRouting(ctx context.Context, dataplane *core_mesh.DataplaneResource, dataplanes *core_mesh.DataplaneResourceList) (*xds.Routing, error) {
+	destinations := ingress.BuildDestinationMap(dataplane)
 	endpoints := ingress.BuildEndpointMap(destinations, dataplanes.Items)
-	proxy.OutboundTargets = endpoints
-
 	routes := &core_mesh.TrafficRouteResourceList{}
 	if err := p.ReadOnlyResManager.List(ctx, routes); err != nil {
-		return err
+		return nil, err
 	}
-	proxy.TrafficRouteList = routes
 
-	return nil
+	routing := &xds.Routing{
+		OutboundTargets: endpoints,
+	}
+	return routing, nil
 }

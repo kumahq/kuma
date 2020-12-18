@@ -10,7 +10,6 @@ func (n *NoopCallbacks) OnStreamOpen(context.Context, int64, string) error {
 }
 
 func (n *NoopCallbacks) OnStreamClosed(int64) {
-	return
 }
 
 func (n *NoopCallbacks) OnStreamRequest(int64, DiscoveryRequest) error {
@@ -18,7 +17,6 @@ func (n *NoopCallbacks) OnStreamRequest(int64, DiscoveryRequest) error {
 }
 
 func (n *NoopCallbacks) OnStreamResponse(int64, DiscoveryRequest, DiscoveryResponse) {
-	return
 }
 
 var _ Callbacks = &NoopCallbacks{}
