@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
-	tls_v3 "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
+	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 )
 
 type ClientSideMTLSConfigurer struct {
@@ -63,7 +63,7 @@ func (c *ClientSideMTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 }
 
 func (c *ClientSideMTLSConfigurer) createTransportSocket(sni string) (*envoy_core.TransportSocket, error) {
-	tlsContext, err := tls_v3.CreateUpstreamTlsContext(c.Ctx, c.Metadata, c.ClientService, sni)
+	tlsContext, err := envoy_tls.CreateUpstreamTlsContext(c.Ctx, c.Metadata, c.ClientService, sni)
 	if err != nil {
 		return nil, err
 	}

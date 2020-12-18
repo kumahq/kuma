@@ -1,15 +1,15 @@
 package listeners
 
 import (
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-)
+	envoy_listener_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	envoy_listener_v3 "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"github.com/pkg/errors"
 
-// FilterChainConfigurer is responsible for configuring a single aspect of the entire Envoy filter chain,
-// such as TcpProxy filter, RBAC filter, access log, etc.
-type FilterChainConfigurer interface {
-	// Configure configures a single aspect on a given Envoy filter chain.
-	Configure(filterChain *envoy_listener.FilterChain) error
-}
+	"github.com/kumahq/kuma/pkg/xds/envoy"
+	v2 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v2"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
+)
 
 // FilterChainBuilderOpt is a configuration option for FilterChainBuilder.
 //
@@ -19,14 +19,17 @@ type FilterChainBuilderOpt interface {
 	ApplyTo(config *FilterChainBuilderConfig)
 }
 
-func NewFilterChainBuilder() *FilterChainBuilder {
-	return &FilterChainBuilder{}
+func NewFilterChainBuilder(apiVersion envoy.APIVersion) *FilterChainBuilder {
+	return &FilterChainBuilder{
+		apiVersion: apiVersion,
+	}
 }
 
 // FilterChainBuilder is responsible for generating an Envoy filter chain
 // by applying a series of FilterChainConfigurers.
 type FilterChainBuilder struct {
-	config FilterChainBuilderConfig
+	apiVersion envoy.APIVersion
+	config     FilterChainBuilderConfig
 }
 
 // Configure configures FilterChainBuilder by adding individual FilterChainConfigurers.
@@ -38,25 +41,44 @@ func (b *FilterChainBuilder) Configure(opts ...FilterChainBuilderOpt) *FilterCha
 }
 
 // Build generates an Envoy filter chain by applying a series of FilterChainConfigurers.
-func (b *FilterChainBuilder) Build() (*envoy_listener.FilterChain, error) {
-	filterChain := envoy_listener.FilterChain{}
-	for _, configurer := range b.config.Configurers {
-		if err := configurer.Configure(&filterChain); err != nil {
-			return nil, err
+func (b *FilterChainBuilder) Build() (envoy_types.Resource, error) {
+	switch b.apiVersion {
+	case envoy.APIV2:
+		filterChain := envoy_listener_v2.FilterChain{}
+		for _, configurer := range b.config.ConfigurersV2 {
+			if err := configurer.Configure(&filterChain); err != nil {
+				return nil, err
+			}
 		}
+		return &filterChain, nil
+	case envoy.APIV3:
+		filterChain := envoy_listener_v3.FilterChain{}
+		for _, configurer := range b.config.ConfigurersV3 {
+			if err := configurer.Configure(&filterChain); err != nil {
+				return nil, err
+			}
+		}
+		return &filterChain, nil
+	default:
+		return nil, errors.New("unknown API")
 	}
-	return &filterChain, nil
 }
 
 // FilterChainBuilderConfig holds configuration of a FilterChainBuilder.
 type FilterChainBuilderConfig struct {
 	// A series of FilterChainConfigurers to apply to Envoy filter chain.
-	Configurers []FilterChainConfigurer
+	ConfigurersV2 []v2.FilterChainConfigurer
+	ConfigurersV3 []v3.FilterChainConfigurer
 }
 
 // Add appends a given FilterChainConfigurer to the end of the chain.
-func (c *FilterChainBuilderConfig) Add(configurer FilterChainConfigurer) {
-	c.Configurers = append(c.Configurers, configurer)
+func (c *FilterChainBuilderConfig) AddV2(configurer v2.FilterChainConfigurer) {
+	c.ConfigurersV2 = append(c.ConfigurersV2, configurer)
+}
+
+// Add appends a given FilterChainConfigurer to the end of the chain.
+func (c *FilterChainBuilderConfig) AddV3(configurer v3.FilterChainConfigurer) {
+	c.ConfigurersV3 = append(c.ConfigurersV3, configurer)
 }
 
 // FilterChainBuilderOptFunc is a convenience type adapter.
