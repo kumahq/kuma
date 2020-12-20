@@ -484,6 +484,26 @@ Global Flags:
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
+### kumactl get retries
+
+```
+Show Retries.
+
+Usage:
+  kumactl get retries [flags]
+
+Flags:
+  -h, --help            help for retries
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
 ### kumactl get proxytemplates
 
 ```

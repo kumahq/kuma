@@ -29,10 +29,10 @@ func GetRetries(
 		return nil, err
 	}
 
-	return buildRetryMap(dataplane, retries.Items, destinations)
+	return BuildRetryMap(dataplane, retries.Items, destinations)
 }
 
-func buildRetryMap(
+func BuildRetryMap(
 	dataplane *mesh_core.DataplaneResource,
 	retries []*mesh_core.RetryResource,
 	destinations core_xds.DestinationMap,
