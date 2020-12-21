@@ -31,10 +31,11 @@ type deployOptions struct {
 	cpReplicas       int
 
 	// app specific
-	namespace string
-	appname   string
-	id        string
-	token     string
+	namespace   string
+	appname     string
+	id          string
+	token       string
+	transparent bool
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -122,6 +123,12 @@ func WithId(id string) DeployOptionsFunc {
 func WithToken(token string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.token = token
+	}
+}
+
+func WithTransparentProxy(transparent bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.transparent = transparent
 	}
 }
 

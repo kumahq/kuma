@@ -29,7 +29,7 @@ func migrateDb(cfg postgres_cfg.PostgresStoreConfig) (core_plugins.DbVersion, er
 			}
 			return ver, core_plugins.AlreadyMigrated
 		}
-		if err.Error() == "file does not exist" {
+		if strings.Contains(err.Error(), "file does not exist") {
 			dbVer, _, err := m.Version()
 			if err != nil {
 				return 0, err
