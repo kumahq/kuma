@@ -493,5 +493,70 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
+		Entry("should fail validation on missing mesh object", testCase{
+			mode:        core.Remote,
+			objTemplate: &mesh_proto.TrafficRoute{},
+			obj: `
+            {
+              "apiVersion":"kuma.io/v1alpha1",
+              "kind":"TrafficRoute",
+              "metadata":{
+                "name":"empty",
+                "creationTimestamp":null,
+                "annotations": {
+                  "k8s.kuma.io/synced": "true"
+                }
+              },
+              "spec":{
+                "sources":[
+                  {
+                    "match":{
+                      "kuma.io/service":"web"
+                    }
+                  }
+                ],
+                "destinations":[
+                  {
+                    "match":{
+                      "kuma.io/service":"backend"
+                    }
+                  }
+                ],
+                "conf":{
+                 "split":[
+                  {
+                    "weight":100,
+                    "destination":{
+                      "kuma.io/service":"backend"
+                    }
+                  }
+                ]
+                }
+              }
+            }`,
+			resp: kube_admission.Response{
+				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+					UID:     "12345",
+					Allowed: false,
+					Result: &kube_meta.Status{
+						Status:  "Failure",
+						Message: "mesh: cannot be empty",
+						Reason:  "Invalid",
+						Code:    422,
+						Details: &kube_meta.StatusDetails{
+							Name: "empty",
+							Kind: "TrafficRoute",
+							Causes: []kube_meta.StatusCause{
+								{
+									Type:    "FieldValueInvalid",
+									Message: "cannot be empty",
+									Field:   "mesh",
+								},
+							},
+						},
+					},
+				},
+			},
+		}),
 	)
 })

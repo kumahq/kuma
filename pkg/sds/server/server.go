@@ -19,9 +19,10 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
-	xds_server "github.com/kumahq/kuma/pkg/xds/server"
-	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
+	auth_components "github.com/kumahq/kuma/pkg/xds/auth/components"
+	xds_callbacks "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
 var (
@@ -35,7 +36,7 @@ func RegisterSDS(rt core_runtime.Runtime, server *grpc.Server) error {
 
 	caProvider := DefaultMeshCaProvider(rt)
 	identityProvider := DefaultIdentityCertProvider(rt)
-	authenticator, err := xds_server.DefaultAuthenticator(rt)
+	authenticator, err := auth_components.DefaultAuthenticator(rt)
 	if err != nil {
 		return err
 	}
@@ -67,11 +68,11 @@ func RegisterSDS(rt core_runtime.Runtime, server *grpc.Server) error {
 	if err != nil {
 		return err
 	}
-	callbacks := util_xds.CallbacksChain{
-		statsCallbacks,
-		util_xds.LoggingCallbacks{Log: sdsServerLog},
-		authCallbacks,
-		syncTracker,
+	callbacks := util_xds_v2.CallbacksChain{
+		util_xds_v2.AdaptCallbacks(statsCallbacks),
+		util_xds_v2.LoggingCallbacks{Log: sdsServerLog},
+		util_xds_v2.AdaptCallbacks(authCallbacks),
+		util_xds_v2.AdaptCallbacks(syncTracker),
 	}
 
 	srv := envoy_server.NewServer(context.Background(), cache, callbacks)
@@ -81,7 +82,7 @@ func RegisterSDS(rt core_runtime.Runtime, server *grpc.Server) error {
 	return nil
 }
 
-func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, metrics core_metrics.Metrics) (envoy_server.Callbacks, error) {
+func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, metrics core_metrics.Metrics) (util_xds.Callbacks, error) {
 	sdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "sds_generation",
 		Help:       "Summary of SDS Snapshot generation",
@@ -97,7 +98,7 @@ func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, metrics
 	if err := metrics.Register(sdsGenerationsErrors); err != nil {
 		return nil, err
 	}
-	return xds_sync.NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
+	return xds_callbacks.NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)

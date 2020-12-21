@@ -15,7 +15,8 @@ Available Commands:
   get         Show Kuma resources
   help        Help about any command
   inspect     Inspect Kuma resources
-  install     Install Kuma on Kubernetes
+  install     Install various Kuma components.
+  uninstall   Uninstall various Kuma components.
   version     Print version
 
 Flags:
@@ -192,17 +193,18 @@ Global Flags:
 ## kumactl install
 
 ```
-Install Kuma on Kubernetes.
+Install various Kuma components.
 
 Usage:
   kumactl install [command]
 
 Available Commands:
-  control-plane Install Kuma Control Plane on Kubernetes
-  dns           Install DNS to Kubernetes
-  logging       Install Logging backend in Kubernetes cluster (Loki)
-  metrics       Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
-  tracing       Install Tracing backend in Kubernetes cluster (Jaeger)
+  control-plane     Install Kuma Control Plane on Kubernetes
+  dns               Install DNS to Kubernetes
+  logging           Install Logging backend in Kubernetes cluster (Loki)
+  metrics           Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
+  tracing           Install Tracing backend in Kubernetes cluster (Jaeger)
+  transparent-proxy Install Transparent Proxy pre-requisites on the host
 
 Flags:
   -h, --help   help for install

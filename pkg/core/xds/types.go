@@ -91,24 +91,30 @@ type CLACache interface {
 	GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error)
 }
 type Proxy struct {
-	Id                 ProxyId
-	Dataplane          *mesh_core.DataplaneResource
-	TrafficPermissions TrafficPermissionMap
-	Logs               LogMap
-	TrafficRoutes      RouteMap
-	OutboundSelectors  DestinationMap
-	OutboundTargets    EndpointMap
-	HealthChecks       HealthCheckMap
-	CircuitBreakers    CircuitBreakerMap
-	TrafficTrace       *mesh_core.TrafficTraceResource
-	TracingBackend     *mesh_proto.TracingBackend
-	Metadata           *DataplaneMetadata
-	FaultInjections    FaultInjectionMap
-	CLACache           CLACache
+	Id        ProxyId
+	Dataplane *mesh_core.DataplaneResource
+	Metadata  *DataplaneMetadata
+	Routing   Routing
+	Policies  MatchedPolicies
+}
+
+type Routing struct {
+	TrafficRoutes   RouteMap
+	OutboundTargets EndpointMap
 
 	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
 	// TrafficRouteList is used only for generating configs for Ingress.
 	TrafficRouteList *mesh_core.TrafficRouteResourceList
+}
+
+type MatchedPolicies struct {
+	TrafficPermissions TrafficPermissionMap
+	Logs               LogMap
+	HealthChecks       HealthCheckMap
+	CircuitBreakers    CircuitBreakerMap
+	TrafficTrace       *mesh_core.TrafficTraceResource
+	TracingBackend     *mesh_proto.TracingBackend
+	FaultInjections    FaultInjectionMap
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
@@ -167,6 +173,9 @@ func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {
 }
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {
+	if id == "" {
+		return nil, errors.Errorf("Envoy ID must not be nil")
+	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]
 	if mesh == "" {
