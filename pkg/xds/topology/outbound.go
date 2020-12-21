@@ -94,7 +94,6 @@ func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core
 		if !dataplane.Spec.IsIngress() {
 			continue
 		}
-		fmt.Println("fillIngressOutbounds", dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetName())
 		if !dataplane.Spec.IsRemoteIngress(zone) {
 			continue // we only need Ingress for other zones, we don't want to direct request to the same zone through Ingress
 		}
@@ -112,7 +111,6 @@ func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core
 		}
 		ingressInstances[ingressCoordinates] = true
 		for _, service := range dataplane.Spec.Networking.GetIngress().GetAvailableServices() {
-			fmt.Println("fillIngressOutbounds#FOR", dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetName(), service.Tags[mesh_proto.ServiceTag])
 			if service.Mesh != mesh.GetMeta().GetName() {
 				continue
 			}
@@ -124,7 +122,6 @@ func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core
 				Weight:   service.Instances,
 				Locality: localityFromTags(mesh, priorityRemote, service.Tags),
 			})
-			fmt.Println("fillIngressOutbounds#FOR#LEN", dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetName(), serviceName, len(outbound[serviceName]))
 		}
 	}
 	return uint32(len(ingressInstances))
