@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSync(t *testing.T) {
+func TestXDSServer(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "XDS Server V2 Suite")
 }

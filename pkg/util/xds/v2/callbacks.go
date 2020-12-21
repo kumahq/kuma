@@ -25,11 +25,11 @@ func AdaptCallbacks(callbacks xds.Callbacks) envoy_xds.Callbacks {
 var _ envoy_xds.Callbacks = &adapterCallbacks{}
 
 func (a *adapterCallbacks) OnFetchRequest(ctx context.Context, request *envoy_api_v2.DiscoveryRequest) error {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (a *adapterCallbacks) OnFetchResponse(request *envoy_api_v2.DiscoveryRequest, response *envoy_api_v2.DiscoveryResponse) {
-	panic("implement me")
+	panic("not implemented")
 }
 
 func (a *adapterCallbacks) OnStreamOpen(ctx context.Context, streamID int64, typeURL string) error {

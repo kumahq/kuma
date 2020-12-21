@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestSync(t *testing.T) {
+func TestCallbacks(t *testing.T) {
 	RegisterFailHandler(Fail)
 	RunSpecs(t, "XDS Callbacks Suite")
 }

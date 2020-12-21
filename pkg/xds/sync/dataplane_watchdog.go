@@ -98,7 +98,7 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 		// Kuma policies (including Dataplanes and Mesh) has not change therefore there is no need to regenerate configuration.
 		return nil
 	}
-	d.log.Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", snapshotHash)
+	d.log.V(1).Info("snapshot hash updated, reconcile", "prev", d.lastHash, "current", snapshotHash)
 
 	envoyCtx, err := d.xdsContextBuilder.buildMeshedContext(d.streamId, d.key.Mesh, d.lastHash)
 	if err != nil {

@@ -50,11 +50,6 @@ func DefaultCallbacks(rt core_runtime.Runtime) (envoy_server.Callbacks, error) {
 		return nil, err
 	}
 
-	statusTracker, err := xds_server.DefaultDataplaneStatusTracker(rt)
-	if err != nil {
-		return nil, err
-	}
-
 	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "xds")
 	if err != nil {
 		return nil, err
@@ -66,7 +61,7 @@ func DefaultCallbacks(rt core_runtime.Runtime) (envoy_server.Callbacks, error) {
 		util_xds_v2.AdaptCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory.New)),
 		util_xds_v2.AdaptCallbacks(metadataTracker),
 		util_xds_v2.AdaptCallbacks(xds_callbacks.NewDataplaneLifecycle(rt.ResourceManager())),
-		util_xds_v2.AdaptCallbacks(statusTracker),
+		util_xds_v2.AdaptCallbacks(xds_server.DefaultDataplaneStatusTracker(rt)),
 		newResourceWarmingForcer(rt.XDS().Cache(), rt.XDS().Hasher()),
 	}, nil
 }

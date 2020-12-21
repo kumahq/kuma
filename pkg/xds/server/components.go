@@ -8,8 +8,8 @@ import (
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 )
 
-func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) (xds_callbacks.DataplaneStatusTracker, error) {
-	tracker := xds_callbacks.NewDataplaneStatusTracker(rt, func(accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
+func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) xds_callbacks.DataplaneStatusTracker {
+	return xds_callbacks.NewDataplaneStatusTracker(rt, func(accessor xds_callbacks.SubscriptionStatusAccessor) xds_callbacks.DataplaneInsightSink {
 		return xds_callbacks.NewDataplaneInsightSink(
 			accessor,
 			func() *time.Ticker {
@@ -19,5 +19,4 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) (xds_callbacks.Datap
 			xds_callbacks.NewDataplaneInsightStore(rt.ResourceManager()),
 		)
 	})
-	return tracker, nil
 }
