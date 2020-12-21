@@ -1,11 +1,11 @@
-package listeners
+package v3
 
 import (
 	"strings"
 
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -19,20 +19,9 @@ const (
 		"resource-exhausted,unavailable"
 )
 
-func Retry(retry *core_mesh.RetryResource, protocol core_mesh.Protocol) FilterChainBuilderOpt {
-	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
-		if retry != nil {
-			config.Add(&RetryConfigurer{
-				retry:    retry,
-				protocol: protocol,
-			})
-		}
-	})
-}
-
 type RetryConfigurer struct {
-	retry    *core_mesh.RetryResource
-	protocol core_mesh.Protocol
+	Retry    *core_mesh.RetryResource
+	Protocol core_mesh.Protocol
 }
 
 func genGrpcRetryPolicy(
@@ -112,18 +101,18 @@ func genHttpRetryPolicy(
 func (c *RetryConfigurer) Configure(
 	filterChain *envoy_listener.FilterChain,
 ) error {
-	if c.retry == nil {
+	if c.Retry == nil {
 		return nil
 	}
 
 	updateFunc := func(manager *envoy_hcm.HttpConnectionManager) error {
 		var policy *envoy_route.RetryPolicy
 
-		switch c.protocol {
+		switch c.Protocol {
 		case "http":
-			policy = genHttpRetryPolicy(c.retry.Spec.Conf.GetHttp())
+			policy = genHttpRetryPolicy(c.Retry.Spec.Conf.GetHttp())
 		case "grpc":
-			policy = genGrpcRetryPolicy(c.retry.Spec.Conf.GetGrpc())
+			policy = genGrpcRetryPolicy(c.Retry.Spec.Conf.GetGrpc())
 		default:
 			return nil
 		}

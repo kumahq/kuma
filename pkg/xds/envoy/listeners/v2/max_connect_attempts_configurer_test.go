@@ -1,4 +1,4 @@
-package listeners_test
+package v2_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -43,13 +43,13 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 			}
 
 			// when
-			listener, err := NewListenerBuilder().
+			listener, err := NewListenerBuilder(envoy_common.APIV2).
 				Configure(OutboundListener(
 					given.listenerName,
 					given.listenerAddress,
 					given.listenerPort,
 				)).
-				Configure(FilterChain(NewFilterChainBuilder().
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(TcpProxy(given.statsName, given.clusters...)).
 					Configure(MaxConnectAttempts(retry)))).
 				Build()

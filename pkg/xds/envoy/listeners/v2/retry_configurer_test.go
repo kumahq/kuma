@@ -1,4 +1,4 @@
-package listeners_test
+package v2_test
 
 import (
 	"github.com/golang/protobuf/ptypes/duration"
@@ -9,10 +9,9 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("RetryConfigurer", func() {
@@ -32,13 +31,13 @@ var _ = Describe("RetryConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder().
+			listener, err := NewListenerBuilder(envoy_common.APIV2).
 				Configure(OutboundListener(
 					given.listenerName,
 					given.listenerAddress,
 					given.listenerPort,
 				)).
-				Configure(FilterChain(NewFilterChainBuilder().
+				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpOutboundRoute(
 						given.service,
