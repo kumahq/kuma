@@ -174,7 +174,7 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (ServiceSe
 		}
 	}
 
-	for _, dp := range dataplanes.Items {
+	for _, dp := range filteredDataplanes.Items {
 		if dp.Spec.IsIngress() {
 			for _, service := range dp.Spec.Networking.Ingress.AvailableServices {
 				if service.Mesh != mesh {
