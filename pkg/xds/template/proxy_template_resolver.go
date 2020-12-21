@@ -1,4 +1,4 @@
-package server
+package template
 
 import (
 	"context"
@@ -17,16 +17,16 @@ var (
 	templateResolverLog = core.Log.WithName("proxy-template-resolver")
 )
 
-type proxyTemplateResolver interface {
+type ProxyTemplateResolver interface {
 	GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate
 }
 
-type simpleProxyTemplateResolver struct {
+type SimpleProxyTemplateResolver struct {
 	manager.ReadOnlyResourceManager
 	DefaultProxyTemplate *mesh_proto.ProxyTemplate
 }
 
-func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
+func (r *SimpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
 	log := templateResolverLog.WithValues("dataplane", core_model.MetaToResourceKey(proxy.Dataplane.Meta))
 	ctx := context.Background()
 	templateList := &mesh_core.ProxyTemplateResourceList{}
@@ -48,10 +48,10 @@ func (r *simpleProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_prot
 	return r.DefaultProxyTemplate
 }
 
-type staticProxyTemplateResolver struct {
-	template *mesh_proto.ProxyTemplate
+type StaticProxyTemplateResolver struct {
+	Template *mesh_proto.ProxyTemplate
 }
 
-func (r *staticProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
-	return r.template
+func (r *StaticProxyTemplateResolver) GetTemplate(proxy *model.Proxy) *mesh_proto.ProxyTemplate {
+	return r.Template
 }

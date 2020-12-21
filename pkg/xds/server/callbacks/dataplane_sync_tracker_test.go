@@ -1,4 +1,4 @@
-package sync_test
+package callbacks_test
 
 import (
 	"context"
@@ -9,8 +9,9 @@ import (
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 
-	. "github.com/kumahq/kuma/pkg/xds/sync"
+	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -44,6 +45,7 @@ var _ = Describe("Sync", func() {
 		It("should not fail when Envoy presents invalid Node ID", func() {
 			// setup
 			tracker := NewDataplaneSyncTracker(nil)
+			callbacks := util_xds_v2.AdaptCallbacks(tracker)
 
 			// given
 			ctx := context.Background()
@@ -53,19 +55,19 @@ var _ = Describe("Sync", func() {
 
 			By("simulating Envoy connecting to the Control Plane")
 			// when
-			err := tracker.OnStreamOpen(ctx, streamID, typ)
+			err := callbacks.OnStreamOpen(ctx, streamID, typ)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating DiscoveryRequest")
 			// when
-			err = tracker.OnStreamRequest(streamID, req)
+			err = callbacks.OnStreamRequest(streamID, req)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating Envoy disconnecting from the Control Plane")
 			// and
-			tracker.OnStreamClosed(streamID)
+			callbacks.OnStreamClosed(streamID)
 
 			// then
 			// expect no panic
@@ -82,6 +84,7 @@ var _ = Describe("Sync", func() {
 					close(watchdogCh)
 				})
 			}))
+			callbacks := util_xds_v2.AdaptCallbacks(tracker)
 
 			// given
 			ctx := context.Background()
@@ -95,13 +98,13 @@ var _ = Describe("Sync", func() {
 
 			By("simulating Envoy connecting to the Control Plane")
 			// when
-			err := tracker.OnStreamOpen(ctx, streamID, typ)
+			err := callbacks.OnStreamOpen(ctx, streamID, typ)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating DiscoveryRequest")
 			// when
-			err = tracker.OnStreamRequest(streamID, req)
+			err = callbacks.OnStreamRequest(streamID, req)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -113,13 +116,13 @@ var _ = Describe("Sync", func() {
 
 			By("simulating another DiscoveryRequest")
 			// when
-			err = tracker.OnStreamRequest(streamID, req)
+			err = callbacks.OnStreamRequest(streamID, req)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			By("simulating Envoy disconnecting from the Control Plane")
 			// and
-			tracker.OnStreamClosed(streamID)
+			callbacks.OnStreamClosed(streamID)
 
 			By("waiting for Watchdog to get stopped")
 			// when
@@ -140,12 +143,13 @@ var _ = Describe("Sync", func() {
 					atomic.AddInt32(&activeWatchdogs, -1)
 				})
 			})
+			callbacks := util_xds_v2.AdaptCallbacks(tracker)
 
 			// when one stream for backend-01 is connected and request is sent
 			streamID := int64(1)
-			err := tracker.OnStreamOpen(context.Background(), streamID, "")
+			err := callbacks.OnStreamOpen(context.Background(), streamID, "")
 			Expect(err).ToNot(HaveOccurred())
-			err = tracker.OnStreamRequest(streamID, &envoy.DiscoveryRequest{
+			err = callbacks.OnStreamRequest(streamID, &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
 					Id: "default.backend-01",
 				},
@@ -154,9 +158,9 @@ var _ = Describe("Sync", func() {
 
 			// and when new stream from backend-01 is connected  and request is sent
 			streamID = 2
-			err = tracker.OnStreamOpen(context.Background(), streamID, "")
+			err = callbacks.OnStreamOpen(context.Background(), streamID, "")
 			Expect(err).ToNot(HaveOccurred())
-			err = tracker.OnStreamRequest(streamID, &envoy.DiscoveryRequest{
+			err = callbacks.OnStreamRequest(streamID, &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
 					Id: "default.backend-01",
 				},
@@ -169,7 +173,7 @@ var _ = Describe("Sync", func() {
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			// when first stream is closed
-			tracker.OnStreamClosed(1)
+			callbacks.OnStreamClosed(1)
 
 			// then watchdog is still active because other stream is opened
 			Eventually(func() int32 {
@@ -177,7 +181,7 @@ var _ = Describe("Sync", func() {
 			}, "5s", "10ms").Should(Equal(int32(1)))
 
 			// when other stream is closed
-			tracker.OnStreamClosed(2)
+			callbacks.OnStreamClosed(2)
 
 			// then no watchdog is stopped
 			Eventually(func() int32 {

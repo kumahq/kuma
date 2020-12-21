@@ -1,14 +1,11 @@
-package server
+package callbacks
 
 import (
 	"context"
 	"sync"
-	"time"
 
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -20,14 +17,10 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
-var (
-	// overridable by unit tests
-	now     = time.Now
-	newUUID = core.NewUUID
-)
+var statusTrackerLog = core.Log.WithName("xds").WithName("statusTracker")
 
 type DataplaneStatusTracker interface {
-	envoy_xds.Callbacks
+	util_xds.Callbacks
 	GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool)
 }
 
@@ -71,9 +64,9 @@ func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int6
 
 	// initialize subscription
 	subscription := &mesh_proto.DiscoverySubscription{
-		Id:                     newUUID(),
+		Id:                     core.NewUUID(),
 		ControlPlaneInstanceId: c.runtimeInfo.GetInstanceId(),
-		ConnectTime:            util_proto.MustTimestampProto(now()),
+		ConnectTime:            util_proto.MustTimestampProto(core.Now()),
 		Status:                 mesh_proto.NewSubscriptionStatus(),
 		Version:                mesh_proto.NewVersion(),
 	}
@@ -85,7 +78,7 @@ func (c *dataplaneStatusTracker) OnStreamOpen(ctx context.Context, streamID int6
 	// save
 	c.streams[streamID] = state
 
-	xdsServerLog.V(1).Info("OnStreamOpen", "context", ctx, "streamid", streamID, "type", typ, "subscription", subscription)
+	statusTrackerLog.V(1).Info("OnStreamOpen", "context", ctx, "streamid", streamID, "type", typ, "subscription", subscription)
 	return nil
 }
 
@@ -101,18 +94,18 @@ func (c *dataplaneStatusTracker) OnStreamClosed(streamID int64) {
 	// finilize subscription
 	state.mu.Lock() // write access to the per Dataplane info
 	subscription := state.subscription
-	subscription.DisconnectTime = util_proto.MustTimestampProto(now())
+	subscription.DisconnectTime = util_proto.MustTimestampProto(core.Now())
 	state.mu.Unlock()
 
 	// trigger final flush
 	state.Close()
 
-	xdsServerLog.V(1).Info("OnStreamClosed", "streamid", streamID, "subscription", subscription)
+	statusTrackerLog.V(1).Info("OnStreamClosed", "streamid", streamID, "subscription", subscription)
 }
 
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequest) error {
+func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.DiscoveryRequest) error {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 
@@ -123,37 +116,37 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req *envoy.Disc
 
 	// infer Dataplane id
 	if state.dataplaneId == (core_model.ResourceKey{}) {
-		if id, err := core_xds.ParseProxyId(req.Node); err == nil {
+		if id, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
 			state.dataplaneId = core_model.ResourceKey{Mesh: id.Mesh, Name: id.Name}
-			if err := readVersion(req.Node.Metadata, state.subscription.Version); err != nil {
-				xdsServerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Node.Metadata)
+			if err := readVersion(req.Metadata(), state.subscription.Version); err != nil {
+				statusTrackerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Metadata())
 			}
 			// kick off async Dataplane status flusher
 			go c.createStatusSink(state).Start(state.stop)
 		} else {
-			xdsServerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "req", req)
+			statusTrackerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "req", req)
 		}
 	}
 
 	// update Dataplane status
 	subscription := state.subscription
-	if req.ResponseNonce != "" {
-		subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(now())
-		if req.ErrorDetail != nil {
+	if req.GetResponseNonce() != "" {
+		subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
+		if req.HasErrors() {
 			subscription.Status.Total.ResponsesRejected++
-			subscription.Status.StatsOf(req.TypeUrl).ResponsesRejected++
+			subscription.Status.StatsOf(req.GetTypeUrl()).ResponsesRejected++
 		} else {
 			subscription.Status.Total.ResponsesAcknowledged++
-			subscription.Status.StatsOf(req.TypeUrl).ResponsesAcknowledged++
+			subscription.Status.StatsOf(req.GetTypeUrl()).ResponsesAcknowledged++
 		}
 	}
 
-	xdsServerLog.V(1).Info("OnStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)
+	statusTrackerLog.V(1).Info("OnStreamRequest", "streamid", streamID, "request", req, "subscription", subscription)
 	return nil
 }
 
 // OnStreamResponse is called immediately prior to sending a response on a stream.
-func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req *envoy.DiscoveryRequest, resp *envoy.DiscoveryResponse) {
+func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req util_xds.DiscoveryRequest, resp util_xds.DiscoveryResponse) {
 	c.mu.RLock() // read access to the map of all ADS streams
 	defer c.mu.RUnlock()
 
@@ -164,11 +157,11 @@ func (c *dataplaneStatusTracker) OnStreamResponse(streamID int64, req *envoy.Dis
 
 	// update Dataplane status
 	subscription := state.subscription
-	subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(now())
+	subscription.Status.LastUpdateTime = util_proto.MustTimestampProto(core.Now())
 	subscription.Status.Total.ResponsesSent++
-	subscription.Status.StatsOf(resp.TypeUrl).ResponsesSent++
+	subscription.Status.StatsOf(resp.GetTypeUrl()).ResponsesSent++
 
-	xdsServerLog.V(1).Info("OnStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
+	statusTrackerLog.V(1).Info("OnStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
 }
 
 func (c *dataplaneStatusTracker) GetStatusAccessor(streamID int64) (SubscriptionStatusAccessor, bool) {

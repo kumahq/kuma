@@ -7,7 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/util"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 
 	"github.com/go-logr/logr"
 
@@ -45,7 +45,7 @@ func NewStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
 var _ StatusTracker = &statusTracker{}
 
 type statusTracker struct {
-	util_xds.NoopCallbacks
+	util_xds_v2.NoopCallbacks
 	runtimeInfo      core_runtime.RuntimeInfo
 	createStatusSink ZoneInsightSinkFactoryFunc
 	mu               sync.RWMutex // protects access to the fields below

@@ -1,4 +1,4 @@
-package xds
+package v2
 
 import (
 	"context"

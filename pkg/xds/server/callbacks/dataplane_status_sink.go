@@ -1,4 +1,4 @@
-package server
+package callbacks
 
 import (
 	"time"
@@ -6,11 +6,14 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
+
+var sinkLog = core.Log.WithName("xds").WithName("sink")
 
 type DataplaneInsightSink interface {
 	Start(stop <-chan struct{})
@@ -64,14 +67,14 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 				// 2) upsert fail because it tries to create a new insight, but there is no Dataplane so ownership returns an error
 				// We could build a synchronous mechanism that waits for Sink to be stopped before moving on to next Callbacks, but this is potentially dangerous
 				// that we could block waiting for storage instead of executing next callbacks.
-				xdsServerLog.V(1).Info("failed to flush Dataplane status on stream close. It can happen when Dataplane is deleted at the same time", "dataplaneid", dataplaneId, "err", err)
+				sinkLog.V(1).Info("failed to flush Dataplane status on stream close. It can happen when Dataplane is deleted at the same time", "dataplaneid", dataplaneId, "err", err)
 			case store.IsResourceConflict(err):
-				xdsServerLog.V(1).Info("failed to flush DataplaneInsight because it was updated in other place. Will retry in the next tick", "dataplaneid", dataplaneId)
+				sinkLog.V(1).Info("failed to flush DataplaneInsight because it was updated in other place. Will retry in the next tick", "dataplaneid", dataplaneId)
 			default:
-				xdsServerLog.Error(err, "failed to flush DataplaneInsight", "dataplaneid", dataplaneId)
+				sinkLog.Error(err, "failed to flush DataplaneInsight", "dataplaneid", dataplaneId)
 			}
 		} else {
-			xdsServerLog.V(1).Info("DataplaneInsight saved", "dataplaneid", dataplaneId, "subscription", currentState)
+			sinkLog.V(1).Info("DataplaneInsight saved", "dataplaneid", dataplaneId, "subscription", currentState)
 			lastStoredState = currentState
 		}
 	}

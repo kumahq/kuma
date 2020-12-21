@@ -1,4 +1,4 @@
-package server_test
+package callbacks_test
 
 import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -8,12 +8,14 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/xds/server"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
+	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("Dataplane Metadata Tracker", func() {
 
-	tracker := server.NewDataplaneMetadataTracker()
+	tracker := NewDataplaneMetadataTracker()
+	callbacks := util_xds_v2.AdaptCallbacks(tracker)
 
 	req := v2.DiscoveryRequest{
 		Node: &envoy_core.Node{
@@ -33,7 +35,7 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 
 	It("should track metadata", func() {
 		// when
-		err := tracker.OnStreamRequest(streamId, &req)
+		err := callbacks.OnStreamRequest(streamId, &req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -54,13 +56,13 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 
 	It("should track metadata with empty Node in consecutive DiscoveryRequests", func() {
 		// when
-		err := tracker.OnStreamRequest(streamId, &req)
+		err := callbacks.OnStreamRequest(streamId, &req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		err = tracker.OnStreamRequest(streamId, &v2.DiscoveryRequest{})
+		err = callbacks.OnStreamRequest(streamId, &v2.DiscoveryRequest{})
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

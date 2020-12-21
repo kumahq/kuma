@@ -1,10 +1,11 @@
-package server
+package callbacks_test
 
 import (
 	"context"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -57,7 +58,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			var latestUpsert *DataplaneInsightUpsert
 
 			// given
-			sink := NewDataplaneInsightSink(accessor, func() *time.Ticker { return ticker }, 1*time.Millisecond, recorder)
+			sink := callbacks.NewDataplaneInsightSink(accessor, func() *time.Ticker { return ticker }, 1*time.Millisecond, recorder)
 			go sink.Start(stop)
 
 			// when
@@ -152,7 +153,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			lastSeenVersion := ""
 
 			// given
-			statusStore := NewDataplaneInsightStore(manager.NewResourceManager(store))
+			statusStore := callbacks.NewDataplaneInsightStore(manager.NewResourceManager(store))
 
 			// when
 			err := statusStore.Upsert(key, proto.Clone(subscription).(*mesh_proto.DiscoverySubscription))
@@ -224,7 +225,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 	})
 })
 
-var _ SubscriptionStatusAccessor = &SubscriptionStatusHolder{}
+var _ callbacks.SubscriptionStatusAccessor = &SubscriptionStatusHolder{}
 
 type SubscriptionStatusHolder struct {
 	core_model.ResourceKey
@@ -235,7 +236,7 @@ func (h *SubscriptionStatusHolder) GetStatus() (core_model.ResourceKey, *mesh_pr
 	return h.ResourceKey, proto.Clone(h.DiscoverySubscription).(*mesh_proto.DiscoverySubscription)
 }
 
-var _ DataplaneInsightStore = &DataplaneInsightStoreRecorder{}
+var _ callbacks.DataplaneInsightStore = &DataplaneInsightStoreRecorder{}
 
 type DataplaneInsightUpsert struct {
 	core_model.ResourceKey
