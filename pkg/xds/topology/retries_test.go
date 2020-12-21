@@ -596,7 +596,7 @@ var _ = Describe("Retry", func() {
 								{
 									Tags: map[string]string{
 										"kuma.io/service": "backend",
-										"region": "eu",
+										"region":          "eu",
 									},
 								},
 							},
