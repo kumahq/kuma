@@ -57,6 +57,11 @@ func (m *OwnerReferenceMutator) Handle(ctx context.Context, req admission.Reques
 			return admission.Errored(http.StatusBadRequest, err)
 		}
 	default:
+		// we need to also validate Mesh here because OwnerReferenceMutator is executed before validatingHandler
+		if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Scope()); err.HasViolations() {
+			return convertValidationErrorOf(err, obj, obj.GetObjectMeta())
+		}
+
 		owner = &mesh_k8s.Mesh{}
 		if err := m.Client.Get(ctx, kube_client.ObjectKey{Name: obj.GetMesh()}, owner); err != nil {
 			return admission.Errored(http.StatusBadRequest, err)
