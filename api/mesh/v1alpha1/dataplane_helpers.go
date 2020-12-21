@@ -27,7 +27,23 @@ const (
 
 	// External service tag
 	ExternalServiceTag = "kuma.io/external-service-name"
+
+	RegularDpType DpType = "regular"
+	IngressDpType DpType = "ingress"
+	GatewayDpType DpType = "gateway"
 )
+
+type DpType string
+
+func (d *Dataplane) DpType() DpType {
+	if d.IsIngress() {
+		return IngressDpType
+	}
+	if d.GetNetworking().GetGateway() != nil {
+		return GatewayDpType
+	}
+	return RegularDpType
+}
 
 type InboundInterface struct {
 	DataplaneIP   string

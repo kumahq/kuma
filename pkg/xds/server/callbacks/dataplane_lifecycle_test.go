@@ -1,10 +1,11 @@
-package server_test
+package callbacks_test
 
 import (
 	"context"
 
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -16,18 +17,21 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
-	"github.com/kumahq/kuma/pkg/xds/server"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
+	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("Dataplane Lifecycle", func() {
 
 	var resManager core_manager.ResourceManager
-	var dpLifecycle *server.DataplaneLifecycle
+	var dpLifecycle *DataplaneLifecycle
+	var callbacks envoy_server.Callbacks
 
 	BeforeEach(func() {
 		store := memory.NewStore()
 		resManager = core_manager.NewResourceManager(store)
-		dpLifecycle = server.NewDataplaneLifecycle(resManager)
+		dpLifecycle = NewDataplaneLifecycle(resManager)
+		callbacks = util_xds_v2.AdaptCallbacks(dpLifecycle)
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -70,7 +74,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		const streamId = 123
 
 		// when
-		err := dpLifecycle.OnStreamRequest(streamId, &req)
+		err := callbacks.OnStreamRequest(streamId, &req)
 
 		// then dp is created
 		Expect(err).ToNot(HaveOccurred())
@@ -118,7 +122,7 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		const streamId = 123
 
 		// when
-		err = dpLifecycle.OnStreamRequest(streamId, &req)
+		err = callbacks.OnStreamRequest(streamId, &req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())

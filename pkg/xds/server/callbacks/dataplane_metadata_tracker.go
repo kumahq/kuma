@@ -1,10 +1,7 @@
-package server
+package callbacks
 
 import (
 	"sync"
-
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	go_cp_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -34,7 +31,7 @@ func (d *DataplaneMetadataTracker) Metadata(streamId int64) *xds.DataplaneMetada
 	}
 }
 
-var _ go_cp_server.Callbacks = &DataplaneMetadataTracker{}
+var _ util_xds.Callbacks = &DataplaneMetadataTracker{}
 
 func (d *DataplaneMetadataTracker) OnStreamClosed(stream int64) {
 	d.mutex.Lock()
@@ -42,8 +39,8 @@ func (d *DataplaneMetadataTracker) OnStreamClosed(stream int64) {
 	delete(d.metadataForStream, stream)
 }
 
-func (d *DataplaneMetadataTracker) OnStreamRequest(stream int64, req *envoy.DiscoveryRequest) error {
-	if req.Node == nil {
+func (d *DataplaneMetadataTracker) OnStreamRequest(stream int64, req util_xds.DiscoveryRequest) error {
+	if req.NodeId() == "" {
 		// from https://www.envoyproxy.io/docs/envoy/latest/api-docs/xds_protocol#ack-nack-and-versioning:
 		// Only the first request on a stream is guaranteed to carry the node identifier.
 		// The subsequent discovery requests on the same stream may carry an empty node identifier.
@@ -55,6 +52,6 @@ func (d *DataplaneMetadataTracker) OnStreamRequest(stream int64, req *envoy.Disc
 
 	d.mutex.Lock()
 	defer d.mutex.Unlock()
-	d.metadataForStream[stream] = xds.DataplaneMetadataFromNode(req.Node)
+	d.metadataForStream[stream] = xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
 	return nil
 }

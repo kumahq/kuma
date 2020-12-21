@@ -1,4 +1,4 @@
-package server
+package v2
 
 import (
 	"sync"
@@ -12,7 +12,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 )
 
 var warmingForcerLog = xdsServerLog.WithName("warming-forcer")
@@ -55,7 +55,7 @@ var warmingForcerLog = xdsServerLog.WithName("warming-forcer")
 // The same problem is with Listeners and Routes (change of the Listener that uses RDS requires RDS DiscoveryResponse), but since we don't use RDS now, the implementation is for EDS only.
 // More reading of how Envoy is trying to solve it https://github.com/envoyproxy/envoy/issues/13009
 type resourceWarmingForcer struct {
-	util_xds.NoopCallbacks
+	util_xds_v2.NoopCallbacks
 	cache  envoy_cache.SnapshotCache
 	hasher envoy_cache.NodeHash
 

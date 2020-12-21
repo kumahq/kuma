@@ -1,4 +1,4 @@
-package server
+package template
 
 import (
 	"context"
@@ -17,7 +17,7 @@ import (
 )
 
 var _ = Describe("Reconcile", func() {
-	Describe("simpleProxyTemplateResolver", func() {
+	Describe("SimpleProxyTemplateResolver", func() {
 		It("should fallback to the default ProxyTemplate when there are no other candidates", func() {
 			// given
 			proxy := &model.Proxy{
@@ -29,7 +29,7 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			// setup
-			resolver := &simpleProxyTemplateResolver{
+			resolver := &SimpleProxyTemplateResolver{
 				ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate:    &mesh_proto.ProxyTemplate{},
 			}
@@ -93,7 +93,7 @@ var _ = Describe("Reconcile", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			resolver := &simpleProxyTemplateResolver{
+			resolver := &SimpleProxyTemplateResolver{
 				ReadOnlyResourceManager: manager.NewResourceManager(memStore),
 				DefaultProxyTemplate:    &mesh_proto.ProxyTemplate{},
 			}
@@ -120,7 +120,7 @@ var _ = Describe("Reconcile", func() {
 			}
 
 			// setup
-			resolver := &simpleProxyTemplateResolver{
+			resolver := &SimpleProxyTemplateResolver{
 				ReadOnlyResourceManager: manager.NewResourceManager(memory.NewStore()),
 				DefaultProxyTemplate:    &mesh_proto.ProxyTemplate{},
 			}

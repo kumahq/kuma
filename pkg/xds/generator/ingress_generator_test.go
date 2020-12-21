@@ -40,8 +40,10 @@ var _ = Describe("IngressGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				OutboundTargets:  given.outboundTargets,
-				TrafficRouteList: given.trafficRoutes,
+				Routing: core_xds.Routing{
+					OutboundTargets:  given.outboundTargets,
+					TrafficRouteList: given.trafficRoutes,
+				},
 			}
 
 			// when
