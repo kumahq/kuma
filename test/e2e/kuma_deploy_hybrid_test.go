@@ -240,7 +240,7 @@ metadata:
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 
-	FIt("should sync traffic permissions", func() {
+	It("should sync traffic permissions", func() {
 		// Remote 4
 		// universal access remote universal service
 		Eventually(func() (string, error) {
