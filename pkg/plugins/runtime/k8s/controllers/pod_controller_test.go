@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -174,12 +175,13 @@ var _ = Describe("PodReconciler", func() {
 			})
 
 		reconciler = &PodReconciler{
-			Client:          kubeClient,
-			EventRecorder:   kube_record.NewFakeRecorder(10),
-			Scheme:          k8sClientScheme,
-			Log:             core.Log.WithName("test"),
-			SystemNamespace: "kuma-system",
-			Persistence:     vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore())),
+			Client:            kubeClient,
+			EventRecorder:     kube_record.NewFakeRecorder(10),
+			Scheme:            k8sClientScheme,
+			Log:               core.Log.WithName("test"),
+			SystemNamespace:   "kuma-system",
+			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore())),
+			ResourceConverter: k8s.NewSimpleConverter(),
 		}
 	})
 
