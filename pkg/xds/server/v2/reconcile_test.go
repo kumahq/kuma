@@ -1,4 +1,4 @@
-package server
+package v2
 
 import (
 	"fmt"
@@ -12,6 +12,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_model "github.com/kumahq/kuma/pkg/core/xds"
@@ -25,16 +26,16 @@ var _ = Describe("Reconcile", func() {
 		var backupNewUUID func() string
 
 		BeforeEach(func() {
-			backupNewUUID = newUUID
+			backupNewUUID = core.NewUUID
 		})
 		AfterEach(func() {
-			newUUID = backupNewUUID
+			core.NewUUID = backupNewUUID
 		})
 
 		var serial uint64
 
 		BeforeEach(func() {
-			newUUID = func() string {
+			core.NewUUID = func() string {
 				uuid := atomic.AddUint64(&serial, 1)
 				return fmt.Sprintf("v%d", uuid)
 			}

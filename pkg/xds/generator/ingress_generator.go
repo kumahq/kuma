@@ -29,7 +29,7 @@ type IngressGenerator struct {
 func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 
-	destinationsPerService := i.destinations(proxy.TrafficRouteList)
+	destinationsPerService := i.destinations(proxy.Routing.TrafficRouteList)
 
 	listener, err := i.generateLDS(proxy.Dataplane, destinationsPerService)
 	if err != nil {
@@ -115,7 +115,7 @@ func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList) 
 
 func (_ IngressGenerator) services(proxy *model.Proxy) []string {
 	var services []string
-	for service := range proxy.OutboundTargets {
+	for service := range proxy.Routing.OutboundTargets {
 		services = append(services, service)
 	}
 	sort.Strings(services)
@@ -153,7 +153,7 @@ func (_ IngressGenerator) lbSubsets(service string, destinationsPerService map[s
 
 func (_ IngressGenerator) generateEDS(proxy *model.Proxy, services []string) (resources []*model.Resource) {
 	for _, service := range services {
-		endpoints := proxy.OutboundTargets[service]
+		endpoints := proxy.Routing.OutboundTargets[service]
 		resources = append(resources, &model.Resource{
 			Name:     service,
 			Origin:   OriginIngress,

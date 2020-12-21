@@ -50,7 +50,6 @@ var _ = Describe("TracingProxyGenerator", func() {
 						Mesh: "demo",
 					},
 				},
-				TracingBackend: nil,
 			},
 		}),
 	)
@@ -90,12 +89,14 @@ var _ = Describe("TracingProxyGenerator", func() {
 						},
 					},
 				},
-				TracingBackend: &mesh_proto.TracingBackend{
-					Name: "zipkin",
-					Type: mesh_proto.TracingZipkinType,
-					Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
-						Url: "http://zipkin.us:9090/v2/spans",
-					}),
+				Policies: model.MatchedPolicies{
+					TracingBackend: &mesh_proto.TracingBackend{
+						Name: "zipkin",
+						Type: mesh_proto.TracingZipkinType,
+						Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+							Url: "http://zipkin.us:9090/v2/spans",
+						}),
+					},
 				},
 			},
 			expectedFile: "zipkin.envoy-config.golden.yaml",

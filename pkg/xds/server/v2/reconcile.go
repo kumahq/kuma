@@ -1,4 +1,4 @@
-package server
+package v2
 
 import (
 	"github.com/golang/protobuf/proto"
@@ -7,6 +7,8 @@ import (
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
+	xds_template "github.com/kumahq/kuma/pkg/xds/template"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -18,12 +20,7 @@ var (
 	reconcileLog = core.Log.WithName("xds-server").WithName("reconcile")
 )
 
-type SnapshotReconciler interface {
-	Reconcile(ctx xds_context.Context, proxy *model.Proxy) error
-	Clear(proxyId *model.ProxyId) error
-}
-
-var _ SnapshotReconciler = &reconciler{}
+var _ xds_sync.SnapshotReconciler = &reconciler{}
 
 type reconciler struct {
 	generator snapshotGenerator
@@ -73,7 +70,7 @@ func (r *reconciler) autoVersion(old envoy_cache.Snapshot, new envoy_cache.Snaps
 func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {
 	new.Version = old.Version
 	if !equalSnapshots(old.Items, new.Items) {
-		new.Version = newUUID()
+		new.Version = core.NewUUID()
 	}
 	return new
 }
@@ -95,7 +92,7 @@ type snapshotGenerator interface {
 }
 
 type templateSnapshotGenerator struct {
-	ProxyTemplateResolver proxyTemplateResolver
+	ProxyTemplateResolver xds_template.ProxyTemplateResolver
 }
 
 func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (envoy_cache.Snapshot, error) {

@@ -1,13 +1,12 @@
-package server
+package callbacks
 
 import (
 	"context"
 	"sync"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	go_cp_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -15,6 +14,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
+
+var lifecycleLog = core.Log.WithName("xds").WithName("dp-lifecycle")
 
 // DataplaneLifecycle is responsible for creating a deleting dataplanes that are passed through metadata
 // There are two possible workflows
@@ -34,7 +35,7 @@ type DataplaneLifecycle struct {
 	sync.RWMutex       // protects createdDpForStream
 }
 
-var _ go_cp_server.Callbacks = &DataplaneLifecycle{}
+var _ util_xds.Callbacks = &DataplaneLifecycle{}
 
 func NewDataplaneLifecycle(resManager manager.ResourceManager) *DataplaneLifecycle {
 	return &DataplaneLifecycle{
@@ -49,15 +50,15 @@ func (d *DataplaneLifecycle) OnStreamClosed(streamID int64) {
 	key := d.createdDpForStream[streamID]
 	delete(d.createdDpForStream, streamID)
 	if key != nil {
-		xdsServerLog.Info("unregistering dataplane", "dataplaneKey", key, "streamID", streamID)
+		lifecycleLog.Info("unregistering dataplane", "dataplaneKey", key, "streamID", streamID)
 		if err := d.unregisterDataplane(*key); err != nil {
-			xdsServerLog.Error(err, "could not unregister dataplane")
+			lifecycleLog.Error(err, "could not unregister dataplane")
 		}
 	}
 }
 
-func (d *DataplaneLifecycle) OnStreamRequest(streamID int64, request *envoy_api_v2.DiscoveryRequest) error {
-	if request.Node == nil { // Only the first request on a stream is guaranteed to carry the node identifier.
+func (d *DataplaneLifecycle) OnStreamRequest(streamID int64, request util_xds.DiscoveryRequest) error {
+	if request.NodeId() == "" { // Only the first request on a stream is guaranteed to carry the node identifier.
 		return nil
 	}
 
@@ -67,9 +68,9 @@ func (d *DataplaneLifecycle) OnStreamRequest(streamID int64, request *envoy_api_
 
 	d.Lock()
 	defer d.Unlock()
-	md := xds.DataplaneMetadataFromNode(request.Node)
+	md := xds.DataplaneMetadataFromXdsMetadata(request.Metadata())
 	if md.DataplaneResource != nil {
-		xdsServerLog.Info("registering dataplane", "dataplane", md.DataplaneResource, "streamID", streamID, "nodeID", request.Node.Id)
+		lifecycleLog.Info("registering dataplane", "dataplane", md.DataplaneResource, "streamID", streamID, "nodeID", request.NodeId())
 		if err := d.registerDataplane(md.DataplaneResource); err != nil {
 			return errors.Wrap(err, "could not register dataplane passed in kuma-dp run")
 		}

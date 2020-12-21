@@ -1,12 +1,16 @@
-package server
+package callbacks_test
 
 import (
 	"context"
 	"time"
 
+	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
+	v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -21,6 +25,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
 	test_runtime "github.com/kumahq/kuma/pkg/test/runtime"
+	. "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
 var _ = Describe("DataplaneStatusTracker", func() {
@@ -28,6 +33,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	var t0 time.Time
 
 	var tracker DataplaneStatusTracker
+	var callbacks envoy_server.Callbacks
+
 	var runtimeInfo = test_runtime.TestRuntimeInfo{InstanceId: "test"}
 	var ctx context.Context
 
@@ -36,22 +43,22 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	var backupNewUUID func() string
 
 	BeforeEach(func() {
-		backupNow = now
-		backupNewUUID = newUUID
+		backupNow = core.Now
+		backupNewUUID = core.NewUUID
 	})
 
 	AfterEach(func() {
-		now = backupNow
-		newUUID = backupNewUUID
+		core.Now = backupNow
+		core.NewUUID = backupNewUUID
 	})
 
 	BeforeEach(func() {
 		t0, _ = time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
-		now = func() time.Time {
+		core.Now = func() time.Time {
 			defer func() { t0 = t0.Add(1 * time.Second) }()
 			return t0
 		}
-		newUUID = func() string {
+		core.NewUUID = func() string {
 			return "a9680ef2-aa57-11e9-85b6-acde48001122"
 		}
 	})
@@ -60,6 +67,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		tracker = NewDataplaneStatusTracker(runtimeInfo, func(accessor SubscriptionStatusAccessor) DataplaneInsightSink {
 			return DataplaneInsightSinkFunc(func(<-chan struct{}) {})
 		})
+		callbacks = v2.AdaptCallbacks(tracker)
 		ctx = context.Background()
 	})
 
@@ -69,7 +77,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating start of ADS subscription")
 		// when
-		err := tracker.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnStreamOpen(ctx, streamID, "")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -100,7 +108,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating end of ADS subscription")
 		// when
-		tracker.OnStreamClosed(streamID)
+		callbacks.OnStreamClosed(streamID)
 
 		By("ensuring ADS subscription final state")
 		// when
@@ -130,7 +138,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 		By("simulating start of ADS subscription")
 		// when
-		err := tracker.OnStreamOpen(ctx, streamID, "")
+		err := callbacks.OnStreamOpen(ctx, streamID, "")
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -144,7 +152,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 		discoveryRequest := &envoy.DiscoveryRequest{
 			TypeUrl: "type.googleapis.com/envoy.api.v2.Listener",
 		}
-		err = tracker.OnStreamRequest(streamID, discoveryRequest)
+		err = callbacks.OnStreamRequest(streamID, discoveryRequest)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
@@ -195,7 +203,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 
 			By("simulating start of subscription")
 			// when
-			err := tracker.OnStreamOpen(ctx, streamID, "")
+			err := callbacks.OnStreamOpen(ctx, streamID, "")
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -226,7 +234,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				},
 				TypeUrl: given.TypeUrl,
 			}
-			err = tracker.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -265,7 +273,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				TypeUrl: given.TypeUrl,
 				Nonce:   "1",
 			}
-			tracker.OnStreamResponse(streamID, discoveryRequest, discoveryResponse)
+			callbacks.OnStreamResponse(streamID, discoveryRequest, discoveryResponse)
 			// and
 			key, subscription = accessor.GetStatus()
 			// then
@@ -281,7 +289,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				TypeUrl:       given.TypeUrl,
 				ResponseNonce: "1",
 			}
-			err = tracker.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -304,7 +312,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 					Message: "failed to apply LDS response",
 				},
 			}
-			err = tracker.OnStreamRequest(streamID, discoveryRequest)
+			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -639,26 +647,31 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	DescribeTable("should read node.metadata without error",
 		func(given versionTestCase) {
 			// given
-			version := mesh_proto.NewVersion()
-			node := &envoy_core.Node{
-				Metadata: &pstruct.Struct{
-					Fields: map[string]*pstruct.Value{
-						"dataplaneTokenPath": {
-							Kind: &pstruct.Value_StringValue{
-								StringValue: "/tmp/token",
-							},
+			streamID := int64(1)
+			discoveryRequest := &envoy.DiscoveryRequest{
+				TypeUrl: "type.googleapis.com/envoy.api.v2.Listener",
+				Node: &envoy_core.Node{
+					Id: "default.example-001",
+					Metadata: &pstruct.Struct{
+						Fields: map[string]*pstruct.Value{
+							"version": given.version,
 						},
-						"version": given.version,
 					},
 				},
 			}
 
 			// when
-			err := readVersion(node.Metadata, version)
+			err := callbacks.OnStreamOpen(context.Background(), streamID, "")
+			Expect(err).ToNot(HaveOccurred())
+			err = callbacks.OnStreamRequest(streamID, discoveryRequest)
 
 			// then
-			Expect(err).To(BeNil())
-			Expect(version).To(Equal(mesh_proto.NewVersion()))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and
+			accessor, _ := tracker.GetStatusAccessor(streamID)
+			_, sub := accessor.GetStatus()
+			Expect(sub.GetVersion()).To(MatchProto(mesh_proto.NewVersion()))
 		},
 		Entry("when version is a nil struct", versionTestCase{
 			version: &pstruct.Value{
