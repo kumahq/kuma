@@ -27,10 +27,11 @@ mtls:
 `, mesh)
 	}
 
-	trafficPermissionAllTo2Remote := `
+	trafficPermissionAllTo2Remote := func(mesh string) string {
+		return fmt.Sprintf(`
 type: TrafficPermission
 name: all-to-2-remote
-mesh: default
+mesh: %s
 sources:
 - match:
    kuma.io/service: "*"
@@ -38,7 +39,8 @@ destinations:
 - match:
    kuma.io/service: "*"
    kuma.io/zone: kuma-2-remote
-`
+`, mesh)
+	}
 
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
@@ -238,7 +240,7 @@ metadata:
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 
-	It("should sync traffic permissions", func() {
+	FIt("should sync traffic permissions", func() {
 		// Remote 4
 		// universal access remote universal service
 		Eventually(func() (string, error) {
@@ -247,10 +249,10 @@ metadata:
 			return stdout, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
-		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-default") // remove builtin traffic permission
+		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-non-default", nonDefaultMesh) // remove builtin traffic permission
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlUniversal(trafficPermissionAllTo2Remote)(global)
+		err = YamlUniversal(trafficPermissionAllTo2Remote(nonDefaultMesh))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Remote 3
