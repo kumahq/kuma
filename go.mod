@@ -16,9 +16,9 @@ require (
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
 	github.com/go-kit/kit v0.10.0
 	github.com/go-logr/logr v0.1.0
-	github.com/go-logr/zapr v0.1.0
+	github.com/go-logr/zapr v0.1.1
 	github.com/gogo/protobuf v1.3.1
-	github.com/golang-migrate/migrate/v4 v4.8.0
+	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
 	github.com/gruntwork-io/terratest v0.27.5
@@ -26,7 +26,8 @@ require (
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
-	github.com/lib/pq v1.7.0
+	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
+	github.com/lib/pq v1.8.0
 	github.com/miekg/dns v1.1.29
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.3
@@ -44,10 +45,17 @@ require (
 	github.com/spiffe/spire v0.10.0
 	go.uber.org/multierr v1.3.0
 	go.uber.org/zap v1.13.0
+<<<<<<< HEAD
 	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 	golang.org/x/tools v0.0.0-20201210181237-6d345e82f1d8 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.30.0
+=======
+	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
+	golang.org/x/tools v0.0.0-20201210164618-f31efc5a5c28 // indirect
+	google.golang.org/genproto v0.0.0-20201030142918-24207fddd1c3
+	google.golang.org/grpc v1.33.1
+>>>>>>> 5dcd5ee9... feat(*) adding kumactl install transparent-proxy (#1321)
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.3.4
@@ -57,13 +65,14 @@ require (
 	// migrating to v0.6.2 fails integration tests with:
 	// failed to convert core list model of type SampleTrafficRoute into k8s counterpart
 	sigs.k8s.io/controller-runtime v0.6.1
-	sigs.k8s.io/testing_frameworks v0.1.1
+	sigs.k8s.io/testing_frameworks v0.1.2
 )
 
 replace (
 	github.com/Azure/go-autorest => github.com/Azure/go-autorest v13.3.2+incompatible
 	github.com/kumahq/kuma/api => ./api
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
+	github.com/kumahq/kuma/pkg/transparentproxy/istio => ./pkg/transparentproxy/istio
 
 	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
 	github.com/spiffe/spire/proto/spire => github.com/spiffe/spire/proto/spire v0.10.0
