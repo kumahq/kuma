@@ -107,6 +107,6 @@ func RunSmokeTest(factory ConfigFactory) {
 
 			// complete
 			close(done)
-		}, 15)
+		}, 60)
 	})
 }
