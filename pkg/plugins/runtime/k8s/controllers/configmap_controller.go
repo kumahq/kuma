@@ -144,10 +144,15 @@ func (m *DataplaneToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.
 	}
 
 	if dp.Spec.IsIngress() {
-		var requests []kube_reconile.Request
+		meshSet := map[string]bool{}
 		for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
+			meshSet[service.Mesh] = true
+		}
+
+		var requests []kube_reconile.Request
+		for mesh := range meshSet {
 			requests = append(requests, kube_reconile.Request{
-				NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(service.Mesh)},
+				NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(mesh)},
 			})
 		}
 		return requests
