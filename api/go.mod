@@ -10,9 +10,9 @@ require (
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.3
 	github.com/pkg/errors v0.9.1
-	google.golang.org/genproto v0.0.0-20200108215221-bd8f9a0ef82f
+	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.30.0
-	google.golang.org/protobuf v1.23.0
+	google.golang.org/protobuf v1.25.0
 // When running `make generate` in this folder, one can get into errors of missing proto dependecies
 // To solve the issue, uncomment the section below and run `go mod download`
 //github.com/cncf/udpa latest
