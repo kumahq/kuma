@@ -146,7 +146,6 @@ func validateConfProtocolBackOff(
 			path.Field("baseInterval"),
 			conf.BaseInterval,
 		))
-
 	}
 
 	return
