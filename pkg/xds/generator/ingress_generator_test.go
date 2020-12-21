@@ -41,9 +41,9 @@ var _ = Describe("IngressGenerator", func() {
 					Spec: dataplane,
 				},
 				Routing: core_xds.Routing{
-					OutboundTargets: given.outboundTargets,
+					OutboundTargets:  given.outboundTargets,
+					TrafficRouteList: given.trafficRoutes,
 				},
-				TrafficRouteList: given.trafficRoutes,
 			}
 
 			// when

@@ -79,7 +79,8 @@ func (p *ingressProxyBuilder) resolveRouting(ctx context.Context, dataplane *cor
 	}
 
 	routing := &xds.Routing{
-		OutboundTargets: endpoints,
+		OutboundTargets:  endpoints,
+		TrafficRouteList: routes,
 	}
 	return routing, nil
 }

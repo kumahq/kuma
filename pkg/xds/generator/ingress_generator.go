@@ -29,7 +29,7 @@ type IngressGenerator struct {
 func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 
-	destinationsPerService := i.destinations(proxy.TrafficRouteList)
+	destinationsPerService := i.destinations(proxy.Routing.TrafficRouteList)
 
 	listener, err := i.generateLDS(proxy.Dataplane, destinationsPerService)
 	if err != nil {

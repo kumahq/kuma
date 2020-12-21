@@ -96,15 +96,15 @@ type Proxy struct {
 	Metadata  *DataplaneMetadata
 	Routing   Routing
 	Policies  MatchedPolicies
-
-	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
-	// TrafficRouteList is used only for generating configs for Ingress.
-	TrafficRouteList *mesh_core.TrafficRouteResourceList
 }
 
 type Routing struct {
 	TrafficRoutes   RouteMap
 	OutboundTargets EndpointMap
+
+	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
+	// TrafficRouteList is used only for generating configs for Ingress.
+	TrafficRouteList *mesh_core.TrafficRouteResourceList
 }
 
 type MatchedPolicies struct {
