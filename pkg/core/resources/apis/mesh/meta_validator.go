@@ -17,6 +17,12 @@ func ValidateMeta(name, mesh string, scope model.ResourceScope) validators.Valid
 	if !nameMeshRegexp.MatchString(name) {
 		err.AddViolation("name", "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.")
 	}
+	err.Add(ValidateMesh(mesh, scope))
+	return err
+}
+
+func ValidateMesh(mesh string, scope model.ResourceScope) validators.ValidationError {
+	var err validators.ValidationError
 	if scope == model.ScopeMesh {
 		if mesh == "" {
 			err.AddViolation("mesh", "cannot be empty")

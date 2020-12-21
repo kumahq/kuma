@@ -207,10 +207,13 @@ func EchoServerUniversal(id, mesh, token string, fs ...DeployOptionsFunc) Instal
 func IngressUniversal(mesh, token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
-		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, true, []string{}, []string{})
+		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, true, []string{})
 		if err != nil {
 			return err
 		}
+
+		app.CreateMainApp([]string{}, []string{})
+
 		err = app.mainApp.Start()
 		if err != nil {
 			return err
@@ -286,9 +289,10 @@ spec:
 	)
 }
 
-func DemoClientUniversal(mesh, token string) InstallFunc {
+func DemoClientUniversal(mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp(WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token))
+		fs = append(fs, WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token))
+		return cluster.DeployApp(fs...)
 	}
 }
 

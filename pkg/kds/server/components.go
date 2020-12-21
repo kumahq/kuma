@@ -18,6 +18,7 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 )
 
 func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.ResourceType, serverID string, refresh time.Duration, filter reconcile.ResourceFilter, insight bool) (Server, error) {
@@ -33,11 +34,11 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 	if err != nil {
 		return nil, err
 	}
-	callbacks := util_xds.CallbacksChain{
+	callbacks := util_xds_v2.CallbacksChain{
 		&typeAdjustCallbacks{},
-		util_xds.NewControlPlaneIdCallbacks(serverID),
-		util_xds.LoggingCallbacks{Log: log},
-		statsCallbacks,
+		util_xds_v2.NewControlPlaneIdCallbacks(serverID),
+		util_xds_v2.LoggingCallbacks{Log: log},
+		util_xds_v2.AdaptCallbacks(statsCallbacks),
 		syncTracker,
 	}
 	if insight {
@@ -75,7 +76,7 @@ func newSyncTracker(log logr.Logger, reconciler reconcile.Reconciler, refresh ti
 	if err := metrics.Register(kdsGenerationsErrors); err != nil {
 		return nil, err
 	}
-	return util_xds.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
+	return util_xds_v2.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
 		log := log.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {

@@ -24,13 +24,13 @@ type TracingProxyGenerator struct {
 var _ ResourceGenerator = TracingProxyGenerator{}
 
 func (t TracingProxyGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	if proxy.TracingBackend == nil {
+	if proxy.Policies.TracingBackend == nil {
 		return nil, nil
 	}
 	resources := core_xds.NewResourceSet()
-	switch proxy.TracingBackend.Type {
+	switch proxy.Policies.TracingBackend.Type {
 	case mesh_proto.TracingZipkinType:
-		res, err := t.zipkinCluster(proxy.TracingBackend)
+		res, err := t.zipkinCluster(proxy.Policies.TracingBackend)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not generate zipkin cluster")
 		}

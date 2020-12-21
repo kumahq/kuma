@@ -71,7 +71,7 @@ var _ = Describe("xDS", func() {
 				}),
 				Entry("empty", testCase{
 					node:        &envoy_core.Node{},
-					expectedErr: "mesh must not be empty",
+					expectedErr: "Envoy ID must not be nil",
 				}),
 				Entry("mesh without name and namespace", testCase{
 					node: &envoy_core.Node{
