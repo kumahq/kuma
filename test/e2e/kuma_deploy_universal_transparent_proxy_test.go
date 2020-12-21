@@ -37,7 +37,7 @@ var _ = Describe("Test Universal Transparent Proxy deployment", func() {
 
 		err = EchoServerUniversal("universal", "default", echoServerToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal(demoClientToken, "default", WithTransparentProxy(true))(cluster)
+		err = DemoClientUniversal("default", demoClientToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
