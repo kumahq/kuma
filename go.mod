@@ -45,17 +45,10 @@ require (
 	github.com/spiffe/spire v0.10.0
 	go.uber.org/multierr v1.3.0
 	go.uber.org/zap v1.13.0
-<<<<<<< HEAD
-	golang.org/x/time v0.0.0-20191024005414-555d28b269f0
-	golang.org/x/tools v0.0.0-20201210181237-6d345e82f1d8 // indirect
-	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
-	google.golang.org/grpc v1.30.0
-=======
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	golang.org/x/tools v0.0.0-20201210164618-f31efc5a5c28 // indirect
 	google.golang.org/genproto v0.0.0-20201030142918-24207fddd1c3
 	google.golang.org/grpc v1.33.1
->>>>>>> 5dcd5ee9... feat(*) adding kumactl install transparent-proxy (#1321)
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.3.0
 	helm.sh/helm/v3 v3.3.4
