@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"path/filepath"
+	"time"
 
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -26,7 +27,9 @@ var _ = Describe("K8S CMD test", func() {
 	BeforeEach(func(done Done) {
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
-			CRDDirectoryPaths: []string{filepath.Join("..", "..", "..", "pkg", "plugins", "resources", "k8s", "native", "config", "crd", "bases")},
+			CRDDirectoryPaths:        []string{filepath.Join("..", "..", "..", "pkg", "plugins", "resources", "k8s", "native", "config", "crd", "bases")},
+			ControlPlaneStartTimeout: 60 * time.Second,
+			ControlPlaneStopTimeout:  60 * time.Second,
 		}
 
 		cfg, err := testEnv.Start()
@@ -49,9 +52,8 @@ var _ = Describe("K8S CMD test", func() {
 
 	AfterEach(func() {
 		By("tearing down the test environment")
-		err := testEnv.Stop()
-		Expect(err).ToNot(HaveOccurred())
-	})
+		Expect(testEnv.Stop()).To(Succeed())
+	}, 60)
 
 	RunSmokeTest(ConfigFactoryFunc(func() string {
 		admissionServerPort, _, err := addr.Suggest()
