@@ -223,12 +223,12 @@ func (c *K8sControlPlane) GetGlobaStatusAPI() string {
 	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
 }
 
-func (c *K8sControlPlane) GenerateDpToken(service string) (string, error) {
+func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
 		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
-		[]byte(fmt.Sprintf(`{"mesh": "default", "tags": {"kuma.io/service": ["%s"]}}`, service)),
+		[]byte(fmt.Sprintf(`{"mesh": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, service)),
 		map[string]string{"content-type": "application/json"},
 		200,
 		DefaultRetries,

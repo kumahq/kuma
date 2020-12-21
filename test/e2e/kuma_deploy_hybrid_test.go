@@ -15,15 +15,17 @@ import (
 
 var _ = Describe("Test Kubernetes/Universal deployment", func() {
 
-	meshDefaulMtlsOn := `
+	meshMTLSOn := func(mesh string) string {
+		return fmt.Sprintf(`
 type: Mesh
-name: default
+name: %s
 mtls:
   enabledBackend: ca-1
   backends:
   - name: ca-1
     type: builtin
-`
+`, mesh)
+	}
 
 	trafficPermissionAllTo2Remote := `
 type: TrafficPermission
@@ -52,6 +54,9 @@ metadata:
 	var global, remote_1, remote_2, remote_3, remote_4 Cluster
 	var optsGlobal, optsRemote1, optsRemote2, optsRemote3, optsRemote4 []DeployOptionsFunc
 
+	const nonDefaultMesh = "non-default"
+	const defaultMesh = "default"
+
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters(
 			[]string{Kuma1, Kuma2},
@@ -69,6 +74,8 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
+			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh))).
+			Install(YamlUniversal(meshMTLSOn(defaultMesh))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -76,11 +83,11 @@ metadata:
 
 		globalCP := global.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
+		echoServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
+		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("ingress")
+		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// K8s Cluster 1
@@ -95,7 +102,7 @@ metadata:
 			Install(Kuma(core.Remote, optsRemote1...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClientK8s()).
+			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_1.VerifyKuma()
@@ -112,8 +119,8 @@ metadata:
 			Install(Kuma(core.Remote, optsRemote2...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(EchoServerK8s()).
-			Install(DemoClientK8s()).
+			Install(EchoServerK8s(nonDefaultMesh)).
+			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()
@@ -127,9 +134,9 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote3...)).
-			Install(EchoServerUniversal("universal", echoServerToken)).
-			Install(DemoClientUniversal(demoClientToken)).
-			Install(IngressUniversal(ingressToken)).
+			Install(EchoServerUniversal("universal", nonDefaultMesh, echoServerToken)).
+			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken)).
+			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_3)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_3.VerifyKuma()
@@ -143,14 +150,11 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote4...)).
-			Install(DemoClientUniversal(demoClientToken)).
-			Install(IngressUniversal(ingressToken)).
+			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken)).
+			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_4)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_4.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlUniversal(meshDefaulMtlsOn)(global)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

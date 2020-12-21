@@ -2,7 +2,6 @@ package framework
 
 import (
 	"fmt"
-	"path/filepath"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/tls"
@@ -125,24 +124,87 @@ func WaitPodsNotAvailable(namespace, app string) InstallFunc {
 	}
 }
 
-func EchoServerK8s() InstallFunc {
+func EchoServerK8s(mesh string) InstallFunc {
 	const name = "echo-server"
+	service := `
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-server
+  namespace: kuma-test
+  annotations:
+    80.service.kuma.io/protocol: http
+spec:
+  ports:
+    - port: 80
+      name: http
+  selector:
+    app: echo-server
+`
+	deployment := `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echo-server
+  namespace: kuma-test
+  labels:
+    app: echo-server
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: echo-server
+  template:
+    metadata:
+      annotations:
+        kuma.io/mesh: %s
+      labels:
+        app: echo-server
+    spec:
+      containers:
+        - name: echo-server
+          image: kuma-universal
+          imagePullPolicy: IfNotPresent
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 3
+          ports:
+            - containerPort: 80
+          command: [ "ncat" ]
+          args:
+            - -lk
+            - -p
+            - "80"
+            - --sh-exec
+            - '/usr/bin/printf "HTTP/1.1 200 OK\n\n Echo\n"'
+          resources:
+            limits:
+              cpu: 50m
+              memory: 128Mi
+`
 	return Combine(
-		YamlPathK8s(filepath.Join("testdata", fmt.Sprintf("%s.yaml", name))),
+		YamlK8s(service),
+		YamlK8s(fmt.Sprintf(deployment, mesh)),
 		WaitService(TestNamespace, name),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
 	)
 }
 
-func EchoServerUniversal(id, token string, fs ...DeployOptionsFunc) InstallFunc {
+func EchoServerUniversal(id, mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
-		fs = append(fs, WithAppname(AppModeEchoServer), WithId(id), WithToken(token))
+		fs = append(fs, WithMesh(mesh), WithAppname(AppModeEchoServer), WithId(id), WithToken(token))
 		return cluster.DeployApp(fs...)
 	}
 }
 
-func IngressUniversal(token string) InstallFunc {
+func IngressUniversal(mesh, token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
 		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, true, []string{}, []string{})
@@ -156,24 +218,77 @@ func IngressUniversal(token string) InstallFunc {
 		uniCluster.apps[AppIngress] = app
 
 		publicAddress := uniCluster.apps[AppIngress].ip
-		dpyaml := fmt.Sprintf(IngressDataplane, publicAddress, kdsPort, kdsPort)
+		dpyaml := fmt.Sprintf(IngressDataplane, mesh, publicAddress, kdsPort, kdsPort)
 		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token)
 	}
 }
 
-func DemoClientK8s() InstallFunc {
+func DemoClientK8s(mesh string) InstallFunc {
 	const name = "demo-client"
+	service := `
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-client
+  namespace: kuma-test
+spec:
+  ports:
+    - port: 3000
+      name: http
+  selector:
+    app: demo-client
+`
+	deployment := `
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-client
+  namespace: kuma-test
+  labels:
+    app: demo-client
+spec:
+  strategy:
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: demo-client
+  template:
+    metadata:
+      annotations:
+        kuma.io/mesh: %s
+      labels:
+        app: demo-client
+    spec:
+      containers:
+        - name: demo-client
+          image: kuma-universal
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          command: [ "ncat" ]
+          args:
+            - -lk
+            - -p
+            - "3000"
+          resources:
+            limits:
+              cpu: 50m
+              memory: 128Mi
+`
 	return Combine(
-		YamlPathK8s(filepath.Join("testdata", fmt.Sprintf("%s.yaml", name))),
+		YamlK8s(service),
+		YamlK8s(fmt.Sprintf(deployment, mesh)),
 		WaitService(TestNamespace, name),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
 	)
 }
 
-func DemoClientUniversal(token string) InstallFunc {
+func DemoClientUniversal(mesh, token string) InstallFunc {
 	return func(cluster Cluster) error {
-		return cluster.DeployApp(WithAppname(AppModeDemoClient), WithToken(token))
+		return cluster.DeployApp(WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token))
 	}
 }
 

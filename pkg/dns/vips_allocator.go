@@ -163,9 +163,17 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (ServiceSe
 	serviceSet := make(map[string]bool)
 
 	dataplanes := core_mesh.DataplaneResourceList{}
-	if err := rm.List(context.Background(), &dataplanes, store.ListByMesh(mesh)); err != nil {
+	if err := rm.List(context.Background(), &dataplanes); err != nil {
 		return nil, err
 	}
+
+	filteredDataplanes := &core_mesh.DataplaneResourceList{}
+	for _, d := range dataplanes.Items {
+		if d.GetMeta().GetMesh() == mesh || d.Spec.IsIngress() {
+			_ = filteredDataplanes.AddItem(d)
+		}
+	}
+
 	for _, dp := range dataplanes.Items {
 		if dp.Spec.IsIngress() {
 			for _, service := range dp.Spec.Networking.Ingress.AvailableServices {

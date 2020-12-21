@@ -40,11 +40,11 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 		Expect(err).ToNot(HaveOccurred())
 		globalCP := globalCluster.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
+		echoServerToken, err := globalCP.GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
+		demoClientToken, err := globalCP.GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("ingress")
+		ingressToken, err := globalCP.GenerateDpToken("default", "ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// Remote
@@ -55,9 +55,9 @@ var _ = Describe("Test Kubernetes/Universal deployment when Global is on K8S", f
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote...)).
-			Install(EchoServerUniversal("universal", echoServerToken)).
-			Install(DemoClientUniversal(demoClientToken)).
-			Install(IngressUniversal(ingressToken)).
+			Install(EchoServerUniversal("universal", "default", echoServerToken)).
+			Install(DemoClientUniversal("default", demoClientToken)).
+			Install(IngressUniversal("default", ingressToken)).
 			Setup(remoteCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = remoteCluster.VerifyKuma()
