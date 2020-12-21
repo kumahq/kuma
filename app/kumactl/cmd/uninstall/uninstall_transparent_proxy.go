@@ -28,7 +28,7 @@ func newUninstallTransparentProxy() *cobra.Command {
 				return errors.Errorf("transparent proxy will work only on Linux OSes")
 			}
 
-			tp := transparentproxy.GetDefaultTransparentProxy()
+			tp := transparentproxy.DefaultTransparentProxy()
 
 			output, err := tp.Cleanup(args.DryRun)
 			if err != nil {
@@ -40,10 +40,10 @@ func newUninstallTransparentProxy() *cobra.Command {
 				_, _ = cmd.OutOrStdout().Write([]byte("\n"))
 			}
 
-			if _, err := os.Stat("/etc/resolv.conf.kuma"); !os.IsNotExist(err) {
-				content, err := ioutil.ReadFile("/etc/resolv.conf.kuma")
+			if _, err := os.Stat("/etc/resolv.conf.kuma-backup"); !os.IsNotExist(err) {
+				content, err := ioutil.ReadFile("/etc/resolv.conf.kuma-backup")
 				if err != nil {
-					return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma")
+					return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma-backup")
 				}
 
 				if !args.DryRun {

@@ -51,10 +51,16 @@ Follow the following steps to use the Kuma data plane proxy in Transparent Proxy
  1) create a dedicated user for the Kuma data plane proxy, e.g. 'kuma-dp'
  2) run this command as a 'root' user to modify the host's iptables and /etc/resolv.conf
     - supply the dedicated username with '--kuma-dp-'
-    - all changes are easly revertable by issuing 'kumactl uninstall transparent-proxy'
+    - all changes are easly revertible by issuing 'kumactl uninstall transparent-proxy'
     - by default the SSH port tcp/22 will not be redirected to Envoy, but everything else will.
       Use '--exclude-inbound-ports' to provide a comma separated list of ports that should also be excluded
     - this command also creates a backup copy of the modified resolv.conf under /etc/resolv.conf
+
+ sudo kumactl install transparent-proxy \
+          --kuma-dp-user kuma-dp \
+          --kuma-cp-ip 10.0.0.1 \
+          --exclude-inbound-ports 443
+
  3) prepare a Dataplane resource yaml like this:
 
 type: Dataplane
@@ -87,6 +93,8 @@ runuser -u kuma-dp -- \
     --dataplane-var port=80  \
     --binary-path /usr/local/bin/envoy
 
+ 5) make sure the kuma-cp is running its DNS service on port 53 by setting the environment variable 'KUMA_DNS_SERVER_PORT=53'
+
 `,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !args.DryRun && runtime.GOOS != "linux" {
@@ -102,60 +110,14 @@ runuser -u kuma-dp -- \
 			}
 
 			if args.ModifyIptables {
-				tp := transparentproxy.GetDefaultTransparentProxy()
-
-				uid, gid, err := findUidGid(args.UID, args.User)
-				if err != nil {
-					return errors.Wrapf(err, "unable to find the kuma-dp user")
-				}
-
-				output, err := tp.Setup(&config.TransparentProxyConfig{
-					DryRun:               args.DryRun,
-					RedirectPortOutBound: args.RedirectPortOutBound,
-					RedirectPortInBound:  args.RedirectPortInBound,
-					ExcludeInboundPorts:  args.ExcludeInboundPorts,
-					ExcludeOutboundPorts: args.ExcludeOutboundPorts,
-					UID:                  uid,
-					GID:                  gid,
-				})
-				if err != nil {
-					return errors.Wrap(err, "failed to setup transparent proxy")
-				}
-
-				if args.DryRun {
-					_, _ = cmd.OutOrStdout().Write([]byte(output))
+				if err := modifyIpTables(cmd, &args); err != nil {
+					return err
 				}
 			}
 
 			if args.ModifyResolvConf {
-				kumaCPLine := fmt.Sprintf("nameserver %s", args.KumaCpIP.String())
-				content, err := ioutil.ReadFile("/etc/resolv.conf")
-				if err != nil {
-					return errors.Wrap(err, "unable to open /etc/resolv.conf")
-				}
-				newcontent := fmt.Sprintf("%s\n%s", kumaCPLine, string(content))
-
-				if !args.DryRun && !strings.Contains(string(content), kumaCPLine) {
-					err = ioutil.WriteFile("/etc/resolv.conf.kuma", content, 0644)
-					if err != nil {
-						return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma")
-					}
-					err = ioutil.WriteFile("/etc/resolv.conf", []byte(newcontent), 0644)
-					if err != nil {
-						return errors.Wrap(err, "unable to write /etc/resolv.conf")
-					}
-				}
-
-				if args.DryRun {
-					_, _ = cmd.OutOrStdout().Write([]byte(newcontent))
-					_, _ = cmd.OutOrStdout().Write([]byte("\n"))
-				} else {
-					content, err := ioutil.ReadFile("/etc/resolv.conf")
-					if err != nil {
-						return errors.Wrap(err, "uanble to open /etc/resolv.conf")
-					}
-					_, _ = cmd.OutOrStdout().Write(content)
-					_, _ = cmd.OutOrStdout().Write([]byte("\n"))
+				if err := modifyResolvConf(cmd, &args); err != nil {
+					return err
 				}
 			}
 
@@ -173,7 +135,7 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
 	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the UID of the user that will run kuma-dp")
 	cmd.Flags().BoolVar(&args.ModifyResolvConf, "modify-resolv-conf", args.ModifyResolvConf, "modify the host `/etc/resolv.conf` to allow `.mesh` resolution through kuma-cp")
-	cmd.Flags().IPVar(&args.KumaCpIP, "kuma-cp-ip", args.KumaCpIP, "the ")
+	cmd.Flags().IPVar(&args.KumaCpIP, "kuma-cp-ip", args.KumaCpIP, "the IP address of the Kuma CP which exposes the DNS service on port 53.")
 
 	return cmd
 }
@@ -189,4 +151,64 @@ func findUidGid(uid, user string) (string, string, error) {
 	}
 
 	return u.Uid, u.Gid, nil
+}
+
+func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
+	tp := transparentproxy.DefaultTransparentProxy()
+
+	uid, gid, err := findUidGid(args.UID, args.User)
+	if err != nil {
+		return errors.Wrapf(err, "unable to find the kuma-dp user")
+	}
+
+	output, err := tp.Setup(&config.TransparentProxyConfig{
+		DryRun:               args.DryRun,
+		RedirectPortOutBound: args.RedirectPortOutBound,
+		RedirectPortInBound:  args.RedirectPortInBound,
+		ExcludeInboundPorts:  args.ExcludeInboundPorts,
+		ExcludeOutboundPorts: args.ExcludeOutboundPorts,
+		UID:                  uid,
+		GID:                  gid,
+	})
+	if err != nil {
+		return errors.Wrap(err, "failed to setup transparent proxy")
+	}
+
+	if args.DryRun {
+		_, _ = cmd.OutOrStdout().Write([]byte(output))
+	} else {
+		_, _ = cmd.OutOrStdout().Write([]byte("iptables set to diverge the traffic to Envoy."))
+	}
+
+	return nil
+}
+
+func modifyResolvConf(cmd *cobra.Command, args *transparenProxyArgs) error {
+	kumaCPLine := fmt.Sprintf("nameserver %s", args.KumaCpIP.String())
+	content, err := ioutil.ReadFile("/etc/resolv.conf")
+	if err != nil {
+		return errors.Wrap(err, "unable to open /etc/resolv.conf")
+	}
+	newcontent := fmt.Sprintf("%s\n%s", kumaCPLine, string(content))
+
+	if args.DryRun {
+		_, _ = cmd.OutOrStdout().Write([]byte(newcontent))
+		_, _ = cmd.OutOrStdout().Write([]byte("\n"))
+		return nil
+	}
+
+	if !strings.Contains(string(content), kumaCPLine) {
+		err = ioutil.WriteFile("/etc/resolv.conf.kuma-backup", content, 0644)
+		if err != nil {
+			return errors.Wrap(err, "unable to open /etc/resolv.conf.kuma-backup")
+		}
+		err = ioutil.WriteFile("/etc/resolv.conf", []byte(newcontent), 0644)
+		if err != nil {
+			return errors.Wrap(err, "unable to write /etc/resolv.conf")
+		}
+	}
+
+	_, _ = cmd.OutOrStdout().Write([]byte("/etc/resolv.conf modified. The previous version of the file backed up to /etc/resolv.conf.kuma-backup"))
+
+	return nil
 }

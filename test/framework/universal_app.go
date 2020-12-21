@@ -151,8 +151,6 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 
 	if mode == AppModeCP {
 		app.allocatePublicPortsFor("5678", "5680", "5681", "5682", "5685")
-	} else {
-		app.allocatePublicPortsFor("30001") // the envoy admin port
 	}
 
 	opts := defaultDockerOptions

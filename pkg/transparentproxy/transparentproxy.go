@@ -13,6 +13,6 @@ type TransparentProxy interface {
 	Cleanup(dryRun bool) (string, error)
 }
 
-func GetDefaultTransparentProxy() TransparentProxy {
+func DefaultTransparentProxy() TransparentProxy {
 	return istio.NewIstioTransparentProxy()
 }
