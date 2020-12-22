@@ -77,11 +77,9 @@ var _ = Describe("RetryConfigurer", func() {
 			retry: &mesh_core.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
-						Protocol: &mesh_proto.Retry_Conf_Http_{
-							Http: &mesh_proto.Retry_Conf_Http{
-								NumRetries: &wrappers.UInt32Value{
-									Value: 7,
-								},
+						Http: &mesh_proto.Retry_Conf_Http{
+							NumRetries: &wrappers.UInt32Value{
+								Value: 7,
 							},
 						},
 					},
@@ -112,7 +110,7 @@ var _ = Describe("RetryConfigurer", func() {
                       name: backend
                       retryPolicy:
                         numRetries: 7
-                        retryOn: 5XX
+                        retryOn: gateway-error,connect-failure,refused-stream
                       routes:
                       - match:
                           prefix: /
@@ -145,24 +143,22 @@ var _ = Describe("RetryConfigurer", func() {
 			retry: &mesh_core.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
-						Protocol: &mesh_proto.Retry_Conf_Http_{
-							Http: &mesh_proto.Retry_Conf_Http{
-								NumRetries: &wrappers.UInt32Value{
-									Value: 3,
-								},
-								PerTryTimeout: &duration.Duration{
-									Seconds: 1,
-								},
-								BackOff: &mesh_proto.Retry_Conf_BackOff{
-									BaseInterval: &duration.Duration{
-										Nanos: 200000000,
-									},
-									MaxInterval: &duration.Duration{
-										Nanos: 500000000,
-									},
-								},
-								RetriableStatusCodes: []uint32{500, 502},
+						Http: &mesh_proto.Retry_Conf_Http{
+							NumRetries: &wrappers.UInt32Value{
+								Value: 3,
 							},
+							PerTryTimeout: &duration.Duration{
+								Seconds: 1,
+							},
+							BackOff: &mesh_proto.Retry_Conf_BackOff{
+								BaseInterval: &duration.Duration{
+									Nanos: 200000000,
+								},
+								MaxInterval: &duration.Duration{
+									Nanos: 500000000,
+								},
+							},
+							RetriableStatusCodes: []uint32{500, 502},
 						},
 					},
 				},
@@ -199,7 +195,7 @@ var _ = Describe("RetryConfigurer", func() {
                         retryBackOff:
                           baseInterval: 0.200s
                           maxInterval: 0.500s
-                        retryOn: retriable-status-codes
+                        retryOn: connect-failure,refused-stream,retriable-status-codes
                       routes:
                       - match:
                           prefix: /
@@ -232,11 +228,9 @@ var _ = Describe("RetryConfigurer", func() {
 			retry: &mesh_core.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
-						Protocol: &mesh_proto.Retry_Conf_Grpc_{
-							Grpc: &mesh_proto.Retry_Conf_Grpc{
-								NumRetries: &wrappers.UInt32Value{
-									Value: 18,
-								},
+						Grpc: &mesh_proto.Retry_Conf_Grpc{
+							NumRetries: &wrappers.UInt32Value{
+								Value: 18,
 							},
 						},
 					},
@@ -267,7 +261,7 @@ var _ = Describe("RetryConfigurer", func() {
                       name: backend
                       retryPolicy:
                         numRetries: 18
-                        retryOn: cancelled,deadline-exceeded,internal,resource-exhausted,unavailable
+                        retryOn: cancelled,connect-failure,gateway-error,refused-stream,reset,resource-exhausted,unavailable
                       routes:
                       - match:
                           prefix: /
@@ -300,26 +294,24 @@ var _ = Describe("RetryConfigurer", func() {
 			retry: &mesh_core.RetryResource{
 				Spec: &mesh_proto.Retry{
 					Conf: &mesh_proto.Retry_Conf{
-						Protocol: &mesh_proto.Retry_Conf_Grpc_{
-							Grpc: &mesh_proto.Retry_Conf_Grpc{
-								NumRetries: &wrappers.UInt32Value{
-									Value: 2,
+						Grpc: &mesh_proto.Retry_Conf_Grpc{
+							NumRetries: &wrappers.UInt32Value{
+								Value: 2,
+							},
+							PerTryTimeout: &duration.Duration{
+								Seconds: 2,
+							},
+							BackOff: &mesh_proto.Retry_Conf_BackOff{
+								BaseInterval: &duration.Duration{
+									Nanos: 400000000,
 								},
-								PerTryTimeout: &duration.Duration{
-									Seconds: 2,
+								MaxInterval: &duration.Duration{
+									Seconds: 1,
 								},
-								BackOff: &mesh_proto.Retry_Conf_BackOff{
-									BaseInterval: &duration.Duration{
-										Nanos: 400000000,
-									},
-									MaxInterval: &duration.Duration{
-										Seconds: 1,
-									},
-								},
-								RetryOn: []mesh_proto.Retry_Conf_Grpc_RetryOn{
-									mesh_proto.Retry_Conf_Grpc_cancelled,
-									mesh_proto.Retry_Conf_Grpc_resource_exhausted,
-								},
+							},
+							RetryOn: []mesh_proto.Retry_Conf_Grpc_RetryOn{
+								mesh_proto.Retry_Conf_Grpc_cancelled,
+								mesh_proto.Retry_Conf_Grpc_resource_exhausted,
 							},
 						},
 					},

@@ -211,24 +211,22 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.Retry_Conf{
-			Protocol: &mesh_proto.Retry_Conf_Http_{
-				Http: &mesh_proto.Retry_Conf_Http{
-					NumRetries: &wrappers.UInt32Value{
-						Value: 5,
-					},
-					PerTryTimeout: &duration.Duration{
-						Seconds: 200000000,
-					},
-					BackOff: &mesh_proto.Retry_Conf_BackOff{
-						BaseInterval: &duration.Duration{
-							Nanos: 200000000,
-						},
-						MaxInterval: &duration.Duration{
-							Seconds: 1,
-						},
-					},
-					RetriableStatusCodes: []uint32{500, 502},
+			Http: &mesh_proto.Retry_Conf_Http{
+				NumRetries: &wrappers.UInt32Value{
+					Value: 5,
 				},
+				PerTryTimeout: &duration.Duration{
+					Seconds: 200000000,
+				},
+				BackOff: &mesh_proto.Retry_Conf_BackOff{
+					BaseInterval: &duration.Duration{
+						Nanos: 200000000,
+					},
+					MaxInterval: &duration.Duration{
+						Seconds: 1,
+					},
+				},
+				RetriableStatusCodes: []uint32{500, 502},
 			},
 		},
 	}

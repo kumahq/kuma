@@ -33,10 +33,8 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 					Sources:      nil,
 					Destinations: nil,
 					Conf: &mesh_proto.Retry_Conf{
-						Protocol: &mesh_proto.Retry_Conf_Tcp_{
-							Tcp: &mesh_proto.Retry_Conf_Tcp{
-								MaxConnectAttempts: given.maxConnectAttempts,
-							},
+						Tcp: &mesh_proto.Retry_Conf_Tcp{
+							MaxConnectAttempts: given.maxConnectAttempts,
 						},
 					},
 				},

@@ -260,7 +260,7 @@ func (r *RetryResource) validateConf() (err validators.ValidationError) {
 		return
 	}
 
-	if conf.GetProtocol() == nil {
+	if conf.Http == nil && conf.Grpc == nil && conf.Tcp == nil {
 		err.AddViolationAt(
 			path,
 			"missing protocol [grpc|http|tcp] configuration",

@@ -13,10 +13,12 @@ import (
 )
 
 const (
-	HttpRetryOn5XX                  = "5xx"
-	HttpRetryOnRetriableStatusCodes = "retriable-status-codes"
-	GrpcRetryOnAll                  = "cancelled,deadline-exceeded,internal," +
-		"resource-exhausted,unavailable"
+	HttpRetryOnDefault = "gateway-error,connect-failure," +
+		"refused-stream"
+	HttpRetryOnRetriableStatusCodes = "connect-failure,refused-stream," +
+		"retriable-status-codes"
+	GrpcRetryOnAll = "cancelled,connect-failure," +
+		"gateway-error,refused-stream,reset,resource-exhausted,unavailable"
 )
 
 type RetryConfigurer struct {
@@ -73,7 +75,7 @@ func genHttpRetryPolicy(
 	}
 
 	policy := envoy_route.RetryPolicy{
-		RetryOn:       HttpRetryOn5XX,
+		RetryOn:       HttpRetryOnDefault,
 		PerTryTimeout: conf.PerTryTimeout,
 	}
 

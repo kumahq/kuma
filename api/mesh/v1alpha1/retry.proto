@@ -68,12 +68,9 @@ message Retry {
       BackOff back_off = 4;
     }
 
-    //  +required
-    oneof protocol {
-      Http http = 1;
-      Tcp tcp = 2;
-      Grpc grpc = 3;
-    }
+    Http http = 1;
+    Tcp tcp = 2;
+    Grpc grpc = 3;
   }
 
   //  +required

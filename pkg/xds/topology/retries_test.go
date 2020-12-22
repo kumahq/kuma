@@ -124,24 +124,22 @@ var _ = Describe("Retry", func() {
 						},
 					},
 					Conf: &mesh_proto.Retry_Conf{
-						Protocol: &mesh_proto.Retry_Conf_Http_{
-							Http: &mesh_proto.Retry_Conf_Http{
-								NumRetries: &wrappers.UInt32Value{
-									Value: 3,
-								},
-								PerTryTimeout: &duration.Duration{
-									Nanos: 200000000,
-								},
-								BackOff: &mesh_proto.Retry_Conf_BackOff{
-									BaseInterval: &duration.Duration{
-										Nanos: 10000000,
-									},
-									MaxInterval: &duration.Duration{
-										Seconds: 1,
-									},
-								},
-								RetriableStatusCodes: []uint32{500, 504},
+						Http: &mesh_proto.Retry_Conf_Http{
+							NumRetries: &wrappers.UInt32Value{
+								Value: 3,
 							},
+							PerTryTimeout: &duration.Duration{
+								Nanos: 200000000,
+							},
+							BackOff: &mesh_proto.Retry_Conf_BackOff{
+								BaseInterval: &duration.Duration{
+									Nanos: 10000000,
+								},
+								MaxInterval: &duration.Duration{
+									Seconds: 1,
+								},
+							},
+							RetriableStatusCodes: []uint32{500, 504},
 						},
 					},
 				},
@@ -167,21 +165,19 @@ var _ = Describe("Retry", func() {
 						},
 					},
 					Conf: &mesh_proto.Retry_Conf{
-						Protocol: &mesh_proto.Retry_Conf_Http_{
-							Http: &mesh_proto.Retry_Conf_Http{
-								NumRetries: &wrappers.UInt32Value{
-									Value: 7,
+						Http: &mesh_proto.Retry_Conf_Http{
+							NumRetries: &wrappers.UInt32Value{
+								Value: 7,
+							},
+							PerTryTimeout: &duration.Duration{
+								Nanos: 200000000,
+							},
+							BackOff: &mesh_proto.Retry_Conf_BackOff{
+								BaseInterval: &duration.Duration{
+									Nanos: 10000000,
 								},
-								PerTryTimeout: &duration.Duration{
-									Nanos: 200000000,
-								},
-								BackOff: &mesh_proto.Retry_Conf_BackOff{
-									BaseInterval: &duration.Duration{
-										Nanos: 10000000,
-									},
-									MaxInterval: &duration.Duration{
-										Seconds: 3,
-									},
+								MaxInterval: &duration.Duration{
+									Seconds: 3,
 								},
 							},
 						},
@@ -209,11 +205,9 @@ var _ = Describe("Retry", func() {
 						},
 					},
 					Conf: &mesh_proto.Retry_Conf{
-						Protocol: &mesh_proto.Retry_Conf_Http_{
-							Http: &mesh_proto.Retry_Conf_Http{
-								NumRetries: &wrappers.UInt32Value{
-									Value: 5,
-								},
+						Http: &mesh_proto.Retry_Conf_Http{
+							NumRetries: &wrappers.UInt32Value{
+								Value: 5,
 							},
 						},
 					},
@@ -388,21 +382,19 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 7,
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 7,
+									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
 										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 3,
-											},
+										MaxInterval: &duration.Duration{
+											Seconds: 3,
 										},
 									},
 								},
@@ -429,24 +421,22 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 3,
-										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 1,
-											},
-										},
-										RetriableStatusCodes: []uint32{500, 504},
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 3,
 									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
+										},
+										MaxInterval: &duration.Duration{
+											Seconds: 1,
+										},
+									},
+									RetriableStatusCodes: []uint32{500, 504},
 								},
 							},
 						},
@@ -514,24 +504,22 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 3,
-										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 1,
-											},
-										},
-										RetriableStatusCodes: []uint32{500, 504},
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 3,
 									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
+										},
+										MaxInterval: &duration.Duration{
+											Seconds: 1,
+										},
+									},
+									RetriableStatusCodes: []uint32{500, 504},
 								},
 							},
 						},
@@ -557,21 +545,19 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 7,
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 7,
+									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
 										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 3,
-											},
+										MaxInterval: &duration.Duration{
+											Seconds: 3,
 										},
 									},
 								},
@@ -636,24 +622,22 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 3,
-										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 1,
-											},
-										},
-										RetriableStatusCodes: []uint32{500, 504},
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 3,
 									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
+										},
+										MaxInterval: &duration.Duration{
+											Seconds: 1,
+										},
+									},
+									RetriableStatusCodes: []uint32{500, 504},
 								},
 							},
 						},
@@ -679,21 +663,19 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 7,
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 7,
+									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
 										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 3,
-											},
+										MaxInterval: &duration.Duration{
+											Seconds: 3,
 										},
 									},
 								},
@@ -758,24 +740,22 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 3,
-										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 1,
-											},
-										},
-										RetriableStatusCodes: []uint32{500, 504},
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 3,
 									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
+										},
+										MaxInterval: &duration.Duration{
+											Seconds: 1,
+										},
+									},
+									RetriableStatusCodes: []uint32{500, 504},
 								},
 							},
 						},
@@ -800,21 +780,19 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 7,
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 7,
+									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
 										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 3,
-											},
+										MaxInterval: &duration.Duration{
+											Seconds: 3,
 										},
 									},
 								},
@@ -879,24 +857,22 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 3,
-										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 1,
-											},
-										},
-										RetriableStatusCodes: []uint32{500, 504},
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 3,
 									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
+										},
+										MaxInterval: &duration.Duration{
+											Seconds: 1,
+										},
+									},
+									RetriableStatusCodes: []uint32{500, 504},
 								},
 							},
 						},
@@ -921,21 +897,19 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 7,
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 7,
+									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
 										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 3,
-											},
+										MaxInterval: &duration.Duration{
+											Seconds: 3,
 										},
 									},
 								},
@@ -1001,24 +975,22 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 3,
-										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 1,
-											},
-										},
-										RetriableStatusCodes: []uint32{500, 504},
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 3,
 									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
+										},
+										MaxInterval: &duration.Duration{
+											Seconds: 1,
+										},
+									},
+									RetriableStatusCodes: []uint32{500, 504},
 								},
 							},
 						},
@@ -1044,21 +1016,19 @@ var _ = Describe("Retry", func() {
 								},
 							},
 							Conf: &mesh_proto.Retry_Conf{
-								Protocol: &mesh_proto.Retry_Conf_Http_{
-									Http: &mesh_proto.Retry_Conf_Http{
-										NumRetries: &wrappers.UInt32Value{
-											Value: 7,
+								Http: &mesh_proto.Retry_Conf_Http{
+									NumRetries: &wrappers.UInt32Value{
+										Value: 7,
+									},
+									PerTryTimeout: &duration.Duration{
+										Nanos: 200000000,
+									},
+									BackOff: &mesh_proto.Retry_Conf_BackOff{
+										BaseInterval: &duration.Duration{
+											Nanos: 10000000,
 										},
-										PerTryTimeout: &duration.Duration{
-											Nanos: 200000000,
-										},
-										BackOff: &mesh_proto.Retry_Conf_BackOff{
-											BaseInterval: &duration.Duration{
-												Nanos: 10000000,
-											},
-											MaxInterval: &duration.Duration{
-												Seconds: 3,
-											},
+										MaxInterval: &duration.Duration{
+											Seconds: 3,
 										},
 									},
 								},
