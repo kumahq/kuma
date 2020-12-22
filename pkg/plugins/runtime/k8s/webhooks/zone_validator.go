@@ -1,0 +1,46 @@
+package webhooks
+
+import (
+	"context"
+	"net/http"
+
+	"k8s.io/api/admission/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
+)
+
+func NewZoneValidatorWebhook(validator zone.Validator) AdmissionValidator {
+	return &ZoneValidator{
+		validator: validator,
+	}
+}
+
+type ZoneValidator struct {
+	validator zone.Validator
+}
+
+func (z *ZoneValidator) InjectDecoder(_ *admission.Decoder) error {
+	return nil
+}
+
+func (z *ZoneValidator) Handle(ctx context.Context, req admission.Request) admission.Response {
+	switch req.Operation {
+	case v1beta1.Delete:
+		return z.ValidateDelete(ctx, req)
+	}
+	return admission.Allowed("")
+}
+
+func (z *ZoneValidator) ValidateDelete(ctx context.Context, req admission.Request) admission.Response {
+	if err := z.validator.ValidateDelete(ctx, req.Name); err != nil {
+		return admission.Errored(http.StatusBadRequest, err)
+	}
+	return admission.Allowed("")
+}
+
+func (z *ZoneValidator) Supports(req admission.Request) bool {
+	gvk := mesh_k8s.GroupVersion.WithKind("Zone")
+	return req.Kind.Kind == gvk.Kind && req.Kind.Version == gvk.Version && req.Kind.Group == gvk.Group
+}
