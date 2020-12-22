@@ -81,6 +81,7 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	serviceName := outbound.GetTagsIncludingLegacy()[kuma_mesh.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
+	retryPolicy := proxy.Policies.Retries[serviceName]
 	filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
 		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2)
 		switch protocol {
@@ -90,25 +91,51 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Policies.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet())).
+				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
 		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
 				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
-				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Policies.Logs[serviceName], proxy)).
-				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet()))
+				Configure(envoy_listeners.HttpAccessLog(
+					meshName,
+					envoy_common.TrafficDirectionOutbound,
+					sourceService,
+					serviceName,
+					proxy.Policies.Logs[serviceName],
+					proxy,
+				)).
+				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet())).
+				Configure(envoy_listeners.Retry(retryPolicy, protocol))
 		case mesh_core.ProtocolKafka:
 			filterChainBuilder.
 				Configure(envoy_listeners.Kafka(serviceName)).
 				Configure(envoy_listeners.TcpProxy(serviceName, subsets...)).
-				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Policies.Logs[serviceName], proxy))
+				Configure(envoy_listeners.NetworkAccessLog(
+					meshName,
+					envoy_common.TrafficDirectionOutbound,
+					sourceService,
+					serviceName,
+					proxy.Policies.Logs[serviceName],
+					proxy,
+				)).
+				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
+
 		case mesh_core.ProtocolTCP:
 			fallthrough
 		default:
 			// configuration for non-HTTP cases
 			filterChainBuilder.
 				Configure(envoy_listeners.TcpProxy(serviceName, subsets...)).
-				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Policies.Logs[serviceName], proxy))
+				Configure(envoy_listeners.NetworkAccessLog(
+					meshName,
+					envoy_common.TrafficDirectionOutbound,
+					sourceService,
+					serviceName,
+					proxy.Policies.Logs[serviceName],
+					proxy,
+				)).
+				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
 		}
 		return filterChainBuilder
 	}()

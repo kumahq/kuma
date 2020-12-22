@@ -81,6 +81,9 @@ type HealthCheckMap map[ServiceName]*mesh_core.HealthCheckResource
 // CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
 type CircuitBreakerMap map[ServiceName]*mesh_core.CircuitBreakerResource
 
+// RetryMap holds the most specific Retry for each reachable service.
+type RetryMap map[ServiceName]*mesh_core.RetryResource
+
 // FaultInjectionMap holds the most specific FaultInjectionResource for each InboundInterface
 type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjection
 
@@ -90,6 +93,7 @@ type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPerm
 type CLACache interface {
 	GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error)
 }
+
 type Proxy struct {
 	Id        ProxyId
 	Dataplane *mesh_core.DataplaneResource
@@ -112,6 +116,7 @@ type MatchedPolicies struct {
 	Logs               LogMap
 	HealthChecks       HealthCheckMap
 	CircuitBreakers    CircuitBreakerMap
+	Retries            RetryMap
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
 	FaultInjections    FaultInjectionMap

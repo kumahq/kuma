@@ -77,6 +77,14 @@ rules:
 - apiGroups:
   - kuma.io
   resources:
+  - retries
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - kuma.io
+  resources:
   - trafficroutes
   verbs:
   - get
