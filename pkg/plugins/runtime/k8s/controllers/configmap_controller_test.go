@@ -70,6 +70,7 @@ var _ = Describe("DataplaneToMeshMapper", func() {
 		for _, r := range requests {
 			requestsStr = append(requestsStr, r.Name)
 		}
-		Expect(requestsStr).To(Equal([]string{"kuma-mesh-1-dns-vips", "kuma-mesh-2-dns-vips", "kuma-mesh-3-dns-vips"}))
+		Expect(requestsStr).To(HaveLen(3))
+		Expect(requestsStr).To(ConsistOf("kuma-mesh-3-dns-vips", "kuma-mesh-2-dns-vips", "kuma-mesh-1-dns-vips"))
 	})
 })
