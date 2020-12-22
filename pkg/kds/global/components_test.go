@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
 
 	"github.com/kumahq/kuma/pkg/kds"
@@ -33,17 +35,22 @@ var _ = Describe("Global Sync", func() {
 	var closeFunc func()
 
 	BeforeEach(func() {
+		const numOfRemotes = 2
+		const zoneName = "zone-%d"
+
+		// Start `numOfRemotes` Kuma CP Remote
 		serverStreams := []*grpc.MockServerStream{}
 		wg := &sync.WaitGroup{}
 		remoteStores = []store.ResourceStore{}
-		for i := 0; i < 2; i++ {
+		for i := 0; i < numOfRemotes; i++ {
 			wg.Add(1)
 			remoteStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(remoteStore, wg, fmt.Sprintf("cluster-%d", i), kds.SupportedTypes, reconcile.Any)
+			serverStream := kds_setup.StartServer(remoteStore, wg, fmt.Sprintf(zoneName, i), kds.SupportedTypes, reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
 			remoteStores = append(remoteStores, remoteStore)
 		}
 
+		// Start 1 Kuma CP Global
 		globalStore = memory.NewStore()
 		globalSyncer = sync_store.NewResourceSyncer(core.Log, globalStore)
 		stopCh := make(chan struct{})
@@ -52,6 +59,12 @@ var _ = Describe("Global Sync", func() {
 			clientStreams = append(clientStreams, ss.ClientStream(stopCh))
 		}
 		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, nil))
+
+		// Create Zone resources for each Kuma CP Remote
+		for i := 0; i < numOfRemotes; i++ {
+			err := globalStore.Create(context.Background(), &system.ZoneResource{Spec: &system_proto.Zone{Enabled: true}}, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+		}
 
 		closeFunc = func() {
 			close(stopCh)
