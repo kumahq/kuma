@@ -199,6 +199,37 @@ var (
 			Imports: []string{"default-kuma-profile"},
 		},
 	}
+	Retry = &mesh_proto.Retry{
+		Sources: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"service": "*",
+			},
+		}},
+		Destinations: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"service": "*",
+			},
+		}},
+		Conf: &mesh_proto.Retry_Conf{
+			Http: &mesh_proto.Retry_Conf_Http{
+				NumRetries: &wrappers.UInt32Value{
+					Value: 5,
+				},
+				PerTryTimeout: &duration.Duration{
+					Seconds: 200000000,
+				},
+				BackOff: &mesh_proto.Retry_Conf_BackOff{
+					BaseInterval: &duration.Duration{
+						Nanos: 200000000,
+					},
+					MaxInterval: &duration.Duration{
+						Seconds: 1,
+					},
+				},
+				RetriableStatusCodes: []uint32{500, 502},
+			},
+		},
+	}
 	Secret = &system_proto.Secret{
 		Data: &wrappers.BytesValue{Value: []byte("secret key")},
 	}
