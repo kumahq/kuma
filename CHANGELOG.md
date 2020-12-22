@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## [1.0.4]
+> Released on  2020/12/22
+
+Changes:
+
+* feat: retry policy [#1325](https://github.com//kumahq/kuma/pull/1325) [#1352](https://github.com//kumahq/kuma/pull/1352)
+* feat: add `kumactl install transparent-proxy` [#1321](https://github.com//kumahq/kuma/pull/1321)
+* feat: Kuma DP + Envoy version in Dataplane Insights [#1192](https://github.com//kumahq/kuma/pull/1192)
+  👍contributed by @jewertow
+* feat: return Kuma DP and Envoy version in the output of `inspect dataplanes` [#1298](https://github.com//kumahq/kuma/pull/1298)
+  👍contributed by @jewertow
+* feat: add horizontal pod autoscaler (bp #1271) [#1271](https://github.com//kumahq/kuma/pull/1271)
+  👍contributed by @austince
+* fix: bug with lost update of Dataplane [#1313](https://github.com//kumahq/kuma/pull/1313)
+* fix: probe path gets a / prepended if not supplied [#1326](https://github.com//kumahq/kuma/pull/1326)
+  👍contributed by @lennartquerter
+* fix: rename field dpVersion to kumaDp in version schema [#1287](https://github.com//kumahq/kuma/pull/1287)
+  👍contributed by @jewertow
+* fix(*) FaultInjection will not validate source protocol [#1315](https://github.com//kumahq/kuma/pull/1315)
+* chore: Automatic readme generation for chart [#1209](https://github.com//kumahq/kuma/pull/1209)
+  👍contributed by @tharun208
+* chore: generate filterChainMatchers based on TrafficRoutes [#1294](https://github.com//kumahq/kuma/pull/1294)
+* feat: handle zone deletion [#1348](https://github.com//kumahq/kuma/pull/1348)
+* fix: bug with Ingress not belonging to the mesh [#1344](https://github.com//kumahq/kuma/pull/1344)
+* fix: validate empty mesh on k8s [#1340](https://github.com//kumahq/kuma/pull/1340)
+* fix: scaling-up issue  [#1282](https://github.com//kumahq/kuma/pull/1282)
+* chore: prepare for XDS v3 migration [#1334](https://github.com//kumahq/kuma/pull/1334) [#1323](https://github.com//kumahq/kuma/pull/1323) [#1312](https://github.com//kumahq/kuma/pull/1312) [#1290](https://github.com//kumahq/kuma/pull/1290) [#1284](https://github.com//kumahq/kuma/pull/1284)
+
+
 ## [1.0.3]
 > Released on  2020/12/03
 
