@@ -3,11 +3,12 @@ package zone
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/pkg/errors"
 )
 
 type Validator struct {

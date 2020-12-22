@@ -4,10 +4,11 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
-	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"k8s.io/api/admission/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
+
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
 func NewZoneValidatorWebhook(validator zone.Validator) AdmissionValidator {
