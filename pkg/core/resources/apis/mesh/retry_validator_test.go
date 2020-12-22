@@ -16,6 +16,11 @@ var _ = Describe("Retry", func() {
 			retry    string
 			expected string
 		}
+
+		type testCaseWithNoErrors struct {
+			retry string
+		}
+
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
@@ -235,6 +240,27 @@ var _ = Describe("Retry", func() {
                   message: has to be greater than 0
 `,
 			}),
+			Entry("conf.grpc.backOff.maxInterval equal 0s", testCase{
+				retry: `
+                sources:
+                - match:
+                    kuma.io/service: web
+                    region: eu
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                    grpc:
+                        backOff:
+                            baseInterval: 20ms
+                            maxInterval: 0s
+`,
+				expected: `
+                violations:
+                - field: conf.grpc.backOff.maxInterval
+                  message: has to be greater than 0 when defined
+`,
+			}),
 			Entry("empty conf.tcp", testCase{
 				retry: `
                 sources:
@@ -251,6 +277,54 @@ var _ = Describe("Retry", func() {
                 violations:
                 - field: conf.tcp.maxConnectAttempts
                   message: has to be greater than 0
+`,
+			}),
+		)
+
+		DescribeTable("should validate all fields and return no errors if all are valid",
+			func(given testCaseWithNoErrors) {
+				// setup
+				retry := NewRetryResource()
+
+				// when
+				err := util_proto.FromYAML([]byte(given.retry), retry.Spec)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				verr := retry.Validate()
+
+				// then
+				Expect(verr).To(BeNil())
+			},
+			Entry("all protocols configuration provided", testCaseWithNoErrors{
+				retry: `
+                sources:
+                - match:
+                    kuma.io/service: web
+                    region: eu
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                    http:
+                        numRetries: 3
+                        perTryTimeout: 200ms
+                        backOff:
+                            baseInterval: 30ms
+                            maxInterval: 1.2s
+                        retriableStatusCodes: [501, 502]
+                    grpc:
+                        numRetries: 3
+                        perTryTimeout: 200ms
+                        backOff:
+                            baseInterval: 58ms
+                            maxInterval: 1s
+                        retryOn:
+                        - cancelled
+                        - unavailable
+                    tcp:
+                        maxConnectAttempts: 5
 `,
 			}),
 		)
