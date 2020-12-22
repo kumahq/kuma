@@ -30,14 +30,14 @@ var _ = Describe("Test Universal Transparent Proxy deployment", func() {
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("echo-server_kuma-test_svc_80")
+		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_80")
 		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("demo-client")
+		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal("universal", echoServerToken, WithTransparentProxy(true))(cluster)
+		err = EchoServerUniversal("universal", "default", echoServerToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal(demoClientToken, WithTransparentProxy(true))(cluster)
+		err = DemoClientUniversal("default", demoClientToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
