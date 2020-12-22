@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
