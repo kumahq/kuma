@@ -52,7 +52,7 @@ func toZones(rlist system.ZoneOverviewResourceList) Zones {
 	for _, overview := range rlist.Items {
 		zones = append(zones, Zone{
 			Name:   overview.GetMeta().GetName(),
-			Active: overview.Spec.GetZoneInsight().IsOnline() && overview.Spec.GetZone().GetEnabled(),
+			Active: overview.Spec.GetZoneInsight().IsOnline() && overview.Spec.GetZone().IsEnabled(),
 		})
 	}
 	return zones

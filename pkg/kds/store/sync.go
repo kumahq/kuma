@@ -126,7 +126,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	}
 
 	zone := system.NewZoneResource()
-	if opts.Zone != "" {
+	if opts.Zone != "" && len(onCreate) > 0 {
 		if err := s.resourceStore.Get(ctx, zone, store.GetByKey(opts.Zone, model.NoMesh)); err != nil {
 			return err
 		}

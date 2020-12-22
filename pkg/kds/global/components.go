@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -91,8 +93,12 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 			return err
 		}
 		kdsGlobalLog.Info("creating Zone", "name", name)
-		err := resManager.Create(context.Background(), &system.ZoneResource{Spec: &system_proto.Zone{Enabled: true}}, store.CreateByKey(name, model.NoMesh))
-		if err != nil {
+		zone := &system.ZoneResource{
+			Spec: &system_proto.Zone{
+				Enabled: &wrappers.BoolValue{Value: true},
+			},
+		}
+		if err := resManager.Create(context.Background(), zone, store.CreateByKey(name, model.NoMesh)); err != nil {
 			return err
 		}
 	}
@@ -119,10 +125,9 @@ func ProvidedFilter(rm manager.ResourceManager) reconcile.ResourceFilter {
 		zone := system.NewZoneResource()
 		if err := rm.Get(context.Background(), zone, store.GetByKey(util.ZoneTag(r), model.NoMesh)); err != nil {
 			kdsGlobalLog.Error(err, "failed to get zone", "zone", util.ZoneTag(r))
-			// since there is no explicit "enabled: false" sync anyway
-			return true
+			return false
 		}
-		return zone.Spec.GetEnabled()
+		return zone.Spec.IsEnabled()
 	}
 }
 

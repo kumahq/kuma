@@ -73,7 +73,8 @@ items:
     modificationTime: "2019-07-17T18:08:41Z"
     name: zone-3
     type: ZoneOverview
-    zone: { }
+    zone:
+      enabled: false
     zoneInsight:
       subscriptions:
         - connectTime: "2019-07-17T16:05:36.995Z"

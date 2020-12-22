@@ -70,7 +70,7 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 					return s.GetStatus().GetTotal().GetResponsesRejected()
 				})
 				onlineStatus := "Offline"
-				if zoneInsight.IsOnline() && zone.GetEnabled() {
+				if zoneInsight.IsOnline() && zone.IsEnabled() {
 					onlineStatus = "Online"
 				}
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())

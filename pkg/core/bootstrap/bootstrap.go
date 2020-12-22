@@ -296,8 +296,8 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
 	customManagers[mesh.DataplaneInsightType] = dpInsightManager
 
-	zoneValidater := zone.Validator{Store: builder.ResourceStore()}
-	zoneManager := zone.NewZoneManager(builder.ResourceStore(), zoneValidater)
+	zoneValidator := zone.Validator{Store: builder.ResourceStore()}
+	zoneManager := zone.NewZoneManager(builder.ResourceStore(), zoneValidator)
 	customManagers[system.ZoneType] = zoneManager
 
 	zoneInsightManager := zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone)

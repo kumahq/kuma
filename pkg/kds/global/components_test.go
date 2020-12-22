@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
@@ -62,7 +64,8 @@ var _ = Describe("Global Sync", func() {
 
 		// Create Zone resources for each Kuma CP Remote
 		for i := 0; i < numOfRemotes; i++ {
-			err := globalStore.Create(context.Background(), &system.ZoneResource{Spec: &system_proto.Zone{Enabled: true}}, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
+			zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: &wrappers.BoolValue{Value: true}}}
+			err := globalStore.Create(context.Background(), zone, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		}
 

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	system_core "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
@@ -65,7 +67,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: true},
+					Zone: &system_proto.Zone{Enabled: &wrappers.BoolValue{Value: true}},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -148,7 +150,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: true},
+					Zone: &system_proto.Zone{Enabled: &wrappers.BoolValue{Value: true}},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -175,7 +177,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{Enabled: false},
+					Zone: &system_proto.Zone{Enabled: &wrappers.BoolValue{Value: false}},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
