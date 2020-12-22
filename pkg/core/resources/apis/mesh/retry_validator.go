@@ -107,7 +107,7 @@ func validateDuration_GreaterThan0(
 	path validators.PathBuilder,
 	duration *duration.Duration,
 ) (err validators.ValidationError) {
-	if duration.Nanos == 0 {
+	if duration.Seconds == 0 && duration.Nanos == 0 {
 		err.AddViolationAt(path, HasToBeGreaterThan0Violation)
 	}
 
@@ -121,7 +121,7 @@ func validateDuration_GreaterThan0OrNil(
 		return
 	}
 
-	if duration.Nanos == 0 {
+	if duration.Seconds == 0 && duration.Nanos == 0 {
 		err.AddViolationAt(path, WhenDefinedHasToBeGreaterThan0Violation)
 	}
 
@@ -141,11 +141,18 @@ func validateConfProtocolBackOff(
 			path.Field("baseInterval"),
 			HasToBeDefinedViolation,
 		)
-	} else if conf.BaseInterval.Nanos == 0 {
-		err.Add(validateDuration_GreaterThan0(
-			path.Field("baseInterval"),
-			conf.BaseInterval,
-		))
+	} else {
+		if conf.BaseInterval.Seconds == 0 && conf.BaseInterval.Nanos == 0 {
+			err.Add(validateDuration_GreaterThan0(
+				path.Field("baseInterval"),
+				conf.BaseInterval,
+			))
+		} else {
+			err.Add(validateDuration_GreaterThan0OrNil(
+				path.Field("maxInterval"),
+				conf.MaxInterval,
+			))
+		}
 	}
 
 	return
