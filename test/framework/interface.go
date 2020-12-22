@@ -36,6 +36,7 @@ type deployOptions struct {
 	id          string
 	token       string
 	transparent bool
+	mesh        string
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -105,6 +106,12 @@ func WithCNI() DeployOptionsFunc {
 func WithNamespace(namespace string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.namespace = namespace
+	}
+}
+
+func WithMesh(mesh string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.mesh = mesh
 	}
 }
 
@@ -189,5 +196,5 @@ type ControlPlane interface {
 	GetKumaCPLogs() (string, error)
 	GetKDSServerAddress() string
 	GetGlobaStatusAPI() string
-	GenerateDpToken(appname string) (string, error)
+	GenerateDpToken(mesh, appname string) (string, error)
 }

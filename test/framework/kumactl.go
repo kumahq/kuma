@@ -78,8 +78,8 @@ func (o *KumactlOptions) RunKumactlAndGetOutputV(verbose bool, args ...string) (
 	return shell.RunCommandAndGetOutputE(o.t, command)
 }
 
-func (o *KumactlOptions) KumactlDelete(kumatype string, name string) error {
-	return o.RunKumactl("delete", kumatype, name)
+func (o *KumactlOptions) KumactlDelete(kumatype, name, mesh string) error {
+	return o.RunKumactl("delete", kumatype, name, "--mesh", mesh)
 }
 
 func (o *KumactlOptions) KumactlApply(configPath string) error {

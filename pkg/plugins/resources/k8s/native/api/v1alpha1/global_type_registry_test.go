@@ -89,6 +89,11 @@ var _ = Describe("global TypeRegistry", func() {
 				expectedType: &FaultInjection{},
 				expectedKind: "FaultInjection",
 			}),
+			Entry("Retry", testCase{
+				inputType:    &mesh_proto.Retry{},
+				expectedType: &Retry{},
+				expectedKind: "Retry",
+			}),
 		)
 	})
 
@@ -160,6 +165,11 @@ var _ = Describe("global TypeRegistry", func() {
 				inputType:    &mesh_proto.TrafficTrace{},
 				expectedType: &TrafficTraceList{},
 				expectedKind: "TrafficTraceList",
+			}),
+			Entry("RetryList", testCase{
+				inputType:    &mesh_proto.Retry{},
+				expectedType: &RetryList{},
+				expectedKind: "RetryList",
 			}),
 		)
 	})

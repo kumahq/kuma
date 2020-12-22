@@ -46,6 +46,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(withPaginationArgs(newGetTrafficTracesCmd(listCtx), listCtx))
 	cmd.AddCommand(withPaginationArgs(newGetFaultInjectionsCmd(listCtx), listCtx))
 	cmd.AddCommand(withPaginationArgs(newGetCircuitBreakersCmd(listCtx), listCtx))
+	cmd.AddCommand(withPaginationArgs(newGetRetriesCmd(listCtx), listCtx))
 	cmd.AddCommand(newGetSecretsCmd(ctx))
 	cmd.AddCommand(withPaginationArgs(newGetZonesCmd(listCtx), listCtx))
 
@@ -60,6 +61,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(newGetTrafficTraceCmd(ctx))
 	cmd.AddCommand(newGetFaultInjectionCmd(ctx))
 	cmd.AddCommand(newGetCircuitBreakerCmd(ctx))
+	cmd.AddCommand(newGetRetryCmd(ctx))
 	cmd.AddCommand(newGetSecretCmd(ctx))
 	cmd.AddCommand(newGetZoneCmd(ctx))
 	return cmd

@@ -127,6 +127,11 @@ func (p *dataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		tracingBackend = meshContext.Resource.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
 	}
 
+	retries, err := xds_topology.GetRetries(ctx, dataplane, outboundSelectors, p.ResManager)
+	if err != nil {
+		return nil, err
+	}
+
 	matchedPermissions, err := p.PermissionMatcher.Match(ctx, dataplane, meshContext.Resource)
 	if err != nil {
 		return nil, err
@@ -150,6 +155,7 @@ func (p *dataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		TrafficTrace:       trafficTrace,
 		TracingBackend:     tracingBackend,
 		FaultInjections:    faultInjection,
+		Retries:            retries,
 	}
 	return matchedPolicies, nil
 }

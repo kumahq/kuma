@@ -45,6 +45,7 @@ var (
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
+		mesh.RetryType,
 		system.SecretType,
 		system.ConfigType,
 	}

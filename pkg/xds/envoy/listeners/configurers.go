@@ -297,3 +297,34 @@ func FilterChain(builder *FilterChainBuilder) ListenerBuilderOpt {
 		})
 	})
 }
+
+func MaxConnectAttempts(retry *mesh_core.RetryResource) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+		if retry != nil && retry.Spec.Conf.GetTcp() != nil {
+			config.AddV2(&v2.MaxConnectAttemptsConfigurer{
+				Retry: retry,
+			})
+			config.AddV3(&v3.MaxConnectAttemptsConfigurer{
+				Retry: retry,
+			})
+		}
+	})
+}
+
+func Retry(
+	retry *mesh_core.RetryResource,
+	protocol mesh_core.Protocol,
+) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+		if retry != nil {
+			config.AddV2(&v2.RetryConfigurer{
+				Retry:    retry,
+				Protocol: protocol,
+			})
+			config.AddV3(&v3.RetryConfigurer{
+				Retry:    retry,
+				Protocol: protocol,
+			})
+		}
+	})
+}
