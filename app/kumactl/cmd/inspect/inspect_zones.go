@@ -59,6 +59,7 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 					return nil
 				}
 				meta := zoneOverviews.Items[i].Meta
+				zone := zoneOverviews.Items[i].Spec.Zone
 				zoneInsight := zoneOverviews.Items[i].Spec.ZoneInsight
 
 				lastSubscription, lastConnected := zoneInsight.GetLatestSubscription()
@@ -69,7 +70,7 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 					return s.GetStatus().GetTotal().GetResponsesRejected()
 				})
 				onlineStatus := "Offline"
-				if zoneInsight.IsOnline() {
+				if zoneInsight.IsOnline() && zone.IsEnabled() {
 					onlineStatus = "Online"
 				}
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())

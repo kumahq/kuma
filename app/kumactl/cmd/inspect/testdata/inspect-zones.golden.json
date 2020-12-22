@@ -1,5 +1,5 @@
 {
-  "total": 2,
+  "total": 3,
   "items": [
     {
       "type": "ZoneOverview",
@@ -7,6 +7,7 @@
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
       "zone": {
+        "enabled": true
       },
       "zoneInsight": {
         "subscriptions": [
@@ -87,6 +88,7 @@
       "creationTime": "2018-07-17T16:05:36.995Z",
       "modificationTime": "2019-07-17T18:08:41Z",
       "zone": {
+        "enabled": true
       },
       "zoneInsight": {
         "subscriptions": [
@@ -101,6 +103,24 @@
           {
             "id": "3",
             "globalInstanceId": "node-003"
+          }
+        ]
+      }
+    },
+    {
+      "type": "ZoneOverview",
+      "name": "zone-3",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2019-07-17T18:08:41Z",
+      "zone": {
+        "enabled": false
+      },
+      "zoneInsight": {
+        "subscriptions": [
+          {
+            "id": "1",
+            "globalInstanceId": "node-001",
+            "connectTime": "2019-07-17T16:05:36.995Z"
           }
         ]
       }
