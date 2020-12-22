@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	HttpRetryOn5XX                  = "5XX"
+	HttpRetryOn5XX                  = "5xx"
 	HttpRetryOnRetriableStatusCodes = "retriable-status-codes"
 	GrpcRetryOnAll                  = "cancelled,deadline-exceeded,internal," +
 		"resource-exhausted,unavailable"
