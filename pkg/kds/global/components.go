@@ -127,7 +127,7 @@ func ProvidedFilter(rm manager.ResourceManager) reconcile.ResourceFilter {
 		if err := rm.Get(context.Background(), zone, store.GetByKey(util.ZoneTag(r), model.NoMesh)); err != nil {
 			kdsGlobalLog.Error(err, "failed to get zone", "zone", util.ZoneTag(r))
 			// since there is no explicit 'enabled: false' then we don't
-			// do any strong decisions which might affect connectivity
+			// make any strong decisions which might affect connectivity
 			return true
 		}
 		return zone.Spec.IsEnabled()
