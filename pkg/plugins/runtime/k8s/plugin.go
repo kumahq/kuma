@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
@@ -214,6 +215,10 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	coreMeshValidator := managers_mesh.MeshValidator{CaManagers: rt.CaManagers()}
 	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, converter, rt.ResourceManager())
 	composite.AddValidator(k8sMeshValidator)
+
+	coreZoneValidator := zone.Validator{Store: rt.ResourceStore()}
+	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator)
+	composite.AddValidator(k8sZoneValidator)
 
 	path := "/validate-kuma-io-v1alpha1"
 	mgr.GetWebhookServer().Register(path, composite.WebHook())

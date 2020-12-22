@@ -5,15 +5,17 @@ import (
 	"fmt"
 	"strings"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 
 	"github.com/pkg/errors"
 
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 
@@ -53,7 +55,7 @@ var (
 func Setup(rt runtime.Runtime) (err error) {
 	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes,
 		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
-		ProvidedFilter, true)
+		ProvidedFilter(rt.ResourceManager()), true)
 	if err != nil {
 		return err
 	}
@@ -89,7 +91,7 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 			return err
 		}
 		kdsGlobalLog.Info("creating Zone", "name", name)
-		err := resManager.Create(context.Background(), system.NewZoneResource(), store.CreateByKey(name, model.NoMesh))
+		err := resManager.Create(context.Background(), &system.ZoneResource{Spec: &system_proto.Zone{Enabled: true}}, store.CreateByKey(name, model.NoMesh))
 		if err != nil {
 			return err
 		}
@@ -97,18 +99,31 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 	return nil
 }
 
-// ProvidedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
-func ProvidedFilter(clusterID string, r model.Resource) bool {
-	if r.GetType() == system.ConfigType && r.GetMeta().GetName() != config_manager.ClusterIdConfigKey {
-		return false
+// ProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
+// excludes Dataplanes and Ingresses from 'clusterID' cluster
+func ProvidedFilter(rm manager.ResourceManager) reconcile.ResourceFilter {
+	return func(clusterID string, r model.Resource) bool {
+		if r.GetType() == system.ConfigType && r.GetMeta().GetName() != config_manager.ClusterIdConfigKey {
+			return false
+		}
+		if r.GetType() != mesh.DataplaneType {
+			return true
+		}
+		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
+			return false
+		}
+		if clusterID == util.ZoneTag(r) {
+			// don't need to sync resource to the zone where resource is originated from
+			return false
+		}
+		zone := system.NewZoneResource()
+		if err := rm.Get(context.Background(), zone, store.GetByKey(util.ZoneTag(r), model.NoMesh)); err != nil {
+			kdsGlobalLog.Error(err, "failed to get zone", "zone", util.ZoneTag(r))
+			// since there is no explicit "enabled: false" sync anyway
+			return true
+		}
+		return zone.Spec.GetEnabled()
 	}
-	if r.GetType() != mesh.DataplaneType {
-		return true
-	}
-	if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
-		return false
-	}
-	return clusterID != util.ZoneTag(r)
 }
 
 func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory) *client.Callbacks {
@@ -128,7 +143,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 			}
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
-			}))
+			}), sync_store.Zone(clusterName))
 		},
 	}
 }

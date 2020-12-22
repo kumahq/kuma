@@ -5,6 +5,7 @@ import (
 	"net"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
 
 	"github.com/pkg/errors"
 
@@ -294,6 +295,10 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
 	customManagers[mesh.DataplaneInsightType] = dpInsightManager
+
+	zoneValidater := zone.Validator{Store: builder.ResourceStore()}
+	zoneManager := zone.NewZoneManager(builder.ResourceStore(), zoneValidater)
+	customManagers[system.ZoneType] = zoneManager
 
 	zoneInsightManager := zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone)
 	customManagers[system.ZoneInsightType] = zoneInsightManager

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -69,7 +70,7 @@ var _ = Describe("Remote Sync", func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, global.ProvidedFilter)
+		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, global.ProvidedFilter(manager.NewResourceManager(globalStore)))
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)
