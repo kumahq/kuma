@@ -149,6 +149,10 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	id := opts.id
 	transparent := opts.transparent
 
+	if opts.mesh == "" {
+		opts.mesh = "default"
+	}
+
 	var args []string
 	switch appname {
 	case AppModeEchoServer:
@@ -179,15 +183,15 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	switch appname {
 	case AppModeEchoServer:
 		if transparent {
-			dpyaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, "80", "80", redirectPortInbound, redirectPortOutbound)
+			dpyaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, opts.mesh, "80", "80", redirectPortInbound, redirectPortOutbound)
 		} else {
-			dpyaml = fmt.Sprintf(EchoServerDataplane, "8080", "80", "8080")
+			dpyaml = fmt.Sprintf(EchoServerDataplane, opts.mesh, "8080", "80", "8080")
 		}
 	case AppModeDemoClient:
 		if transparent {
-			dpyaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, "3000", redirectPortInbound, redirectPortOutbound)
+			dpyaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, opts.mesh, "3000", redirectPortInbound, redirectPortOutbound)
 		} else {
-			dpyaml = fmt.Sprintf(DemoClientDataplane, "13000", "3000", "80", "8080")
+			dpyaml = fmt.Sprintf(DemoClientDataplane, opts.mesh, "13000", "3000", "80", "8080")
 		}
 	}
 

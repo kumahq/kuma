@@ -30,7 +30,7 @@ const (
 
 	IngressDataplane = `
 type: Dataplane
-mesh: default
+mesh: %s
 name: dp-ingress
 networking:
   address: {{ address }}
@@ -44,7 +44,7 @@ networking:
 `
 	EchoServerDataplane = `
 type: Dataplane
-mesh: default
+mesh: %s
 name: {{ name }}
 networking:
   address:  {{ address }}
@@ -57,7 +57,7 @@ networking:
 `
 	EchoServerDataplaneTransparentProxy = `
 type: Dataplane
-mesh: default
+mesh: %s
 name: {{ name }}
 networking:
   address:  {{ address }}
@@ -74,7 +74,7 @@ networking:
 	AppModeDemoClient   = "demo-client"
 	DemoClientDataplane = `
 type: Dataplane
-mesh: default
+mesh: %s
 name: {{ name }}
 networking:
   address: {{ address }}
@@ -96,7 +96,7 @@ networking:
 `
 	DemoClientDataplaneTransparentProxy = `
 type: Dataplane
-mesh: default
+mesh: %s
 name: {{ name }}
 networking:
   address: {{ address }}
