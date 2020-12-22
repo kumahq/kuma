@@ -75,6 +75,7 @@ var _ = Describe("KDS Server", func() {
 			kds_samples.TrafficRoute,
 			kds_samples.TrafficTrace,
 			kds_samples.ProxyTemplate,
+			kds_samples.Retry,
 			kds_samples.Secret,
 			kds_samples.Config}).
 			To(HaveLen(len(kds.SupportedTypes)))
@@ -92,6 +93,11 @@ var _ = Describe("KDS Server", func() {
 			Exec(kds_verifier.Create(ctx, &mesh.TrafficRouteResource{Spec: kds_samples.TrafficRoute}, store.CreateByKey("tr-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.TrafficTraceResource{Spec: kds_samples.TrafficTrace}, store.CreateByKey("tt-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.ProxyTemplateResource{Spec: kds_samples.ProxyTemplate}, store.CreateByKey("pt-1", "mesh-1"))).
+			Exec(kds_verifier.Create(
+				ctx,
+				&mesh.RetryResource{Spec: kds_samples.Retry},
+				store.CreateByKey("r-1", "mesh-1"),
+			)).
 			Exec(kds_verifier.Create(ctx, &system.SecretResource{Spec: kds_samples.Secret}, store.CreateByKey("s-1", "mesh-1"))).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.MeshType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
