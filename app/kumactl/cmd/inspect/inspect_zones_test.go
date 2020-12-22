@@ -65,7 +65,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{},
+					Zone: &system_proto.Zone{Enabled: true},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -148,7 +148,7 @@ var _ = Describe("kumactl inspect zones", func() {
 					ModificationTime: now,
 				},
 				Spec: &system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{},
+					Zone: &system_proto.Zone{Enabled: true},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -162,6 +162,26 @@ var _ = Describe("kumactl inspect zones", func() {
 							{
 								Id:               "3",
 								GlobalInstanceId: "node-003",
+							},
+						},
+					},
+				},
+			},
+			{
+				Meta: &test_model.ResourceMeta{
+					Mesh:             "default",
+					Name:             "zone-3",
+					CreationTime:     t1,
+					ModificationTime: now,
+				},
+				Spec: &system_proto.ZoneOverview{
+					Zone: &system_proto.Zone{Enabled: false},
+					ZoneInsight: &system_proto.ZoneInsight{
+						Subscriptions: []*system_proto.KDSSubscription{
+							{
+								Id:               "1",
+								GlobalInstanceId: "node-001",
+								ConnectTime:      util_proto.MustTimestampProto(t2),
 							},
 						},
 					},
