@@ -64,7 +64,9 @@ var _ = Describe("SDS Server", func() {
 		cfg.DpServer.TlsKeyFile = filepath.Join("..", "..", "..", "test", "certs", "server-key.pem")
 		cfg.DpServer.Auth.Type = dp_server_cfg.DpServerAuthDpToken
 
-		runtime, err := runtime.BuilderFor(cfg).Build()
+		builder, err := runtime.BuilderFor(cfg)
+		Expect(err).ToNot(HaveOccurred())
+		runtime, err := builder.Build()
 		Expect(err).ToNot(HaveOccurred())
 		metrics = runtime.Metrics()
 		resManager = runtime.ResourceManager()

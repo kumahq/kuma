@@ -45,7 +45,10 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := autoconfigure(&cfg); err != nil {
 		return nil, err
 	}
-	builder := core_runtime.BuilderFor(cfg)
+	builder, err := core_runtime.BuilderFor(cfg)
+	if err != nil {
+		return nil, err
+	}
 	if err := initializeMetrics(builder); err != nil {
 		return nil, err
 	}

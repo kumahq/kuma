@@ -47,8 +47,12 @@ func (i TestRuntimeInfo) GetClusterId() string {
 	return i.ClusterId
 }
 
-func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
-	builder := core_runtime.BuilderFor(cfg).
+func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
+	builder, err := core_runtime.BuilderFor(cfg)
+	if err != nil {
+		return nil, err
+	}
+	builder.
 		WithComponentManager(component.NewManager(leader_memory.NewAlwaysLeaderElector())).
 		WithResourceStore(resources_memory.NewStore()).
 		WithXdsContext(core_xds.NewXdsContext())
@@ -72,7 +76,7 @@ func BuilderFor(cfg kuma_cp.Config) *core_runtime.Builder {
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)
 
-	return builder
+	return builder, nil
 }
 
 func initializeConfigManager(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
