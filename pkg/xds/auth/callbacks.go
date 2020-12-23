@@ -4,8 +4,6 @@ import (
 	"context"
 	"sync"
 
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
@@ -13,11 +11,12 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
 const authorization = "authorization"
 
-func NewCallbacks(resManager core_manager.ResourceManager, authenticator Authenticator) envoy_server.Callbacks {
+func NewCallbacks(resManager core_manager.ResourceManager, authenticator Authenticator) util_xds.Callbacks {
 	return &authCallbacks{
 		resManager:    resManager,
 		authenticator: authenticator,
@@ -28,6 +27,7 @@ func NewCallbacks(resManager core_manager.ResourceManager, authenticator Authent
 
 // authCallback checks if the DiscoveryRequest is authorized, ie. if it has a valid Dataplane Token/Service Account Token.
 type authCallbacks struct {
+	util_xds.NoopCallbacks
 	resManager    core_manager.ResourceManager
 	authenticator Authenticator
 
@@ -39,7 +39,7 @@ type authCallbacks struct {
 	authenticated map[core_xds.StreamID]string
 }
 
-var _ envoy_server.Callbacks = &authCallbacks{}
+var _ util_xds.Callbacks = &authCallbacks{}
 
 func (a *authCallbacks) OnStreamOpen(ctx context.Context, streamID core_xds.StreamID, _ string) error {
 	a.Lock()
@@ -56,10 +56,10 @@ func (a *authCallbacks) OnStreamClosed(streamID core_xds.StreamID) {
 	a.Unlock()
 }
 
-func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req *envoy_api.DiscoveryRequest) error {
+func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds.DiscoveryRequest) error {
 	if id, alreadyAuthenticated := a.authNodeId(streamID); alreadyAuthenticated {
-		if req.Node != nil && req.Node.Id != id {
-			return errors.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", id, req.Node.Id)
+		if req.NodeId() != "" && req.NodeId() != id {
+			return errors.Errorf("stream was authenticated for ID %s. Received request is for node with ID %s. Node ID cannot be changed after stream is initialized", id, req.NodeId())
 		}
 		return nil
 	}
@@ -73,7 +73,7 @@ func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req *envoy_a
 		return err
 	}
 	a.Lock()
-	a.authenticated[streamID] = req.Node.Id
+	a.authenticated[streamID] = req.NodeId()
 	a.Unlock()
 	return nil
 }
@@ -100,13 +100,13 @@ func (a *authCallbacks) credential(streamID core_xds.StreamID) (Credential, erro
 	return credential, err
 }
 
-func (a *authCallbacks) authenticate(credential Credential, req *envoy_api.DiscoveryRequest) error {
+func (a *authCallbacks) authenticate(credential Credential, req util_xds.DiscoveryRequest) error {
 	dataplane := core_mesh.NewDataplaneResource()
-	md := core_xds.DataplaneMetadataFromNode(req.Node)
+	md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
 	if md.DataplaneResource != nil {
 		dataplane = md.DataplaneResource
 	} else {
-		proxyId, err := core_xds.ParseProxyId(req.Node)
+		proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId())
 		if err != nil {
 			return errors.Wrap(err, "SDS request must have a valid Proxy Id")
 		}
@@ -124,22 +124,6 @@ func (a *authCallbacks) authenticate(credential Credential, req *envoy_api.Disco
 	}
 	return nil
 }
-
-func (a *authCallbacks) OnStreamResponse(core_xds.StreamID, *envoy_api.DiscoveryRequest, *envoy_api.DiscoveryResponse) {
-}
-
-func (a *authCallbacks) OnFetchRequest(ctx context.Context, request *envoy_api.DiscoveryRequest) error {
-	credential, err := extractCredential(ctx)
-	if err != nil {
-		return errors.Wrap(err, "could not extract credential from DiscoveryRequest")
-	}
-	return a.authenticate(credential, request)
-}
-
-func (a *authCallbacks) OnFetchResponse(*envoy_api.DiscoveryRequest, *envoy_api.DiscoveryResponse) {
-}
-
-var _ envoy_server.Callbacks = &authCallbacks{}
 
 func extractCredential(ctx context.Context) (Credential, error) {
 	metadata, ok := metadata.FromIncomingContext(ctx)

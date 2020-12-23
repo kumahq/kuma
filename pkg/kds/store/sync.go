@@ -7,6 +7,8 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/golang/protobuf/proto"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -27,6 +29,7 @@ type ResourceSyncer interface {
 
 type SyncOption struct {
 	Predicate func(r model.Resource) bool
+	Zone      string
 }
 
 type SyncOptionFunc func(*SyncOption)
@@ -37,6 +40,12 @@ func NewSyncOptions(fs ...SyncOptionFunc) *SyncOption {
 		f(opts)
 	}
 	return opts
+}
+
+func Zone(name string) SyncOptionFunc {
+	return func(opts *SyncOption) {
+		opts.Zone = name
+	}
 }
 
 func PrefilterBy(predicate func(r model.Resource) bool) SyncOptionFunc {
@@ -116,13 +125,29 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 		}
 	}
 
+	zone := system.NewZoneResource()
+	if opts.Zone != "" && len(onCreate) > 0 {
+		if err := s.resourceStore.Get(ctx, zone, store.GetByKey(opts.Zone, model.NoMesh)); err != nil {
+			return err
+		}
+	}
+
 	for _, r := range onCreate {
 		rk := model.MetaToResourceKey(r.GetMeta())
 		log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		creationTime := r.GetMeta().GetCreationTime()
 		// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
 		r.SetMeta(nil)
-		if err := s.resourceStore.Create(ctx, r, store.CreateBy(rk), store.CreatedAt(creationTime), store.CreateSynced()); err != nil {
+
+		createOpts := []store.CreateOptionsFunc{
+			store.CreateBy(rk),
+			store.CreatedAt(creationTime),
+			store.CreateSynced(),
+		}
+		if opts.Zone != "" {
+			createOpts = append(createOpts, store.CreateWithOwner(zone))
+		}
+		if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
 			return err
 		}
 	}

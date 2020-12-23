@@ -32,7 +32,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 
 		// generate CDS resource
 		localClusterName := envoy_names.GetLocalClusterName(endpoint.WorkloadPort)
-		clusterBuilder := envoy_clusters.NewClusterBuilder().
+		clusterBuilder := envoy_clusters.NewClusterBuilder(envoy_common.APIV2).
 			Configure(envoy_clusters.StaticCluster(localClusterName, endpoint.WorkloadIP, endpoint.WorkloadPort))
 		switch protocol {
 		case mesh_core.ProtocolHTTP2, mesh_core.ProtocolGRPC:
@@ -52,21 +52,21 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		service := iface.GetService()
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
 		filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
-			filterChainBuilder := envoy_listeners.NewFilterChainBuilder()
+			filterChainBuilder := envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2)
 			switch protocol {
 			// configuration for HTTP case
 			case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
-					Configure(envoy_listeners.FaultInjection(proxy.FaultInjections[endpoint])).
-					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
+					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
+					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
 					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterSubset{ClusterName: localClusterName}))
 			case mesh_core.ProtocolGRPC:
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
 					Configure(envoy_listeners.GrpcStats()).
-					Configure(envoy_listeners.FaultInjection(proxy.FaultInjections[endpoint])).
-					Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
+					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
+					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
 					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterSubset{ClusterName: localClusterName}))
 			case mesh_core.ProtocolKafka:
 				filterChainBuilder.
@@ -80,9 +80,9 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			}
 			return filterChainBuilder.
 				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
-				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.TrafficPermissions[endpoint]))
+				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]))
 		}()
-		inboundListener, err := envoy_listeners.NewListenerBuilder().
+		inboundListener, err := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
 			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).
 			Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).

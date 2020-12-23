@@ -80,9 +80,15 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret, zone"))
+			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, " +
+				"dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, " +
+				"traffic-route, traffic-trace, fault-injection, circuit-breaker, retry, secret, " +
+				"zone"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret, zone`))
+			Expect(outbuf.String()).To(MatchRegexp("unknown TYPE: some-type. " +
+				"Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, " +
+				"traffic-permission, traffic-route, traffic-trace, fault-injection, " +
+				"circuit-breaker, retry, secret, zone"))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
@@ -154,6 +160,12 @@ var _ = Describe("kumactl delete ", func() {
 					name:            "web-to-backend",
 					resource:        func() core_model.Resource { return mesh_core.NewHealthCheckResource() },
 					expectedMessage: "deleted HealthCheck \"web-to-backend\"\n",
+				}),
+				Entry("retries", testCase{
+					typ:             "retry",
+					name:            "web-to-backend",
+					resource:        func() core_model.Resource { return mesh_core.NewRetryResource() },
+					expectedMessage: "deleted Retry \"web-to-backend\"\n",
 				}),
 				Entry("traffic-permissions", testCase{
 					typ:             "traffic-permission",
@@ -227,6 +239,12 @@ var _ = Describe("kumactl delete ", func() {
 					name:            "web-to-backend",
 					resource:        func() core_model.Resource { return mesh_core.NewHealthCheckResource() },
 					expectedMessage: "Error: there is no HealthCheck with name \"web-to-backend\"\n",
+				}),
+				Entry("retries", testCase{
+					typ:             "retry",
+					name:            "web-to-backend",
+					resource:        func() core_model.Resource { return mesh_core.NewRetryResource() },
+					expectedMessage: "Error: there is no Retry with name \"web-to-backend\"\n",
 				}),
 				Entry("traffic-permissions", testCase{
 					typ:             "traffic-permission",

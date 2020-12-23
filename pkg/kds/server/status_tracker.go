@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 
 	"github.com/go-logr/logr"
 
@@ -44,6 +45,7 @@ func NewStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
 var _ StatusTracker = &statusTracker{}
 
 type statusTracker struct {
+	util_xds_v2.NoopCallbacks
 	runtimeInfo      core_runtime.RuntimeInfo
 	createStatusSink ZoneInsightSinkFactoryFunc
 	mu               sync.RWMutex // protects access to the fields below
@@ -156,15 +158,6 @@ func (c *statusTracker) OnStreamResponse(streamID int64, req *envoy.DiscoveryReq
 
 	c.log.V(1).Info("OnStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
 }
-
-// OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
-// request and respond with an error.
-func (c *statusTracker) OnFetchRequest(context.Context, *envoy.DiscoveryRequest) error {
-	return nil
-}
-
-// OnFetchResponse is called immediately prior to sending a response.
-func (c *statusTracker) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {}
 
 func (c *statusTracker) GetStatusAccessor(streamID int64) (StatusAccessor, bool) {
 	state, ok := c.streams[streamID]

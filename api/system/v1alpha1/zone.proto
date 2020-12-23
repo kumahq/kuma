@@ -4,6 +4,12 @@ package kuma.system.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 
+import "google/protobuf/wrappers.proto";
+
 // Zone defines the Zone configuration used at the Global Control Plane
 // within a distributed deployment
-message Zone {}
+message Zone {
+  // enable allows to turn the zone on/off and exclude the whole zone from
+  // balancing traffic on it
+  google.protobuf.BoolValue enabled = 1;
+}

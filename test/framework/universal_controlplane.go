@@ -52,7 +52,7 @@ func (c *UniversalControlPlane) GetGlobaStatusAPI() string {
 	panic("not implemented")
 }
 
-func (c *UniversalControlPlane) GenerateDpToken(service string) (string, error) {
+func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, error) {
 	dpType := ""
 	if service == "ingress" {
 		dpType = "ingress"
@@ -61,7 +61,7 @@ func (c *UniversalControlPlane) GenerateDpToken(service string) (string, error) 
 		sshApp := NewSshApp(c.verbose, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
 			"--fail", "--show-error",
 			"-H", "\"Content-Type: application/json\"",
-			"--data", fmt.Sprintf(`'{"mesh": "default", "type": "%s", "tags": {"kuma.io/service":["%s"]}}'`, dpType, service),
+			"--data", fmt.Sprintf(`'{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service":["%s"]}}'`, mesh, dpType, service),
 			"http://localhost:5681/tokens"})
 		if err := sshApp.Run(); err != nil {
 			return "", err

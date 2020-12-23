@@ -3,7 +3,9 @@ package controllers
 import (
 	"context"
 
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
@@ -46,11 +48,12 @@ const (
 type PodReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder
-	Scheme          *kube_runtime.Scheme
-	Log             logr.Logger
-	PodConverter    PodConverter
-	Persistence     *vips.Persistence
-	SystemNamespace string
+	Scheme            *kube_runtime.Scheme
+	Log               logr.Logger
+	PodConverter      PodConverter
+	Persistence       *vips.Persistence
+	ResourceConverter k8s_common.Converter
+	SystemNamespace   string
 }
 
 func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -181,7 +184,12 @@ func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dat
 	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
 	for i := range allDataplanes.Items {
 		dataplane := allDataplanes.Items[i]
-		if dataplane.Mesh == mesh {
+		dp := core_mesh.NewDataplaneResource()
+		if err := r.ResourceConverter.ToCoreResource(&dataplane, dp); err != nil {
+			converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
+			continue // one invalid Dataplane definition should not break the entire mesh
+		}
+		if dataplane.Mesh == mesh || dp.Spec.IsIngress() {
 			otherDataplanes = append(otherDataplanes, &dataplane)
 		}
 	}

@@ -18,6 +18,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 
 	. "github.com/onsi/ginkgo"
@@ -70,7 +71,7 @@ var _ = Describe("Auth Callbacks", func() {
 		memStore := memory.NewStore()
 		resManager = core_manager.NewResourceManager(memStore)
 		testAuth = &testAuthenticator{}
-		callbacks = auth.NewCallbacks(resManager, testAuth)
+		callbacks = util_xds_v2.AdaptCallbacks(auth.NewCallbacks(resManager, testAuth))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())

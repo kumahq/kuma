@@ -3,7 +3,8 @@ items:
     modificationTime: "2019-07-17T18:08:41Z"
     name: zone-1
     type: ZoneOverview
-    zone: {}
+    zone:
+      enabled: true
     zoneInsight:
       subscriptions:
         - connectTime: "2018-07-17T16:05:36.995Z"
@@ -58,7 +59,8 @@ items:
     modificationTime: "2019-07-17T18:08:41Z"
     name: zone-2
     type: ZoneOverview
-    zone: {}
+    zone:
+      enabled: true
     zoneInsight:
       subscriptions:
         - globalInstanceId: node-001
@@ -67,5 +69,16 @@ items:
           id: "2"
         - globalInstanceId: node-003
           id: "3"
+  - creationTime: "2018-07-17T16:05:36.995Z"
+    modificationTime: "2019-07-17T18:08:41Z"
+    name: zone-3
+    type: ZoneOverview
+    zone:
+      enabled: false
+    zoneInsight:
+      subscriptions:
+        - connectTime: "2019-07-17T16:05:36.995Z"
+          globalInstanceId: node-001
+          id: "1"
 next: null
-total: 2
+total: 3

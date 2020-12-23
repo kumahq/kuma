@@ -44,9 +44,9 @@ type DestinationMap map[ServiceName]TagSelectorSet
 
 type ExternalService struct {
 	TLSEnabled bool
-	CaCert     *envoy_core.DataSource
-	ClientCert *envoy_core.DataSource
-	ClientKey  *envoy_core.DataSource
+	CaCert     []byte
+	ClientCert []byte
+	ClientKey  []byte
 }
 
 type Locality struct {
@@ -81,6 +81,9 @@ type HealthCheckMap map[ServiceName]*mesh_core.HealthCheckResource
 // CircuitBreakerMap holds the most specific CircuitBreaker for each reachable service.
 type CircuitBreakerMap map[ServiceName]*mesh_core.CircuitBreakerResource
 
+// RetryMap holds the most specific Retry for each reachable service.
+type RetryMap map[ServiceName]*mesh_core.RetryResource
+
 // FaultInjectionMap holds the most specific FaultInjectionResource for each InboundInterface
 type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjection
 
@@ -88,23 +91,35 @@ type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjectio
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResource
 
 type CLACache interface {
-	GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error)
+	GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error)
 }
+
 type Proxy struct {
-	Id                 ProxyId
-	Dataplane          *mesh_core.DataplaneResource
+	Id        ProxyId
+	Dataplane *mesh_core.DataplaneResource
+	Metadata  *DataplaneMetadata
+	Routing   Routing
+	Policies  MatchedPolicies
+}
+
+type Routing struct {
+	TrafficRoutes   RouteMap
+	OutboundTargets EndpointMap
+
+	// todo(lobkovilya): split Proxy struct into DataplaneProxy and IngressProxy
+	// TrafficRouteList is used only for generating configs for Ingress.
+	TrafficRouteList *mesh_core.TrafficRouteResourceList
+}
+
+type MatchedPolicies struct {
 	TrafficPermissions TrafficPermissionMap
 	Logs               LogMap
-	TrafficRoutes      RouteMap
-	OutboundSelectors  DestinationMap
-	OutboundTargets    EndpointMap
 	HealthChecks       HealthCheckMap
 	CircuitBreakers    CircuitBreakerMap
+	Retries            RetryMap
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
-	Metadata           *DataplaneMetadata
 	FaultInjections    FaultInjectionMap
-	CLACache           CLACache
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
@@ -163,6 +178,9 @@ func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {
 }
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {
+	if id == "" {
+		return nil, errors.Errorf("Envoy ID must not be nil")
+	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]
 	if mesh == "" {

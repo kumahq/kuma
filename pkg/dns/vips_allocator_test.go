@@ -186,6 +186,9 @@ var _ = Describe("BuildServiceSet", func() {
 		err = rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-2", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
+		err = rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("mesh-3", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
 		// setup dataplanes
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("backend")}, store.CreateByKey("backend-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
@@ -200,6 +203,9 @@ var _ = Describe("BuildServiceSet", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("another-mesh-svc")}, store.CreateByKey("another-mesh-dp-1", "mesh-2"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("only-mesh-3-service")}, store.CreateByKey("dp-m-3", "mesh-3"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup ingress

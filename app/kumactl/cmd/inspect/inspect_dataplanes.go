@@ -66,7 +66,7 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 
 func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS"},
+		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "KUMA-DP VERSION", "ENVOY VERSION"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -102,6 +102,17 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 				dataplaneInsight.GetMTLS().GetCertificateExpirationTime()
 				certRegenerations := strconv.Itoa(int(dataplaneInsight.GetMTLS().GetCertificateRegenerations()))
 
+				var kumaDpVersion string
+				var envoyVersion string
+				if lastSubscription.GetVersion() != nil {
+					if lastSubscription.Version.KumaDp != nil {
+						kumaDpVersion = lastSubscription.Version.KumaDp.Version
+					}
+					if lastSubscription.Version.Envoy != nil {
+						envoyVersion = lastSubscription.Version.Envoy.Version
+					}
+				}
+
 				return []string{
 					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
@@ -114,6 +125,8 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 					table.Ago(lastCertGeneration, now),   // CERT REGENERATED AGO
 					table.Date(certExpiration),           // CERT EXPIRATION
 					certRegenerations,                    // CERT REGENERATIONS
+					kumaDpVersion,                        // KUMA-DP VERSION
+					envoyVersion,                         // ENVOY VERSION
 				}
 			}
 		}(),
