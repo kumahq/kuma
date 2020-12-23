@@ -286,6 +286,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	meshValidator := mesh_managers.MeshValidator{
 		CaManagers: builder.CaManagers(),
+		Store:      builder.ResourceStore(),
 	}
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator)
 	customManagers[mesh.MeshType] = meshManager
