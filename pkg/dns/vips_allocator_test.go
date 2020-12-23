@@ -2,7 +2,6 @@ package dns_test
 
 import (
 	"context"
-	"fmt"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -166,8 +165,7 @@ var _ = Describe("VIP Allocator", func() {
 
 		err = errAllocator.CreateOrUpdateVIPConfigs()
 		Expect(err).To(HaveOccurred())
-		fmt.Println(err)
-		Expect(err.Error()).To(Equal("error during update, mesh = mesh-1; error during update, mesh = mesh-2"))
+		Expect(err).To(MatchError("error during update, mesh = mesh-1; error during update, mesh = mesh-2"))
 	})
 })
 
