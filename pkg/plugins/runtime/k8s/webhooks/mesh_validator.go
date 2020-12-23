@@ -2,7 +2,6 @@ package webhooks
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 
 	"k8s.io/api/admission/v1beta1"
@@ -13,7 +12,6 @@ import (
 	managers_mesh "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
@@ -52,12 +50,8 @@ func (h *MeshValidator) Handle(ctx context.Context, req admission.Request) admis
 }
 
 func (h *MeshValidator) ValidateDelete(ctx context.Context, req admission.Request) admission.Response {
-	dps := mesh_core.DataplaneResourceList{}
-	if err := h.resourceManager.List(ctx, &dps, store.ListByMesh(req.Name)); err != nil {
+	if err := h.validator.ValidateDelete(ctx, req.Name); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
-	}
-	if len(dps.Items) != 0 {
-		return admission.Errored(http.StatusBadRequest, fmt.Errorf("unable to delete mesh, there are still some dataplanes attached"))
 	}
 	return admission.Allowed("")
 }
