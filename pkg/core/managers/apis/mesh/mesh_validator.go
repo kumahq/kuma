@@ -2,12 +2,12 @@ package mesh
 
 import (
 	"context"
-	"fmt"
 
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	"github.com/pkg/errors"
 )
 
 type MeshValidator struct {
@@ -56,8 +56,7 @@ func (m *MeshValidator) ValidateDelete(ctx context.Context, name string) error {
 	dps := core_mesh.DataplaneResourceList{}
 	validationErr := &validators.ValidationError{}
 	if err := m.Store.List(ctx, &dps, store.ListByMesh(name)); err != nil {
-		validationErr.AddViolation("mesh", fmt.Sprintf("unable to list Dataplane: %v", err))
-		return validationErr
+		return errors.Wrap(err, "unable to list Dataplanes")
 	}
 	if len(dps.Items) != 0 {
 		validationErr.AddViolation("mesh", "unable to delete mesh, there are still some dataplanes attached")
