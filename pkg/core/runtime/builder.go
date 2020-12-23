@@ -71,8 +71,11 @@ type Builder struct {
 	*runtimeInfo
 }
 
-func BuilderFor(cfg kuma_cp.Config) *Builder {
-	hostname, _ := os.Hostname()
+func BuilderFor(cfg kuma_cp.Config) (*Builder, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get hostname")
+	}
 	suffix := core.NewUUID()[0:4]
 	return &Builder{
 		cfg: cfg,
@@ -81,7 +84,7 @@ func BuilderFor(cfg kuma_cp.Config) *Builder {
 		runtimeInfo: &runtimeInfo{
 			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
 		},
-	}
+	}, nil
 }
 
 func (b *Builder) WithComponentManager(cm component.Manager) *Builder {
