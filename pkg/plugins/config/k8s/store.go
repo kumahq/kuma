@@ -95,7 +95,10 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		},
 	}
 	if err := s.client.Update(context.Background(), cm); err != nil {
-		return err
+		if kube_apierrs.IsConflict(err) {
+			return core_store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
+		}
+		return errors.Wrap(err, "failed to update k8s resource")
 	}
 	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
 	return nil

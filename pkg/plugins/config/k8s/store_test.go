@@ -161,6 +161,36 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(actual.Data).To(Equal(expected.Data))
 		})
+
+		It("should return error in case of resource conflict", func() {
+			// setup
+			initial := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: "kuma-internal-config"
+              namespace : %s
+            data:
+              config: "test" 
+    `, ns))
+			backend.Create(initial)
+
+			// given
+			config := system_model.NewConfigResource()
+
+			err := s.Get(context.Background(), config, core_store.GetByKey("kuma-internal-config", ""))
+			Expect(err).ToNot(HaveOccurred())
+
+			config.Meta.(*k8s.KubernetesMetaAdapter).ResourceVersion = config.Meta.(*k8s.KubernetesMetaAdapter).ResourceVersion + "1"
+			config.Spec.Config = "next test"
+
+			// when
+			err = s.Update(context.Background(), config)
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(`Resource conflict: type="Config" name="kuma-internal-config" mesh=""`))
+		})
 	})
 
 	Describe("Get()", func() {
