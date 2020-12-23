@@ -2,6 +2,8 @@ package runtime
 
 import (
 	"context"
+	"fmt"
+	"os"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 
@@ -69,15 +71,20 @@ type Builder struct {
 	*runtimeInfo
 }
 
-func BuilderFor(cfg kuma_cp.Config) *Builder {
+func BuilderFor(cfg kuma_cp.Config) (*Builder, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get hostname")
+	}
+	suffix := core.NewUUID()[0:4]
 	return &Builder{
 		cfg: cfg,
 		ext: context.Background(),
 		cam: core_ca.Managers{},
 		runtimeInfo: &runtimeInfo{
-			instanceId: core.NewUUID(),
+			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
 		},
-	}
+	}, nil
 }
 
 func (b *Builder) WithComponentManager(cm component.Manager) *Builder {
