@@ -3,11 +3,12 @@ package mesh
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/pkg/errors"
 )
 
 type MeshValidator struct {

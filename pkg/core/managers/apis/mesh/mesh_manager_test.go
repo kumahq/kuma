@@ -262,7 +262,7 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when mesh-1 is delete
-			err = resManager.Delete(context.Background(),core_mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
+			err = resManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
 			// then
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("mesh: unable to delete mesh, there are still some dataplanes attached"))
