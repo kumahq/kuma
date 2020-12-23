@@ -29,7 +29,7 @@ var _ = Describe("kumactl get traffic-traces", func() {
 
 	trafficTraceResources := []*mesh.TrafficTraceResource{
 		{
-			Spec: v1alpha1.TrafficTrace{
+			Spec: &v1alpha1.TrafficTrace{
 				Selectors: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
@@ -48,7 +48,7 @@ var _ = Describe("kumactl get traffic-traces", func() {
 			},
 		},
 		{
-			Spec: v1alpha1.TrafficTrace{
+			Spec: &v1alpha1.TrafficTrace{
 				Selectors: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{

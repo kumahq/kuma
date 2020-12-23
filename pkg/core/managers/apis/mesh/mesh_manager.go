@@ -132,7 +132,7 @@ func (m *meshManager) Update(ctx context.Context, resource core_model.Resource, 
 		return err
 	}
 
-	currentMesh := &core_mesh.MeshResource{}
+	currentMesh := core_mesh.NewMeshResource()
 	if err := m.Get(ctx, currentMesh, core_store.GetBy(core_model.MetaToResourceKey(mesh.GetMeta())), core_store.GetByVersion(mesh.GetMeta().GetVersion())); err != nil {
 		return err
 	}

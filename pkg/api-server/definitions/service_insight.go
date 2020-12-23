@@ -9,7 +9,7 @@ var ServiceInsightWsDefinition = ResourceWsDefinition{
 	Name: "Service Insight",
 	Path: "service-insights",
 	ResourceFactory: func() model.Resource {
-		return &mesh.ServiceInsightResource{}
+		return mesh.NewServiceInsightResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.ServiceInsightResourceList{}

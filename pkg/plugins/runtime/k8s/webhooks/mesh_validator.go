@@ -57,7 +57,7 @@ func (h *MeshValidator) ValidateDelete(ctx context.Context, req admission.Reques
 }
 
 func (h *MeshValidator) ValidateCreate(ctx context.Context, req admission.Request) admission.Response {
-	coreRes := &mesh_core.MeshResource{}
+	coreRes := mesh_core.NewMeshResource()
 	k8sRes := &v1alpha1.Mesh{}
 	if err := h.decoder.Decode(req, k8sRes); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
@@ -75,7 +75,7 @@ func (h *MeshValidator) ValidateCreate(ctx context.Context, req admission.Reques
 }
 
 func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Request) admission.Response {
-	coreRes := &mesh_core.MeshResource{}
+	coreRes := mesh_core.NewMeshResource()
 	k8sRes := &v1alpha1.Mesh{}
 	if err := h.decoder.DecodeRaw(req.Object, k8sRes); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
@@ -84,7 +84,7 @@ func (h *MeshValidator) ValidateUpdate(ctx context.Context, req admission.Reques
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
-	oldCoreRes := &mesh_core.MeshResource{}
+	oldCoreRes := mesh_core.NewMeshResource()
 	oldK8sRes := &v1alpha1.Mesh{}
 	if err := h.decoder.DecodeRaw(req.OldObject, oldK8sRes); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)

@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -37,8 +39,8 @@ var _ = Describe("Remote Sync", func() {
 			_ = comp.Start(stop)
 		}()
 	}
-	ingressFunc := func(zone string) mesh_proto.Dataplane {
-		return mesh_proto.Dataplane{
+	ingressFunc := func(zone string) *mesh_proto.Dataplane {
+		return &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Ingress: &mesh_proto.Dataplane_Networking_Ingress{
@@ -69,7 +71,7 @@ var _ = Describe("Remote Sync", func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, global.ProvidedFilter)
+		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, global.ProvidedFilter(manager.NewResourceManager(globalStore)))
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)

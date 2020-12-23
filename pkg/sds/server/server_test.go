@@ -71,7 +71,7 @@ var _ = Describe("SDS Server", func() {
 
 		// setup default mesh with active mTLS and 2 CA
 		meshRes := mesh_core.MeshResource{
-			Spec: mesh_proto.Mesh{
+			Spec: &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: "ca-1",
 					Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -102,7 +102,7 @@ var _ = Describe("SDS Server", func() {
 
 		// setup backend dataplane
 		dpRes := mesh_core.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -194,8 +194,8 @@ var _ = Describe("SDS Server", func() {
 		Expect(resp.Resources).To(HaveLen(2))
 
 		// and insight is generated
-		dpInsight := mesh_core.DataplaneInsightResource{}
-		err = resManager.Get(context.Background(), &dpInsight, core_store.GetByKey("backend-01", "default"))
+		dpInsight := mesh_core.NewDataplaneInsightResource()
+		err = resManager.Get(context.Background(), dpInsight, core_store.GetByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 		Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(1)))
 		expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
@@ -240,12 +240,12 @@ var _ = Describe("SDS Server", func() {
 
 		It("should return pair when CA is changed", func(done Done) {
 			// when
-			meshRes := mesh_core.MeshResource{}
-			Expect(resManager.Get(context.Background(), &meshRes, core_store.GetByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
+			meshRes := mesh_core.NewMeshResource()
+			Expect(resManager.Get(context.Background(), meshRes, core_store.GetByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "" // we need to first disable mTLS
-			Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
+			Expect(resManager.Update(context.Background(), meshRes)).To(Succeed())
 			meshRes.Spec.Mtls.EnabledBackend = "ca-2"
-			Expect(resManager.Update(context.Background(), &meshRes)).To(Succeed())
+			Expect(resManager.Update(context.Background(), meshRes)).To(Succeed())
 
 			// and when send a request with version previously fetched
 			req := newRequestForSecrets()
@@ -261,8 +261,8 @@ var _ = Describe("SDS Server", func() {
 			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
 
 			// and insight is updated
-			dpInsight := mesh_core.DataplaneInsightResource{}
-			err = resManager.Get(context.Background(), &dpInsight, core_store.GetByKey("backend-01", "default"))
+			dpInsight := mesh_core.NewDataplaneInsightResource()
+			err = resManager.Get(context.Background(), dpInsight, core_store.GetByKey("backend-01", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(2)))
 			expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()

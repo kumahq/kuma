@@ -4,7 +4,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -17,7 +17,7 @@ var _ = Describe("MarshalAnyDeterministic", func() {
 			"version": "v1",
 			"cloud":   "aws",
 		}
-		metadata := envoy.EndpointMetadata(tags)
+		metadata := envoy_metadata.EndpointMetadata(tags)
 		for i := 0; i < 100; i++ {
 			any1, _ := util_proto.MarshalAnyDeterministic(metadata)
 			any2, _ := util_proto.MarshalAnyDeterministic(metadata)

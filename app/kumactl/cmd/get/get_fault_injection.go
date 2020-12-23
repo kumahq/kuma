@@ -28,7 +28,7 @@ func newGetFaultInjectionCmd(pctx *getContext) *cobra.Command {
 			}
 			name := args[0]
 			currentMesh := pctx.CurrentMesh()
-			faultInjection := &mesh.FaultInjectionResource{}
+			faultInjection := mesh.NewFaultInjectionResource()
 			if err := rs.Get(context.Background(), faultInjection, store.GetByKey(name, currentMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)

@@ -74,7 +74,7 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 
 			routeMap[outbound] = &mesh_core.TrafficRouteResource{
 				Meta: route.GetMeta(),
-				Spec: mesh_proto.TrafficRoute{
+				Spec: &mesh_proto.TrafficRoute{
 					Sources:      route.Spec.GetSources(),
 					Destinations: route.Spec.GetDestinations(),
 					Conf: &mesh_proto.TrafficRoute_Conf{

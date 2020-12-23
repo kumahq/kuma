@@ -28,7 +28,7 @@ func newGetZoneCmd(pctx *getContext) *cobra.Command {
 				return err
 			}
 			name := args[0]
-			zone := &system.ZoneResource{}
+			zone := system.NewZoneResource()
 			if err := rs.Get(context.Background(), zone, store.GetByKey(name, model.NoMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No zone resources found")

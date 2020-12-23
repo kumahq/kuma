@@ -106,7 +106,7 @@ metadata:
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClientK8s()).
+			Install(DemoClientK8s("default")).
 			Install(externalservice.Install(externalservice.HttpServer, []string{})).
 			Install(externalservice.Install(externalservice.HttpsServer, []string{})).
 			Setup(cluster)

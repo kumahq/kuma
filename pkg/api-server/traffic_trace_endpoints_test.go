@@ -57,7 +57,7 @@ var _ = Describe("TrafficTrace Endpoints", func() {
 
 	BeforeEach(func() {
 		// when
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 	})

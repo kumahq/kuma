@@ -5,6 +5,7 @@ import (
 	"sort"
 	"strings"
 
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/pkg/errors"
 )
 
@@ -138,3 +139,16 @@ func (c Clusters) Get(name string) *Cluster {
 func (c Clusters) Tags(name string) []Tags {
 	return c[name].Tags()
 }
+
+type NamedResource interface {
+	envoy_types.Resource
+	GetName() string
+}
+
+type TrafficDirection string
+
+const (
+	TrafficDirectionOutbound    TrafficDirection = "OUTBOUND"
+	TrafficDirectionInbound     TrafficDirection = "INBOUND"
+	TrafficDirectionUnspecified TrafficDirection = "UNSPECIFIED"
+)

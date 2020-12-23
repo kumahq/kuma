@@ -15,7 +15,8 @@ Available Commands:
   get         Show Kuma resources
   help        Help about any command
   inspect     Inspect Kuma resources
-  install     Install Kuma on Kubernetes
+  install     Install various Kuma components.
+  uninstall   Uninstall various Kuma components.
   version     Print version
 
 Flags:
@@ -192,17 +193,18 @@ Global Flags:
 ## kumactl install
 
 ```
-Install Kuma on Kubernetes.
+Install various Kuma components.
 
 Usage:
   kumactl install [command]
 
 Available Commands:
-  control-plane Install Kuma Control Plane on Kubernetes
-  dns           Install DNS to Kubernetes
-  logging       Install Logging backend in Kubernetes cluster (Loki)
-  metrics       Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
-  tracing       Install Tracing backend in Kubernetes cluster (Jaeger)
+  control-plane     Install Kuma Control Plane on Kubernetes
+  dns               Install DNS to Kubernetes
+  logging           Install Logging backend in Kubernetes cluster (Loki)
+  metrics           Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
+  tracing           Install Tracing backend in Kubernetes cluster (Jaeger)
+  transparent-proxy Install Transparent Proxy pre-requisites on the host
 
 Flags:
   -h, --help   help for install
@@ -395,6 +397,8 @@ Available Commands:
   meshes              Show Meshes
   proxytemplate       Show a single Proxytemplate resource
   proxytemplates      Show ProxyTemplates
+  retries             Show Retries
+  retry               Show a single retry resource
   secret              Show a single Secret resource
   secrets             Show Secrets
   traffic-log         Show a single TrafficLog resource
@@ -470,6 +474,26 @@ Usage:
 
 Flags:
   -h, --help            help for healthchecks
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get retries
+
+```
+Show Retries.
+
+Usage:
+  kumactl get retries [flags]
+
+Flags:
+  -h, --help            help for retries
       --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 

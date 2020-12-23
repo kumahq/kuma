@@ -19,7 +19,7 @@ func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
 
 func NewVersion() *Version {
 	return &Version{
-		DpVersion: &KumaDpVersion{
+		KumaDp: &KumaDpVersion{
 			Version:   "",
 			GitTag:    "",
 			GitCommit: "",

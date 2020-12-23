@@ -29,13 +29,13 @@ var _ = Describe("Metered Store", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup test data
-		err = memoryStore.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err = memoryStore.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should public metrics of GET", func() {
 		// when
-		err := store.Get(context.Background(), &core_mesh.MeshResource{}, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
+		err := store.Get(context.Background(), core_mesh.NewMeshResource(), core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -53,7 +53,7 @@ var _ = Describe("Metered Store", func() {
 
 	It("should public metrics of DELETE", func() {
 		// when
-		err := store.Delete(context.Background(), &core_mesh.MeshResource{}, core_store.DeleteByKey(model.DefaultMesh, model.NoMesh))
+		err := store.Delete(context.Background(), core_mesh.NewMeshResource(), core_store.DeleteByKey(model.DefaultMesh, model.NoMesh))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -62,7 +62,7 @@ var _ = Describe("Metered Store", func() {
 
 	It("should public metrics of UPDATE", func() {
 		// when
-		mesh := &core_mesh.MeshResource{}
+		mesh := core_mesh.NewMeshResource()
 		err := store.Get(context.Background(), mesh, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 

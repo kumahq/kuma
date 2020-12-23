@@ -2,9 +2,9 @@ package mesh
 
 import (
 	"net/http"
-	"reflect"
 	"regexp"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -21,17 +21,17 @@ func (f *FaultInjectionResource) Validate() error {
 
 func (f *FaultInjectionResource) HasFaultDelay() bool {
 	faultDelay := f.Spec.Conf.GetDelay()
-	return faultDelay != nil && !reflect.DeepEqual(*faultDelay, v1alpha1.FaultInjection_Conf_Delay{})
+	return faultDelay != nil && !proto.Equal(faultDelay, &v1alpha1.FaultInjection_Conf_Delay{})
 }
 
 func (f *FaultInjectionResource) HasFaultAbort() bool {
 	faultAbort := f.Spec.Conf.GetAbort()
-	return faultAbort != nil && !reflect.DeepEqual(*faultAbort, v1alpha1.FaultInjection_Conf_Abort{})
+	return faultAbort != nil && !proto.Equal(faultAbort, &v1alpha1.FaultInjection_Conf_Abort{})
 }
 
 func (f *FaultInjectionResource) HasFaultResponseBandwidth() bool {
 	faultResponseBandwidth := f.Spec.Conf.GetResponseBandwidth()
-	return faultResponseBandwidth != nil && !reflect.DeepEqual(*faultResponseBandwidth, v1alpha1.FaultInjection_Conf_ResponseBandwidth{})
+	return faultResponseBandwidth != nil && !proto.Equal(faultResponseBandwidth, &v1alpha1.FaultInjection_Conf_ResponseBandwidth{})
 }
 
 func (f *FaultInjectionResource) validateSources() validators.ValidationError {
@@ -39,9 +39,6 @@ func (f *FaultInjectionResource) validateSources() validators.ValidationError {
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
 			RequireAtLeastOneTag: true,
-			ExtraSelectorValidators: []SelectorValidatorFunc{
-				ProtocolValidator("http"),
-			},
 		},
 	})
 }
@@ -52,7 +49,7 @@ func (f *FaultInjectionResource) validateDestinations() validators.ValidationErr
 		ValidateSelectorOpts: ValidateSelectorOpts{
 			RequireAtLeastOneTag: true,
 			ExtraSelectorValidators: []SelectorValidatorFunc{
-				ProtocolValidator("http"),
+				ProtocolValidator(ProtocolHTTP, ProtocolHTTP2, ProtocolGRPC),
 			},
 		},
 	})

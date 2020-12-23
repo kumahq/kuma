@@ -16,7 +16,13 @@ var _ model.Resource = &TrafficPermissionResource{}
 
 type TrafficPermissionResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.TrafficPermission
+	Spec *mesh_proto.TrafficPermission
+}
+
+func NewTrafficPermissionResource() *TrafficPermissionResource {
+	return &TrafficPermissionResource{
+		Spec: &mesh_proto.TrafficPermission{},
+	}
 }
 
 func (t *TrafficPermissionResource) GetType() model.ResourceType {
@@ -29,14 +35,14 @@ func (t *TrafficPermissionResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *TrafficPermissionResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *TrafficPermissionResource) SetSpec(spec model.ResourceSpec) error {
 	status, ok := spec.(*mesh_proto.TrafficPermission)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *status
+		t.Spec = status
 		return nil
 	}
 }
@@ -62,7 +68,7 @@ func (l *TrafficPermissionResourceList) GetItemType() model.ResourceType {
 	return TrafficPermissionType
 }
 func (l *TrafficPermissionResourceList) NewItem() model.Resource {
-	return &TrafficPermissionResource{}
+	return NewTrafficPermissionResource()
 }
 func (l *TrafficPermissionResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*TrafficPermissionResource); ok {
@@ -85,6 +91,6 @@ func (t *TrafficPermissionResource) Destinations() []*mesh_proto.Selector {
 }
 
 func init() {
-	registry.RegisterType(&TrafficPermissionResource{})
+	registry.RegisterType(NewTrafficPermissionResource())
 	registry.RegistryListType(&TrafficPermissionResourceList{})
 }

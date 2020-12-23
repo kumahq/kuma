@@ -223,6 +223,21 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "10.services-for-pod.yaml",
 			dataplane:      "10.dataplane.yaml",
 		}),
+		Entry("11. Pod with several containers", testCase{
+			pod:            "11.pod.yaml",
+			servicesForPod: "11.services-for-pod.yaml",
+			dataplane:      "11.dataplane.yaml",
+		}),
+		Entry("11. Pod with several containers", testCase{
+			pod:            "11.pod.yaml",
+			servicesForPod: "11.services-for-pod.yaml",
+			dataplane:      "11.dataplane.yaml",
+		}),
+		Entry("12. Pod with kuma-sidecar is not ready", testCase{
+			pod:            "12.pod.yaml",
+			servicesForPod: "12.services-for-pod.yaml",
+			dataplane:      "12.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Pod into a Dataplane YAML version",

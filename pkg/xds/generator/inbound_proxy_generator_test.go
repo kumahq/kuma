@@ -44,7 +44,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
-						Spec: mesh_proto.Mesh{
+						Spec: &mesh_proto.Mesh{
 							Mtls: &mesh_proto.Mesh_Mtls{
 								EnabledBackend: "builtin",
 								Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -69,25 +69,52 @@ var _ = Describe("InboundProxyGenerator", func() {
 					Meta: &test_model.ResourceMeta{
 						Version: "1",
 					},
-					Spec: dataplane,
+					Spec: &dataplane,
 				},
-				TrafficPermissions: model.TrafficPermissionMap{
-					mesh_proto.InboundInterface{
-						DataplaneIP:   "192.168.0.1",
-						DataplanePort: 80,
-						WorkloadIP:    "127.0.0.1",
-						WorkloadPort:  8080,
-					}: &mesh_core.TrafficPermissionResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "tp-1",
-							Mesh: "default",
+				Policies: model.MatchedPolicies{
+
+					TrafficPermissions: model.TrafficPermissionMap{
+						mesh_proto.InboundInterface{
+							DataplaneIP:   "192.168.0.1",
+							DataplanePort: 80,
+							WorkloadIP:    "127.0.0.1",
+							WorkloadPort:  8080,
+						}: &mesh_core.TrafficPermissionResource{
+							Meta: &test_model.ResourceMeta{
+								Name: "tp-1",
+								Mesh: "default",
+							},
+							Spec: &mesh_proto.TrafficPermission{
+								Sources: []*mesh_proto.Selector{
+									{
+										Match: map[string]string{
+											"kuma.io/service": "web1",
+											"version":         "1.0",
+										},
+									},
+								},
+								Destinations: []*mesh_proto.Selector{
+									{
+										Match: map[string]string{
+											"kuma.io/service": "backend1",
+											"env":             "dev",
+										},
+									},
+								},
+							},
 						},
-						Spec: mesh_proto.TrafficPermission{
+					},
+					FaultInjections: model.FaultInjectionMap{
+						mesh_proto.InboundInterface{
+							DataplaneIP:   "192.168.0.1",
+							DataplanePort: 80,
+							WorkloadIP:    "127.0.0.1",
+							WorkloadPort:  8080,
+						}: &mesh_proto.FaultInjection{
 							Sources: []*mesh_proto.Selector{
 								{
 									Match: map[string]string{
-										"kuma.io/service": "web1",
-										"version":         "1.0",
+										"kuma.io/service": "frontend",
 									},
 								},
 							},
@@ -95,38 +122,14 @@ var _ = Describe("InboundProxyGenerator", func() {
 								{
 									Match: map[string]string{
 										"kuma.io/service": "backend1",
-										"env":             "dev",
 									},
 								},
 							},
-						},
-					},
-				},
-				FaultInjections: model.FaultInjectionMap{
-					mesh_proto.InboundInterface{
-						DataplaneIP:   "192.168.0.1",
-						DataplanePort: 80,
-						WorkloadIP:    "127.0.0.1",
-						WorkloadPort:  8080,
-					}: &mesh_proto.FaultInjection{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service": "frontend",
+							Conf: &mesh_proto.FaultInjection_Conf{
+								Delay: &mesh_proto.FaultInjection_Conf_Delay{
+									Percentage: &wrappers.DoubleValue{Value: 50},
+									Value:      &duration.Duration{Seconds: 5},
 								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service": "backend1",
-								},
-							},
-						},
-						Conf: &mesh_proto.FaultInjection_Conf{
-							Delay: &mesh_proto.FaultInjection_Conf_Delay{
-								Percentage: &wrappers.DoubleValue{Value: 50},
-								Value:      &duration.Duration{Seconds: 5},
 							},
 						},
 					},

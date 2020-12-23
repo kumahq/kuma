@@ -32,6 +32,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
+						Spec: &mesh_proto.Mesh{},
 					},
 				},
 			}
@@ -73,7 +74,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 								RedirectPortOutbound: 15001,
@@ -82,13 +83,15 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
-				Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is not picked
-					"some-service": {
-						Name: "file",
-						Type: mesh_proto.LoggingFileType,
-						Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
-							Path: "/var/log",
-						}),
+				Policies: model.MatchedPolicies{
+					Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is not picked
+						"some-service": {
+							Name: "file",
+							Type: mesh_proto.LoggingFileType,
+							Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+								Path: "/var/log",
+							}),
+						},
 					},
 				},
 			},
@@ -157,7 +160,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 								RedirectPortOutbound: 15001,
@@ -166,13 +169,15 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
-				Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is is not picked
-					"pass_through": {
-						Name: "file",
-						Type: mesh_proto.LoggingFileType,
-						Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
-							Path: "/var/log",
-						}),
+				Policies: model.MatchedPolicies{
+					Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is is not picked
+						"pass_through": {
+							Name: "file",
+							Type: mesh_proto.LoggingFileType,
+							Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+								Path: "/var/log",
+							}),
+						},
 					},
 				},
 			},

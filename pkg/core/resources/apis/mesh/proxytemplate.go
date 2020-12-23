@@ -16,7 +16,13 @@ var _ model.Resource = &ProxyTemplateResource{}
 
 type ProxyTemplateResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.ProxyTemplate
+	Spec *mesh_proto.ProxyTemplate
+}
+
+func NewProxyTemplateResource() *ProxyTemplateResource {
+	return &ProxyTemplateResource{
+		Spec: &mesh_proto.ProxyTemplate{},
+	}
 }
 
 func (t *ProxyTemplateResource) GetType() model.ResourceType {
@@ -29,14 +35,14 @@ func (t *ProxyTemplateResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *ProxyTemplateResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 	template, ok := spec.(*mesh_proto.ProxyTemplate)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *template
+		t.Spec = template
 		return nil
 	}
 }
@@ -62,7 +68,7 @@ func (l *ProxyTemplateResourceList) GetItemType() model.ResourceType {
 	return ProxyTemplateType
 }
 func (l *ProxyTemplateResourceList) NewItem() model.Resource {
-	return &ProxyTemplateResource{}
+	return NewProxyTemplateResource()
 }
 func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ProxyTemplateResource); ok {
@@ -77,7 +83,7 @@ func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&ProxyTemplateResource{})
+	registry.RegisterType(NewProxyTemplateResource())
 	registry.RegistryListType(&ProxyTemplateResourceList{})
 }
 

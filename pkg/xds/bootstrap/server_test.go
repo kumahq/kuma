@@ -104,7 +104,7 @@ var _ = Describe("Bootstrap Server", func() {
 	})
 
 	BeforeEach(func() {
-		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err := resManager.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 		core.Now = func() time.Time {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
@@ -121,7 +121,7 @@ var _ = Describe("Bootstrap Server", func() {
 		func(given testCase) {
 			// given
 			res := mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "8.8.8.8",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -192,7 +192,7 @@ var _ = Describe("Bootstrap Server", func() {
 	It("should return 422 for the lack of the dataplane token", func() {
 		// given
 		res := mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -232,7 +232,7 @@ var _ = Describe("Bootstrap Server", func() {
 	It("should publish metrics", func() {
 		// given
 		res := mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

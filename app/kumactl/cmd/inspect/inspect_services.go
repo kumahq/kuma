@@ -42,7 +42,7 @@ func newInspectServicesCmd(pctx *inspectContext) *cobra.Command {
 			}
 
 			serviceInsight := &mesh.ServiceInsightResource{
-				Spec: mesh_proto.ServiceInsight{
+				Spec: &mesh_proto.ServiceInsight{
 					Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{},
 				},
 			}

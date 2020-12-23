@@ -117,6 +117,19 @@ var _ = Describe("OwnerReferenceMutator", func() {
             }`,
 			expectedMessage: `meshes.kuma.io "not-existing-mesh" not found`,
 		}),
+		Entry("should return error message if mesh is not present", testCase{
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "TrafficRoute",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null
+              }
+            }`,
+			expectedMessage: `mesh: cannot be empty`,
+		}),
 	)
 
 	It("should add owner reference to resource owned by Dataplane", func() {

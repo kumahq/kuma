@@ -101,7 +101,7 @@ message DiscoveryServiceStats {
 message Version {
 
   // Version of Kuma Dataplane
-  KumaDpVersion dpVersion = 1;
+  KumaDpVersion kumaDp = 1;
 
   // Version of Envoy
   EnvoyVersion envoy = 2;

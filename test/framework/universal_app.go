@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -29,7 +30,7 @@ const (
 
 	IngressDataplane = `
 type: Dataplane
-mesh: default
+mesh: %s
 name: dp-ingress
 networking:
   address: {{ address }}
@@ -43,7 +44,7 @@ networking:
 `
 	EchoServerDataplane = `
 type: Dataplane
-mesh: default
+mesh: %s
 name: {{ name }}
 networking:
   address:  {{ address }}
@@ -54,10 +55,26 @@ networking:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: http
 `
+	EchoServerDataplaneTransparentProxy = `
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address:  {{ address }}
+  inbound:
+  - port: %s
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/protocol: http
+  transparentProxying:
+    redirectPortInbound: %s
+    redirectPortOutbound: %s
+`
+
 	AppModeDemoClient   = "demo-client"
 	DemoClientDataplane = `
 type: Dataplane
-mesh: default
+mesh: %s
 name: {{ name }}
 networking:
   address: {{ address }}
@@ -76,6 +93,20 @@ networking:
   - port: 5000
     tags:
       kuma.io/service: external-service
+`
+	DemoClientDataplaneTransparentProxy = `
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address: {{ address }}
+  inbound:
+  - port: %s
+    tags:
+      kuma.io/service: demo-client
+  transparentProxying:
+    redirectPortInbound: %s
+    redirectPortOutbound: %s
 `
 )
 
@@ -108,7 +139,7 @@ type UniversalApp struct {
 	verbose      bool
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, env []string, args []string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, caps []string) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:            t,
 		ports:        map[string]string{},
@@ -124,6 +155,9 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 
 	opts := defaultDockerOptions
 	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
+	for _, cap := range caps {
+		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
+	}
 	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
 	container, err := docker.RunAndGetIDE(t, KumaUniversalImage, &opts)
@@ -143,8 +177,6 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 		})
 
 	fmt.Printf("Node IP %s\n", app.ip)
-
-	app.CreateMainApp(env, args)
 
 	return app, nil
 }
@@ -208,7 +240,7 @@ func (s *UniversalApp) CreateMainApp(env []string, args []string) {
 }
 
 func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
-	// and echo it to the Application Node
+	// create the token file on the app container
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
 		panic(err)
@@ -218,14 +250,29 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 	if err != nil {
 		panic(err)
 	}
-	// run the DP
-	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"kuma-dp", "run",
+
+	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
+	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"runuser", "-u", "kuma-dp", "--",
+		"/usr/bin/kuma-dp", "run",
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
 		"--dataplane-file=/kuma/dpyaml-" + appname,
 		"--dataplane-var", "name=dp-" + appname,
 		"--dataplane-var", "address=" + ip,
-		"--binary-path", "/usr/local/bin/envoy"})
+		"--binary-path", "/usr/local/bin/envoy",
+	})
+}
+
+func (s *UniversalApp) setupTransparent(cpIp string) {
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"/usr/bin/kumactl", "install", "transparent-proxy",
+		"--kuma-dp-user", "kuma-dp",
+		"--kuma-cp-ip", cpIp,
+	}).Run()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (s *UniversalApp) getIP() (string, error) {
@@ -234,8 +281,16 @@ func (s *UniversalApp) getIP() (string, error) {
 	if err != nil {
 		return "invalid", errors.Wrapf(err, "getent failed with %s", string(bytes))
 	}
-	split := strings.Split(string(bytes), " ")
-	return split[0], nil
+	lines := strings.Split(string(bytes), "\n")
+	// search ipv4
+	for _, line := range lines {
+		split := strings.Split(line, " ")
+		testInput := net.ParseIP(split[0])
+		if testInput.To4() != nil {
+			return split[0], nil
+		}
+	}
+	return "", errors.Errorf("No IPv4 address found")
 }
 
 type SshApp struct {
