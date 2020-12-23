@@ -55,6 +55,7 @@ func DefaultCallbacks(rt core_runtime.Runtime) (envoy_server.Callbacks, error) {
 		return nil, err
 	}
 	return util_xds_v2.CallbacksChain{
+		util_xds_v2.NewControlPlaneIdCallbacks(rt.GetInstanceId()),
 		util_xds_v2.AdaptCallbacks(statsCallbacks),
 		util_xds_v2.AdaptCallbacks(connectionInfoTracker),
 		util_xds_v2.AdaptCallbacks(authCallbacks),
