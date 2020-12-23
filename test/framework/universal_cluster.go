@@ -60,7 +60,8 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	}
 
 	cmd := []string{"kuma-cp", "run"}
-	env := []string{"KUMA_MODE=" + mode}
+	env := []string{"KUMA_MODE=" + mode, "KUMA_DNS_SERVER_PORT=53"}
+	caps := []string{}
 	for k, v := range opts.env {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
@@ -75,10 +76,12 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		cmd = append(cmd, "--config-file", confPath)
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, true, env, cmd)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, true, caps)
 	if err != nil {
 		return err
 	}
+
+	app.CreateMainApp(env, cmd)
 
 	err = app.mainApp.Start()
 	if err != nil {
@@ -133,7 +136,8 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string) error {
-	cpAddress := "https://" + c.apps[AppModeCP].ip + ":5678"
+	cpIp := c.apps[AppModeCP].ip
+	cpAddress := "https://" + cpIp + ":5678"
 	app.CreateDP(token, cpAddress, appname, ip, dpyaml)
 	return app.dpApp.Start()
 }
@@ -143,6 +147,11 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	appname := opts.appname
 	token := opts.token
 	id := opts.id
+	transparent := opts.transparent
+
+	if opts.mesh == "" {
+		opts.mesh = "default"
+	}
 
 	var args []string
 	switch appname {
@@ -154,26 +163,45 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		return errors.Errorf("not supported app type %s", appname)
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppMode(appname), c.verbose, []string{}, args)
+	caps := []string{}
+	if transparent {
+		caps = append(caps, "NET_ADMIN", "NET_RAW")
+	}
+
+	app, err := NewUniversalApp(c.t, c.name, AppMode(appname), c.verbose, caps)
 	if err != nil {
 		return err
 	}
 
-	err = app.mainApp.Start()
-	if err != nil {
-		return err
+	if transparent {
+		app.setupTransparent(c.apps[AppModeCP].ip)
 	}
+
 	ip := app.ip
 
 	dpyaml := ""
 	switch appname {
 	case AppModeEchoServer:
-		dpyaml = fmt.Sprintf(EchoServerDataplane, "8080", "80", "8080")
+		if transparent {
+			dpyaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, opts.mesh, "80", "80", redirectPortInbound, redirectPortOutbound)
+		} else {
+			dpyaml = fmt.Sprintf(EchoServerDataplane, opts.mesh, "8080", "80", "8080")
+		}
 	case AppModeDemoClient:
-		dpyaml = fmt.Sprintf(DemoClientDataplane, "13000", "3000", "80", "8080")
+		if transparent {
+			dpyaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, opts.mesh, "3000", redirectPortInbound, redirectPortOutbound)
+		} else {
+			dpyaml = fmt.Sprintf(DemoClientDataplane, opts.mesh, "13000", "3000", "80", "8080")
+		}
 	}
 
 	err = c.CreateDP(app, appname, ip, dpyaml, token)
+	if err != nil {
+		return err
+	}
+
+	app.CreateMainApp([]string{}, args)
+	err = app.mainApp.Start()
 	if err != nil {
 		return err
 	}

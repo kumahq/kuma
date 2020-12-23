@@ -51,11 +51,15 @@ func (p KumaProbe) ToVirtual(virtualPort uint32) (KumaProbe, error) {
 		return KumaProbe{}, errors.Errorf("cannot override Pod's probes. Port for probe cannot "+
 			"be set to %d. It is reserved for the dataplane that will serve pods without mTLS.", virtualPort)
 	}
+	probePath := p.Path()
+	if !strings.HasPrefix(p.Path(), "/") {
+		probePath = fmt.Sprintf("/%s", p.Path())
+	}
 	return KumaProbe{
 		Handler: kube_core.Handler{
 			HTTPGet: &kube_core.HTTPGetAction{
 				Port: intstr.FromInt(int(virtualPort)),
-				Path: fmt.Sprintf("/%d%s", p.Port(), p.Path()),
+				Path: fmt.Sprintf("/%d%s", p.Port(), probePath),
 			},
 		},
 	}, nil

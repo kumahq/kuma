@@ -31,10 +31,12 @@ type deployOptions struct {
 	cpReplicas       int
 
 	// app specific
-	namespace string
-	appname   string
-	id        string
-	token     string
+	namespace   string
+	appname     string
+	id          string
+	token       string
+	transparent bool
+	mesh        string
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -107,6 +109,12 @@ func WithNamespace(namespace string) DeployOptionsFunc {
 	}
 }
 
+func WithMesh(mesh string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.mesh = mesh
+	}
+}
+
 func WithAppname(appname string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.appname = appname
@@ -122,6 +130,12 @@ func WithId(id string) DeployOptionsFunc {
 func WithToken(token string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.token = token
+	}
+}
+
+func WithTransparentProxy(transparent bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.transparent = transparent
 	}
 }
 
@@ -182,5 +196,5 @@ type ControlPlane interface {
 	GetKumaCPLogs() (string, error)
 	GetKDSServerAddress() string
 	GetGlobaStatusAPI() string
-	GenerateDpToken(appname string) (string, error)
+	GenerateDpToken(mesh, appname string) (string, error)
 }

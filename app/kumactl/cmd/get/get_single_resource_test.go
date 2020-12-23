@@ -72,6 +72,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		Entry("traffic-route", "traffic-route"),
 		Entry("traffic-trace", "traffic-trace"),
 		Entry("secret", "secret"),
+		Entry("retry", "retry"),
 	}
 
 	DescribeTable("should throw an error in case of no args",

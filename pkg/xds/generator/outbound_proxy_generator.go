@@ -4,8 +4,6 @@ import (
 	"context"
 	"strings"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -55,7 +53,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 			return nil, err
 		}
 		resources.Add(&model.Resource{
-			Name:     listener.Name,
+			Name:     listener.GetName(),
 			Origin:   OriginOutbound,
 			Resource: listener,
 		})
@@ -68,7 +66,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	}
 	resources.AddSet(cdsResources)
 
-	edsResources, err := g.generateEDS(ctx, proxy, clusters)
+	edsResources, err := g.generateEDS(ctx, clusters)
 	if err != nil {
 		return nil, err
 	}
@@ -77,44 +75,71 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	return resources, nil
 }
 
-func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_common.ClusterSubset, outbound *kuma_mesh.Dataplane_Networking_Outbound, protocol mesh_core.Protocol) (*envoy_api_v2.Listener, error) {
+func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_common.ClusterSubset, outbound *kuma_mesh.Dataplane_Networking_Outbound, protocol mesh_core.Protocol) (envoy_common.NamedResource, error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 	meshName := proxy.Dataplane.Meta.GetMesh()
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	serviceName := outbound.GetTagsIncludingLegacy()[kuma_mesh.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
+	retryPolicy := proxy.Policies.Retries[serviceName]
 	filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
-		filterChainBuilder := envoy_listeners.NewFilterChainBuilder()
+		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2)
 		switch protocol {
 		case mesh_core.ProtocolGRPC:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
-				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
-				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
+				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
+				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Policies.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet())).
+				Configure(envoy_listeners.Retry(retryPolicy, protocol)).
 				Configure(envoy_listeners.GrpcStats())
 		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 			filterChainBuilder.
 				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
-				Configure(envoy_listeners.Tracing(proxy.TracingBackend)).
-				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy)).
-				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet()))
+				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
+				Configure(envoy_listeners.HttpAccessLog(
+					meshName,
+					envoy_common.TrafficDirectionOutbound,
+					sourceService,
+					serviceName,
+					proxy.Policies.Logs[serviceName],
+					proxy,
+				)).
+				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet())).
+				Configure(envoy_listeners.Retry(retryPolicy, protocol))
 		case mesh_core.ProtocolKafka:
 			filterChainBuilder.
 				Configure(envoy_listeners.Kafka(serviceName)).
 				Configure(envoy_listeners.TcpProxy(serviceName, subsets...)).
-				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy))
+				Configure(envoy_listeners.NetworkAccessLog(
+					meshName,
+					envoy_common.TrafficDirectionOutbound,
+					sourceService,
+					serviceName,
+					proxy.Policies.Logs[serviceName],
+					proxy,
+				)).
+				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
+
 		case mesh_core.ProtocolTCP:
 			fallthrough
 		default:
 			// configuration for non-HTTP cases
 			filterChainBuilder.
 				Configure(envoy_listeners.TcpProxy(serviceName, subsets...)).
-				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, serviceName, proxy.Logs[serviceName], proxy))
+				Configure(envoy_listeners.NetworkAccessLog(
+					meshName,
+					envoy_common.TrafficDirectionOutbound,
+					sourceService,
+					serviceName,
+					proxy.Policies.Logs[serviceName],
+					proxy,
+				)).
+				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
 		}
 		return filterChainBuilder
 	}()
-	listener, err := envoy_listeners.NewListenerBuilder().
+	listener, err := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
 		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
@@ -130,17 +155,17 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 	for _, clusterName := range clusters.ClusterNames() {
 		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
 		tags := clusters.Tags(clusterName)
-		healthCheck := proxy.HealthChecks[serviceName]
-		circuitBreaker := proxy.CircuitBreakers[serviceName]
-		edsClusterBuilder := envoy_clusters.NewClusterBuilder().
+		healthCheck := proxy.Policies.HealthChecks[serviceName]
+		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
+		edsClusterBuilder := envoy_clusters.NewClusterBuilder(envoy_common.APIV2).
 			Configure(envoy_clusters.LbSubset(o.lbSubsets(tags))).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 			Configure(envoy_clusters.HealthCheck(healthCheck))
 
 		if clusters.Get(clusterName).HasExternalService() {
 			edsClusterBuilder = edsClusterBuilder.
-				Configure(envoy_clusters.StrictDNSCluster(clusterName, proxy.OutboundTargets[serviceName])).
-				Configure(envoy_clusters.ClientSideTLS(proxy.OutboundTargets[serviceName]))
+				Configure(envoy_clusters.StrictDNSCluster(clusterName, proxy.Routing.OutboundTargets[serviceName])).
+				Configure(envoy_clusters.ClientSideTLS(proxy.Routing.OutboundTargets[serviceName]))
 			protocol := o.inferProtocol(proxy, clusters.Get(clusterName).Subsets())
 			switch protocol {
 			case mesh_core.ProtocolHTTP2, mesh_core.ProtocolGRPC:
@@ -180,14 +205,14 @@ func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]strin
 	return result
 }
 
-func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (*model.ResourceSet, error) {
+func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, clusters envoy_common.Clusters) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
 		// Endpoints for ExternalServices are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !clusters.Get(clusterName).HasExternalService() {
 			serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
-			loadAssignment, err := proxy.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), serviceName)
+			loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, serviceName)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not get ClusterLoadAssingment for %s", serviceName)
 			}
@@ -205,7 +230,7 @@ func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []env
 	var allEndpoints []model.Endpoint
 	for _, cluster := range clusters {
 		serviceName := cluster.Tags[kuma_mesh.ServiceTag]
-		endpoints := model.EndpointList(proxy.OutboundTargets[serviceName])
+		endpoints := model.EndpointList(proxy.Routing.OutboundTargets[serviceName])
 		allEndpoints = append(allEndpoints, endpoints...)
 	}
 	return InferServiceProtocol(allEndpoints)
@@ -214,7 +239,7 @@ func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []env
 func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *kuma_mesh.Dataplane_Networking_Outbound) (subsets []envoy_common.ClusterSubset, err error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
-	route := proxy.TrafficRoutes[oface]
+	route := proxy.Routing.TrafficRoutes[oface]
 	if route == nil {
 		outboundLog.Info("there is no selected TrafficRoute for the outbound interface, which means that the traffic won't be routed. Visit https://kuma.io/docs/latest/policies/traffic-route/ to check how to introduce the routing.", "dataplane", proxy.Dataplane.Meta.GetName(), "mesh", proxy.Dataplane.Meta.GetMesh(), "outbound", oface)
 		return nil, nil
@@ -238,7 +263,7 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 
 		// We assume that all the targets are either ExternalServices or not
 		// therefore we check only the first one
-		endpoints := proxy.OutboundTargets[service]
+		endpoints := proxy.Routing.OutboundTargets[service]
 		if len(endpoints) > 0 {
 			ep := endpoints[0]
 			if ep.IsExternalService() {

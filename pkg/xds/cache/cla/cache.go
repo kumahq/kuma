@@ -21,7 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
+	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -67,8 +67,8 @@ func NewCache(
 	}, nil
 }
 
-func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
-	key := fmt.Sprintf("%s:%s", meshName, service)
+func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
+	key := fmt.Sprintf("%s:%s:%s", meshName, service, meshHash)
 	value, found := c.cache.Get(key)
 	if found {
 		c.metrics.WithLabelValues("get", "hit").Inc()

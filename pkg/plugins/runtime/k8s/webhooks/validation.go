@@ -75,6 +75,10 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 		return admission.Errored(http.StatusInternalServerError, err)
 	}
 
+	if err := core_mesh.ValidateMesh(obj.GetMesh(), coreRes.Scope()); err.HasViolations() {
+		return convertValidationErrorOf(err, obj, obj.GetObjectMeta())
+	}
+
 	if err := coreRes.Validate(); err != nil {
 		if kumaErr, ok := err.(*validators.ValidationError); ok {
 			// we assume that coreRes.Validate() returns validation errors of the spec
