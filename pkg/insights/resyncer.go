@@ -273,9 +273,23 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			insight.Dataplanes.Total = uint32(len(list.GetItems()))
 		case core_mesh.DataplaneInsightType:
 			for _, dpInsight := range list.(*core_mesh.DataplaneInsightResourceList).Items {
+				dpSubscription, _ := dpInsight.Spec.GetLatestSubscription()
 				if dpInsight.Spec.IsOnline() {
 					insight.Dataplanes.Online++
+					insight.DpVersions.KumaDp[dpSubscription.Version.KumaDp.Version].Online++
+					insight.DpVersions.Envoy[dpSubscription.Version.Envoy.Version].Online++
+				} else {
+					insight.DpVersions.KumaDp[dpSubscription.Version.KumaDp.Version].Offline++
+					insight.DpVersions.Envoy[dpSubscription.Version.Envoy.Version].Offline++
 				}
+				// KumaDP total
+				insight.DpVersions.KumaDp[dpSubscription.Version.KumaDp.Version].Total =
+					insight.DpVersions.KumaDp[dpSubscription.Version.KumaDp.Version].Online +
+					insight.DpVersions.KumaDp[dpSubscription.Version.KumaDp.Version].Offline
+				// Envoy total
+				insight.DpVersions.Envoy[dpSubscription.Version.Envoy.Version].Total =
+					insight.DpVersions.Envoy[dpSubscription.Version.Envoy.Version].Online +
+					insight.DpVersions.Envoy[dpSubscription.Version.Envoy.Version].Offline
 			}
 		default:
 			if len(list.GetItems()) != 0 {
