@@ -23,4 +23,15 @@ message MeshInsight {
   // PolicyStat defines statistic for all policies in general
   message PolicyStat { uint32 total = 1; }
   map<string, PolicyStat> policies = 3;
+
+  // DpVersions defines statistics grouped by dataplane versions
+  message DpVersions {
+
+    // Dataplane stats grouped by KumaDP version
+    map<string, DataplaneStat> kumaDp = 1;
+
+    // Dataplan stats grouped by Envoy version
+    map<string, DataplaneStat> envoy = 2;
+  }
+  DpVersions dpVersions = 4;
 }
