@@ -258,7 +258,7 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		Policies:   map[string]*mesh_proto.MeshInsight_PolicyStat{},
 		DpVersions: &mesh_proto.MeshInsight_DpVersions{
 			KumaDp: map[string]*mesh_proto.MeshInsight_DataplaneStat{},
-			Envoy: 	map[string]*mesh_proto.MeshInsight_DataplaneStat{},
+			Envoy:  map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 		},
 	}
 	for _, resType := range registry.Global().ListTypes() {
