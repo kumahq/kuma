@@ -273,8 +273,6 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			return err
 		}
 		switch resType {
-		case core_mesh.DataplaneType:
-			insight.Dataplanes.Total = uint32(len(list.GetItems()))
 		case core_mesh.DataplaneInsightType:
 			for _, dpInsight := range list.(*core_mesh.DataplaneInsightResourceList).Items {
 				dpSubscription, _ := dpInsight.Spec.GetLatestSubscription()
@@ -284,9 +282,11 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 					insight.DpVersions.KumaDp[dpSubscription.Version.KumaDp.Version].Online++
 					insight.DpVersions.Envoy[dpSubscription.Version.Envoy.Version].Online++
 				} else {
+					insight.Dataplanes.Offline++
 					insight.DpVersions.KumaDp[dpSubscription.Version.KumaDp.Version].Offline++
 					insight.DpVersions.Envoy[dpSubscription.Version.Envoy.Version].Offline++
 				}
+				insight.Dataplanes.Total = insight.Dataplanes.Online + insight.Dataplanes.Offline
 				updateTotal(dpSubscription.Version.KumaDp.Version, insight.DpVersions.KumaDp)
 				updateTotal(dpSubscription.Version.Envoy.Version, insight.DpVersions.Envoy)
 			}
@@ -298,7 +298,6 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			}
 		}
 	}
-	insight.Dataplanes.Offline = insight.Dataplanes.Total - insight.Dataplanes.Online
 
 	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: model.NoMesh, Name: mesh}, core_mesh.NewMeshInsightResource(), func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
