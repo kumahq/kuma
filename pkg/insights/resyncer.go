@@ -276,19 +276,19 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		case core_mesh.DataplaneInsightType:
 			for _, dpInsight := range list.(*core_mesh.DataplaneInsightResourceList).Items {
 				dpSubscription, _ := dpInsight.Spec.GetLatestSubscription()
-				ensureVersionExists(dpSubscription.Version, insight.DpVersions)
+				ensureVersionExists(dpSubscription.GetVersion(), insight.DpVersions)
 				if dpInsight.Spec.IsOnline() {
 					insight.Dataplanes.Online++
-					insight.DpVersions.KumaDp[dpSubscription.Version.KumaDp.Version].Online++
-					insight.DpVersions.Envoy[dpSubscription.Version.Envoy.Version].Online++
+					insight.DpVersions.KumaDp[dpSubscription.GetVersion().GetKumaDp().GetVersion()].Online++
+					insight.DpVersions.Envoy[dpSubscription.GetVersion().GetEnvoy().GetVersion()].Online++
 				} else {
 					insight.Dataplanes.Offline++
-					insight.DpVersions.KumaDp[dpSubscription.Version.KumaDp.Version].Offline++
-					insight.DpVersions.Envoy[dpSubscription.Version.Envoy.Version].Offline++
+					insight.DpVersions.KumaDp[dpSubscription.GetVersion().GetKumaDp().GetVersion()].Offline++
+					insight.DpVersions.Envoy[dpSubscription.GetVersion().GetEnvoy().GetVersion()].Offline++
 				}
 				insight.Dataplanes.Total = insight.Dataplanes.Online + insight.Dataplanes.Offline
-				updateTotal(dpSubscription.Version.KumaDp.Version, insight.DpVersions.KumaDp)
-				updateTotal(dpSubscription.Version.Envoy.Version, insight.DpVersions.Envoy)
+				updateTotal(dpSubscription.GetVersion().GetKumaDp().GetVersion(), insight.DpVersions.KumaDp)
+				updateTotal(dpSubscription.GetVersion().GetEnvoy().GetVersion(), insight.DpVersions.Envoy)
 			}
 		default:
 			if len(list.GetItems()) != 0 {
@@ -324,8 +324,8 @@ func updateTotal(version string, dpStats map[string]*mesh_proto.MeshInsight_Data
 }
 
 func ensureVersionExists(v *mesh_proto.Version, dpVersions *mesh_proto.MeshInsight_DpVersions) {
-	ensureKeyExists(v.KumaDp.Version, dpVersions.KumaDp)
-	ensureKeyExists(v.Envoy.Version, dpVersions.Envoy)
+	ensureKeyExists(v.GetKumaDp().GetVersion(), dpVersions.KumaDp)
+	ensureKeyExists(v.GetEnvoy().GetVersion(), dpVersions.Envoy)
 }
 
 func ensureKeyExists(version string, m map[string]*mesh_proto.MeshInsight_DataplaneStat) {
