@@ -214,7 +214,10 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode)
 	composite.AddValidator(handler)
 
-	coreMeshValidator := managers_mesh.MeshValidator{CaManagers: rt.CaManagers()}
+	coreMeshValidator := managers_mesh.MeshValidator{
+		CaManagers: rt.CaManagers(),
+		Store:      rt.ResourceStore(),
+	}
 	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, converter, rt.ResourceManager())
 	composite.AddValidator(k8sMeshValidator)
 

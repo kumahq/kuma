@@ -91,6 +91,11 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 	if err != nil {
 		return err
 	}
+	opts := core_store.NewDeleteOptions(fs...)
+
+	if err := m.meshValidator.ValidateDelete(ctx, opts.Name); err != nil {
+		return err
+	}
 	// delete Mesh first to avoid a state where a Mesh could exist without secrets.
 	// even if removal of secrets fails later on, delete operation can be safely tried again.
 	var notFoundErr error
@@ -101,7 +106,6 @@ func (m *meshManager) Delete(ctx context.Context, resource core_model.Resource, 
 			return err
 		}
 	}
-	opts := core_store.NewDeleteOptions(fs...)
 	// delete all secrets
 	if err := m.otherManagers.DeleteAll(ctx, &system.SecretResourceList{}, core_store.DeleteAllByMesh(opts.Name)); err != nil {
 		return errors.Wrap(err, "could not delete associated secrets")
