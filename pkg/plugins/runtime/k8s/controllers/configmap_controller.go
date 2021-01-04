@@ -16,6 +16,8 @@ import (
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
@@ -45,9 +47,17 @@ func (r *ConfigMapReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 		return kube_ctrl.Result{}, nil
 	}
 
+	r.Log.V(1).Info("updating VIPs", "mesh", mesh)
+
 	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh); err != nil {
+		if store.IsResourceConflict(err) {
+			r.Log.V(1).Info("VIPs were updated in the other place. Retrying")
+			return kube_ctrl.Result{Requeue: true}, nil
+		}
 		return kube_ctrl.Result{}, err
 	}
+
+	r.Log.V(1).Info("VIPs updated", "mesh", mesh)
 
 	return kube_ctrl.Result{}, nil
 }

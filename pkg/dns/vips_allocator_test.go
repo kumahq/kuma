@@ -5,6 +5,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
+
+	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
@@ -36,6 +39,15 @@ func dp(services ...string) *mesh_proto.Dataplane {
 			Inbound: inbound,
 		},
 	}
+}
+
+type errConfigManager struct {
+	config_manager.ConfigManager
+}
+
+func (e *errConfigManager) Update(ctx context.Context, r *config_model.ConfigResource, opts ...store.UpdateOptionsFunc) error {
+	meshName, _ := vips.MeshFromConfigKey(r.GetMeta().GetName())
+	return errors.Errorf("error during update, mesh = %s", meshName)
 }
 
 var _ = Describe("VIP Allocator", func() {
@@ -121,6 +133,40 @@ var _ = Describe("VIP Allocator", func() {
 		}))
 	})
 
+	It("should return error if failed to update VIP config", func() {
+		errConfigManager := &errConfigManager{ConfigManager: cm}
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, "240.0.0.0/24", r)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = errAllocator.CreateOrUpdateVIPConfig("mesh-1")
+		Expect(err).To(HaveOccurred())
+		Expect(err.Error()).To(Equal("error during update, mesh = mesh-1"))
+	})
+
+	It("should try to update all meshes and return combined error", func() {
+		errConfigManager := &errConfigManager{ConfigManager: cm}
+		errAllocator, err := dns.NewVIPsAllocator(rm, errConfigManager, "240.0.0.0/24", r)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = errAllocator.CreateOrUpdateVIPConfigs()
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("database")}, store.CreateByKey("dp-3", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &mesh.DataplaneResource{Spec: dp("payment")}, store.CreateByKey("dp-4", "mesh-2"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = errAllocator.CreateOrUpdateVIPConfigs()
+		Expect(err).To(HaveOccurred())
+		Expect(err).To(MatchError("error during update, mesh = mesh-1; error during update, mesh = mesh-2"))
+	})
 })
 
 var _ = Describe("BuildServiceSet", func() {
