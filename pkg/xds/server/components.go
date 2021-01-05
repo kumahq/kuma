@@ -14,6 +14,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 	v2 "github.com/kumahq/kuma/pkg/xds/server/v2"
+	v3 "github.com/kumahq/kuma/pkg/xds/server/v3"
 
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 )
@@ -67,6 +68,9 @@ func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 
 	if err := v2.RegisterXDS(statsCallbacks, xdsMetrics, meshSnapshotCache, envoyCpCtx, rt, server); err != nil {
 		return errors.Wrap(err, "could not register V2 XDS")
+	}
+	if err := v3.RegisterXDS(statsCallbacks, xdsMetrics, meshSnapshotCache, envoyCpCtx, rt, server); err != nil {
+		return errors.Wrap(err, "could not register V3 XDS")
 	}
 	return nil
 }
