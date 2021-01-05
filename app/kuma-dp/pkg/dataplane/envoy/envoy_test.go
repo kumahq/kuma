@@ -12,11 +12,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -73,12 +68,9 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, EnvoyVersion) (proto.Message, error) {
-				return &envoy_bootstrap.Bootstrap{
-					Node: &envoy_core.Node{
-						Id: "example",
-					},
-				}, nil
+			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, EnvoyVersion) ([]byte, error) {
+				return []byte(`node:
+  id: example`), nil
 			}
 			expectedConfigFile := filepath.Join(configDir, "bootstrap.yaml")
 
@@ -144,8 +136,8 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, EnvoyVersion) (proto.Message, error) {
-				return &envoy_bootstrap.Bootstrap{}, nil
+			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, EnvoyVersion) ([]byte, error) {
+				return nil, nil
 			}
 
 			By("starting a mock dataplane")
@@ -186,8 +178,8 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, EnvoyVersion) (proto.Message, error) {
-				return &envoy_bootstrap.Bootstrap{}, nil
+			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, EnvoyVersion) ([]byte, error) {
+				return nil, nil
 			}
 
 			By("starting a mock dataplane")

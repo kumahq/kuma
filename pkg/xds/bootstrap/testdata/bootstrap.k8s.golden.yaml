@@ -17,6 +17,7 @@ dynamicResources:
           credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
           statPrefix: ads
           targetUri: localhost:5678
+    transportApiVersion: V2
   cdsConfig:
     ads: {}
   ldsConfig:

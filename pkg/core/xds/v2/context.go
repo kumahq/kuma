@@ -1,4 +1,4 @@
-package xds
+package v2
 
 import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -7,6 +7,7 @@ import (
 	"github.com/go-logr/logr"
 
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/xds"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
@@ -57,7 +58,7 @@ func (h hasher) ID(node *envoy_core.Node) string {
 	if node == nil {
 		return "unknown"
 	}
-	proxyId, err := ParseProxyId(node)
+	proxyId, err := xds.ParseProxyIdFromString(node.GetId())
 	if err != nil {
 		h.log.Error(err, "failed to parse Proxy ID", "node", node)
 		return "unknown"

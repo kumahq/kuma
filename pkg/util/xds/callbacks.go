@@ -3,7 +3,6 @@ package xds
 import (
 	"context"
 
-	"github.com/golang/protobuf/proto"
 	_struct "github.com/golang/protobuf/ptypes/struct"
 )
 
@@ -14,7 +13,6 @@ type DiscoveryRequest interface {
 	GetTypeUrl() string
 	GetResponseNonce() string
 	HasErrors() bool
-	Proto() proto.Message
 }
 
 // DiscoveryResponse defines interface over real Envoy's DiscoveryResponse.

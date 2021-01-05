@@ -13,7 +13,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -25,7 +24,7 @@ var (
 	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 )
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource, ev EnvoyVersion) (proto.Message, error)
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource, ev EnvoyVersion) ([]byte, error)
 
 type Opts struct {
 	Config    kuma_dp.Config

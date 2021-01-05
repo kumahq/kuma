@@ -22,7 +22,6 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 // Runtime represents initialized application state.
@@ -40,7 +39,6 @@ type RuntimeInfo interface {
 
 type RuntimeContext interface {
 	Config() kuma_cp.Config
-	XDS() core_xds.XdsContext
 	DataSourceLoader() datasource.Loader
 	ResourceManager() core_manager.ResourceManager
 	ResourceStore() core_store.ResourceStore
@@ -101,7 +99,6 @@ type runtimeContext struct {
 	cs       core_store.ResourceStore
 	rom      core_manager.ReadOnlyResourceManager
 	cam      ca.Managers
-	xds      core_xds.XdsContext
 	dsl      datasource.Loader
 	ext      context.Context
 	dns      resolver.DNSResolver
@@ -127,10 +124,6 @@ func (rc *runtimeContext) CaManagers() ca.Managers {
 
 func (rc *runtimeContext) Config() kuma_cp.Config {
 	return rc.cfg
-}
-
-func (rc *runtimeContext) XDS() core_xds.XdsContext {
-	return rc.xds
 }
 
 func (rc *runtimeContext) DataSourceLoader() datasource.Loader {

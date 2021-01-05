@@ -23,7 +23,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -34,7 +33,6 @@ type BuilderContext interface {
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
 	ResourceManager() core_manager.ResourceManager
-	XdsContext() core_xds.XdsContext
 	Config() kuma_cp.Config
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
@@ -58,7 +56,6 @@ type Builder struct {
 	rm       core_manager.ResourceManager
 	rom      core_manager.ReadOnlyResourceManager
 	cam      core_ca.Managers
-	xds      core_xds.XdsContext
 	dsl      datasource.Loader
 	ext      context.Context
 	dns      resolver.DNSResolver
@@ -132,11 +129,6 @@ func (b *Builder) WithDataSourceLoader(loader datasource.Loader) *Builder {
 	return b
 }
 
-func (b *Builder) WithXdsContext(xds core_xds.XdsContext) *Builder {
-	b.xds = xds
-	return b
-}
-
 func (b *Builder) WithExtensions(ext context.Context) *Builder {
 	b.ext = ext
 	return b
@@ -195,9 +187,6 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.rom == nil {
 		return nil, errors.Errorf("ReadOnlyResourceManager has not been configured")
 	}
-	if b.xds == nil {
-		return nil, errors.Errorf("xDS Context has not been configured")
-	}
 	if b.dsl == nil {
 		return nil, errors.Errorf("DataSourceLoader has not been configured")
 	}
@@ -231,7 +220,6 @@ func (b *Builder) Build() (Runtime, error) {
 			rs:       b.rs,
 			ss:       b.ss,
 			cam:      b.cam,
-			xds:      b.xds,
 			dsl:      b.dsl,
 			ext:      b.ext,
 			dns:      b.dns,
@@ -266,9 +254,6 @@ func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 }
 func (b *Builder) CaManagers() core_ca.Managers {
 	return b.cam
-}
-func (b *Builder) XdsContext() core_xds.XdsContext {
-	return b.xds
 }
 func (b *Builder) Config() kuma_cp.Config {
 	return b.cfg

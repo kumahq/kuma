@@ -3,48 +3,27 @@ package sync
 import (
 	"time"
 
-	"github.com/prometheus/client_golang/prometheus"
-
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 )
 
 type dataplaneWatchdogFactory struct {
-	xdsGenerations       prometheus.Summary
-	xdsGenerationsErrors prometheus.Counter
-	refreshInterval      time.Duration
+	xdsSyncMetrics  *XDSSyncMetrics
+	refreshInterval time.Duration
 
 	deps DataplaneWatchdogDependencies
 }
 
 func NewDataplaneWatchdogFactory(
-	metrics core_metrics.Metrics,
+	xdsSyncMetrics *XDSSyncMetrics,
 	refreshInterval time.Duration,
 	deps DataplaneWatchdogDependencies,
 ) (DataplaneWatchdogFactory, error) {
-	xdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "xds_generation",
-		Help:       "Summary of XDS Snapshot generation",
-		Objectives: core_metrics.DefaultObjectives,
-	})
-	if err := metrics.Register(xdsGenerations); err != nil {
-		return nil, err
-	}
-	xdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
-		Name: "xds_generation_errors",
-		Help: "Counter of errors during XDS generation",
-	})
-	if err := metrics.Register(xdsGenerationsErrors); err != nil {
-		return nil, err
-	}
-
 	return &dataplaneWatchdogFactory{
-		deps:                 deps,
-		refreshInterval:      refreshInterval,
-		xdsGenerations:       xdsGenerations,
-		xdsGenerationsErrors: xdsGenerationsErrors,
+		deps:            deps,
+		refreshInterval: refreshInterval,
+		xdsSyncMetrics:  xdsSyncMetrics,
 	}, nil
 }
 
@@ -58,12 +37,12 @@ func (d *dataplaneWatchdogFactory) New(key core_model.ResourceKey, streamId int6
 		OnTick: func() error {
 			start := core.Now()
 			defer func() {
-				d.xdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
+				d.xdsSyncMetrics.XdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
 			}()
 			return dataplaneWatchdog.Sync()
 		},
 		OnError: func(err error) {
-			d.xdsGenerationsErrors.Inc()
+			d.xdsSyncMetrics.XdsGenerationsErrors.Inc()
 			log.Error(err, "OnTick() failed")
 		},
 		OnStop: func() {

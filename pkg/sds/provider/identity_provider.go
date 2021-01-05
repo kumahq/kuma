@@ -1,4 +1,4 @@
-package identity
+package provider
 
 import (
 	"context"
@@ -10,10 +10,20 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-func New(resourceManager core_manager.ResourceManager, caManagers core_ca.Managers) sds_provider.SecretProvider {
+type Identity struct {
+	Mesh     string
+	Name     string
+	Services []string
+}
+
+type IdentityCertProvider interface {
+	Get(ctx context.Context, requestor Identity) (*core_xds.IdentitySecret, error)
+}
+
+func NewIdentityProvider(resourceManager core_manager.ResourceManager, caManagers core_ca.Managers) IdentityCertProvider {
 	return &identityCertProvider{
 		resourceManager: resourceManager,
 		caManagers:      caManagers,
@@ -25,11 +35,7 @@ type identityCertProvider struct {
 	caManagers      core_ca.Managers
 }
 
-func (s *identityCertProvider) RequiresIdentity() bool {
-	return true
-}
-
-func (s *identityCertProvider) Get(ctx context.Context, name string, requestor sds_provider.Identity) (sds_provider.Secret, error) {
+func (s *identityCertProvider) Get(ctx context.Context, requestor Identity) (*core_xds.IdentitySecret, error) {
 	meshName := requestor.Mesh
 
 	meshRes := core_mesh.NewMeshResource()
@@ -52,7 +58,7 @@ func (s *identityCertProvider) Get(ctx context.Context, name string, requestor s
 		return nil, errors.Wrapf(err, "could not generate dataplane cert for mesh: %q backend: %q services: %q", meshName, backend.Name, requestor.Services)
 	}
 
-	return &IdentityCertSecret{
+	return &core_xds.IdentitySecret{
 		PemCerts: [][]byte{pair.CertPEM},
 		PemKey:   pair.KeyPEM,
 	}, nil

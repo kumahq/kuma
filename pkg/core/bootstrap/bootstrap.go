@@ -37,7 +37,6 @@ import (
 	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -85,8 +84,6 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 	if err := initializeCaManagers(builder); err != nil {
 		return nil, err
 	}
-
-	initializeXds(builder)
 
 	leaderInfoComponent := &component.LeaderInfoComponent{}
 	builder.WithLeaderInfo(leaderInfoComponent)
@@ -265,10 +262,6 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 		builder.WithConfigStore(cs)
 		return nil
 	}
-}
-
-func initializeXds(builder *core_runtime.Builder) {
-	builder.WithXdsContext(core_xds.NewXdsContext())
 }
 
 func initializeCaManagers(builder *core_runtime.Builder) error {

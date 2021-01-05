@@ -1,4 +1,4 @@
-package server
+package v2
 
 import (
 	"context"
@@ -9,19 +9,20 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
-	"github.com/prometheus/client_golang/prometheus"
 	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
+	"github.com/kumahq/kuma/pkg/sds/server/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 	xds_auth "github.com/kumahq/kuma/pkg/xds/auth"
 	auth_components "github.com/kumahq/kuma/pkg/xds/auth/components"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_callbacks "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 )
 
@@ -29,13 +30,13 @@ var (
 	sdsServerLog = core.Log.WithName("sds-server")
 )
 
-func RegisterSDS(rt core_runtime.Runtime, server *grpc.Server) error {
+func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *metrics.SDSMetrics, server *grpc.Server) error {
 	hasher := hasher{sdsServerLog}
 	logger := util_xds.NewLogger(sdsServerLog)
 	cache := envoy_cache.NewSnapshotCache(false, hasher, logger)
 
-	caProvider := DefaultMeshCaProvider(rt)
-	identityProvider := DefaultIdentityCertProvider(rt)
+	caProvider := sds_provider.NewCaProvider(rt.ResourceManager(), rt.CaManagers())
+	identityProvider := sds_provider.NewIdentityProvider(rt.ResourceManager(), rt.CaManagers())
 	authenticator, err := auth_components.DefaultAuthenticator(rt)
 	if err != nil {
 		return err
@@ -49,55 +50,28 @@ func RegisterSDS(rt core_runtime.Runtime, server *grpc.Server) error {
 		identityProvider:   identityProvider,
 		cache:              cache,
 		upsertConfig:       rt.Config().Store.Upsert,
-	}
-	certGenerationsMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-		Help: "Number of generated certificates",
-		Name: "sds_cert_generation",
-	}, func() float64 {
-		return float64(reconciler.GeneratedCerts())
-	})
-	if err := rt.Metrics().Register(certGenerationsMetric); err != nil {
-		return err
+		sdsMetrics:         sdsMetrics,
 	}
 
-	syncTracker, err := syncTracker(&reconciler, rt.Config().SdsServer.DataplaneConfigurationRefreshInterval, rt.Metrics())
-	if err != nil {
-		return err
-	}
-	statsCallbacks, err := util_xds.NewStatsCallbacks(rt.Metrics(), "sds")
+	syncTracker, err := syncTracker(&reconciler, rt.Config().SdsServer.DataplaneConfigurationRefreshInterval, sdsMetrics)
 	if err != nil {
 		return err
 	}
 	callbacks := util_xds_v2.CallbacksChain{
-		util_xds_v2.AdaptCallbacks(statsCallbacks),
-		util_xds_v2.LoggingCallbacks{Log: sdsServerLog},
+		util_xds_v2.AdaptCallbacks(sdsMetrics.Callbacks),
+		util_xds_v2.AdaptCallbacks(util_xds.LoggingCallbacks{Log: sdsServerLog}),
 		util_xds_v2.AdaptCallbacks(authCallbacks),
 		util_xds_v2.AdaptCallbacks(syncTracker),
 	}
 
 	srv := envoy_server.NewServer(context.Background(), cache, callbacks)
 
-	sdsServerLog.Info("registering Secret Discovery Service in Dataplane Server")
+	sdsServerLog.Info("registering Secret Discovery Service V2 in Dataplane Server")
 	envoy_discovery.RegisterSecretDiscoveryServiceServer(server, srv)
 	return nil
 }
 
-func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, metrics core_metrics.Metrics) (util_xds.Callbacks, error) {
-	sdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
-		Name:       "sds_generation",
-		Help:       "Summary of SDS Snapshot generation",
-		Objectives: core_metrics.DefaultObjectives,
-	})
-	if err := metrics.Register(sdsGenerations); err != nil {
-		return nil, err
-	}
-	sdsGenerationsErrors := prometheus.NewCounter(prometheus.CounterOpts{
-		Help: "Counter of errors during SDS generation",
-		Name: "sds_generation_errors",
-	})
-	if err := metrics.Register(sdsGenerationsErrors); err != nil {
-		return nil, err
-	}
+func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetrics *metrics.SDSMetrics) (util_xds.Callbacks, error) {
 	return xds_callbacks.NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
@@ -106,12 +80,12 @@ func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, metrics
 			OnTick: func() error {
 				start := core.Now()
 				defer func() {
-					sdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
+					sdsMetrics.SdsGeneration(envoy_common.APIV2).Observe(float64(core.Now().Sub(start).Milliseconds()))
 				}()
 				return reconciler.Reconcile(dataplaneId)
 			},
 			OnError: func(err error) {
-				sdsGenerationsErrors.Inc()
+				sdsMetrics.SdsGenerationsErrors(envoy_common.APIV2).Inc()
 				sdsServerLog.Error(err, "OnTick() failed")
 			},
 		}
@@ -126,7 +100,7 @@ func (h hasher) ID(node *envoy_core.Node) string {
 	if node == nil {
 		return "unknown"
 	}
-	proxyId, err := core_xds.ParseProxyId(node)
+	proxyId, err := core_xds.ParseProxyIdFromString(node.GetId())
 	if err != nil {
 		h.log.Error(err, "failed to parse Proxy ID", "node", node)
 		return "unknown"

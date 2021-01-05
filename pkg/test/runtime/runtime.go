@@ -19,7 +19,6 @@ import (
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
 	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -54,8 +53,7 @@ func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	}
 	builder.
 		WithComponentManager(component.NewManager(leader_memory.NewAlwaysLeaderElector())).
-		WithResourceStore(resources_memory.NewStore()).
-		WithXdsContext(core_xds.NewXdsContext())
+		WithResourceStore(resources_memory.NewStore())
 
 	metrics, _ := metrics.NewMetrics("Standalone")
 	builder.WithMetrics(metrics)

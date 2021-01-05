@@ -1,4 +1,4 @@
-package identity
+package v2
 
 import (
 	"bytes"
@@ -6,29 +6,23 @@ import (
 	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
-	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
-type IdentityCertSecret struct {
-	PemCerts [][]byte
-	PemKey   []byte
-}
-
-var _ sds_provider.Secret = &IdentityCertSecret{}
-
-func (s *IdentityCertSecret) ToResource(name string) *envoy_auth.Secret {
+func CreateIdentitySecret(secret *core_xds.IdentitySecret) *envoy_auth.Secret {
 	return &envoy_auth.Secret{
-		Name: name,
+		Name: tls.IdentityCertResource,
 		Type: &envoy_auth.Secret_TlsCertificate{
 			TlsCertificate: &envoy_auth.TlsCertificate{
 				CertificateChain: &envoy_core.DataSource{
 					Specifier: &envoy_core.DataSource_InlineBytes{
-						InlineBytes: bytes.Join(s.PemCerts, []byte("\n")),
+						InlineBytes: bytes.Join(secret.PemCerts, []byte("\n")),
 					},
 				},
 				PrivateKey: &envoy_core.DataSource{
 					Specifier: &envoy_core.DataSource_InlineBytes{
-						InlineBytes: s.PemKey,
+						InlineBytes: secret.PemKey,
 					},
 				},
 			},
