@@ -1,16 +1,19 @@
 package client
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"github.com/kumahq/kuma/pkg/kds/util"
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	pstruct "github.com/golang/protobuf/ptypes/struct"
 	"google.golang.org/genproto/googleapis/rpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 type KDSStream interface {
@@ -40,11 +43,20 @@ func NewKDSStream(s mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient, c
 }
 
 func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
+	remoteCpVersionJSON, err := json.Marshal(kuma_version.Build)
+	if err != nil {
+		return err
+	}
 	return s.streamClient.Send(&envoy.DiscoveryRequest{
 		VersionInfo:   "",
 		ResponseNonce: "",
 		Node: &envoy_core.Node{
 			Id: s.clientId,
+			Metadata: &pstruct.Struct{
+				Fields: map[string]*pstruct.Value{
+					"version": {Kind: &pstruct.Value_StringValue{StringValue: string(remoteCpVersionJSON)}},
+				},
+			},
 		},
 		ResourceNames: []string{},
 		TypeUrl:       string(resourceType),
