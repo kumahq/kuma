@@ -15,4 +15,5 @@ In alphabetical order:
 * Jakub Dyszkiewicz ([jakubdyszkiewicz](https://github.com/jakubdyszkiewicz)) (jakub.dyszkiewicz@konghq.com)
 * Marco Palladino ([subnetmarco](https://github.com/subnetmarco)) (marco@konghq.com)
 * Nikolay Nikolaev ([nickolaev](https://github.com/nickolaev)) (nikolay.nikolaev@konghq.com)
+* Bart Smykla ([bartsmykla](https://github.com/bartsmykla)) (bartek@smykla.com)
 
