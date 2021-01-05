@@ -41,7 +41,8 @@ spec:
           {{- $name := $item.name | upper }}
           {{- $defaultEnvDict := set $defaultEnvDict $name $item.value }}
           {{- end }}
-          {{- $mergedEnv := merge .Values.controlPlane.envVars $defaultEnvDict }}
+          {{- $envVarsCopy := deepCopy .Values.controlPlane.envVars }}
+          {{- $mergedEnv := merge $envVarsCopy $defaultEnvDict }}
           {{- range $key, $value := $mergedEnv }}
             - name: {{ $key }}
               value: {{ $value | quote }}
