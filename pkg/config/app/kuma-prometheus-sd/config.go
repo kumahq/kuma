@@ -94,8 +94,8 @@ func (c *MonitoringAssignmentClientConfig) Validate() (errs error) {
 		if !url.IsAbs() {
 			errs = multierr.Append(errs, errors.Errorf(".URL must be a valid absolute URI"))
 		}
-		if url.Scheme != "grpc" {
-			errs = multierr.Append(errs, errors.Errorf(".URL must start with grpc://"))
+		if url.Scheme != "grpc" && url.Scheme != "grpcs" {
+			errs = multierr.Append(errs, errors.Errorf(".URL must start with grpc:// or grpcs://"))
 		}
 	}
 	return
