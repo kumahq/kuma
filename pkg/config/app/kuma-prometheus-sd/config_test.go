@@ -98,6 +98,19 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err.Error()).To(Equal(`Invalid configuration: .MonitoringAssignment is not valid: .Client is not valid: .Name must be non-empty; .URL must be a valid absolute URI; .URL must start with grpc://; .Prometheus is not valid: .OutputFile must be non-empty`))
+		Expect(err.Error()).To(Equal(`Invalid configuration: .MonitoringAssignment is not valid: .Client is not valid: .Name must be non-empty; .URL must be a valid absolute URI; .URL must start with grpc:// or grpcs://; .Prometheus is not valid: .OutputFile must be non-empty`))
+	})
+
+	It("should allow grpcs", func() {
+		// given
+		cfg := kuma_promsd.Config{}
+
+		// when
+		err := config.Load(filepath.Join("testdata", "valid-grpcs-config.input.yaml"), &cfg)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(cfg.MonitoringAssignment.Client.URL).To(Equal("grpcs://kuma-control-plane.internal:5682"))
 	})
 })
