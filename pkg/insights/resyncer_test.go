@@ -170,7 +170,7 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(kumaDp["1.0.4"].Total).To(Equal(uint32(1)))
 		Expect(kumaDp["1.0.4"].Offline).To(Equal(uint32(1)))
 
-		envoy := meshInsight.Spec.DpVersions.KumaDp
+		envoy := meshInsight.Spec.DpVersions.Envoy
 		Expect(envoy["unknown"].Total).To(Equal(uint32(1)))
 		Expect(envoy["unknown"].Offline).To(Equal(uint32(1)))
 		Expect(envoy["1.15.0"].Total).To(Equal(uint32(2)))
