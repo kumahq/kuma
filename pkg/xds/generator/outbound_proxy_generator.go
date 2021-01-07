@@ -139,11 +139,15 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 		}
 		return filterChainBuilder
 	}()
-	listener, err := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
+	listenerBuilder, err := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
 		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
-		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-		Build()
+		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))
+	if protocol == mesh_core.ProtocolUDP {
+		// Lack of support of subset loadbalancing for UDPProxy in Envoy
+		listenerBuilder = listenerBuilder.Configure(envoy_listeners.UDPProxy(serviceName, subsets[0]))
+	}
+	listener, err := listenerBuilder.Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener %s for service %s", outboundListenerName, serviceName)
 	}

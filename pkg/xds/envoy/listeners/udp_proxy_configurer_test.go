@@ -30,8 +30,7 @@ var _ = Describe("UDPProxyConfigurer", func() {
 			// when
 			listener, err := NewListenerBuilder().
 				Configure(InboundListener(given.listenerName, given.protocol, given.listenerAddress, given.listenerPort)).
-				Configure(FilterChain(NewFilterChainBuilder().
-					Configure(UDPProxy(given.statsName, given.cluster)))).
+				Configure(UDPProxy(given.statsName, given.cluster)).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -60,8 +59,7 @@ var _ = Describe("UDPProxyConfigurer", func() {
             address: 192.168.0.1
             portValue: 8080
             protocol: UDP
-        filterChains:
-        - filters:
+        listenerFilters:
           - name: envoy.filters.udp_listener.udp_proxy
             typedConfig:
               '@type': type.googleapis.com/envoy.config.filter.udp.udp_proxy.v2alpha.UdpProxyConfig

@@ -1,7 +1,8 @@
 package listeners
 
 import (
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
+	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_api_v2_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_udp_proxy "github.com/envoyproxy/go-control-plane/envoy/config/filter/udp/udp_proxy/v2alpha"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -9,8 +10,8 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-func UDPProxy(statsName string, cluster envoy_common.ClusterSubset) FilterChainBuilderOpt {
-	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+func UDPProxy(statsName string, cluster envoy_common.ClusterSubset) ListenerBuilderOpt {
+	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
 		config.Add(&UDPProxyConfigurer{
 			statsName: statsName,
 			cluster:   cluster,
@@ -24,7 +25,7 @@ type UDPProxyConfigurer struct {
 	cluster envoy_common.ClusterSubset
 }
 
-func (c *UDPProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+func (c *UDPProxyConfigurer) Configure(l *v2.Listener) error {
 	udpProxy := c.udpProxy()
 
 	pbst, err := proto.MarshalAnyDeterministic(udpProxy)
@@ -32,9 +33,9 @@ func (c *UDPProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) 
 		return err
 	}
 
-	filterChain.Filters = append(filterChain.Filters, &envoy_listener.Filter{
+	l.ListenerFilters = append(l.ListenerFilters, &envoy_api_v2_listener.ListenerFilter{
 		Name: "envoy.filters.udp_listener.udp_proxy",
-		ConfigType: &envoy_listener.Filter_TypedConfig{
+		ConfigType: &envoy_api_v2_listener.ListenerFilter_TypedConfig{
 			TypedConfig: pbst,
 		},
 	})
