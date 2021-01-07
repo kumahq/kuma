@@ -183,7 +183,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		}
 		certBytes = base64.StdEncoding.EncodeToString(cert)
 	}
-	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
+	accessLogPipe := fmt.Sprintf("/tmp/%s-%s.sock", request.Name, request.Mesh)
 	params := configParameters{
 		Id:                 proxyId.String(),
 		Service:            service,

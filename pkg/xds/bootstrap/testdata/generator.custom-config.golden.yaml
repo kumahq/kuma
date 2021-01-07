@@ -54,7 +54,7 @@ staticResources:
               - endpoint:
                   address:
                     pipe:
-                      path: /tmp/kuma-access-logs-name.namespace-mesh.sock
+                      path: /tmp/name.namespace-mesh.sock
       name: access_log_sink
       type: STATIC
       upstreamConnectionOptions:

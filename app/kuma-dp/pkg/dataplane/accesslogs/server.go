@@ -33,10 +33,11 @@ func (s *accessLogServer) NeedLeaderElection() bool {
 }
 
 func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
+	address := fmt.Sprintf("/tmp/%s-%s.sock", dataplane.Name, dataplane.Mesh)
 	return &accessLogServer{
 		server:     grpc.NewServer(),
 		newHandler: defaultHandler,
-		address:    fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", dataplane.Name, dataplane.Mesh),
+		address:    address,
 	}
 }
 
