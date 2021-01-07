@@ -48,7 +48,8 @@ func (i TestRuntimeInfo) GetClusterId() string {
 }
 
 func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
-	builder, err := core_runtime.BuilderFor(cfg)
+	stopCh := make(chan struct{})
+	builder, err := core_runtime.BuilderFor(cfg, stopCh)
 	if err != nil {
 		return nil, err
 	}

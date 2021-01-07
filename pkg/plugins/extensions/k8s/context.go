@@ -35,13 +35,13 @@ func FromResourceConverterContext(ctx context.Context) (converter k8s_common.Con
 	return
 }
 
-type nonCachedClient struct{}
+type secretClient struct{}
 
-func NewNonCachedClientContext(ctx context.Context, client kube_client.Client) context.Context {
-	return context.WithValue(ctx, nonCachedClient{}, client)
+func NewSecretClientContext(ctx context.Context, client kube_client.Client) context.Context {
+	return context.WithValue(ctx, secretClient{}, client)
 }
 
-func FromNonCachedClientContext(ctx context.Context) (client kube_client.Client, ok bool) {
-	client, ok = ctx.Value(nonCachedClient{}).(kube_client.Client)
+func FromSecretClientContext(ctx context.Context) (client kube_client.Client, ok bool) {
+	client, ok = ctx.Value(secretClient{}).(kube_client.Client)
 	return
 }
