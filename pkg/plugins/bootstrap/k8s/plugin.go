@@ -6,7 +6,9 @@ import (
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/meta"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/rest"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
@@ -24,6 +26,8 @@ import (
 )
 
 var _ core_plugins.BootstrapPlugin = &plugin{}
+
+var log = core.Log.WithName("plugins").WithName("bootstrap").WithName("k8s")
 
 type plugin struct{}
 
@@ -52,48 +56,68 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 		return err
 	}
 
-	resyncPeriod := 10 * time.Hour
-	cache, err := kuma_kube_cache.New(config, cache.Options{Scheme: scheme, Mapper: mgr.GetRESTMapper(), Resync: &resyncPeriod, Namespace: b.Config().Store.Kubernetes.SystemNamespace})
-	if err != nil {
-		return err
-	}
-	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
-	}
-	err = cache.IndexField(context.Background(), &kube_core.Secret{}, "type", func(object kube_runtime.Object) []string {
-		secret := object.(*kube_core.Secret)
-		return []string{string(secret.Type)}
-	})
-	if err != nil {
-		return err
-	}
-
-	go func() {
-		stopCh := new(chan struct{})
-		if err := cache.Start(*stopCh); err != nil {
-			panic(err)
-		}
-	}()
-
-	stopCh := new(chan struct{})
-	if ok := cache.WaitForCacheSync(*stopCh); !ok {
-		core.Log.Info("could not sync cache")
-	}
-
-	writeObj, err := kube_manager.DefaultNewClient(cache, config, kube_client.Options{Scheme: scheme, Mapper: mgr.GetRESTMapper()})
+	secretClient, err := secretClient(b.Config().Store.Kubernetes.SystemNamespace, config, scheme, mgr.GetRESTMapper())
 	if err != nil {
 		return err
 	}
 
 	b.WithComponentManager(&kubeComponentManager{mgr})
 	b.WithExtensions(k8s_extensions.NewManagerContext(b.Extensions(), mgr))
-	b.WithExtensions(k8s_extensions.NewNonCachedClientContext(b.Extensions(), writeObj))
+	b.WithExtensions(k8s_extensions.NewSecretClientContext(b.Extensions(), secretClient))
 	if expTime := b.Config().Runtime.Kubernetes.MarshalingCacheExpirationTime; expTime > 0 {
 		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewCachingConverter(expTime)))
 	} else {
 		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter()))
 	}
 	return nil
+}
+
+// We need separate client for Secrets, because we don't have (get/list/watch) RBAC for all namespaces / cluster scope.
+// Kubernetes cache lists resources under the hood from all Namespace unless we specify the "Namespace" in Options.
+// If we try to use regular cached client for Secrets then we will see following error: E1126 10:42:52.097662       1 reflector.go:178] pkg/mod/k8s.io/client-go@v0.18.9/tools/cache/reflector.go:125: Failed to list *v1.Secret: secrets is forbidden: User "system:serviceaccount:kuma-system:kuma-control-plane" cannot list resource "secrets" in API group "" at the cluster scope
+// We cannot specify this Namespace parameter for the main cache in ControllerManager because it affect all the resources, therefore we need separate client with cache for Secrets.
+// The alternative was to use non-cached client, but it had performance problems.
+func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runtime.Scheme, restMapper meta.RESTMapper) (kube_client.Client, error) {
+	resyncPeriod := 10 * time.Hour // default resyncPeriod in Kubernetes
+	kubeCache, err := kuma_kube_cache.New(config, cache.Options{
+		Scheme:    scheme,
+		Mapper:    restMapper,
+		Resync:    &resyncPeriod,
+		Namespace: systemNamespace,
+	})
+	if err != nil {
+		return nil, err
+	}
+	// Add kube core scheme first, otherwise cache won't start
+	if err := kube_core.AddToScheme(scheme); err != nil {
+		return nil, errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
+	}
+
+	// We are listing secrets by our custom "type", therefore we need to add index by this field into cache
+	err = kubeCache.IndexField(context.Background(), &kube_core.Secret{}, "type", func(object kube_runtime.Object) []string {
+		secret := object.(*kube_core.Secret)
+		return []string{string(secret.Type)}
+	})
+	if err != nil {
+		return nil, errors.Wrap(err, "could not add index of Secret cache by field 'type'")
+	}
+
+	// According to ControllerManager code, cache needs to start before all the Runnables (our Components)
+	// So we need separate go routine to start a cache and then wait for cache
+	go func() {
+		if err := kubeCache.Start(core.SetupSignalHandler()); err != nil {
+			// According to implementations, there is no case when error is returned. It just for the Runnable contract.
+			log.Error(err, "could not start the secret k8s cache")
+		}
+	}()
+
+	if ok := kubeCache.WaitForCacheSync(core.SetupSignalHandler()); !ok {
+		// ControllerManager ignores case when WaitForCacheSync returns false.
+		// It might be a better idea to return an error and stop the Control Plane altogether, but sticking to return error for now.
+		core.Log.Error(errors.New("could not sync secret cache"), "failed to wait for cache")
+	}
+
+	return kube_manager.DefaultNewClient(kubeCache, config, kube_client.Options{Scheme: scheme, Mapper: restMapper})
 }
 
 func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
