@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
@@ -14,18 +15,18 @@ import (
 var _ = Describe("InboundListenerConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		protocol        mesh_core.Protocol
-		listenerAddress string
-		listenerPort    uint32
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -37,10 +38,10 @@ var _ = Describe("InboundListenerConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic listener", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
-			protocol:        mesh_core.ProtocolTCP,
-			listenerAddress: "192.168.0.1",
-			listenerPort:    8080,
+			listenerName:     "inbound:192.168.0.1:8080",
+			listenerAddress:  "192.168.0.1",
+			listenerPort:     8080,
+			listenerProtocol: mesh_core.ProtocolTCP,
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
@@ -51,10 +52,10 @@ var _ = Describe("InboundListenerConfigurer", func() {
 `,
 		}),
 		Entry("basic listener with udp protocol", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
-			protocol:        mesh_core.ProtocolUDP,
-			listenerAddress: "192.168.0.1",
-			listenerPort:    8080,
+			listenerName:     "inbound:192.168.0.1:8080",
+			listenerAddress:  "192.168.0.1",
+			listenerPort:     8080,
+			listenerProtocol: mesh_core.ProtocolUDP,
 			expected: `
             name: inbound:192.168.0.1:8080
             reusePort: true

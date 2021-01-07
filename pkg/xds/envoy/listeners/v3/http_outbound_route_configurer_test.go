@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
@@ -15,21 +16,22 @@ import (
 var _ = Describe("HttpOutboundRouteConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		service         string
-		subsets         []envoy_common.ClusterSubset
-		dpTags          mesh_proto.MultiValueTagSet
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		statsName        string
+		service          string
+		subsets          []envoy_common.ClusterSubset
+		dpTags           mesh_proto.MultiValueTagSet
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpOutboundRoute(given.service, given.subsets, given.dpTags)))).
@@ -44,11 +46,12 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic http_connection_manager with an outbound route", testCase{
-			listenerName:    "outbound:127.0.0.1:18080",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    18080,
-			statsName:       "127.0.0.1:18080",
-			service:         "backend",
+			listenerName:     "outbound:127.0.0.1:18080",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     18080,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "127.0.0.1:18080",
+			service:          "backend",
 			subsets: []envoy_common.ClusterSubset{
 				{
 					ClusterName: "backend",

@@ -26,7 +26,7 @@ var _ = Describe("TracingConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV2).
-				Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080)).
+				Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, mesh_core.ProtocolTCP)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV2).
 					Configure(HttpConnectionManager("localhost:8080")).
 					Configure(Tracing(given.backend)))).

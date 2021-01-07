@@ -18,13 +18,14 @@ import (
 var _ = Describe("HttpAccessLogConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		routeName       string
-		backend         *mesh_proto.LoggingBackend
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		statsName        string
+		routeName        string
+		backend          *mesh_proto.LoggingBackend
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -60,7 +61,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV2).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV2).
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpAccessLog(mesh, envoy.TrafficDirectionOutbound, sourceService, destinationService, given.backend, proxy)))).
@@ -75,12 +76,13 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic http_connection_manager without access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    27070,
-			statsName:       "backend",
-			routeName:       "outbound:backend",
-			backend:         nil,
+			listenerName:     "outbound:127.0.0.1:27070",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     27070,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "backend",
+			routeName:        "outbound:backend",
+			backend:          nil,
 			expected: `
             name: outbound:127.0.0.1:27070
             address:
@@ -99,11 +101,12 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 `,
 		}),
 		Entry("basic http_connection_manager with file access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    27070,
-			statsName:       "backend",
-			routeName:       "outbound:backend",
+			listenerName:     "outbound:127.0.0.1:27070",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     27070,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "backend",
+			routeName:        "outbound:backend",
 			backend: &mesh_proto.LoggingBackend{
 				Name: "file",
 				Type: mesh_proto.LoggingFileType,
@@ -137,11 +140,12 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 `,
 		}),
 		Entry("basic http_connection_manager with tcp access log", testCase{
-			listenerName:    "outbound:127.0.0.1:27070",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    27070,
-			statsName:       "backend",
-			routeName:       "outbound:backend",
+			listenerName:     "outbound:127.0.0.1:27070",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     27070,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "backend",
+			routeName:        "outbound:backend",
 			backend: &mesh_proto.LoggingBackend{
 				Name: "tcp",
 				Format: `[%START_TIME%] "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%REQ(ORIGIN)%" "%REQ(CONTENT-TYPE)%" "%KUMA_SOURCE_SERVICE%" "%KUMA_DESTINATION_SERVICE%" "%KUMA_SOURCE_ADDRESS%" "%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%" "%UPSTREAM_HOST%"

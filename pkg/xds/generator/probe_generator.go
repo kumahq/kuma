@@ -3,7 +3,7 @@ package generator
 import (
 	"github.com/pkg/errors"
 
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -50,7 +50,7 @@ func (g ProbeProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Prox
 	}
 
 	probeListener, err := envoy_listeners.NewListenerBuilder(envoy.APIV2).
-		Configure(envoy_listeners.InboundListener(listenerName, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port)).
+		Configure(envoy_listeners.InboundListener(listenerName, proxy.Dataplane.Spec.GetNetworking().GetAddress(), probes.Port, mesh_core.ProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy.APIV2).
 			Configure(envoy_listeners.HttpConnectionManager(listenerName)).
 			Configure(envoy_listeners.HttpStaticRoute(envoy_routes.NewRouteConfigurationBuilder(envoy.APIV2).

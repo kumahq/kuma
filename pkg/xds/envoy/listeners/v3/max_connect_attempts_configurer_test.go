@@ -18,6 +18,7 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 		listenerName       string
 		listenerAddress    string
 		listenerPort       uint32
+		listenerProtocol   mesh_core.Protocol
 		statsName          string
 		clusters           []envoy_common.ClusterSubset
 		maxConnectAttempts uint32
@@ -46,6 +47,7 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 					given.listenerName,
 					given.listenerAddress,
 					given.listenerPort,
+					given.listenerProtocol,
 				)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(TcpProxy(given.statsName, given.clusters...)).
@@ -64,6 +66,7 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 			listenerName:       "outbound:127.0.0.1:5432",
 			listenerAddress:    "127.0.0.1",
 			listenerPort:       5432,
+			listenerProtocol:   mesh_core.ProtocolTCP,
 			statsName:          "db",
 			clusters:           []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
 			maxConnectAttempts: 5,

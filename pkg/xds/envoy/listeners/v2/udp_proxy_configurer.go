@@ -1,4 +1,4 @@
-package listeners
+package v2
 
 import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -10,19 +10,10 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-func UDPProxy(statsName string, cluster envoy_common.ClusterSubset) ListenerBuilderOpt {
-	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
-		config.Add(&UDPProxyConfigurer{
-			statsName: statsName,
-			cluster:   cluster,
-		})
-	})
-}
-
 type UDPProxyConfigurer struct {
-	statsName string
+	StatsName string
 	// Cluster to forward traffic to.
-	cluster envoy_common.ClusterSubset
+	Cluster envoy_common.ClusterSubset
 }
 
 func (c *UDPProxyConfigurer) Configure(l *v2.Listener) error {
@@ -44,10 +35,10 @@ func (c *UDPProxyConfigurer) Configure(l *v2.Listener) error {
 
 func (c *UDPProxyConfigurer) udpProxy() *envoy_udp_proxy.UdpProxyConfig {
 	proxy := envoy_udp_proxy.UdpProxyConfig{
-		StatPrefix: util_xds.SanitizeMetric(c.statsName),
+		StatPrefix: util_xds.SanitizeMetric(c.StatsName),
 	}
 	proxy.RouteSpecifier = &envoy_udp_proxy.UdpProxyConfig_Cluster{
-		Cluster: c.cluster.ClusterName,
+		Cluster: c.Cluster.ClusterName,
 	}
 	return &proxy
 }

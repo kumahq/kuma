@@ -139,8 +139,8 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 		}
 		return filterChainBuilder
 	}()
-	listenerBuilder, err := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
-		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort)).
+	listenerBuilder := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
+		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort, protocol)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))
 	if protocol == mesh_core.ProtocolUDP {

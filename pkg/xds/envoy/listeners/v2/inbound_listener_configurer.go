@@ -11,13 +11,14 @@ type InboundListenerConfigurer struct {
 	ListenerName string
 	Address      string
 	Port         uint32
+	Protocol     mesh_core.Protocol
 }
 
 func (c *InboundListenerConfigurer) Configure(l *v2.Listener) error {
 	l.Name = c.ListenerName
 	l.TrafficDirection = envoy_core.TrafficDirection_INBOUND
 	var listenerProtocol envoy_core.SocketAddress_Protocol
-	switch c.protocol {
+	switch c.Protocol {
 	case mesh_core.ProtocolUDP:
 		listenerProtocol = envoy_core.SocketAddress_UDP
 		l.ReusePort = true
@@ -27,7 +28,7 @@ func (c *InboundListenerConfigurer) Configure(l *v2.Listener) error {
 	l.Address = &envoy_core.Address{
 		Address: &envoy_core.Address_SocketAddress{
 			SocketAddress: &envoy_core.SocketAddress{
-				Protocol: envoy_core.SocketAddress_TCP,
+				Protocol: listenerProtocol,
 				Address:  c.Address,
 				PortSpecifier: &envoy_core.SocketAddress_PortValue{
 					PortValue: c.Port,

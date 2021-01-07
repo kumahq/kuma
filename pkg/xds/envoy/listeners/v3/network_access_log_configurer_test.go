@@ -18,13 +18,14 @@ import (
 var _ = Describe("NetworkAccessLogConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		clusters        []envoy_common.ClusterSubset
-		backend         *mesh_proto.LoggingBackend
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		statsName        string
+		clusters         []envoy_common.ClusterSubset
+		backend          *mesh_proto.LoggingBackend
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -60,7 +61,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(TcpProxy(given.statsName, given.clusters...)).
 					Configure(NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, destinationService, given.backend, proxy)))).
@@ -75,12 +76,13 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic tcp_proxy without access log", testCase{
-			listenerName:    "outbound:127.0.0.1:5432",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    5432,
-			statsName:       "db",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
-			backend:         nil,
+			listenerName:     "outbound:127.0.0.1:5432",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     5432,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "db",
+			clusters:         []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
+			backend:          nil,
 			expected: `
             name: outbound:127.0.0.1:5432
             trafficDirection: OUTBOUND
@@ -98,11 +100,12 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 `,
 		}),
 		Entry("basic tcp_proxy with file access log", testCase{
-			listenerName:    "outbound:127.0.0.1:5432",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    5432,
-			statsName:       "db",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
+			listenerName:     "outbound:127.0.0.1:5432",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     5432,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "db",
+			clusters:         []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
 			backend: &mesh_proto.LoggingBackend{
 				Name: "file",
 				Type: mesh_proto.LoggingFileType,
@@ -135,11 +138,12 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 `,
 		}),
 		XEntry("basic tcp_proxy with tcp access log", testCase{ // todo
-			listenerName:    "outbound:127.0.0.1:5432",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    5432,
-			statsName:       "db",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
+			listenerName:     "outbound:127.0.0.1:5432",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     5432,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "db",
+			clusters:         []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
 			backend: &mesh_proto.LoggingBackend{
 				Name: "tcp",
 				Format: `[%START_TIME%] "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%REQ(ORIGIN)%" "%REQ(CONTENT-TYPE)%" "%KUMA_SOURCE_SERVICE%" "%KUMA_DESTINATION_SERVICE%" "%KUMA_SOURCE_ADDRESS%" "%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%" "%UPSTREAM_HOST%

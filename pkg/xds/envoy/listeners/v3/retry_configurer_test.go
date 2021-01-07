@@ -16,16 +16,17 @@ import (
 
 var _ = Describe("RetryConfigurer", func() {
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		service         string
-		subsets         []envoy_common.ClusterSubset
-		dpTags          mesh_proto.MultiValueTagSet
-		protocol        mesh_core.Protocol
-		retry           *mesh_core.RetryResource
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		statsName        string
+		service          string
+		subsets          []envoy_common.ClusterSubset
+		dpTags           mesh_proto.MultiValueTagSet
+		protocol         mesh_core.Protocol
+		retry            *mesh_core.RetryResource
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -36,6 +37,7 @@ var _ = Describe("RetryConfigurer", func() {
 					given.listenerName,
 					given.listenerAddress,
 					given.listenerPort,
+					given.listenerProtocol,
 				)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(HttpConnectionManager(given.statsName)).
@@ -57,11 +59,12 @@ var _ = Describe("RetryConfigurer", func() {
 		},
 		Entry("basic http_connection_manager with an outbound route"+
 			" and simple http retry policy", testCase{
-			listenerName:    "outbound:127.0.0.1:17777",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    17777,
-			statsName:       "127.0.0.1:17777",
-			service:         "backend",
+			listenerName:     "outbound:127.0.0.1:17777",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     17777,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "127.0.0.1:17777",
+			service:          "backend",
 			subsets: []envoy_common.ClusterSubset{
 				{
 					ClusterName: "backend",
@@ -123,11 +126,12 @@ var _ = Describe("RetryConfigurer", func() {
 		}),
 		Entry("basic http_connection_manager with an outbound route"+
 			" and more complex http retry policy", testCase{
-			listenerName:    "outbound:127.0.0.1:18080",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    18080,
-			statsName:       "127.0.0.1:18080",
-			service:         "backend",
+			listenerName:     "outbound:127.0.0.1:18080",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     18080,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "127.0.0.1:18080",
+			service:          "backend",
 			subsets: []envoy_common.ClusterSubset{
 				{
 					ClusterName: "backend",
@@ -208,11 +212,12 @@ var _ = Describe("RetryConfigurer", func() {
 		}),
 		Entry("basic http_connection_manager with an outbound route"+
 			" and simple grpc retry policy", testCase{
-			listenerName:    "outbound:127.0.0.1:17777",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    17777,
-			statsName:       "127.0.0.1:17777",
-			service:         "backend",
+			listenerName:     "outbound:127.0.0.1:17777",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     17777,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "127.0.0.1:17777",
+			service:          "backend",
 			subsets: []envoy_common.ClusterSubset{
 				{
 					ClusterName: "backend",
@@ -274,11 +279,12 @@ var _ = Describe("RetryConfigurer", func() {
 		}),
 		Entry("basic http_connection_manager with an outbound route"+
 			" and more complex http retry policy", testCase{
-			listenerName:    "outbound:127.0.0.1:18080",
-			listenerAddress: "127.0.0.1",
-			listenerPort:    18080,
-			statsName:       "127.0.0.1:18080",
-			service:         "backend",
+			listenerName:     "outbound:127.0.0.1:18080",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     18080,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "127.0.0.1:18080",
+			service:          "backend",
 			subsets: []envoy_common.ClusterSubset{
 				{
 					ClusterName: "backend",

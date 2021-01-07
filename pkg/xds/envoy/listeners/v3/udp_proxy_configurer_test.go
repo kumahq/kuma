@@ -1,4 +1,4 @@
-package listeners_test
+package v3_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -16,20 +16,20 @@ import (
 var _ = Describe("UDPProxyConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		protocol        mesh_core.Protocol
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		cluster         envoy_common.ClusterSubset
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		statsName        string
+		cluster          envoy_common.ClusterSubset
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder().
-				Configure(InboundListener(given.listenerName, given.protocol, given.listenerAddress, given.listenerPort)).
+			listener, err := NewListenerBuilder(envoy_common.APIV3).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(UDPProxy(given.statsName, given.cluster)).
 				Build()
 			// then
@@ -42,11 +42,11 @@ var _ = Describe("UDPProxyConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic udp_proxy with a single destination cluster", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
-			protocol:        mesh_core.ProtocolUDP,
-			listenerAddress: "192.168.0.1",
-			listenerPort:    8080,
-			statsName:       "localhost:8080",
+			listenerName:     "inbound:192.168.0.1:8080",
+			listenerAddress:  "192.168.0.1",
+			listenerPort:     8080,
+			listenerProtocol: mesh_core.ProtocolUDP,
+			statsName:        "localhost:8080",
 			cluster: envoy_common.ClusterSubset{
 				ClusterName: "localhost:8080",
 			},
@@ -62,7 +62,7 @@ var _ = Describe("UDPProxyConfigurer", func() {
         listenerFilters:
           - name: envoy.filters.udp_listener.udp_proxy
             typedConfig:
-              '@type': type.googleapis.com/envoy.config.filter.udp.udp_proxy.v2alpha.UdpProxyConfig
+              '@type': type.googleapis.com/envoy.extensions.filters.udp.udp_proxy.v3.UdpProxyConfig
               cluster: localhost:8080
               statPrefix: localhost_8080
 `,

@@ -46,15 +46,9 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 
 	for _, endpoint := range endpoints {
 		name := fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
-<<<<<<< HEAD
 		listener, err := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
-			Configure(envoy_listeners.OutboundListener(name, endpoint.Address, endpoint.Port)).
+			Configure(envoy_listeners.OutboundListener(name, endpoint.Address, endpoint.Port, mesh_core.ProtocolTCP)).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2).
-=======
-		listener, err := envoy_listeners.NewListenerBuilder().
-			Configure(envoy_listeners.OutboundListener(name, mesh_core.ProtocolTCP, endpoint.Address, endpoint.Port)).
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
->>>>>>> fix(*) remove isUDP
 				Configure(envoy_listeners.TcpProxy(name, envoy_common.ClusterSubset{ClusterName: "direct_access"})).
 				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, name, proxy.Policies.Logs[mesh_core.PassThroughService], proxy)))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).

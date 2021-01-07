@@ -16,21 +16,22 @@ import (
 var _ = Describe("HttpInboundRouteConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		protocol        mesh_core.Protocol
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		service         string
-		cluster         envoy_common.ClusterSubset
-		expected        string
+		listenerName     string
+		protocol         mesh_core.Protocol
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		statsName        string
+		service          string
+		cluster          envoy_common.ClusterSubset
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV2).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpInboundRoute(given.service, given.cluster)))).
@@ -45,13 +46,13 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic http_connection_manager with a single destination cluster", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
-			protocol:        mesh_core.ProtocolTCP,
-			listenerAddress: "192.168.0.1",
-			listenerPort:    8080,
-			statsName:       "localhost:8080",
-			service:         "backend",
-			cluster:         envoy_common.ClusterSubset{ClusterName: "localhost:8080", Weight: 200},
+			listenerName:     "inbound:192.168.0.1:8080",
+			listenerAddress:  "192.168.0.1",
+			listenerPort:     8080,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "localhost:8080",
+			service:          "backend",
+			cluster:          envoy_common.ClusterSubset{ClusterName: "localhost:8080", Weight: 200},
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND

@@ -16,20 +16,21 @@ import (
 var _ = Describe("TcpProxyConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		protocol        mesh_core.Protocol
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		clusters        []envoy_common.ClusterSubset
-		expected        string
+		listenerName     string
+		protocol         mesh_core.Protocol
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		statsName        string
+		clusters         []envoy_common.ClusterSubset
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV2).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(TcpProxy(given.statsName, given.clusters...)))).
 				Build()
@@ -43,11 +44,11 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic tcp_proxy with a single destination cluster", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
-			protocol:        mesh_core.ProtocolTCP,
-			listenerAddress: "192.168.0.1",
-			listenerPort:    8080,
-			statsName:       "localhost:8080",
+			listenerName:     "inbound:192.168.0.1:8080",
+			listenerAddress:  "192.168.0.1",
+			listenerPort:     8080,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "localhost:8080",
 			clusters: []envoy_common.ClusterSubset{
 				{ClusterName: "localhost:8080", Weight: 200},
 			},
@@ -68,11 +69,11 @@ var _ = Describe("TcpProxyConfigurer", func() {
 `,
 		}),
 		Entry("basic tcp_proxy with weighted destination clusters", testCase{
-			listenerName:    "inbound:127.0.0.1:5432",
-			protocol:        mesh_core.ProtocolTCP,
-			listenerAddress: "127.0.0.1",
-			listenerPort:    5432,
-			statsName:       "db",
+			listenerName:     "inbound:127.0.0.1:5432",
+			listenerAddress:  "127.0.0.1",
+			listenerPort:     5432,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "db",
 			clusters: []envoy_common.ClusterSubset{{
 				ClusterName: "db",
 				Weight:      10,

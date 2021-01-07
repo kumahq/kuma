@@ -84,7 +84,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		}()
 
 		inboundListenerBuilder := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
-			Configure(envoy_listeners.InboundListener(inboundListenerName, protocol, endpoint.DataplaneIP, endpoint.DataplanePort)).
+			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, protocol)).
 			Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))
 
