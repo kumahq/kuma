@@ -122,7 +122,7 @@ func newRunCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			server := accesslogs.NewAccessLogServer()
+			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
 
 			componentMgr := component.NewManager(leader_memory.NewNeverLeaderElector())
 			if err := componentMgr.Add(server, dataplane); err != nil {

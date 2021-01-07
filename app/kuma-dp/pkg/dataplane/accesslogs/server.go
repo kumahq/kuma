@@ -6,10 +6,13 @@ import (
 	"net"
 	"sync/atomic"
 
+	"github.com/kumahq/kuma/pkg/xds/envoy"
+
 	envoy_accesslog "github.com/envoyproxy/go-control-plane/envoy/service/accesslog/v2"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 
+	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 )
@@ -31,9 +34,8 @@ func (s *accessLogServer) NeedLeaderElection() bool {
 	return false
 }
 
-func NewAccessLogServer() *accessLogServer {
-	id := core.NewUUID()
-	var address = fmt.Sprintf("/tmp/%s.sock", id)
+func NewAccessLogServer(dataplane kumadp.Dataplane) *accessLogServer {
+	address := envoy.AccessLogSocketName(dataplane.Name, dataplane.Mesh)
 	return &accessLogServer{
 		server:     grpc.NewServer(),
 		newHandler: defaultHandler,
