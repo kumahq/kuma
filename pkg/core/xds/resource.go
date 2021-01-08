@@ -5,7 +5,8 @@ import (
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	envoy_resource_v2 "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	envoy_resource_v3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 )
@@ -146,10 +147,15 @@ func (s *ResourceSet) List() ResourceList {
 		return nil
 	}
 	list := ResourceList{}
-	list = append(list, s.ListOf(envoy_resource.EndpointType)...)
-	list = append(list, s.ListOf(envoy_resource.ClusterType)...)
-	list = append(list, s.ListOf(envoy_resource.RouteType)...)
-	list = append(list, s.ListOf(envoy_resource.ListenerType)...)
-	list = append(list, s.ListOf(envoy_resource.SecretType)...)
+	list = append(list, s.ListOf(envoy_resource_v2.EndpointType)...)
+	list = append(list, s.ListOf(envoy_resource_v3.EndpointType)...)
+	list = append(list, s.ListOf(envoy_resource_v2.ClusterType)...)
+	list = append(list, s.ListOf(envoy_resource_v3.ClusterType)...)
+	list = append(list, s.ListOf(envoy_resource_v2.RouteType)...)
+	list = append(list, s.ListOf(envoy_resource_v3.RouteType)...)
+	list = append(list, s.ListOf(envoy_resource_v2.ListenerType)...)
+	list = append(list, s.ListOf(envoy_resource_v3.ListenerType)...)
+	list = append(list, s.ListOf(envoy_resource_v2.SecretType)...)
+	list = append(list, s.ListOf(envoy_resource_v3.SecretType)...)
 	return list
 }

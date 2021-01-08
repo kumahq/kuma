@@ -1,13 +1,13 @@
-package modifications_test
+package v3_test
 
 import (
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
+	modifications "github.com/kumahq/kuma/pkg/xds/generator/modifications/v3"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -27,7 +27,7 @@ var _ = Describe("Cluster modifications", func() {
 			// given
 			set := core_xds.NewResourceSet()
 			for _, clusterYAML := range given.clusters {
-				cluster := &envoy_api.Cluster{}
+				cluster := &envoy_cluster.Cluster{}
 				err := util_proto.FromYAML([]byte(clusterYAML), cluster)
 				Expect(err).ToNot(HaveOccurred())
 				set.Add(&core_xds.Resource{
@@ -71,7 +71,7 @@ var _ = Describe("Cluster modifications", func() {
             resources:
             - name: test:cluster
               resource:
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
                 edsClusterConfig:
                   edsConfig:
                     ads: {}
@@ -101,7 +101,7 @@ var _ = Describe("Cluster modifications", func() {
             resources:
             - name: test:cluster
               resource:
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
                 edsClusterConfig:
                   edsConfig:
                     ads: {}
@@ -147,7 +147,7 @@ var _ = Describe("Cluster modifications", func() {
             resources:
             - name: test:cluster2
               resource:
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
                 connectTimeout: 5s
                 lbPolicy: CLUSTER_PROVIDED
                 name: test:cluster2
@@ -200,7 +200,7 @@ var _ = Describe("Cluster modifications", func() {
             resources:
             - name: test:cluster
               resource:
-                '@type': type.googleapis.com/envoy.api.v2.Cluster
+                '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
                 connectTimeout: 5s
                 httpProtocolOptions:
                   acceptHttp10: true

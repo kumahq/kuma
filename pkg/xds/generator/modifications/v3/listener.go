@@ -1,8 +1,8 @@
-package modifications
+package v3
 
 import (
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
@@ -14,7 +14,7 @@ import (
 type listenerModificator mesh_proto.ProxyTemplate_Modifications_Listener
 
 func (l *listenerModificator) apply(resources *core_xds.ResourceSet) error {
-	listener := &envoy_api.Listener{}
+	listener := &envoy_listener.Listener{}
 	if err := util_proto.FromYAML([]byte(l.Value), listener); err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func (l *listenerModificator) apply(resources *core_xds.ResourceSet) error {
 	return nil
 }
 
-func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPatch *envoy_api.Listener) {
+func (l *listenerModificator) patch(resources *core_xds.ResourceSet, listenerPatch *envoy_listener.Listener) {
 	for _, listener := range resources.Resources(envoy_resource.ListenerType) {
 		if l.listenerMatches(listener) {
 			proto.Merge(listener.Resource, listenerPatch)
@@ -47,7 +47,7 @@ func (l *listenerModificator) remove(resources *core_xds.ResourceSet) {
 	}
 }
 
-func (l *listenerModificator) app(resources *core_xds.ResourceSet, listener *envoy_api.Listener) *core_xds.ResourceSet {
+func (l *listenerModificator) app(resources *core_xds.ResourceSet, listener *envoy_listener.Listener) *core_xds.ResourceSet {
 	return resources.Add(&core_xds.Resource{
 		Name:     listener.Name,
 		Origin:   OriginProxyTemplateModifications,
