@@ -1,7 +1,6 @@
 package client
 
 import (
-	"encoding/json"
 	"fmt"
 
 	"github.com/kumahq/kuma/pkg/kds/util"
@@ -12,7 +11,9 @@ import (
 	"google.golang.org/genproto/googleapis/rpc/status"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -43,7 +44,14 @@ func NewKDSStream(s mesh_proto.KumaDiscoveryService_StreamKumaResourcesClient, c
 }
 
 func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
-	remoteCpVersionJSON, err := json.Marshal(kuma_version.Build)
+	cpVersion, err := util_proto.ToStruct(&system_proto.Version{
+		KumaCp: &system_proto.KumaCpVersion{
+			Version:   kuma_version.Build.Version,
+			GitTag:    kuma_version.Build.GitTag,
+			GitCommit: kuma_version.Build.GitCommit,
+			BuildDate: kuma_version.Build.BuildDate,
+		},
+	})
 	if err != nil {
 		return err
 	}
@@ -54,7 +62,7 @@ func (s *stream) DiscoveryRequest(resourceType model.ResourceType) error {
 			Id: s.clientId,
 			Metadata: &pstruct.Struct{
 				Fields: map[string]*pstruct.Value{
-					"version": {Kind: &pstruct.Value_StringValue{StringValue: string(remoteCpVersionJSON)}},
+					"version": {Kind: &pstruct.Value_StructValue{StructValue: cpVersion}},
 				},
 			},
 		},
