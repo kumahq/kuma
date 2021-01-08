@@ -15,11 +15,11 @@ import (
 var _ = Describe("ListenerFilterChainConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		protocol        mesh_core.Protocol
-		listenerAddress string
-		listenerPort    uint32
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		expected         string
 	}
 
 	Context("V2", func() {
@@ -27,7 +27,7 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
 			func(given testCase) {
 				// when
 				listener, err := NewListenerBuilder(envoy.APIV2).
-					Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+					Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy.APIV2))).
 					Build()
 				// then
@@ -41,9 +41,10 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("basic listener with an empty filter chain", testCase{
-				listenerName:    "inbound:192.168.0.1:8080",
-				listenerAddress: "192.168.0.1",
-				listenerPort:    8080,
+				listenerName:     "inbound:192.168.0.1:8080",
+				listenerAddress:  "192.168.0.1",
+				listenerPort:     8080,
+				listenerProtocol: mesh_core.ProtocolTCP,
 				expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
@@ -63,7 +64,7 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
 			func(given testCase) {
 				// when
 				listener, err := NewListenerBuilder(envoy.APIV3).
-					Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+					Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 					Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3))).
 					Build()
 				// then
@@ -77,9 +78,10 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
 				Expect(actual).To(MatchYAML(given.expected))
 			},
 			Entry("basic listener with an empty filter chain", testCase{
-				listenerName:    "inbound:192.168.0.1:8080",
-				listenerAddress: "192.168.0.1",
-				listenerPort:    8080,
+				listenerName:     "inbound:192.168.0.1:8080",
+				listenerAddress:  "192.168.0.1",
+				listenerPort:     8080,
+				listenerProtocol: mesh_core.ProtocolTCP,
 				expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND

@@ -17,7 +17,6 @@ var _ = Describe("TcpProxyConfigurer", func() {
 
 	type testCase struct {
 		listenerName     string
-		protocol         mesh_core.Protocol
 		listenerAddress  string
 		listenerPort     uint32
 		listenerProtocol mesh_core.Protocol

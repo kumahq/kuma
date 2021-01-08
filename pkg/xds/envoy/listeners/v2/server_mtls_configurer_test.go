@@ -21,11 +21,9 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 
 	type testCase struct {
 		listenerName     string
-		protocol         mesh_core.Protocol
 		listenerAddress  string
 		listenerPort     uint32
 		listenerProtocol mesh_core.Protocol
-		isUDP            bool
 		statsName        string
 		clusters         []envoy_common.ClusterSubset
 		ctx              xds_context.Context
