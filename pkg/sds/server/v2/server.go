@@ -15,8 +15,9 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
-	"github.com/kumahq/kuma/pkg/sds/server/metrics"
+	sds_ca "github.com/kumahq/kuma/pkg/sds/ca"
+	sds_identity "github.com/kumahq/kuma/pkg/sds/identity"
+	sds_metrics "github.com/kumahq/kuma/pkg/sds/metrics"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
@@ -30,13 +31,13 @@ var (
 	sdsServerLog = core.Log.WithName("sds-server")
 )
 
-func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *metrics.SDSMetrics, server *grpc.Server) error {
+func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *sds_metrics.Metrics, server *grpc.Server) error {
 	hasher := hasher{sdsServerLog}
 	logger := util_xds.NewLogger(sdsServerLog)
 	cache := envoy_cache.NewSnapshotCache(false, hasher, logger)
 
-	caProvider := sds_provider.NewCaProvider(rt.ResourceManager(), rt.CaManagers())
-	identityProvider := sds_provider.NewIdentityProvider(rt.ResourceManager(), rt.CaManagers())
+	caProvider := sds_ca.NewProvider(rt.ResourceManager(), rt.CaManagers())
+	identityProvider := sds_identity.NewProvider(rt.ResourceManager(), rt.CaManagers())
 	authenticator, err := auth_components.DefaultAuthenticator(rt)
 	if err != nil {
 		return err
@@ -71,7 +72,7 @@ func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *metrics.SDSMetrics, server
 	return nil
 }
 
-func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetrics *metrics.SDSMetrics) (util_xds.Callbacks, error) {
+func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetrics *sds_metrics.Metrics) (util_xds.Callbacks, error) {
 	return xds_callbacks.NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {

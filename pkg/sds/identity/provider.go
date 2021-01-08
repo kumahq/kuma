@@ -1,4 +1,4 @@
-package provider
+package identity
 
 import (
 	"context"
@@ -19,11 +19,11 @@ type Identity struct {
 	Services []string
 }
 
-type IdentityCertProvider interface {
+type Provider interface {
 	Get(ctx context.Context, requestor Identity) (*core_xds.IdentitySecret, error)
 }
 
-func NewIdentityProvider(resourceManager core_manager.ResourceManager, caManagers core_ca.Managers) IdentityCertProvider {
+func NewProvider(resourceManager core_manager.ResourceManager, caManagers core_ca.Managers) Provider {
 	return &identityCertProvider{
 		resourceManager: resourceManager,
 		caManagers:      caManagers,

@@ -8,14 +8,14 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-type SDSMetrics struct {
+type Metrics struct {
 	sdsGeneration        *prometheus.SummaryVec
 	sdsGenerationsErrors *prometheus.CounterVec
 	certGenerations      *prometheus.CounterVec
 	Callbacks            util_xds.Callbacks
 }
 
-func NewSDSMetrics(metrics core_metrics.Metrics) (*SDSMetrics, error) {
+func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 	sdsGenerations := prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name:       "sds_generation",
 		Help:       "Summary of SDS Snapshot generation",
@@ -41,7 +41,7 @@ func NewSDSMetrics(metrics core_metrics.Metrics) (*SDSMetrics, error) {
 		return nil, err
 	}
 
-	return &SDSMetrics{
+	return &Metrics{
 		sdsGeneration:        sdsGenerations,
 		sdsGenerationsErrors: sdsGenerationsErrors,
 		certGenerations:      certGenerationsMetric,
@@ -49,14 +49,14 @@ func NewSDSMetrics(metrics core_metrics.Metrics) (*SDSMetrics, error) {
 	}, nil
 }
 
-func (s *SDSMetrics) SdsGeneration(apiVersion envoy_common.APIVersion) prometheus.Observer {
+func (s *Metrics) SdsGeneration(apiVersion envoy_common.APIVersion) prometheus.Observer {
 	return s.sdsGeneration.WithLabelValues(string(apiVersion))
 }
 
-func (s *SDSMetrics) SdsGenerationsErrors(apiVersion envoy_common.APIVersion) prometheus.Counter {
+func (s *Metrics) SdsGenerationsErrors(apiVersion envoy_common.APIVersion) prometheus.Counter {
 	return s.sdsGenerationsErrors.WithLabelValues(string(apiVersion))
 }
 
-func (s *SDSMetrics) CertGenerations(apiVersion envoy_common.APIVersion) prometheus.Counter {
+func (s *Metrics) CertGenerations(apiVersion envoy_common.APIVersion) prometheus.Counter {
 	return s.certGenerations.WithLabelValues(string(apiVersion))
 }

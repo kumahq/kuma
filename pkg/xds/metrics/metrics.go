@@ -1,4 +1,4 @@
-package sync
+package metrics
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
@@ -6,12 +6,12 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
-type XDSSyncMetrics struct {
+type Metrics struct {
 	XdsGenerations       prometheus.Summary
 	XdsGenerationsErrors prometheus.Counter
 }
 
-func NewXDSSyncMetrics(metrics core_metrics.Metrics) (*XDSSyncMetrics, error) {
+func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 	xdsGenerations := prometheus.NewSummary(prometheus.SummaryOpts{
 		Name:       "xds_generation",
 		Help:       "Summary of XDS Snapshot generation",
@@ -28,7 +28,7 @@ func NewXDSSyncMetrics(metrics core_metrics.Metrics) (*XDSSyncMetrics, error) {
 		return nil, err
 	}
 
-	return &XDSSyncMetrics{
+	return &Metrics{
 		XdsGenerations:       xdsGenerations,
 		XdsGenerationsErrors: xdsGenerationsErrors,
 	}, nil

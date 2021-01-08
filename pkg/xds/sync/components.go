@@ -9,6 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 )
 
 var (
@@ -45,7 +46,7 @@ func DefaultDataplaneWatchdogFactory(
 	connectionInfoTracker ConnectionInfoTracker,
 	dataplaneReconciler SnapshotReconciler,
 	ingressReconciler SnapshotReconciler,
-	xdsSyncMetrics *XDSSyncMetrics,
+	xdsMetrics *xds_metrics.Metrics,
 	meshSnapshotCache *mesh.Cache,
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	apiVersion envoy.APIVersion,
@@ -64,7 +65,7 @@ func DefaultDataplaneWatchdogFactory(
 		meshCache:             meshSnapshotCache,
 	}
 	return NewDataplaneWatchdogFactory(
-		xdsSyncMetrics,
+		xdsMetrics,
 		rt.Config().XdsServer.DataplaneConfigurationRefreshInterval,
 		deps,
 	)

@@ -1,4 +1,4 @@
-package provider
+package ca
 
 import (
 	"context"
@@ -13,11 +13,11 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-type CaProvider interface {
+type Provider interface {
 	Get(ctx context.Context, mesh string) (*core_xds.CaSecret, error)
 }
 
-func NewCaProvider(resourceManager core_manager.ResourceManager, caManagers core_ca.Managers) CaProvider {
+func NewProvider(resourceManager core_manager.ResourceManager, caManagers core_ca.Managers) Provider {
 	return &meshCaProvider{
 		resourceManager: resourceManager,
 		caManagers:      caManagers,

@@ -18,6 +18,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 	xds_callbacks "github.com/kumahq/kuma/pkg/xds/server/callbacks"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
@@ -27,7 +28,7 @@ var xdsServerLog = core.Log.WithName("xds-server")
 
 func RegisterXDS(
 	statsCallbacks util_xds.Callbacks,
-	xdsSyncMetrics *xds_sync.XDSSyncMetrics,
+	xdsMetrics *xds_metrics.Metrics,
 	meshSnapshotCache *mesh.Cache,
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	rt core_runtime.Runtime,
@@ -45,7 +46,7 @@ func RegisterXDS(
 	connectionInfoTracker := xds_callbacks.NewConnectionInfoTracker()
 	reconciler := DefaultReconciler(rt, xdsContext)
 	ingressReconciler := DefaultIngressReconciler(rt, xdsContext)
-	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, metadataTracker, connectionInfoTracker, reconciler, ingressReconciler, xdsSyncMetrics, meshSnapshotCache, envoyCpCtx, envoy_common.APIV2)
+	watchdogFactory, err := xds_sync.DefaultDataplaneWatchdogFactory(rt, metadataTracker, connectionInfoTracker, reconciler, ingressReconciler, xdsMetrics, meshSnapshotCache, envoyCpCtx, envoy_common.APIV2)
 	if err != nil {
 		return err
 	}

@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/sds/server/metrics"
+	sds_metrics "github.com/kumahq/kuma/pkg/sds/metrics"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_secrets "github.com/kumahq/kuma/pkg/xds/envoy/secrets/v2"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
@@ -31,7 +31,8 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
+	sds_ca "github.com/kumahq/kuma/pkg/sds/ca"
+	sds_identity "github.com/kumahq/kuma/pkg/sds/identity"
 )
 
 // DataplaneReconciler keeps the state of the Cache for SDS consistent
@@ -43,11 +44,11 @@ import (
 type DataplaneReconciler struct {
 	resManager         core_manager.ResourceManager
 	readOnlyResManager core_manager.ReadOnlyResourceManager
-	meshCaProvider     sds_provider.CaProvider
-	identityProvider   sds_provider.IdentityCertProvider
+	meshCaProvider     sds_ca.Provider
+	identityProvider   sds_identity.Provider
 	cache              envoy_cache.SnapshotCache
 	upsertConfig       store.UpsertConfig
-	sdsMetrics         *metrics.SDSMetrics
+	sdsMetrics         *sds_metrics.Metrics
 }
 
 func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) error {
@@ -134,7 +135,7 @@ func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_
 }
 
 func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (envoy_cache.Snapshot, error) {
-	requestor := sds_provider.Identity{
+	requestor := sds_identity.Identity{
 		Services: dataplane.Spec.TagSet().Values(mesh_proto.ServiceTag),
 		Mesh:     dataplane.GetMeta().GetMesh(),
 	}

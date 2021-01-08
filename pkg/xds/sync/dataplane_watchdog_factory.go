@@ -6,24 +6,25 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
+	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 )
 
 type dataplaneWatchdogFactory struct {
-	xdsSyncMetrics  *XDSSyncMetrics
+	xdsMetrics      *xds_metrics.Metrics
 	refreshInterval time.Duration
 
 	deps DataplaneWatchdogDependencies
 }
 
 func NewDataplaneWatchdogFactory(
-	xdsSyncMetrics *XDSSyncMetrics,
+	xdsSyncMetrics *xds_metrics.Metrics,
 	refreshInterval time.Duration,
 	deps DataplaneWatchdogDependencies,
 ) (DataplaneWatchdogFactory, error) {
 	return &dataplaneWatchdogFactory{
 		deps:            deps,
 		refreshInterval: refreshInterval,
-		xdsSyncMetrics:  xdsSyncMetrics,
+		xdsMetrics:      xdsSyncMetrics,
 	}, nil
 }
 
@@ -37,12 +38,12 @@ func (d *dataplaneWatchdogFactory) New(key core_model.ResourceKey, streamId int6
 		OnTick: func() error {
 			start := core.Now()
 			defer func() {
-				d.xdsSyncMetrics.XdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
+				d.xdsMetrics.XdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
 			}()
 			return dataplaneWatchdog.Sync()
 		},
 		OnError: func(err error) {
-			d.xdsSyncMetrics.XdsGenerationsErrors.Inc()
+			d.xdsMetrics.XdsGenerationsErrors.Inc()
 			log.Error(err, "OnTick() failed")
 		},
 		OnStop: func() {
