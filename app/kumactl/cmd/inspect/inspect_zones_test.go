@@ -61,7 +61,6 @@ var _ = Describe("kumactl inspect zones", func() {
 		sampleZoneOverview = []*system_core.ZoneOverviewResource{
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:             "default",
 					Name:             "zone-1",
 					CreationTime:     t1,
 					ModificationTime: now,
@@ -160,7 +159,6 @@ var _ = Describe("kumactl inspect zones", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:             "default",
 					Name:             "zone-2",
 					CreationTime:     t1,
 					ModificationTime: now,
@@ -187,7 +185,6 @@ var _ = Describe("kumactl inspect zones", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:             "default",
 					Name:             "zone-3",
 					CreationTime:     t1,
 					ModificationTime: now,

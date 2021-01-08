@@ -50,7 +50,7 @@ func newInspectZonesCmd(ctx *inspectContext) *cobra.Command {
 
 func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "REMOTE-CP VERSION"},
+		Headers: []string{"NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "REMOTE-CP VERSION"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -83,7 +83,6 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 				}
 
 				return []string{
-					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
 					onlineStatus,                         // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
