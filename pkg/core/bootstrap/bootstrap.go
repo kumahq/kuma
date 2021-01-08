@@ -40,11 +40,11 @@ import (
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
-func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
+func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
 	if err := autoconfigure(&cfg); err != nil {
 		return nil, err
 	}
-	builder, err := core_runtime.BuilderFor(cfg)
+	builder, err := core_runtime.BuilderFor(cfg, closeCh)
 	if err != nil {
 		return nil, err
 	}
@@ -129,8 +129,8 @@ func initializeMetrics(builder *core_runtime.Builder) error {
 	return nil
 }
 
-func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
-	runtime, err := buildRuntime(cfg)
+func Bootstrap(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
+	runtime, err := buildRuntime(cfg, closeCh)
 	if err != nil {
 		return nil, err
 	}

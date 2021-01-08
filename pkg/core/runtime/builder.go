@@ -65,10 +65,11 @@ type Builder struct {
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
 	apim     api_server.APIManager
+	closeCh  <-chan struct{}
 	*runtimeInfo
 }
 
-func BuilderFor(cfg kuma_cp.Config) (*Builder, error) {
+func BuilderFor(cfg kuma_cp.Config, closeCh <-chan struct{}) (*Builder, error) {
 	hostname, err := os.Hostname()
 	if err != nil {
 		return nil, errors.Wrap(err, "could not get hostname")
@@ -81,6 +82,7 @@ func BuilderFor(cfg kuma_cp.Config) (*Builder, error) {
 		runtimeInfo: &runtimeInfo{
 			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
 		},
+		closeCh: closeCh,
 	}, nil
 }
 
@@ -285,4 +287,7 @@ func (b *Builder) EventReaderFactory() events.ListenerFactory {
 
 func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
+}
+func (b *Builder) CloseCh() <-chan struct{} {
+	return b.closeCh
 }

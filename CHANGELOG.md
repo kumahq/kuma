@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## [1.0.5]
+> Released on  2021/01/07
+
+Changes:
+
+* perf: cached client for fetching secrets on k8s [#1393](https://github.com//kumahq/kuma/pull/1393)
+* feat: added envoy gRPC status command to accesslog [#1223](https://github.com//kumahq/kuma/pull/1223)
+  👍contributed by @tharun208
+* feat: add control plane identifier in DiscoveryResponse [#1319](https://github.com//kumahq/kuma/pull/1319)
+  👍contributed by @jewertow
+* fix: allow kuma-cp config to grpcs scheme [#1390](https://github.com//kumahq/kuma/pull/1390)
+  👍contributed by @lahabana
+* fix: traffic logging to tcp backends [#1389](https://github.com//kumahq/kuma/pull/1389) [#1394](https://github.com//kumahq/kuma/pull/1394)
+* fix: validate mesh deletion on Universal [#1285](https://github.com//kumahq/kuma/pull/1285)
+* fix: logging of resource conflicts [#1254](https://github.com//kumahq/kuma/pull/1254)
+* fix: allow fault injection for http2 and grpc [#1350](https://github.com//kumahq/kuma/pull/1350)
+
+
 ## [1.0.4]
 > Released on  2020/12/22
 

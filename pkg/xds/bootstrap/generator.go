@@ -12,6 +12,8 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/kumahq/kuma/pkg/xds/envoy"
+
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -172,7 +174,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		return nil, err
 	}
 
-	var certBytes string = ""
+	var certBytes = ""
 	if b.xdsCertFile != "" {
 		cert, err := ioutil.ReadFile(b.xdsCertFile)
 		if err != nil {
@@ -180,7 +182,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		}
 		certBytes = base64.StdEncoding.EncodeToString(cert)
 	}
-	accessLogPipe := fmt.Sprintf("/tmp/kuma-access-logs-%s-%s.sock", request.Name, request.Mesh)
+	accessLogSocket := envoy.AccessLogSocketName(request.Name, request.Mesh)
 	params := configParameters{
 		Id:                 proxyId.String(),
 		Service:            service,
@@ -190,7 +192,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		XdsHost:            b.xdsHost(request),
 		XdsPort:            b.config.Params.XdsPort,
 		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout,
-		AccessLogPipe:      accessLogPipe,
+		AccessLogPipe:      accessLogSocket,
 		DataplaneTokenPath: request.DataplaneTokenPath,
 		DataplaneResource:  request.DataplaneResource,
 		CertBytes:          certBytes,
