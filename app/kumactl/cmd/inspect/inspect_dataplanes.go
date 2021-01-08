@@ -64,6 +64,26 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 	return cmd
 }
 
+func getStatus(dataplane *mesh_proto.Dataplane, dataplaneInsight *mesh_proto.DataplaneInsight) string {
+	proxyOnline := dataplaneInsight.IsOnline()
+	allInboundsOffline := true
+	allInboundsOnline := true
+	for _, inbound := range dataplane.Networking.Inbound {
+		if inbound.Health == nil || inbound.Health.Ready {
+			allInboundsOffline = false
+		} else {
+			allInboundsOnline = false
+		}
+	}
+	if !proxyOnline || allInboundsOffline {
+		return "Offline"
+	}
+	if !allInboundsOnline {
+		return "Partially degraded"
+	}
+	return "Online"
+}
+
 func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "KUMA-DP VERSION", "ENVOY VERSION"},
@@ -85,10 +105,7 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 				totalResponsesRejected := dataplaneInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
 					return s.GetStatus().GetTotal().GetResponsesRejected()
 				})
-				onlineStatus := "Offline"
-				if dataplaneInsight.IsOnline() {
-					onlineStatus = "Online"
-				}
+				status := getStatus(dataplane, dataplaneInsight)
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
 				var certExpiration *time.Time
@@ -117,7 +134,7 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
 					dataplane.TagSet().String(),          // TAGS
-					onlineStatus,                         // STATUS
+					status,                               // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO
 					table.Number(totalResponsesSent),     // TOTAL UPDATES
