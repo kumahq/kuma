@@ -183,6 +183,9 @@ func (s *streamState) Close() {
 }
 
 func readVersion(metadata *pstruct.Struct, version *system_proto.Version) error {
+	if metadata == nil {
+		return nil
+	}
 	rawVersion := metadata.Fields["version"].GetStructValue()
 	if rawVersion != nil {
 		err := util_proto.ToTyped(rawVersion, version)
