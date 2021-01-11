@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/golang/protobuf/proto"
 
 	"github.com/pkg/errors"
 
@@ -13,7 +13,7 @@ import (
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 // StreamID represents a stream opened by XDS
@@ -91,15 +91,16 @@ type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjectio
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResource
 
 type CLACache interface {
-	GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error)
+	GetCLA(ctx context.Context, meshName, meshHash, service string, apiVersion envoy_common.APIVersion) (proto.Message, error)
 }
 
 type Proxy struct {
-	Id        ProxyId
-	Dataplane *mesh_core.DataplaneResource
-	Metadata  *DataplaneMetadata
-	Routing   Routing
-	Policies  MatchedPolicies
+	Id         ProxyId
+	APIVersion envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
+	Dataplane  *mesh_core.DataplaneResource
+	Metadata   *DataplaneMetadata
+	Routing    Routing
+	Policies   MatchedPolicies
 }
 
 type Routing struct {
@@ -120,6 +121,15 @@ type MatchedPolicies struct {
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
 	FaultInjections    FaultInjectionMap
+}
+
+type CaSecret struct {
+	PemCerts [][]byte
+}
+
+type IdentitySecret struct {
+	PemCerts [][]byte
+	PemKey   []byte
 }
 
 func (s TagSelectorSet) Add(new mesh_proto.TagSelector) TagSelectorSet {
@@ -168,13 +178,6 @@ func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
 func BuildProxyId(mesh, name string, more ...string) (*ProxyId, error) {
 	id := strings.Join(append([]string{mesh, name}, more...), ".")
 	return ParseProxyIdFromString(id)
-}
-
-func ParseProxyId(node *envoy_core.Node) (*ProxyId, error) {
-	if node == nil {
-		return nil, errors.Errorf("Envoy node must not be nil")
-	}
-	return ParseProxyIdFromString(node.Id)
 }
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {

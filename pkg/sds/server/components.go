@@ -1,16 +1,21 @@
 package server
 
 import (
+	"google.golang.org/grpc"
+
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	sds_provider "github.com/kumahq/kuma/pkg/sds/provider"
-	ca_sds_provider "github.com/kumahq/kuma/pkg/sds/provider/ca"
-	identity_sds_provider "github.com/kumahq/kuma/pkg/sds/provider/identity"
+	sds_metrics "github.com/kumahq/kuma/pkg/sds/metrics"
+	v2 "github.com/kumahq/kuma/pkg/sds/server/v2"
 )
 
-func DefaultMeshCaProvider(rt core_runtime.Runtime) sds_provider.SecretProvider {
-	return ca_sds_provider.New(rt.ResourceManager(), rt.CaManagers())
-}
+func RegisterSDS(rt core_runtime.Runtime, server *grpc.Server) error {
+	sdsMetrics, err := sds_metrics.NewMetrics(rt.Metrics())
+	if err != nil {
+		return err
+	}
 
-func DefaultIdentityCertProvider(rt core_runtime.Runtime) sds_provider.SecretProvider {
-	return identity_sds_provider.New(rt.ResourceManager(), rt.CaManagers())
+	if err := v2.RegisterSDS(rt, sdsMetrics, server); err != nil {
+		return err
+	}
+	return nil
 }

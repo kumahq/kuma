@@ -30,7 +30,7 @@ func (t TracingProxyGenerator) Generate(_ xds_context.Context, proxy *core_xds.P
 	resources := core_xds.NewResourceSet()
 	switch proxy.Policies.TracingBackend.Type {
 	case mesh_proto.TracingZipkinType:
-		res, err := t.zipkinCluster(proxy.Policies.TracingBackend)
+		res, err := t.zipkinCluster(proxy.Policies.TracingBackend, proxy.APIVersion)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not generate zipkin cluster")
 		}
@@ -39,7 +39,7 @@ func (t TracingProxyGenerator) Generate(_ xds_context.Context, proxy *core_xds.P
 	return resources, nil
 }
 
-func (t TracingProxyGenerator) zipkinCluster(backend *mesh_proto.TracingBackend) (*core_xds.Resource, error) {
+func (t TracingProxyGenerator) zipkinCluster(backend *mesh_proto.TracingBackend, apiVersion envoy.APIVersion) (*core_xds.Resource, error) {
 	cfg := mesh_proto.ZipkinTracingBackendConfig{}
 	if err := proto.ToTyped(backend.Conf, &cfg); err != nil {
 		return nil, errors.Wrap(err, "could not convert backend")
@@ -54,7 +54,7 @@ func (t TracingProxyGenerator) zipkinCluster(backend *mesh_proto.TracingBackend)
 	}
 
 	clusterName := names.GetTracingClusterName(backend.Name)
-	cluster, err := clusters.NewClusterBuilder(envoy.APIV2).
+	cluster, err := clusters.NewClusterBuilder(apiVersion).
 		Configure(clusters.DNSCluster(clusterName, url.Hostname(), uint32(port))).
 		Build()
 	if err != nil {

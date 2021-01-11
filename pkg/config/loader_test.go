@@ -14,6 +14,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/test/testenvconfig"
 )
 
@@ -82,6 +83,7 @@ var _ = Describe("Config loader", func() {
 			}
 
 			// then
+			Expect(cfg.BootstrapServer.APIVersion).To(Equal(envoy.APIV3))
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
@@ -245,6 +247,7 @@ store:
     conflictRetryBaseBackoff: 4s
     conflictRetryMaxTimes: 10
 bootstrapServer:
+  apiVersion: v3
   params:
     adminPort: 1234
     adminAccessLogPath: /access/log/test
@@ -387,6 +390,7 @@ sdsServer:
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
+				"KUMA_BOOTSTRAP_SERVER_API_VERSION":                                                        "v3",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                                                  "1234",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                                                    "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                                                    "4321",

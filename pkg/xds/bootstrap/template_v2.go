@@ -1,29 +1,6 @@
 package bootstrap
 
-import "time"
-
-type configParameters struct {
-	Id                 string
-	Service            string
-	AdminAddress       string
-	AdminPort          uint32
-	AdminAccessLogPath string
-	XdsHost            string
-	XdsPort            uint32
-	XdsConnectTimeout  time.Duration
-	AccessLogPipe      string
-	DataplaneTokenPath string
-	DataplaneResource  string
-	CertBytes          string
-	KumaDpVersion      string
-	KumaDpGitTag       string
-	KumaDpGitCommit    string
-	KumaDpBuildDate    string
-	EnvoyVersion       string
-	EnvoyBuild         string
-}
-
-const configTemplate string = `
+const configTemplateV2 string = `
 node:
   id: {{.Id}}
   cluster: {{.Service}}
@@ -77,6 +54,7 @@ dynamic_resources:
   cds_config: {ads: {}}
   ads_config:
     api_type: GRPC
+    transport_api_version: V2
     timeout: {{ .XdsConnectTimeout }}
     grpc_services:
     - googleGrpc:

@@ -10,7 +10,7 @@ import (
 func RegisterBootstrap(rt core_runtime.Runtime, mux *http.ServeMux) error {
 	generator, err := NewDefaultBootstrapGenerator(
 		rt.ResourceManager(),
-		rt.Config().BootstrapServer.Params,
+		rt.Config().BootstrapServer,
 		rt.Config().DpServer.TlsCertFile,
 		rt.Config().DpServer.Auth.Type != dp_server.DpServerAuthNone,
 	)

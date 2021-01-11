@@ -5,26 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func GenerateBootstrapFile(cfg kuma_dp.DataplaneRuntime, config proto.Message) (string, error) {
-	switch v := config.(type) {
-	case (interface{ Validate() error }):
-		if err := v.Validate(); err != nil {
-			return "", errors.Wrap(err, "Envoy bootstrap config is not valid")
-		}
-	}
-	data, err := util_proto.ToYAML(config)
-	if err != nil {
-		return "", errors.Wrap(err, "failed to marshal Envoy config")
-	}
+func GenerateBootstrapFile(cfg kuma_dp.DataplaneRuntime, config []byte) (string, error) {
 	configFile := filepath.Join(cfg.ConfigDir, "bootstrap.yaml")
-	if err := writeFile(configFile, data, 0600); err != nil {
+	if err := writeFile(configFile, config, 0600); err != nil {
 		return "", errors.Wrap(err, "failed to persist Envoy bootstrap config on disk")
 	}
 	return configFile, nil

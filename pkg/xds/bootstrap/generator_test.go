@@ -8,6 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -81,7 +82,7 @@ var _ = Describe("bootstrapGenerator", func() {
 	})
 
 	type testCase struct {
-		config             func() *bootstrap_config.BootstrapParamsConfig
+		config             func() *bootstrap_config.BootstrapServerConfig
 		dpAuthEnabled      bool
 		request            types.BootstrapRequest
 		expectedConfigFile string
@@ -112,10 +113,11 @@ var _ = Describe("bootstrapGenerator", func() {
 		},
 		Entry("default config with minimal request", testCase{
 			dpAuthEnabled: false,
-			config: func() *bootstrap_config.BootstrapParamsConfig {
-				cfg := bootstrap_config.DefaultBootstrapParamsConfig()
-				cfg.XdsHost = "localhost"
-				cfg.XdsPort = 5678
+			config: func() *bootstrap_config.BootstrapServerConfig {
+				cfg := bootstrap_config.DefaultBootstrapServerConfig()
+				cfg.Params.XdsHost = "localhost"
+				cfg.Params.XdsPort = 5678
+				cfg.APIVersion = envoy_common.APIV2
 				return cfg
 			},
 			request: types.BootstrapRequest{
@@ -127,10 +129,11 @@ var _ = Describe("bootstrapGenerator", func() {
 		}),
 		Entry("default config", testCase{
 			dpAuthEnabled: true,
-			config: func() *bootstrap_config.BootstrapParamsConfig {
-				cfg := bootstrap_config.DefaultBootstrapParamsConfig()
-				cfg.XdsHost = "localhost"
-				cfg.XdsPort = 5678
+			config: func() *bootstrap_config.BootstrapServerConfig {
+				cfg := bootstrap_config.DefaultBootstrapServerConfig()
+				cfg.Params.XdsHost = "localhost"
+				cfg.Params.XdsPort = 5678
+				cfg.APIVersion = envoy_common.APIV2
 				return cfg
 			},
 			request: types.BootstrapRequest{
@@ -144,14 +147,17 @@ var _ = Describe("bootstrapGenerator", func() {
 		}),
 		Entry("custom config with minimal request", testCase{
 			dpAuthEnabled: false,
-			config: func() *bootstrap_config.BootstrapParamsConfig {
-				return &bootstrap_config.BootstrapParamsConfig{
-					AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-					AdminPort:          9902,          // by default, turn off Admin interface of Envoy
-					AdminAccessLogPath: "/var/log",
-					XdsHost:            "localhost",
-					XdsPort:            15678,
-					XdsConnectTimeout:  2 * time.Second,
+			config: func() *bootstrap_config.BootstrapServerConfig {
+				return &bootstrap_config.BootstrapServerConfig{
+					Params: &bootstrap_config.BootstrapParamsConfig{
+						AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
+						AdminPort:          9902,          // by default, turn off Admin interface of Envoy
+						AdminAccessLogPath: "/var/log",
+						XdsHost:            "localhost",
+						XdsPort:            15678,
+						XdsConnectTimeout:  2 * time.Second,
+					},
+					APIVersion: envoy_common.APIV2,
 				}
 			},
 			request: types.BootstrapRequest{
@@ -163,14 +169,17 @@ var _ = Describe("bootstrapGenerator", func() {
 		}),
 		Entry("custom config", testCase{
 			dpAuthEnabled: true,
-			config: func() *bootstrap_config.BootstrapParamsConfig {
-				return &bootstrap_config.BootstrapParamsConfig{
-					AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
-					AdminPort:          9902,          // by default, turn off Admin interface of Envoy
-					AdminAccessLogPath: "/var/log",
-					XdsHost:            "localhost",
-					XdsPort:            15678,
-					XdsConnectTimeout:  2 * time.Second,
+			config: func() *bootstrap_config.BootstrapServerConfig {
+				return &bootstrap_config.BootstrapServerConfig{
+					Params: &bootstrap_config.BootstrapParamsConfig{
+						AdminAddress:       "192.168.0.1", // by default, Envoy Admin interface should listen on loopback address
+						AdminPort:          9902,          // by default, turn off Admin interface of Envoy
+						AdminAccessLogPath: "/var/log",
+						XdsHost:            "localhost",
+						XdsPort:            15678,
+						XdsConnectTimeout:  2 * time.Second,
+					},
+					APIVersion: envoy_common.APIV2,
 				}
 			},
 			request: types.BootstrapRequest{
@@ -244,11 +253,11 @@ var _ = Describe("bootstrapGenerator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
-		params := bootstrap_config.DefaultBootstrapParamsConfig()
-		params.XdsHost = "localhost"
-		params.XdsPort = 5678
+		cfg := bootstrap_config.DefaultBootstrapServerConfig()
+		cfg.Params.XdsHost = "localhost"
+		cfg.Params.XdsPort = 5678
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, params, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
 		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
@@ -309,11 +318,11 @@ var _ = Describe("bootstrapGenerator", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// given
-		params := bootstrap_config.DefaultBootstrapParamsConfig()
-		params.XdsHost = "localhost"
-		params.XdsPort = 5678
+		cfg := bootstrap_config.DefaultBootstrapServerConfig()
+		cfg.Params.XdsHost = "localhost"
+		cfg.Params.XdsPort = 5678
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, params, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
 		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
@@ -331,9 +340,9 @@ var _ = Describe("bootstrapGenerator", func() {
 
 	It("should fail bootstrap due to invalid hostname", func() {
 		// given
-		params := bootstrap_config.DefaultBootstrapParamsConfig()
+		cfg := bootstrap_config.DefaultBootstrapServerConfig()
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, params, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
 		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
