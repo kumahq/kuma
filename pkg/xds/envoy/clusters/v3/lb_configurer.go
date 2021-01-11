@@ -3,8 +3,6 @@ package clusters
 import (
 	"fmt"
 
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
@@ -19,7 +17,13 @@ type LbConfigurer struct {
 var _ ClusterConfigurer = &LbConfigurer{}
 
 func (e *LbConfigurer) Configure(c *envoy_cluster.Cluster) error {
-	switch e.Lb.LbType.(type) {
+	// default ot Round Robin
+	if e.Lb.GetLbType() == nil {
+		c.LbPolicy = envoy_cluster.Cluster_ROUND_ROBIN
+		return nil
+	}
+
+	switch e.Lb.GetLbType().(type) {
 	case *mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_:
 		c.LbPolicy = envoy_cluster.Cluster_ROUND_ROBIN
 
@@ -39,7 +43,7 @@ func (e *LbConfigurer) Configure(c *envoy_cluster.Cluster) error {
 		c.LbPolicy = envoy_cluster.Cluster_RING_HASH
 
 		lbConfig := e.Lb.GetRingHash()
-		hashfn, ok := envoy_api.Cluster_RingHashLbConfig_HashFunction_value[lbConfig.HashFunction]
+		hashfn, ok := envoy_cluster.Cluster_RingHashLbConfig_HashFunction_value[lbConfig.HashFunction]
 		if !ok {
 			return errors.New(fmt.Sprintf("Invalid ring hash function %s", lbConfig.HashFunction))
 		}
