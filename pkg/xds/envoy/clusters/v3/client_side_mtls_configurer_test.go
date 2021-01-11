@@ -76,6 +76,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             name: testCluster
             transportSocket:
               name: envoy.transport_sockets.tls
@@ -158,6 +159,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             name: testCluster
             transportSocketMatches:
             - match:
@@ -283,6 +285,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             name: testCluster
             transportSocket:
               name: envoy.transport_sockets.tls
