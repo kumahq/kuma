@@ -7,6 +7,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
@@ -30,6 +31,9 @@ func ProbesFor(pod *kube_core.Pod) (*mesh_proto.Dataplane_Probes, error) {
 		Port: port,
 	}
 	for _, c := range pod.Spec.Containers {
+		if c.Name == util.KumaSidecarContainerName {
+			continue
+		}
 		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
 			if endpoint, err := ProbeFor(c.LivenessProbe, port); err != nil {
 				return nil, err

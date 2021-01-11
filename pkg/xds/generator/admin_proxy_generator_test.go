@@ -36,8 +36,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 
 			ctx := context.Context{
 				ControlPlane: nil,
-				Mesh: context.MeshContext{
-				},
+				Mesh:         context.MeshContext{},
 			}
 
 			proxy := &xds.Proxy{
