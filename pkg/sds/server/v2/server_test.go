@@ -1,4 +1,4 @@
-package server_test
+package v2_test
 
 import (
 	"context"
@@ -60,8 +60,8 @@ var _ = Describe("SDS Server", func() {
 		port, err := test.GetFreePort()
 		Expect(err).ToNot(HaveOccurred())
 		cfg.DpServer.Port = port
-		cfg.DpServer.TlsCertFile = filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem")
-		cfg.DpServer.TlsKeyFile = filepath.Join("..", "..", "..", "test", "certs", "server-key.pem")
+		cfg.DpServer.TlsCertFile = filepath.Join("..", "..", "..", "..", "test", "certs", "server-cert.pem")
+		cfg.DpServer.TlsKeyFile = filepath.Join("..", "..", "..", "..", "test", "certs", "server-key.pem")
 		cfg.DpServer.Auth.Type = dp_server_cfg.DpServerAuthDpToken
 
 		builder, err := runtime.BuilderFor(cfg)
@@ -141,7 +141,7 @@ var _ = Describe("SDS Server", func() {
 
 		// wait for SDS server
 		Eventually(func() error {
-			creds, err := credentials.NewClientTLSFromFile(filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), "")
+			creds, err := credentials.NewClientTLSFromFile(filepath.Join("..", "..", "..", "..", "test", "certs", "server-cert.pem"), "")
 			if err != nil {
 				return err
 			}
@@ -204,7 +204,7 @@ var _ = Describe("SDS Server", func() {
 		Expect(dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds).To(Equal(expirationSeconds))
 
 		// and metrics are published
-		Expect(test_metrics.FindMetric(metrics, "sds_cert_generation").GetGauge().GetValue()).To(Equal(1.0))
+		Expect(test_metrics.FindMetric(metrics, "sds_cert_generation").GetCounter().GetValue()).To(Equal(1.0))
 		Expect(test_metrics.FindMetric(metrics, "sds_generation")).ToNot(BeNil())
 
 		close(done)

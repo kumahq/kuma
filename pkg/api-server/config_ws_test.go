@@ -78,6 +78,7 @@ var _ = Describe("Config WS", func() {
             "readOnly": false
           },
           "bootstrapServer": {
+            "apiVersion": "v2",
             "params": {
               "adminAccessLogPath": "/dev/null",
               "adminAddress": "127.0.0.1",

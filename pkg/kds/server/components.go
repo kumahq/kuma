@@ -37,7 +37,7 @@ func New(log logr.Logger, rt core_runtime.Runtime, providedTypes []model.Resourc
 	callbacks := util_xds_v2.CallbacksChain{
 		&typeAdjustCallbacks{},
 		util_xds_v2.NewControlPlaneIdCallbacks(serverID),
-		util_xds_v2.LoggingCallbacks{Log: log},
+		util_xds_v2.AdaptCallbacks(util_xds.LoggingCallbacks{Log: log}),
 		util_xds_v2.AdaptCallbacks(statsCallbacks),
 		syncTracker,
 	}

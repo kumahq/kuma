@@ -66,7 +66,7 @@ func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.P
 	}
 	resources.AddSet(cdsResources)
 
-	edsResources, err := g.generateEDS(ctx, clusters)
+	edsResources, err := g.generateEDS(ctx, clusters, proxy.APIVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +83,7 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
 	retryPolicy := proxy.Policies.Retries[serviceName]
 	filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
-		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2)
+		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
 		switch protocol {
 		case mesh_core.ProtocolGRPC:
 			filterChainBuilder.
@@ -139,7 +139,7 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 		}
 		return filterChainBuilder
 	}()
-	listener, err := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
+	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
@@ -157,7 +157,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		tags := clusters.Tags(clusterName)
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
-		edsClusterBuilder := envoy_clusters.NewClusterBuilder(envoy_common.APIV2).
+		edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 			Configure(envoy_clusters.LbSubset(o.lbSubsets(tags))).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
 			Configure(envoy_clusters.HealthCheck(healthCheck))
@@ -205,14 +205,14 @@ func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]strin
 	return result
 }
 
-func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, clusters envoy_common.Clusters) (*model.ResourceSet, error) {
+func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, clusters envoy_common.Clusters, apiVersion envoy_common.APIVersion) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
 	for _, clusterName := range clusters.ClusterNames() {
 		// Endpoints for ExternalServices are specified in load assignment in DNS Cluster.
 		// We are not allowed to add endpoints with DNS names through EDS.
 		if !clusters.Get(clusterName).HasExternalService() {
 			serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
-			loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, serviceName)
+			loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, serviceName, apiVersion)
 			if err != nil {
 				return nil, errors.Wrapf(err, "could not get ClusterLoadAssingment for %s", serviceName)
 			}

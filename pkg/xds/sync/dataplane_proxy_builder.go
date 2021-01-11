@@ -16,12 +16,13 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
 var syncLog = core.Log.WithName("sync")
 
-type dataplaneProxyBuilder struct {
+type DataplaneProxyBuilder struct {
 	ResManager            manager.ReadOnlyResourceManager
 	LookupIP              lookup.LookupIPFunc
 	DataSourceLoader      datasource.Loader
@@ -30,10 +31,11 @@ type dataplaneProxyBuilder struct {
 	LogsMatcher           logs.TrafficLogsMatcher
 	FaultInjectionMatcher faultinjections.FaultInjectionMatcher
 
-	Zone string
+	Zone       string
+	apiVersion envoy.APIVersion
 }
 
-func (p *dataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64, meshCtx *xds_context.MeshContext) (*xds.Proxy, error) {
+func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64, meshCtx *xds_context.MeshContext) (*xds.Proxy, error) {
 	ctx := context.Background()
 
 	dp, err := p.resolveDataplane(ctx, key)
@@ -52,16 +54,17 @@ func (p *dataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64
 	}
 
 	proxy := &xds.Proxy{
-		Id:        xds.FromResourceKey(key),
-		Dataplane: dp,
-		Metadata:  p.MetadataTracker.Metadata(streamId),
-		Routing:   *routing,
-		Policies:  *matchedPolicies,
+		Id:         xds.FromResourceKey(key),
+		APIVersion: p.apiVersion,
+		Dataplane:  dp,
+		Metadata:   p.MetadataTracker.Metadata(streamId),
+		Routing:    *routing,
+		Policies:   *matchedPolicies,
 	}
 	return proxy, nil
 }
 
-func (p *dataplaneProxyBuilder) resolveDataplane(ctx context.Context, key core_model.ResourceKey) (*core_mesh.DataplaneResource, error) {
+func (p *DataplaneProxyBuilder) resolveDataplane(ctx context.Context, key core_model.ResourceKey) (*core_mesh.DataplaneResource, error) {
 	dataplane := core_mesh.NewDataplaneResource()
 
 	// we use non-cached ResourceManager to always fetch fresh version of the Dataplane.
@@ -78,7 +81,7 @@ func (p *dataplaneProxyBuilder) resolveDataplane(ctx context.Context, key core_m
 	return resolvedDp, nil
 }
 
-func (p *dataplaneProxyBuilder) resolveRouting(
+func (p *DataplaneProxyBuilder) resolveRouting(
 	ctx context.Context,
 	meshContext *xds_context.MeshContext,
 	dataplane *core_mesh.DataplaneResource,
@@ -107,7 +110,7 @@ func (p *dataplaneProxyBuilder) resolveRouting(
 	return routing, destinations, nil
 }
 
-func (p *dataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors xds.DestinationMap) (*xds.MatchedPolicies, error) {
+func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors xds.DestinationMap) (*xds.MatchedPolicies, error) {
 	healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, outboundSelectors, p.ResManager)
 	if err != nil {
 		return nil, err

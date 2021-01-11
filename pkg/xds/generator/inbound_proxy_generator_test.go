@@ -16,6 +16,7 @@ import (
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -71,6 +72,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 					},
 					Spec: &dataplane,
 				},
+				APIVersion: envoy_common.APIV2,
 				Policies: model.MatchedPolicies{
 
 					TrafficPermissions: model.TrafficPermissionMap{

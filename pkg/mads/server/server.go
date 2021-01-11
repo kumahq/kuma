@@ -2,6 +2,7 @@ package server
 
 import (
 	"github.com/kumahq/kuma/pkg/core"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -18,7 +19,7 @@ func SetupServer(rt core_runtime.Runtime) error {
 	reconciler := NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := NewSyncTracker(reconciler, rt.Config().MonitoringAssignmentServer.AssignmentRefreshInterval)
 	callbacks := util_xds_v2.CallbacksChain{
-		util_xds_v2.LoggingCallbacks{Log: madsServerLog},
+		util_xds_v2.AdaptCallbacks(util_xds.LoggingCallbacks{Log: madsServerLog}),
 		syncTracker,
 	}
 	srv := NewServer(cache, callbacks)

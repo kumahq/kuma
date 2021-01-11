@@ -10,6 +10,7 @@ import (
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -62,6 +63,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						Version: "v1",
 					},
 				},
+				APIVersion: envoy_common.APIV2,
 			},
 			expected: `
         {}
@@ -83,6 +85,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
+				APIVersion: envoy_common.APIV2,
 				Policies: model.MatchedPolicies{
 					Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is not picked
 						"some-service": {
@@ -169,6 +172,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
+				APIVersion: envoy_common.APIV2,
 				Policies: model.MatchedPolicies{
 					Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is is not picked
 						"pass_through": {
