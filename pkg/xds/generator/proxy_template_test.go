@@ -14,6 +14,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -81,6 +82,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV2,
 				},
 				template: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
@@ -158,7 +160,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 						},
 						Spec: dataplane,
 					},
-					Metadata: &model.DataplaneMetadata{},
+					APIVersion: envoy_common.APIV2,
+					Metadata:   &model.DataplaneMetadata{},
 				}
 
 				// when

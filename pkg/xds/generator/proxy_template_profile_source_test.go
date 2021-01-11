@@ -6,8 +6,9 @@ import (
 	"path/filepath"
 	"time"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	"github.com/golang/protobuf/proto"
 
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
 
 	"github.com/golang/protobuf/ptypes"
@@ -28,9 +29,11 @@ type dummyCLACache struct {
 	outboundTargets model.EndpointMap
 }
 
-func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
+func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash, service string, version envoy_common.APIVersion) (proto.Message, error) {
 	return endpoints.CreateClusterLoadAssignment(service, d.outboundTargets[service]), nil
 }
+
+var _ model.CLACache = &dummyCLACache{}
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
 
@@ -100,6 +103,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 					Spec: dataplane,
 				},
+				APIVersion: envoy_common.APIV2,
 				Routing: model.Routing{
 					TrafficRoutes: model.RouteMap{
 						mesh_proto.OutboundInterface{

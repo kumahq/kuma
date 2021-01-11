@@ -7,11 +7,14 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 var _ config.Config = &BootstrapServerConfig{}
 
 type BootstrapServerConfig struct {
+	// The version of Envoy API (available: "v2", "v3")
+	APIVersion envoy_common.APIVersion `yaml:"apiVersion" envconfig:"kuma_bootstrap_server_api_version"`
 	// Parameters of bootstrap configuration
 	Params *BootstrapParamsConfig `yaml:"params"`
 }
@@ -24,12 +27,18 @@ func (b *BootstrapServerConfig) Validate() error {
 	if err := b.Params.Validate(); err != nil {
 		return errors.Wrap(err, "Params validation failed")
 	}
+	switch b.APIVersion {
+	case envoy_common.APIV2, envoy_common.APIV3:
+	default:
+		return errors.Errorf("APIVersion has invalid value. Available values: %q, %q", envoy_common.APIV2, envoy_common.APIV3)
+	}
 	return nil
 }
 
 func DefaultBootstrapServerConfig() *BootstrapServerConfig {
 	return &BootstrapServerConfig{
-		Params: DefaultBootstrapParamsConfig(),
+		APIVersion: envoy_common.APIV2,
+		Params:     DefaultBootstrapParamsConfig(),
 	}
 }
 

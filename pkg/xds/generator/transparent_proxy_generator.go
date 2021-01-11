@@ -35,7 +35,7 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	var err error
 
 	if ctx.Mesh.Resource.Spec.IsPassthrough() {
-		outboundPassThroughCluster, err = envoy_clusters.NewClusterBuilder(envoy_common.APIV2).
+		outboundPassThroughCluster, err = envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 			Configure(envoy_clusters.PassThroughCluster(outboundName)).
 			Build()
 		if err != nil {
@@ -43,9 +43,9 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 		}
 	}
 
-	outboundListener, err = envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
+	outboundListener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 		Configure(envoy_listeners.OutboundListener(outboundName, "0.0.0.0", redirectPortOutbound)).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2).
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxy(outboundName, envoy_common.ClusterSubset{ClusterName: outboundName})).
 			Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, "external", proxy.Policies.Logs[mesh_core.PassThroughService], proxy)))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
@@ -56,7 +56,7 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 
 	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
 
-	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder(envoy_common.APIV2).
+	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 		Configure(envoy_clusters.PassThroughCluster(inboundName)).
 		Configure(envoy_clusters.UpstreamBindConfig("127.0.0.6", 0)).
 		Build()
@@ -64,9 +64,9 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 		return nil, errors.Wrapf(err, "could not generate cluster: %s", inboundName)
 	}
 
-	inboundListener, err := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
+	inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 		Configure(envoy_listeners.InboundListener(inboundName, "0.0.0.0", redirectPortInbound)).
-		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2).
+		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxy(inboundName, envoy_common.ClusterSubset{ClusterName: inboundName})))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
