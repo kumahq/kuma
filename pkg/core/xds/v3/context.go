@@ -1,4 +1,4 @@
-package v2
+package v3
 
 import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
