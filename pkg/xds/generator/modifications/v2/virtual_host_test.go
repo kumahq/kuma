@@ -1,4 +1,4 @@
-package modifications_test
+package v2_test
 
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -7,7 +7,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
+	modifications "github.com/kumahq/kuma/pkg/xds/generator/modifications/v2"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
