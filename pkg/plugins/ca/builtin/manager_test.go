@@ -50,7 +50,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should create a CA", func() {
 			//given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
 			}
@@ -62,13 +62,13 @@ var _ = Describe("Builtin CA Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and key+cert are stored as a secrets
-			secretRes := system.SecretResource{}
-			err = secretManager.Get(context.Background(), &secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-1", "default"))
+			secretRes := system.NewSecretResource()
+			err = secretManager.Get(context.Background(), secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(secretRes.Spec.GetData().GetValue()).ToNot(BeEmpty())
 
-			keyRes := system.SecretResource{}
-			err = secretManager.Get(context.Background(), &keyRes, core_store.GetByKey("default.ca-builtin-key-builtin-1", "default"))
+			keyRes := system.NewSecretResource()
+			err = secretManager.Get(context.Background(), keyRes, core_store.GetByKey("default.ca-builtin-key-builtin-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(keyRes.Spec.GetData().GetValue()).ToNot(BeEmpty())
 
@@ -88,7 +88,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should create a configured CA", func() {
 			//given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
 				Conf: proto.MustToStruct(&config.BuiltinCertificateAuthorityConfig{
@@ -108,8 +108,8 @@ var _ = Describe("Builtin CA Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and CA has configured parameters
-			secretRes := system.SecretResource{}
-			err = secretManager.Get(context.Background(), &secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-1", "default"))
+			secretRes := system.NewSecretResource()
+			err = secretManager.Get(context.Background(), secretRes, core_store.GetByKey("default.ca-builtin-cert-builtin-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			block, _ := pem.Decode(secretRes.Spec.Data.Value)
 			cert, err := x509.ParseCertificate(block.Bytes)
@@ -122,7 +122,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should retrieve created certs", func() {
 			//given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
 			}
@@ -141,7 +141,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should throw an error on retrieving certs on CA that was not created", func() {
 			// given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-non-existent",
 				Type: "builtin",
 			}
@@ -158,7 +158,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should generate dataplane certs", func() {
 			//given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-1",
 				Type: "builtin",
 				DpCert: &mesh_proto.CertificateAuthorityBackend_DpCert{
@@ -191,7 +191,7 @@ var _ = Describe("Builtin CA Manager", func() {
 		It("should throw an error on generate dataplane certs on non-existing CA", func() {
 			// given
 			mesh := "default"
-			backend := mesh_proto.CertificateAuthorityBackend{
+			backend := &mesh_proto.CertificateAuthorityBackend{
 				Name: "builtin-non-existent",
 				Type: "builtin",
 			}

@@ -338,7 +338,7 @@ var _ = Describe("Injector", func() {
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("15. Override virtual probes port", testCase{
+		Entry("15. virtual probes: config - 9000, pod - 19000", testCase{
 			num: "15",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -355,7 +355,7 @@ var _ = Describe("Injector", func() {
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("16. Override virtual probes enabled state", testCase{
+		Entry("16. virtual probes: config - enabled, pod - disabled", testCase{
 			num: "16",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -425,6 +425,57 @@ var _ = Describe("Injector", func() {
 		}),
 		Entry("20. skip injection for label exception", testCase{
 			num: "20",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+		Entry("21. virtual probes: config - disabled, pod - empty", testCase{
+			num: "21",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.vp-disabled.config.yaml",
+		}),
+		Entry("22. virtual probes: config - disabled, pod - enabled", testCase{
+			num: "22",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.vp-disabled.config.yaml",
+		}),
+		Entry("23. Adjust Pod's probes, named port", testCase{
+			num: "23",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
               kind: Mesh

@@ -26,7 +26,7 @@ func newGetHealthCheckCmd(pctx *getContext) *cobra.Command {
 			}
 			name := args[0]
 			currentMesh := pctx.CurrentMesh()
-			healthcheck := &mesh.HealthCheckResource{}
+			healthcheck := mesh.NewHealthCheckResource()
 			if err := rs.Get(context.Background(), healthcheck, store.GetByKey(name, currentMesh)); err != nil {
 				if store.IsResourceNotFound(err) {
 					return errors.Errorf("No resources found in %s mesh", currentMesh)

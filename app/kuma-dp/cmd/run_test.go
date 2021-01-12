@@ -15,8 +15,6 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -25,7 +23,6 @@ import (
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/test"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("run", func() {
@@ -36,13 +33,10 @@ var _ = Describe("run", func() {
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
-		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource) (proto.Message, error) {
-			bootstrap := envoy_bootstrap.Bootstrap{}
+		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource, version envoy.EnvoyVersion) ([]byte, error) {
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
-			err = util_proto.FromYAML(respBytes, &bootstrap)
-			Expect(err).ToNot(HaveOccurred())
-			return &bootstrap, nil
+			return respBytes, nil
 		}
 	})
 	AfterEach(func() {
@@ -152,13 +146,14 @@ var _ = Describe("run", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			actualArgs := strings.Split(string(cmdline), "\n")
-			Expect(actualArgs[0]).To(Equal("-c"))
-			actualConfigFile := actualArgs[1]
+			Expect(actualArgs[0]).To(Equal("--version"))
+			Expect(actualArgs[1]).To(Equal("-c"))
+			actualConfigFile := actualArgs[2]
 			Expect(actualConfigFile).To(BeARegularFile())
 
 			// then
 			if given.expectedFile != "" {
-				Expect(actualArgs[1]).To(Equal(given.expectedFile))
+				Expect(actualArgs[2]).To(Equal(given.expectedFile))
 			}
 
 			// when

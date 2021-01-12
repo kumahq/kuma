@@ -10,6 +10,7 @@ import (
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -32,6 +33,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: "default",
 						},
+						Spec: &mesh_proto.Mesh{},
 					},
 				},
 			}
@@ -61,6 +63,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						Version: "v1",
 					},
 				},
+				APIVersion: envoy_common.APIV2,
 			},
 			expected: `
         {}
@@ -73,7 +76,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 								RedirectPortOutbound: 15001,
@@ -82,13 +85,16 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
-				Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is not picked
-					"some-service": {
-						Name: "file",
-						Type: mesh_proto.LoggingFileType,
-						Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
-							Path: "/var/log",
-						}),
+				APIVersion: envoy_common.APIV2,
+				Policies: model.MatchedPolicies{
+					Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is not picked
+						"some-service": {
+							Name: "file",
+							Type: mesh_proto.LoggingFileType,
+							Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+								Path: "/var/log",
+							}),
+						},
 					},
 				},
 			},
@@ -157,7 +163,7 @@ var _ = Describe("TransparentProxyGenerator", func() {
 					Meta: &test_model.ResourceMeta{
 						Version: "v1",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
 								RedirectPortOutbound: 15001,
@@ -166,13 +172,16 @@ var _ = Describe("TransparentProxyGenerator", func() {
 						},
 					},
 				},
-				Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is is not picked
-					"pass_through": {
-						Name: "file",
-						Type: mesh_proto.LoggingFileType,
-						Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
-							Path: "/var/log",
-						}),
+				APIVersion: envoy_common.APIV2,
+				Policies: model.MatchedPolicies{
+					Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is is not picked
+						"pass_through": {
+							Name: "file",
+							Type: mesh_proto.LoggingFileType,
+							Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+								Path: "/var/log",
+							}),
+						},
 					},
 				},
 			},

@@ -15,20 +15,23 @@ import (
 
 var _ = Describe("Test Kubernetes/Universal deployment", func() {
 
-	meshDefaulMtlsOn := `
+	meshMTLSOn := func(mesh string) string {
+		return fmt.Sprintf(`
 type: Mesh
-name: default
+name: %s
 mtls:
   enabledBackend: ca-1
   backends:
   - name: ca-1
     type: builtin
-`
+`, mesh)
+	}
 
-	trafficPermissionAllTo2Remote := `
+	trafficPermissionAllTo2Remote := func(mesh string) string {
+		return fmt.Sprintf(`
 type: TrafficPermission
 name: all-to-2-remote
-mesh: default
+mesh: %s
 sources:
 - match:
    kuma.io/service: "*"
@@ -36,7 +39,8 @@ destinations:
 - match:
    kuma.io/service: "*"
    kuma.io/zone: kuma-2-remote
-`
+`, mesh)
+	}
 
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
@@ -51,6 +55,9 @@ metadata:
 
 	var global, remote_1, remote_2, remote_3, remote_4 Cluster
 	var optsGlobal, optsRemote1, optsRemote2, optsRemote3, optsRemote4 []DeployOptionsFunc
+
+	const nonDefaultMesh = "non-default"
+	const defaultMesh = "default"
 
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters(
@@ -69,6 +76,8 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
+			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh))).
+			Install(YamlUniversal(meshMTLSOn(defaultMesh))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -76,11 +85,11 @@ metadata:
 
 		globalCP := global.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
+		echoServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
+		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("ingress")
+		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// K8s Cluster 1
@@ -95,7 +104,7 @@ metadata:
 			Install(Kuma(core.Remote, optsRemote1...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClientK8s()).
+			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_1.VerifyKuma()
@@ -112,8 +121,8 @@ metadata:
 			Install(Kuma(core.Remote, optsRemote2...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(EchoServerK8s()).
-			Install(DemoClientK8s()).
+			Install(EchoServerK8s(nonDefaultMesh)).
+			Install(DemoClientK8s(nonDefaultMesh)).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()
@@ -127,9 +136,9 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote3...)).
-			Install(EchoServerUniversal("universal", echoServerToken)).
-			Install(DemoClientUniversal(demoClientToken)).
-			Install(IngressUniversal(ingressToken)).
+			Install(EchoServerUniversal("universal", nonDefaultMesh, echoServerToken)).
+			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken)).
+			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_3)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_3.VerifyKuma()
@@ -143,18 +152,18 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote4...)).
-			Install(DemoClientUniversal(demoClientToken)).
-			Install(IngressUniversal(ingressToken)).
+			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken)).
+			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_4)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_4.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlUniversal(meshDefaulMtlsOn)(global)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		_ = k8s.KubectlDeleteFromStringE(remote_1.GetTesting(), remote_1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
 		err := remote_1.DeleteKuma(optsRemote1...)
 		Expect(err).ToNot(HaveOccurred())
@@ -240,10 +249,10 @@ metadata:
 			return stdout, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
-		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-default") // remove builtin traffic permission
+		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-non-default", nonDefaultMesh) // remove builtin traffic permission
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlUniversal(trafficPermissionAllTo2Remote)(global)
+		err = YamlUniversal(trafficPermissionAllTo2Remote(nonDefaultMesh))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Remote 3

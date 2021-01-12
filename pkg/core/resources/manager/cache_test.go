@@ -12,6 +12,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 
 	. "github.com/onsi/ginkgo"
@@ -63,7 +64,7 @@ var _ = Describe("Cached Resource Manager", func() {
 
 		// and created resources
 		res = &core_mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "127.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -81,9 +82,9 @@ var _ = Describe("Cached Resource Manager", func() {
 
 	It("should cache Get() queries", func() {
 		// when fetched resources multiple times
-		fetch := func() core_mesh.DataplaneResource {
-			fetched := core_mesh.DataplaneResource{}
-			err := cachedManager.Get(context.Background(), &fetched, core_store.GetByKey("dp-1", "default"))
+		fetch := func() *core_mesh.DataplaneResource {
+			fetched := core_mesh.NewDataplaneResource()
+			err := cachedManager.Get(context.Background(), fetched, core_store.GetByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			return fetched
 		}
@@ -99,14 +100,14 @@ var _ = Describe("Cached Resource Manager", func() {
 		wg.Wait()
 
 		// then real manager should be called only once
-		Expect(fetch().Spec).To(Equal(res.Spec))
+		Expect(fetch().Spec).To(MatchProto(res.Spec))
 		Expect(countingManager.getQueries).To(Equal(1))
 
 		// when
 		time.Sleep(expiration)
 
 		// then
-		Expect(fetch().Spec).To(Equal(res.Spec))
+		Expect(fetch().Spec).To(MatchProto(res.Spec))
 		Expect(countingManager.getQueries).To(Equal(2))
 
 		// and metrics are published
@@ -142,7 +143,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		// then real manager should be called only once
 		list := fetch()
 		Expect(list.Items).To(HaveLen(1))
-		Expect(list.Items[0].GetSpec()).To(Equal(&res.Spec))
+		Expect(list.Items[0].GetSpec()).To(MatchProto(res.Spec))
 		Expect(countingManager.listQueries).To(Equal(1))
 
 		// when
@@ -151,7 +152,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		// then
 		list = fetch()
 		Expect(list.Items).To(HaveLen(1))
-		Expect(list.Items[0].GetSpec()).To(Equal(&res.Spec))
+		Expect(list.Items[0].GetSpec()).To(MatchProto(res.Spec))
 		Expect(countingManager.listQueries).To(Equal(2))
 
 		// and metrics are published

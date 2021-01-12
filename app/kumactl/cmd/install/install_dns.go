@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"regexp"
 	"strings"
 
@@ -16,11 +15,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
-	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 )
 
 const (
-	defaultKubeConfig     = "$HOME/.kube/config"
 	corednsAppendTemplate = `mesh:53 {
         errors
         cache 3
@@ -31,15 +30,15 @@ const (
 var resourceHeader = []byte("---\napiVersion: v1\nkind: ConfigMap\n")
 
 type InstallDNSArgs struct {
-	namespace string
-	service   string
-	port      string
+	Namespace string
+	Service   string
+	Port      string
 }
 
 var DefaultInstallDNSArgs = InstallDNSArgs{
-	namespace: "kuma-system",
-	service:   "kuma-control-plane",
-	port:      "5653",
+	Namespace: "kuma-system",
+	Service:   "kuma-control-plane",
+	Port:      "5653",
 }
 
 func newInstallDNS() *cobra.Command {
@@ -51,28 +50,23 @@ func newInstallDNS() *cobra.Command {
 		Long: `Install the DNS forwarding to the CoreDNS ConfigMap in the configured Kubernetes Cluster.
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			kubeconfigPath := os.Getenv("KUBECONFIG")
-			if kubeconfigPath == "" {
-				kubeconfigPath = os.ExpandEnv(defaultKubeConfig)
+			kubeClientConfig, err := k8s.DefaultClientConfig()
+			if err != nil {
+				return errors.Wrap(err, "could not detect Kubernetes configuration")
 			}
 
-			config, err := clientcmd.BuildConfigFromFlags("", kubeconfigPath)
+			clientset, err := kubernetes.NewForConfig(kubeClientConfig)
 			if err != nil {
 				return err
 			}
 
-			clientset, err := kubernetes.NewForConfig(config)
+			kumaCPSVC, err := clientset.CoreV1().Services(args.Namespace).Get(context.TODO(),
+				args.Service, metav1.GetOptions{})
 			if err != nil {
 				return err
 			}
 
-			kumaCPSVC, err := clientset.CoreV1().Services(args.namespace).Get(context.TODO(),
-				args.service, metav1.GetOptions{})
-			if err != nil {
-				return err
-			}
-
-			kumaDNSAddress := fmt.Sprintf("%s:%s", kumaCPSVC.Spec.ClusterIP, args.port)
+			kumaDNSAddress := fmt.Sprintf("%s:%s", kumaCPSVC.Spec.ClusterIP, args.Port)
 
 			var errs error
 			generated := false
@@ -105,8 +99,8 @@ This command requires that the KUBECONFIG environment is set`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&args.namespace, "namespace", args.namespace, "namespace to look for Kuma Control Plane service")
-	cmd.Flags().StringVar(&args.port, "port", args.port, "port of the Kuma DNS server")
+	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to look for Kuma Control Plane service")
+	cmd.Flags().StringVar(&args.Port, "port", args.Port, "port of the Kuma DNS server")
 
 	return cmd
 }

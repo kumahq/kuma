@@ -78,6 +78,7 @@ var _ = Describe("Config WS", func() {
             "readOnly": false
           },
           "bootstrapServer": {
+            "apiVersion": "v2",
             "params": {
               "adminAccessLogPath": "/dev/null",
               "adminAddress": "127.0.0.1",
@@ -125,6 +126,7 @@ var _ = Describe("Config WS", func() {
               "kds": {
                 "grpcPort": 5685,
                 "refreshInterval": "1s",
+                "zoneInsightFlushInterval": "10s",
                 "tlsCertFile": "",
                 "tlsKeyFile": ""
               }
@@ -243,11 +245,15 @@ var _ = Describe("Config WS", func() {
               "enabled": true,
               "expirationTime": "1s"
             },
+            "upsert": {
+              "conflictRetryBaseBackoff": "100ms",
+              "conflictRetryMaxTimes": 5
+            },
             "type": "memory"
           },
           "xdsServer": {
             "dataplaneConfigurationRefreshInterval": "1s",
-            "dataplaneStatusFlushInterval": "1s"
+            "dataplaneStatusFlushInterval": "10s"
           },
           "diagnostics": {
             "serverPort": 5680,

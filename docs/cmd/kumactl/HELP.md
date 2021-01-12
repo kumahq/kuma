@@ -15,7 +15,8 @@ Available Commands:
   get         Show Kuma resources
   help        Help about any command
   inspect     Inspect Kuma resources
-  install     Install Kuma on Kubernetes
+  install     Install various Kuma components.
+  uninstall   Uninstall various Kuma components.
   version     Print version
 
 Flags:
@@ -192,17 +193,18 @@ Global Flags:
 ## kumactl install
 
 ```
-Install Kuma on Kubernetes.
+Install various Kuma components.
 
 Usage:
   kumactl install [command]
 
 Available Commands:
-  control-plane Install Kuma Control Plane on Kubernetes
-  dns           Install DNS to Kubernetes
-  logging       Install Logging backend in Kubernetes cluster (Loki)
-  metrics       Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
-  tracing       Install Tracing backend in Kubernetes cluster (Jaeger)
+  control-plane     Install Kuma Control Plane on Kubernetes
+  dns               Install DNS to Kubernetes
+  logging           Install Logging backend in Kubernetes cluster (Loki)
+  metrics           Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
+  tracing           Install Tracing backend in Kubernetes cluster (Jaeger)
+  transparent-proxy Install Transparent Proxy pre-requisites on the host
 
 Flags:
   -h, --help   help for install
@@ -219,6 +221,7 @@ Use "kumactl install [command] --help" for more information about a command.
 
 ```
 Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.
+This command requires that the KUBECONFIG environment is set
 
 Usage:
   kumactl install control-plane [flags]
@@ -259,6 +262,7 @@ Flags:
       --tls-kds-global-server-secret string         Secret that contains tls.crt, key.crt for protecting cross cluster communication
       --tls-kds-remote-client-secret string         Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
       --use-node-port                               use NodePort instead of LoadBalancer
+      --without-kubernetes-connection               install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades
       --zone string                                 set the Kuma zone name
 
 Global Flags:
@@ -335,27 +339,39 @@ Global Flags:
   -m, --mesh string          mesh to use (default "default")
 ```
 
-### kumactl generate dp-token
+### kumactl generate dataplane-token
 
 ```
-Generate resources, tokens, etc.
+Generate Dataplane Token that is used to prove Dataplane identity.
 
 Usage:
-  kumactl generate [command]
+  kumactl generate dataplane-token [flags]
 
-Available Commands:
-  dataplane-token Generate Dataplane Token
-  tls-certificate Generate a TLS certificate
+Examples:
+
+Generate token bound by name and mesh
+$ kumactl generate dataplane-token --mesh demo --dataplane demo-01
+
+Generate token bound by mesh
+$ kumactl generate dataplane-token --mesh demo
+
+Generate Ingress token
+$ kumactl generate dataplane-token --type ingress
+
+Generate token bound by tag
+$ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
+
 
 Flags:
-  -h, --help   help for generate
+  -h, --help                 help for dataplane-token
+      --name string          name of the Dataplane
+      --tag stringToString   required tag values for dataplane (split values by comma to provide multiple values) (default [])
+      --type string          type of the Dataplane ("dataplane", "ingress")
 
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
-
-Use "kumactl generate [command] --help" for more information about a command.
 ```
 
 ## kumactl get
@@ -381,6 +397,8 @@ Available Commands:
   meshes              Show Meshes
   proxytemplate       Show a single Proxytemplate resource
   proxytemplates      Show ProxyTemplates
+  retries             Show Retries
+  retry               Show a single retry resource
   secret              Show a single Secret resource
   secrets             Show Secrets
   traffic-log         Show a single TrafficLog resource
@@ -456,6 +474,26 @@ Usage:
 
 Flags:
   -h, --help            help for healthchecks
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get retries
+
+```
+Show Retries.
+
+Usage:
+  kumactl get retries [flags]
+
+Flags:
+  -h, --help            help for retries
       --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 
@@ -670,6 +708,7 @@ Usage:
 Available Commands:
   dataplanes  Inspect Dataplanes
   meshes      Inspect Meshes
+  services    Inspect Services
   zones       Inspect Zones
 
 Flags:

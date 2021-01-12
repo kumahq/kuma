@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -73,6 +71,12 @@ func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_co
 			iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?
+
+			// if inbound.Health == nil we consider Dataplane as healthy in order to be compatible with Universal
+			// where we Kuma doesn't fill inbound.Health automatically
+			if inbound.Health != nil && !inbound.Health.Ready {
+				continue
+			}
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
 				Target:   iface.DataplaneIP,
 				Port:     iface.DataplanePort,
@@ -165,7 +169,7 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 	}, nil
 }
 
-func convertToEnvoy(ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) *envoy_core.DataSource {
+func convertToEnvoy(ds *v1alpha1.DataSource, mesh string, loader datasource.Loader) []byte {
 	if ds == nil {
 		return nil
 	}
@@ -176,11 +180,7 @@ func convertToEnvoy(ds *v1alpha1.DataSource, mesh string, loader datasource.Load
 		return nil
 	}
 
-	return &envoy_core.DataSource{
-		Specifier: &envoy_core.DataSource_InlineBytes{
-			InlineBytes: data,
-		},
-	}
+	return data
 }
 
 func localityFromTags(mesh *mesh_core.MeshResource, priority uint32, tags map[string]string) *core_xds.Locality {

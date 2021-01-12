@@ -16,6 +16,11 @@ import (
 	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
 	kube_source "sigs.k8s.io/controller-runtime/pkg/source"
 
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+
 	"github.com/kumahq/kuma/pkg/dns/vips"
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -28,11 +33,12 @@ import (
 type ConfigMapReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder
-	Scheme          *kube_runtime.Scheme
-	Log             logr.Logger
-	ResourceManager manager.ResourceManager
-	VIPsAllocator   *dns.VIPsAllocator
-	SystemNamespace string
+	Scheme            *kube_runtime.Scheme
+	Log               logr.Logger
+	ResourceManager   manager.ResourceManager
+	ResourceConverter k8s_common.Converter
+	VIPsAllocator     *dns.VIPsAllocator
+	SystemNamespace   string
 }
 
 func (r *ConfigMapReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -41,9 +47,17 @@ func (r *ConfigMapReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 		return kube_ctrl.Result{}, nil
 	}
 
+	r.Log.V(1).Info("updating VIPs", "mesh", mesh)
+
 	if err := r.VIPsAllocator.CreateOrUpdateVIPConfig(mesh); err != nil {
+		if store.IsResourceConflict(err) {
+			r.Log.V(1).Info("VIPs were updated in the other place. Retrying")
+			return kube_ctrl.Result{Requeue: true}, nil
+		}
 		return kube_ctrl.Result{}, err
 	}
+
+	r.Log.V(1).Info("VIPs updated", "mesh", mesh)
 
 	return kube_ctrl.Result{}, nil
 }
@@ -65,9 +79,10 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		}).
 		Watches(&kube_source.Kind{Type: &mesh_k8s.Dataplane{}}, &kube_handler.EnqueueRequestsFromMapFunc{
 			ToRequests: &DataplaneToMeshMapper{
-				Client:          mgr.GetClient(),
-				Log:             r.Log.WithName("dataplane-to-configmap-mapper"),
-				SystemNamespace: r.SystemNamespace,
+				Client:            mgr.GetClient(),
+				Log:               r.Log.WithName("dataplane-to-configmap-mapper"),
+				SystemNamespace:   r.SystemNamespace,
+				ResourceConverter: r.ResourceConverter,
 			},
 		}).
 		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, &kube_handler.EnqueueRequestsFromMapFunc{
@@ -120,8 +135,9 @@ func (m *ServiceToConfigMapsMapper) Map(obj kube_handler.MapObject) []kube_recon
 
 type DataplaneToMeshMapper struct {
 	kube_client.Client
-	Log             logr.Logger
-	SystemNamespace string
+	Log               logr.Logger
+	SystemNamespace   string
+	ResourceConverter k8s_common.Converter
 }
 
 func (m *DataplaneToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
@@ -129,6 +145,27 @@ func (m *DataplaneToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.
 	if !ok {
 		m.Log.WithValues("dataplane", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
 		return nil
+	}
+
+	dp := core_mesh.NewDataplaneResource()
+	if err := m.ResourceConverter.ToCoreResource(cause, dp); err != nil {
+		converterLog.Error(err, "failed to parse Dataplane", "dataplane", cause.Spec)
+		return nil
+	}
+
+	if dp.Spec.IsIngress() {
+		meshSet := map[string]bool{}
+		for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
+			meshSet[service.Mesh] = true
+		}
+
+		var requests []kube_reconile.Request
+		for mesh := range meshSet {
+			requests = append(requests, kube_reconile.Request{
+				NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(mesh)},
+			})
+		}
+		return requests
 	}
 
 	return []kube_reconile.Request{{

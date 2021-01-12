@@ -14,6 +14,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -27,8 +28,8 @@ var _ = Describe("ProbeGenerator", func() {
 		func(given testCase) {
 			gen := generator.ProbeProxyGenerator{}
 
-			dataplane := mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
+			dataplane := &mesh_proto.Dataplane{}
+			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			proxy := &core_xds.Proxy{
 				Dataplane: &mesh_core.DataplaneResource{
@@ -37,6 +38,7 @@ var _ = Describe("ProbeGenerator", func() {
 					},
 					Spec: dataplane,
 				},
+				APIVersion: envoy_common.APIV2,
 			}
 
 			// when
@@ -59,6 +61,9 @@ var _ = Describe("ProbeGenerator", func() {
 		},
 		Entry("base probes", testCase{
 			dataplane: `
+            networking:
+              inbound:
+              - port: 8080
             probes:
               port: 9000
               endpoints:
@@ -71,6 +76,20 @@ var _ = Describe("ProbeGenerator", func() {
 		Entry("empty probes", testCase{
 			dataplane: ``,
 			expected:  "02.envoy.golden.yaml",
+		}),
+		Entry("no inbound for probe", testCase{
+			dataplane: `
+            networking:
+              inbound:
+              - port: 1010
+            probes:
+              port: 9000
+              endpoints:
+              - inboundPort: 8080
+                inboundPath: /healthz/probe
+                path: /8080/healthz/probe
+`,
+			expected: "03.envoy.golden.yaml",
 		}),
 	)
 })

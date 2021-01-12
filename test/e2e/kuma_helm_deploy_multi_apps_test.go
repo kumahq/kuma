@@ -30,6 +30,13 @@ metadata:
 `, namespace)
 	}
 
+	defaultMesh := `
+apiVersion: kuma.io/v1alpha1
+kind: Mesh
+metadata:
+  name: default
+`
+
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
@@ -48,24 +55,30 @@ metadata:
 		deployOptsFuncs = []DeployOptionsFunc{
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
+			WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
+			WithCPReplicas(3),         // test HA capability
 			WithCNI(),
 		}
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(KumaDNS()).
+			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClientK8s()).
-			Install(EchoServerK8s()).
+			Install(DemoClientK8s("default")).
+			Install(EchoServerK8s("default")).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		// tear down apps
 		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		// tear down Kuma

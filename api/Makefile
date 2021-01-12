@@ -19,9 +19,9 @@ define go_mod_latest_version
 	find $(GOPATH_DIR)/pkg/mod/$(1) -maxdepth 1 -name '$(2)@*' | xargs -L 1 basename | sort -r | head -1 | awk -F@ '{print $$2}'
 endef
 
-PROTOC_VERSION := 3.6.1
-PROTOC_PGV_VERSION := v0.3.0-java.0.20200311152155-ab56c3dd1cf9 # Envoy API from master needs changes from master in protoc-gen-validate. Switch to stable once it's released
-GOLANG_PROTOBUF_VERSION := v1.3.2
+PROTOC_VERSION := 3.14.0
+PROTOC_PGV_VERSION := v0.4.1
+GOLANG_PROTOBUF_VERSION := v1.4.3
 DATAPLANE_API_LATEST_VERSION := master
 DATAPLANE_API_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/envoyproxy,data-plane-api))
 UDPA_LATEST_VERSION := master
@@ -58,8 +58,8 @@ PROTOC_GO := protoc \
 	--proto_path=$(PROTOBUF_WKT_DIR)/include \
 	--proto_path=. \
 	$(protoc_search_go_paths) \
-	--go_out=plugins=grpc,$(go_mapping):. \
-	--validate_out=lang=go:.
+	--go_opt=paths=source_relative \
+	--go_out=plugins=grpc,$(go_mapping):.
 
 PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)

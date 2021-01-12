@@ -81,13 +81,13 @@ networking:
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("demo-client")
+		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
-			Install(DemoClientUniversal(demoClientToken)).
+			Install(DemoClientUniversal("default", demoClientToken)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -105,6 +105,9 @@ networking:
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		err := cluster.DeleteKuma(deployOptsFuncs...)
 		Expect(err).ToNot(HaveOccurred())
 

@@ -38,9 +38,14 @@ const (
 
 	cniApp       = "kuma-cni"
 	cniNamespace = "kube-system"
+
+	redirectPortInbound  = "15006"
+	redirectPortOutbound = "15001"
 )
 
 var HelmChartPath = "../../deployments/charts/kuma"
+var HelmSubChartPrefix = ""
+
 var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
 

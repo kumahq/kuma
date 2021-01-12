@@ -38,21 +38,21 @@ var _ = Describe("kumactl get traffic-routes", func() {
 					Mesh: "default",
 					Name: "web-to-backend",
 				},
-				Spec: mesh_proto.TrafficRoute{},
+				Spec: &mesh_proto.TrafficRoute{},
 			},
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default",
 					Name: "backend-to-db",
 				},
-				Spec: mesh_proto.TrafficRoute{},
+				Spec: &mesh_proto.TrafficRoute{},
 			},
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "gateway-to-service",
 				},
-				Spec: mesh_proto.TrafficRoute{},
+				Spec: &mesh_proto.TrafficRoute{},
 			},
 		}
 	})

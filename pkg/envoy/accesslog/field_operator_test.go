@@ -180,6 +180,32 @@ var _ = Describe("FieldOperator", func() {
 				},
 				expected: `21`, // time in millis
 			}),
+			Entry("GRPC_STATUS: OK", testCase{
+				field: "GRPC_STATUS",
+				entry: &accesslog_data.HTTPAccessLogEntry{
+					Response: &accesslog_data.HTTPResponseProperties{
+						ResponseTrailers: map[string]string{
+							"grpc-status": "0",
+						},
+					},
+				},
+				expected: "OK",
+			}),
+			Entry("GRPC_STATUS: no status", testCase{
+				field:    "GRPC_STATUS",
+				expected: "",
+			}),
+			Entry("GRPC_STATUS: InvalidCode", testCase{
+				field: "GRPC_STATUS",
+				entry: &accesslog_data.HTTPAccessLogEntry{
+					Response: &accesslog_data.HTTPResponseProperties{
+						ResponseTrailers: map[string]string{
+							"grpc-status": "",
+						},
+					},
+				},
+				expected: "InvalidCode",
+			}),
 		)
 	})
 

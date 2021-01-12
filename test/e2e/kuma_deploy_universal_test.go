@@ -16,9 +16,10 @@ import (
 
 var _ = Describe("Test Universal deployment", func() {
 
-	meshDefaulMtlsOn := `
+	meshMTLSOn := func(mesh, localityAware string) string {
+		return fmt.Sprintf(`
 type: Mesh
-name: default
+name: %s
 mtls:
   enabledBackend: ca-1
   backends:
@@ -26,8 +27,19 @@ mtls:
     type: builtin
 routing:
   localityAwareLoadBalancing: %s
-`
+`, mesh, localityAware)
+	}
+
+	meshMTLSOff := func(mesh string) string {
+		return fmt.Sprintf(`
+type: Mesh
+name: %s
+`, mesh)
+	}
+
 	const iterations = 100
+	const defaultMesh = "default"
+	const nonDefaultMesh = "non-default"
 
 	var global, remote_1, remote_2 Cluster
 	var optsGlobal, optsRemote1, optsRemote2 []DeployOptionsFunc
@@ -41,9 +53,10 @@ routing:
 		// Global
 		global = clusters.GetCluster(Kuma1)
 		optsGlobal = []DeployOptionsFunc{}
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
+			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh, "false"))).
+			Install(YamlUniversal(meshMTLSOff(defaultMesh))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.VerifyKuma()
@@ -51,11 +64,11 @@ routing:
 
 		globalCP := global.GetKuma()
 
-		echoServerToken, err := globalCP.GenerateDpToken("echo-server_kuma-test_svc_8080")
+		echoServerToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := globalCP.GenerateDpToken("demo-client")
+		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("ingress")
+		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 1
@@ -66,9 +79,9 @@ routing:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote1...)).
-			Install(EchoServerUniversal("universal1", echoServerToken)).
-			Install(DemoClientUniversal(demoClientToken)).
-			Install(IngressUniversal(ingressToken)).
+			Install(EchoServerUniversal("universal1", nonDefaultMesh, echoServerToken)).
+			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken)).
+			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_1.VerifyKuma()
@@ -82,19 +95,19 @@ routing:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote2...)).
-			Install(EchoServerUniversal("universal2", echoServerToken)).
-			Install(DemoClientUniversal(demoClientToken)).
-			Install(IngressUniversal(ingressToken)).
+			Install(EchoServerUniversal("universal2", nonDefaultMesh, echoServerToken)).
+			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken)).
+			Install(IngressUniversal("default", ingressToken)).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "false"))(global)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		err := remote_1.DeleteKuma(optsRemote1...)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.DeleteKuma(optsRemote2...)
@@ -164,7 +177,7 @@ routing:
 
 	It("should use locality aware load balancing", func() {
 		// given services in zone1 and zone2 in a mesh with enabled Locality Aware Load Balancing
-		err := YamlUniversal(fmt.Sprintf(meshDefaulMtlsOn, "true"))(global)
+		err := YamlUniversal(meshMTLSOn(nonDefaultMesh, "true"))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when executing requests from zone 2

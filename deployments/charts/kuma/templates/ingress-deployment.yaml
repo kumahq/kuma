@@ -12,6 +12,7 @@ spec:
     rollingUpdate:
       maxSurge: 1
       maxUnavailable: 0
+  replicas: {{ .Values.ingress.replicas }}
   selector:
     matchLabels:
       {{- include "kuma.selectorLabels" . | nindent 6 }}

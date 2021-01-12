@@ -2,6 +2,10 @@ package runtime
 
 import (
 	"context"
+	"fmt"
+	"os"
+
+	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 
 	"github.com/pkg/errors"
 
@@ -19,7 +23,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -30,7 +33,6 @@ type BuilderContext interface {
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
 	ResourceManager() core_manager.ResourceManager
-	XdsContext() core_xds.XdsContext
 	Config() kuma_cp.Config
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
@@ -39,6 +41,7 @@ type BuilderContext interface {
 	LeaderInfo() component.LeaderInfo
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
+	APIManager() api_server.APIManager
 }
 
 var _ BuilderContext = &Builder{}
@@ -53,7 +56,6 @@ type Builder struct {
 	rm       core_manager.ResourceManager
 	rom      core_manager.ReadOnlyResourceManager
 	cam      core_ca.Managers
-	xds      core_xds.XdsContext
 	dsl      datasource.Loader
 	ext      context.Context
 	dns      resolver.DNSResolver
@@ -62,18 +64,26 @@ type Builder struct {
 	lif      lookup.LookupIPFunc
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
+	apim     api_server.APIManager
+	closeCh  <-chan struct{}
 	*runtimeInfo
 }
 
-func BuilderFor(cfg kuma_cp.Config) *Builder {
+func BuilderFor(cfg kuma_cp.Config, closeCh <-chan struct{}) (*Builder, error) {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return nil, errors.Wrap(err, "could not get hostname")
+	}
+	suffix := core.NewUUID()[0:4]
 	return &Builder{
 		cfg: cfg,
 		ext: context.Background(),
 		cam: core_ca.Managers{},
 		runtimeInfo: &runtimeInfo{
-			instanceId: core.NewUUID(),
+			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
 		},
-	}
+		closeCh: closeCh,
+	}, nil
 }
 
 func (b *Builder) WithComponentManager(cm component.Manager) *Builder {
@@ -121,11 +131,6 @@ func (b *Builder) WithDataSourceLoader(loader datasource.Loader) *Builder {
 	return b
 }
 
-func (b *Builder) WithXdsContext(xds core_xds.XdsContext) *Builder {
-	b.xds = xds
-	return b
-}
-
 func (b *Builder) WithExtensions(ext context.Context) *Builder {
 	b.ext = ext
 	return b
@@ -166,6 +171,11 @@ func (b *Builder) WithEventReaderFactory(erf events.ListenerFactory) *Builder {
 	return b
 }
 
+func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
+	b.apim = apim
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -178,9 +188,6 @@ func (b *Builder) Build() (Runtime, error) {
 	}
 	if b.rom == nil {
 		return nil, errors.Errorf("ReadOnlyResourceManager has not been configured")
-	}
-	if b.xds == nil {
-		return nil, errors.Errorf("xDS Context has not been configured")
 	}
 	if b.dsl == nil {
 		return nil, errors.Errorf("DataSourceLoader has not been configured")
@@ -203,6 +210,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.erf == nil {
 		return nil, errors.Errorf("EventReaderFactory has not been configured")
 	}
+	if b.apim == nil {
+		return nil, errors.Errorf("APIManager has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -212,7 +222,6 @@ func (b *Builder) Build() (Runtime, error) {
 			rs:       b.rs,
 			ss:       b.ss,
 			cam:      b.cam,
-			xds:      b.xds,
 			dsl:      b.dsl,
 			ext:      b.ext,
 			dns:      b.dns,
@@ -221,6 +230,7 @@ func (b *Builder) Build() (Runtime, error) {
 			lif:      b.lif,
 			metrics:  b.metrics,
 			erf:      b.erf,
+			apim:     b.apim,
 		},
 		Manager: b.cm,
 	}, nil
@@ -246,9 +256,6 @@ func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 }
 func (b *Builder) CaManagers() core_ca.Managers {
 	return b.cam
-}
-func (b *Builder) XdsContext() core_xds.XdsContext {
-	return b.xds
 }
 func (b *Builder) Config() kuma_cp.Config {
 	return b.cfg
@@ -276,4 +283,11 @@ func (b *Builder) Metrics() metrics.Metrics {
 }
 func (b *Builder) EventReaderFactory() events.ListenerFactory {
 	return b.erf
+}
+
+func (b *Builder) APIManager() api_server.APIManager {
+	return b.apim
+}
+func (b *Builder) CloseCh() <-chan struct{} {
+	return b.closeCh
 }

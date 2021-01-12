@@ -68,8 +68,8 @@ metadata:
 			Install(Kuma(core.Remote, optsRemote...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClientK8s()).
-			Install(EchoServerK8s()).
+			Install(DemoClientK8s("default")).
+			Install(EchoServerK8s("default")).
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -99,6 +99,10 @@ metadata:
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
+
 		defer func() {
 			// restore the original namespace
 			KumaNamespace = originalKumaNamespace

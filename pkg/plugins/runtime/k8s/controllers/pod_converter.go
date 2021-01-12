@@ -188,6 +188,6 @@ func MetricsFor(pod *kube_core.Pod) (*mesh_proto.MetricsBackend, error) {
 	}
 	return &mesh_proto.MetricsBackend{
 		Type: mesh_proto.MetricsPrometheusType,
-		Conf: &str,
+		Conf: str,
 	}, nil
 }

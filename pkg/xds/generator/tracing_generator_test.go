@@ -10,6 +10,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
 	"github.com/kumahq/kuma/pkg/xds/generator"
 
@@ -50,7 +51,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 						Mesh: "demo",
 					},
 				},
-				TracingBackend: nil,
+				APIVersion: envoy_common.APIV2,
 			},
 		}),
 	)
@@ -84,18 +85,21 @@ var _ = Describe("TracingProxyGenerator", func() {
 						Name: "backend-01",
 						Mesh: "demo",
 					},
-					Spec: mesh_proto.Dataplane{
+					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
 							Address: "192.168.0.1",
 						},
 					},
 				},
-				TracingBackend: &mesh_proto.TracingBackend{
-					Name: "zipkin",
-					Type: mesh_proto.TracingZipkinType,
-					Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
-						Url: "http://zipkin.us:9090/v2/spans",
-					}),
+				APIVersion: envoy_common.APIV2,
+				Policies: model.MatchedPolicies{
+					TracingBackend: &mesh_proto.TracingBackend{
+						Name: "zipkin",
+						Type: mesh_proto.TracingZipkinType,
+						Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
+							Url: "http://zipkin.us:9090/v2/spans",
+						}),
+					},
 				},
 			},
 			expectedFile: "zipkin.envoy-config.golden.yaml",

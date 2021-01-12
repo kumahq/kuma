@@ -22,7 +22,8 @@ function _kumactl {
       "get:Show Kuma resources"
       "help:Help about any command"
       "inspect:Inspect Kuma resources"
-      "install:Install Kuma on Kubernetes"
+      "install:Install various Kuma components."
+      "uninstall:Uninstall various Kuma components."
       "version:Print version"
     )
     _describe "command" commands
@@ -56,6 +57,9 @@ function _kumactl {
     ;;
   install)
     _kumactl_install
+    ;;
+  uninstall)
+    _kumactl_uninstall
     ;;
   version)
     _kumactl_version
@@ -284,7 +288,7 @@ function _kumactl_generate {
 
 function _kumactl_generate_dataplane-token {
   _arguments \
-    '--dataplane[name of the Dataplane]:' \
+    '--name[name of the Dataplane]:' \
     '--tag[required tag values for dataplane (split values by comma to provide multiple values)]:' \
     '--type[type of the Dataplane ("dataplane", "ingress")]:' \
     '--config-file[path to the configuration file to use]:' \
@@ -332,6 +336,8 @@ function _kumactl_get {
       "meshes:Show Meshes"
       "proxytemplate:Show a single Proxytemplate resource"
       "proxytemplates:Show ProxyTemplates"
+      "retries:Show Retries"
+      "retry:Show a single retry resource"
       "secret:Show a single Secret resource"
       "secrets:Show Secrets"
       "traffic-log:Show a single TrafficLog resource"
@@ -391,6 +397,12 @@ function _kumactl_get {
     ;;
   proxytemplates)
     _kumactl_get_proxytemplates
+    ;;
+  retries)
+    _kumactl_get_retries
+    ;;
+  retry)
+    _kumactl_get_retry
     ;;
   secret)
     _kumactl_get_secret
@@ -557,6 +569,24 @@ function _kumactl_get_proxytemplates {
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
+function _kumactl_get_retries {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_retry {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
 function _kumactl_get_secret {
   _arguments \
     '--config-file[path to the configuration file to use]:' \
@@ -687,6 +717,7 @@ function _kumactl_inspect {
     commands=(
       "dataplanes:Inspect Dataplanes"
       "meshes:Inspect Meshes"
+      "services:Inspect Services"
       "zones:Inspect Zones"
     )
     _describe "command" commands
@@ -699,6 +730,9 @@ function _kumactl_inspect {
     ;;
   meshes)
     _kumactl_inspect_meshes
+    ;;
+  services)
+    _kumactl_inspect_services
     ;;
   zones)
     _kumactl_inspect_zones
@@ -718,6 +752,14 @@ function _kumactl_inspect_dataplanes {
 }
 
 function _kumactl_inspect_meshes {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_inspect_services {
   _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
@@ -752,6 +794,7 @@ function _kumactl_install {
       "logging:Install Logging backend in Kubernetes cluster (Loki)"
       "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
       "tracing:Install Tracing backend in Kubernetes cluster (Jaeger)"
+      "transparent-proxy:Install Transparent Proxy pre-requisites on the host"
     )
     _describe "command" commands
     ;;
@@ -772,6 +815,9 @@ function _kumactl_install {
     ;;
   tracing)
     _kumactl_install_tracing
+    ;;
+  transparent-proxy)
+    _kumactl_install_transparent-proxy
     ;;
   esac
 }
@@ -812,6 +858,7 @@ function _kumactl_install_control-plane {
     '--tls-kds-global-server-secret[Secret that contains tls.crt, key.crt for protecting cross cluster communication]:' \
     '--tls-kds-remote-client-secret[Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification]:' \
     '--use-node-port[use NodePort instead of LoadBalancer]' \
+    '--without-kubernetes-connection[install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades]' \
     '--zone[set the Kuma zone name]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
@@ -849,6 +896,58 @@ function _kumactl_install_metrics {
 function _kumactl_install_tracing {
   _arguments \
     '--namespace[namespace to install tracing to]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_transparent-proxy {
+  _arguments \
+    '--dry-run[dry run]' \
+    '--exclude-inbound-ports[a comma separated list of inbound ports to exclude from redirect to Envoy]:' \
+    '--exclude-outbound-ports[a comma separated list of outbound ports to exclude from redirect to Envoy]:' \
+    '--kuma-cp-ip[the IP address of the Kuma CP which exposes the DNS service on port 53.]:' \
+    '--kuma-dp-uid[the UID of the user that will run kuma-dp]:' \
+    '--kuma-dp-user[the user that will run kuma-dp]:' \
+    '--modify-iptables[modify the host iptables to redirect the traffic to Envoy]' \
+    '--modify-resolv-conf[modify the host `/etc/resolv.conf` to allow `.mesh` resolution through kuma-cp]' \
+    '--redirect-inbound-port[inbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortInbound`]:' \
+    '--redirect-outbound-port[outbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortOutbound`]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+
+function _kumactl_uninstall {
+  local -a commands
+
+  _arguments -C \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "transparent-proxy:Uninstall Transparent Proxy pre-requisites on the host"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  transparent-proxy)
+    _kumactl_uninstall_transparent-proxy
+    ;;
+  esac
+}
+
+function _kumactl_uninstall_transparent-proxy {
+  _arguments \
+    '--dry-run[dry run]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'

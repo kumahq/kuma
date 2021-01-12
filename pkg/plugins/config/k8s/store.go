@@ -95,7 +95,10 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 		},
 	}
 	if err := s.client.Update(context.Background(), cm); err != nil {
-		return err
+		if kube_apierrs.IsConflict(err) {
+			return core_store.ErrorResourceConflict(r.GetType(), r.GetMeta().GetName(), r.GetMeta().GetMesh())
+		}
+		return errors.Wrap(err, "failed to update k8s resource")
 	}
 	r.SetMeta(&KubernetesMetaAdapter{cm.ObjectMeta})
 	return nil
@@ -151,7 +154,7 @@ func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, 
 	}
 	for _, cm := range cmlist.Items {
 		configRes.Items = append(configRes.Items, &config_model.ConfigResource{
-			Spec: system_proto.Config{
+			Spec: &system_proto.Config{
 				Config: cm.Data[configMapKey],
 			},
 			Meta: &KubernetesMetaAdapter{cm.ObjectMeta},

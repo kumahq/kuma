@@ -46,24 +46,24 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 
 	for _, endpoint := range endpoints {
 		name := fmt.Sprintf("direct_access_%s:%d", endpoint.Address, endpoint.Port)
-		listener, err := envoy_listeners.NewListenerBuilder().
+		listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.OutboundListener(name, endpoint.Address, endpoint.Port)).
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder().
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 				Configure(envoy_listeners.TcpProxy(name, envoy_common.ClusterSubset{ClusterName: "direct_access"})).
-				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_listeners.TrafficDirectionOutbound, sourceService, name, proxy.Logs[mesh_core.PassThroughService], proxy)))).
+				Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, name, proxy.Policies.Logs[mesh_core.PassThroughService], proxy)))).
 			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 			Build()
 		if err != nil {
 			return nil, err
 		}
 		resources.Add(&core_xds.Resource{
-			Name:     listener.Name,
+			Name:     name,
 			Origin:   OriginDirectAccess,
 			Resource: listener,
 		})
 	}
 
-	directAccessCluster, err := envoy_clusters.NewClusterBuilder().
+	directAccessCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 		Configure(envoy_clusters.PassThroughCluster("direct_access")).
 		Configure(envoy_clusters.UnknownDestinationClientSideMTLS(ctx, proxy.Metadata)).
 		Build()
@@ -71,7 +71,7 @@ func (_ DirectAccessProxyGenerator) Generate(ctx xds_context.Context, proxy *cor
 		return nil, errors.Wrapf(err, "could not generate cluster: direct_access")
 	}
 	resources.Add(&core_xds.Resource{
-		Name:     directAccessCluster.Name,
+		Name:     directAccessCluster.GetName(),
 		Origin:   OriginDirectAccess,
 		Resource: directAccessCluster,
 	})

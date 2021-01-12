@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "mesh/v1alpha1/selector.proto";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+import "validate/validate.proto";
+
+message Retry {
+  // List of selectors to match dataplanes that retry policy should be
+  // configured for
+  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+
+  // List of selectors to match services that need to be health checked.
+  repeated Selector destinations = 2
+      [ (validate.rules).repeated .min_items = 1 ];
+
+  message Conf {
+    message BackOff {
+      //  +required
+      google.protobuf.Duration base_interval = 1;
+      //  +optional
+      google.protobuf.Duration max_interval = 2;
+    }
+
+    message Http {
+      //  +optional
+      google.protobuf.UInt32Value num_retries = 2;
+
+      //  +optional
+      google.protobuf.Duration per_try_timeout = 3;
+
+      //  +optional
+      BackOff back_off = 4;
+
+      //  +optional
+      repeated uint32 retriable_status_codes = 5;
+    }
+
+    message Tcp {
+      //  +optional
+      uint32 max_connect_attempts = 1;
+    }
+
+    message Grpc {
+      enum RetryOn {
+        cancelled = 0;
+        deadline_exceeded = 1;
+        internal = 2;
+        resource_exhausted = 3;
+        unavailable = 4;
+      }
+
+      //  +optional
+      repeated RetryOn retry_on = 1;
+
+      //  +optional
+      google.protobuf.UInt32Value num_retries = 2;
+
+      //  +optional
+      google.protobuf.Duration per_try_timeout = 3;
+
+      //  +optional
+      BackOff back_off = 4;
+    }
+
+    Http http = 1;
+    Tcp tcp = 2;
+    Grpc grpc = 3;
+  }
+
+  //  +required
+  Conf conf = 3;
+}

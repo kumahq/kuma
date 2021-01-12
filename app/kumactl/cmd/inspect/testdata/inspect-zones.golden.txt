@@ -1,3 +1,4 @@
 MESH      NAME     STATUS    LAST CONNECTED AGO   LAST UPDATED AGO   TOTAL UPDATES   TOTAL ERRORS
 default   zone-1   Online    2h                   never              42              13
 default   zone-2   Offline   never                never              0               0
+default   zone-3   Offline   2h                   never              0               0

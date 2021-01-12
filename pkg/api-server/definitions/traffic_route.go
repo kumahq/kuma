@@ -9,7 +9,7 @@ var TrafficRouteWsDefinition = ResourceWsDefinition{
 	Name: "TrafficRoute",
 	Path: "traffic-routes",
 	ResourceFactory: func() model.Resource {
-		return &mesh.TrafficRouteResource{}
+		return mesh.NewTrafficRouteResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.TrafficRouteResourceList{}

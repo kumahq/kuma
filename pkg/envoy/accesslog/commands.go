@@ -27,6 +27,7 @@ const (
 	CMD_REQUEST_DURATION      = "REQUEST_DURATION"
 	CMD_RESPONSE_DURATION     = "RESPONSE_DURATION"
 	CMD_RESPONSE_TX_DURATION  = "RESPONSE_TX_DURATION"
+	CMD_GRPC_STATUS           = "GRPC_STATUS"
 
 	// Commands that are the same for HTTP and TCP log entries.
 
@@ -178,6 +179,8 @@ func (o CommandOperatorDescriptor) String() string {
 		return "%KUMA_MESH%"
 	case CMD_KUMA_TRAFFIC_DIRECTION:
 		return "%KUMA_TRAFFIC_DIRECTION%"
+	case CMD_GRPC_STATUS:
+		return "%CMD_GRPC_STATUS%"
 	default:
 		return fmt.Sprintf("%%%s%%", string(o))
 	}

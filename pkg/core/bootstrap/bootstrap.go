@@ -4,6 +4,9 @@ import (
 	"context"
 	"net"
 
+	"github.com/kumahq/kuma/pkg/api-server/customization"
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/dns/resolver"
@@ -34,19 +37,21 @@ import (
 	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
-func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
+func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
 	if err := autoconfigure(&cfg); err != nil {
 		return nil, err
 	}
-	builder := core_runtime.BuilderFor(cfg)
+	builder, err := core_runtime.BuilderFor(cfg, closeCh)
+	if err != nil {
+		return nil, err
+	}
 	if err := initializeMetrics(builder); err != nil {
 		return nil, err
 	}
-	if err := initializeBootstrap(cfg, builder); err != nil {
+	if err := initializeBeforeBootstrap(cfg, builder); err != nil {
 		return nil, err
 	}
 	if err := initializeResourceStore(cfg, builder); err != nil {
@@ -80,12 +85,15 @@ func buildRuntime(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
 		return nil, err
 	}
 
-	initializeXds(builder)
-
 	leaderInfoComponent := &component.LeaderInfoComponent{}
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
+	builder.WithAPIManager(customization.NewAPIList())
+
+	if err := initializeAfterBootstrap(cfg, builder); err != nil {
+		return nil, err
+	}
 
 	rt, err := builder.Build()
 	if err != nil {
@@ -121,8 +129,8 @@ func initializeMetrics(builder *core_runtime.Builder) error {
 	return nil
 }
 
-func Bootstrap(cfg kuma_cp.Config) (core_runtime.Runtime, error) {
-	runtime, err := buildRuntime(cfg)
+func Bootstrap(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Runtime, error) {
+	runtime, err := buildRuntime(cfg, closeCh)
 	if err != nil {
 		return nil, err
 	}
@@ -142,13 +150,26 @@ func startReporter(runtime core_runtime.Runtime) error {
 	}))
 }
 
-func initializeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+func initializeBeforeBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
 	for name, plugin := range core_plugins.Plugins().BootstrapPlugins() {
 		if (cfg.Environment == config_core.KubernetesEnvironment && name == core_plugins.Universal) ||
 			(cfg.Environment == config_core.UniversalEnvironment && name == core_plugins.Kubernetes) {
 			continue
 		}
-		if err := plugin.Bootstrap(builder, nil); err != nil {
+		if err := plugin.BeforeBootstrap(builder, nil); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func initializeAfterBootstrap(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
+	for name, plugin := range core_plugins.Plugins().BootstrapPlugins() {
+		if (cfg.Environment == config_core.KubernetesEnvironment && name == core_plugins.Universal) ||
+			(cfg.Environment == config_core.UniversalEnvironment && name == core_plugins.Kubernetes) {
+			continue
+		}
+		if err := plugin.AfterBootstrap(builder, nil); err != nil {
 			return err
 		}
 	}
@@ -243,10 +264,6 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	}
 }
 
-func initializeXds(builder *core_runtime.Builder) {
-	builder.WithXdsContext(core_xds.NewXdsContext())
-}
-
 func initializeCaManagers(builder *core_runtime.Builder) error {
 	for pluginName, caPlugin := range core_plugins.Plugins().CaPlugins() {
 		caManager, err := caPlugin.NewCaManager(builder, nil)
@@ -265,6 +282,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	meshValidator := mesh_managers.MeshValidator{
 		CaManagers: builder.CaManagers(),
+		Store:      builder.ResourceStore(),
 	}
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator)
 	customManagers[mesh.MeshType] = meshManager
@@ -274,6 +292,10 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
 	customManagers[mesh.DataplaneInsightType] = dpInsightManager
+
+	zoneValidator := zone.Validator{Store: builder.ResourceStore()}
+	zoneManager := zone.NewZoneManager(builder.ResourceStore(), zoneValidator)
+	customManagers[system.ZoneType] = zoneManager
 
 	zoneInsightManager := zoneinsight.NewZoneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Zone)
 	customManagers[system.ZoneInsightType] = zoneInsightManager

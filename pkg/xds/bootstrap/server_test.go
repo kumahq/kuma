@@ -3,6 +3,7 @@ package bootstrap_test
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"path/filepath"
@@ -34,9 +35,22 @@ var _ = Describe("Bootstrap Server", func() {
 
 	var stop chan struct{}
 	var resManager manager.ResourceManager
-	var config *bootstrap_config.BootstrapParamsConfig
 	var baseUrl string
 	var metrics core_metrics.Metrics
+
+	version := `
+	"version": {
+	  "kumaDp": {
+	    "version": "0.0.1",
+	    "gitTag": "v0.0.1",
+	    "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+	    "buildDate": "2019-08-07T11:26:06Z"
+	  },
+	  "envoy": {
+	    "version": "1.15.0",
+	    "build": "hash/1.15.0/RELEASE"
+	  }
+	}`
 
 	httpClient := &http.Client{
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
@@ -44,9 +58,9 @@ var _ = Describe("Bootstrap Server", func() {
 
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
-		config = bootstrap_config.DefaultBootstrapParamsConfig()
-		config.XdsHost = "127.0.0.1"
-		config.XdsPort = 5678
+		config := bootstrap_config.DefaultBootstrapServerConfig()
+		config.Params.XdsHost = "localhost"
+		config.Params.XdsPort = 5678
 
 		port, err := test.GetFreePort()
 		baseUrl = "https://localhost:" + strconv.Itoa(port)
@@ -61,8 +75,10 @@ var _ = Describe("Bootstrap Server", func() {
 		}
 		dpServer := dp_server.NewDpServer(dpServerCfg, metrics)
 
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true)
+		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
-			Generator: bootstrap.NewDefaultBootstrapGenerator(resManager, config, "", true),
+			Generator: generator,
 		}
 		dpServer.HTTPMux().HandleFunc("/bootstrap", bootstrapHandler.Handle)
 
@@ -87,7 +103,7 @@ var _ = Describe("Bootstrap Server", func() {
 	})
 
 	BeforeEach(func() {
-		err := resManager.Create(context.Background(), &mesh.MeshResource{}, store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		err := resManager.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 		core.Now = func() time.Time {
 			now, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
@@ -104,7 +120,7 @@ var _ = Describe("Bootstrap Server", func() {
 		func(given testCase) {
 			// given
 			res := mesh.DataplaneResource{
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "8.8.8.8",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -140,17 +156,17 @@ var _ = Describe("Bootstrap Server", func() {
 		},
 		Entry("minimal data provided (universal)", testCase{
 			dataplaneName:      "dp-1",
-			body:               `{ "mesh": "default", "name": "dp-1", "dataplaneTokenPath": "/tmp/token" }`,
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1", "dataplaneTokenPath": "/tmp/token", %s }`, version),
 			expectedConfigFile: "bootstrap.universal.golden.yaml",
 		}),
 		Entry("minimal data provided (k8s)", testCase{
 			dataplaneName:      "dp-1.default",
-			body:               `{ "mesh": "default", "name": "dp-1.default", "dataplaneTokenPath": "/tmp/token" }`,
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "dataplaneTokenPath": "/tmp/token", %s }`, version),
 			expectedConfigFile: "bootstrap.k8s.golden.yaml",
 		}),
 		Entry("full data provided", testCase{
 			dataplaneName:      "dp-1.default",
-			body:               `{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneTokenPath": "/tmp/token" }`,
+			body:               fmt.Sprintf(`{ "mesh": "default", "name": "dp-1.default", "adminPort": 1234, "dataplaneTokenPath": "/tmp/token", %s }`, version),
 			expectedConfigFile: "bootstrap.overridden.golden.yaml",
 		}),
 	)
@@ -175,7 +191,7 @@ var _ = Describe("Bootstrap Server", func() {
 	It("should return 422 for the lack of the dataplane token", func() {
 		// given
 		res := mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -215,7 +231,7 @@ var _ = Describe("Bootstrap Server", func() {
 	It("should publish metrics", func() {
 		// given
 		res := mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "8.8.8.8",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{

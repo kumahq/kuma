@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 
 	_ "github.com/lib/pq"
@@ -16,6 +18,7 @@ import (
 	config "github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -27,10 +30,14 @@ type postgresResourceStore struct {
 
 var _ store.ResourceStore = &postgresResourceStore{}
 
-func NewStore(config config.PostgresStoreConfig) (store.ResourceStore, error) {
+func NewStore(metrics core_metrics.Metrics, config config.PostgresStoreConfig) (store.ResourceStore, error) {
 	db, err := common_postgres.ConnectToDb(config)
 	if err != nil {
 		return nil, err
+	}
+
+	if err := registerMetrics(metrics, db); err != nil {
+		return nil, errors.Wrapf(err, "could not register DB metrics")
 	}
 
 	return &postgresResourceStore{
@@ -266,4 +273,95 @@ func (r *resourceMetaObject) GetCreationTime() time.Time {
 
 func (r *resourceMetaObject) GetModificationTime() time.Time {
 	return r.ModificationTime
+}
+
+func registerMetrics(metrics core_metrics.Metrics, db *sql.DB) error {
+	postgresCurrentConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connections",
+		Help: "Current number of postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "open_connections",
+		},
+	}, func() float64 {
+		return float64(db.Stats().OpenConnections)
+	})
+
+	postgresInUseConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connections",
+		Help: "Current number of postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "in_use",
+		},
+	}, func() float64 {
+		return float64(db.Stats().InUse)
+	})
+
+	postgresIdleConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connections",
+		Help: "Current number of postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "idle",
+		},
+	}, func() float64 {
+		return float64(db.Stats().Idle)
+	})
+
+	postgresMaxOpenConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connections_max",
+		Help: "Max postgres store open connections",
+	}, func() float64 {
+		return float64(db.Stats().MaxOpenConnections)
+	})
+
+	postgresWaitConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_wait_count",
+		Help: "Current waiting postgres store connections",
+	}, func() float64 {
+		return float64(db.Stats().WaitCount)
+	})
+
+	postgresWaitConnectionDurationMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_wait_duration",
+		Help: "Time Blocked waiting for new connection in seconds",
+	}, func() float64 {
+		return db.Stats().WaitDuration.Seconds()
+	})
+
+	postgresMaxIdleClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_closed",
+		Help: "Current number of closed postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "max_idle_conns",
+		},
+	}, func() float64 {
+		return float64(db.Stats().MaxIdleClosed)
+	})
+
+	postgresMaxIdleTimeClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_closed",
+		Help: "Current number of closed postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "conn_max_idle_time",
+		},
+	}, func() float64 {
+		return float64(db.Stats().MaxIdleTimeClosed)
+	})
+
+	postgresMaxLifeTimeClosedConnectionMetric := prometheus.NewGaugeFunc(prometheus.GaugeOpts{
+		Name: "store_postgres_connection_closed",
+		Help: "Current number of closed postgres store connections",
+		ConstLabels: map[string]string{
+			"type": "conn_max_life_time",
+		},
+	}, func() float64 {
+		return float64(db.Stats().MaxLifetimeClosed)
+	})
+
+	if err := metrics.
+		BulkRegister(postgresCurrentConnectionMetric, postgresInUseConnectionMetric, postgresIdleConnectionMetric,
+			postgresMaxOpenConnectionMetric, postgresWaitConnectionMetric, postgresWaitConnectionDurationMetric,
+			postgresMaxIdleClosedConnectionMetric, postgresMaxIdleTimeClosedConnectionMetric, postgresMaxLifeTimeClosedConnectionMetric); err != nil {
+		return err
+	}
+	return nil
 }

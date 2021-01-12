@@ -13,8 +13,8 @@ PROTOC_GO := protoc \
 	--proto_path=./api \
 	--proto_path=. \
 	$(protoc_search_go_paths) \
-	--go_out=plugins=grpc,Msystem/v1alpha1/datasource.proto=github.com/kumahq/kuma/api/system/v1alpha1:. \
-	--validate_out=lang=go:.
+	--go_opt=paths=source_relative \
+	--go_out=plugins=grpc,Msystem/v1alpha1/datasource.proto=github.com/kumahq/kuma/api/system/v1alpha1:.
 
 .PHONY: clean/proto
 clean/proto: ## Dev: Remove auto-generated Protobuf files

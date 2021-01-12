@@ -3,12 +3,12 @@ package xds
 import (
 	"strconv"
 
+	_struct "github.com/golang/protobuf/ptypes/struct"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	"github.com/kumahq/kuma/pkg/core"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
 var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
@@ -62,22 +62,22 @@ func (m *DataplaneMetadata) GetAdminPort() uint32 {
 	return m.AdminPort
 }
 
-func DataplaneMetadataFromNode(node *envoy_core.Node) *DataplaneMetadata {
+func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMetadata {
 	metadata := DataplaneMetadata{}
-	if node.Metadata == nil {
+	if xdsMetadata == nil {
 		return &metadata
 	}
-	if field := node.Metadata.Fields[fieldDataplaneTokenPath]; field != nil {
+	if field := xdsMetadata.Fields[fieldDataplaneTokenPath]; field != nil {
 		metadata.DataplaneTokenPath = field.GetStringValue()
 	}
-	if value := node.Metadata.Fields[fieldDataplaneAdminPort]; value != nil {
+	if value := xdsMetadata.Fields[fieldDataplaneAdminPort]; value != nil {
 		if port, err := strconv.Atoi(value.GetStringValue()); err == nil {
 			metadata.AdminPort = uint32(port)
 		} else {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneAdminPort, "value", value)
 		}
 	}
-	if value := node.Metadata.Fields[fieldDataplaneDataplaneResource]; value != nil {
+	if value := xdsMetadata.Fields[fieldDataplaneDataplaneResource]; value != nil {
 		res, err := rest.UnmarshallToCore([]byte(value.GetStringValue()))
 		if err != nil {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)

@@ -58,7 +58,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				runLog.Error(err, "could not load the configuration")
 				return err
 			}
-			rt, err := bootstrap.Bootstrap(cfg)
+			closeCh := opts.SetupSignalHandler()
+			rt, err := bootstrap.Bootstrap(cfg, closeCh)
 			if err != nil {
 				runLog.Error(err, "unable to set up Control Plane runtime")
 				return err
@@ -159,7 +160,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 
 			runLog.Info("starting Control Plane", "version", kuma_version.Build.Version)
-			if err := rt.Start(opts.SetupSignalHandler()); err != nil {
+			if err := rt.Start(closeCh); err != nil {
 				runLog.Error(err, "problem running Control Plane")
 				return err
 			}

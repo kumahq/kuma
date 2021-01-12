@@ -2,10 +2,12 @@ package store
 
 import (
 	"context"
-	"reflect"
 	"time"
 
 	"github.com/go-logr/logr"
+	"github.com/golang/protobuf/proto"
+
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
@@ -27,6 +29,7 @@ type ResourceSyncer interface {
 
 type SyncOption struct {
 	Predicate func(r model.Resource) bool
+	Zone      string
 }
 
 type SyncOptionFunc func(*SyncOption)
@@ -37,6 +40,12 @@ func NewSyncOptions(fs ...SyncOptionFunc) *SyncOption {
 		f(opts)
 	}
 	return opts
+}
+
+func Zone(name string) SyncOptionFunc {
+	return func(opts *SyncOption) {
+		opts.Zone = name
+	}
 }
 
 func PrefilterBy(predicate func(r model.Resource) bool) SyncOptionFunc {
@@ -60,7 +69,8 @@ func NewResourceSyncer(log logr.Logger, resourceStore store.ResourceStore) Resou
 func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFunc) error {
 	opts := NewSyncOptions(fs...)
 	ctx := context.Background()
-	s.log.V(1).Info("sync", "upstream", upstream)
+	log := s.log.WithValues("type", upstream.GetItemType())
+	log.V(1).Info("sync", "upstream", upstream)
 	downstream, err := registry.Global().NewList(upstream.GetItemType())
 	if err != nil {
 		return err
@@ -68,7 +78,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 	if err := s.resourceStore.List(ctx, downstream); err != nil {
 		return err
 	}
-	s.log.V(1).Info("before filtering", "downstream", downstream)
+	log.V(1).Info("before filtering", "downstream", downstream)
 
 	if opts.Predicate != nil {
 		if filtered, err := filter(downstream, opts.Predicate); err != nil {
@@ -77,7 +87,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 			downstream = filtered
 		}
 	}
-	s.log.V(1).Info("after filtering", "downstream", downstream)
+	log.V(1).Info("after filtering", "downstream", downstream)
 
 	indexedUpstream := newIndexed(upstream)
 	indexedDownstream := newIndexed(downstream)
@@ -99,7 +109,7 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 			onCreate = append(onCreate, r)
 			continue
 		}
-		if !reflect.DeepEqual(existing.GetSpec(), r.GetSpec()) {
+		if !proto.Equal(existing.GetSpec(), r.GetSpec()) {
 			// we have to use meta of the current Store during update, because some Stores (Kubernetes, Memory)
 			// expect to receive ResourceMeta of own type.
 			r.SetMeta(existing.GetMeta())
@@ -109,25 +119,41 @@ func (s *syncResourceStore) Sync(upstream model.ResourceList, fs ...SyncOptionFu
 
 	for _, r := range onDelete {
 		rk := model.MetaToResourceKey(r.GetMeta())
-		s.log.Info("deleting a resource since it's no longer available in the upstream", "resourceKey", rk)
+		log.Info("deleting a resource since it's no longer available in the upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		if err := s.resourceStore.Delete(ctx, r, store.DeleteBy(rk)); err != nil {
+			return err
+		}
+	}
+
+	zone := system.NewZoneResource()
+	if opts.Zone != "" && len(onCreate) > 0 {
+		if err := s.resourceStore.Get(ctx, zone, store.GetByKey(opts.Zone, model.NoMesh)); err != nil {
 			return err
 		}
 	}
 
 	for _, r := range onCreate {
 		rk := model.MetaToResourceKey(r.GetMeta())
-		s.log.Info("creating a new resource from upstream", "resourceKey", rk)
+		log.Info("creating a new resource from upstream", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		creationTime := r.GetMeta().GetCreationTime()
 		// some Stores try to cast ResourceMeta to own Store type that's why we have to set meta to nil
 		r.SetMeta(nil)
-		if err := s.resourceStore.Create(ctx, r, store.CreateBy(rk), store.CreatedAt(creationTime), store.CreateSynced()); err != nil {
+
+		createOpts := []store.CreateOptionsFunc{
+			store.CreateBy(rk),
+			store.CreatedAt(creationTime),
+			store.CreateSynced(),
+		}
+		if opts.Zone != "" {
+			createOpts = append(createOpts, store.CreateWithOwner(zone))
+		}
+		if err := s.resourceStore.Create(ctx, r, createOpts...); err != nil {
 			return err
 		}
 	}
 
 	for _, r := range onUpdate {
-		s.log.Info("updating a resource", "resourceKey", model.MetaToResourceKey(r.GetMeta()))
+		log.Info("updating a resource", "name", r.GetMeta().GetName(), "mesh", r.GetMeta().GetMesh())
 		now := time.Now()
 		// some stores manage ModificationTime time on they own (Kubernetes), in order to be consistent
 		// we set ModificationTime when we add to downstream store. This time is almost the same with ModificationTime

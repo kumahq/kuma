@@ -11,18 +11,13 @@ import (
 	net_url "net/url"
 	"strings"
 
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	// import only limited proto definitions from Go Control Plane to save kuma-dp size
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
@@ -48,7 +43,7 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_types.Resource) (proto.Message, error) {
+func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_types.Resource, ev EnvoyVersion) ([]byte, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
 		return nil, err
@@ -78,7 +73,7 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 	var respBytes []byte
 	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")
-		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg, dp)
+		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg, dp, ev)
 		if err == nil {
 			return nil
 		}
@@ -96,16 +91,10 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 	if err != nil {
 		return nil, err
 	}
-
-	bootstrap := envoy_bootstrap.Bootstrap{}
-	if err := util_proto.FromYAML(respBytes, &bootstrap); err != nil {
-		return nil, errors.Wrap(err, "could not parse the bootstrap configuration")
-	}
-
-	return &bootstrap, nil
+	return respBytes, nil
 }
 
-func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, dp *rest_types.Resource) ([]byte, error) {
+func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, dp *rest_types.Resource, ev EnvoyVersion) ([]byte, error) {
 	url.Path = "/bootstrap"
 	var dataplaneResource string
 	if dp != nil {
@@ -123,6 +112,18 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		AdminPort:          cfg.Dataplane.AdminPort.Lowest(),
 		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
 		DataplaneResource:  dataplaneResource,
+		Version: types.Version{
+			KumaDp: types.KumaDpVersion{
+				Version:   kuma_version.Build.Version,
+				GitTag:    kuma_version.Build.GitTag,
+				GitCommit: kuma_version.Build.GitCommit,
+				BuildDate: kuma_version.Build.BuildDate,
+			},
+			Envoy: types.EnvoyVersion{
+				Version: ev.Version,
+				Build:   ev.Build,
+			},
+		},
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {
@@ -144,7 +145,7 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		if resp.StatusCode == http.StatusNotFound && string(bodyBytes) == "404: Page Not Found" { // response body of Go HTTP Server when hit for invalid endpoint
 			return nil, errors.New("There is no /bootstrap endpoint for provided CP address. Double check if the address passed to the CP has a DP Server port (5678 by default), not HTTP API (5681 by default)")
 		}
-		if resp.StatusCode == http.StatusUnprocessableEntity {
+		if resp.StatusCode/100 == 4 {
 			return nil, InvalidRequestErr(string(bodyBytes))
 		}
 		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)

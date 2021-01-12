@@ -14,6 +14,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -43,6 +44,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
+							Spec: &mesh_proto.Mesh{},
 						},
 					},
 				}
@@ -64,7 +66,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							Mesh:    "demo",
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -80,6 +82,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV2,
 				},
 				template: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
@@ -130,7 +133,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
-							Spec: mesh_proto.Mesh{
+							Spec: &mesh_proto.Mesh{
 								Mtls: &mesh_proto.Mesh_Mtls{
 									EnabledBackend: "builtin",
 									Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -145,8 +148,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 					},
 				}
 
-				dataplane := mesh_proto.Dataplane{}
-				Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
+				dataplane := &mesh_proto.Dataplane{}
+				Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 				proxy := &model.Proxy{
 					Id: model.ProxyId{Name: "demo.backend-01"},
 					Dataplane: &mesh_core.DataplaneResource{
@@ -157,7 +160,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 						},
 						Spec: dataplane,
 					},
-					Metadata: &model.DataplaneMetadata{},
+					APIVersion: envoy_common.APIV2,
+					Metadata:   &model.DataplaneMetadata{},
 				}
 
 				// when

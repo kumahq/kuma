@@ -48,16 +48,17 @@ func NewPersistence(resourceManager manager.ReadOnlyResourceManager, configManag
 	}
 }
 
-func (m *Persistence) Get() (List, error) {
+func (m *Persistence) Get() (global List, meshed map[string]List, errs error) {
 	resourceList := &config_model.ConfigResourceList{}
 	if err := m.configManager.List(context.Background(), resourceList); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	var errs error
-	vips := List{}
+	global = List{}
+	meshed = map[string]List{}
 	for _, resource := range resourceList.Items {
-		if _, ok := MeshFromConfigKey(resource.Meta.GetName()); !ok {
+		mesh, ok := MeshFromConfigKey(resource.Meta.GetName())
+		if !ok {
 			continue
 		}
 		if resource.Spec.Config == "" {
@@ -68,15 +69,16 @@ func (m *Persistence) Get() (List, error) {
 			errs = multierr.Append(errs, err)
 			continue
 		}
-		vips.Append(v)
+		global.Append(v)
+		meshed[mesh] = v
 	}
-	return vips, nil
+	return
 }
 
 func (m *Persistence) GetByMesh(mesh string) (List, error) {
 	name := fmt.Sprintf(template, mesh)
 	vips := List{}
-	resource := &config_model.ConfigResource{}
+	resource := config_model.NewConfigResource()
 	err := m.configManager.Get(context.Background(), resource, store.GetByKey(name, ""))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
@@ -100,7 +102,7 @@ func (m *Persistence) GetByMesh(mesh string) (List, error) {
 func (m *Persistence) Set(mesh string, vips List) error {
 	ctx := context.Background()
 	name := fmt.Sprintf(template, mesh)
-	resource := &config_model.ConfigResource{}
+	resource := config_model.NewConfigResource()
 	create := false
 	if err := m.configManager.Get(ctx, resource, store.GetByKey(name, model.NoMesh)); err != nil {
 		if !store.IsResourceNotFound(err) {
@@ -116,7 +118,7 @@ func (m *Persistence) Set(mesh string, vips List) error {
 	resource.Spec.Config = string(jsonBytes)
 
 	if create {
-		meshRes := &mesh_core.MeshResource{}
+		meshRes := mesh_core.NewMeshResource()
 		if err := m.resourceManager.Get(ctx, meshRes, store.GetByKey(mesh, model.NoMesh)); err != nil {
 			return err
 		}

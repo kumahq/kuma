@@ -52,12 +52,21 @@ store:
   # Cache for read only operations. This cache is local to the instance of the control plane.
   cache:
     # If true then cache is enabled
-    enabled: true
+    enabled: true # ENV: KUMA_STORE_CACHE_ENABLED
     # Expiration time for elements in cache.
-    expirationTime: 1s
+    expirationTime: 1s # ENV: KUMA_STORE_CACHE_EXPIRATION_TIME
+
+  # Upsert configuration
+  upsert:
+    # Base time for exponential backoff on upsert (get and update) operations when retry is enabled
+    conflictRetryBaseBackoff: 100ms # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF
+    # Max retries on upsert (get and update) operation when retry is enabled
+    conflictRetryMaxTimes: 5 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES
 
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
+  # The version of Envoy API (available: "v2", "v3")
+  apiVersion: v2
   # Parameters of bootstrap configuration
   params:
     # Address of Envoy Admin
@@ -90,7 +99,7 @@ xdsServer:
   # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
   dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
   # Interval for flushing status of Dataplanes connected to the Control Plane
-  dataplaneStatusFlushInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
+  dataplaneStatusFlushInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
 
 # API Server configuration
 apiServer:
@@ -298,6 +307,8 @@ multizone:
       grpcPort: 5685 # ENV: KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT
       # Interval for refreshing state of the world
       refreshInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL
+      # Interval for flushing Zone Insights (stats of multi-zone communication)
+      zoneInsightFlushInterval: 10s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL
       # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
       tlsCertFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
       # TTlsKeyFile defines a path to a file with PEM-encoded TLS key.

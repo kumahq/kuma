@@ -6,6 +6,8 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
@@ -19,7 +21,7 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 				// ignore non-TCP ports
 				continue
 			}
-			containerPort, err := util_k8s.FindPort(pod, &svcPort)
+			containerPort, container, err := util_k8s.FindPort(pod, &svcPort)
 			if err != nil {
 				converterLog.Error(err, "failed to find a container port in a given Pod that would match a given Service port", "namespace", pod.Namespace, "podName", pod.Name, "serviceName", svc.Name, "servicePortName", svcPort.Name)
 				// ignore those cases where a Pod doesn't have all the ports a Service has
@@ -27,10 +29,34 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 			}
 
 			tags := InboundTagsFor(zone, pod, svc, &svcPort)
+			var health *mesh_proto.Dataplane_Networking_Inbound_Health
+
+			// if container is not equal nil then port is explicitly defined as containerPort so we're able
+			// to figure out which container implements which service. Since we know container we can check its status
+			// and map it to the Dataplane health
+			if container != nil {
+				if cs := util_k8s.FindContainerStatus(pod, container.Name); cs != nil {
+					health = &mesh_proto.Dataplane_Networking_Inbound_Health{
+						Ready: cs.Ready,
+					}
+				}
+			}
+
+			// also we're checking whether kuma-sidecar container is ready
+			if cs := util_k8s.FindContainerStatus(pod, injector.KumaSidecarContainerName); cs != nil {
+				if health != nil {
+					health.Ready = health.Ready && cs.Ready
+				} else {
+					health = &mesh_proto.Dataplane_Networking_Inbound_Health{
+						Ready: cs.Ready,
+					}
+				}
+			}
 
 			ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
-				Port: uint32(containerPort),
-				Tags: tags,
+				Port:   uint32(containerPort),
+				Tags:   tags,
+				Health: health,
 			})
 		}
 	}

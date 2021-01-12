@@ -16,7 +16,13 @@ var _ model.Resource = &HealthCheckResource{}
 
 type HealthCheckResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.HealthCheck
+	Spec *mesh_proto.HealthCheck
+}
+
+func NewHealthCheckResource() *HealthCheckResource {
+	return &HealthCheckResource{
+		Spec: &mesh_proto.HealthCheck{},
+	}
 }
 
 func (r *HealthCheckResource) GetType() model.ResourceType {
@@ -29,14 +35,14 @@ func (r *HealthCheckResource) SetMeta(m model.ResourceMeta) {
 	r.Meta = m
 }
 func (r *HealthCheckResource) GetSpec() model.ResourceSpec {
-	return &r.Spec
+	return r.Spec
 }
 func (r *HealthCheckResource) SetSpec(value model.ResourceSpec) error {
 	spec, ok := value.(*mesh_proto.HealthCheck)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		r.Spec = *spec
+		r.Spec = spec
 		return nil
 	}
 }
@@ -68,7 +74,7 @@ func (l *HealthCheckResourceList) GetItemType() model.ResourceType {
 	return HealthCheckType
 }
 func (l *HealthCheckResourceList) NewItem() model.Resource {
-	return &HealthCheckResource{}
+	return NewHealthCheckResource()
 }
 func (l *HealthCheckResourceList) AddItem(r model.Resource) error {
 	if item, ok := r.(*HealthCheckResource); ok {
@@ -83,6 +89,6 @@ func (l *HealthCheckResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&HealthCheckResource{})
+	registry.RegisterType(NewHealthCheckResource())
 	registry.RegistryListType(&HealthCheckResourceList{})
 }

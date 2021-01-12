@@ -72,14 +72,17 @@ spec:
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
-			Install(DemoClientK8s()).
-			Install(EchoServerK8s()).
+			Install(DemoClientK8s("default")).
+			Install(EchoServerK8s("default")).
 			Install(tracing.Install()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {
+		if ShouldSkipCleanup() {
+			return
+		}
 		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 		Expect(k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())

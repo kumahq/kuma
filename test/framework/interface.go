@@ -21,17 +21,22 @@ type deployOptions struct {
 	// cp specific
 	globalAddress    string
 	installationMode InstallationMode
+	skipDefaultMesh  bool
 	helmReleaseName  string
 	helmOpts         map[string]string
 	ctlOpts          map[string]string
+	env              map[string]string
 	ingress          bool
 	cni              bool
+	cpReplicas       int
 
 	// app specific
-	namespace string
-	appname   string
-	id        string
-	token     string
+	namespace   string
+	appname     string
+	id          string
+	token       string
+	transparent bool
+	mesh        string
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -39,6 +44,20 @@ type DeployOptionsFunc func(*deployOptions)
 func WithGlobalAddress(address string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.globalAddress = address
+	}
+}
+
+// WithCPReplicas works only with HELM now
+func WithCPReplicas(cpReplicas int) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.cpReplicas = cpReplicas
+	}
+}
+
+// WithSkipDefaultMesh works only with HELM now
+func WithSkipDefaultMesh(skip bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.skipDefaultMesh = skip
 	}
 }
 
@@ -63,6 +82,15 @@ func WithHelmOpt(name, value string) DeployOptionsFunc {
 	}
 }
 
+func WithEnv(name, value string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		if o.env == nil {
+			o.env = map[string]string{}
+		}
+		o.env[name] = value
+	}
+}
+
 func WithIngress() DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.ingress = true
@@ -81,6 +109,12 @@ func WithNamespace(namespace string) DeployOptionsFunc {
 	}
 }
 
+func WithMesh(mesh string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.mesh = mesh
+	}
+}
+
 func WithAppname(appname string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.appname = appname
@@ -96,6 +130,12 @@ func WithId(id string) DeployOptionsFunc {
 func WithToken(token string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.token = token
+	}
+}
+
+func WithTransparentProxy(transparent bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.transparent = transparent
 	}
 }
 
@@ -132,7 +172,6 @@ type Cluster interface {
 	DeployKuma(mode string, opts ...DeployOptionsFunc) error
 	GetKuma() ControlPlane
 	VerifyKuma() error
-	RestartKuma() error
 	DeleteKuma(opts ...DeployOptionsFunc) error
 	InjectDNS(namespace ...string) error
 	GetKumactlOptions() *KumactlOptions
@@ -157,5 +196,5 @@ type ControlPlane interface {
 	GetKumaCPLogs() (string, error)
 	GetKDSServerAddress() string
 	GetGlobaStatusAPI() string
-	GenerateDpToken(appname string) (string, error)
+	GenerateDpToken(mesh, appname string) (string, error)
 }
