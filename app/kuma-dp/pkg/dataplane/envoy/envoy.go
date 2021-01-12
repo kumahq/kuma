@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 
 	"github.com/pkg/errors"
 
@@ -24,7 +25,7 @@ var (
 	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 )
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource, ev EnvoyVersion) ([]byte, error)
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource, bootstrapVersion types.BootstrapVersion, ev EnvoyVersion) ([]byte, types.BootstrapVersion, error)
 
 type Opts struct {
 	Config    kuma_dp.Config
@@ -107,7 +108,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	}
 	runLog.Info("fetched Envoy version", "version", envoyVersion)
 	runLog.Info("generating bootstrap configuration")
-	bootstrapConfig, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, e.opts.Dataplane, *envoyVersion)
+	bootstrapConfig, version, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, e.opts.Dataplane, types.BootstrapVersion(e.opts.Config.Dataplane.BootstrapVersion), *envoyVersion)
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 	}
@@ -139,6 +140,9 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		// and we don't expect users to do "hot restart" manually.
 		// so, let's turn it off to simplify getting started experience.
 		"--disable-hot-restart",
+	}
+	if version != "" { // version is always send by Kuma CP, but we check empty for backwards compatibility reasons (new Kuma DP connects to old Kuma CP)
+		args = append(args, "--bootstrap-version", string(version))
 	}
 	command := exec.CommandContext(ctx, resolvedPath, args...)
 	command.Stdout = e.opts.Stdout
