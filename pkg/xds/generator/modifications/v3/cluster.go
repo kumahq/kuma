@@ -1,8 +1,8 @@
-package modifications
+package v3
 
 import (
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
@@ -14,7 +14,7 @@ import (
 type clusterModificator mesh_proto.ProxyTemplate_Modifications_Cluster
 
 func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
-	clusterMod := &envoy_api.Cluster{}
+	clusterMod := &envoy_cluster.Cluster{}
 	if err := util_proto.FromYAML([]byte(c.Value), clusterMod); err != nil {
 		return err
 	}
@@ -31,7 +31,7 @@ func (c *clusterModificator) apply(resources *core_xds.ResourceSet) error {
 	return nil
 }
 
-func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *envoy_api.Cluster) {
+func (c *clusterModificator) patch(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) {
 	for _, cluster := range resources.Resources(envoy_resource.ClusterType) {
 		if c.clusterMatches(cluster) {
 			proto.Merge(cluster.Resource, clusterMod)
@@ -47,7 +47,7 @@ func (c *clusterModificator) remove(resources *core_xds.ResourceSet) {
 	}
 }
 
-func (c *clusterModificator) add(resources *core_xds.ResourceSet, clusterMod *envoy_api.Cluster) *core_xds.ResourceSet {
+func (c *clusterModificator) add(resources *core_xds.ResourceSet, clusterMod *envoy_cluster.Cluster) *core_xds.ResourceSet {
 	return resources.Add(&core_xds.Resource{
 		Name:     clusterMod.Name,
 		Origin:   OriginProxyTemplateModifications,

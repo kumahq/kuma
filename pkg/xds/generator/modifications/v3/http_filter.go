@@ -1,10 +1,9 @@
-package modifications
+package v3
 
 import (
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
-	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
@@ -18,7 +17,7 @@ type httpFilterModificator mesh_proto.ProxyTemplate_Modifications_HttpFilter
 func (h *httpFilterModificator) apply(resources *core_xds.ResourceSet) error {
 	for _, resource := range resources.Resources(envoy_resource.ListenerType) {
 		if h.listenerMatches(resource) {
-			listener := resource.Resource.(*envoy_api.Listener)
+			listener := resource.Resource.(*envoy_listener.Listener)
 			for _, chain := range listener.FilterChains { // apply on all filter chains. We could introduce filter chain matcher as an improvement.
 				for _, networkFilter := range chain.Filters {
 					if networkFilter.Name == "envoy.filters.network.http_connection_manager" {

@@ -1,11 +1,11 @@
-package modifications_test
+package v2_test
 
 import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-	"github.com/kumahq/kuma/pkg/xds/generator/modifications"
+	modifications "github.com/kumahq/kuma/pkg/xds/generator/modifications/v2"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 
