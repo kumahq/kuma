@@ -1,7 +1,7 @@
 package clusters_test
 
 import (
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -15,7 +15,7 @@ var _ = Describe("Lb", func() {
 
 	type testCase struct {
 		clusterName string
-		lb          *v1alpha1.TrafficRoute_LoadBalancer
+		lb          *mesh_proto.TrafficRoute_LoadBalancer
 		expected    string
 	}
 
@@ -36,8 +36,8 @@ var _ = Describe("Lb", func() {
 		},
 		Entry("round robin", testCase{
 			clusterName: "backend",
-			lb: &v1alpha1.TrafficRoute_LoadBalancer{
-				LbType: &v1alpha1.TrafficRoute_LoadBalancer_RoundRobin_{},
+			lb: &mesh_proto.TrafficRoute_LoadBalancer{
+				LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
 			},
 			expected: `
             connectTimeout: 5s
@@ -49,9 +49,9 @@ var _ = Describe("Lb", func() {
 		}),
 		Entry("least request", testCase{
 			clusterName: "backend",
-			lb: &v1alpha1.TrafficRoute_LoadBalancer{
-				LbType: &v1alpha1.TrafficRoute_LoadBalancer_LeastRequest_{
-					LeastRequest: &v1alpha1.TrafficRoute_LoadBalancer_LeastRequest{
+			lb: &mesh_proto.TrafficRoute_LoadBalancer{
+				LbType: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest_{
+					LeastRequest: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest{
 						ChoiceCount: 4,
 					},
 				},
@@ -69,9 +69,9 @@ var _ = Describe("Lb", func() {
 		}),
 		Entry("ring hash", testCase{
 			clusterName: "backend",
-			lb: &v1alpha1.TrafficRoute_LoadBalancer{
-				LbType: &v1alpha1.TrafficRoute_LoadBalancer_RingHash_{
-					RingHash: &v1alpha1.TrafficRoute_LoadBalancer_RingHash{
+			lb: &mesh_proto.TrafficRoute_LoadBalancer{
+				LbType: &mesh_proto.TrafficRoute_LoadBalancer_RingHash_{
+					RingHash: &mesh_proto.TrafficRoute_LoadBalancer_RingHash{
 						HashFunction: "MURMUR_HASH_2",
 						MinRingSize:  64,
 						MaxRingSize:  1024,
@@ -93,8 +93,8 @@ var _ = Describe("Lb", func() {
 		}),
 		Entry("random", testCase{
 			clusterName: "backend",
-			lb: &v1alpha1.TrafficRoute_LoadBalancer{
-				LbType: &v1alpha1.TrafficRoute_LoadBalancer_Random_{},
+			lb: &mesh_proto.TrafficRoute_LoadBalancer{
+				LbType: &mesh_proto.TrafficRoute_LoadBalancer_Random_{},
 			},
 			expected: `
             connectTimeout: 5s
@@ -107,8 +107,8 @@ var _ = Describe("Lb", func() {
 		}),
 		Entry("random", testCase{
 			clusterName: "backend",
-			lb: &v1alpha1.TrafficRoute_LoadBalancer{
-				LbType: &v1alpha1.TrafficRoute_LoadBalancer_Maglev_{},
+			lb: &mesh_proto.TrafficRoute_LoadBalancer{
+				LbType: &mesh_proto.TrafficRoute_LoadBalancer_Maglev_{},
 			},
 			expected: `
             connectTimeout: 5s

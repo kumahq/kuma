@@ -63,7 +63,7 @@ func (d *TrafficRouteResource) validateLb() (err validators.ValidationError) {
 		switch lbConfig.HashFunction {
 		case "XX_HASH", "MURMUR_HASH_2":
 		default:
-			root := validators.RootedAt("conf.loadBalancer.ringHash")
+			root := validators.RootedAt("conf.loadBalancer.ringHash.hashFunction")
 			err.AddViolationAt(root, "must have a valid hash function")
 		}
 	}

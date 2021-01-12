@@ -181,7 +181,7 @@ var _ = Describe("TrafficRoute", func() {
 `,
 				expected: `
                 violations:
-                - field: conf.loadBalancer.ringHash
+                - field: conf.loadBalancer.ringHash.hashFunction
                   message: must have a valid hash function
 `,
 			}),

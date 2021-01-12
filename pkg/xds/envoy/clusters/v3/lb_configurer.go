@@ -17,7 +17,7 @@ type LbConfigurer struct {
 var _ ClusterConfigurer = &LbConfigurer{}
 
 func (e *LbConfigurer) Configure(c *envoy_cluster.Cluster) error {
-	// default ot Round Robin
+	// default to Round Robin
 	if e.Lb.GetLbType() == nil {
 		c.LbPolicy = envoy_cluster.Cluster_ROUND_ROBIN
 		return nil
