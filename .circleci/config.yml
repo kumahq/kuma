@@ -200,18 +200,10 @@ jobs:
     executor: golang
     steps:
     - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - go.mod-{{ .Branch }}-
-        # otherwise, fallback to the most recently generated cache on any branch
-        - go.mod-
     - run:
         name: "Download Go modules"
         command: |
-          go mod download
+          make vet
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
         key: go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
@@ -220,6 +212,7 @@ jobs:
 
   check:
     executor: golang
+    resource_class: large
     environment:
       CLANG_FORMAT_PATH: clang-format-12
     steps:
@@ -228,8 +221,6 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - go.mod-{{ .Branch }}-
         # otherwise, fallback to the most recently generated cache on any branch
         - go.mod-
     - run:
@@ -299,8 +290,6 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - go.mod-{{ .Branch }}-
         # otherwise, fallback to the most recently generated cache on any branch
         - go.mod-
     - run:
@@ -374,8 +363,6 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - go.mod-{{ .Branch }}-
         # otherwise, fallback to the most recently generated cache on any branch
         - go.mod-
     - run:
@@ -536,8 +523,6 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - go.mod-{{ .Branch }}-
         # otherwise, fallback to the most recently generated cache on any branch
         - go.mod-
     - run:
