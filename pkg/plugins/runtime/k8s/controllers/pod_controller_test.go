@@ -24,6 +24,7 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_record "k8s.io/client-go/tools/record"
+	utilpointer "k8s.io/utils/pointer"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -146,9 +147,6 @@ var _ = Describe("PodReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
 					Name:      "example",
-					Annotations: map[string]string{
-						"80.service.kuma.io/protocol": "http",
-					},
 				},
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.1",
@@ -159,6 +157,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
+							AppProtocol: utilpointer.StringPtr("http"),
 						},
 						{
 							Protocol: "TCP",

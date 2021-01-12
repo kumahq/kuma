@@ -2,12 +2,11 @@
 metadata:
   namespace: demo
   name: example
-  annotations:
-    80.service.kuma.io/protocol: http
 spec:
   clusterIP: 192.168.0.1
   ports:
     - # protocol defaults to TCP
+      appProtocol: http
       port: 80
       targetPort: 8080
     - kuma.io/protocol: TCP
@@ -17,12 +16,11 @@ spec:
 metadata:
   namespace: playground
   name: sample
-  annotations:
-    7071.service.kuma.io/protocol: MONGO
 spec:
   clusterIP: 192.168.0.1
   ports:
     - kuma.io/protocol: TCP
+      appProtocol: MONGO
       port: 7071
       targetPort: 7070
     - kuma.io/protocol: TCP
