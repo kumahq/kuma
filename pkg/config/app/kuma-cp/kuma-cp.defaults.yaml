@@ -344,3 +344,12 @@ dpServer:
     # Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
     # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
     type: "" # ENV: KUMA_DP_SERVER_AUTH_TYPE
+  hds:
+    enabled: true
+    interval: 1s
+    check:
+      timeout: 2s
+      interval: 1s
+      noTrafficInterval: 1s
+      healthyThreshold: 1
+      unhealthyThreshold: 1

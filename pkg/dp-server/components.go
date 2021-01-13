@@ -1,6 +1,8 @@
 package dp_server
 
 import (
+	"github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/hds"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -19,6 +21,11 @@ func SetupServer(rt runtime.Runtime) error {
 	}
 	if err := bootstrap.RegisterBootstrap(rt, dpServer.httpMux); err != nil {
 		return err
+	}
+	if rt.Config().Environment == core.UniversalEnvironment && rt.Config().DpServer.Hds.Enabled {
+		if err := hds.RegisterHDS(rt, dpServer.grpcServer); err != nil {
+			return err
+		}
 	}
 	if err := rt.Add(dpServer); err != nil {
 		return err

@@ -1,6 +1,8 @@
 package dp_server
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -18,6 +20,8 @@ type DpServerConfig struct {
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_dp_server_tls_key_file"`
 	// Auth defines an authentication configuration for the DP Server
 	Auth DpServerAuthConfig `yaml:"auth"`
+	// Hds
+	Hds *HdsConfig `yaml:"hds"`
 }
 
 type DpServerAuthType string
@@ -61,5 +65,71 @@ func DefaultDpServerConfig() *DpServerConfig {
 		Auth: DpServerAuthConfig{
 			Type: "", // autoconfigured from the environment
 		},
+		Hds: DefaultHdsConfig(),
 	}
+}
+
+func DefaultHdsConfig() *HdsConfig {
+	return &HdsConfig{
+		Enabled:  true,
+		Interval: 1 * time.Second,
+		Check: &HdsCheck{
+			Timeout:            2 * time.Second,
+			Interval:           1 * time.Second,
+			NoTrafficInterval:  1 * time.Second,
+			HealthyThreshold:   1,
+			UnhealthyThreshold: 1,
+		},
+	}
+}
+
+type HdsConfig struct {
+	// Enabled
+	Enabled bool `yaml:"enabled" envconfig:"kuma_dp_server_hds_enabled"`
+	// Interval
+	Interval time.Duration `yaml:"interval" envconfig:"kuma_dp_server_hds_interval"`
+	// Check
+	Check *HdsCheck `yaml:"check"`
+}
+
+func (h *HdsConfig) Sanitize() {
+}
+
+func (h *HdsConfig) Validate() error {
+	if h.Interval <= 0 {
+		return errors.New("Interval must be greater than 0s")
+	}
+	if err := h.Check.Validate(); err != nil {
+		return errors.Wrap(err, "Check is invalid")
+	}
+	return nil
+}
+
+type HdsCheck struct {
+	// Timeout
+	Timeout time.Duration `yaml:"timeout" envconfig:"kuma_dp_server_hds_check_timeout"`
+	// Interval
+	Interval time.Duration `yaml:"interval" envconfig:"kuma_dp_server_hds_check_interval"`
+	// NoTrafficInterval
+	NoTrafficInterval time.Duration `yaml:"noTrafficInterval" envconfig:"kuma_dp_server_hds_check_no_traffic_interval"`
+	// HealthyThreshold
+	HealthyThreshold uint32 `yaml:"healthyThreshold" envconfig:"kuma_dp_server_hds_check_healthy_threshold"`
+	// UnhealthyThreshold
+	UnhealthyThreshold uint32 `yaml:"unhealthyThreshold" envconfig:"kuma_dp_server_hds_check_unhealthy_threshold"`
+}
+
+func (h *HdsCheck) Sanitize() {
+}
+
+func (h *HdsCheck) Validate() error {
+	if h.Timeout <= 0 {
+		return errors.New("Timeout must be greater than 0s")
+	}
+	if h.Interval <= 0 {
+		return errors.New("Interval must be greater than 0s")
+	}
+	if h.NoTrafficInterval <= 0 {
+		return errors.New("NoTrafficInterval must be greater than 0s")
+	}
+	return nil
 }
