@@ -12,6 +12,9 @@ COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/README /kuma
 COPY --chown=kumactl --chmod=544 $KUMA_ROOT/tools/releases/templates/install_missing_crds.sh /kuma
+# As the flag `--chmod` is not yet available everywhere we'll temporarily use
+# the instruction below, which should be removed in the future
+RUN chmod 0544 /kuma/install_missing_crds.sh
 
 ENV HOME /home/kumactl
 
