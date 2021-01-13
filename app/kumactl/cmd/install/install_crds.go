@@ -68,9 +68,7 @@ func newInstallCrdsCmd() *cobra.Command {
 
 			installedCrds := filerKumaCrdNames(getCrdNamesFromList(crds))
 			for _, installedCrdName := range installedCrds {
-				if _, ok := crdsToInstallMap[installedCrdName]; ok {
-					delete(crdsToInstallMap, installedCrdName)
-				}
+				delete(crdsToInstallMap, installedCrdName)
 			}
 
 			var crdsToInstall []data.File
