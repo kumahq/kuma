@@ -17,6 +17,6 @@ require (
 replace (
 	github.com/kumahq/kuma/api => ../../../../api
 	github.com/prometheus/prometheus => ../../../../vendored/github.com/prometheus/prometheus
-	k8s.io/client-go => k8s.io/client-go v0.18.9
+	k8s.io/client-go => k8s.io/client-go v0.18.14
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native => ../../../plugins/resources/k8s/native
 )

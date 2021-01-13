@@ -3,7 +3,7 @@ FROM envoyproxy/envoy-alpine:v1.16.1 as envoy
 
 FROM ubuntu:bionic as builder
 
-ENV GOVERSION 1.15.5
+ENV GOVERSION 1.15.6
 ENV GOROOT /opt/go
 ENV GOPATH /root/.go
 
