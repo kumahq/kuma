@@ -8,8 +8,9 @@ import (
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/ptypes"
-	cache2 "github.com/kumahq/kuma/pkg/hds/cache"
 	"github.com/pkg/errors"
+
+	cache2 "github.com/kumahq/kuma/pkg/hds/cache"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

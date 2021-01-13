@@ -6,6 +6,8 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
@@ -15,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/pkg/errors"
 )
 
 type tracker struct {

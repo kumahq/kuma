@@ -7,6 +7,8 @@ import (
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/durationpb"
+
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -15,7 +17,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/hds/cache"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 type generator struct {

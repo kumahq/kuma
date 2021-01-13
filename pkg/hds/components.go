@@ -5,11 +5,12 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
+	"google.golang.org/grpc"
+
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/hds/cache"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	"google.golang.org/grpc"
 )
 
 var (

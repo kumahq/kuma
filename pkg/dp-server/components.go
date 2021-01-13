@@ -1,9 +1,10 @@
 package dp_server
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/hds"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	sds_server "github.com/kumahq/kuma/pkg/sds/server"
