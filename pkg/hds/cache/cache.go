@@ -52,7 +52,6 @@ type Snapshot interface {
 	WithVersion(typ string, version string) Snapshot
 }
 
-
 // SnapshotCache is a snapshot-based envoy_cache that maintains a single versioned
 // snapshot of responses per node. SnapshotCache consistently replies with the
 // latest snapshot. For the protocol to work correctly in ADS mode, EDS/RDS
