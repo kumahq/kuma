@@ -151,6 +151,7 @@ resources:
         edsConfig:
           ads: { }
       http2ProtocolOptions: { }
+      lbPolicy: RANDOM
       name: api-grpc
       type: EDS
   - name: api-http
@@ -177,7 +178,12 @@ resources:
         edsConfig:
           ads: {}
       http2ProtocolOptions: {}
+      lbPolicy: RING_HASH
       name: api-http2
+      ringHashLbConfig:
+        hashFunction: MURMUR_HASH_2
+        maximumRingSize: "1024"
+        minimumRingSize: "64"
       type: EDS
   - name: api-tcp
     resource:
@@ -187,6 +193,9 @@ resources:
         edsConfig:
           ads: {}
       http2ProtocolOptions: {}
+      lbPolicy: LEAST_REQUEST
+      leastRequestLbConfig:
+        choiceCount: 4
       name: api-tcp
       type: EDS
   - name: backend
@@ -197,6 +206,7 @@ resources:
         edsConfig:
           ads: {}
       http2ProtocolOptions: {}
+      lbPolicy: MAGLEV
       name: backend
       type: EDS
   - name: db

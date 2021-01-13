@@ -181,6 +181,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 										Weight:      100,
 										Destination: mesh_proto.MatchService("api-http"),
 									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+									},
 								},
 							},
 						},
@@ -194,6 +197,13 @@ var _ = Describe("OutboundProxyGenerator", func() {
 										Weight:      100,
 										Destination: mesh_proto.MatchService("api-tcp"),
 									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest_{
+											LeastRequest: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest{
+												ChoiceCount: 4,
+											},
+										},
+									},
 								},
 							},
 						},
@@ -207,6 +217,15 @@ var _ = Describe("OutboundProxyGenerator", func() {
 										Weight:      100,
 										Destination: mesh_proto.MatchService("api-http2"),
 									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RingHash_{
+											RingHash: &mesh_proto.TrafficRoute_LoadBalancer_RingHash{
+												HashFunction: "MURMUR_HASH_2",
+												MinRingSize:  64,
+												MaxRingSize:  1024,
+											},
+										},
+									},
 								},
 							},
 						},
@@ -220,6 +239,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 										Weight:      100,
 										Destination: mesh_proto.MatchService("api-grpc"),
 									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_Random_{},
+									},
 								},
 							},
 						},
@@ -233,6 +255,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 										Weight:      100,
 										Destination: mesh_proto.MatchService("backend"),
 									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_Maglev_{},
+									},
 								},
 							},
 						},

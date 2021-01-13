@@ -1,6 +1,7 @@
 package clusters
 
 import (
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -132,6 +133,17 @@ func LbSubset(keySets [][]string) ClusterBuilderOptFunc {
 			KeySets: keySets,
 		})
 	}
+}
+
+func LB(lb *mesh_proto.TrafficRoute_LoadBalancer) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV2(&v2.LbConfigurer{
+			Lb: lb,
+		})
+		config.AddV3(&v3.LbConfigurer{
+			Lb: lb,
+		})
+	})
 }
 
 func PassThroughCluster(name string) ClusterBuilderOpt {
