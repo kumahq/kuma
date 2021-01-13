@@ -24,7 +24,7 @@ $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(ku
 endef
 
 CI_KIND_VERSION ?= v0.9.0
-CI_KUBERNETES_VERSION ?= v1.18.8@sha256:f4bcc97a0ad6e7abaf3f643d890add7efe6ee4ab90baeb374b4f41a4c95567eb
+CI_KUBERNETES_VERSION ?= v1.20.0@sha256:b40ecf8bcb188f6a0d0f5d406089c48588b75edc112c6f635d26be5de1c89040
 
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 
@@ -42,7 +42,7 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 			--name "$(KIND_CLUSTER_NAME)" \
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
 			--kubeconfig $(KIND_KUBECONFIG) \
-			--quiet --wait 120s && \
+			--wait 120s && \
 		KUBECONFIG=$(KIND_KUBECONFIG) kubectl scale deployment --replicas 1 coredns --namespace kube-system && \
 		until \
 			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
