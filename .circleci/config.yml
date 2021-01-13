@@ -228,10 +228,13 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+<<<<<<< HEAD
         # otherwise, fallback to the most recently generated cache on that branch
         - go.mod-{{ .Branch }}-
         # otherwise, fallback to the most recently generated cache on any branch
         - go.mod-
+=======
+>>>>>>> f53fb48c6... test(*) ci cache cleanup (#1411)
     - run:
         name: "Install pre-requirements"
         # `unzip` is necessary to install `protoc`
@@ -266,10 +269,6 @@ jobs:
         keys:
         # prefer the exact match
         - api-go.mod-{{ .Branch }}-{{ checksum "api/go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - api-go.mod-{{ .Branch }}-
-        # otherwise, fallback to the most recently generated cache on any branch
-        - api-go.mod-
     - run:
         name: "Download Go modules"
         command: |
@@ -299,10 +298,13 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+<<<<<<< HEAD
         # otherwise, fallback to the most recently generated cache on that branch
         - go.mod-{{ .Branch }}-
         # otherwise, fallback to the most recently generated cache on any branch
         - go.mod-
+=======
+>>>>>>> f53fb48c6... test(*) ci cache cleanup (#1411)
     - run:
         name: "Install pre-requirements"
         # `unzip` is necessary to install `protoc`
@@ -338,10 +340,6 @@ jobs:
         keys:
         # prefer the exact match
         - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - vm-executor-go.mod-{{ .Branch }}-
-        # otherwise, fallback to the most recently generated cache on any branch
-        - vm-executor-go.mod-
     - run:
         name: "Download Go modules"
         command: |
@@ -374,10 +372,13 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+<<<<<<< HEAD
         # otherwise, fallback to the most recently generated cache on that branch
         - go.mod-{{ .Branch }}-
         # otherwise, fallback to the most recently generated cache on any branch
         - go.mod-
+=======
+>>>>>>> f53fb48c6... test(*) ci cache cleanup (#1411)
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
@@ -536,10 +537,13 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+<<<<<<< HEAD
         # otherwise, fallback to the most recently generated cache on that branch
         - go.mod-{{ .Branch }}-
         # otherwise, fallback to the most recently generated cache on any branch
         - go.mod-
+=======
+>>>>>>> f53fb48c6... test(*) ci cache cleanup (#1411)
     - run:
         name: "Install Docker client"
         command: |
