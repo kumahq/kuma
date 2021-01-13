@@ -22,4 +22,5 @@ USER kumactl
 
 WORKDIR /home/kumactl
 
-ENTRYPOINT ["/bin/sh"]
+ENTRYPOINT []
+CMD ["/bin/sh"]
