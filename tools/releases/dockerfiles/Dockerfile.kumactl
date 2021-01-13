@@ -1,6 +1,9 @@
-FROM alpine:3.12
+FROM bitnami/kubectl:1.18.8
 
-RUN apk add --no-cache curl
+USER root
+
+RUN addgroup --system --gid 6789 kumactl \
+ && adduser --system --disabled-password --ingroup kumactl --uid 6789 kumactl
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 
@@ -8,11 +11,12 @@ RUN mkdir /kuma
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/README /kuma
+COPY --chown=kumactl --chmod=544 $KUMA_ROOT/tools/releases/templates/install_missing_crds.sh /kuma
 
-RUN addgroup -S -g 6789 kumactl \
- && adduser -S -D -G kumactl -u 6789 kumactl
+ENV HOME /home/kumactl
 
 USER kumactl
+
 WORKDIR /home/kumactl
 
-CMD ["/bin/sh"]
+ENTRYPOINT ["/bin/sh"]

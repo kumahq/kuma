@@ -8,6 +8,10 @@ global:
 # -- Whether or not to patch the target namespace with the system label
 patchSystemNamespace: true
 
+# -- Whether ot not install new CRDs before upgrade  (if any were introduced
+#    with the new version of Kuma)
+installNewCrdsWhenUpgrade: true
+
 controlPlane:
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
@@ -170,3 +174,8 @@ ingress:
     annotations: {}
     # -- Port on which Ingress is exposed
     port: 10001
+
+kumactl:
+  image:
+    # -- The kumactl image repository
+    repository: kumactl
