@@ -1,4 +1,4 @@
-package modifications_test
+package v2_test
 
 import (
 	"testing"
@@ -14,6 +14,6 @@ func TestModifications(t *testing.T) {
 	RegisterFailHandler(Fail)
 
 	RunSpecsWithDefaultAndCustomReporters(t,
-		"Modifications Suite",
+		"Modifications V2 Suite",
 		[]Reporter{util_test.NewlineReporter{}})
 }

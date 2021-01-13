@@ -34,7 +34,7 @@ func (g *ProxyTemplateGenerator) Generate(ctx xds_context.Context, proxy *model.
 	} else {
 		resources.AddSet(rs)
 	}
-	if err := modifications.Apply(resources, g.ProxyTemplate.GetConf().GetModifications()); err != nil {
+	if err := modifications.Apply(resources, g.ProxyTemplate.GetConf().GetModifications(), proxy.APIVersion); err != nil {
 		return nil, errors.Wrap(err, "could not apply modifications")
 	}
 	return resources, nil

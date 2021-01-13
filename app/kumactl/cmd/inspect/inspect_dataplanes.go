@@ -2,8 +2,10 @@ package inspect
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -64,29 +66,32 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 	return cmd
 }
 
-func getStatus(dataplane *mesh_proto.Dataplane, dataplaneInsight *mesh_proto.DataplaneInsight) string {
+func getStatus(dataplane *mesh_proto.Dataplane, dataplaneInsight *mesh_proto.DataplaneInsight) (string, []string) {
 	proxyOnline := dataplaneInsight.IsOnline()
-	allInboundsOffline := true
-	allInboundsOnline := true
+
+	var errs []string
+
 	for _, inbound := range dataplane.Networking.Inbound {
-		if inbound.Health == nil || inbound.Health.Ready {
-			allInboundsOffline = false
-		} else {
-			allInboundsOnline = false
+		if inbound.Health != nil && !inbound.Health.Ready {
+			errs = append(errs, fmt.Sprintf("inbound[port=%d,svc=%s] is not ready", inbound.Port, inbound.Tags[mesh_proto.ServiceTag]))
 		}
 	}
+
+	allInboundsOffline := len(errs) == len(dataplane.Networking.Inbound)
+	allInboundsOnline := len(errs) == 0
+
 	if !proxyOnline || allInboundsOffline {
-		return "Offline"
+		return "Offline", errs
 	}
 	if !allInboundsOnline {
-		return "Partially degraded"
+		return "Partially degraded", errs
 	}
-	return "Online"
+	return "Online", nil
 }
 
 func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "KUMA-DP VERSION", "ENVOY VERSION"},
+		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "KUMA-DP VERSION", "ENVOY VERSION", "NOTES"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -105,7 +110,7 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 				totalResponsesRejected := dataplaneInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
 					return s.GetStatus().GetTotal().GetResponsesRejected()
 				})
-				status := getStatus(dataplane, dataplaneInsight)
+				status, errs := getStatus(dataplane, dataplaneInsight)
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
 				var certExpiration *time.Time
@@ -144,6 +149,7 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 					certRegenerations,                    // CERT REGENERATIONS
 					kumaDpVersion,                        // KUMA-DP VERSION
 					envoyVersion,                         // ENVOY VERSION
+					strings.Join(errs, ";"),              // NOTES
 				}
 			}
 		}(),

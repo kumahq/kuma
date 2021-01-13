@@ -16,6 +16,7 @@ func (e *EdsClusterConfigurer) Configure(c *envoy_cluster.Cluster) error {
 	c.ClusterDiscoveryType = &envoy_cluster.Cluster_Type{Type: envoy_cluster.Cluster_EDS}
 	c.EdsClusterConfig = &envoy_cluster.Cluster_EdsClusterConfig{
 		EdsConfig: &envoy_core.ConfigSource{
+			ResourceApiVersion: envoy_core.ApiVersion_V3,
 			ConfigSourceSpecifier: &envoy_core.ConfigSource_Ads{
 				Ads: &envoy_core.AggregatedConfigSource{},
 			},

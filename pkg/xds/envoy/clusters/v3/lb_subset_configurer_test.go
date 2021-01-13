@@ -41,6 +41,7 @@ var _ = Describe("LbSubset", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             name: backend
             type: EDS`,
 		}),
@@ -55,6 +56,7 @@ var _ = Describe("LbSubset", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             lbSubsetConfig:
               fallbackPolicy: ANY_ENDPOINT
               subsetSelectors:
