@@ -5,6 +5,9 @@ USER root
 RUN addgroup --system --gid 6789 kumactl \
  && adduser --system --disabled-password --ingroup kumactl --uid 6789 kumactl
 
+RUN apt-get update && \
+  apt-get install psmisc=23.2-1
+
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 
 RUN mkdir /kuma
