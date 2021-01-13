@@ -40,10 +40,55 @@ message TrafficRoute {
     } ];
   };
 
+  // LoadBalancer defines the load balancing policy and configuration
+  message LoadBalancer {
+
+    // RoundRobin is a simple policy in which each available upstream host is
+    // selected in round robin order
+    message RoundRobin {}
+
+    // LeastRequest uses different algorithms depending on whether hosts have
+    // the same or different weights
+    message LeastRequest {
+      // The number of random healthy hosts from which the host with the fewest
+      // active requests will be chosen. Defaults to 2 so that we perform
+      // two-choice selection if the field is not set.
+      uint32 choice_count = 1;
+    }
+
+    // RingHash implements consistent hashing to upstream hosts
+    message RingHash {
+      // The hash function used to hash hosts onto the ketama ring. The value
+      // defaults to 'XX_HASH'
+      string hash_function = 1;
+
+      // Minimum hash ring size
+      uint64 min_ring_size = 2;
+
+      // Maximum hash ring size.
+      uint64 max_ring_size = 3;
+    }
+
+    // Random selects a random available host
+    message Random {}
+
+    // Maglev implements consistent hashing to upstream hosts
+    message Maglev {}
+
+    oneof lb_type {
+      RoundRobin round_robin = 1;
+      LeastRequest least_request = 2;
+      RingHash ring_hash = 3;
+      Random random = 4;
+      Maglev maglev = 5;
+    }
+  };
+
   // Conf defines the destination configuration
   message Conf {
     // List of destinations with weights assigned to them.
     repeated Split split = 1 [ (validate.rules).repeated .min_items = 1 ];
+    LoadBalancer load_balancer = 2;
   };
 
   // Configuration for the route
