@@ -87,7 +87,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 var DpTokenRequired = errors.New("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
 
-var InvalidBootstrapVersion = errors.New(`Invalid BootstrapVersion. Available values are: "2", "3"`)
+var InvalidBootstrapVersion = errors.New(`Invalid BootstrapVersion. Available values are: "2"`)
 
 func SANMismatchErr(host string, sans []string) error {
 	return errors.Errorf("A data plane proxy is trying to connect to the control plane using %q address, but the certificate in the control plane has the following SANs %q. "+

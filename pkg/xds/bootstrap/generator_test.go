@@ -133,7 +133,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "localhost"
 				cfg.Params.XdsPort = 5678
-				cfg.APIVersion = envoy_common.APIV3
+				cfg.APIVersion = envoy_common.APIV2
 				return cfg
 			},
 			request: types.BootstrapRequest{
@@ -144,7 +144,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Version:            defaultVersion,
 			},
 			expectedConfigFile:       "generator.default-config.golden.yaml",
-			expectedBootstrapVersion: types.BootstrapV3,
+			expectedBootstrapVersion: types.BootstrapV2,
 		}),
 		Entry("custom config with minimal request", testCase{
 			dpAuthEnabled: false,
@@ -386,6 +386,6 @@ var _ = Describe("bootstrapGenerator", func() {
 		// then
 		Expect(err).To(HaveOccurred())
 		// and
-		Expect(err.Error()).To(Equal(`Invalid BootstrapVersion. Available values are: "2", "3"`))
+		Expect(err.Error()).To(Equal(`Invalid BootstrapVersion. Available values are: "2"`))
 	})
 })
