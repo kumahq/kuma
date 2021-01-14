@@ -1,7 +1,10 @@
-package universal_test
+package outbound_test
 
 import (
 	"context"
+
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/universal/outbound"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -13,7 +16,6 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/universal"
 )
 
 type countingManager struct {
@@ -28,15 +30,21 @@ func (c *countingManager) Update(ctx context.Context, resource model.Resource, o
 
 var _ = Describe("UpdateOutbound", func() {
 	var rm *countingManager
-	vips := map[string]string{
-		"service-1": "240.0.0.1",
-		"service-2": "240.0.0.2",
-	}
+	var outboundsLoop *outbound.OutboundsLoop
 
 	BeforeEach(func() {
 		rm = &countingManager{ResourceManager: core_manager.NewResourceManager(memory.NewStore())}
 
 		err := rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		r := resolver.NewDNSResolver("mesh")
+		r.SetVIPs(map[string]string{
+			"service-1": "240.0.0.1",
+			"service-2": "240.0.0.2",
+		})
+		// and
+		outboundsLoop, err = outbound.NewOutboundsLoop(rm, rm, r)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -83,7 +91,7 @@ var _ = Describe("UpdateOutbound", func() {
 			}, store.CreateByKey("dp-2", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			err = universal.UpdateOutbounds(context.Background(), rm, vips)
+			err = outboundsLoop.UpdateOutbounds(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -116,8 +124,7 @@ var _ = Describe("UpdateOutbound", func() {
 				},
 			}, store.CreateByKey("dp-2", "another-mesh"))
 			Expect(err).ToNot(HaveOccurred())
-			// and
-			err = universal.UpdateOutbounds(context.Background(), rm, vips)
+			err = outboundsLoop.UpdateOutbounds(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 			// then
 			dp1 := mesh.NewDataplaneResource()
@@ -145,14 +152,14 @@ var _ = Describe("UpdateOutbound", func() {
 				}, store.CreateByKey("dp-2", "default"))
 				Expect(err).ToNot(HaveOccurred())
 
-				err = universal.UpdateOutbounds(context.Background(), rm, vips)
+				err = outboundsLoop.UpdateOutbounds(context.Background())
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("should not update outbounds if they are not changed", func() {
 				Expect(rm.updated).To(Equal(1))
 
-				err := universal.UpdateOutbounds(context.Background(), rm, vips)
+				err := outboundsLoop.UpdateOutbounds(context.Background())
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(rm.updated).To(Equal(1))
@@ -163,7 +170,7 @@ var _ = Describe("UpdateOutbound", func() {
 				err := rm.Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-2", "default"))
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				err = universal.UpdateOutbounds(context.Background(), rm, vips)
+				err = outboundsLoop.UpdateOutbounds(context.Background())
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -232,7 +239,7 @@ var _ = Describe("UpdateOutbound", func() {
 
 		It("should not update outbounds", func() {
 			// when
-			err := universal.UpdateOutbounds(context.Background(), rm, vips)
+			err := outboundsLoop.UpdateOutbounds(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			// then

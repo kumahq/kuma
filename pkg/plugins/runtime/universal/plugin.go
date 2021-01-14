@@ -1,17 +1,11 @@
 package universal
 
 import (
-	"context"
-
-	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/config/core"
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-)
-
-var (
-	log = core.Log.WithName("plugin").WithName("runtime").WithName("universal")
+	"github.com/kumahq/kuma/pkg/plugins/runtime/universal/outbound"
 )
 
 var _ core_plugins.RuntimePlugin = &plugin{}
@@ -23,16 +17,31 @@ func init() {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
-	rt.DNSResolver().SetVIPsChangedHandler(func(list vips.List) {
-		if err := UpdateOutbounds(context.Background(), rt.ResourceManager(), list); err != nil {
-			log.Error(err, "failed to update VIP outbounds")
-		}
-	})
+	if rt.Config().Mode == core.Global {
+		return nil
+	}
+
+	if err := addOutboundsLoop(rt); err != nil {
+		return err
+	}
 
 	if err := addDNS(rt); err != nil {
 		return err
 	}
+
 	return nil
+}
+
+func addOutboundsLoop(rt core_runtime.Runtime) error {
+	outboundsLoop, err := outbound.NewOutboundsLoop(
+		rt.ReadOnlyResourceManager(),
+		rt.ResourceManager(),
+		rt.DNSResolver(),
+	)
+	if err != nil {
+		return err
+	}
+	return rt.Add(outboundsLoop)
 }
 
 func addDNS(rt core_runtime.Runtime) error {

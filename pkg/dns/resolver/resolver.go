@@ -12,6 +12,7 @@ import (
 type DNSResolver interface {
 	GetDomain() string
 	SetVIPs(list vips.List)
+	GetVIPs() vips.List
 	SetVIPsChangedHandler(handler vips.ChangeHandler)
 
 	ForwardLookup(service string) (string, error)
@@ -45,6 +46,12 @@ func (s *dnsResolver) SetVIPs(list vips.List) {
 	if s.handler != nil {
 		s.handler(s.viplist)
 	}
+}
+
+func (s *dnsResolver) GetVIPs() vips.List {
+	s.Lock()
+	defer s.Unlock()
+	return s.viplist
 }
 
 func (s *dnsResolver) SetVIPsChangedHandler(handler vips.ChangeHandler) {
