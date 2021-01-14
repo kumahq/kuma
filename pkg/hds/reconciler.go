@@ -3,22 +3,15 @@ package hds
 import (
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
+
 	"github.com/kumahq/kuma/pkg/hds/cache"
 )
 
-func NewReconciler(hasher cache.NodeHash, cache cache.SnapshotCache, generator *generator, versioner cache.SnapshotVersioner) *reconciler {
-	return &reconciler{
-		hasher:    hasher,
-		cache:     cache,
-		generator: generator,
-		versioner: versioner,
-	}
-}
-
 type reconciler struct {
-	hasher    cache.NodeHash
-	cache     cache.SnapshotCache
-	generator *generator
+	hasher    util_xds_v3.NodeHash
+	cache     util_xds_v3.SnapshotCache
+	generator *SnapshotGenerator
 	versioner cache.SnapshotVersioner
 }
 

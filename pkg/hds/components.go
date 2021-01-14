@@ -9,8 +9,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/hds/cache"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 var (
@@ -19,7 +19,7 @@ var (
 
 func RegisterHDS(rt core_runtime.Runtime, grpcSrv *grpc.Server) error {
 	hasher := hasher{}
-	snapshotCache := cache.NewSnapshotCache(false, hasher, util_xds.NewLogger(hdsServerLog))
+	snapshotCache := util_xds_v3.NewSnapshotCache(false, hasher, util_xds.NewLogger(hdsServerLog))
 
 	callbacks, err := DefaultCallbacks(rt, snapshotCache)
 	if err != nil {
@@ -33,8 +33,8 @@ func RegisterHDS(rt core_runtime.Runtime, grpcSrv *grpc.Server) error {
 	return nil
 }
 
-func DefaultCallbacks(rt core_runtime.Runtime, cache cache.SnapshotCache) (Callbacks, error) {
-	return NewTracker(rt.ResourceManager(), cache, rt.Config().DpServer.Hds), nil
+func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) (Callbacks, error) {
+	return NewTracker(rt.ResourceManager(), rt.ReadOnlyResourceManager(), cache, rt.Config().DpServer.Hds), nil
 }
 
 type hasher struct {

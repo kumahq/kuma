@@ -16,6 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
@@ -28,7 +29,12 @@ type tracker struct {
 	proxyByStreamID    map[int64]*envoy_core.Node
 }
 
-func NewTracker(resourceManager manager.ResourceManager, cache envoy_cache.SnapshotCache, config *dp_server.HdsConfig) Callbacks {
+func NewTracker(
+	resourceManager manager.ResourceManager,
+	readOnlyResourceManager manager.ReadOnlyResourceManager,
+	cache util_xds_v3.SnapshotCache,
+	config *dp_server.HdsConfig,
+) Callbacks {
 	return &tracker{
 		resourceManager: resourceManager,
 		proxyByStreamID: map[int64]*envoy_core.Node{},
@@ -37,10 +43,7 @@ func NewTracker(resourceManager manager.ResourceManager, cache envoy_cache.Snaps
 			cache:     cache,
 			hasher:    &hasher{},
 			versioner: envoy_cache.SnapshotAutoVersioner{UUID: core.NewUUID},
-			generator: &generator{
-				config:                  config,
-				readOnlyResourceManager: resourceManager,
-			},
+			generator: NewSnapshotGenerator(readOnlyResourceManager, config),
 		},
 	}
 }

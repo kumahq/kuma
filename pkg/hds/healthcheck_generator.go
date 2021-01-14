@@ -16,15 +16,23 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/hds/cache"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-type generator struct {
+type SnapshotGenerator struct {
 	config                  *dp_server.HdsConfig
 	readOnlyResourceManager manager.ReadOnlyResourceManager
 }
 
-func (g *generator) GenerateSnapshot(node *envoy_core.Node) (cache.Snapshot, error) {
+func NewSnapshotGenerator(readOnlyResourceManager manager.ReadOnlyResourceManager, config *dp_server.HdsConfig) *SnapshotGenerator {
+	return &SnapshotGenerator{
+		readOnlyResourceManager: readOnlyResourceManager,
+		config:                  config,
+	}
+}
+
+func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3.Snapshot, error) {
 	proxyID, err := xds.ParseProxyIdFromString(node.Id)
 	if err != nil {
 		return nil, err
@@ -78,5 +86,5 @@ func (g *generator) GenerateSnapshot(node *envoy_core.Node) (cache.Snapshot, err
 		Interval:            durationpb.New(g.config.Interval),
 	}
 
-	return cache.NewSnapshot(hcs), nil
+	return cache.NewSnapshot("", hcs), nil
 }

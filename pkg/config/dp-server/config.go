@@ -20,7 +20,7 @@ type DpServerConfig struct {
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_dp_server_tls_key_file"`
 	// Auth defines an authentication configuration for the DP Server
 	Auth DpServerAuthConfig `yaml:"auth"`
-	// Hds
+	// Hds defines a Health Discovery Service configuration
 	Hds *HdsConfig `yaml:"hds"`
 }
 
@@ -84,11 +84,12 @@ func DefaultHdsConfig() *HdsConfig {
 }
 
 type HdsConfig struct {
-	// Enabled
+	// Enabled if true then Envoy will actively check application's ports, but only on Universal.
+	// On Kubernetes this feature disabled for now regardless the flag value
 	Enabled bool `yaml:"enabled" envconfig:"kuma_dp_server_hds_enabled"`
-	// Interval
+	// Interval for Envoy to send statuses for HealthChecks
 	Interval time.Duration `yaml:"interval" envconfig:"kuma_dp_server_hds_interval"`
-	// Check
+	// Check defines a HealthCheck configuration
 	Check *HdsCheck `yaml:"check"`
 }
 
@@ -106,15 +107,19 @@ func (h *HdsConfig) Validate() error {
 }
 
 type HdsCheck struct {
-	// Timeout
+	// Timeout is a time to wait for a health check response. If the timeout is reached the
+	// health check attempt will be considered a failure.
 	Timeout time.Duration `yaml:"timeout" envconfig:"kuma_dp_server_hds_check_timeout"`
-	// Interval
+	// Interval between health checks.
 	Interval time.Duration `yaml:"interval" envconfig:"kuma_dp_server_hds_check_interval"`
-	// NoTrafficInterval
+	// NoTrafficInterval is a special health check interval that is used when a cluster has
+	// never had traffic routed to it.
 	NoTrafficInterval time.Duration `yaml:"noTrafficInterval" envconfig:"kuma_dp_server_hds_check_no_traffic_interval"`
-	// HealthyThreshold
+	// HealthyThreshold is a number of healthy health checks required before a host is marked
+	// healthy.
 	HealthyThreshold uint32 `yaml:"healthyThreshold" envconfig:"kuma_dp_server_hds_check_healthy_threshold"`
-	// UnhealthyThreshold
+	// UnhealthyThreshold is a number of unhealthy health checks required before a host is marked
+	// unhealthy.
 	UnhealthyThreshold uint32 `yaml:"unhealthyThreshold" envconfig:"kuma_dp_server_hds_check_unhealthy_threshold"`
 }
 

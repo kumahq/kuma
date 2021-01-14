@@ -9,12 +9,11 @@ import (
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
-
-	cache2 "github.com/kumahq/kuma/pkg/hds/cache"
-
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 )
 
 // inspired by https://github.com/envoyproxy/go-control-plane/blob/master/pkg/server/sotw/v3/server.go
@@ -27,10 +26,10 @@ type Stream interface {
 }
 
 type Callbacks interface {
-	// OnHealthCheckRequest
+	// OnHealthCheckRequest is called when Envoy sends HealthCheckRequest with Node and Capabilities
 	OnHealthCheckRequest(streamID int64, request *envoy_service_health.HealthCheckRequest) error
 
-	// OnEndpointHealthResponse
+	// OnEndpointHealthResponse is called when there is a response from Envoy with status of endpoints in the cluster
 	OnEndpointHealthResponse(streamID int64, response *envoy_service_health.EndpointHealthResponse) error
 
 	// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
@@ -156,7 +155,7 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 			}
 			s.healthChecks, s.healthChecksCancel = s.cache.CreateWatch(&cache.Request{
 				Node:          node,
-				TypeUrl:       cache2.HealthCheckSpecifierType,
+				TypeUrl:       envoy_cache.HealthCheckSpecifierType,
 				ResourceNames: []string{"hcs"},
 			})
 		}
@@ -164,5 +163,5 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 }
 
 func (s *server) FetchHealthCheck(ctx context.Context, response *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse) (*envoy_service_health.HealthCheckSpecifier, error) {
-	panic("implement me")
+	panic("not implemented")
 }

@@ -3,11 +3,13 @@ package cache
 import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/golang/protobuf/proto"
+
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 // SnapshotVersioner assigns versions to xDS resources in a new Snapshot.
 type SnapshotVersioner interface {
-	Version(new, old Snapshot) Snapshot
+	Version(new, old util_xds_v3.Snapshot) util_xds_v3.Snapshot
 }
 
 // SnapshotAutoVersioner assigns versions to xDS resources in a new Snapshot
@@ -17,7 +19,7 @@ type SnapshotAutoVersioner struct {
 	UUID func() string
 }
 
-func (v SnapshotAutoVersioner) Version(new, old Snapshot) Snapshot {
+func (v SnapshotAutoVersioner) Version(new, old util_xds_v3.Snapshot) util_xds_v3.Snapshot {
 	if new == nil {
 		return nil
 	}

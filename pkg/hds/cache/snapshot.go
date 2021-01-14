@@ -5,13 +5,16 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/pkg/errors"
+
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 const HealthCheckSpecifierType = "envoy.service.health.v3.HealthCheckSpecifier"
 
-func NewSnapshot(hcs *envoy_service_health_v3.HealthCheckSpecifier) Snapshot {
-	return &snapshot{
+func NewSnapshot(version string, hcs *envoy_service_health_v3.HealthCheckSpecifier) util_xds_v3.Snapshot {
+	return &Snapshot{
 		HealthChecks: cache.Resources{
+			Version: version,
 			Items: map[string]envoy_types.Resource{
 				"hcs": hcs,
 			},
@@ -20,45 +23,45 @@ func NewSnapshot(hcs *envoy_service_health_v3.HealthCheckSpecifier) Snapshot {
 }
 
 // Snapshot is an internally consistent snapshot of HDS resources.
-type snapshot struct {
+type Snapshot struct {
 	HealthChecks cache.Resources
 }
 
-func (s *snapshot) GetSupportedTypes() []string {
+func (s *Snapshot) GetSupportedTypes() []string {
 	return []string{HealthCheckSpecifierType}
 }
 
-func (s *snapshot) Consistent() error {
+func (s *Snapshot) Consistent() error {
 	if s == nil {
-		return errors.New("nil snapshot")
+		return errors.New("nil Snapshot")
 	}
 	return nil
 }
 
-func (s *snapshot) GetResources(typ string) map[string]envoy_types.Resource {
+func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
 	if s == nil || typ != HealthCheckSpecifierType {
 		return nil
 	}
 	return s.HealthChecks.Items
 }
 
-func (s *snapshot) GetVersion(typ string) string {
+func (s *Snapshot) GetVersion(typ string) string {
 	if s == nil || typ != HealthCheckSpecifierType {
 		return ""
 	}
 	return s.HealthChecks.Version
 }
 
-func (s *snapshot) WithVersion(typ string, version string) Snapshot {
+func (s *Snapshot) WithVersion(typ string, version string) util_xds_v3.Snapshot {
 	if s == nil {
 		return nil
 	}
-	if s.GetVersion(typ) == version {
+	if s.GetVersion(typ) == version || typ != HealthCheckSpecifierType {
 		return s
 	}
 	n := cache.Resources{
 		Version: version,
 		Items:   s.HealthChecks.Items,
 	}
-	return &snapshot{HealthChecks: n}
+	return &Snapshot{HealthChecks: n}
 }
