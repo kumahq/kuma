@@ -14,7 +14,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/envoy/accesslog"
+	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -86,9 +86,9 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 			},
 		},
 	}
-	// if err := format.ConfigureHttpLog(httpGrpcAccessLog); err != nil {
-	// 	return nil, errors.Wrapf(err, "failed to configure %T according to the format string: %s", httpGrpcAccessLog, format)
-	// } // todo
+	if err := format.ConfigureHttpLog(httpGrpcAccessLog); err != nil {
+		return nil, errors.Wrapf(err, "failed to configure %T according to the format string: %s", httpGrpcAccessLog, format)
+	}
 	marshalled, err := proto.MarshalAnyDeterministic(httpGrpcAccessLog)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshall %T", httpGrpcAccessLog)
