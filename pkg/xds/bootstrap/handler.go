@@ -83,8 +83,7 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 	}
 	if err == InvalidBootstrapVersion {
 		resp.WriteHeader(http.StatusBadRequest)
-		_, err = resp.Write([]byte(err.Error()))
-		if err != nil {
+		if _, err := resp.Write([]byte(err.Error())); err != nil {
 			logger.Error(err, "Error while writing the response")
 		}
 		return

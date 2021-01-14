@@ -229,25 +229,20 @@ func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_m
 }
 
 func (b *bootstrapGenerator) configForParameters(params configParameters, version types.BootstrapVersion) (proto.Message, types.BootstrapVersion, error) {
-	if version == "" { // if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
-		switch b.config.APIVersion {
-		case envoy_common.APIV2:
-			version = types.BootstrapV2
-		case envoy_common.APIV3:
-			version = types.BootstrapV3
-		default:
-			return nil, "", InvalidBootstrapVersion
-		}
-	}
-
-	switch version {
-	case types.BootstrapV2:
+	switch {
+	// V2
+	case version == types.BootstrapV2:
+		fallthrough
+	case version == "" && b.config.APIVersion == envoy_common.APIV2: // if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
 		cfg, err := b.configForParametersV2(params)
 		if err != nil {
 			return nil, "", err
 		}
 		return cfg, types.BootstrapV2, nil
-	case types.BootstrapV3:
+	// V3
+	case version == types.BootstrapV3:
+		fallthrough
+	case version == "" && b.config.APIVersion == envoy_common.APIV3: // if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
 		cfg, err := b.configForParametersV3(params)
 		if err != nil {
 			return nil, "", err
