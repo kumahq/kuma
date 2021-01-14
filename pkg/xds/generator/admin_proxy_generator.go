@@ -8,7 +8,7 @@ import (
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-// OriginPrometheus is a marker to indicate by which ProxyGenerator resources were generated.
+// OriginAdmin is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginAdmin = "admin"
 const adminReadyEndpoint = "/ready"
 
