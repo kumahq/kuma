@@ -5,8 +5,17 @@ USER root
 RUN addgroup --system --gid 6789 kumactl \
  && adduser --system --disabled-password --ingroup kumactl --uid 6789 kumactl
 
+# To be sure the build is reproducible every package has set exact version
+# to be installed. If a package has dependencies, they are also explicitly
+# listed and separated by new line and additional indentation.
 RUN apt-get update && \
-  apt-get install psmisc=23.2-1
+  apt-get install \
+    psmisc=23.2-1 \
+    gawk=1:4.2.1+dfsg-1 \
+      libmpfr6=4.0.2-1 \
+      libreadline7=7.0-5 \
+        readline-common=7.0-5 \
+      libsigsegv2=2.12-2
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 
