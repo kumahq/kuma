@@ -427,6 +427,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 		zone           string
 		podLabels      map[string]string
 		svcAnnotations map[string]string
+		appProtocol    *string
 		expected       map[string]string
 	}
 
@@ -451,8 +452,9 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				Spec: kube_core.ServiceSpec{
 					Ports: []kube_core.ServicePort{
 						{
-							Name: "http",
-							Port: 80,
+							Name:        "http",
+							Port:        80,
+							AppProtocol: given.appProtocol,
 							TargetPort: kube_intstr.IntOrString{
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
@@ -498,6 +500,52 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"version":          "0.1",
 				"kuma.io/service":  "example_demo_svc_80",
 				"kuma.io/protocol": "tcp", // we want Kuma's default behaviour to be explicit to a user
+			},
+		}),
+		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and an unknown value", testCase{
+			isGateway: false,
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			svcAnnotations: map[string]string{
+				"80.service.kuma.io/protocol": "not-yet-supported-protocol",
+			},
+			expected: map[string]string{
+				"app":              "example",
+				"version":          "0.1",
+				"kuma.io/service":  "example_demo_svc_80",
+				"kuma.io/protocol": "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
+			},
+		}),
+		Entry("Service with a `<port>.service.kuma.io/protocol` annotation and a known value", testCase{
+			isGateway: false,
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			svcAnnotations: map[string]string{
+				"80.service.kuma.io/protocol": "http",
+			},
+			expected: map[string]string{
+				"app":              "example",
+				"version":          "0.1",
+				"kuma.io/service":  "example_demo_svc_80",
+				"kuma.io/protocol": "http",
+			},
+		}),
+		Entry("Service with appProtocol and a known value", testCase{
+			isGateway: false,
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			appProtocol: utilpointer.StringPtr("http"),
+			expected: map[string]string{
+				"app":              "example",
+				"version":          "0.1",
+				"kuma.io/service":  "example_demo_svc_80",
+				"kuma.io/protocol": "http",
 			},
 		}),
 		Entry("Inject a zone tag if Zone is set", testCase{
@@ -561,16 +609,18 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 
 	type testCase struct {
 		appProtocol *string
+		annotations map[string]string
 		expected    string
 	}
 
-	DescribeTable("should infer protocol from `appProtocol` field",
+	DescribeTable("should infer protocol from `appProtocol` or `<port>.service.kuma.io/protocol` field",
 		func(given testCase) {
 			// given
 			svc := &kube_core.Service{
 				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "example",
+					Namespace:   "demo",
+					Name:        "example",
+					Annotations: given.annotations,
 				},
 				Spec: kube_core.ServiceSpec{
 					Ports: []kube_core.ServicePort{
@@ -588,30 +638,42 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 			}
 
 			// expect
-			Expect(ProtocolTagFor(&svc.Spec.Ports[0])).To(Equal(given.expected))
+			Expect(ProtocolTagFor(svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
 		},
-		Entry("no `<port>.service.kuma.io/protocol` annotation", testCase{
+		Entry("no appProtocol", testCase{
 			appProtocol: nil,
 			expected:    "tcp", // we want Kuma's default behaviour to be explicit to a user
 		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation has an empty value", testCase{
+		Entry("appProtocol has an empty value", testCase{
 			appProtocol: utilpointer.StringPtr(""),
 			expected:    "tcp", // we want Kuma's default behaviour to be explicit to a user
 		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation has an unknown value", testCase{
+		Entry("no appProtocol but with `<port>.service.kuma.io/protocol` annotation", testCase{
+			appProtocol: nil,
+			annotations: map[string]string{
+				"80.service.kuma.io/protocol": "http",
+			},
+			expected: "http", // we want to support both ways of providing protocol
+		}),
+		Entry("appProtocol has an unknown value", testCase{
 			appProtocol: utilpointer.StringPtr("not-yet-supported-protocol"),
-			expected:    "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
+			expected:    "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy appProtocol value "as is")
 		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation has a non-lowercase value", testCase{
+		Entry("appProtocol has a non-lowercase value", testCase{
 			appProtocol: utilpointer.StringPtr("HtTp"),
-			expected:    "HtTp", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
+			expected:    "HtTp", // we want Kuma's behaviour to be straightforward to a user (just copy appProtocol value "as is")
 		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation has a known value: http", testCase{
+		Entry("appProtocol has a known value: http", testCase{
 			appProtocol: utilpointer.StringPtr("http"),
 			expected:    "http",
 		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation has a known value: tcp", testCase{
+		Entry("appProtocol has a known value: tcp", testCase{
 			appProtocol: utilpointer.StringPtr("tcp"),
+			expected:    "tcp",
+		}),
+		Entry("no appProtocol and no `<port>.service.kuma.io/protocol`", testCase{
+			appProtocol: nil,
+			annotations: nil,
 			expected:    "tcp",
 		}),
 	)

@@ -16,12 +16,13 @@ spec:
 metadata:
   namespace: playground
   name: sample
+  annotations:
+    7071.service.kuma.io/protocol: MONGO
 spec:
   clusterIP: 192.168.0.1
   ports:
     - kuma.io/protocol: TCP
       port: 7071
-      appProtocol: MONGO
       targetPort: 7070
     - kuma.io/protocol: TCP
       port: 6061
