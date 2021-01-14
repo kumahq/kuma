@@ -49,7 +49,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 	reqParams.Host = hostname
 	logger := log.WithValues("params", reqParams)
 
-	config, err := b.Generator.Generate(req.Context(), reqParams)
+	config, version, err := b.Generator.Generate(req.Context(), reqParams)
 	if err != nil {
 		handleError(resp, err, logger)
 		return
@@ -64,6 +64,7 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 
 	resp.WriteHeader(http.StatusOK)
 	resp.Header().Set("content-type", "text/x-yaml")
+	resp.Header().Set(types.BootstrapVersionHeader, string(version))
 	_, err = resp.Write(bytes)
 	if err != nil {
 		logger.Error(err, "Error while writing the response")
@@ -76,6 +77,13 @@ func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 		resp.WriteHeader(http.StatusUnprocessableEntity)
 		_, err = resp.Write([]byte(err.Error()))
 		if err != nil {
+			logger.Error(err, "Error while writing the response")
+		}
+		return
+	}
+	if err == InvalidBootstrapVersion {
+		resp.WriteHeader(http.StatusBadRequest)
+		if _, err := resp.Write([]byte(err.Error())); err != nil {
 			logger.Error(err, "Error while writing the response")
 		}
 		return
