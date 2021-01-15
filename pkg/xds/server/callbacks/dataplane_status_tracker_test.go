@@ -219,7 +219,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 					Id: "default.example-001",
 					Metadata: &pstruct.Struct{
 						Fields: map[string]*pstruct.Value{
-							"dataplaneTokenPath": {
+							"dataplane.token.filename": {
 								Kind: &pstruct.Value_StringValue{
 									StringValue: "/tmp/token",
 								},

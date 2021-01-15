@@ -6,7 +6,7 @@ node:
   cluster: {{.Service}}
   metadata:
 {{if .DataplaneTokenPath}}
-    dataplaneTokenPath: {{.DataplaneTokenPath}}
+    dataplane.token.filename: {{.DataplaneTokenPath}}
 {{end}}
 {{if .DataplaneResource}}
     dataplane.resource: '{{.DataplaneResource}}'

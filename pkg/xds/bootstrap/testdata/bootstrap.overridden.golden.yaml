@@ -33,7 +33,7 @@ node:
   id: default.dp-1.default
   metadata:
     dataplane.admin.port: "1234"
-    dataplaneTokenPath: /tmp/token
+    dataplane.token.filename: /tmp/token
     version:
       kumaDp:
         version: 0.0.1

@@ -29,7 +29,7 @@ var _ = DescribeTable("DataplaneMetadataFromXdsMetadata",
 	Entry("should parse metadata", testCase{
 		node: &pstruct.Struct{
 			Fields: map[string]*pstruct.Value{
-				"dataplaneTokenPath": &pstruct.Value{
+				"dataplane.token.filename": &pstruct.Value{
 					Kind: &pstruct.Value_StringValue{
 						StringValue: "/tmp/token",
 					},

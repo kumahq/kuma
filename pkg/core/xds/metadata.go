@@ -16,7 +16,7 @@ var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
 const (
 	// Supported Envoy node metadata fields.
 
-	fieldDataplaneTokenPath         = "dataplaneTokenPath"
+	fieldDataplaneTokenPath         = "dataplane.token.filename"
 	fieldDataplaneAdminPort         = "dataplane.admin.port"
 	fieldDataplaneDataplaneResource = "dataplane.resource"
 )
@@ -66,6 +66,9 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 	metadata := DataplaneMetadata{}
 	if xdsMetadata == nil {
 		return &metadata
+	}
+	if field := xdsMetadata.Fields["dataplaneTokenPath"]; field != nil {
+		metadata.DataplaneTokenPath = field.GetStringValue()
 	}
 	if field := xdsMetadata.Fields[fieldDataplaneTokenPath]; field != nil {
 		metadata.DataplaneTokenPath = field.GetStringValue()

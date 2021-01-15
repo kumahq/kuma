@@ -26,7 +26,7 @@ node:
   cluster: backend
   id: default.dp-1.default
   metadata:
-    dataplaneTokenPath: /tmp/token
+    dataplane.token.filename: /tmp/token
     version:
       kumaDp:
         version: 0.0.1

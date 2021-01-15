@@ -22,7 +22,7 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 			Id: "default.example",
 			Metadata: &pstruct.Struct{
 				Fields: map[string]*pstruct.Value{
-					"dataplaneTokenPath": &pstruct.Value{
+					"dataplane.token.filename": &pstruct.Value{
 						Kind: &pstruct.Value_StringValue{
 							StringValue: "/tmp/token",
 						},

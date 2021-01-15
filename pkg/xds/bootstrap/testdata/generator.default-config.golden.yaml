@@ -35,7 +35,7 @@ node:
   id: mesh.name.namespace
   metadata:
     dataplane.admin.port: "1234"
-    dataplaneTokenPath: /tmp/token
+    dataplane.token.filename: /tmp/token
     version:
       envoy:
         build: hash/1.15.0/RELEASE
