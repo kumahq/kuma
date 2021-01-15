@@ -82,10 +82,11 @@ var _ = Describe("bootstrapGenerator", func() {
 	})
 
 	type testCase struct {
-		config             func() *bootstrap_config.BootstrapServerConfig
-		dpAuthEnabled      bool
-		request            types.BootstrapRequest
-		expectedConfigFile string
+		config                   func() *bootstrap_config.BootstrapServerConfig
+		dpAuthEnabled            bool
+		request                  types.BootstrapRequest
+		expectedConfigFile       string
+		expectedBootstrapVersion types.BootstrapVersion
 	}
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
@@ -94,22 +95,20 @@ var _ = Describe("bootstrapGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			bootstrapConfig, err := generator.Generate(context.Background(), given.request)
+			bootstrapConfig, version, err := generator.Generate(context.Background(), given.request)
+
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			// when
+			// and config is as expected
 			actual, err := util_proto.ToYAML(bootstrapConfig)
-			// then
 			Expect(err).ToNot(HaveOccurred())
-
-			// when
 			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.expectedConfigFile))
-			// then
 			Expect(err).ToNot(HaveOccurred())
-
-			// expect
 			Expect(actual).To(MatchYAML(expected))
+
+			// and
+			Expect(version).To(Equal(given.expectedBootstrapVersion))
 		},
 		Entry("default config with minimal request", testCase{
 			dpAuthEnabled: false,
@@ -125,7 +124,8 @@ var _ = Describe("bootstrapGenerator", func() {
 				Name:    "name.namespace",
 				Version: defaultVersion,
 			},
-			expectedConfigFile: "generator.default-config-minimal-request.golden.yaml",
+			expectedConfigFile:       "generator.default-config-minimal-request.golden.yaml",
+			expectedBootstrapVersion: types.BootstrapV2,
 		}),
 		Entry("default config", testCase{
 			dpAuthEnabled: true,
@@ -143,7 +143,8 @@ var _ = Describe("bootstrapGenerator", func() {
 				DataplaneTokenPath: "/tmp/token",
 				Version:            defaultVersion,
 			},
-			expectedConfigFile: "generator.default-config.golden.yaml",
+			expectedConfigFile:       "generator.default-config.golden.yaml",
+			expectedBootstrapVersion: types.BootstrapV2,
 		}),
 		Entry("custom config with minimal request", testCase{
 			dpAuthEnabled: false,
@@ -157,15 +158,17 @@ var _ = Describe("bootstrapGenerator", func() {
 						XdsPort:            15678,
 						XdsConnectTimeout:  2 * time.Second,
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				}
 			},
 			request: types.BootstrapRequest{
-				Mesh:    "mesh",
-				Name:    "name.namespace",
-				Version: defaultVersion,
+				Mesh:             "mesh",
+				Name:             "name.namespace",
+				Version:          defaultVersion,
+				BootstrapVersion: types.BootstrapV2,
 			},
-			expectedConfigFile: "generator.custom-config-minimal-request.golden.yaml",
+			expectedConfigFile:       "generator.custom-config-minimal-request.golden.yaml",
+			expectedBootstrapVersion: types.BootstrapV2,
 		}),
 		Entry("custom config", testCase{
 			dpAuthEnabled: true,
@@ -210,7 +213,8 @@ var _ = Describe("bootstrapGenerator", func() {
 }`,
 				Version: defaultVersion,
 			},
-			expectedConfigFile: "generator.custom-config.golden.yaml",
+			expectedConfigFile:       "generator.custom-config.golden.yaml",
+			expectedBootstrapVersion: types.BootstrapV2,
 		}),
 	)
 
@@ -266,7 +270,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		}
 
 		// when
-		_, err = generator.Generate(context.Background(), request)
+		_, _, err = generator.Generate(context.Background(), request)
 		// then
 		Expect(err).To(HaveOccurred())
 		// and
@@ -279,7 +283,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		}
 
 		// when
-		_, err = generator.Generate(context.Background(), request)
+		_, _, err = generator.Generate(context.Background(), request)
 		// then
 		Expect(err).To(HaveOccurred())
 		// and
@@ -331,7 +335,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		}
 
 		// when
-		_, err = generator.Generate(context.Background(), request)
+		_, _, err = generator.Generate(context.Background(), request)
 		// then
 		Expect(err).To(HaveOccurred())
 		// and
@@ -352,7 +356,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		}
 
 		// when
-		_, err = generator.Generate(context.Background(), request)
+		_, _, err = generator.Generate(context.Background(), request)
 		// then
 		Expect(err).To(HaveOccurred())
 		// and
@@ -360,5 +364,28 @@ var _ = Describe("bootstrapGenerator", func() {
 1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --cp-hostname=kuma.internal'
 2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.
 3) Restart the control plane to read the new certificate and start kuma-dp.`))
+	})
+
+	It("should fail bootstrap due to invalid bootstrap version", func() {
+		// given
+		cfg := bootstrap_config.DefaultBootstrapServerConfig()
+		cfg.Params.XdsHost = "localhost"
+		cfg.Params.XdsPort = 5678
+
+		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		Expect(err).ToNot(HaveOccurred())
+		request := types.BootstrapRequest{
+			Mesh:             "mesh",
+			Name:             "name.namespace",
+			AdminPort:        9901,
+			BootstrapVersion: "5",
+		}
+
+		// when
+		_, _, err = generator.Generate(context.Background(), request)
+		// then
+		Expect(err).To(HaveOccurred())
+		// and
+		Expect(err.Error()).To(Equal(`Invalid BootstrapVersion. Available values are: "2"`))
 	})
 })

@@ -35,14 +35,14 @@ node:
     dataplane.admin.port: "1234"
     dataplaneTokenPath: /tmp/token
     version:
-      kumaDp:
-        version: 0.0.1
-        gitTag: v0.0.1
-        gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
-        buildDate: 2019-08-07T11:26:06Z
       envoy:
-        version: 1.15.0
         build: hash/1.15.0/RELEASE
+        version: 1.15.0
+      kumaDp:
+        buildDate: "2019-08-07T11:26:06Z"
+        gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+        gitTag: v0.0.1
+        version: 0.0.1
 staticResources:
   clusters:
     - connectTimeout: 1s
