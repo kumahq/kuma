@@ -351,6 +351,9 @@ func (d *Dataplane) GetIdentifyingService() string {
 }
 
 func (d *Dataplane) IsIngress() bool {
+	if d.GetNetworking() == nil {
+		return false
+	}
 	return d.Networking.Ingress != nil
 }
 
