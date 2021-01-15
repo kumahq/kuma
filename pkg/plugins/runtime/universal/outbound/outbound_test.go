@@ -2,6 +2,7 @@ package outbound_test
 
 import (
 	"context"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/universal/outbound"
@@ -30,7 +31,7 @@ func (c *countingManager) Update(ctx context.Context, resource model.Resource, o
 
 var _ = Describe("UpdateOutbound", func() {
 	var rm *countingManager
-	var outboundsLoop *outbound.OutboundsLoop
+	var vipOutboundsReconciler *outbound.VIPOutboundsReconciler
 
 	BeforeEach(func() {
 		rm = &countingManager{ResourceManager: core_manager.NewResourceManager(memory.NewStore())}
@@ -44,7 +45,7 @@ var _ = Describe("UpdateOutbound", func() {
 			"service-2": "240.0.0.2",
 		})
 		// and
-		outboundsLoop, err = outbound.NewOutboundsLoop(rm, rm, r)
+		vipOutboundsReconciler, err = outbound.NewVIPOutboundsReconciler(rm, rm, r, time.Second)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -91,7 +92,7 @@ var _ = Describe("UpdateOutbound", func() {
 			}, store.CreateByKey("dp-2", "default"))
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			err = outboundsLoop.UpdateOutbounds(context.Background())
+			err = vipOutboundsReconciler.UpdateVIPOutbounds(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
@@ -124,7 +125,7 @@ var _ = Describe("UpdateOutbound", func() {
 				},
 			}, store.CreateByKey("dp-2", "another-mesh"))
 			Expect(err).ToNot(HaveOccurred())
-			err = outboundsLoop.UpdateOutbounds(context.Background())
+			err = vipOutboundsReconciler.UpdateVIPOutbounds(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 			// then
 			dp1 := mesh.NewDataplaneResource()
@@ -152,14 +153,14 @@ var _ = Describe("UpdateOutbound", func() {
 				}, store.CreateByKey("dp-2", "default"))
 				Expect(err).ToNot(HaveOccurred())
 
-				err = outboundsLoop.UpdateOutbounds(context.Background())
+				err = vipOutboundsReconciler.UpdateVIPOutbounds(context.Background())
 				Expect(err).ToNot(HaveOccurred())
 			})
 
 			It("should not update outbounds if they are not changed", func() {
 				Expect(rm.updated).To(Equal(1))
 
-				err := outboundsLoop.UpdateOutbounds(context.Background())
+				err := vipOutboundsReconciler.UpdateVIPOutbounds(context.Background())
 				Expect(err).ToNot(HaveOccurred())
 
 				Expect(rm.updated).To(Equal(1))
@@ -170,7 +171,7 @@ var _ = Describe("UpdateOutbound", func() {
 				err := rm.Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-2", "default"))
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				err = outboundsLoop.UpdateOutbounds(context.Background())
+				err = vipOutboundsReconciler.UpdateVIPOutbounds(context.Background())
 				Expect(err).ToNot(HaveOccurred())
 
 				// then
@@ -239,7 +240,7 @@ var _ = Describe("UpdateOutbound", func() {
 
 		It("should not update outbounds", func() {
 			// when
-			err := outboundsLoop.UpdateOutbounds(context.Background())
+			err := vipOutboundsReconciler.UpdateVIPOutbounds(context.Background())
 			Expect(err).ToNot(HaveOccurred())
 
 			// then

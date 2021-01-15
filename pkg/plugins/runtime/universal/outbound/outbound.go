@@ -18,42 +18,38 @@ import (
 
 var log = core.Log.WithName("dns-vips-allocator")
 
-type OutboundsLoop struct {
+type VIPOutboundsReconciler struct {
 	rorm      manager.ReadOnlyResourceManager
 	rm        manager.ResourceManager
 	resolver  resolver.DNSResolver
 	newTicker func() *time.Ticker
 }
 
-const (
-	tickInterval = 500 * time.Millisecond
-)
-
-func NewOutboundsLoop(rorm manager.ReadOnlyResourceManager, rm manager.ResourceManager, resolver resolver.DNSResolver) (*OutboundsLoop, error) {
-	return &OutboundsLoop{
+func NewVIPOutboundsReconciler(rorm manager.ReadOnlyResourceManager, rm manager.ResourceManager, resolver resolver.DNSResolver, refresh time.Duration) (*VIPOutboundsReconciler, error) {
+	return &VIPOutboundsReconciler{
 		rorm:     rorm,
 		rm:       rm,
 		resolver: resolver,
 		newTicker: func() *time.Ticker {
-			return time.NewTicker(tickInterval)
+			return time.NewTicker(refresh)
 		},
 	}, nil
 }
 
-func (o *OutboundsLoop) NeedLeaderElection() bool {
+func (v *VIPOutboundsReconciler) NeedLeaderElection() bool {
 	return true
 }
 
-func (o *OutboundsLoop) Start(stop <-chan struct{}) error {
-	ticker := o.newTicker()
+func (v *VIPOutboundsReconciler) Start(stop <-chan struct{}) error {
+	ticker := v.newTicker()
 	defer ticker.Stop()
 
-	log.Info("starting the outbounds loop")
+	log.Info("starting the VIP outbounds reconciler")
 	for {
 		select {
 		case <-ticker.C:
-			if err := o.UpdateOutbounds(context.Background()); err != nil {
-				log.Error(err, "errors in the outbounds loop")
+			if err := v.UpdateVIPOutbounds(context.Background()); err != nil {
+				log.Error(err, "errors in the VIP outbounds reconciler")
 			}
 		case <-stop:
 			log.Info("stopping")
@@ -62,18 +58,18 @@ func (o *OutboundsLoop) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (o *OutboundsLoop) UpdateOutbounds(ctx context.Context) error {
+func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 	meshes := &mesh.MeshResourceList{}
-	if err := o.rorm.List(ctx, meshes); err != nil {
+	if err := v.rorm.List(ctx, meshes); err != nil {
 		return err
 	}
 	for _, m := range meshes.Items {
 		dpList := &mesh.DataplaneResourceList{}
-		if err := o.rorm.List(ctx, dpList, store.ListByMesh(m.Meta.GetName())); err != nil {
+		if err := v.rorm.List(ctx, dpList, store.ListByMesh(m.Meta.GetName())); err != nil {
 			return err
 		}
 		externalServices := &mesh.ExternalServiceResourceList{}
-		if err := o.rorm.List(ctx, externalServices, store.ListByMesh(m.Meta.GetName())); err != nil {
+		if err := v.rorm.List(ctx, externalServices, store.ListByMesh(m.Meta.GetName())); err != nil {
 			return err
 		}
 		dpsUpdated := 0
@@ -81,13 +77,13 @@ func (o *OutboundsLoop) UpdateOutbounds(ctx context.Context) error {
 			if dp.Spec.Networking.GetTransparentProxying() == nil {
 				continue
 			}
-			newOutbounds := dns.VIPOutbounds(dp.Meta.GetName(), dpList.Items, o.resolver.GetVIPs(), externalServices.Items)
+			newOutbounds := dns.VIPOutbounds(dp.Meta.GetName(), dpList.Items, v.resolver.GetVIPs(), externalServices.Items)
 
 			if outboundsEqual(newOutbounds, dp.Spec.Networking.Outbound) {
 				continue
 			}
 			dp.Spec.Networking.Outbound = newOutbounds
-			if err := o.rm.Update(ctx, dp); err != nil {
+			if err := v.rm.Update(ctx, dp); err != nil {
 				log.Error(err, "failed to update VIP outbounds", "dataplane", dp.GetMeta())
 				continue
 			}

@@ -49,8 +49,8 @@ func (s *dnsResolver) SetVIPs(list vips.List) {
 }
 
 func (s *dnsResolver) GetVIPs() vips.List {
-	s.Lock()
-	defer s.Unlock()
+	s.RLock()
+	defer s.RUnlock()
 	return s.viplist
 }
 

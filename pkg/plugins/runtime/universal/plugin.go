@@ -21,7 +21,7 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 		return nil
 	}
 
-	if err := addOutboundsLoop(rt); err != nil {
+	if err := addVIPOutboundsReconciler(rt); err != nil {
 		return err
 	}
 
@@ -32,16 +32,17 @@ func (p *plugin) Customize(rt core_runtime.Runtime) error {
 	return nil
 }
 
-func addOutboundsLoop(rt core_runtime.Runtime) error {
-	outboundsLoop, err := outbound.NewOutboundsLoop(
+func addVIPOutboundsReconciler(rt core_runtime.Runtime) error {
+	vipOutboundsReconciler, err := outbound.NewVIPOutboundsReconciler(
 		rt.ReadOnlyResourceManager(),
 		rt.ResourceManager(),
 		rt.DNSResolver(),
+		rt.Config().XdsServer.DataplaneStatusFlushInterval,
 	)
 	if err != nil {
 		return err
 	}
-	return rt.Add(outboundsLoop)
+	return rt.Add(vipOutboundsReconciler)
 }
 
 func addDNS(rt core_runtime.Runtime) error {
