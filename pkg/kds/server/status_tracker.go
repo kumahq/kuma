@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	pstruct "github.com/golang/protobuf/ptypes/struct"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/util"
@@ -72,6 +74,7 @@ func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ st
 		GlobalInstanceId: c.runtimeInfo.GetInstanceId(),
 		ConnectTime:      util_proto.MustTimestampProto(core.Now()),
 		Status:           system_proto.NewSubscriptionStatus(),
+		Version:          system_proto.NewVersion(),
 	}
 	// initialize state per ADS stream
 	state := &streamState{
@@ -117,9 +120,12 @@ func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequ
 	state.mu.Lock() // write access to the per Dataplane info
 	defer state.mu.Unlock()
 
-	// infer Dataplane id
+	// infer zone
 	if state.zone == "" {
 		state.zone = req.Node.Id
+		if err := readVersion(req.Node.GetMetadata(), state.subscription.Version); err != nil {
+			c.log.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Node.GetMetadata())
+		}
 		go c.createStatusSink(state, c.log).Start(state.stop)
 	}
 
@@ -174,4 +180,18 @@ func (s *streamState) GetStatus() (string, *system_proto.KDSSubscription) {
 
 func (s *streamState) Close() {
 	close(s.stop)
+}
+
+func readVersion(metadata *pstruct.Struct, version *system_proto.Version) error {
+	if metadata == nil {
+		return nil
+	}
+	rawVersion := metadata.Fields["version"].GetStructValue()
+	if rawVersion != nil {
+		err := util_proto.ToTyped(rawVersion, version)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

@@ -155,6 +155,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 	for _, clusterName := range clusters.ClusterNames() {
 		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
 		tags := clusters.Tags(clusterName)
+		lb := clusters.Lb(clusterName)
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
 		edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
@@ -175,6 +176,7 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		} else {
 			edsClusterBuilder = edsClusterBuilder.
 				Configure(envoy_clusters.EdsCluster(clusterName)).
+				Configure(envoy_clusters.LB(lb)).
 				Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, tags)).
 				Configure(envoy_clusters.Http2())
 		}
@@ -270,6 +272,8 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 				subset.IsExternalService = true
 			}
 		}
+
+		subset.Lb = route.Spec.GetConf().GetLoadBalancer()
 
 		subsets = append(subsets, subset)
 	}

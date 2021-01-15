@@ -70,6 +70,7 @@ Kuma has been built with universality and scalability in mind. Kubernetes and VM
 * **GUI**: Out of the box browser GUI to explore all the Service Meshes configured in the system.
 * **Tagging Selectors**: To apply sophisticated regional, cloud-specific and team-oriented policies.
 * **Platform-Agnostic**: Support for Kubernetes, VMs, and bare metal. Including hybrid deployments.
+* **Transparent Proxying**: Out of the box transparent proxying on Kubernetes, VMs and any other platform.
 * **Network Overlay**: Create a configurable Mesh overlay across different Kubernetes clusters and namespaces.
 
 Below you can find a snapshot of the GUI that ships with Kuma:

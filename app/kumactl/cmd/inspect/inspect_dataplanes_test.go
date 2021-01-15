@@ -80,16 +80,16 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									Port:        8080,
 									ServicePort: 80,
 									Tags: map[string]string{
-										"service": "mobile",
-										"version": "v1",
+										mesh_proto.ServiceTag: "mobile",
+										"version":             "v1",
 									},
 								},
 								{
 									Port:        8090,
 									ServicePort: 90,
 									Tags: map[string]string{
-										"service": "metrics",
-										"version": "v1",
+										mesh_proto.ServiceTag: "metrics",
+										"version":             "v1",
 									},
 								},
 							},
@@ -172,7 +172,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									Port:        8080,
 									ServicePort: 80,
 									Tags: map[string]string{
-										"service": "example",
+										mesh_proto.ServiceTag: "example",
 									},
 								},
 								{
@@ -180,7 +180,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									ServicePort: 81,
 									Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
 									Tags: map[string]string{
-										"service": "example",
+										mesh_proto.ServiceTag: "example",
 									},
 								},
 							},
@@ -264,7 +264,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									ServicePort: 80,
 									Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
 									Tags: map[string]string{
-										"service": "example",
+										mesh_proto.ServiceTag: "example",
 									},
 								},
 								{
@@ -272,7 +272,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									ServicePort: 81,
 									Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
 									Tags: map[string]string{
-										"service": "example",
+										mesh_proto.ServiceTag: "example",
 									},
 								},
 							},
@@ -355,7 +355,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									Port:        8080,
 									ServicePort: 80,
 									Tags: map[string]string{
-										"service": "example",
+										"kuma.io/service": "example",
 									},
 								},
 							},
@@ -417,6 +417,15 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
 
+		byLine := func(s string) []string {
+			lines := strings.Split(s, "\n")
+			var trimmedLines []string
+			for _, line := range lines {
+				trimmedLines = append(trimmedLines, strings.TrimSpace(line))
+			}
+			return trimmedLines
+		}
+
 		DescribeTable("kumactl inspect dataplanes -o table|json|yaml",
 			func(given testCase) {
 				// given
@@ -440,14 +449,14 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				outputFormat: "",
 				goldenFile:   "inspect-dataplanes.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
-					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+					return WithTransform(byLine, Equal(byLine(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "inspect-dataplanes.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
-					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+					return WithTransform(byLine, Equal(byLine(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support JSON output", testCase{
@@ -467,14 +476,14 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// given
 				rootCmd.SetArgs([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "dataplanes", "--tag", "service=mobile", "--tag", "version=v1"})
+					"inspect", "dataplanes", "--tag", "kuma.io/service=mobile", "--tag", "version=v1"})
 
 				// when
 				err := rootCmd.Execute()
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				Expect(testClient.receivedTags).To(HaveKeyWithValue("service", "mobile"))
+				Expect(testClient.receivedTags).To(HaveKeyWithValue(mesh_proto.ServiceTag, "mobile"))
 				Expect(testClient.receivedTags).To(HaveKeyWithValue("version", "v1"))
 			})
 		})
