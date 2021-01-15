@@ -4,11 +4,14 @@ import (
 	"context"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	"github.com/kumahq/kuma/pkg/core"
-	mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
@@ -63,24 +66,53 @@ func (s *storeCounter) NeedLeaderElection() bool {
 }
 
 func (s *storeCounter) count() error {
-	insights := &mesh.MeshInsightResourceList{}
-	err := s.resManager.List(context.Background(), insights)
-	if err != nil {
+	resourceCount := map[string]uint32{}
+	if err := s.countGlobalScopedResources(resourceCount); err != nil {
 		return err
 	}
-
-	resourceCounts := map[string]uint32{
-		string(mesh.MeshType): uint32(len(insights.GetItems())),
+	if err := s.countMeshScopedResources(resourceCount); err != nil {
+		return err
 	}
-	for _, meshInsight := range insights.Items {
-		resourceCounts[string(mesh.DataplaneType)] += meshInsight.Spec.GetDataplanes().GetTotal()
-		for policy, stats := range meshInsight.Spec.GetPolicies() {
-			resourceCounts[policy] += stats.GetTotal()
-		}
-	}
-	for resType, counter := range resourceCounts {
+	for resType, counter := range resourceCount {
 		s.counts.WithLabelValues(resType).Set(float64(counter))
 	}
-
 	return nil
+}
+
+func (s *storeCounter) countGlobalScopedResources(resourceCount map[string]uint32) error {
+	for _, resType := range registry.Global().ListTypes() {
+		if meshScoped(resType) {
+			continue
+		}
+		resList, err := registry.Global().NewList(resType)
+		if err != nil {
+			return err
+		}
+		if err := s.resManager.List(context.Background(), resList); err != nil {
+			return err
+		}
+		resourceCount[string(resType)] += uint32(len(resList.GetItems()))
+	}
+	return nil
+}
+
+func (s *storeCounter) countMeshScopedResources(resourceCount map[string]uint32) error {
+	insights := &mesh.MeshInsightResourceList{}
+	if err := s.resManager.List(context.Background(), insights); err != nil {
+		return err
+	}
+	for _, meshInsight := range insights.Items {
+		resourceCount[string(mesh.DataplaneType)] += meshInsight.Spec.GetDataplanes().GetTotal()
+		for policy, stats := range meshInsight.Spec.GetPolicies() {
+			resourceCount[policy] += stats.GetTotal()
+		}
+	}
+	return nil
+}
+
+func meshScoped(t model.ResourceType) bool {
+	if obj, err := registry.Global().NewObject(t); err != nil || obj.Scope() != model.ScopeMesh {
+		return false
+	}
+	return true
 }
