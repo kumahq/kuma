@@ -218,6 +218,17 @@ var _ = Describe("Config WS", func() {
             "tlsKeyFile": "",
             "auth": {
               "type": ""
+            },
+            "hds": {
+              "check": {
+                "healthyThreshold": 1,
+                "interval": "1s",
+                "noTrafficInterval": "1s",
+                "timeout": "2s",
+                "unhealthyThreshold": 1
+              },
+              "enabled": true,
+              "interval": "1s"
             }
           },
           "store": {
