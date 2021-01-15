@@ -62,9 +62,9 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp.WriteHeader(http.StatusOK)
 	resp.Header().Set("content-type", "text/x-yaml")
 	resp.Header().Set(types.BootstrapVersionHeader, string(version))
+	resp.WriteHeader(http.StatusOK)
 	_, err = resp.Write(bytes)
 	if err != nil {
 		logger.Error(err, "Error while writing the response")

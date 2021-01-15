@@ -147,7 +147,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	command := exec.CommandContext(ctx, resolvedPath, args...)
 	command.Stdout = e.opts.Stdout
 	command.Stderr = e.opts.Stderr
-	runLog.Info("starting Envoy")
+	runLog.Info("starting Envoy", "args", args)
 	if err := command.Start(); err != nil {
 		runLog.Error(err, "the envoy executable was found at "+resolvedPath+" but an error occurred when executing it")
 		return err
