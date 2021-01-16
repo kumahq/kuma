@@ -140,7 +140,6 @@ var _ = Describe("Counter", func() {
 		time.Sleep(1 * time.Second)
 
 		// then
-		Expect(err).ToNot(HaveOccurred())
 		Expect(findGauge("Zone").GetValue()).To(Equal(float64(1)))
 		Expect(findGauge("Mesh").GetValue()).To(Equal(float64(2)))
 		Expect(findGauge("Dataplane").GetValue()).To(Equal(float64(1)))
