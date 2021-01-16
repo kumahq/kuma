@@ -79,11 +79,15 @@ kind/load/kuma-init:
 kind/load/kuma-prometheus-sd:
 	@kind load docker-image $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
+.PHONY: kind/load/kumactl
+kind/load/kumactl:
+	@kind load docker-image $(KUMACTL_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
+
 .PHONY: kind/load/images
-kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd
+kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl
 
 .PHONY: kind/load
-kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd kind/load/images
+kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl kind/load/images
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load
