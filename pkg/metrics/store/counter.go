@@ -92,14 +92,14 @@ func (s *storeCounter) countGlobalScopedResources(resourceCount map[string]uint3
 		if meshScoped(resType) {
 			continue
 		}
-		resList, err := registry.Global().NewList(resType)
+		list, err := registry.Global().NewList(resType)
 		if err != nil {
 			return err
 		}
-		if err := s.resManager.List(context.Background(), resList); err != nil {
+		if err := s.resManager.List(context.Background(), list); err != nil {
 			return err
 		}
-		resourceCount[string(resType)] += uint32(len(resList.GetItems()))
+		resourceCount[string(resType)] += uint32(len(list.GetItems()))
 	}
 	return nil
 }
