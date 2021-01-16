@@ -15,6 +15,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/insights"
+	test_insights "github.com/kumahq/kuma/pkg/insights/test"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
 	store_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -24,22 +25,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
-
-type testEventReader struct {
-	ch chan events.Event
-}
-
-func (t *testEventReader) Recv(stop <-chan struct{}) (events.Event, error) {
-	return <-t.ch, nil
-}
-
-type testEventReaderFactory struct {
-	reader *testEventReader
-}
-
-func (t *testEventReaderFactory) New() events.Listener {
-	return t.reader
-}
 
 var _ = Describe("Counter", func() {
 	var store core_store.ResourceStore
@@ -86,7 +71,7 @@ var _ = Describe("Counter", func() {
 			MinResyncTimeout:   5 * time.Second,
 			MaxResyncTimeout:   1 * time.Minute,
 			ResourceManager:    resManager,
-			EventReaderFactory: &testEventReaderFactory{reader: &testEventReader{ch: eventCh}},
+			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: eventCh}},
 			Tick: func(d time.Duration) (rv <-chan time.Time) {
 				tickMtx.RLock()
 				defer tickMtx.RUnlock()
