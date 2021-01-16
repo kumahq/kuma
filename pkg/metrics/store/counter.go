@@ -42,6 +42,14 @@ func NewStoreCounter(resManager manager.ReadOnlyResourceManager, metrics metrics
 
 func (s *storeCounter) Start(stop <-chan struct{}) error {
 	ticker := time.NewTicker(1 * time.Minute)
+	return s.start(stop, ticker)
+}
+
+func (s *storeCounter) StartWithTicker(stop <-chan struct{}, ticker *time.Ticker) error {
+	return s.start(stop, ticker)
+}
+
+func (s *storeCounter) start(stop <-chan struct{}, ticker *time.Ticker) error {
 	defer ticker.Stop()
 
 	log.Info("starting the resource counter")
