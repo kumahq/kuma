@@ -26,7 +26,7 @@ type deployOptions struct {
 	helmChartPath    *string
 	helmChartVersion string
 	helmOpts         map[string]string
-	noHelmOpts 		 []string
+	noHelmOpts       []string
 	ctlOpts          map[string]string
 	env              map[string]string
 	ingress          bool
