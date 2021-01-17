@@ -19,19 +19,12 @@ var _ = Describe("Test upgrading with Helm chart", func() {
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
-	AfterEach(func() {
-		if ShouldSkipCleanup() {
-			return
-		}
-
-		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
-	})
-
 	AfterSuite(func() {
 		if ShouldSkipCleanup() {
 			return
 		}
 
+		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
