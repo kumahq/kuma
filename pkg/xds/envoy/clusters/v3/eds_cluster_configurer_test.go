@@ -20,6 +20,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
         edsClusterConfig:
           edsConfig:
             ads: {}
+            resourceApiVersion: V3
         name: test:cluster
         type: EDS`
 

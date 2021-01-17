@@ -14,6 +14,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	"github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 
 	. "github.com/onsi/ginkgo"
@@ -80,7 +81,8 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			}
 
 			proxy := &xds.Proxy{
-				Dataplane: dataplane,
+				Dataplane:  dataplane,
+				APIVersion: envoy_common.APIV2,
 			}
 
 			// when

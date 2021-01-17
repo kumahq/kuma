@@ -11,7 +11,7 @@ import (
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
-	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -31,7 +31,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 
 	destinationsPerService := i.destinations(proxy.Routing.TrafficRouteList)
 
-	listener, err := i.generateLDS(proxy.Dataplane, destinationsPerService)
+	listener, err := i.generateLDS(proxy.Dataplane, destinationsPerService, proxy.APIVersion)
 	if err != nil {
 		return nil, err
 	}
@@ -43,13 +43,16 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 
 	services := i.services(proxy)
 
-	cdsResources, err := i.generateCDS(services, destinationsPerService)
+	cdsResources, err := i.generateCDS(services, destinationsPerService, proxy.APIVersion)
 	if err != nil {
 		return nil, err
 	}
 	resources.Add(cdsResources...)
 
-	edsResources := i.generateEDS(proxy, services)
+	edsResources, err := i.generateEDS(proxy, services, proxy.APIVersion)
+	if err != nil {
+		return nil, err
+	}
 	resources.Add(edsResources...)
 
 	return resources, nil
@@ -61,16 +64,20 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 // We take all possible destinations from TrafficRoutes and generate FilterChainsMatcher for each unique destination.
 // This approach has a limitation: additional tags on outbound in Universal mode won't work across different zones.
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
-func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, destinationsPerService map[string][]envoy_common.Tags) (envoy_common.NamedResource, error) {
+func (i IngressGenerator) generateLDS(
+	ingress *core_mesh.DataplaneResource,
+	destinationsPerService map[string][]envoy_common.Tags,
+	apiVersion envoy_common.APIVersion,
+) (envoy_common.NamedResource, error) {
 	inbound := ingress.Spec.Networking.Inbound[0]
 	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), inbound.Port)
-	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(envoy_common.APIV2).
+	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(apiVersion).
 		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port)).
 		Configure(envoy_listeners.TLSInspector())
 
 	if !ingress.Spec.HasAvailableServices() {
 		inboundListenerBuilder = inboundListenerBuilder.
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2)))
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion)))
 	}
 
 	sniUsed := map[string]bool{}
@@ -90,7 +97,7 @@ func (i IngressGenerator) generateLDS(ingress *core_mesh.DataplaneResource, dest
 			}
 			sniUsed[sni] = true
 			inboundListenerBuilder = inboundListenerBuilder.
-				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(envoy_common.APIV2).
+				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion).
 					Configure(envoy_listeners.FilterChainMatch(sni)).
 					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
 						ClusterName: service,
@@ -122,9 +129,13 @@ func (_ IngressGenerator) services(proxy *model.Proxy) []string {
 	return services
 }
 
-func (i IngressGenerator) generateCDS(services []string, destinationsPerService map[string][]envoy_common.Tags) (resources []*model.Resource, _ error) {
+func (i IngressGenerator) generateCDS(
+	services []string,
+	destinationsPerService map[string][]envoy_common.Tags,
+	apiVersion envoy_common.APIVersion,
+) (resources []*model.Resource, _ error) {
 	for _, service := range services {
-		edsCluster, err := envoy_clusters.NewClusterBuilder(envoy_common.APIV2).
+		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
 			Configure(envoy_clusters.EdsCluster(service)).
 			Configure(envoy_clusters.LbSubset(i.lbSubsets(service, destinationsPerService))).
 			Build()
@@ -151,13 +162,21 @@ func (_ IngressGenerator) lbSubsets(service string, destinationsPerService map[s
 	return selectors
 }
 
-func (_ IngressGenerator) generateEDS(proxy *model.Proxy, services []string) (resources []*model.Resource) {
+func (_ IngressGenerator) generateEDS(
+	proxy *model.Proxy,
+	services []string,
+	apiVersion envoy_common.APIVersion,
+) (resources []*model.Resource, err error) {
 	for _, service := range services {
 		endpoints := proxy.Routing.OutboundTargets[service]
+		cla, err := envoy_endpoints.CreateClusterLoadAssignment(service, endpoints, apiVersion)
+		if err != nil {
+			return nil, err
+		}
 		resources = append(resources, &model.Resource{
 			Name:     service,
 			Origin:   OriginIngress,
-			Resource: envoy_endpoints.CreateClusterLoadAssignment(service, endpoints),
+			Resource: cla,
 		})
 	}
 	return

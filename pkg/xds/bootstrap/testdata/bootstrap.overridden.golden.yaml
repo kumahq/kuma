@@ -23,6 +23,7 @@ dynamicResources:
           credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
           statPrefix: ads
           targetUri: localhost:5678
+    transportApiVersion: V2
   cdsConfig:
     ads: {}
   ldsConfig:
@@ -53,7 +54,7 @@ staticResources:
               - endpoint:
                   address:
                     pipe:
-                      path: /tmp/kuma-access-logs-dp-1.default-default.sock
+                      path: /tmp/kuma-al-dp-1.default-default.sock
       name: access_log_sink
       type: STATIC
       upstreamConnectionOptions:

@@ -1,7 +1,6 @@
 package xds_test
 
 import (
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -16,14 +15,14 @@ var _ = Describe("xDS", func() {
 
 		Context("valid input", func() {
 			type testCase struct {
-				node     *envoy_core.Node
+				nodeID   string
 				expected core_xds.ProxyId
 			}
 
 			DescribeTable("should successfully parse",
 				func(given testCase) {
 					// when
-					proxyId, err := core_xds.ParseProxyId(given.node)
+					proxyId, err := core_xds.ParseProxyIdFromString(given.nodeID)
 
 					// then
 					Expect(err).ToNot(HaveOccurred())
@@ -31,17 +30,13 @@ var _ = Describe("xDS", func() {
 					Expect(*proxyId).To(Equal(given.expected))
 				},
 				Entry("mesh and name without namespace", testCase{
-					node: &envoy_core.Node{
-						Id: "demo.example",
-					},
+					nodeID: "demo.example",
 					expected: core_xds.ProxyId{
 						Mesh: "demo", Name: "example",
 					},
 				}),
 				Entry("name with namespace and mesh", testCase{
-					node: &envoy_core.Node{
-						Id: "demo.example.sample",
-					},
+					nodeID: "demo.example.sample",
 					expected: core_xds.ProxyId{
 						Mesh: "demo", Name: "example.sample",
 					},
@@ -51,38 +46,30 @@ var _ = Describe("xDS", func() {
 
 		Context("invalid input", func() {
 			type testCase struct {
-				node        *envoy_core.Node
+				nodeID      string
 				expectedErr interface{}
 			}
 
 			DescribeTable("should fail to parse",
 				func(given testCase) {
 					// when
-					key, err := core_xds.ParseProxyId(given.node)
+					key, err := core_xds.ParseProxyIdFromString(given.nodeID)
 
 					// then
 					Expect(err).To(MatchError(given.expectedErr))
 					// and
 					Expect(key).To(BeNil())
 				},
-				Entry("`nil`", testCase{
-					node:        nil,
-					expectedErr: "Envoy node must not be nil",
-				}),
 				Entry("empty", testCase{
-					node:        &envoy_core.Node{},
+					nodeID:      "",
 					expectedErr: "Envoy ID must not be nil",
 				}),
 				Entry("mesh without name and namespace", testCase{
-					node: &envoy_core.Node{
-						Id: "demo",
-					},
+					nodeID:      "demo",
 					expectedErr: "the name should be provided after the dot",
 				}),
 				Entry("mesh with empty name", testCase{
-					node: &envoy_core.Node{
-						Id: "demo.",
-					},
+					nodeID:      "demo.",
 					expectedErr: "name must not be empty",
 				}),
 			)

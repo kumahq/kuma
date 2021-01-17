@@ -167,6 +167,9 @@ resources:
         edsConfig:
           ads: {}
       http2ProtocolOptions: {}
+      lbPolicy: LEAST_REQUEST
+      leastRequestLbConfig:
+        choiceCount: 4
       name: api-tcp
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -213,6 +216,7 @@ resources:
         edsConfig:
           ads: {}
       http2ProtocolOptions: {}
+      lbPolicy: MAGLEV
       name: backend
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -390,11 +394,11 @@ resources:
                   - name: envoy.filters.http.router
                 routeConfig:
                   name: outbound:api-http
-                  validateClusters: false
                   requestHeadersToAdd:
                     - header:
                         key: x-kuma-tags
                         value: '&kuma.io/service=web&'
+                  validateClusters: false
                   virtualHosts:
                     - domains:
                         - '*'

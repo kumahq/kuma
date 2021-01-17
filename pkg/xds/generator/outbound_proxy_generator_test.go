@@ -13,6 +13,7 @@ import (
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
@@ -167,6 +168,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
+				APIVersion: envoy_common.APIV2,
 				Routing: model.Routing{
 					TrafficRoutes: model.RouteMap{
 						mesh_proto.OutboundInterface{
@@ -179,6 +181,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 										Weight:      100,
 										Destination: mesh_proto.MatchService("api-http"),
 									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+									},
 								},
 							},
 						},
@@ -192,6 +197,13 @@ var _ = Describe("OutboundProxyGenerator", func() {
 										Weight:      100,
 										Destination: mesh_proto.MatchService("api-tcp"),
 									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest_{
+											LeastRequest: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest{
+												ChoiceCount: 4,
+											},
+										},
+									},
 								},
 							},
 						},
@@ -205,6 +217,15 @@ var _ = Describe("OutboundProxyGenerator", func() {
 										Weight:      100,
 										Destination: mesh_proto.MatchService("api-http2"),
 									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RingHash_{
+											RingHash: &mesh_proto.TrafficRoute_LoadBalancer_RingHash{
+												HashFunction: "MURMUR_HASH_2",
+												MinRingSize:  64,
+												MaxRingSize:  1024,
+											},
+										},
+									},
 								},
 							},
 						},
@@ -218,6 +239,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 										Weight:      100,
 										Destination: mesh_proto.MatchService("api-grpc"),
 									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_Random_{},
+									},
 								},
 							},
 						},
@@ -231,6 +255,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 										Weight:      100,
 										Destination: mesh_proto.MatchService("backend"),
 									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_Maglev_{},
+									},
 								},
 							},
 						},
@@ -496,6 +523,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 				Spec: dataplane,
 			},
+			APIVersion: envoy_common.APIV2,
 			Routing: model.Routing{
 				TrafficRoutes: model.RouteMap{
 					mesh_proto.OutboundInterface{

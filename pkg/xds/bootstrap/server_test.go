@@ -35,7 +35,6 @@ var _ = Describe("Bootstrap Server", func() {
 
 	var stop chan struct{}
 	var resManager manager.ResourceManager
-	var config *bootstrap_config.BootstrapParamsConfig
 	var baseUrl string
 	var metrics core_metrics.Metrics
 
@@ -59,9 +58,9 @@ var _ = Describe("Bootstrap Server", func() {
 
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
-		config = bootstrap_config.DefaultBootstrapParamsConfig()
-		config.XdsHost = "localhost"
-		config.XdsPort = 5678
+		config := bootstrap_config.DefaultBootstrapServerConfig()
+		config.Params.XdsHost = "localhost"
+		config.Params.XdsPort = 5678
 
 		port, err := test.GetFreePort()
 		baseUrl = "https://localhost:" + strconv.Itoa(port)

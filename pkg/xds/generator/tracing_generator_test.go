@@ -10,6 +10,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
 	"github.com/kumahq/kuma/pkg/xds/generator"
 
@@ -50,6 +51,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 						Mesh: "demo",
 					},
 				},
+				APIVersion: envoy_common.APIV2,
 			},
 		}),
 	)
@@ -89,6 +91,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 						},
 					},
 				},
+				APIVersion: envoy_common.APIV2,
 				Policies: model.MatchedPolicies{
 					TracingBackend: &mesh_proto.TracingBackend{
 						Name: "zipkin",

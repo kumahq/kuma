@@ -138,9 +138,11 @@ func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xd
 	return &envoy_tls.SdsSecretConfig{
 		Name: name,
 		SdsConfig: &envoy_core.ConfigSource{
+			ResourceApiVersion: envoy_core.ApiVersion_V3,
 			ConfigSourceSpecifier: &envoy_core.ConfigSource_ApiConfigSource{
 				ApiConfigSource: &envoy_core.ApiConfigSource{
-					ApiType: envoy_core.ApiConfigSource_GRPC,
+					ApiType:             envoy_core.ApiConfigSource_GRPC,
+					TransportApiVersion: envoy_core.ApiVersion_V3,
 					GrpcServices: []*envoy_core.GrpcService{
 						{
 							TargetSpecifier: &envoy_core.GrpcService_GoogleGrpc_{

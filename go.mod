@@ -24,8 +24,8 @@ require (
 	github.com/gruntwork-io/terratest v0.27.5
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000 // indirect
-	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000 // indirect
+	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
+	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
 	github.com/lib/pq v1.8.0
 	github.com/miekg/dns v1.1.29
@@ -36,7 +36,7 @@ require (
 	github.com/prometheus/client_golang v1.9.0
 	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.15.0
-	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000 // indirect
+	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
 	github.com/sethvargo/go-retry v0.1.0
 	github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749
 	github.com/shurcooL/vfsgen v0.0.0-20200824052919-0d455de96546 // indirect
@@ -48,14 +48,14 @@ require (
 	go.uber.org/multierr v1.3.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	golang.org/x/tools v0.0.0-20210115202250-e0d201561e39 // indirect
+	golang.org/x/tools v0.0.0-20210111221946-d33bae441459 // indirect
 	google.golang.org/genproto v0.0.0-20201030142918-24207fddd1c3
 	google.golang.org/grpc v1.34.0
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.3.4
-	k8s.io/api v0.18.9
-	k8s.io/apimachinery v0.18.9
+	k8s.io/api v0.18.14
+	k8s.io/apimachinery v0.18.14
 	k8s.io/client-go v10.0.0+incompatible
 	sigs.k8s.io/controller-runtime v0.6.4
 	sigs.k8s.io/testing_frameworks v0.1.2
@@ -67,5 +67,5 @@ replace (
 	github.com/kumahq/kuma/pkg/transparentproxy/istio => ./pkg/transparentproxy/istio
 
 	github.com/prometheus/prometheus => ./vendored/github.com/prometheus/prometheus
-	k8s.io/client-go => k8s.io/client-go v0.18.9
+	k8s.io/client-go => k8s.io/client-go v0.18.14
 )

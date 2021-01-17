@@ -1,7 +1,12 @@
 {
-  "total": 2,
+  "total": 4,
   "items": [
     {
+      "type": "DataplaneOverview",
+      "mesh": "default",
+      "name": "experiment",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2019-07-17T18:08:41Z",
       "dataplane": {
         "networking": {
           "address": "127.0.0.1",
@@ -10,7 +15,7 @@
               "port": 8080,
               "servicePort": 80,
               "tags": {
-                "service": "mobile",
+                "kuma.io/service": "mobile",
                 "version": "v1"
               }
             },
@@ -18,7 +23,7 @@
               "port": 8090,
               "servicePort": 90,
               "tags": {
-                "service": "metrics",
+                "kuma.io/service": "metrics",
                 "version": "v1"
               }
             }
@@ -79,14 +84,14 @@
           "lastCertificateRegeneration": "2019-07-16T19:48:08Z",
           "certificateRegenerations": 10
         }
-      },
-      "mesh": "default",
-      "name": "experiment",
-      "creationTime": "2018-07-17T16:05:36.995Z",
-      "modificationTime": "2019-07-17T18:08:41Z",
-      "type": "DataplaneOverview"
+      }
     },
     {
+      "type": "DataplaneOverview",
+      "mesh": "default",
+      "name": "degraded-dp",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2019-07-17T18:08:41Z",
       "dataplane": {
         "networking": {
           "address": "127.0.0.1",
@@ -95,7 +100,176 @@
               "port": 8080,
               "servicePort": 80,
               "tags": {
-                "service": "example"
+                "kuma.io/service": "example"
+              }
+            },
+            {
+              "port": 9001,
+              "servicePort": 81,
+              "tags": {
+                "kuma.io/service": "example"
+              },
+              "health": {}
+            }
+          ]
+        }
+      },
+      "dataplaneInsight": {
+        "subscriptions": [
+          {
+            "id": "1",
+            "controlPlaneInstanceId": "node-001",
+            "connectTime": "2018-07-17T16:05:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "10",
+                "responsesRejected": "1"
+              }
+            },
+            "version": {
+              "kumaDp": {
+                "version": "1.0.0",
+                "gitTag": "v1.0.0",
+                "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+                "buildDate": "2019-08-07T11:26:06Z"
+              },
+              "envoy": {
+                "version": "1.16.0",
+                "build": "hash/1.16.0/RELEASE"
+              }
+            }
+          },
+          {
+            "id": "2",
+            "controlPlaneInstanceId": "node-002",
+            "connectTime": "2019-07-17T16:05:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "20",
+                "responsesRejected": "2"
+              }
+            },
+            "version": {
+              "kumaDp": {
+                "version": "1.0.2",
+                "gitTag": "v1.0.2",
+                "gitCommit": "9d868cd8681c4021bb4a10bf2306ca613ba4de42",
+                "buildDate": "2020-08-07T11:26:06Z"
+              },
+              "envoy": {
+                "version": "1.16.1",
+                "build": "hash/1.16.1/RELEASE"
+              }
+            }
+          }
+        ],
+        "mTLS": {
+          "certificateExpirationTime": "2020-05-08T08:28:22Z",
+          "lastCertificateRegeneration": "2019-07-16T19:48:08Z",
+          "certificateRegenerations": 10
+        }
+      }
+    },
+    {
+      "type": "DataplaneOverview",
+      "mesh": "default",
+      "name": "offline-dp",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2019-07-17T18:08:41Z",
+      "dataplane": {
+        "networking": {
+          "address": "127.0.0.1",
+          "inbound": [
+            {
+              "port": 8080,
+              "servicePort": 80,
+              "tags": {
+                "kuma.io/service": "example"
+              },
+              "health": {}
+            },
+            {
+              "port": 9001,
+              "servicePort": 81,
+              "tags": {
+                "kuma.io/service": "example"
+              },
+              "health": {}
+            }
+          ]
+        }
+      },
+      "dataplaneInsight": {
+        "subscriptions": [
+          {
+            "id": "1",
+            "controlPlaneInstanceId": "node-001",
+            "connectTime": "2018-07-17T16:05:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "10",
+                "responsesRejected": "1"
+              }
+            },
+            "version": {
+              "kumaDp": {
+                "version": "1.0.0",
+                "gitTag": "v1.0.0",
+                "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+                "buildDate": "2019-08-07T11:26:06Z"
+              },
+              "envoy": {
+                "version": "1.16.0",
+                "build": "hash/1.16.0/RELEASE"
+              }
+            }
+          },
+          {
+            "id": "2",
+            "controlPlaneInstanceId": "node-002",
+            "connectTime": "2019-07-17T16:05:36.995Z",
+            "status": {
+              "total": {
+                "responsesSent": "20",
+                "responsesRejected": "2"
+              }
+            },
+            "version": {
+              "kumaDp": {
+                "version": "1.0.2",
+                "gitTag": "v1.0.2",
+                "gitCommit": "9d868cd8681c4021bb4a10bf2306ca613ba4de42",
+                "buildDate": "2020-08-07T11:26:06Z"
+              },
+              "envoy": {
+                "version": "1.16.1",
+                "build": "hash/1.16.1/RELEASE"
+              }
+            }
+          }
+        ],
+        "mTLS": {
+          "certificateExpirationTime": "2020-05-08T08:28:22Z",
+          "lastCertificateRegeneration": "2019-07-16T19:48:08Z",
+          "certificateRegenerations": 10
+        }
+      }
+    },
+    {
+      "type": "DataplaneOverview",
+      "mesh": "default",
+      "name": "example",
+      "creationTime": "2018-07-17T16:05:36.995Z",
+      "modificationTime": "2019-07-17T18:08:41Z",
+      "dataplane": {
+        "networking": {
+          "address": "127.0.0.1",
+          "inbound": [
+            {
+              "port": 8080,
+              "servicePort": 80,
+              "tags": {
+                "kuma.io/service": "example"
               }
             }
           ]
@@ -116,12 +290,7 @@
             "controlPlaneInstanceId": "node-003"
           }
         ]
-      },
-      "mesh": "default",
-      "name": "example",
-      "creationTime": "2018-07-17T16:05:36.995Z",
-      "modificationTime": "2019-07-17T18:08:41Z",
-      "type": "DataplaneOverview"
+      }
     }
   ],
   "next": null
