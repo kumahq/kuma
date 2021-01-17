@@ -39,7 +39,7 @@ var _ = Describe("Test upgrading with Helm chart", func() {
 		initialChartVersion string
 	}
 
-	FDescribeTable(
+	DescribeTable(
 		"should successfully upgrade Kuma via Helm",
 		func(given testCase) {
 			clusters, err := NewK8sClusters(
