@@ -19,7 +19,7 @@ var _ = Describe("Test upgrading with Helm chart", func() {
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
-	AfterSuite(func() {
+	AfterEach(func() {
 		if ShouldSkipCleanup() {
 			return
 		}
