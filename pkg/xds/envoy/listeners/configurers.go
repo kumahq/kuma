@@ -54,16 +54,18 @@ func OriginalDstForwarder() ListenerBuilderOpt {
 	})
 }
 
-func PrometheusEndpoint(statsName string, path string, clusterName string) FilterChainBuilderOpt {
+func StaticEndpoint(statsName string, path string, rewritePath string, clusterName string) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
-		config.AddV2(&v2.PrometheusEndpointConfigurer{
+		config.AddV2(&v2.StaticEndpointConfigurer{
 			StatsName:   statsName,
 			Path:        path,
+			RewritePath: rewritePath,
 			ClusterName: clusterName,
 		})
-		config.AddV3(&v3.PrometheusEndpointConfigurer{
+		config.AddV3(&v3.StaticEndpointConfigurer{
 			StatsName:   statsName,
 			Path:        path,
+			RewritePath: rewritePath,
 			ClusterName: clusterName,
 		})
 	})
