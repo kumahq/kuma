@@ -136,8 +136,8 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote3...)).
-			Install(EchoServerUniversal("universal", nonDefaultMesh, echoServerToken)).
-			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken)).
+			Install(EchoServerUniversal("universal", nonDefaultMesh, echoServerToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_3)
 		Expect(err).ToNot(HaveOccurred())
@@ -228,7 +228,7 @@ metadata:
 		// Remote 3
 		// universal access remote k8s service
 		stdout, _, err := remote_3.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "localhost:4000")
+			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
@@ -259,7 +259,7 @@ metadata:
 		// universal access remote k8s service
 		Eventually(func() (string, error) {
 			stdout, _, err := remote_3.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "localhost:4000")
+				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 			return stdout, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 
