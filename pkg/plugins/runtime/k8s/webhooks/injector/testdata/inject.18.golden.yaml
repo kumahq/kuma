@@ -79,11 +79,9 @@ spec:
       image: kuma/kuma-sidecar:latest
       imagePullPolicy: IfNotPresent
       livenessProbe:
-        exec:
-          command:
-            - wget
-            - -qO-
-            - http://127.0.0.1:9901/ready
+        httpGet:
+          path: /ready
+          port: 9901
         failureThreshold: 212
         initialDelaySeconds: 260
         periodSeconds: 25
@@ -91,11 +89,9 @@ spec:
         timeoutSeconds: 23
       name: kuma-sidecar
       readinessProbe:
-        exec:
-          command:
-            - wget
-            - -qO-
-            - http://127.0.0.1:9901/ready
+        httpGet:
+          path: /ready
+          port: 9901
         failureThreshold: 112
         initialDelaySeconds: 11
         periodSeconds: 15

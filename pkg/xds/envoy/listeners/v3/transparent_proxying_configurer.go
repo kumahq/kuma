@@ -10,10 +10,6 @@ type TransparentProxyingConfigurer struct {
 }
 
 func (c *TransparentProxyingConfigurer) Configure(l *envoy_listener.Listener) error {
-	// TODO(yskopets): What is the up-to-date alternative ?
-	l.DeprecatedV1 = &envoy_listener.Listener_DeprecatedV1{
-		BindToPort: &wrappers.BoolValue{Value: false},
-	}
-
+	l.BindToPort = &wrappers.BoolValue{Value: false}
 	return nil
 }

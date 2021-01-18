@@ -79,8 +79,8 @@ name: %s
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote1...)).
-			Install(EchoServerUniversal("universal1", nonDefaultMesh, echoServerToken)).
-			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken)).
+			Install(EchoServerUniversal("universal1", nonDefaultMesh, echoServerToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
@@ -95,9 +95,9 @@ name: %s
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote2...)).
-			Install(EchoServerUniversal("universal2", nonDefaultMesh, echoServerToken)).
-			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken)).
-			Install(IngressUniversal("default", ingressToken)).
+			Install(EchoServerUniversal("universal2", nonDefaultMesh, echoServerToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
+			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()
@@ -128,7 +128,7 @@ name: %s
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+					"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 				if err != nil {
 					return "should retry", err
 				}
@@ -142,7 +142,7 @@ name: %s
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
 				stdout, _, err := remote_2.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+					"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 				if err != nil {
 					return "should retry", err
 				}
@@ -160,7 +160,7 @@ name: %s
 		responses := 0
 		for i := 0; i < iterations; i++ {
 			stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			Expect(stdout).To(ContainSubstring("universal"))
@@ -184,7 +184,7 @@ name: %s
 		responses := 0
 		for i := 0; i < iterations; i++ {
 			stdout, _, err := remote_2.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "localhost:4001")
+				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 			Expect(stdout).To(ContainSubstring("universal"))

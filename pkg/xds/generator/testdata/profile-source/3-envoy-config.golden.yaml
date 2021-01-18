@@ -180,9 +180,9 @@ resources:
                   - name: envoy.filters.http.router
                 routeConfig:
                   name: inbound:backend
-                  validateClusters: false
                   requestHeadersToRemove:
                     - x-kuma-tags
+                  validateClusters: false
                   virtualHosts:
                     - domains:
                         - '*'
@@ -231,6 +231,35 @@ resources:
                               targetUri: kuma-system:5677
               requireClientCertificate: true
       name: inbound:192.168.0.1:80
+      trafficDirection: INBOUND
+  - name: kuma:envoy:admin
+    resource:
+      '@type': type.googleapis.com/envoy.api.v2.Listener
+      address:
+        socketAddress:
+          address: 192.168.0.1
+          portValue: 9902
+      filterChains:
+        - filters:
+            - name: envoy.filters.network.http_connection_manager
+              typedConfig:
+                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                httpFilters:
+                  - name: envoy.filters.http.router
+                routeConfig:
+                  validateClusters: false
+                  virtualHosts:
+                    - domains:
+                        - '*'
+                      name: envoy_admin
+                      routes:
+                        - match:
+                            prefix: /ready
+                          route:
+                            cluster: kuma:envoy:admin
+                            prefixRewrite: /ready
+                statPrefix: kuma_envoy_admin
+      name: kuma:envoy:admin
       trafficDirection: INBOUND
   - name: kuma:metrics:prometheus
     resource:
