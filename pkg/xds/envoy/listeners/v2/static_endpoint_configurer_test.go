@@ -1,4 +1,4 @@
-package v3_test
+package v2_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -11,7 +11,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-var _ = Describe("PrometheusEndpointConfigurer", func() {
+var _ = Describe("StaticEndpointConfigurer", func() {
 
 	type testCase struct {
 		listenerName    string
@@ -25,10 +25,10 @@ var _ = Describe("PrometheusEndpointConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy.APIV3).
+			listener, err := NewListenerBuilder(envoy.APIV2).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
-					Configure(PrometheusEndpoint(given.listenerName, given.path, given.clusterName)))).
+				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV2).
+					Configure(StaticEndpoint(given.listenerName, given.path, "/stats/prometheus", given.clusterName)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -56,7 +56,7 @@ var _ = Describe("PrometheusEndpointConfigurer", func() {
             - filters:
               - name: envoy.filters.network.http_connection_manager
                 typedConfig:
-                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                   httpFilters:
                   - name: envoy.filters.http.router
                   routeConfig:

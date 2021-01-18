@@ -68,6 +68,7 @@ var predefinedProfiles = make(map[string]ResourceGenerator)
 
 func NewDefaultProxyProfile() ResourceGenerator {
 	return CompositeResourceGenerator{
+		AdminProxyGenerator{},
 		PrometheusEndpointGenerator{},
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
@@ -80,7 +81,7 @@ func NewDefaultProxyProfile() ResourceGenerator {
 
 func init() {
 	predefinedProfiles[mesh_core.ProfileDefaultProxy] = NewDefaultProxyProfile()
-	predefinedProfiles[IngressProxy] = &IngressGenerator{}
+	predefinedProfiles[IngressProxy] = CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}}
 }
 
 type ProxyTemplateProfileSource struct {
