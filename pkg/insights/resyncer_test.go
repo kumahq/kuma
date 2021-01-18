@@ -59,7 +59,11 @@ var _ = Describe("Insight Persistence", func() {
 
 	BeforeEach(func() {
 		rm = manager.NewResourceManager(memory.NewStore())
+
+		nowMtx.Lock()
 		now = time.Now()
+		nowMtx.Unlock()
+
 		eventCh = make(chan events.Event)
 		stopCh = make(chan struct{})
 
@@ -79,10 +83,10 @@ var _ = Describe("Insight Persistence", func() {
 				return tickCh
 			},
 		})
-		go func() {
+		go func(stopCh chan struct{}) {
 			err := resyncer.Start(stopCh)
 			Expect(err).ToNot(HaveOccurred())
-		}()
+		}(stopCh)
 	})
 
 	It("should sync more often than MaxResyncTimeout", func() {
