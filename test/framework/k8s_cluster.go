@@ -301,6 +301,14 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 		values[opt] = value
 	}
 
+	if opts.cni {
+		values["cni.enabled"] = "true"
+		values["cni.chained"] = "true"
+		values["cni.netDir"] = "/etc/cni/net.d"
+		values["cni.binDir"] = "/opt/cni/bin"
+		values["cni.confName"] = "10-kindnet.conflist"
+	}
+
 	switch mode {
 	case core.Global:
 		values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
