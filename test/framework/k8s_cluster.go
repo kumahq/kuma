@@ -270,6 +270,11 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		argsMap["--cni-conf-name"] = "10-kindnet.conflist"
 	}
 
+	apiVersion := os.Getenv(envAPIVersion)
+	if apiVersion != "" {
+		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + apiVersion
+	}
+
 	for opt, value := range opts.ctlOpts {
 		argsMap[opt] = value
 	}
@@ -305,6 +310,11 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	}
 	for opt, value := range opts.helmOpts {
 		values[opt] = value
+	}
+
+	apiVersion := os.Getenv(envAPIVersion)
+	if apiVersion != "" {
+		values["controlPlane.envVars.KUMA_BOOTSTRAP_SERVER_API_VERSION"] = apiVersion
 	}
 
 	if opts.cni {
