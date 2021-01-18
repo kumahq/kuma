@@ -7,12 +7,13 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/pkg/errors"
+
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
 	kuma_http "github.com/kumahq/kuma/pkg/util/http"
-	"github.com/pkg/errors"
 )
 
 type ServiceOverviewClient interface {
