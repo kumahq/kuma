@@ -30,7 +30,7 @@ var _ = Describe("Test Universal Transparent Proxy deployment", func() {
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_80")
+		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
@@ -56,7 +56,7 @@ var _ = Describe("Test Universal Transparent Proxy deployment", func() {
 				DefaultRetries, DefaultTimeout,
 				func() (string, error) {
 					stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-						"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_80.mesh")
+						"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_8080.mesh")
 					if err != nil {
 						return "should retry", err
 					}

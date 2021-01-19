@@ -32,6 +32,10 @@ func GetPrometheusListenerName() string {
 	return "kuma:metrics:prometheus"
 }
 
+func GetAdminListenerName() string {
+	return "kuma:envoy:admin"
+}
+
 func GetTracingClusterName(backendName string) string {
 	return fmt.Sprintf("tracing:%s", backendName)
 }

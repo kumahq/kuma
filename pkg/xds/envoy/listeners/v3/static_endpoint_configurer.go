@@ -1,25 +1,25 @@
-package v2
+package v3
 
 import (
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
-	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
-	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
+	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
+	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
+	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
-type PrometheusEndpointConfigurer struct {
+type StaticEndpointConfigurer struct {
 	StatsName   string
 	Path        string
 	ClusterName string
+	RewritePath string
 }
 
-var _ FilterChainConfigurer = &PrometheusEndpointConfigurer{}
+var _ FilterChainConfigurer = &StaticEndpointConfigurer{}
 
-func (c *PrometheusEndpointConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+func (c *StaticEndpointConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	config := &envoy_hcm.HttpConnectionManager{
 		StatPrefix: util_xds.SanitizeMetric(c.StatsName),
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
@@ -27,7 +27,7 @@ func (c *PrometheusEndpointConfigurer) Configure(filterChain *envoy_listener.Fil
 			Name: "envoy.filters.http.router",
 		}},
 		RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
-			RouteConfig: &envoy_api.RouteConfiguration{
+			RouteConfig: &envoy_route.RouteConfiguration{
 				VirtualHosts: []*envoy_route.VirtualHost{{
 					Name:    "envoy_admin",
 					Domains: []string{"*"},
@@ -42,7 +42,7 @@ func (c *PrometheusEndpointConfigurer) Configure(filterChain *envoy_listener.Fil
 								ClusterSpecifier: &envoy_route.RouteAction_Cluster{
 									Cluster: c.ClusterName,
 								},
-								PrefixRewrite: "/stats/prometheus", // well-known Admin API endpoint
+								PrefixRewrite: c.RewritePath,
 							},
 						},
 					}},

@@ -14,7 +14,7 @@ func ToDeltaDiscoveryResponse(s ctl_cache.Snapshot) (*v2.DeltaDiscoveryResponse,
 	for _, rs := range s.Resources {
 		for _, name := range sortedResourceNames(rs) {
 			r := rs.Items[name]
-			pbany, err := ptypes.MarshalAny(r)
+			pbany, err := ptypes.MarshalAny(r.Resource)
 			if err != nil {
 				return nil, err
 			}
