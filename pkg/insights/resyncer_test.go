@@ -7,10 +7,6 @@ import (
 	"time"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -18,27 +14,15 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/insights"
+	test_insights "github.com/kumahq/kuma/pkg/insights/test"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/proto"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
-
-type testEventReader struct {
-	ch chan events.Event
-}
-
-func (t *testEventReader) Recv(stop <-chan struct{}) (events.Event, error) {
-	return <-t.ch, nil
-}
-
-type testEventReaderFactory struct {
-	reader *testEventReader
-}
-
-func (t *testEventReaderFactory) New() events.Listener {
-	return t.reader
-}
 
 var _ = Describe("Insight Persistence", func() {
 	var rm manager.ResourceManager
@@ -75,7 +59,7 @@ var _ = Describe("Insight Persistence", func() {
 			MinResyncTimeout:   5 * time.Second,
 			MaxResyncTimeout:   1 * time.Minute,
 			ResourceManager:    rm,
-			EventReaderFactory: &testEventReaderFactory{reader: &testEventReader{ch: eventCh}},
+			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: eventCh}},
 			Tick: func(d time.Duration) (rv <-chan time.Time) {
 				tickMtx.RLock()
 				defer tickMtx.RUnlock()
