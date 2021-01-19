@@ -6,8 +6,6 @@ import (
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
@@ -43,7 +41,7 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 			}
 
 			// also we're checking whether kuma-sidecar container is ready
-			if cs := util_k8s.FindContainerStatus(pod, injector.KumaSidecarContainerName); cs != nil {
+			if cs := util_k8s.FindContainerStatus(pod, util_k8s.KumaSidecarContainerName); cs != nil {
 				if health != nil {
 					health.Ready = health.Ready && cs.Ready
 				} else {

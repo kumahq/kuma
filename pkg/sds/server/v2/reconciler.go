@@ -161,7 +161,7 @@ func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneRes
 }
 
 func (d *DataplaneReconciler) updateInsights(dataplaneId core_model.ResourceKey, snapshot envoy_cache.Snapshot) error {
-	secret := snapshot.Resources[envoy_types.Secret].Items[tls.IdentityCertResource].(*envoy_auth.Secret)
+	secret := snapshot.Resources[envoy_types.Secret].Items[tls.IdentityCertResource].Resource.(*envoy_auth.Secret)
 	certPEM := secret.GetTlsCertificate().CertificateChain.GetInlineBytes()
 	block, _ := pem.Decode(certPEM)
 	cert, err := x509.ParseCertificate(block.Bytes)
