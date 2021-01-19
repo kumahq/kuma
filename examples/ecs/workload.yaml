@@ -36,7 +36,7 @@ Parameters:
     Description: The desired replica count of the workload
   CPAddress:
     Type: String
-    Default: "http://controlplane.kuma.io:5681"
+    Default: "https://controlplane.kuma.io:5678"
     Description: The kuma-cp address
   DPTemplate:
     Type: String
