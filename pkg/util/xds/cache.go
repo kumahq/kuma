@@ -57,6 +57,9 @@ type Snapshot interface {
 	// GetResources selects snapshot resources by type.
 	GetResources(typ string) map[string]envoy_types.Resource
 
+	// GetResourcesAndTtl selects snapshot resources by type, returning the map of resources and the associated TTL.
+	GetResourcesAndTtl(typ string) map[string]envoy_types.ResourceWithTtl
+
 	// GetVersion returns the version for a resource type.
 	GetVersion(typ string) string
 
@@ -99,8 +102,6 @@ type SnapshotCache interface {
 	GetStatusKeys() []string
 }
 
-// The part below is a exact copy of snapshotCache and statusInfo of go-control-plane with exception marked with `Kuma modification start`
-
 type snapshotCache struct {
 	// watchCount is an atomic counter incremented for each watch. This needs to
 	// be the first field in the struct to guarantee that it is 64-bit aligned,
@@ -137,12 +138,88 @@ type snapshotCache struct {
 //
 // Logger is optional.
 func NewSnapshotCache(ads bool, hash envoy_cache.NodeHash, logger envoy_log.Logger) SnapshotCache {
-	return &snapshotCache{
+	return newSnapshotCache(ads, hash, logger)
+}
+
+func newSnapshotCache(ads bool, hash envoy_cache.NodeHash, logger envoy_log.Logger) *snapshotCache {
+	cache := &snapshotCache{
 		log:       logger,
 		ads:       ads,
 		snapshots: make(map[string]Snapshot),
 		status:    make(map[string]*statusInfo),
 		hash:      hash,
+	}
+
+	return cache
+}
+
+// NewSnapshotCacheWithHeartbeating initializes a simple cache that sends periodic heartbeat
+// responses for resources with a TTL.
+//
+// ADS flag forces a delay in responding to streaming requests until all
+// resources are explicitly named in the request. This avoids the problem of a
+// partial request over a single stream for a subset of resources which would
+// require generating a fresh version for acknowledgement. ADS flag requires
+// snapshot consistency. For non-ADS case (and fetch), multiple partial
+// requests are sent across multiple streams and re-using the snapshot version
+// is OK.
+//
+// Logger is optional.
+//
+// The context provides a way to cancel the heartbeating routine, while the heartbeatInterval
+// parameter controls how often heartbeating occurs.
+func NewSnapshotCacheWithHeartbeating(ctx context.Context, ads bool, hash envoy_cache.NodeHash, logger envoy_log.Logger, heartbeatInterval time.Duration) SnapshotCache {
+	cache := newSnapshotCache(ads, hash, logger)
+	go func() {
+		t := time.NewTicker(heartbeatInterval)
+
+		for {
+			select {
+			case <-t.C:
+				cache.mu.Lock()
+				for node := range cache.status {
+					// TODO(snowp): Omit heartbeats if a real response has been sent recently.
+					cache.sendHeartbeats(ctx, node)
+				}
+				cache.mu.Unlock()
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return cache
+}
+
+func (cache *snapshotCache) sendHeartbeats(ctx context.Context, node string) {
+	snapshot := cache.snapshots[node]
+	if info, ok := cache.status[node]; ok {
+		info.mu.Lock()
+		for id, watch := range info.watches {
+			// Respond with the current version regardless of whether the version has changed.
+			version := snapshot.GetVersion(watch.Request.TypeUrl)
+			resources := snapshot.GetResourcesAndTtl(watch.Request.TypeUrl)
+
+			// TODO(snowp): Construct this once per type instead of once per watch.
+			resourcesWithTtl := map[string]envoy_types.ResourceWithTtl{}
+			for k, v := range resources {
+				if v.Ttl != nil {
+					resourcesWithTtl[k] = v
+				}
+			}
+
+			if len(resourcesWithTtl) == 0 {
+				continue
+			}
+			if cache.log != nil {
+				cache.log.Debugf("respond open watch %d%v with heartbeat for version %q", id, watch.Request.ResourceNames, version)
+			}
+
+			cache.respond(watch.Request, watch.Response, resourcesWithTtl, version, true)
+
+			// The watch must be deleted and we must rely on the client to ack this response to create a new watch.
+			delete(info.watches, id)
+		}
+		info.mu.Unlock()
 	}
 }
 
@@ -163,7 +240,8 @@ func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) error {
 				if cache.log != nil {
 					cache.log.Debugf("respond open watch %d%v with new version %q", id, watch.Request.ResourceNames, version)
 				}
-				cache.respond(watch.Request, watch.Response, snapshot.GetResources(watch.Request.TypeUrl), version)
+				resources := snapshot.GetResourcesAndTtl(watch.Request.TypeUrl)
+				cache.respond(watch.Request, watch.Response, resources, version, false)
 
 				// discard the watch
 				delete(info.watches, id)
@@ -206,7 +284,7 @@ func nameSet(names []string) map[string]bool {
 }
 
 // superset checks that all resources are listed in the names set.
-func superset(names map[string]bool, resources map[string]envoy_types.Resource) error {
+func superset(names map[string]bool, resources map[string]envoy_types.ResourceWithTtl) error {
 	for resourceName := range resources {
 		if _, exists := names[resourceName]; !exists {
 			return fmt.Errorf("%q not listed", resourceName)
@@ -258,7 +336,8 @@ func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request) (chan envo
 	}
 
 	// otherwise, the watch may be responded immediately
-	cache.respond(request, value, snapshot.GetResources(request.TypeUrl), version)
+	resources := snapshot.GetResourcesAndTtl(request.TypeUrl)
+	cache.respond(request, value, resources, version, false)
 
 	return value, nil
 }
@@ -283,7 +362,7 @@ func (cache *snapshotCache) cancelWatch(nodeID string, watchID int64) func() {
 
 // Respond to a watch with the snapshot value. The value channel should have capacity not to block.
 // TODO(kuat) do not respond always, see issue https://github.com/envoyproxy/go-control-plane/issues/46
-func (cache *snapshotCache) respond(request *envoy_cache.Request, value chan envoy_cache.Response, resources map[string]envoy_types.Resource, version string) {
+func (cache *snapshotCache) respond(request *envoy_cache.Request, value chan envoy_cache.Response, resources map[string]envoy_types.ResourceWithTtl, version string, heartbeat bool) {
 	// for ADS, the request names must match the snapshot names
 	// if they do not, then the watch is never responded, and it is expected that envoy makes another request
 	if len(request.ResourceNames) != 0 && cache.ads {
@@ -299,11 +378,11 @@ func (cache *snapshotCache) respond(request *envoy_cache.Request, value chan env
 			request.TypeUrl, request.ResourceNames, request.VersionInfo, version)
 	}
 
-	value <- cache.createResponse(request, resources, version)
+	value <- createResponse(request, resources, version, heartbeat)
 }
 
-func (cache *snapshotCache) createResponse(request *envoy_cache.Request, resources map[string]envoy_types.Resource, version string) envoy_cache.Response {
-	filtered := make([]envoy_types.Resource, 0, len(resources))
+func createResponse(request *envoy_cache.Request, resources map[string]envoy_types.ResourceWithTtl, version string, heartbeat bool) envoy_cache.Response {
+	filtered := make([]envoy_types.ResourceWithTtl, 0, len(resources))
 
 	// Reply only with the requested resources. Envoy may ask each resource
 	// individually in a separate stream. It is ok to reply with the same version
@@ -325,6 +404,7 @@ func (cache *snapshotCache) createResponse(request *envoy_cache.Request, resourc
 		Request:   request,
 		Version:   version,
 		Resources: filtered,
+		Heartbeat: heartbeat,
 	}
 }
 
@@ -347,8 +427,8 @@ func (cache *snapshotCache) Fetch(ctx context.Context, request *envoy_cache.Requ
 			return nil, &envoy_types.SkipFetchError{}
 		}
 
-		resources := snapshot.GetResources(request.TypeUrl)
-		out := cache.createResponse(request, resources, version)
+		resources := snapshot.GetResourcesAndTtl(request.TypeUrl)
+		out := createResponse(request, resources, version, false)
 		return out, nil
 	}
 

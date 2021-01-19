@@ -14,6 +14,7 @@ import (
 	"syscall"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -33,10 +34,10 @@ var _ = Describe("run", func() {
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
 		backupBootstrapGenerator = bootstrapGenerator
-		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource, version envoy.EnvoyVersion) ([]byte, error) {
+		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource, _ types.BootstrapVersion, version envoy.EnvoyVersion) ([]byte, types.BootstrapVersion, error) {
 			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
-			return respBytes, nil
+			return respBytes, "", nil
 		}
 	})
 	AfterEach(func() {

@@ -7,6 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	prometheus_client "github.com/prometheus/client_model/go"
+
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	envoy_api_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -203,9 +205,13 @@ var _ = Describe("SDS Server", func() {
 		expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
 		Expect(dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds).To(Equal(expirationSeconds))
 
-		// and metrics are published
-		Expect(test_metrics.FindMetric(metrics, "sds_cert_generation").GetCounter().GetValue()).To(Equal(1.0))
-		Expect(test_metrics.FindMetric(metrics, "sds_generation")).ToNot(BeNil())
+		// and metrics are published (metrics are published async, it does not have to be done before response is sent)
+		Eventually(func() float64 {
+			return test_metrics.FindMetric(metrics, "sds_cert_generation").GetCounter().GetValue()
+		}, "5s").Should(Equal(1.0))
+		Eventually(func() *prometheus_client.Metric {
+			return test_metrics.FindMetric(metrics, "sds_generation")
+		}, "5s").ShouldNot(BeNil())
 
 		close(done)
 	}, 10)
