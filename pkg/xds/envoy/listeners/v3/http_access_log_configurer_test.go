@@ -112,7 +112,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 				}),
 			},
 			expected: `
-            name: outbound:127.0.0.1:27070
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -126,17 +125,20 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                   - name: envoy.access_loggers.file
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                      format: |+
-                        [%START_TIME%] demo "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "backend" "192.168.0.1" "%UPSTREAM_HOST%"
-
+                      logFormat:
+                        textFormatSource:
+                          inlineString: |+
+                            [%START_TIME%] demo "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "backend" "192.168.0.1" "%UPSTREAM_HOST%"
+            
                       path: /tmp/log
                   httpFilters:
                   - name: envoy.filters.http.router
                   statPrefix: backend
+            name: outbound:127.0.0.1:27070
             trafficDirection: OUTBOUND
 `,
 		}),
-		XEntry("basic http_connection_manager with tcp access log", testCase{ // todo
+		Entry("basic http_connection_manager with tcp access log", testCase{
 			listenerName:    "outbound:127.0.0.1:27070",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    27070,
@@ -154,7 +156,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 				}),
 			},
 			expected: `
-            name: outbound:127.0.0.1:27070
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -181,14 +182,15 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                             clusterName: access_log_sink
                         logName: |+
                           127.0.0.1:1234;[%START_TIME%] "%REQ(x-request-id)%" "%REQ(:authority)%" "%REQ(origin)%" "%REQ(content-type)%" "web" "backend" "192.168.0.1:0" "192.168.0.1" "%UPSTREAM_HOST%"
-
+            
                           "%RESP(server):5%" "%TRAILER(grpc-message):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
-
+            
+                        transportApiVersion: V3
                   httpFilters:
                   - name: envoy.filters.http.router
                   statPrefix: backend
-            trafficDirection: OUTBOUND
-`,
+            name: outbound:127.0.0.1:27070
+            trafficDirection: OUTBOUND`,
 		}),
 	)
 })
