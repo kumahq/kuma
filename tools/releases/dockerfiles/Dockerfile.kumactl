@@ -1,38 +1,20 @@
-FROM bitnami/kubectl:1.18.8
+FROM alpine:3.12
 
-USER root
-
-RUN addgroup --system --gid 6789 kumactl \
- && adduser --system --disabled-password --ingroup kumactl --uid 6789 kumactl
-
-# To be sure the build is reproducible every package has set exact version
-# to be installed. If a package has dependencies, they are also explicitly
-# listed and separated by new line and additional indentation.
-RUN apt-get update && \
-  apt-get install \
-    psmisc=23.2-1 \
-    gawk=1:4.2.1+dfsg-1 \
-      libmpfr6=4.0.2-1 \
-      libreadline7=7.0-5 \
-        readline-common=7.0-5 \
-      libsigsegv2=2.12-2
+RUN apk add --no-cache curl
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
+
+COPY --from=bitnami/kubectl:1.18.8 /opt/bitnami/kubectl/bin/kubectl /usr/bin
 
 RUN mkdir /kuma
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/README /kuma
-COPY --chown=kumactl $KUMA_ROOT/tools/releases/templates/install_missing_crds.sh /kuma
-# As the flag `--chmod` is not yet available everywhere we'll temporarily use
-# the instruction below, which should be removed in the future
-RUN chmod 0544 /kuma/install_missing_crds.sh
 
-ENV HOME /home/kumactl
+RUN addgroup -S -g 6789 kumactl \
+ && adduser -S -D -G kumactl -u 6789 kumactl
 
 USER kumactl
-
 WORKDIR /home/kumactl
 
-ENTRYPOINT []
 CMD ["/bin/sh"]

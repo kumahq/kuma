@@ -64,6 +64,27 @@ subjects:
     name: {{ $serviceAccountName }}
     namespace: {{ .Release.Namespace }}
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kuma.name" . }}-install-missing-crds
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": "pre-upgrade"
+    "helm.sh/hook-weight": "-1"
+    "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
+  labels:
+  {{- include "kuma.labels" . | nindent 4 }}
+data:
+  install_missing_crds.sh: |
+    #!/usr/bin/env sh
+
+    missing_crds="$(kumactl install crds --not-installed)"
+
+    if [ -n "${missing_crds}" ]; then
+      echo "${missing_crds}" | kubectl create -f -
+    fi
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -89,5 +110,14 @@ spec:
           command:
             - 'sh'
             - '-c'
-            - '/kuma/install_missing_crds.sh'
+            - '/kuma/scripts/install_missing_crds.sh'
+          volumeMounts:
+            - mountPath: /kuma/scripts
+              name: scripts
+              readOnly: true
+      volumes:
+        - name: scripts
+          configMap:
+            name: {{ include "kuma.name" . }}-install-missing-crds
+            defaultMode: 0755
 {{- end }}
