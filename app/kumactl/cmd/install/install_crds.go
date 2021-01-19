@@ -66,7 +66,7 @@ func newInstallCrdsCmd() *cobra.Command {
 				return errors.Wrap(err, "Failed obtaining CRDs from Kubernetes cluster")
 			}
 
-			installedCrds := filerKumaCrdNames(getCrdNamesFromList(crds))
+			installedCrds := filterKumaCrdNames(getCrdNamesFromList(crds))
 			for _, installedCrdName := range installedCrds {
 				delete(crdsToInstallMap, installedCrdName)
 			}
@@ -93,7 +93,7 @@ func newInstallCrdsCmd() *cobra.Command {
 	return cmd
 }
 
-func filerKumaCrdNames(crdNames []string) []string {
+func filterKumaCrdNames(crdNames []string) []string {
 	var result []string
 
 	for _, name := range crdNames {
