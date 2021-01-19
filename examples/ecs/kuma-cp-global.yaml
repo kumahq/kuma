@@ -173,7 +173,11 @@ Resources:
           Essential: true
           Image: !Ref Image
           PortMappings:
+            - ContainerPort: 5680
+              Protocol: tcp
             - ContainerPort: 5681
+              Protocol: tcp
+            - ContainerPort: 5682
               Protocol: tcp
             - ContainerPort: 5685
               Protocol: tcp
