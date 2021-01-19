@@ -4,8 +4,6 @@ RUN apk add --no-cache curl
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 
-COPY --from=bitnami/kubectl:1.18.8 /opt/bitnami/kubectl/bin/kubectl /usr/bin
-
 RUN mkdir /kuma
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
