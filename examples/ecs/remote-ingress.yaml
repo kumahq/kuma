@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Kuma enabled workload on ECS
+Description: Kuma Multizone Ingress on ECS
 Parameters:
   VPCStackName:
     Type: String
@@ -10,56 +10,40 @@ Parameters:
     Type: String
     Default: "kong-docker-kuma-docker.bintray.io/kuma-dp:1.0.5"
     Description: The name of the kuma-dp docker image
-  WorkloadName:
+  IngressPort:
     Type: String
-    Default: "httpbin"
-    Description: The name of the workload image
-  WorkloadImage:
-    Type: String
-    Default: "kennethreitz/httpbin"
-    Description: The name of the workload image
-  WorkloadProtocol:
-    Type: String
-    Default: "http"
-    Description: The protocol for the workload [tcp|http|http2|grpc]
-  WorkloadPort:
-    Type: String
-    Default: 80
-    Description: The port of the workload service
-  WorkloadManagementPort:
-    Type: String
-    Default: 22
-    Description: The workload management port (e.g. SSH)
+    Default: 10001
   DesiredCount:
     Type: String
     Default: 1
     Description: The desired replica count of the workload
   CPAddress:
     Type: String
-    Default: "https://controlplane.kuma.io:5678"
+    Default: "https://zone-1-controlplane.kuma.io:5678"
     Description: The kuma-cp address
   DPTemplate:
     Type: String
     Default: |
       ---
       type: Dataplane
-      name: "{{ dpname }}"
-      mesh: "{{ mesh }}"
+      name: dp-ingress
+      mesh: default
       networking:
         address: "{{ address }}"
+        ingress:
+          publicAddress: "{{ publicAddress }}"
+          publicPort: "{{ publicPort }}"
         inbound:
-        - port: {{ port }}
-          tags:
-            kuma.io/service: "{{ service }}"
-            kuma.io/protocol: "{{ protocol }}"
-        transparentProxying:
-          redirectPortOutbound: 15001
-          redirectPortInbound: 15006
+          - port: {{ port }}
+            tags:
+              kuma.io/service: ingress
+              kuma.io/protocol: tcp
   DPMesh:
     Type: String
     Default: "default"
     Description: The Mesh of the dataplane
   DPToken:
+    # generated with "wget --header='Content-Type: application/json' --post-data='{\"mesh\": \"default\", \"type\": \"ingress\"}' -qO- http://localhost:5681/tokens"
     Type: String
     Default: ""
     Description: The dataplane token generated from kuma-cp
@@ -73,7 +57,7 @@ Resources:
   # Service Discovery configuration #
   ###################################
 
-  WorkloadTaskExecutionRole:
+  IngressTaskExecutionRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -87,7 +71,7 @@ Resources:
         - arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly
         - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
 
-  WorkloadTaskIamRole:
+  IngressTaskIamRole:
     Type: AWS::IAM::Role
     Properties:
       Path: /
@@ -104,27 +88,6 @@ Resources:
         - arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess
         - arn:aws:iam::aws:policy/AWSAppMeshEnvoyAccess
 
-  DiscoveryServiceApp:
-    Type: AWS::ServiceDiscovery::Service
-    Properties:
-      Description: Discovery Service for App
-      DnsConfig:
-        RoutingPolicy: MULTIVALUE
-        DnsRecords:
-          - TTL: 60
-            Type: A
-          - TTL: 60
-            Type: SRV
-      HealthCheckCustomConfig:
-        FailureThreshold: 1
-      Name: !Ref WorkloadName
-      NamespaceId:
-        Fn::ImportValue:
-          !Join [ ':', [ !Ref 'VPCStackName', 'PrivateNamespace' ] ]
-
-  #########################
-  #       Log Group       #
-  #########################
 
   LogGroup:
     Type: AWS::Logs::LogGroup
@@ -132,93 +95,62 @@ Resources:
       LogGroupName: !Ref AWS::StackName
       RetentionInDays: 7 # days
 
-  #########################
-  #     Security Group    #
-  #########################
+  ############################
+  # Ingress DP configuration #
+  ############################
 
-  WorkloadSecurityGroup:
+  IngressDPSecurityGroup:
     Type: AWS::EC2::SecurityGroup
     Properties:
-      GroupDescription: kuma-cp security group
-      SecurityGroupIngress:
-        - CidrIp: '10.0.0.0/8'
-          IpProtocol: tcp
-          ToPort: !Ref WorkloadPort
-          FromPort: !Ref WorkloadPort
-        - CidrIp: !Ref AllowedCidr
-          IpProtocol: tcp
-          ToPort: !Ref WorkloadManagementPort
-          FromPort: !Ref WorkloadManagementPort
+      GroupDescription: Access to Kuma Ingress DP
       VpcId:
         Fn::ImportValue:
           !Join [ ':', [ !Ref 'VPCStackName', 'VPCId' ] ]
 
-  ##########################
-  # Workload configuration #
-  ##########################
+  IngressDPTcp:
+    Type: AWS::EC2::SecurityGroupIngress
+    Properties:
+      Description: For Ingress DP
+      GroupId: !Ref IngressDPSecurityGroup
+      IpProtocol: tcp
+      CidrIp: 0.0.0.0/0
+      FromPort: !Ref IngressPort
+      ToPort: !Ref IngressPort
 
-  ServiceWorkload:
+  ServiceIngressDP:
     Type: AWS::ECS::Service
     Properties:
       LaunchType: FARGATE
       Cluster:
         Fn::ImportValue:
           !Join [ ':', [ !Ref 'VPCStackName', 'ClusterName' ] ]
-      DesiredCount: !Ref DesiredCount
-      TaskDefinition: !Ref 'TaskDefinitionWorkload'
-      ServiceRegistries:
-        - RegistryArn: !GetAtt DiscoveryServiceApp.Arn
-          Port: !Ref WorkloadPort
+      DesiredCount: 1
+      TaskDefinition: !Ref 'TaskDefinitionIngressDP'
       NetworkConfiguration:
         AwsvpcConfiguration:
           AssignPublicIp: ENABLED
           Subnets:
             - Fn::ImportValue:
                 !Join [ ':', [ !Ref 'VPCStackName', 'PublicSubnet' ] ]
-          SecurityGroups: [ !Ref 'WorkloadSecurityGroup' ]
+          SecurityGroups: [ !Ref 'IngressDPSecurityGroup' ]
 
-  TaskDefinitionWorkload:
+  TaskDefinitionIngressDP:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: !Sub "${WorkloadName}-family"
+      Family: kuma-dp-ingress
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
-      TaskRoleArn: !Ref WorkloadTaskIamRole
-      ExecutionRoleArn: !Ref 'WorkloadTaskExecutionRole'
+      TaskRoleArn: !Ref IngressTaskIamRole
+      ExecutionRoleArn: !Ref 'IngressTaskExecutionRole'
       Cpu: 256
       Memory: 512
-      ProxyConfiguration:
-        Type: APPMESH
-        ContainerName: kuma-dp
-        ProxyConfigurationProperties:
-          - Name: IgnoredUID
-            Value: '5678'
-          - Name: ProxyIngressPort
-            Value: '15006'
-          - Name: ProxyEgressPort
-            Value: '15001'
-          - Name: AppPorts
-            Value: !Ref WorkloadPort
       ContainerDefinitions:
-        - Name: workload
-          Essential: true
-          Image: !Ref WorkloadImage
-          PortMappings:
-            - ContainerPort: !Ref WorkloadPort
-              Protocol: tcp
-            - ContainerPort: !Ref WorkloadManagementPort
-              Protocol: tcp
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref AWS::StackName
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: workload
         - Name: kuma-dp
           Image: !Ref Image
           PortMappings:
-            - ContainerPort: 30001
+            - ContainerPort: !Ref IngressPort
+              Protocol: tcp
           Essential: true
           User: '5678'
           Environment:
@@ -239,13 +171,11 @@ Resources:
                 - "--dataplane-var"
                 - "address=`hostname -i`"
                 - "--dataplane-var"
-                - !Join [ "=", [ "mesh", !Ref DPMesh ] ]
+                - !Join [ "=", [ "port", !Ref IngressPort ] ]
                 - "--dataplane-var"
-                - !Join [ "=", [ "port", !Ref WorkloadPort ] ]
+                - "publicAddress=`hostname -i`" # this might be an LB public IP
                 - "--dataplane-var"
-                - !Join [ "=", [ "service", !Ref WorkloadName ] ]
-                - "--dataplane-var"
-                - !Join [ "=", [ "protocol", !Ref WorkloadProtocol ] ]
+                - !Join [ "=", [ "publicPort", !Ref IngressPort ] ]
           LogConfiguration:
             LogDriver: awslogs
             Options:

@@ -308,6 +308,9 @@ func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
 		return nil, errors.Wrap(err, "could not read certificate")
 	}
 	pemCert, _ := pem.Decode(certBytes)
+	if pemCert == nil {
+		return nil, errors.Wrap(err, "could not parse certificate")
+	}
 	cert, err := x509.ParseCertificate(pemCert.Bytes)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse certificate")
