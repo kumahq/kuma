@@ -43,23 +43,52 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 		return nil, err
 	}
 
-	inbounds, err := dp.Spec.GetNetworking().GetInboundInterfaces()
-	if err != nil {
-		return nil, err
-	}
-
 	var healthChecks []*envoy_service_health.ClusterHealthCheck
-	for _, inbound := range inbounds {
+	for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
+		if inbound.ServiceProbe == nil {
+			continue
+		}
+		serviceProbe := inbound.ServiceProbe
+		intf := dp.Spec.GetNetworking().ToInboundInterface(inbound)
+
+		var timeout *durationpb.Duration
+		if serviceProbe.Timeout == nil {
+			timeout = durationpb.New(g.config.Check.Timeout)
+		} else {
+			timeout = serviceProbe.Timeout
+		}
+
+		var interval *durationpb.Duration
+		if serviceProbe.Timeout == nil {
+			interval = durationpb.New(g.config.Check.Interval)
+		} else {
+			interval = serviceProbe.Interval
+		}
+
+		var healthyThreshold *wrappers.UInt32Value
+		if serviceProbe.HealthyThreshold == nil {
+			healthyThreshold = &wrappers.UInt32Value{Value: g.config.Check.HealthyThreshold}
+		} else {
+			healthyThreshold = serviceProbe.HealthyThreshold
+		}
+
+		var unhealthyThreshold *wrappers.UInt32Value
+		if serviceProbe.UnhealthyThreshold == nil {
+			unhealthyThreshold = &wrappers.UInt32Value{Value: g.config.Check.UnhealthyThreshold}
+		} else {
+			unhealthyThreshold = serviceProbe.UnhealthyThreshold
+		}
+
 		healthChecks = append(healthChecks, &envoy_service_health.ClusterHealthCheck{
-			ClusterName: names.GetLocalClusterName(inbound.WorkloadPort),
+			ClusterName: names.GetLocalClusterName(intf.WorkloadPort),
 			LocalityEndpoints: []*envoy_service_health.LocalityEndpoints{{
 				Endpoints: []*envoy_endpoint.Endpoint{{
 					Address: &envoy_core.Address{
 						Address: &envoy_core.Address_SocketAddress{
 							SocketAddress: &envoy_core.SocketAddress{
-								Address: inbound.WorkloadIP,
+								Address: intf.WorkloadIP,
 								PortSpecifier: &envoy_core.SocketAddress_PortValue{
-									PortValue: inbound.WorkloadPort,
+									PortValue: intf.WorkloadPort,
 								},
 							},
 						},
@@ -68,11 +97,11 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 			}},
 			HealthChecks: []*envoy_core.HealthCheck{
 				{
-					Timeout:            durationpb.New(g.config.Check.Timeout),
-					Interval:           durationpb.New(g.config.Check.Interval),
+					Timeout:            timeout,
+					Interval:           interval,
+					HealthyThreshold:   healthyThreshold,
+					UnhealthyThreshold: unhealthyThreshold,
 					NoTrafficInterval:  durationpb.New(g.config.Check.NoTrafficInterval),
-					HealthyThreshold:   &wrappers.UInt32Value{Value: g.config.Check.HealthyThreshold},
-					UnhealthyThreshold: &wrappers.UInt32Value{Value: g.config.Check.UnhealthyThreshold},
 					HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
 						TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
 					},

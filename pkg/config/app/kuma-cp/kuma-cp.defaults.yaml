@@ -351,6 +351,8 @@ dpServer:
     enabled: true # ENV: KUMA_DP_SERVER_HDS_ENABLED
     # Interval for Envoy to send statuses for HealthChecks
     interval: 1s # ENV: KUMA_DP_SERVER_HDS_INTERVAL
+    # RefreshInterval is an interval for re-genarting configuration for Dataplanes connected to the Control Plane
+    refreshInterval: 1s # ENV: KUMA_DP_SERVER_HDS_REFRESH_INTERVAL
     # Check defines a HealthCheck configuration
     check:
       # Timeout is a time to wait for a health check response. If the timeout is reached the

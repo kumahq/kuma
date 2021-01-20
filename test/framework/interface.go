@@ -29,6 +29,7 @@ type deployOptions struct {
 	ingress          bool
 	cni              bool
 	cpReplicas       int
+	proxyOnly        bool
 
 	// app specific
 	namespace   string
@@ -40,6 +41,12 @@ type deployOptions struct {
 }
 
 type DeployOptionsFunc func(*deployOptions)
+
+func ProxyOnly() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.proxyOnly = true
+	}
+}
 
 func WithGlobalAddress(address string) DeployOptionsFunc {
 	return func(o *deployOptions) {

@@ -71,8 +71,9 @@ func DefaultDpServerConfig() *DpServerConfig {
 
 func DefaultHdsConfig() *HdsConfig {
 	return &HdsConfig{
-		Enabled:  true,
-		Interval: 1 * time.Second,
+		Enabled:         true,
+		Interval:        1 * time.Second,
+		RefreshInterval: 1 * time.Second,
 		Check: &HdsCheck{
 			Timeout:            2 * time.Second,
 			Interval:           1 * time.Second,
@@ -89,6 +90,8 @@ type HdsConfig struct {
 	Enabled bool `yaml:"enabled" envconfig:"kuma_dp_server_hds_enabled"`
 	// Interval for Envoy to send statuses for HealthChecks
 	Interval time.Duration `yaml:"interval" envconfig:"kuma_dp_server_hds_interval"`
+	// RefreshInterval is an interval for re-genarting configuration for Dataplanes connected to the Control Plane
+	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_dp_server_hds_refresh_interval"`
 	// Check defines a HealthCheck configuration
 	Check *HdsCheck `yaml:"check"`
 }

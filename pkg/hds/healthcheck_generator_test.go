@@ -67,6 +67,8 @@ networking:
     - port: 9000
       serviceAddress: 192.168.0.1
       servicePort: 80
+      serviceProbe: 
+        tcp: {}
       tags:
         kuma.io/service: backend
 `,

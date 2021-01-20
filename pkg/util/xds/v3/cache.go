@@ -222,7 +222,10 @@ func (cache *snapshotCache) CreateWatch(request *envoy_cache.Request) (chan envo
 	value := make(chan envoy_cache.Response, 1)
 
 	snapshot, exists := cache.snapshots[nodeID]
-	version := snapshot.GetVersion(request.TypeUrl)
+	version := ""
+	if exists {
+		version = snapshot.GetVersion(request.TypeUrl)
+	}
 
 	// if the requested version is up-to-date or missing a response, leave an open watch
 	if !exists || request.VersionInfo == version {

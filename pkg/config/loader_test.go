@@ -216,6 +216,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Port).To(Equal(9876))
 			Expect(cfg.DpServer.Hds.Enabled).To(BeFalse())
 			Expect(cfg.DpServer.Hds.Interval).To(Equal(11 * time.Second))
+			Expect(cfg.DpServer.Hds.RefreshInterval).To(Equal(12 * time.Second))
 			Expect(cfg.DpServer.Hds.Check.Timeout).To(Equal(5 * time.Second))
 			Expect(cfg.DpServer.Hds.Check.Interval).To(Equal(6 * time.Second))
 			Expect(cfg.DpServer.Hds.Check.NoTrafficInterval).To(Equal(7 * time.Second))
@@ -394,6 +395,7 @@ dpServer:
   hds:
     enabled: false
     interval: 11s
+    refreshInterval: 12s
     check:
       timeout: 5s
       interval: 6s
@@ -517,6 +519,7 @@ sdsServer:
 				"KUMA_DP_SERVER_PORT":                                                                      "9876",
 				"KUMA_DP_SERVER_HDS_ENABLED":                                                               "false",
 				"KUMA_DP_SERVER_HDS_INTERVAL":                                                              "11s",
+				"KUMA_DP_SERVER_HDS_REFRESH_INTERVAL":                                                      "12s",
 				"KUMA_DP_SERVER_HDS_CHECK_TIMEOUT":                                                         "5s",
 				"KUMA_DP_SERVER_HDS_CHECK_INTERVAL":                                                        "6s",
 				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",

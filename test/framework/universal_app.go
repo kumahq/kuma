@@ -51,6 +51,8 @@ networking:
   inbound:
   - port: %s
     servicePort: %s
+    serviceProbe:
+      tcp: {}
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: http
@@ -81,6 +83,8 @@ networking:
   inbound:
   - port: %s
     servicePort: %s
+    serviceProbe:
+      tcp: {}
     tags:
       kuma.io/service: demo-client
   outbound:

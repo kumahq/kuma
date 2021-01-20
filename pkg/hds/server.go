@@ -8,12 +8,11 @@ import (
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/ptypes"
+	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-
-	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 )
 
 // inspired by https://github.com/envoyproxy/go-control-plane/blob/master/pkg/server/sotw/v3/server.go
@@ -41,9 +40,17 @@ type server struct {
 	ctx         context.Context
 	callbacks   Callbacks
 	cache       cache.Cache
+}
 
+type watches struct {
 	healthChecks       chan cache.Response
 	healthChecksCancel func()
+}
+
+func (values *watches) Cancel() {
+	if values.healthChecksCancel != nil {
+		values.healthChecksCancel()
+	}
 }
 
 func NewServer(ctx context.Context, config cache.Cache, callbacks Callbacks) envoy_service_health.HealthDiscoveryServiceServer {
@@ -89,6 +96,10 @@ func (s *server) StreamHandler(stream Stream) error {
 
 func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse) error {
 	streamID := atomic.AddInt64(&s.streamCount, 1)
+	lastVersion := ""
+
+	var values watches
+	defer values.Cancel()
 
 	send := func(resp cache.Response) error {
 		if resp == nil {
@@ -107,6 +118,10 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 		if err := ptypes.UnmarshalAny(out.Resources[0], hcs); err != nil {
 			return err
 		}
+		lastVersion, err = resp.GetVersion()
+		if err != nil {
+			return err
+		}
 		return stream.Send(hcs)
 	}
 
@@ -115,13 +130,22 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 		select {
 		case <-s.ctx.Done():
 			return nil
-		case resp, more := <-s.healthChecks:
+		case resp, more := <-values.healthChecks:
 			if !more {
 				return status.Error(codes.Unavailable, "healthChecks watch failed")
 			}
 			if err := send(resp); err != nil {
 				return err
 			}
+			if values.healthChecksCancel != nil {
+				values.healthChecksCancel()
+			}
+			values.healthChecks, values.healthChecksCancel = s.cache.CreateWatch(&cache.Request{
+				Node:          node,
+				TypeUrl:       envoy_cache.HealthCheckSpecifierType,
+				ResourceNames: []string{"hcs"},
+				VersionInfo:   lastVersion,
+			})
 		case reqOrResp, more := <-reqOrRespCh:
 			if !more {
 				return nil
@@ -135,7 +159,6 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 				} else {
 					req.Node = node
 				}
-
 				if s.callbacks != nil {
 					if err := s.callbacks.OnHealthCheckRequest(streamID, req); err != nil {
 						return err
@@ -149,14 +172,14 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 					}
 				}
 			}
-
-			if s.healthChecksCancel != nil {
-				s.healthChecksCancel()
+			if values.healthChecksCancel != nil {
+				values.healthChecksCancel()
 			}
-			s.healthChecks, s.healthChecksCancel = s.cache.CreateWatch(&cache.Request{
+			values.healthChecks, values.healthChecksCancel = s.cache.CreateWatch(&cache.Request{
 				Node:          node,
 				TypeUrl:       envoy_cache.HealthCheckSpecifierType,
 				ResourceNames: []string{"hcs"},
+				VersionInfo:   lastVersion,
 			})
 		}
 	}

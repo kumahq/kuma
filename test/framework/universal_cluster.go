@@ -200,10 +200,12 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		return err
 	}
 
-	app.CreateMainApp([]string{}, args)
-	err = app.mainApp.Start()
-	if err != nil {
-		return err
+	if !opts.proxyOnly {
+		app.CreateMainApp([]string{}, args)
+		err = app.mainApp.Start()
+		if err != nil {
+			return err
+		}
 	}
 
 	c.apps[appname] = app
