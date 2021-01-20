@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Kuma Control Plane on ECS
+Description: Kuma Global Control Plane on ECS
 Parameters:
   VPCStackName:
     Type: String

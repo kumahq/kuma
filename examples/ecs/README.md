@@ -49,7 +49,7 @@ aws cloudformation deploy \
 
 ### Remote
 
-Setting up a remote `kuma-cp` is a two step process. First, deploy the kuma-cp itself:
+Setting up a remote `kuma-cp` is a three step process. First, deploy the kuma-cp itself:
 
 ```bash
 aws cloudformation deploy \
@@ -59,12 +59,31 @@ aws cloudformation deploy \
 ```
 
 
-## OPTIONAL: Configure `kumactl` to access the API 
+#### OPTIONAL: Configure `kumactl` to access the API 
 Find the public IP address fo the remote or standalone `kuma-cp` and use it in the command below.
 
 ```bash
 export PUBLIC_IP=<ip address>
 kumactl config control-planes add --name=ecs --address=http://$PUBLIC_IP:5681 --overwrite
+```
+
+### Install the Zone Ingress
+
+For cross-zone communication Kuma needs the Ingress DP deployed. As every dataplane (see details in the `workload` chapter below) it needs a dataplane token generated 
+
+```shell
+ssh root@<kuma-cp-remote-ip> "wget --header='Content-Type: application/json' --post-data='{\"mesh\": \"default\", \"type\": \"ingress\"}' -qO- http://localhost:5681/tokens"
+```
+
+Then simply deploy the ingress itself:
+
+```shell
+aws cloudformation deploy \
+    --capabilities CAPABILITY_IAM \
+    --stack-name ingress \
+    --template-file remote-ingress.yaml \
+    --parameter-overrides \
+      DPToken="<DP_TOKEN_VALUE>"
 ```
 
 ### Install the Kuma DNS
@@ -104,6 +123,7 @@ on port `5682` as well as client ceritificate setup for authentication. The full
 [User to control plane communication](https://kuma.io/docs/1.0.5/documentation/security/#user-to-control-plane-communication)
 
 #### Standalone
+
 ```bash
 aws cloudformation deploy \
     --capabilities CAPABILITY_IAM \
@@ -115,6 +135,7 @@ aws cloudformation deploy \
 ```
 
 #### Remote
+
 ```bash
 aws cloudformation deploy \
     --capabilities CAPABILITY_IAM \
