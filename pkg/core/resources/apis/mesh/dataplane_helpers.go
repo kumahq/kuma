@@ -20,6 +20,8 @@ const (
 	ProtocolHTTP2   = "http2"
 	ProtocolGRPC    = "grpc"
 	ProtocolKafka   = "kafka"
+
+	TCPPortReserved = 49151 // IANA Reserved
 )
 
 func ParseProtocol(tag string) Protocol {

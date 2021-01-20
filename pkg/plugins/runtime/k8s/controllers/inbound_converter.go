@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -26,7 +27,7 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 				continue
 			}
 
-			tags := InboundTagsFor(zone, pod, svc, &svcPort)
+			tags := InboundTagsForService(zone, pod, svc, &svcPort)
 			var health *mesh_proto.Dataplane_Networking_Inbound_Health
 
 			// if container is not equal nil then port is explicitly defined as containerPort so we're able
@@ -58,20 +59,50 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 			})
 		}
 	}
+
 	if len(ifaces) == 0 {
-		// Notice that here we return an error immediately
-		// instead of leaving Dataplane validation up to a ValidatingAdmissionWebHook.
-		// We do it this way in order to provide the most descriptive error message.
-		cause := "However, there are no Services that select this Pod."
 		if len(services) > 0 {
-			cause = "However, this Pod doesn't have any container ports that would satisfy matching Service(s)."
+			// Notice that here we return an error immediately
+			// instead of leaving Dataplane validation up to a ValidatingAdmissionWebHook.
+			// We do it this way in order to provide the most descriptive error message.
+			return nil, errors.Errorf("Kuma requires every Pod in a Mesh to be a part of at least one Service. However, this Pod doesn't have any container ports that would satisfy matching Service(s).")
 		}
-		return nil, errors.Errorf("Kuma requires every Pod in a Mesh to be a part of at least one Service. %s", cause)
+
+		// The Pod does not have any services associated with it, just get the data from the Pod itself
+		tags := InboundTagsForPod(zone, pod)
+		var health *mesh_proto.Dataplane_Networking_Inbound_Health
+
+		for _, container := range pod.Spec.Containers {
+			if container.Name != util_k8s.KumaSidecarContainerName {
+				if cs := util_k8s.FindContainerStatus(pod, container.Name); cs != nil {
+					health = &mesh_proto.Dataplane_Networking_Inbound_Health{
+						Ready: cs.Ready,
+					}
+				}
+			}
+		}
+
+		// also we're checking whether kuma-sidecar container is ready
+		if cs := util_k8s.FindContainerStatus(pod, util_k8s.KumaSidecarContainerName); cs != nil {
+			if health != nil {
+				health.Ready = health.Ready && cs.Ready
+			} else {
+				health = &mesh_proto.Dataplane_Networking_Inbound_Health{
+					Ready: cs.Ready,
+				}
+			}
+		}
+
+		ifaces = append(ifaces, &mesh_proto.Dataplane_Networking_Inbound{
+			Port:   mesh_core.TCPPortReserved,
+			Tags:   tags,
+			Health: health,
+		})
 	}
 	return ifaces, nil
 }
 
-func InboundTagsFor(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort) map[string]string {
+func InboundTagsForService(zone string, pod *kube_core.Pod, svc *kube_core.Service, svcPort *kube_core.ServicePort) map[string]string {
 	tags := util_k8s.CopyStringMap(pod.Labels)
 	for key, value := range tags {
 		if value == "" {
@@ -109,4 +140,34 @@ func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) stri
 	// we still want Dataplane to have a `protocol: <value as is>` tag in order to make it clear
 	// to a user that at least `<port>.service.kuma.io/protocol` has an effect
 	return protocolValue
+}
+
+func InboundTagsForPod(zone string, pod *kube_core.Pod) map[string]string {
+	tags := util_k8s.CopyStringMap(pod.Labels)
+	for key, value := range tags {
+		if value == "" {
+			delete(tags, key)
+		}
+	}
+	if tags == nil {
+		tags = make(map[string]string)
+	}
+	tags[mesh_proto.ServiceTag] = fmt.Sprintf("%s_%s_svc", nameFromPod(pod), pod.Namespace)
+	if zone != "" {
+		tags[mesh_proto.ZoneTag] = zone
+	}
+	tags[mesh_proto.ProtocolTag] = mesh_core.ProtocolTCP
+	tags[mesh_proto.InstanceTag] = pod.Name
+
+	return tags
+}
+
+func nameFromPod(pod *kube_core.Pod) string {
+	// the name is in format <name>-<replica set id>-<pod id>
+	split := strings.Split(pod.Name, "-")
+	if len(split) > 2 {
+		split = split[:len(split)-2]
+	}
+
+	return strings.Join(split, "-")
 }
