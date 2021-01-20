@@ -42,7 +42,7 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 			--name "$(KIND_CLUSTER_NAME)" \
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
 			--kubeconfig $(KIND_KUBECONFIG) \
-			--wait 120s && \
+			--quiet --wait 120s && \
 		KUBECONFIG=$(KIND_KUBECONFIG) kubectl scale deployment --replicas 1 coredns --namespace kube-system && \
 		until \
 			KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
