@@ -90,5 +90,17 @@ var _ = Describe("kumactl install metrics", func() {
 			},
 			goldenFile: "install-metrics.overrides.golden.yaml",
 		}),
+		Entry("should generate Kubernetes resources without prometheus", testCase{
+			extraArgs: []string{
+				"--without-prometheus",
+			},
+			goldenFile: "install-metrics.no-prometheus.golden.yaml",
+		}),
+		Entry("should generate Kubernetes resources without grafana", testCase{
+			extraArgs: []string{
+				"--without-grafana",
+			},
+			goldenFile: "install-metrics.no-grafana.golden.yaml",
+		}),
 	)
 })
