@@ -1,12 +1,11 @@
 package e2e_test
 
 import (
-	"time"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Test application HealthCheck on Universal", func() {
@@ -45,7 +44,6 @@ var _ = Describe("Test application HealthCheck on Universal", func() {
 	})
 
 	It("should update dataplane.inbound.health", func() {
-		<-time.After(5 * time.Second)
 		Eventually(func() (string, error) {
 			output, err := cluster.GetKumactlOptions().RunKumactlAndGetOutputV(Verbose, "get", "dataplane", "dp-echo-server", "-oyaml")
 			if err != nil {

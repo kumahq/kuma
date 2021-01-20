@@ -7,9 +7,10 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
+	"github.com/pkg/errors"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/watchdog"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"

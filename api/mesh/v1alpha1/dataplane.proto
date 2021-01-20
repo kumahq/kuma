@@ -89,7 +89,8 @@ message Dataplane {
         // unhealthy.
         google.protobuf.UInt32Value unhealthy_threshold = 3;
 
-        // Number of consecutive healthy checks before considering a host healthy.
+        // Number of consecutive healthy checks before considering a host
+        // healthy.
         google.protobuf.UInt32Value healthy_threshold = 4;
 
         message Tcp {}

@@ -8,11 +8,12 @@ import (
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	"github.com/golang/protobuf/ptypes"
-	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+
+	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 )
 
 // inspired by https://github.com/envoyproxy/go-control-plane/blob/master/pkg/server/sotw/v3/server.go
