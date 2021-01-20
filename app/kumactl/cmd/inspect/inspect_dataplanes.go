@@ -116,7 +116,7 @@ func printDataplaneOverviews(now time.Time, dataplaneOverviews *mesh_core.Datapl
 					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
 					dataplane.TagSet().String(),          // TAGS
-					string(status),                       // STATUS
+					status.String(),                      // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO
 					table.Number(totalResponsesSent),     // TOTAL UPDATES

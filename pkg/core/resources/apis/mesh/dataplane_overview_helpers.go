@@ -8,6 +8,10 @@ import (
 
 type Status string
 
+func (s Status) String() string {
+	return string(s)
+}
+
 const (
 	Online            = Status("Online")
 	Offline           = Status("Offline")
