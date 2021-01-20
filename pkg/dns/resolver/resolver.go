@@ -1,6 +1,7 @@
 package resolver
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/miekg/dns"
@@ -125,7 +126,10 @@ func (s *dnsResolver) serviceFromName(name string) (string, error) {
 		return "", errors.Errorf("wrong DNS name: %s", name)
 	}
 
-	service := split[0]
+	// If it terminates with the domain we remove it.
+	if split[len(split)-1] == s.domain {
+		split = split[0 : len(split)-1]
+	}
 
-	return service, nil
+	return strings.Join(split, "."), nil
 }
