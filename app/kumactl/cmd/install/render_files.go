@@ -11,19 +11,29 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
 
+type templateFilter interface {
+	Filter(name string) bool
+}
+
 func renderFiles(templates []data.File, args interface{}, newRenderer func(data.File) (templateRenderer, error)) ([]data.File, error) {
+	return renderFilesWithFilter(templates, args, newRenderer, NoneFilter{})
+}
+
+func renderFilesWithFilter(templates []data.File, args interface{}, newRenderer func(data.File) (templateRenderer, error), filter templateFilter) ([]data.File, error) {
 	renderedFiles := make([]data.File, len(templates))
 
 	for i, template := range templates {
-		renderer, err := newRenderer(template)
-		if err != nil {
-			return nil, err
+		if filter.Filter(template.FullPath) {
+			renderer, err := newRenderer(template)
+			if err != nil {
+				return nil, err
+			}
+			var buf bytes.Buffer
+			if err := renderer.Execute(&buf, args); err != nil {
+				return nil, err
+			}
+			renderedFiles[i].Data = buf.Bytes()
 		}
-		var buf bytes.Buffer
-		if err := renderer.Execute(&buf, args); err != nil {
-			return nil, err
-		}
-		renderedFiles[i].Data = buf.Bytes()
 	}
 
 	return renderedFiles, nil
@@ -39,4 +49,26 @@ func simpleTemplateRenderer(text data.File) (templateRenderer, error) {
 		return nil, errors.Wrap(err, "Failed to parse k8s resource template")
 	}
 	return tmpl, nil
+}
+
+// Template filters
+
+type ExcludePrefixesFilter struct {
+	Prefixes []string
+}
+
+func (f ExcludePrefixesFilter) Filter(name string) bool {
+	for _, prefix := range f.Prefixes {
+		if len(name) > len(prefix) && name[:len(prefix)] == prefix {
+			return false
+		}
+	}
+	return true
+}
+
+type NoneFilter struct {
+}
+
+func (f NoneFilter) Filter(name string) bool {
+	return true
 }
