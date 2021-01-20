@@ -25,6 +25,7 @@ type RootRuntime struct {
 	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewZoneOverviewClient      func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ZoneOverviewClient, error)
+	NewServiceOverviewClient   func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ServiceOverviewClient, error)
 	NewDataplaneTokenClient    func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error)
 	NewAPIServerClient         func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
 }
@@ -41,6 +42,7 @@ func DefaultRootContext() *RootContext {
 			NewResourceStore:           kumactl_resources.NewResourceStore,
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewZoneOverviewClient:      kumactl_resources.NewZoneOverviewClient,
+			NewServiceOverviewClient:   kumactl_resources.NewServiceOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
 			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
 		},
@@ -119,6 +121,14 @@ func (rc *RootContext) CurrentZoneOverviewClient() (kumactl_resources.ZoneOvervi
 		return nil, err
 	}
 	return rc.Runtime.NewZoneOverviewClient(controlPlane.Coordinates.ApiServer)
+}
+
+func (rc *RootContext) CurrentServiceOverviewClient() (kumactl_resources.ServiceOverviewClient, error) {
+	controlPlane, err := rc.CurrentControlPlane()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewServiceOverviewClient(controlPlane.Coordinates.ApiServer)
 }
 
 func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {

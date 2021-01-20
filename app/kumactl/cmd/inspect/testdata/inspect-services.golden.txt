@@ -1,0 +1,4 @@
+SERVICE   STATUS               DATAPLANES
+backend   Partially degraded   5/10
+web       Online               20/20
+orders    Offline              0/5
