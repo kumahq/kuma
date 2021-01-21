@@ -5075,7 +5075,7 @@ data:
         },
         {
           "collapsed": false,
-          "datasource": null,
+          "datasource": "Prometheus",
           "gridPos": {
             "h": 1,
             "w": 24,

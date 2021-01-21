@@ -87,12 +87,12 @@ var _ = Describe("bootstrapGenerator", func() {
 		request                  types.BootstrapRequest
 		expectedConfigFile       string
 		expectedBootstrapVersion types.BootstrapVersion
-		universal                bool
+		hdsEnabled               bool
 	}
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled, given.universal)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled, given.hdsEnabled)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -127,7 +127,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.default-config-minimal-request.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV2,
-			universal:                true,
+			hdsEnabled:               true,
 		}),
 		Entry("default config", testCase{
 			dpAuthEnabled: true,
@@ -147,7 +147,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.default-config.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV3,
-			universal:                true,
+			hdsEnabled:               true,
 		}),
 		Entry("custom config with minimal request", testCase{
 			dpAuthEnabled: false,
@@ -172,7 +172,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.custom-config-minimal-request.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV2,
-			universal:                true,
+			hdsEnabled:               true,
 		}),
 		Entry("custom config", testCase{
 			dpAuthEnabled: true,
@@ -219,7 +219,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.custom-config.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV2,
-			universal:                true,
+			hdsEnabled:               true,
 		}),
 		Entry("default config, kubernetes", testCase{
 			dpAuthEnabled: true,
@@ -239,7 +239,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.default-config.kubernetes.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV3,
-			universal:                false,
+			hdsEnabled:               false,
 		}),
 	)
 

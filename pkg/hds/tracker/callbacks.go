@@ -17,14 +17,13 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/watchdog"
 
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
-	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -65,23 +64,19 @@ func NewCallbacks(
 		reconciler: &reconciler{
 			cache:     cache,
 			hasher:    hasher,
-			versioner: envoy_cache.SnapshotAutoVersioner{UUID: core.NewUUID},
+			versioner: util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID},
 			generator: NewSnapshotGenerator(readOnlyResourceManager, config),
 		},
 	}
 }
 
 func (t *tracker) OnStreamOpen(ctx context.Context, streamID int64) error {
-	t.metrics.StreamsActiveMux.Lock()
-	defer t.metrics.StreamsActiveMux.Unlock()
-	t.metrics.StreamsActive++
+	t.metrics.StreamsActiveInc()
 	return nil
 }
 
 func (t *tracker) OnStreamClosed(streamID xds.StreamID) {
-	t.metrics.StreamsActiveMux.Lock()
-	t.metrics.StreamsActive--
-	t.metrics.StreamsActiveMux.Unlock()
+	t.metrics.StreamsActiveDec()
 
 	t.Lock()
 	defer t.Unlock()
@@ -201,7 +196,7 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, port uint32, ready bool
 			continue
 		}
 		if inbound.Health == nil || inbound.Health.Ready != ready {
-			inbound.Health = &v1alpha1.Dataplane_Networking_Inbound_Health{
+			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{
 				Ready: ready,
 			}
 			changed = true

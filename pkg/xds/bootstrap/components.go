@@ -3,7 +3,6 @@ package bootstrap
 import (
 	"net/http"
 
-	"github.com/kumahq/kuma/pkg/config/core"
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 )
@@ -14,7 +13,7 @@ func RegisterBootstrap(rt core_runtime.Runtime, mux *http.ServeMux) error {
 		rt.Config().BootstrapServer,
 		rt.Config().DpServer.TlsCertFile,
 		rt.Config().DpServer.Auth.Type != dp_server.DpServerAuthNone,
-		rt.Config().Environment == core.UniversalEnvironment,
+		rt.Config().DpServer.Hds.Enabled,
 	)
 	if err != nil {
 		return err

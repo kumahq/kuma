@@ -12,7 +12,7 @@ type reconciler struct {
 	hasher    util_xds_v3.NodeHash
 	cache     util_xds_v3.SnapshotCache
 	generator *SnapshotGenerator
-	versioner cache.SnapshotVersioner
+	versioner util_xds_v3.SnapshotVersioner
 }
 
 func (r *reconciler) Reconcile(node *envoy_config_core_v3.Node) error {

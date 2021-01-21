@@ -220,7 +220,7 @@ var _ = Describe("Config WS", func() {
               "type": ""
             },
             "hds": {
-              "check": {
+              "checkDefaults": {
                 "healthyThreshold": 1,
                 "interval": "1s",
                 "noTrafficInterval": "1s",

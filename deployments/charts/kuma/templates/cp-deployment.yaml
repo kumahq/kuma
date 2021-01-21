@@ -51,6 +51,8 @@ spec:
             {{- end }}
             - name: KUMA_API_SERVER_READ_ONLY
               value: "true"
+            - name: KUMA_DP_SERVER_HDS_ENABLED
+              value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
               value: "5443"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR

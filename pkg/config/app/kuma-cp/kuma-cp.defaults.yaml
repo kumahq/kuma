@@ -350,11 +350,11 @@ dpServer:
     # On Kubernetes this feature disabled for now regardless the flag value
     enabled: true # ENV: KUMA_DP_SERVER_HDS_ENABLED
     # Interval for Envoy to send statuses for HealthChecks
-    interval: 1s # ENV: KUMA_DP_SERVER_HDS_INTERVAL
+    interval: 5s # ENV: KUMA_DP_SERVER_HDS_INTERVAL
     # RefreshInterval is an interval for re-genarting configuration for Dataplanes connected to the Control Plane
-    refreshInterval: 1s # ENV: KUMA_DP_SERVER_HDS_REFRESH_INTERVAL
+    refreshInterval: 10s # ENV: KUMA_DP_SERVER_HDS_REFRESH_INTERVAL
     # Check defines a HealthCheck configuration
-    check:
+    checkDefaults:
       # Timeout is a time to wait for a health check response. If the timeout is reached the
       # health check attempt will be considered a failure
       timeout: 2s # ENV: KUMA_DP_SERVER_HDS_CHECK_TIMEOUT

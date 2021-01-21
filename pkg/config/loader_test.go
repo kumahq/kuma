@@ -217,11 +217,11 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.Hds.Enabled).To(BeFalse())
 			Expect(cfg.DpServer.Hds.Interval).To(Equal(11 * time.Second))
 			Expect(cfg.DpServer.Hds.RefreshInterval).To(Equal(12 * time.Second))
-			Expect(cfg.DpServer.Hds.Check.Timeout).To(Equal(5 * time.Second))
-			Expect(cfg.DpServer.Hds.Check.Interval).To(Equal(6 * time.Second))
-			Expect(cfg.DpServer.Hds.Check.NoTrafficInterval).To(Equal(7 * time.Second))
-			Expect(cfg.DpServer.Hds.Check.HealthyThreshold).To(Equal(uint32(8)))
-			Expect(cfg.DpServer.Hds.Check.UnhealthyThreshold).To(Equal(uint32(9)))
+			Expect(cfg.DpServer.Hds.CheckDefaults.Timeout).To(Equal(5 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.Interval).To(Equal(6 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.NoTrafficInterval).To(Equal(7 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
+			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
 			Expect(cfg.SdsServer.DataplaneConfigurationRefreshInterval).To(Equal(11 * time.Second))
 		},

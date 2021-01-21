@@ -53,28 +53,28 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 
 		var timeout *durationpb.Duration
 		if serviceProbe.Timeout == nil {
-			timeout = durationpb.New(g.config.Check.Timeout)
+			timeout = durationpb.New(g.config.CheckDefaults.Timeout)
 		} else {
 			timeout = serviceProbe.Timeout
 		}
 
 		var interval *durationpb.Duration
 		if serviceProbe.Timeout == nil {
-			interval = durationpb.New(g.config.Check.Interval)
+			interval = durationpb.New(g.config.CheckDefaults.Interval)
 		} else {
 			interval = serviceProbe.Interval
 		}
 
 		var healthyThreshold *wrappers.UInt32Value
 		if serviceProbe.HealthyThreshold == nil {
-			healthyThreshold = &wrappers.UInt32Value{Value: g.config.Check.HealthyThreshold}
+			healthyThreshold = &wrappers.UInt32Value{Value: g.config.CheckDefaults.HealthyThreshold}
 		} else {
 			healthyThreshold = serviceProbe.HealthyThreshold
 		}
 
 		var unhealthyThreshold *wrappers.UInt32Value
 		if serviceProbe.UnhealthyThreshold == nil {
-			unhealthyThreshold = &wrappers.UInt32Value{Value: g.config.Check.UnhealthyThreshold}
+			unhealthyThreshold = &wrappers.UInt32Value{Value: g.config.CheckDefaults.UnhealthyThreshold}
 		} else {
 			unhealthyThreshold = serviceProbe.UnhealthyThreshold
 		}
@@ -101,7 +101,7 @@ func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3
 					Interval:           interval,
 					HealthyThreshold:   healthyThreshold,
 					UnhealthyThreshold: unhealthyThreshold,
-					NoTrafficInterval:  durationpb.New(g.config.Check.NoTrafficInterval),
+					NoTrafficInterval:  durationpb.New(g.config.CheckDefaults.NoTrafficInterval),
 					HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
 						TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
 					},

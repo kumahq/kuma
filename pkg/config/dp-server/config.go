@@ -72,9 +72,9 @@ func DefaultDpServerConfig() *DpServerConfig {
 func DefaultHdsConfig() *HdsConfig {
 	return &HdsConfig{
 		Enabled:         true,
-		Interval:        1 * time.Second,
-		RefreshInterval: 1 * time.Second,
-		Check: &HdsCheck{
+		Interval:        5 * time.Second,
+		RefreshInterval: 10 * time.Second,
+		CheckDefaults: &HdsCheck{
 			Timeout:            2 * time.Second,
 			Interval:           1 * time.Second,
 			NoTrafficInterval:  1 * time.Second,
@@ -92,8 +92,8 @@ type HdsConfig struct {
 	Interval time.Duration `yaml:"interval" envconfig:"kuma_dp_server_hds_interval"`
 	// RefreshInterval is an interval for re-genarting configuration for Dataplanes connected to the Control Plane
 	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_dp_server_hds_refresh_interval"`
-	// Check defines a HealthCheck configuration
-	Check *HdsCheck `yaml:"check"`
+	// CheckDefaults defines a HealthCheck configuration
+	CheckDefaults *HdsCheck `yaml:"checkDefaults"`
 }
 
 func (h *HdsConfig) Sanitize() {
@@ -103,7 +103,7 @@ func (h *HdsConfig) Validate() error {
 	if h.Interval <= 0 {
 		return errors.New("Interval must be greater than 0s")
 	}
-	if err := h.Check.Validate(); err != nil {
+	if err := h.CheckDefaults.Validate(); err != nil {
 		return errors.Wrap(err, "Check is invalid")
 	}
 	return nil

@@ -14,7 +14,7 @@ type Metrics struct {
 	ResponsesReceivedMetric prometheus.Counter
 	RequestsReceivedMetric  prometheus.Counter
 
-	StreamsActiveMux sync.RWMutex
+	streamsActiveMux sync.RWMutex
 	StreamsActive    int
 }
 
@@ -58,8 +58,8 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Name: "hds_streams_active",
 		Help: "Number of active connections between a server and a client",
 	}, func() float64 {
-		m.StreamsActiveMux.RLock()
-		defer m.StreamsActiveMux.RUnlock()
+		m.streamsActiveMux.RLock()
+		defer m.streamsActiveMux.RUnlock()
 		return float64(m.StreamsActive)
 	})
 	if err := metrics.Register(streamsActive); err != nil {
@@ -67,4 +67,16 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 	}
 
 	return m, nil
+}
+
+func (m *Metrics) StreamsActiveInc() {
+	m.streamsActiveMux.Lock()
+	defer m.streamsActiveMux.Unlock()
+	m.StreamsActive++
+}
+
+func (m *Metrics) StreamsActiveDec() {
+	m.streamsActiveMux.Lock()
+	defer m.streamsActiveMux.Unlock()
+	m.StreamsActive--
 }

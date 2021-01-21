@@ -78,6 +78,7 @@ message Dataplane {
       // will be excluded from Endpoints Discovery Service (EDS)
       Health health = 7;
 
+      // ServiceProbe defines parameters for probing service's port
       message ServiceProbe {
         // Interval between consecutive health checks.
         google.protobuf.Duration interval = 1;
@@ -94,7 +95,7 @@ message Dataplane {
         google.protobuf.UInt32Value healthy_threshold = 4;
 
         message Tcp {}
-
+        // Tcp checker tries to establish tcp connection with destination
         Tcp tcp = 5;
       }
 

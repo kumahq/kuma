@@ -41,7 +41,7 @@ func NewDefaultBootstrapGenerator(
 	config *bootstrap_config.BootstrapServerConfig,
 	dpServerCertFile string,
 	dpAuthEnabled bool,
-	universal bool,
+	hdsEnabled bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
@@ -56,7 +56,7 @@ func NewDefaultBootstrapGenerator(
 		xdsCertFile:   dpServerCertFile,
 		dpAuthEnabled: dpAuthEnabled,
 		hostsAndIps:   hostsAndIps,
-		universal:     universal,
+		hdsEnabled:    hdsEnabled,
 	}, nil
 }
 
@@ -66,7 +66,7 @@ type bootstrapGenerator struct {
 	dpAuthEnabled bool
 	xdsCertFile   string
 	hostsAndIps   SANSet
-	universal     bool
+	hdsEnabled    bool
 }
 
 func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, types.BootstrapVersion, error) {
@@ -206,7 +206,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		KumaDpBuildDate:    request.Version.KumaDp.BuildDate,
 		EnvoyVersion:       request.Version.Envoy.Version,
 		EnvoyBuild:         request.Version.Envoy.Build,
-		Universal:          b.universal,
+		HdsEnabled:         b.hdsEnabled,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params, request.BootstrapVersion)

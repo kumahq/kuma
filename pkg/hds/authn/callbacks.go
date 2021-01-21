@@ -18,6 +18,8 @@ import (
 
 const authorization = "authorization"
 
+// Inspired by pkg/xds/auth/callbacks.go
+
 func NewCallbacks(resManager core_manager.ResourceManager, authenticator xds_auth.Authenticator) hds_callbacks.Callbacks {
 	return &authn{
 		resManager:    resManager,
@@ -126,7 +128,7 @@ func (a *authn) authenticate(credential xds_auth.Credential, nodeID string) erro
 
 	proxyId, err := core_xds.ParseProxyIdFromString(nodeID)
 	if err != nil {
-		return errors.Wrap(err, "SDS request must have a valid Proxy Id")
+		return errors.Wrap(err, "HDS request must have a valid Proxy Id")
 	}
 	err = a.resManager.Get(context.Background(), dataplane, core_store.GetByKey(proxyId.Name, proxyId.Mesh))
 	if err != nil {

@@ -75,7 +75,7 @@ networking:
 			hdsConfig: &dp_server.HdsConfig{
 				Interval: 8 * time.Second,
 				Enabled:  true,
-				Check: &dp_server.HdsCheck{
+				CheckDefaults: &dp_server.HdsCheck{
 					Interval:           1 * time.Second,
 					NoTrafficInterval:  2 * time.Second,
 					Timeout:            3 * time.Second,

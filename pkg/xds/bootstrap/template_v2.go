@@ -49,7 +49,7 @@ stats_config:
   - tag_name: listener
     regex: '((.+?)\.)rbac\.'
 
-{{ if .Universal }}
+{{ if .HdsEnabled }}
 hds_config:
   api_type: GRPC
   transport_api_version: V3
