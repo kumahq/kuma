@@ -5,8 +5,9 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
-	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
 	"google.golang.org/grpc"
+
+	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
 
 	"github.com/kumahq/kuma/pkg/hds/authn"
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"

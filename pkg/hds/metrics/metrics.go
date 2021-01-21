@@ -3,8 +3,9 @@ package metrics
 import (
 	"sync"
 
-	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/prometheus/client_golang/prometheus"
+
+	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
 type Metrics struct {

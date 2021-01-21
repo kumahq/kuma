@@ -8,8 +8,9 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/go-logr/logr"
-	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
 	"github.com/pkg/errors"
+
+	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
 
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
 
