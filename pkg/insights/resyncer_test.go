@@ -164,4 +164,25 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(envoy["1.15.0"].Total).To(Equal(uint32(2)))
 		Expect(envoy["1.15.0"].Offline).To(Equal(uint32(2)))
 	})
+
+	FIt("should not count dataplane as a policy", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp-1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		nowMtx.Lock()
+		now = now.Add(61 * time.Second)
+		nowMtx.Unlock()
+		tickCh <- now
+
+		insight := core_mesh.NewMeshInsightResource()
+		Eventually(func() error {
+			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
+		}, "10s", "100ms").Should(BeNil())
+		Expect(insight.Spec.Policies[string(core_mesh.DataplaneType)]).To(BeNil())
+		Expect(insight.Spec.Dataplanes.Total).To(Equal(uint32(1)))
+		Expect(insight.Spec.LastSync).To(MatchProto(proto.MustTimestampProto(now)))
+	})
 })
