@@ -147,9 +147,6 @@ var _ = Describe("Insight Persistence", func() {
 		}, "10s", "100ms").Should(BeNil())
 
 		// then
-		Expect(meshInsight.Spec.Dataplanes.Total).To(Equal(uint32(3)))
-		Expect(meshInsight.Spec.Dataplanes.Offline).To(Equal(uint32(3)))
-
 		kumaDp := meshInsight.Spec.DpVersions.KumaDp
 		Expect(kumaDp["unknown"].Total).To(Equal(uint32(1)))
 		Expect(kumaDp["unknown"].Offline).To(Equal(uint32(1)))
@@ -165,7 +162,7 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(envoy["1.15.0"].Offline).To(Equal(uint32(2)))
 	})
 
-	FIt("should not count dataplane as a policy", func() {
+	It("should not count dataplane as a policy", func() {
 		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
