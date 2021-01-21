@@ -49,6 +49,7 @@ stats_config:
   - tag_name: listener
     regex: '((.+?)\.)rbac\.'
 
+{{ if .Universal }}
 hds_config:
   api_type: GRPC
   transport_api_version: V3
@@ -73,6 +74,7 @@ hds_config:
       statPrefix: hds
       targetUri: {{ .XdsHost }}:{{ .XdsPort }}
   set_node_on_first_message_only: true
+{{ end }}
 
 dynamic_resources:
   lds_config:

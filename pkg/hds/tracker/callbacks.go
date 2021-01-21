@@ -8,6 +8,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/go-logr/logr"
+	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
 	"github.com/pkg/errors"
 
 	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
@@ -37,6 +38,7 @@ type tracker struct {
 	config          *dp_server.HdsConfig
 	reconciler      *reconciler
 	log             logr.Logger
+	metrics         *hds_metrics.Metrics
 
 	sync.RWMutex       // protects access to the fields below
 	streamsAssociation map[xds.StreamID]core_model.ResourceKey
@@ -50,6 +52,7 @@ func NewCallbacks(
 	cache util_xds_v3.SnapshotCache,
 	config *dp_server.HdsConfig,
 	hasher util_xds_v3.NodeHash,
+	metrics *hds_metrics.Metrics,
 ) hds_callbacks.Callbacks {
 	return &tracker{
 		resourceManager:    resourceManager,
@@ -57,6 +60,7 @@ func NewCallbacks(
 		dpStreams:          map[core_model.ResourceKey]streams{},
 		config:             config,
 		log:                log,
+		metrics:            metrics,
 		reconciler: &reconciler{
 			cache:     cache,
 			hasher:    hasher,
@@ -67,10 +71,38 @@ func NewCallbacks(
 }
 
 func (t *tracker) OnStreamOpen(ctx context.Context, streamID int64) error {
+	t.metrics.StreamsActiveMux.Lock()
+	defer t.metrics.StreamsActiveMux.Unlock()
+	t.metrics.StreamsActive++
 	return nil
 }
 
+func (t *tracker) OnStreamClosed(streamID xds.StreamID) {
+	t.metrics.StreamsActiveMux.Lock()
+	t.metrics.StreamsActive--
+	t.metrics.StreamsActiveMux.Unlock()
+
+	t.Lock()
+	defer t.Unlock()
+
+	dp, hasAssociation := t.streamsAssociation[streamID]
+	if hasAssociation {
+		delete(t.streamsAssociation, streamID)
+
+		streams := t.dpStreams[dp]
+		delete(streams.activeStreams, streamID)
+		if len(streams.activeStreams) == 0 { // no stream is active, cancel watchdog
+			if streams.watchdogCancel != nil {
+				streams.watchdogCancel()
+			}
+			delete(t.dpStreams, dp)
+		}
+	}
+}
+
 func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service_health.HealthCheckRequest) error {
+	t.metrics.RequestsReceivedMetric.Inc()
+
 	id, err := xds.ParseProxyIdFromString(req.GetNode().GetId())
 	if err != nil {
 		t.log.Error(err, "failed to parse Dataplane Id out of HealthCheckRequest", "streamid", streamID, "req", req)
@@ -108,9 +140,14 @@ func (t *tracker) newWatchdog(node *envoy_core.Node) watchdog.Watchdog {
 			return time.NewTicker(t.config.RefreshInterval)
 		},
 		OnTick: func() error {
+			start := core.Now()
+			defer func() {
+				t.metrics.HdsGenerations.Observe(float64(core.Now().Sub(start).Milliseconds()))
+			}()
 			return t.reconciler.Reconcile(node)
 		},
 		OnError: func(err error) {
+			t.metrics.HdsGenerationsErrors.Inc()
 			t.log.Error(err, "OnTick() failed")
 		},
 		OnStop: func() {
@@ -122,7 +159,7 @@ func (t *tracker) newWatchdog(node *envoy_core.Node) watchdog.Watchdog {
 }
 
 func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_service_health.EndpointHealthResponse) error {
-	t.log.Info("on-endpoint-health-response", "streamID", streamID, "resp", resp)
+	t.metrics.ResponsesReceivedMetric.Inc()
 	for _, clusterHealth := range resp.GetClusterEndpointsHealth() {
 		if len(clusterHealth.LocalityEndpointsHealth) == 0 {
 			continue
@@ -132,7 +169,6 @@ func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_se
 		}
 		status := clusterHealth.LocalityEndpointsHealth[0].EndpointsHealth[0].HealthStatus
 		health := status == envoy_core.HealthStatus_HEALTHY || status == envoy_core.HealthStatus_UNKNOWN
-		t.log.Info("on-endpoint-health-response", "health", health)
 		port, err := names.GetPortForLocalClusterName(clusterHealth.ClusterName)
 		if err != nil {
 			return err
@@ -142,25 +178,6 @@ func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_se
 		}
 	}
 	return nil
-}
-
-func (t *tracker) OnStreamClosed(streamID xds.StreamID) {
-	t.Lock()
-	defer t.Unlock()
-
-	dp, hasAssociation := t.streamsAssociation[streamID]
-	if hasAssociation {
-		delete(t.streamsAssociation, streamID)
-
-		streams := t.dpStreams[dp]
-		delete(streams.activeStreams, streamID)
-		if len(streams.activeStreams) == 0 { // no stream is active, cancel watchdog
-			if streams.watchdogCancel != nil {
-				streams.watchdogCancel()
-			}
-			delete(t.dpStreams, dp)
-		}
-	}
 }
 
 func (t *tracker) updateDataplane(streamID xds.StreamID, port uint32, ready bool) error {
@@ -191,6 +208,7 @@ func (t *tracker) updateDataplane(streamID xds.StreamID, port uint32, ready bool
 	}
 
 	if changed {
+		t.log.V(1).Info("status updated", "dataplaneKey", dataplaneKey)
 		return t.resourceManager.Update(context.Background(), dp)
 	}
 

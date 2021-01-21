@@ -5,6 +5,7 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
+	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
 	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/pkg/hds/authn"
@@ -43,9 +44,16 @@ func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) 
 	if err != nil {
 		return nil, err
 	}
+
+	metrics, err := hds_metrics.NewMetrics(rt.Metrics())
+	if err != nil {
+		return nil, err
+	}
+
 	return hds_callbacks.Chain{
 		authn.NewCallbacks(rt.ResourceManager(), authenticator),
-		tracker.NewCallbacks(hdsServerLog, rt.ResourceManager(), rt.ReadOnlyResourceManager(), cache, rt.Config().DpServer.Hds, hasher{}),
+		tracker.NewCallbacks(hdsServerLog, rt.ResourceManager(), rt.ReadOnlyResourceManager(),
+			cache, rt.Config().DpServer.Hds, hasher{}, metrics),
 	}, nil
 }
 
