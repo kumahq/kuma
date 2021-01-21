@@ -66,6 +66,14 @@
                   "responsesRejected": "1"
                 }
               }
+            },
+            "version": {
+              "kumaCp": {
+                "version": "1.0.0",
+                "gitTag": "v1.0.0",
+                "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+                "buildDate": "2019-08-07T11:26:06Z"
+              }
             }
           },
           {
@@ -76,6 +84,14 @@
               "total": {
                 "responsesSent": "20",
                 "responsesRejected": "2"
+              }
+            },
+            "version": {
+              "kumaCp": {
+                "version": "1.0.0",
+                "gitTag": "v1.0.0",
+                "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+                "buildDate": "2019-08-07T11:26:06Z"
               }
             }
           }
@@ -120,7 +136,15 @@
           {
             "id": "1",
             "globalInstanceId": "node-001",
-            "connectTime": "2019-07-17T16:05:36.995Z"
+            "connectTime": "2019-07-17T16:05:36.995Z",
+            "version": {
+              "kumaCp": {
+                "version": "1.0.0",
+                "gitTag": "v1.0.0",
+                "gitCommit": "91ce236824a9d875601679aa80c63783fb0e8725",
+                "buildDate": "2019-08-07T11:26:06Z"
+              }
+            }
           }
         ]
       }
