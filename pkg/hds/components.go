@@ -7,6 +7,12 @@ import (
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"google.golang.org/grpc"
 
+	"github.com/kumahq/kuma/pkg/hds/authn"
+	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
+	hds_server "github.com/kumahq/kuma/pkg/hds/server"
+	"github.com/kumahq/kuma/pkg/hds/tracker"
+	"github.com/kumahq/kuma/pkg/xds/auth/components"
+
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
@@ -18,23 +24,29 @@ var (
 )
 
 func RegisterHDS(rt core_runtime.Runtime, grpcSrv *grpc.Server) error {
-	hasher := hasher{}
-	snapshotCache := util_xds_v3.NewSnapshotCache(false, hasher, util_xds.NewLogger(hdsServerLog))
+	snapshotCache := util_xds_v3.NewSnapshotCache(false, hasher{}, util_xds.NewLogger(hdsServerLog))
 
 	callbacks, err := DefaultCallbacks(rt, snapshotCache)
 	if err != nil {
 		return err
 	}
 
-	srv := NewServer(context.Background(), snapshotCache, callbacks)
+	srv := hds_server.New(context.Background(), snapshotCache, callbacks)
 
 	hdsServerLog.Info("registering Health Discovery Service in Dataplane Server")
 	envoy_service_health.RegisterHealthDiscoveryServiceServer(grpcSrv, srv)
 	return nil
 }
 
-func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) (Callbacks, error) {
-	return NewTracker(rt.ResourceManager(), rt.ReadOnlyResourceManager(), cache, rt.Config().DpServer.Hds), nil
+func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) (hds_callbacks.Callbacks, error) {
+	authenticator, err := components.DefaultAuthenticator(rt)
+	if err != nil {
+		return nil, err
+	}
+	return hds_callbacks.Chain{
+		authn.NewCallbacks(rt.ResourceManager(), authenticator),
+		tracker.NewCallbacks(hdsServerLog, rt.ResourceManager(), rt.ReadOnlyResourceManager(), cache, rt.Config().DpServer.Hds, hasher{}),
+	}, nil
 }
 
 type hasher struct {

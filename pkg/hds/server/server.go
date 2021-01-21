@@ -1,4 +1,4 @@
-package hds
+package server
 
 import (
 	"context"
@@ -13,6 +13,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
+	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
+
 	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 )
 
@@ -25,21 +27,10 @@ type Stream interface {
 	Recv() (*envoy_service_health.HealthCheckRequestOrEndpointHealthResponse, error)
 }
 
-type Callbacks interface {
-	// OnHealthCheckRequest is called when Envoy sends HealthCheckRequest with Node and Capabilities
-	OnHealthCheckRequest(streamID int64, request *envoy_service_health.HealthCheckRequest) error
-
-	// OnEndpointHealthResponse is called when there is a response from Envoy with status of endpoints in the cluster
-	OnEndpointHealthResponse(streamID int64, response *envoy_service_health.EndpointHealthResponse) error
-
-	// OnStreamClosed is called immediately prior to closing an xDS stream with a stream ID.
-	OnStreamClosed(int64)
-}
-
 type server struct {
 	streamCount int64
 	ctx         context.Context
-	callbacks   Callbacks
+	callbacks   hds_callbacks.Callbacks
 	cache       cache.Cache
 }
 
@@ -54,7 +45,7 @@ func (values *watches) Cancel() {
 	}
 }
 
-func NewServer(ctx context.Context, config cache.Cache, callbacks Callbacks) envoy_service_health.HealthDiscoveryServiceServer {
+func New(ctx context.Context, config cache.Cache, callbacks hds_callbacks.Callbacks) envoy_service_health.HealthDiscoveryServiceServer {
 	return &server{
 		ctx:       ctx,
 		callbacks: callbacks,
@@ -100,7 +91,12 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 	lastVersion := ""
 
 	var values watches
-	defer values.Cancel()
+	defer func() {
+		values.Cancel()
+		if s.callbacks != nil {
+			s.callbacks.OnStreamClosed(streamID)
+		}
+	}()
 
 	send := func(resp cache.Response) error {
 		if resp == nil {
@@ -124,6 +120,12 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 			return err
 		}
 		return stream.Send(hcs)
+	}
+
+	if s.callbacks != nil {
+		if err := s.callbacks.OnStreamOpen(stream.Context(), streamID); err != nil {
+			return err
+		}
 	}
 
 	var node = &envoy_core.Node{}

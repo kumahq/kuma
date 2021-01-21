@@ -1,4 +1,4 @@
-package hds_test
+package tracker_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestHDS(t *testing.T) {
+func TestHDSTracker(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "HDS Suite")
+	RunSpecs(t, "HDS Tracker Suite")
 }

@@ -1,4 +1,4 @@
-package hds
+package tracker
 
 import (
 	"context"
@@ -7,7 +7,10 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
+	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
+
+	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/util/watchdog"
@@ -33,36 +36,44 @@ type tracker struct {
 	resourceManager manager.ResourceManager
 	config          *dp_server.HdsConfig
 	reconciler      *reconciler
+	log             logr.Logger
 
 	sync.RWMutex       // protects access to the fields below
 	streamsAssociation map[xds.StreamID]core_model.ResourceKey
 	dpStreams          map[core_model.ResourceKey]streams
 }
 
-func NewTracker(
+func NewCallbacks(
+	log logr.Logger,
 	resourceManager manager.ResourceManager,
 	readOnlyResourceManager manager.ReadOnlyResourceManager,
 	cache util_xds_v3.SnapshotCache,
 	config *dp_server.HdsConfig,
-) Callbacks {
+	hasher util_xds_v3.NodeHash,
+) hds_callbacks.Callbacks {
 	return &tracker{
 		resourceManager:    resourceManager,
 		streamsAssociation: map[xds.StreamID]core_model.ResourceKey{},
 		dpStreams:          map[core_model.ResourceKey]streams{},
 		config:             config,
+		log:                log,
 		reconciler: &reconciler{
 			cache:     cache,
-			hasher:    &hasher{},
+			hasher:    hasher,
 			versioner: envoy_cache.SnapshotAutoVersioner{UUID: core.NewUUID},
 			generator: NewSnapshotGenerator(readOnlyResourceManager, config),
 		},
 	}
 }
 
+func (t *tracker) OnStreamOpen(ctx context.Context, streamID int64) error {
+	return nil
+}
+
 func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service_health.HealthCheckRequest) error {
 	id, err := xds.ParseProxyIdFromString(req.GetNode().GetId())
 	if err != nil {
-		hdsServerLog.Error(err, "failed to parse Dataplane Id out of HealthCheckRequest", "streamid", streamID, "req", req)
+		t.log.Error(err, "failed to parse Dataplane Id out of HealthCheckRequest", "streamid", streamID, "req", req)
 		return nil
 	}
 
@@ -84,7 +95,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 		}
 		// kick off watchdog for that Dataplane
 		go t.newWatchdog(req.Node).Start(stopCh)
-		hdsServerLog.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", id, "dataplaneKey", dataplaneKey)
+		t.log.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", id, "dataplaneKey", dataplaneKey)
 	}
 	t.dpStreams[dataplaneKey] = streams
 	t.streamsAssociation[streamID] = dataplaneKey
@@ -100,18 +111,18 @@ func (t *tracker) newWatchdog(node *envoy_core.Node) watchdog.Watchdog {
 			return t.reconciler.Reconcile(node)
 		},
 		OnError: func(err error) {
-			hdsServerLog.Error(err, "OnTick() failed")
+			t.log.Error(err, "OnTick() failed")
 		},
 		OnStop: func() {
 			if err := t.reconciler.Clear(node); err != nil {
-				hdsServerLog.Error(err, "OnTick() failed")
+				t.log.Error(err, "OnTick() failed")
 			}
 		},
 	}
 }
 
 func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_service_health.EndpointHealthResponse) error {
-	hdsServerLog.Info("on-endpoint-health-response", "streamID", streamID, "resp", resp)
+	t.log.Info("on-endpoint-health-response", "streamID", streamID, "resp", resp)
 	for _, clusterHealth := range resp.GetClusterEndpointsHealth() {
 		if len(clusterHealth.LocalityEndpointsHealth) == 0 {
 			continue
@@ -121,7 +132,7 @@ func (t *tracker) OnEndpointHealthResponse(streamID xds.StreamID, resp *envoy_se
 		}
 		status := clusterHealth.LocalityEndpointsHealth[0].EndpointsHealth[0].HealthStatus
 		health := status == envoy_core.HealthStatus_HEALTHY || status == envoy_core.HealthStatus_UNKNOWN
-		hdsServerLog.Info("on-endpoint-health-response", "health", health)
+		t.log.Info("on-endpoint-health-response", "health", health)
 		port, err := names.GetPortForLocalClusterName(clusterHealth.ClusterName)
 		if err != nil {
 			return err
