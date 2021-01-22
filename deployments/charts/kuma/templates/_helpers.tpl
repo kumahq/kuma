@@ -112,6 +112,8 @@ env:
 - name: KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
   value: {{ .Values.controlPlane.kdsGlobalAddress }}
 {{- end }}
+- name: KUMA_DP_SERVER_HDS_ENABLED
+  value: "false"
 - name: KUMA_API_SERVER_READ_ONLY
   value: "true"
 - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT

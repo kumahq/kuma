@@ -29,6 +29,9 @@ type deployOptions struct {
 	ingress          bool
 	cni              bool
 	cpReplicas       int
+	proxyOnly        bool
+	hdsDisabled      bool
+	serviceProbe     bool
 
 	// app specific
 	namespace   string
@@ -40,6 +43,24 @@ type deployOptions struct {
 }
 
 type DeployOptionsFunc func(*deployOptions)
+
+func ProxyOnly() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.proxyOnly = true
+	}
+}
+
+func ServiceProbe() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.serviceProbe = true
+	}
+}
+
+func WithHDS(enabled bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.hdsDisabled = !enabled
+	}
+}
 
 func WithGlobalAddress(address string) DeployOptionsFunc {
 	return func(o *deployOptions) {

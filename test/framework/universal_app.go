@@ -55,6 +55,23 @@ networking:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: http
 `
+
+	EchoServerDataplaneWithServiceProbe = `
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address:  {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    serviceProbe:
+      tcp: {}
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/protocol: http
+`
+
 	EchoServerDataplaneTransparentProxy = `
 type: Dataplane
 mesh: %s
@@ -95,6 +112,32 @@ networking:
     tags:
       kuma.io/service: external-service
 `
+
+	DemoClientDataplaneWithServiceProbe = `
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address: {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    serviceProbe:
+      tcp: {}
+    tags:
+      kuma.io/service: demo-client
+  outbound:
+  - port: 4000
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+  - port: 4001
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+  - port: 5000
+    tags:
+      kuma.io/service: external-service
+`
+
 	DemoClientDataplaneTransparentProxy = `
 type: Dataplane
 mesh: %s
