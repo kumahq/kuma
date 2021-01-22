@@ -30,6 +30,8 @@ type deployOptions struct {
 	cni              bool
 	cpReplicas       int
 	proxyOnly        bool
+	hdsDisabled      bool
+	serviceProbe     bool
 
 	// app specific
 	namespace   string
@@ -45,6 +47,18 @@ type DeployOptionsFunc func(*deployOptions)
 func ProxyOnly() DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.proxyOnly = true
+	}
+}
+
+func ServiceProbe() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.serviceProbe = true
+	}
+}
+
+func WithHDS(enabled bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.hdsDisabled = !enabled
 	}
 }
 

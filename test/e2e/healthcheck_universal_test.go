@@ -29,9 +29,9 @@ var _ = Describe("Test application HealthCheck on Universal", func() {
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal("universal", "default", echoServerToken, ProxyOnly())(cluster)
+		err = EchoServerUniversal("universal", "default", echoServerToken, ProxyOnly(), ServiceProbe())(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal("default", demoClientToken)(cluster)
+		err = DemoClientUniversal("default", demoClientToken, ServiceProbe())(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -50,7 +50,7 @@ var _ = Describe("Test application HealthCheck on Universal", func() {
 				return "", err
 			}
 			return output, nil
-		}, "10s", "1s").Should(ContainSubstring("health: {}"))
+		}, "30s", "500ms").Should(ContainSubstring("health: {}"))
 
 		Eventually(func() (string, error) {
 			output, err := cluster.GetKumactlOptions().RunKumactlAndGetOutputV(Verbose, "get", "dataplane", "dp-demo-client", "-oyaml")
@@ -58,7 +58,7 @@ var _ = Describe("Test application HealthCheck on Universal", func() {
 				return "", err
 			}
 			return output, nil
-		}, "10s", "1s").Should(ContainSubstring("ready: true"))
+		}, "30s", "500ms").Should(ContainSubstring("ready: true"))
 	})
 
 })

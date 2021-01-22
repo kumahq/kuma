@@ -228,8 +228,8 @@ var _ = Describe("Config WS", func() {
                 "unhealthyThreshold": 1
               },
               "enabled": true,
-              "interval": "1s",
-              "refreshInterval": "1s"
+              "interval": "5s",
+              "refreshInterval": "10s"
             }
           },
           "store": {
