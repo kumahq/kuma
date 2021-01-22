@@ -6972,6 +6972,8 @@ spec:
               value: "true"
             - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
               value: "false"
+            - name: KUMA_DP_SERVER_HDS_ENABLED
+              value: "false"
             - name: KUMA_ENVIRONMENT
               value: kubernetes
             - name: KUMA_GENERAL_TLS_CERT_FILE
