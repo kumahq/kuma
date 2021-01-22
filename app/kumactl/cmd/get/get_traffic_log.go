@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/spf13/cobra"
@@ -15,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetTrafficLogCmd(pctx *getContext) *cobra.Command {
+func newGetTrafficLogCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-log NAME",
 		Short: "Show a single TrafficLog resource",
@@ -38,7 +39,7 @@ func newGetTrafficLogCmd(pctx *getContext) *cobra.Command {
 			trafficLogs := &mesh.TrafficLogResourceList{
 				Items: []*mesh.TrafficLogResource{trafficLog},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printTrafficLogs(pctx.Now(), trafficLogs, cmd.OutOrStdout())
 			default:

@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
@@ -18,7 +19,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetZonesCmd(pctx *listContext) *cobra.Command {
+func newGetZonesCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "zones",
 		Short: "Show Zones",
@@ -30,11 +31,11 @@ func newGetZonesCmd(pctx *listContext) *cobra.Command {
 			}
 
 			zones := system.ZoneResourceList{}
-			if err := rs.List(context.Background(), &zones, core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
+			if err := rs.List(context.Background(), &zones, core_store.ListByPage(pctx.ListContext.Args.Size, pctx.ListContext.Args.Offset)); err != nil {
 				return errors.Wrapf(err, "failed to list Zone")
 			}
 
-			switch format := output.Format(pctx.getContext.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printZones(pctx.Now(), &zones, cmd.OutOrStdout())
 			default:

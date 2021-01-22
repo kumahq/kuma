@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -18,7 +19,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetSecretsCmd(pctx *getContext) *cobra.Command {
+func newGetSecretsCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "secrets",
 		Short: "Show Secrets",
@@ -34,7 +35,7 @@ func newGetSecretsCmd(pctx *getContext) *cobra.Command {
 				return errors.Wrapf(err, "failed to list Secrets")
 			}
 
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printSecrets(pctx.Now(), secrets.Items, cmd.OutOrStdout())
 			default:

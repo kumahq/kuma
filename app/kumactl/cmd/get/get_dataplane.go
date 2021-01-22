@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/spf13/cobra"
@@ -15,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetDataplaneCmd(pctx *getContext) *cobra.Command {
+func newGetDataplaneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "dataplane NAME",
 		Short: "Show a single Dataplane resource",
@@ -38,7 +39,7 @@ func newGetDataplaneCmd(pctx *getContext) *cobra.Command {
 			dataplanes := mesh.DataplaneResourceList{
 				Items: []*mesh.DataplaneResource{dataplane},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printDataplanes(pctx.Now(), &dataplanes, cmd.OutOrStdout())
 			default:

@@ -9,6 +9,8 @@ import (
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	util_files "github.com/kumahq/kuma/pkg/util/files"
@@ -31,8 +33,12 @@ type RootRuntime struct {
 }
 
 type RootContext struct {
-	Args    RootArgs
-	Runtime RootRuntime
+	TypeArgs       map[string]core_model.ResourceType
+	Args           RootArgs
+	Runtime        RootRuntime
+	GetContext     GetContext
+	ListContext    ListContext
+	InspectContext InspectContext
 }
 
 func DefaultRootContext() *RootContext {
@@ -46,7 +52,34 @@ func DefaultRootContext() *RootContext {
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
 			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
 		},
+		TypeArgs: map[string]core_model.ResourceType{
+			"mesh":               core_mesh.MeshType,
+			"dataplane":          core_mesh.DataplaneType,
+			"externalservice":    core_mesh.ExternalServiceType,
+			"healthcheck":        core_mesh.HealthCheckType,
+			"proxytemplate":      core_mesh.ProxyTemplateType,
+			"traffic-log":        core_mesh.TrafficLogType,
+			"traffic-permission": core_mesh.TrafficPermissionType,
+			"traffic-route":      core_mesh.TrafficRouteType,
+			"traffic-trace":      core_mesh.TrafficTraceType,
+			"fault-injection":    core_mesh.FaultInjectionType,
+			"circuit-breaker":    core_mesh.CircuitBreakerType,
+			"retry":              core_mesh.RetryType,
+			"secret":             system.SecretType,
+			"zone":               system.ZoneType,
+		},
 	}
+}
+
+func (rc *RootContext) TypeForArg(arg string) (core_model.ResourceType, error) {
+	typ, ok := rc.TypeArgs[arg]
+	if !ok {
+		return "", errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, "+
+			"healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, "+
+			"traffic-trace, fault-injection, circuit-breaker, retry, secret, zone",
+			arg)
+	}
+	return typ, nil
 }
 
 func (rc *RootContext) LoadConfig() error {
@@ -152,4 +185,23 @@ func (rc *RootContext) CurrentApiClient() (kumactl_resources.ApiServerClient, er
 		return nil, err
 	}
 	return rc.Runtime.NewAPIServerClient(controlPlane.Coordinates.ApiServer)
+}
+
+type GetContext struct {
+	Args struct {
+		OutputFormat string
+	}
+}
+
+type ListContext struct {
+	Args struct {
+		Size   int
+		Offset string
+	}
+}
+
+type InspectContext struct {
+	Args struct {
+		OutputFormat string
+	}
 }

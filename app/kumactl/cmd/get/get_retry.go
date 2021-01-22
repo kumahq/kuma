@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -13,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetRetryCmd(pctx *getContext) *cobra.Command {
+func newGetRetryCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "retry NAME",
 		Short: "Show a single retry resource",
@@ -40,7 +41,7 @@ func newGetRetryCmd(pctx *getContext) *cobra.Command {
 			retries := &mesh.RetryResourceList{
 				Items: []*mesh.RetryResource{retry},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printRetries(pctx.Now(), retries, cmd.OutOrStdout())
 			default:

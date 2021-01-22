@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/spf13/cobra"
@@ -15,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetFaultInjectionCmd(pctx *getContext) *cobra.Command {
+func newGetFaultInjectionCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fault-injection NAME",
 		Short: "Show a single Fault-Injection resource",
@@ -38,7 +39,7 @@ func newGetFaultInjectionCmd(pctx *getContext) *cobra.Command {
 			faultInjections := &mesh.FaultInjectionResourceList{
 				Items: []*mesh.FaultInjectionResource{faultInjection},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printFaultInjections(pctx.Now(), faultInjections, cmd.OutOrStdout())
 			default:

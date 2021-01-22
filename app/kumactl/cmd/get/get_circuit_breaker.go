@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/spf13/cobra"
@@ -15,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetCircuitBreakerCmd(pctx *getContext) *cobra.Command {
+func newGetCircuitBreakerCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "circuit-breaker NAME",
 		Short: "Show a single CircuitBreaker resource",
@@ -38,7 +39,7 @@ func newGetCircuitBreakerCmd(pctx *getContext) *cobra.Command {
 			circuitBreakers := &core_mesh.CircuitBreakerResourceList{
 				Items: []*core_mesh.CircuitBreakerResource{circuitBreaker},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printCircuitBreakers(pctx.Now(), circuitBreakers, cmd.OutOrStdout())
 			default:

@@ -6,6 +6,7 @@ import (
 	"io"
 	"time"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 
@@ -18,7 +19,7 @@ import (
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
-func newGetMeshesCmd(pctx *listContext) *cobra.Command {
+func newGetMeshesCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "meshes",
 		Short: "Show Meshes",
@@ -30,11 +31,11 @@ func newGetMeshesCmd(pctx *listContext) *cobra.Command {
 			}
 
 			meshes := mesh.MeshResourceList{}
-			if err := rs.List(context.Background(), &meshes, core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
+			if err := rs.List(context.Background(), &meshes, core_store.ListByPage(pctx.ListContext.Args.Size, pctx.ListContext.Args.Offset)); err != nil {
 				return errors.Wrapf(err, "failed to list Meshes")
 			}
 
-			switch format := output.Format(pctx.getContext.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printMeshes(pctx.Now(), &meshes, cmd.OutOrStdout())
 			default:

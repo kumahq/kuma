@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 
 	"github.com/pkg/errors"
@@ -17,7 +18,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetRetriesCmd(pctx *listContext) *cobra.Command {
+func newGetRetriesCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "retries",
 		Short: "Show Retries",
@@ -33,12 +34,12 @@ func newGetRetriesCmd(pctx *listContext) *cobra.Command {
 				context.Background(),
 				retries,
 				core_store.ListByMesh(pctx.CurrentMesh()),
-				core_store.ListByPage(pctx.args.size, pctx.args.offset),
+				core_store.ListByPage(pctx.ListContext.Args.Size, pctx.ListContext.Args.Offset),
 			); err != nil {
 				return errors.Wrapf(err, "failed to list Retries")
 			}
 
-			switch format := output.Format(pctx.getContext.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printRetries(pctx.Now(), retries, cmd.OutOrStdout())
 			default:

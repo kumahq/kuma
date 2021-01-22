@@ -3,6 +3,7 @@ package get
 import (
 	"context"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetZoneCmd(pctx *getContext) *cobra.Command {
+func newGetZoneCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "zone NAME",
 		Short: "Show a single Zone resource",
@@ -38,7 +39,7 @@ func newGetZoneCmd(pctx *getContext) *cobra.Command {
 			zones := &system.ZoneResourceList{
 				Items: []*system.ZoneResource{zone},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printZones(pctx.Now(), zones, cmd.OutOrStdout())
 			default:

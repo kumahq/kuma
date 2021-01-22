@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/spf13/cobra"
@@ -15,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetTrafficPermissionCmd(pctx *getContext) *cobra.Command {
+func newGetTrafficPermissionCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-permission NAME",
 		Short: "Show a single TrafficPermission resource",
@@ -38,7 +39,7 @@ func newGetTrafficPermissionCmd(pctx *getContext) *cobra.Command {
 			trafficPermissions := &mesh.TrafficPermissionResourceList{
 				Items: []*mesh.TrafficPermissionResource{trafficPermission},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printTrafficPermissions(pctx.Now(), trafficPermissions, cmd.OutOrStdout())
 			default:

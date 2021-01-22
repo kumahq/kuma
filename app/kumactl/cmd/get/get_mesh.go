@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
@@ -16,7 +17,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetMeshCmd(pctx *getContext) *cobra.Command {
+func newGetMeshCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "mesh NAME",
 		Short: "Show a single Mesh resource",
@@ -38,7 +39,7 @@ func newGetMeshCmd(pctx *getContext) *cobra.Command {
 			meshes := &core_mesh.MeshResourceList{
 				Items: []*core_mesh.MeshResource{mesh},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printMeshes(pctx.Now(), meshes, cmd.OutOrStdout())
 			default:

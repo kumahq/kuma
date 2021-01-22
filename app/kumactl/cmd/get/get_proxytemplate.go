@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/spf13/cobra"
@@ -15,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetProxyTemplateCmd(pctx *getContext) *cobra.Command {
+func newGetProxyTemplateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "proxytemplate NAME",
 		Short: "Show a single Proxytemplate resource",
@@ -38,7 +39,7 @@ func newGetProxyTemplateCmd(pctx *getContext) *cobra.Command {
 			proxyTemplates := &mesh.ProxyTemplateResourceList{
 				Items: []*mesh.ProxyTemplateResource{proxyTemplate},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printProxyTemplates(pctx.Now(), proxyTemplates, cmd.OutOrStdout())
 			default:

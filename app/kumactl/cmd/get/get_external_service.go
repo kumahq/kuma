@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/spf13/cobra"
@@ -15,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetExternalServiceCmd(pctx *getContext) *cobra.Command {
+func newGetExternalServiceCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "external-service NAME",
 		Short: "Show a single ExternalService resource",
@@ -38,7 +39,7 @@ func newGetExternalServiceCmd(pctx *getContext) *cobra.Command {
 			externalServices := &mesh.ExternalServiceResourceList{
 				Items: []*mesh.ExternalServiceResource{externalService},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printExternalServices(pctx.Now(), externalServices, cmd.OutOrStdout())
 			default:

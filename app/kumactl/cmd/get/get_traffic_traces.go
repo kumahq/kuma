@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 
 	"github.com/pkg/errors"
@@ -17,7 +18,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetTrafficTracesCmd(pctx *listContext) *cobra.Command {
+func newGetTrafficTracesCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-traces",
 		Short: "Show TrafficTraces",
@@ -29,11 +30,11 @@ func newGetTrafficTracesCmd(pctx *listContext) *cobra.Command {
 			}
 
 			trafficTraces := mesh.TrafficTraceResourceList{}
-			if err := rs.List(context.Background(), &trafficTraces, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
+			if err := rs.List(context.Background(), &trafficTraces, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.ListContext.Args.Size, pctx.ListContext.Args.Offset)); err != nil {
 				return errors.Wrapf(err, "failed to list TrafficTrace")
 			}
 
-			switch format := output.Format(pctx.getContext.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printTrafficTraces(pctx.Now(), &trafficTraces, cmd.OutOrStdout())
 			default:

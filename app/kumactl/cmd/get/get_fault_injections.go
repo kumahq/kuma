@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 
 	"github.com/pkg/errors"
@@ -17,7 +18,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetFaultInjectionsCmd(pctx *listContext) *cobra.Command {
+func newGetFaultInjectionsCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "fault-injections",
 		Short: "Show FaultInjections",
@@ -29,11 +30,11 @@ func newGetFaultInjectionsCmd(pctx *listContext) *cobra.Command {
 			}
 
 			faultInjections := mesh.FaultInjectionResourceList{}
-			if err := rs.List(context.Background(), &faultInjections, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
+			if err := rs.List(context.Background(), &faultInjections, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.ListContext.Args.Size, pctx.ListContext.Args.Offset)); err != nil {
 				return errors.Wrapf(err, "failed to list FaultInjection")
 			}
 
-			switch format := output.Format(pctx.getContext.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printFaultInjections(pctx.Now(), &faultInjections, cmd.OutOrStdout())
 			default:

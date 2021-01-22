@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -13,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetHealthCheckCmd(pctx *getContext) *cobra.Command {
+func newGetHealthCheckCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "healthcheck NAME",
 		Short: "Show a single HealthCheck resource",
@@ -36,7 +37,7 @@ func newGetHealthCheckCmd(pctx *getContext) *cobra.Command {
 			healthchecks := &mesh.HealthCheckResourceList{
 				Items: []*mesh.HealthCheckResource{healthcheck},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printHealthChecks(pctx.Now(), healthchecks, cmd.OutOrStdout())
 			default:

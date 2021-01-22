@@ -8,67 +8,49 @@ import (
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
 )
 
-type getContext struct {
-	*kumactl_cmd.RootContext
-
-	args struct {
-		outputFormat string
-	}
-}
-
-type listContext struct {
-	*getContext
-	args struct {
-		size   int
-		offset string
-	}
-}
-
 func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
-	ctx := &getContext{RootContext: pctx}
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Show Kuma resources",
 		Long:  `Show Kuma resources.`,
 	}
 	// flags
-	cmd.PersistentFlags().StringVarP(&ctx.args.outputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
+	cmd.PersistentFlags().StringVarP(&pctx.GetContext.Args.OutputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
 	// sub-commands
-	listCtx := &listContext{getContext: ctx}
-	cmd.AddCommand(withPaginationArgs(newGetMeshesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetDataplanesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetExternalServicesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetHealthChecksCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetProxyTemplatesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetTrafficPermissionsCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetTrafficRoutesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetTrafficLogsCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetTrafficTracesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetFaultInjectionsCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetCircuitBreakersCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetRetriesCmd(listCtx), listCtx))
-	cmd.AddCommand(newGetSecretsCmd(ctx))
-	cmd.AddCommand(withPaginationArgs(newGetZonesCmd(listCtx), listCtx))
+	cmd.AddCommand(WithPaginationArgs(newGetMeshesCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetDataplanesCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetExternalServicesCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetHealthChecksCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetProxyTemplatesCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetTrafficPermissionsCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetTrafficRoutesCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetTrafficLogsCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetTrafficTracesCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetFaultInjectionsCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetCircuitBreakersCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(newGetRetriesCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(newGetSecretsCmd(pctx))
+	cmd.AddCommand(WithPaginationArgs(newGetZonesCmd(pctx), &pctx.ListContext))
 
-	cmd.AddCommand(newGetMeshCmd(ctx))
-	cmd.AddCommand(newGetDataplaneCmd(ctx))
-	cmd.AddCommand(newGetExternalServiceCmd(ctx))
-	cmd.AddCommand(newGetHealthCheckCmd(ctx))
-	cmd.AddCommand(newGetProxyTemplateCmd(ctx))
-	cmd.AddCommand(newGetTrafficLogCmd(ctx))
-	cmd.AddCommand(newGetTrafficPermissionCmd(ctx))
-	cmd.AddCommand(newGetTrafficRouteCmd(ctx))
-	cmd.AddCommand(newGetTrafficTraceCmd(ctx))
-	cmd.AddCommand(newGetFaultInjectionCmd(ctx))
-	cmd.AddCommand(newGetCircuitBreakerCmd(ctx))
-	cmd.AddCommand(newGetRetryCmd(ctx))
-	cmd.AddCommand(newGetSecretCmd(ctx))
-	cmd.AddCommand(newGetZoneCmd(ctx))
+	cmd.AddCommand(newGetMeshCmd(pctx))
+	cmd.AddCommand(newGetDataplaneCmd(pctx))
+	cmd.AddCommand(newGetExternalServiceCmd(pctx))
+	cmd.AddCommand(newGetHealthCheckCmd(pctx))
+	cmd.AddCommand(newGetProxyTemplateCmd(pctx))
+	cmd.AddCommand(newGetTrafficLogCmd(pctx))
+	cmd.AddCommand(newGetTrafficPermissionCmd(pctx))
+	cmd.AddCommand(newGetTrafficRouteCmd(pctx))
+	cmd.AddCommand(newGetTrafficTraceCmd(pctx))
+	cmd.AddCommand(newGetFaultInjectionCmd(pctx))
+	cmd.AddCommand(newGetCircuitBreakerCmd(pctx))
+	cmd.AddCommand(newGetRetryCmd(pctx))
+	cmd.AddCommand(newGetSecretCmd(pctx))
+	cmd.AddCommand(newGetZoneCmd(pctx))
 	return cmd
 }
 
-func withPaginationArgs(cmd *cobra.Command, ctx *listContext) *cobra.Command {
-	cmd.PersistentFlags().IntVarP(&ctx.args.size, "size", "", 0, "maximum number of elements to return")
-	cmd.PersistentFlags().StringVarP(&ctx.args.offset, "offset", "", "", "the offset that indicates starting element of the resources list to retrieve")
+func WithPaginationArgs(cmd *cobra.Command, ctx *kumactl_cmd.ListContext) *cobra.Command {
+	cmd.PersistentFlags().IntVarP(&ctx.Args.Size, "size", "", 0, "maximum number of elements to return")
+	cmd.PersistentFlags().StringVarP(&ctx.Args.Offset, "offset", "", "", "the offset that indicates starting element of the resources list to retrieve")
 	return cmd
 }

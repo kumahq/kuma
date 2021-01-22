@@ -3,6 +3,7 @@ package get
 import (
 	"context"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/pkg/errors"
@@ -14,7 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetSecretCmd(pctx *getContext) *cobra.Command {
+func newGetSecretCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "secret NAME",
 		Short: "Show a single Secret resource",
@@ -35,7 +36,7 @@ func newGetSecretCmd(pctx *getContext) *cobra.Command {
 				return errors.Wrapf(err, "failed to get a secret %s", currentMesh)
 			}
 			secrets := []*system.SecretResource{secret}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printSecrets(pctx.Now(), secrets, cmd.OutOrStdout())
 			default:

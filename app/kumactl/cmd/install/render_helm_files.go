@@ -38,7 +38,10 @@ metadata:
 `, namespace)
 }
 
-func renderHelmFiles(templates []data.File, args interface{}, kubeClientConfig *rest.Config) ([]data.File, error) {
+// When Kuma chart is embedded into other chart all the values need to have a prefix. You can set this prefix with this var.
+var HELMValuesPrefix = ""
+
+func renderHelmFiles(templates []data.File, args interface{}, namespace string, kubeClientConfig *rest.Config) ([]data.File, error) {
 	chart, err := loadCharts(templates)
 	if err != nil {
 		return nil, errors.Errorf("Failed to load charts: %s", err)
@@ -49,7 +52,6 @@ func renderHelmFiles(templates []data.File, args interface{}, kubeClientConfig *
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)
 	}
 
-	namespace := overrideValues["namespace"].(string)
 	options := generateReleaseOptions(chart.Metadata.Name, namespace)
 
 	valuesToRender, err := chartutil.ToRenderValues(chart, overrideValues, options, nil)
@@ -126,6 +128,12 @@ func generateOverrideValues(args interface{}) map[string]interface{} {
 			root = root[n].(map[string]interface{})
 		}
 		root[splitTag[tagCount-1]] = adjustType(value)
+	}
+
+	if HELMValuesPrefix != "" {
+		prefixed := map[string]interface{}{}
+		prefixed[HELMValuesPrefix] = overrideValues
+		return prefixed
 	}
 
 	return overrideValues

@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 
 	"github.com/spf13/cobra"
@@ -15,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetTrafficRouteCmd(pctx *getContext) *cobra.Command {
+func newGetTrafficRouteCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-route NAME",
 		Short: "Show a single TrafficRoute resource",
@@ -38,7 +39,7 @@ func newGetTrafficRouteCmd(pctx *getContext) *cobra.Command {
 			trafficRoutes := &mesh.TrafficRouteResourceList{
 				Items: []*mesh.TrafficRouteResource{trafficRoute},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printTrafficRoutes(pctx.Now(), trafficRoutes, cmd.OutOrStdout())
 			default:

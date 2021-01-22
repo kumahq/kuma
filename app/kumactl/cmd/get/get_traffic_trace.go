@@ -6,6 +6,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -13,7 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetTrafficTraceCmd(pctx *getContext) *cobra.Command {
+func newGetTrafficTraceCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "traffic-trace NAME",
 		Short: "Show a single TrafficTrace resource",
@@ -36,7 +37,7 @@ func newGetTrafficTraceCmd(pctx *getContext) *cobra.Command {
 			trafficTraces := &mesh.TrafficTraceResourceList{
 				Items: []*mesh.TrafficTraceResource{trafficTrace},
 			}
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printTrafficTraces(pctx.Now(), trafficTraces, cmd.OutOrStdout())
 			default:

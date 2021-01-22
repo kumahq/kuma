@@ -25,7 +25,7 @@ var (
 )
 
 type InstallControlPlaneArgs struct {
-	Namespace                                    string            `helm:"namespace"`
+	Namespace                                    string
 	ControlPlane_image_pullPolicy                string            `helm:"controlPlane.image.pullPolicy"`
 	ControlPlane_image_registry                  string            `helm:"controlPlane.image.registry"`
 	ControlPlane_image_repository                string            `helm:"controlPlane.image.repository"`
@@ -141,7 +141,7 @@ This command requires that the KUBECONFIG environment is set`,
 				return errors.Wrap(err, "Failed to read template files")
 			}
 
-			renderedFiles, err := renderHelmFiles(templateFiles, args, kubeClientConfig)
+			renderedFiles, err := renderHelmFiles(templateFiles, args, args.Namespace, kubeClientConfig)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render helm template files")
 			}

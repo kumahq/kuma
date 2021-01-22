@@ -5,6 +5,7 @@ import (
 	"io"
 	"time"
 
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
 
 	"github.com/pkg/errors"
@@ -17,7 +18,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
-func newGetProxyTemplatesCmd(pctx *listContext) *cobra.Command {
+func newGetProxyTemplatesCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "proxytemplates",
 		Short: "Show ProxyTemplates",
@@ -29,11 +30,11 @@ func newGetProxyTemplatesCmd(pctx *listContext) *cobra.Command {
 			}
 
 			proxyTemplates := &mesh_core.ProxyTemplateResourceList{}
-			if err := rs.List(context.Background(), proxyTemplates, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.args.size, pctx.args.offset)); err != nil {
+			if err := rs.List(context.Background(), proxyTemplates, core_store.ListByMesh(pctx.CurrentMesh()), core_store.ListByPage(pctx.ListContext.Args.Size, pctx.ListContext.Args.Offset)); err != nil {
 				return errors.Wrapf(err, "failed to list ProxyTemplates")
 			}
 
-			switch format := output.Format(pctx.getContext.args.outputFormat); format {
+			switch format := output.Format(pctx.GetContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printProxyTemplates(pctx.Now(), proxyTemplates, cmd.OutOrStdout())
 			default:

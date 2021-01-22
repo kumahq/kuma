@@ -25,11 +25,11 @@ import (
 
 var (
 	kdsRemoteLog  = core.Log.WithName("kds-remote")
-	providedTypes = []model.ResourceType{
+	ProvidedTypes = []model.ResourceType{
 		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
 	}
-	consumedTypes = []model.ResourceType{
+	ConsumedTypes = []model.ResourceType{
 		mesh.MeshType,
 		mesh.DataplaneType,
 		mesh.ExternalServiceType,
@@ -49,7 +49,7 @@ var (
 
 func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multizone.Remote.Zone
-	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes,
+	kdsServer, err := kds_server.New(kdsRemoteLog, rt, ProvidedTypes,
 		zone, rt.Config().Multizone.Remote.KDS.RefreshInterval,
 		providedFilter(zone), false)
 	if err != nil {
@@ -65,7 +65,7 @@ func Setup(rt core_runtime.Runtime) error {
 				log.Error(err, "StreamKumaResources finished with an error")
 			}
 		}()
-		sink := kds_client.NewKDSSink(log, consumedTypes, kds_client.NewKDSStream(session.ClientStream(), zone),
+		sink := kds_client.NewKDSSink(log, ConsumedTypes, kds_client.NewKDSStream(session.ClientStream(), zone),
 			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
 		)
 		go func() {
@@ -128,7 +128,7 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 }
 
 func ConsumesType(typ model.ResourceType) bool {
-	for _, consumedTyp := range consumedTypes {
+	for _, consumedTyp := range ConsumedTypes {
 		if consumedTyp == typ {
 			return true
 		}
