@@ -186,7 +186,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	switch appname {
 	case AppModeEchoServer:
 		if transparent {
-			dpyaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, opts.mesh, "80", "80", redirectPortInbound, redirectPortOutbound)
+			dpyaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, opts.mesh, "8080", "80", "8080", redirectPortInbound, redirectPortOutbound)
 		} else {
 			if opts.serviceProbe {
 				dpyaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, opts.mesh, "8080", "80", "8080")

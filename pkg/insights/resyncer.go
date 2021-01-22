@@ -178,39 +178,49 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	insight := &mesh_proto.ServiceInsight{
 		Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{},
 	}
-	dpList := &core_mesh.DataplaneResourceList{}
-	if err := r.rm.List(context.Background(), dpList, store.ListByMesh(mesh)); err != nil {
+	dp := &core_mesh.DataplaneResourceList{}
+	if err := r.rm.List(context.Background(), dp, store.ListByMesh(mesh)); err != nil {
 		return err
-	}
-	dpMap := map[model.ResourceKey][]string{}
-	for _, dp := range dpList.Items {
-		if dp.Spec.IsIngress() {
-			continue // ingress does not represent any service
-		}
-		dpKey := model.MetaToResourceKey(dp.Meta)
-		for _, inbound := range dp.Spec.Networking.Inbound {
-			svc := inbound.GetService()
-			dpMap[dpKey] = append(dpMap[dpKey], svc)
-			if _, ok := insight.Services[svc]; !ok {
-				insight.Services[svc] = &mesh_proto.ServiceInsight_DataplaneStat{}
-			}
-			insight.Services[svc].Total++
-		}
 	}
 	dpInsights := &core_mesh.DataplaneInsightResourceList{}
 	if err := r.rm.List(context.Background(), dpInsights, store.ListByMesh(mesh)); err != nil {
 		return err
 	}
-	for _, dpInsight := range dpInsights.Items {
-		if dpInsight.Spec.IsOnline() {
-			for _, svc := range dpMap[model.MetaToResourceKey(dpInsight.Meta)] {
-				insight.Services[svc].Online++
+	dpOverviews := core_mesh.NewDataplaneOverviews(*dp, *dpInsights)
+
+	incTotal := func(svc string) {
+		if _, ok := insight.Services[svc]; !ok {
+			insight.Services[svc] = &mesh_proto.ServiceInsight_DataplaneStat{}
+		}
+		insight.Services[svc].Total++
+	}
+
+	for _, dpOverview := range dpOverviews.Items {
+		status, _ := dpOverview.GetStatus()
+
+		switch status {
+		case core_mesh.Online:
+			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
+				incTotal(inbound.GetService())
+				insight.Services[inbound.GetService()].Online++
+			}
+		case core_mesh.Offline:
+			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
+				incTotal(inbound.GetService())
+				insight.Services[inbound.GetService()].Offline++
+			}
+		case core_mesh.PartiallyDegraded:
+			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
+				incTotal(inbound.GetService())
+				if inbound.Health != nil && !inbound.Health.Ready {
+					insight.Services[inbound.GetService()].Offline++
+				} else {
+					insight.Services[inbound.GetService()].Online++
+				}
 			}
 		}
 	}
-	for _, stat := range insight.Services {
-		stat.Offline = stat.Total - stat.Online
-	}
+
 	err := manager.Upsert(r.rm, model.ResourceKey{Mesh: mesh, Name: ServiceInsightName(mesh)}, core_mesh.NewServiceInsightResource(), func(resource model.Resource) {
 		insight.LastSync = proto.MustTimestampProto(core.Now())
 		_ = resource.SetSpec(insight)
@@ -273,6 +283,8 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			return err
 		}
 		switch resType {
+		case core_mesh.DataplaneType:
+			insight.Dataplanes.Total = uint32(len(list.GetItems()))
 		case core_mesh.DataplaneInsightType:
 			for _, dpInsight := range list.(*core_mesh.DataplaneInsightResourceList).Items {
 				dpSubscription, _ := dpInsight.Spec.GetLatestSubscription()
@@ -289,7 +301,6 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 					insight.DpVersions.KumaDp[kumaDpVersion].Offline++
 					insight.DpVersions.Envoy[envoyVersion].Offline++
 				}
-				insight.Dataplanes.Total = insight.Dataplanes.Online + insight.Dataplanes.Offline
 				updateTotal(kumaDpVersion, insight.DpVersions.KumaDp)
 				updateTotal(envoyVersion, insight.DpVersions.Envoy)
 			}

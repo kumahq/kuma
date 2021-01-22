@@ -80,6 +80,7 @@ networking:
   address:  {{ address }}
   inbound:
   - port: %s
+    servicePort: %s
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: http

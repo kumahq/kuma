@@ -15,8 +15,8 @@ func NewSnapshot(version string, hcs *envoy_service_health_v3.HealthCheckSpecifi
 	return &Snapshot{
 		HealthChecks: cache.Resources{
 			Version: version,
-			Items: map[string]envoy_types.Resource{
-				"hcs": hcs,
+			Items: map[string]envoy_types.ResourceWithTtl{
+				"hcs": {Resource: hcs},
 			},
 		},
 	}
@@ -42,7 +42,11 @@ func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
 	if s == nil || typ != HealthCheckSpecifierType {
 		return nil
 	}
-	return s.HealthChecks.Items
+	withoutTtl := make(map[string]envoy_types.Resource, len(s.HealthChecks.Items))
+	for name, res := range s.HealthChecks.Items {
+		withoutTtl[name] = res.Resource
+	}
+	return withoutTtl
 }
 
 func (s *Snapshot) GetVersion(typ string) string {

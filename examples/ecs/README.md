@@ -29,7 +29,12 @@ aws cloudformation deploy \
     --template-file kuma-cp-standalone.yaml
 ```
 
-The `kuma-vpc` stack is the default for the `VPCStackName` parameter. Note that `AllowedCidr` parameter and override it accordingly to enable access to Kuma CP ports accordingly.
+The `kuma-vpc` stack is the default for the `VPCStackName` parameter. Note that `AllowedCidr` parameter and override it accordingly to enable access to Kuma CP ports.
+
+To remove the `kuma-cp` stack use:
+```shell
+aws cloudformation delete-stack --stack-name kuma-cp
+```
 
 ### Global
 
@@ -44,7 +49,7 @@ aws cloudformation deploy \
 
 ### Remote
 
-Setting up a remote `kuma-cp` is a two step process. First, deploy the kuma-cp itself:
+Setting up a remote `kuma-cp` is a three step process. First, deploy the kuma-cp itself:
 
 ```bash
 aws cloudformation deploy \
@@ -53,33 +58,8 @@ aws cloudformation deploy \
     --template-file kuma-cp-remote.yaml
 ```
 
-Then add a resource in the global (see how to configure `kumactl` in the next session)
 
-#### ECS/Universal
-```bash
-echo "type: Zone
-name: zone-1
-ingress:
-  address: <zone-ingress-address>" | kumactl apply -f -
-```
-
-#### Kubernetes
-
-```bash
-echo "apiVersion: kuma.io/v1alpha1
-kind: Zone
-mesh: default
-metadata:
-  name: zone-1
-spec:
-  ingress:
-    address:  <zone-ingress-address>" | kubectl apply -f -
-```
-
-Where `<zone-ingress-address>` is composed of the public address of the remote kuma-cp and the port assigned for the Ingress.
-
-
-## OPTIONAL: Configure `kumactl` to access the API 
+#### OPTIONAL: Configure `kumactl` to access the API 
 Find the public IP address fo the remote or standalone `kuma-cp` and use it in the command below.
 
 ```bash
@@ -87,9 +67,28 @@ export PUBLIC_IP=<ip address>
 kumactl config control-planes add --name=ecs --address=http://$PUBLIC_IP:5681 --overwrite
 ```
 
+### Install the Zone Ingress
+
+For cross-zone communication Kuma needs the Ingress DP deployed. As every dataplane (see details in the `workload` chapter below) it needs a dataplane token generated 
+
+```shell
+ssh root@<kuma-cp-remote-ip> "wget --header='Content-Type: application/json' --post-data='{\"mesh\": \"default\", \"type\": \"ingress\"}' -qO- http://localhost:5681/tokens"
+```
+
+Then simply deploy the ingress itself:
+
+```shell
+aws cloudformation deploy \
+    --capabilities CAPABILITY_IAM \
+    --stack-name ingress \
+    --template-file remote-ingress.yaml \
+    --parameter-overrides \
+      DPToken="<DP_TOKEN_VALUE>"
+```
+
 ### Install the Kuma DNS
 
-The services within the Kuma mesh are exposed whtough their names (as defined in the `kuma.io/service` tag) in the `.mesh` DNS zone. In the default workload example that would be `httpbin.mesh`.
+The services within the Kuma mesh are exposed through their names (as defined in the `kuma.io/service` tag) in the `.mesh` DNS zone. In the default workload example that would be `httpbin.mesh`.
 Run the following command to create the necessary Forwarding rules in Route 53 and leverage the integrated DNS server in `kuma-cp`.
 
 ```bash
@@ -106,18 +105,25 @@ Note: We strongly recommend exposing the Kuma-CP instances behind a load balance
 ### Install the workload
 
 The `workload` template provides a basic example how `kuma-dp` can be run as a sidecar container alongside an arbitrary, single port service container.
-In order to run `kuma-dp` container, we have to issue a token. Token could be generated using Admin API of the Kuma CP. By default Admin API
-doesn't require security and serves only on `localhost`. If you'd like to run Admin API on the public interface please 
-check the [instructions](https://kuma.io/docs/0.7.1/documentation/security/#accessing-admin-server-from-a-different-machine).
+In order to run `kuma-dp` container, we have to issue a token. Token could be generated using Admin API of the Kuma CP.
 
-Run in the same network namespace as Kuma CP (this example deploys ssh server as a sidecar for Kuma CP):
+In this example we'll show the simplest form to generate it by executing this command alongside the `kuma-cp`:
 ```bash
-wget --header='Content-Type: application/json' --post-data='{"mesh": "default"}' -O /tmp/dp-httpbin-1 http://localhost:5681/tokens
+ssh root@<kuma-cp-ip> "wget --header='Content-Type: application/json' --post-data='{\"mesh\": \"default\"}' -qO- http://localhost:5681/tokens"
 ```
-Note: this command generates token which is valid for all Dataplanes in the `default` mesh. Kuma also allows you to generate tokens based
-on Dataplane's Name and Tags.   
+
+The passowrd is `root`, as noted in the beginning these are sample deployments and it is not adviseable 
+
+The generated token is valid for all Dataplanes in the `default` mesh. Kuma also allows you to generate tokens based
+on Dataplane's Name and Tags.
+
+Note: Kuma allows much more advanced and secure way to expose the `/tokens` endpoint. For this it needs to have `HTTPS` endpoint configured
+on port `5682` as well as client ceritificate setup for authentication. The full procedure is available in Kuma Security documentation 
+[Data plane proxy authentication](https://kuma.io/docs/1.0.5/documentation/security/#data-plane-proxy-to-control-plane-communication),
+[User to control plane communication](https://kuma.io/docs/1.0.5/documentation/security/#user-to-control-plane-communication)
 
 #### Standalone
+
 ```bash
 aws cloudformation deploy \
     --capabilities CAPABILITY_IAM \
@@ -129,6 +135,7 @@ aws cloudformation deploy \
 ```
 
 #### Remote
+
 ```bash
 aws cloudformation deploy \
     --capabilities CAPABILITY_IAM \
@@ -137,11 +144,49 @@ aws cloudformation deploy \
     --parameter-overrides \
       DesiredCount=2 \
       DPToken="<DP_TOKEN_VALUE>" \
-      CPAddress="http://zone-1-controlplane.kuma.io:5681"
+      CPAddress="https://zone-1-controlplane.kuma.io:5678"
 ```
 
 The `workload` template has a lot of parameters, so it can be customized for many scenarios, with different workload images, service name and port etc. Find more information in the template itself.
 
+## A second zone example
+Here is an example how to run a second workload with the same SSH server in a second zone:
+
+First create the second zone:
+
+```shell
+kumactl generate tls-certificate --type=server --cp-hostname zone-2-controlplane.kuma.io
+export KEY=$(cat key.pem)
+export CERT=$(cat cert.pem)
+aws cloudformation deploy \
+    --capabilities CAPABILITY_IAM \
+    --stack-name kuma-cp-remote-2 \
+    --template-file kuma-cp-remote.yaml \
+    --parameter-overrides \
+      ServerCert=$CERT \
+      ServerKey=$KEY \
+      Zone=zone-2
+```
+
+```shell
+aws cloudformation deploy \
+    --capabilities CAPABILITY_IAM \
+    --stack-name workload-2 \
+    --template-file workload.yaml \
+    --parameter-overrides \
+      WorkloadName=ssh \
+      WorkloadImage=sickp/alpine-sshd:latest \
+      WorkloadManagementPort=22 \
+      CPAddress="https://zone-2-controlplane.kuma.io:5678" \
+      DPToken="<DP_TOKEN_VALUE>"
+```
+
+Finally log in the new workload container and access the `httpbin.mesh` service:
+
+```shell
+ssh roo@<workload-2-ip>
+wget -qO- httpbin.mesh
+```
 
 # Future work
 

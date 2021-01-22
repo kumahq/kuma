@@ -396,7 +396,7 @@ dpServer:
     enabled: false
     interval: 11s
     refreshInterval: 12s
-    check:
+    checkDefaults:
       timeout: 5s
       interval: 6s
       noTrafficInterval: 7s

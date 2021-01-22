@@ -286,7 +286,7 @@ func (cache *snapshotCache) respond(request *envoy_cache.Request, value chan env
 }
 
 func createResponse(request *envoy_cache.Request, resources map[string]types.Resource, version string) envoy_cache.Response {
-	filtered := make([]types.Resource, 0, len(resources))
+	filtered := make([]types.ResourceWithTtl, 0, len(resources))
 
 	// Reply only with the requested resources. Envoy may ask each resource
 	// individually in a separate stream. It is ok to reply with the same version
@@ -295,12 +295,12 @@ func createResponse(request *envoy_cache.Request, resources map[string]types.Res
 		set := nameSet(request.ResourceNames)
 		for name, resource := range resources {
 			if set[name] {
-				filtered = append(filtered, resource)
+				filtered = append(filtered, types.ResourceWithTtl{Resource: resource})
 			}
 		}
 	} else {
 		for _, resource := range resources {
-			filtered = append(filtered, resource)
+			filtered = append(filtered, types.ResourceWithTtl{Resource: resource})
 		}
 	}
 
