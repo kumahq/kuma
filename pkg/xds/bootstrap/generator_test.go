@@ -227,7 +227,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "localhost"
 				cfg.Params.XdsPort = 5678
-				cfg.APIVersion = envoy_common.APIV3
+				cfg.APIVersion = envoy_common.APIV2
 				return cfg
 			},
 			request: types.BootstrapRequest{
@@ -238,7 +238,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Version:            defaultVersion,
 			},
 			expectedConfigFile:       "generator.default-config.kubernetes.golden.yaml",
-			expectedBootstrapVersion: types.BootstrapV3,
+			expectedBootstrapVersion: types.BootstrapV2,
 			hdsEnabled:               false,
 		}),
 	)

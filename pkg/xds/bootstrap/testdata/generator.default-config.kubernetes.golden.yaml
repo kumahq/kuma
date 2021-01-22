@@ -13,7 +13,7 @@ dynamicResources:
             - fromPlugin:
                 name: envoy.grpc_credentials.file_based_metadata
                 typedConfig:
-                  '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
+                  '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
                   secretData:
                     filename: /tmp/token
           channelCredentials:
@@ -23,13 +23,11 @@ dynamicResources:
           credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
           statPrefix: ads
           targetUri: localhost:5678
-    transportApiVersion: V3
+    transportApiVersion: V2
   cdsConfig:
     ads: {}
-    resourceApiVersion: V3
   ldsConfig:
     ads: {}
-    resourceApiVersion: V3
 node:
   cluster: backend
   id: mesh.name.namespace
