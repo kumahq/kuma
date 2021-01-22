@@ -283,6 +283,8 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			return err
 		}
 		switch resType {
+		case core_mesh.DataplaneType:
+			insight.Dataplanes.Total = uint32(len(list.GetItems()))
 		case core_mesh.DataplaneInsightType:
 			for _, dpInsight := range list.(*core_mesh.DataplaneInsightResourceList).Items {
 				dpSubscription, _ := dpInsight.Spec.GetLatestSubscription()
@@ -299,7 +301,6 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 					insight.DpVersions.KumaDp[kumaDpVersion].Offline++
 					insight.DpVersions.Envoy[envoyVersion].Offline++
 				}
-				insight.Dataplanes.Total = insight.Dataplanes.Online + insight.Dataplanes.Offline
 				updateTotal(kumaDpVersion, insight.DpVersions.KumaDp)
 				updateTotal(envoyVersion, insight.DpVersions.Envoy)
 			}

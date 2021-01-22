@@ -90,7 +90,6 @@ func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 			dpsUpdated++
 			log.V(1).Info("outbounds updated", "mesh", m.Meta.GetName(), "dataplane", dp)
 		}
-		log.Info("outbounds updated due to VIP changes", "mesh", m.Meta.GetName(), "dpsUpdated", dpsUpdated)
 	}
 	return nil
 }
