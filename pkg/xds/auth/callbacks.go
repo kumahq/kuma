@@ -14,6 +14,8 @@ import (
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
+// The same logic also resides in pkg/hds/authn/callbacks.go
+
 const authorization = "authorization"
 
 func NewCallbacks(resManager core_manager.ResourceManager, authenticator Authenticator) util_xds.Callbacks {

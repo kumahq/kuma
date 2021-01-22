@@ -21,4 +21,5 @@ type configParameters struct {
 	KumaDpBuildDate    string
 	EnvoyVersion       string
 	EnvoyBuild         string
+	HdsEnabled         bool
 }

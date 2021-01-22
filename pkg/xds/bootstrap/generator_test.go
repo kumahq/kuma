@@ -87,11 +87,12 @@ var _ = Describe("bootstrapGenerator", func() {
 		request                  types.BootstrapRequest
 		expectedConfigFile       string
 		expectedBootstrapVersion types.BootstrapVersion
+		hdsEnabled               bool
 	}
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled, given.hdsEnabled)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -126,6 +127,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.default-config-minimal-request.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV2,
+			hdsEnabled:               true,
 		}),
 		Entry("default config", testCase{
 			dpAuthEnabled: true,
@@ -145,6 +147,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.default-config.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV3,
+			hdsEnabled:               true,
 		}),
 		Entry("custom config with minimal request", testCase{
 			dpAuthEnabled: false,
@@ -169,6 +172,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.custom-config-minimal-request.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV2,
+			hdsEnabled:               true,
 		}),
 		Entry("custom config", testCase{
 			dpAuthEnabled: true,
@@ -215,6 +219,27 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.custom-config.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV2,
+			hdsEnabled:               true,
+		}),
+		Entry("default config, kubernetes", testCase{
+			dpAuthEnabled: true,
+			config: func() *bootstrap_config.BootstrapServerConfig {
+				cfg := bootstrap_config.DefaultBootstrapServerConfig()
+				cfg.Params.XdsHost = "localhost"
+				cfg.Params.XdsPort = 5678
+				cfg.APIVersion = envoy_common.APIV3
+				return cfg
+			},
+			request: types.BootstrapRequest{
+				Mesh:               "mesh",
+				Name:               "name.namespace",
+				AdminPort:          1234,
+				DataplaneTokenPath: "/tmp/token",
+				Version:            defaultVersion,
+			},
+			expectedConfigFile:       "generator.default-config.kubernetes.golden.yaml",
+			expectedBootstrapVersion: types.BootstrapV3,
+			hdsEnabled:               false,
 		}),
 	)
 
@@ -261,7 +286,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		cfg.Params.XdsHost = "localhost"
 		cfg.Params.XdsPort = 5678
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true)
 		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
@@ -326,7 +351,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		cfg.Params.XdsHost = "localhost"
 		cfg.Params.XdsPort = 5678
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true)
 		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
@@ -346,7 +371,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		// given
 		cfg := bootstrap_config.DefaultBootstrapServerConfig()
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true)
 		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
@@ -372,7 +397,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		cfg.Params.XdsHost = "localhost"
 		cfg.Params.XdsPort = 5678
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true)
 		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:             "mesh",
