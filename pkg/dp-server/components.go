@@ -3,6 +3,8 @@ package dp_server
 import (
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/hds"
+
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	sds_server "github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap"
@@ -19,6 +21,11 @@ func SetupServer(rt runtime.Runtime) error {
 	}
 	if err := bootstrap.RegisterBootstrap(rt, dpServer.httpMux); err != nil {
 		return err
+	}
+	if rt.Config().DpServer.Hds.Enabled {
+		if err := hds.RegisterHDS(rt, dpServer.grpcServer); err != nil {
+			return err
+		}
 	}
 	if err := rt.Add(dpServer); err != nil {
 		return err

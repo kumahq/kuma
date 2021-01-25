@@ -7030,7 +7030,7 @@ spec:
         # priority scheduling and that its resources are reserved
         # if it ever gets evicted.
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        checksum/config: aca3260a4e39c57bded26a45971905b7371dfb34b5225b76451e581ab0cea5ed
+        checksum/config: a44dcb387240cfcf24c3e9cb49ab57adb12cf9853649159a8b8dee49cb90bfaa
     spec:
       nodeSelector:
 
@@ -7108,8 +7108,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: c53a71cd533239dfc51872d70ba983e0a0d84c1334dbcda10f0e83c0ce3115fd
-        checksum/tls-secrets: 4d3bf5caa21cc0cd813874cf4ae57c9b9cc02b8bf85d21beb1c10a6c5c9ea488
+        checksum/config: 9f338e194d02567321138ce2c3652db2b944e1a24adec76d6e6bcce190199442
+        checksum/tls-secrets: d7265831b6f233468406188b4f550dc084d41228a7a2e8206beadb801c68ffe1
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -7121,62 +7121,71 @@ spec:
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
-      - name: control-plane
-        image: "kong-docker-kuma-docker.bintray.io/kuma-cp:0.0.1"
-        imagePullPolicy: IfNotPresent
-        env:
-        - name: KUMA_ENVIRONMENT
-          value: "kubernetes"
-        - name: KUMA_STORE_TYPE
-          value: "kubernetes"
-        - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
-          value: "kuma-system"
-        - name: KUMA_GENERAL_TLS_CERT_FILE
-          value: /var/run/secrets/kuma.io/tls-cert/tls.crt
-        - name: KUMA_GENERAL_TLS_KEY_FILE
-          value: /var/run/secrets/kuma.io/tls-cert/tls.key
-        - name: KUMA_API_SERVER_READ_ONLY
-          value: "true"
-        - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
-          value: "5443"
-        - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
-          value: /var/run/secrets/kuma.io/tls-cert
-        - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
-          value: "true"
-        - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
-          value: "kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1"
-        - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-          value: "kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1"
-        - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
-          value: /var/run/secrets/kuma.io/tls-cert/ca.crt
-        - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
-          value: "false"
-        - name: KUMA_MODE
-          value: "standalone"
-        args:
-        - run
-        - --log-level=info
-        - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
-        ports:
-        - containerPort: 5681
-        - containerPort: 5682
-        - containerPort: 5443
-        - containerPort: 5678
-        - containerPort: 5653
-          protocol: UDP
-        livenessProbe:
-          httpGet:
-            path: /healthy
-            port: 5680
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 5680
-        resources:
-          requests:
-            cpu: 100m
-            memory: 256Mi
-        volumeMounts:
+        - name: control-plane
+          image: "kong-docker-kuma-docker.bintray.io/kuma-cp:0.0.1"
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: KUMA_API_SERVER_READ_ONLY
+              value: "true"
+            - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
+              value: "false"
+            - name: KUMA_DP_SERVER_HDS_ENABLED
+              value: "false"
+            - name: KUMA_ENVIRONMENT
+              value: kubernetes
+            - name: KUMA_GENERAL_TLS_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/tls.crt
+            - name: KUMA_GENERAL_TLS_KEY_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/tls.key
+            - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+              value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
+            - name: KUMA_MODE
+              value: standalone
+            - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
+              value: /var/run/secrets/kuma.io/tls-cert
+            - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
+              value: "5443"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
+              value: "true"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
+              value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
+            - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
+              value: kuma-system
+            - name: KUMA_STORE_TYPE
+              value: kubernetes
+          args:
+            - run
+            - --log-level=info
+            - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
+          ports:
+            - containerPort: 5681
+            - containerPort: 5682
+            - containerPort: 5443
+            - containerPort: 5678
+            - containerPort: 5653
+              protocol: UDP
+          livenessProbe:
+            httpGet:
+              path: /healthy
+              port: 5680
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 5680
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - name: general-tls-cert
+              mountPath: /var/run/secrets/kuma.io/tls-cert
+              readOnly: true
+            - name: kuma-control-plane-config
+              mountPath: /etc/kuma.io/kuma-control-plane
+              readOnly: true
+      volumes:
         - name: general-tls-cert
           mountPath: /var/run/secrets/kuma.io/tls-cert
           readOnly: true

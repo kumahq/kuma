@@ -111,6 +111,13 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.defaults.golden.yaml",
 		}),
+		Entry("should override default env-vars with values supplied", testCase{
+			extraArgs: []string{
+				"--env-var", "KUMA_DEFAULTS_SKIP_MESH_CREATION=true",
+				"--without-kubernetes-connection",
+			},
+			goldenFile: "install-control-plane.override-env-vars.golden.yaml",
+		}),
 		Entry("should generate Kubernetes resources with custom settings", testCase{
 			extraArgs: []string{
 				"--namespace", "kuma",

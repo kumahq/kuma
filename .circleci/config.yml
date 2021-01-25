@@ -705,6 +705,13 @@ workflows:
             - images
           # custom parameters
           target: test/e2e
+      - integration:
+          <<: *commit_workflow_filters
+          name: test/e2e V3
+          requires:
+            - images
+          # custom parameters
+          target: test/e2e API_VERSION=v3
 
   kuma-release:
     jobs:

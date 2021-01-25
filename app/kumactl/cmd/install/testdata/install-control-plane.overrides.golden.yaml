@@ -6945,8 +6945,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 5e1887bb368b679ff73f34151c144e21fdd25d8ffb9e9633957b03a1abe88986
-        checksum/tls-secrets: 70a1435634d31573bb20bc0bc6ad4fb20228660ebffb0a93f479a1aeba8eeb5d
+        checksum/config: 49b9b00b5b07435813f7626eb414fe3a3afd9f407d23277b3e8d166e879daa31
+        checksum/tls-secrets: d82553ca996c64ef0ba8fc6546d00271b43d155116360cc488689982b58f73b5
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -6958,78 +6958,99 @@ spec:
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
-      - name: control-plane
-        image: "kuma-ci/kuma-cp:greatest"
-        imagePullPolicy: Never
-        env:
-        - name: KUMA_ENVIRONMENT
-          value: "kubernetes"
-        - name: KUMA_STORE_TYPE
-          value: "kubernetes"
-        - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
-          value: "kuma"
-        - name: KUMA_GENERAL_TLS_CERT_FILE
-          value: /var/run/secrets/kuma.io/tls-cert/tls.crt
-        - name: KUMA_GENERAL_TLS_KEY_FILE
-          value: /var/run/secrets/kuma.io/tls-cert/tls.key
-        - name: KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
-          value: grpcs://192.168.0.1:5685
-        - name: KUMA_API_SERVER_READ_ONLY
-          value: "true"
-        - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
-          value: "5443"
-        - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
-          value: /var/run/secrets/kuma.io/tls-cert
-        - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
-          value: "false"
-        - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
-          value: "kuma-ci/kuma-dp:greatest"
-        - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-          value: "kuma-ci/kuma-init:greatest"
-        - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
-          value: /var/run/secrets/kuma.io/tls-cert/ca.crt
-        - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
-          value: "false"
-        - name: KUMA_MODE
-          value: "remote"
-        - name: KUMA_MULTIZONE_REMOTE_ZONE
-          value: "zone-1"
-        - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
-          value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.crt
-        - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
-          value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.key
-        - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
-          value: /var/run/secrets/kuma.io/api-server-client-certs/
-        - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
-          value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
-        - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
-          value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
-        - name: KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE
-          value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
-        args:
-        - run
-        - --log-level=info
-        - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
-        ports:
-        - containerPort: 5681
-        - containerPort: 5682
-        - containerPort: 5443
-        - containerPort: 5678
-        - containerPort: 5653
-          protocol: UDP
-        livenessProbe:
-          httpGet:
-            path: /healthy
-            port: 5680
-        readinessProbe:
-          httpGet:
-            path: /ready
-            port: 5680
-        resources:
-          requests:
-            cpu: 100m
-            memory: 256Mi
-        volumeMounts:
+        - name: control-plane
+          image: "kuma-ci/kuma-cp:greatest"
+          imagePullPolicy: Never
+          env:
+            - name: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
+              value: /var/run/secrets/kuma.io/api-server-client-certs/
+            - name: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
+              value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.crt
+            - name: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
+              value: /var/run/secrets/kuma.io/api-server-tls-cert/tls.key
+            - name: KUMA_API_SERVER_READ_ONLY
+              value: "true"
+            - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
+              value: "false"
+            - name: KUMA_DP_SERVER_HDS_ENABLED
+              value: "false"
+            - name: KUMA_ENVIRONMENT
+              value: kubernetes
+            - name: KUMA_GENERAL_TLS_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/tls.crt
+            - name: KUMA_GENERAL_TLS_KEY_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/tls.key
+            - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
+              value: kuma-ci/kuma-init:greatest
+            - name: KUMA_MODE
+              value: remote
+            - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
+              value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.crt
+            - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
+              value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
+            - name: KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
+              value: grpcs://192.168.0.1:5685
+            - name: KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE
+              value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
+            - name: KUMA_MULTIZONE_REMOTE_ZONE
+              value: zone-1
+            - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
+              value: /var/run/secrets/kuma.io/tls-cert
+            - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
+              value: "5443"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
+              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
+              value: "false"
+            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
+              value: kuma-ci/kuma-dp:greatest
+            - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
+              value: kuma
+            - name: KUMA_STORE_TYPE
+              value: kubernetes
+          args:
+            - run
+            - --log-level=info
+            - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
+          ports:
+            - containerPort: 5681
+            - containerPort: 5682
+            - containerPort: 5443
+            - containerPort: 5678
+            - containerPort: 5653
+              protocol: UDP
+          livenessProbe:
+            httpGet:
+              path: /healthy
+              port: 5680
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 5680
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - mountPath: /var/run/secrets/kuma.io/tls-cert
+              name: general-tls-cert
+              readOnly: true
+            - mountPath: /etc/kuma.io/kuma-control-plane
+              name: kuma-control-plane-config
+              readOnly: true
+            - mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
+              name: api-server-tls-cert
+              readOnly: true
+            - mountPath: /var/run/secrets/kuma.io/api-server-client-certs
+              name: api-server-client-certs
+              readOnly: true
+            - mountPath: /var/run/secrets/kuma.io/kds-server-tls-cert
+              name: kds-server-tls-cert
+              readOnly: true
+            - mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
+              name: kds-client-tls-cert
+              readOnly: true
+      volumes:
         - name: general-tls-cert
           mountPath: /var/run/secrets/kuma.io/tls-cert
           readOnly: true

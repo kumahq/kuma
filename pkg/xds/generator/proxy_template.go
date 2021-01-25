@@ -80,8 +80,12 @@ func NewDefaultProxyProfile() ResourceGenerator {
 }
 
 func init() {
-	predefinedProfiles[mesh_core.ProfileDefaultProxy] = NewDefaultProxyProfile()
-	predefinedProfiles[IngressProxy] = CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}}
+	RegisterProfile(mesh_core.ProfileDefaultProxy, NewDefaultProxyProfile())
+	RegisterProfile(IngressProxy, CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
+}
+
+func RegisterProfile(profileName string, generator ResourceGenerator) {
+	predefinedProfiles[profileName] = generator
 }
 
 type ProxyTemplateProfileSource struct {

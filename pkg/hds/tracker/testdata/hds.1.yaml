@@ -1,0 +1,16 @@
+clusterHealthChecks:
+  - clusterName: localhost:80
+    healthChecks:
+      - healthyThreshold: 4
+        interval: 1s
+        noTrafficInterval: 2s
+        tcpHealthCheck: {}
+        timeout: 3s
+        unhealthyThreshold: 5
+    localityEndpoints:
+      - endpoints:
+          - address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 80
+interval: 8s

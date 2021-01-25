@@ -28,6 +28,7 @@ const (
 
 	envKUMACTLBIN  = "KUMACTLBIN"
 	envK8SCLUSTERS = "K8SCLUSTERS"
+	envAPIVersion  = "API_VERSION"
 
 	maxClusters = 3
 

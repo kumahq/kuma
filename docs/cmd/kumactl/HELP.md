@@ -286,6 +286,8 @@ Flags:
       --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd")
       --kuma-prometheus-sd-version string   version of Kuma Prometheus SD (default "latest")
       --namespace string                    namespace to install metrics to (default "kuma-metrics")
+      --without-grafana                     disable Grafana resources generation
+      --without-prometheus                  disable Prometheus resources generation
 
 Global Flags:
       --config-file string   path to the configuration file to use

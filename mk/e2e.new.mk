@@ -1,6 +1,7 @@
 K8SCLUSTERS = kuma-1 kuma-2
 K8SCLUSTERS_START_TARGETS = $(addprefix test/e2e/kind/start/cluster/, $(K8SCLUSTERS))
 K8SCLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/kind/stop/cluster/, $(K8SCLUSTERS))
+API_VERSION ?= v2
 
 KUMA_UNIVERSAL_DOCKER_IMAGE ?= kuma-universal
 KUMA_UNIVERSAL_DOCKERFILE ?= test/dockerfiles/Dockerfile.universal
@@ -43,6 +44,7 @@ test/e2e/kind/stop: $(K8SCLUSTERS_STOP_TARGETS)
 test/e2e/test:
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
+	API_VERSION="$(API_VERSION)" \
 		$(GO_TEST) -v -timeout=45m ./test/e2e/...
 
 # test/e2e/debug is used for quicker feedback of E2E tests (ex. debugging flaky tests)
@@ -54,6 +56,7 @@ test/e2e/test:
 test/e2e/debug: build/kumactl images docker/build/universal test/e2e/kind/start
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
+	API_VERSION="$(API_VERSION)" \
 	GINKGO_EDITOR_INTEGRATION=true \
 		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) ./test/e2e/...
 	$(MAKE) test/e2e/kind/stop

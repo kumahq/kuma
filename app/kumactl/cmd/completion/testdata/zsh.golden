@@ -900,6 +900,8 @@ function _kumactl_install_metrics {
     '--kuma-prometheus-sd-image[image name of Kuma Prometheus SD]:' \
     '--kuma-prometheus-sd-version[version of Kuma Prometheus SD]:' \
     '--namespace[namespace to install metrics to]:' \
+    '--without-grafana[disable Grafana resources generation]' \
+    '--without-prometheus[disable Prometheus resources generation]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'

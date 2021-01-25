@@ -71,10 +71,15 @@ name: %s
 		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
 		Expect(err).ToNot(HaveOccurred())
 
+		// TODO: right now these tests are deliberately run WithHDS(false)
+		// even if HDS is enabled without any ServiceProbes it still affects
+		// first 2-3 load balancer requests, it's fine but tests should be rewritten
+
 		// Cluster 1
 		remote_1 = clusters.GetCluster(Kuma2)
 		optsRemote1 = []DeployOptionsFunc{
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			WithHDS(false),
 		}
 
 		err = NewClusterSetup().
@@ -91,6 +96,7 @@ name: %s
 		remote_2 = clusters.GetCluster(Kuma3)
 		optsRemote2 = []DeployOptionsFunc{
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			WithHDS(false),
 		}
 
 		err = NewClusterSetup().
