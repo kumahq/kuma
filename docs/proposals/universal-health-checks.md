@@ -34,12 +34,14 @@ Thanks to Envoy HDS (Health Discovery Service)  we can configure Envoy to do act
 There are several types of health checkers - TCP, HTTP and GRPC, each of them has own set of parameters. We want flexibility in specifying those health checks on a per Dataplane basis. In order to do that we have to either extend of the existing policy or introduce new one. Current proposal aims to cover all possible options with pros and cons.
 
 ## Requirements
+
 1. Enable/Disable application health check for all Dataplanes or only for specific ones.
 2. Parametrise port and path for health checkers (if application has special endpoints for checking health)
 
 ## Possible solutions
 
 ### Extend Dataplane model
+
 ```yaml
 type: Dataplane
 mesh: default
@@ -122,3 +124,30 @@ conf:
   readiness:
     tcp: {}
 ```
+
+## Solution
+
+Extend dataplane module, specifically Inbound section:
+
+```yaml
+type: Dataplane
+mesh: default
+name: web-01
+networking:
+  address: 127.0.0.1
+  inbound:
+    - port: 11011
+      servicePort: 11012
+      tags:
+        kuma.io/service: backend
+        kuma.io/protocol: http
+      serviceProbe:
+        interval: 10s
+        timeout: 3s
+        healthyThreshold: 1
+        unhealthThreshold: 1
+        tcp: {}
+```
+
+Parameters `interval`, `timeout`, `healthyThreshold` and `unhealthyThreshold` could be omitted, default values for them could be specified in kuma-cp config. 
+In the future we can add `http` checker section as well.
