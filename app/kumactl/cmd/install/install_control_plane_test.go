@@ -7,17 +7,18 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/cmd/install"
+	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
+	"github.com/kumahq/kuma/pkg/test/golden"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/pkg/tls"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-var _ = Describe("kumactl install control-plane", func() {
+var _ = FDescribe("kumactl install control-plane", func() {
 
 	var backupNewSelfSignedCert func(string, tls.CertType, ...string) (tls.KeyPair, error)
 	BeforeEach(func() {
@@ -79,28 +80,24 @@ var _ = Describe("kumactl install control-plane", func() {
 
 			// when
 			err := rootCmd.Execute()
-			// then
+
+			// then command succeed
 			Expect(err).ToNot(HaveOccurred())
-			// and
 			Expect(stderr.Bytes()).To(BeNil())
 
-			// when
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			expectedManifests := data.SplitYAML(data.File{Data: expected})
-
-			// when
+			// and output matches golden files
 			actual := stdout.Bytes()
-			// then
-			Expect(actual).To(MatchYAML(expected))
-			// and
 			actualManifests := data.SplitYAML(data.File{Data: actual})
 
-			// and
+			goldenFilePath := filepath.Join("testdata", given.goldenFile)
+			if golden.UpdateGoldenFiles() {
+				err := ioutil.WriteFile(goldenFilePath, actual, 0664)
+				Expect(err).ToNot(HaveOccurred())
+			}
+			expected, err := ioutil.ReadFile(goldenFilePath)
+			expectedManifests := data.SplitYAML(data.File{Data: expected})
+
 			Expect(len(actualManifests)).To(Equal(len(expectedManifests)))
-			// and
 			for i := range expectedManifests {
 				Expect(actualManifests[i]).To(MatchYAML(expectedManifests[i]))
 			}
