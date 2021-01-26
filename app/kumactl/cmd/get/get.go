@@ -6,6 +6,8 @@ import (
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 )
 
 func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -17,35 +19,35 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	// flags
 	cmd.PersistentFlags().StringVarP(&pctx.GetContext.Args.OutputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
 	// sub-commands
-	cmd.AddCommand(WithPaginationArgs(newGetMeshesCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetDataplanesCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetExternalServicesCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetHealthChecksCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetProxyTemplatesCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetTrafficPermissionsCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetTrafficRoutesCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetTrafficLogsCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetTrafficTracesCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetFaultInjectionsCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetCircuitBreakersCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(WithPaginationArgs(newGetRetriesCmd(pctx), &pctx.ListContext))
-	cmd.AddCommand(newGetSecretsCmd(pctx))
-	cmd.AddCommand(WithPaginationArgs(newGetZonesCmd(pctx), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "meshes", core_mesh.MeshType, printMeshes), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "dataplanes", core_mesh.DataplaneType, printDataplanes), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "external-services", core_mesh.ExternalServiceType, printExternalServices), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "healthchecks", core_mesh.HealthCheckType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "proxytemplates", core_mesh.ProxyTemplateType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "traffic-permissions", core_mesh.TrafficPermissionType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "traffic-routes", core_mesh.TrafficRouteType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "traffic-logs", core_mesh.TrafficLogType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "traffic-traces", core_mesh.TrafficTraceType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "fault-injections", core_mesh.FaultInjectionType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "circuit-breakers", core_mesh.CircuitBreakerType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "retries", core_mesh.RetryType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(NewGetResourcesCmd(pctx, "secrets", core_system.SecretType, BasicResourceTablePrinter))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "zones", core_system.ZoneType, printZones), &pctx.ListContext))
 
-	cmd.AddCommand(newGetMeshCmd(pctx))
-	cmd.AddCommand(newGetDataplaneCmd(pctx))
-	cmd.AddCommand(newGetExternalServiceCmd(pctx))
-	cmd.AddCommand(newGetHealthCheckCmd(pctx))
-	cmd.AddCommand(newGetProxyTemplateCmd(pctx))
-	cmd.AddCommand(newGetTrafficLogCmd(pctx))
-	cmd.AddCommand(newGetTrafficPermissionCmd(pctx))
-	cmd.AddCommand(newGetTrafficRouteCmd(pctx))
-	cmd.AddCommand(newGetTrafficTraceCmd(pctx))
-	cmd.AddCommand(newGetFaultInjectionCmd(pctx))
-	cmd.AddCommand(newGetCircuitBreakerCmd(pctx))
-	cmd.AddCommand(newGetRetryCmd(pctx))
-	cmd.AddCommand(newGetSecretCmd(pctx))
-	cmd.AddCommand(newGetZoneCmd(pctx))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "mesh", core_mesh.MeshType, printMeshes))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "dataplane", core_mesh.DataplaneType, printDataplanes))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "external-service", core_mesh.ExternalServiceType, printExternalServices))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "healthcheck", core_mesh.HealthCheckType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "proxytemplate", core_mesh.ProxyTemplateType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "traffic-permission", core_mesh.TrafficPermissionType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "traffic-route", core_mesh.TrafficRouteType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "traffic-log", core_mesh.TrafficLogType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "traffic-trace", core_mesh.TrafficTraceType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "fault-injection", core_mesh.FaultInjectionType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "circuit-breaker", core_mesh.CircuitBreakerType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "retry", core_mesh.RetryType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "secret", core_system.SecretType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "zone", core_mesh.RetryType, printZones))
 	return cmd
 }
 
