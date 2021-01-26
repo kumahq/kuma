@@ -6,20 +6,39 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
-type StaticEndpointConfigurer struct {
-	StatsName   string
-	Path        string
-	ClusterName string
-	RewritePath string
+type StaticEndpointsConfigurer struct {
+	StatsName string
+	Paths     []*envoy_common.StaticEndpointPath
 }
 
-var _ FilterChainConfigurer = &StaticEndpointConfigurer{}
+var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
 
-func (c *StaticEndpointConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+	routes := []*envoy_route.Route{}
+	for _, p := range c.Paths {
+		routes = append(routes, &envoy_route.Route{
+			Match: &envoy_route.RouteMatch{
+				PathSpecifier: &envoy_route.RouteMatch_Prefix{
+					Prefix: p.Path,
+				},
+			},
+			Action: &envoy_route.Route_Route{
+				Route: &envoy_route.RouteAction{
+					ClusterSpecifier: &envoy_route.RouteAction_Cluster{
+						Cluster: p.ClusterName,
+					},
+					PrefixRewrite: p.RewritePath,
+				},
+			},
+		})
+	}
+
 	config := &envoy_hcm.HttpConnectionManager{
 		StatPrefix: util_xds.SanitizeMetric(c.StatsName),
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
@@ -31,21 +50,7 @@ func (c *StaticEndpointConfigurer) Configure(filterChain *envoy_listener.FilterC
 				VirtualHosts: []*envoy_route.VirtualHost{{
 					Name:    "envoy_admin",
 					Domains: []string{"*"},
-					Routes: []*envoy_route.Route{{
-						Match: &envoy_route.RouteMatch{
-							PathSpecifier: &envoy_route.RouteMatch_Prefix{
-								Prefix: c.Path,
-							},
-						},
-						Action: &envoy_route.Route_Route{
-							Route: &envoy_route.RouteAction{
-								ClusterSpecifier: &envoy_route.RouteAction_Cluster{
-									Cluster: c.ClusterName,
-								},
-								PrefixRewrite: c.RewritePath,
-							},
-						},
-					}},
+					Routes:  routes,
 				}},
 				ValidateClusters: &wrappers.BoolValue{
 					Value: false,

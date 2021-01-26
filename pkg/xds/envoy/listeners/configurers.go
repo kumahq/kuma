@@ -54,19 +54,15 @@ func OriginalDstForwarder() ListenerBuilderOpt {
 	})
 }
 
-func StaticEndpoint(statsName string, path string, rewritePath string, clusterName string) FilterChainBuilderOpt {
+func StaticEndpoints(statsName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
-		config.AddV2(&v2.StaticEndpointConfigurer{
-			StatsName:   statsName,
-			Path:        path,
-			RewritePath: rewritePath,
-			ClusterName: clusterName,
+		config.AddV2(&v2.StaticEndpointsConfigurer{
+			StatsName: statsName,
+			Paths:     paths,
 		})
-		config.AddV3(&v3.StaticEndpointConfigurer{
-			StatsName:   statsName,
-			Path:        path,
-			RewritePath: rewritePath,
-			ClusterName: clusterName,
+		config.AddV3(&v3.StaticEndpointsConfigurer{
+			StatsName: statsName,
+			Paths:     paths,
 		})
 	})
 }

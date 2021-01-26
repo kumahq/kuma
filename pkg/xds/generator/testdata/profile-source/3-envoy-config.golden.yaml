@@ -254,10 +254,40 @@ resources:
                       name: envoy_admin
                       routes:
                         - match:
+                            prefix: /clusters
+                          route:
+                            cluster: kuma:envoy:admin
+                            prefixRewrite: /clusters
+                        - match:
+                            prefix: /config_dump
+                          route:
+                            cluster: kuma:envoy:admin
+                            prefixRewrite: /config_dump
+                        - match:
+                            prefix: /listeners
+                          route:
+                            cluster: kuma:envoy:admin
+                            prefixRewrite: /listeners
+                        - match:
+                            prefix: /listeners
+                          route:
+                            cluster: kuma:envoy:admin
+                            prefixRewrite: /listeners
+                        - match:
+                            prefix: /quitquitquit
+                          route:
+                            cluster: kuma:envoy:admin
+                            prefixRewrite: /quitquitquit
+                        - match:
                             prefix: /ready
                           route:
                             cluster: kuma:envoy:admin
                             prefixRewrite: /ready
+                        - match:
+                            prefix: /stats
+                          route:
+                            cluster: kuma:envoy:admin
+                            prefixRewrite: /stats
                 statPrefix: kuma_envoy_admin
       name: kuma:envoy:admin
       trafficDirection: INBOUND

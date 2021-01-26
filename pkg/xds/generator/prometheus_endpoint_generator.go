@@ -11,6 +11,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -74,10 +75,23 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 			// generate filter chain that does not require mTLS when DP scrapes itself (for example DP next to Prometheus Server)
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 				Configure(envoy_listeners.SourceMatcher(proxy.Dataplane.Spec.GetNetworking().Address)).
-				Configure(envoy_listeners.StaticEndpoint(prometheusListenerName, prometheusEndpoint.Path, statsPath, envoyAdminClusterName)),
+				Configure(envoy_listeners.StaticEndpoints(prometheusListenerName,
+					[]*envoy_common.StaticEndpointPath{
+						{
+							ClusterName: envoyAdminClusterName,
+							Path:        prometheusEndpoint.Path,
+							RewritePath: statsPath,
+						},
+					})),
 			)).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-				Configure(envoy_listeners.StaticEndpoint(prometheusListenerName, prometheusEndpoint.Path, statsPath, envoyAdminClusterName)).
+				Configure(envoy_listeners.StaticEndpoints(prometheusListenerName, []*envoy_common.StaticEndpointPath{
+					{
+						ClusterName: envoyAdminClusterName,
+						Path:        prometheusEndpoint.Path,
+						RewritePath: statsPath,
+					},
+				})).
 				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
 				Configure(envoy_listeners.NetworkRBAC(prometheusListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[iface])),
 			)).
@@ -86,7 +100,13 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 		listener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.InboundListener(prometheusListenerName, prometheusEndpointAddress, prometheusEndpoint.Port)).
 			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-				Configure(envoy_listeners.StaticEndpoint(prometheusListenerName, prometheusEndpoint.Path, statsPath, envoyAdminClusterName)),
+				Configure(envoy_listeners.StaticEndpoints(prometheusListenerName, []*envoy_common.StaticEndpointPath{
+					{
+						ClusterName: envoyAdminClusterName,
+						Path:        prometheusEndpoint.Path,
+						RewritePath: statsPath,
+					},
+				})),
 			)).
 			Build()
 	}
