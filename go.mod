@@ -9,7 +9,7 @@ require (
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
-	github.com/emicklei/go-restful v2.14.2+incompatible
+	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210107210257-6e771204fae6
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/ghodss/yaml v1.0.0
@@ -27,7 +27,7 @@ require (
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
-	github.com/lib/pq v1.8.0
+	github.com/lib/pq v1.9.0
 	github.com/miekg/dns v1.1.29
 	github.com/onsi/ginkgo v1.14.2
 	github.com/onsi/gomega v1.10.4

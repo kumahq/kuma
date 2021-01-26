@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## [1.0.6]
+> Released on  2021/01/22
+
+Changes:
+
+* feat: dataplane and service status improvements. Introduce Health Discovery Service [#1437](https://github.com//kumahq/kuma/pull/1437) [#1404](https://github.com//kumahq/kuma/pull/1404) [#1378](https://github.com//kumahq/kuma/pull/1378) [#1418](https://github.com//kumahq/kuma/pull/1418)
+* feat: user specified load balancer type per route [#1402](https://github.com//kumahq/kuma/pull/1402)
+* feat: remote-cp version in ZoneInsight [#1380](https://github.com//kumahq/kuma/pull/1380)
+  👍contributed by @tharun208
+* feat: update mesh insights with DP versions [#1372](https://github.com//kumahq/kuma/pull/1372)
+  👍contributed by @jewertow
+* chore: allow resolution of service names with "." [#1448](https://github.com//kumahq/kuma/pull/1448)
+  👍contributed by @lahabana
+* chore: Expose the possibility to add ProxyTemplates publicly [#1452](https://github.com//kumahq/kuma/pull/1452)
+  👍contributed by @lahabana
+* chore: Envoy XDS v2/v3 support [#1412](https://github.com//kumahq/kuma/pull/1412) [#1398](https://github.com//kumahq/kuma/pull/1398) [#1379](https://github.com//kumahq/kuma/pull/1379)
+* chore: disable prometheus/grafana in install metrics [#1447](https://github.com//kumahq/kuma/pull/1447)
+* chore: change exec probes to http [#1407](https://github.com//kumahq/kuma/pull/1407)
+* chore: update ecs examples [#1446](https://github.com//kumahq/kuma/pull/1446)
+* fix: nil check in IsIngress() to avoid panic when validating [#1424](https://github.com//kumahq/kuma/pull/1424)
+  👍contributed by @nikita15p
+* fix: outbound reconciler for Universal [#1422](https://github.com//kumahq/kuma/pull/1422)
+* fix: get rid of sending 'spec' in event from postgres [#1406](https://github.com//kumahq/kuma/pull/1406)
+* fix: de-duplicate passed env-vars [#1367](https://github.com//kumahq/kuma/pull/1367)
+  👍contributed by @hvydya
+
+
 ## [1.0.5]
 > Released on  2021/01/07
 

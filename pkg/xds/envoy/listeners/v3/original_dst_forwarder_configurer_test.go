@@ -11,7 +11,7 @@ import (
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-var _ = XDescribe("OriginalDstForwarderConfigurer", func() {
+var _ = Describe("OriginalDstForwarderConfigurer", func() {
 
 	type testCase struct {
 		listenerName    string

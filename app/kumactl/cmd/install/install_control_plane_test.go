@@ -18,7 +18,7 @@ import (
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-var _ = FDescribe("kumactl install control-plane", func() {
+var _ = Describe("kumactl install control-plane", func() {
 
 	var backupNewSelfSignedCert func(string, tls.CertType, ...string) (tls.KeyPair, error)
 	BeforeEach(func() {
@@ -95,6 +95,7 @@ var _ = FDescribe("kumactl install control-plane", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 			expected, err := ioutil.ReadFile(goldenFilePath)
+			Expect(err).ToNot(HaveOccurred())
 			expectedManifests := data.SplitYAML(data.File{Data: expected})
 
 			Expect(len(actualManifests)).To(Equal(len(expectedManifests)))
