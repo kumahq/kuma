@@ -5,6 +5,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
+	inspect_context "github.com/kumahq/kuma/app/kumactl/cmd/inspect/context"
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
@@ -33,13 +35,20 @@ type RootRuntime struct {
 	NewAPIServerClient         func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
 }
 
+// RootContext contains variables, functions and components that can be overridden when extending kumactl or running the test.
+// Example:
+//
+// rootCtx := kumactl_cmd.DefaultRootContext()
+// rootCtx.InstallCpContext.Args.ControlPlane_image_tag = "0.0.1"
+// rootCmd := cmd.NewRootCmd(rootCtx)
+// err := rootCmd.Execute()
 type RootContext struct {
 	TypeArgs         map[string]core_model.ResourceType
 	Args             RootArgs
 	Runtime          RootRuntime
-	GetContext       GetContext
-	ListContext      ListContext
-	InspectContext   InspectContext
+	GetContext       get_context.GetContext
+	ListContext      get_context.ListContext
+	InspectContext   inspect_context.InspectContext
 	InstallCpContext install_context.InstallCpContext
 }
 
@@ -188,23 +197,4 @@ func (rc *RootContext) CurrentApiClient() (kumactl_resources.ApiServerClient, er
 		return nil, err
 	}
 	return rc.Runtime.NewAPIServerClient(controlPlane.Coordinates.ApiServer)
-}
-
-type GetContext struct {
-	Args struct {
-		OutputFormat string
-	}
-}
-
-type ListContext struct {
-	Args struct {
-		Size   int
-		Offset string
-	}
-}
-
-type InspectContext struct {
-	Args struct {
-		OutputFormat string
-	}
 }

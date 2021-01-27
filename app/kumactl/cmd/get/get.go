@@ -3,6 +3,7 @@ package get
 import (
 	"github.com/spf13/cobra"
 
+	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
@@ -51,7 +52,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	return cmd
 }
 
-func WithPaginationArgs(cmd *cobra.Command, ctx *kumactl_cmd.ListContext) *cobra.Command {
+func WithPaginationArgs(cmd *cobra.Command, ctx *get_context.ListContext) *cobra.Command {
 	cmd.PersistentFlags().IntVarP(&ctx.Args.Size, "size", "", 0, "maximum number of elements to return")
 	cmd.PersistentFlags().StringVarP(&ctx.Args.Offset, "offset", "", "", "the offset that indicates starting element of the resources list to retrieve")
 	return cmd
