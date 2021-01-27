@@ -3,72 +3,57 @@ package get
 import (
 	"github.com/spf13/cobra"
 
+	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	kuma_cmd "github.com/kumahq/kuma/pkg/cmd"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 )
 
-type getContext struct {
-	*kumactl_cmd.RootContext
-
-	args struct {
-		outputFormat string
-	}
-}
-
-type listContext struct {
-	*getContext
-	args struct {
-		size   int
-		offset string
-	}
-}
-
 func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
-	ctx := &getContext{RootContext: pctx}
 	cmd := &cobra.Command{
 		Use:   "get",
 		Short: "Show Kuma resources",
 		Long:  `Show Kuma resources.`,
 	}
 	// flags
-	cmd.PersistentFlags().StringVarP(&ctx.args.outputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
+	cmd.PersistentFlags().StringVarP(&pctx.GetContext.Args.OutputFormat, "output", "o", string(output.TableFormat), kuma_cmd.UsageOptions("output format", output.TableFormat, output.YAMLFormat, output.JSONFormat))
 	// sub-commands
-	listCtx := &listContext{getContext: ctx}
-	cmd.AddCommand(withPaginationArgs(newGetMeshesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetDataplanesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetExternalServicesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetHealthChecksCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetProxyTemplatesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetTrafficPermissionsCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetTrafficRoutesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetTrafficLogsCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetTrafficTracesCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetFaultInjectionsCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetCircuitBreakersCmd(listCtx), listCtx))
-	cmd.AddCommand(withPaginationArgs(newGetRetriesCmd(listCtx), listCtx))
-	cmd.AddCommand(newGetSecretsCmd(ctx))
-	cmd.AddCommand(withPaginationArgs(newGetZonesCmd(listCtx), listCtx))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "meshes", core_mesh.MeshType, printMeshes), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "dataplanes", core_mesh.DataplaneType, printDataplanes), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "external-services", core_mesh.ExternalServiceType, printExternalServices), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "healthchecks", core_mesh.HealthCheckType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "proxytemplates", core_mesh.ProxyTemplateType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "traffic-permissions", core_mesh.TrafficPermissionType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "traffic-routes", core_mesh.TrafficRouteType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "traffic-logs", core_mesh.TrafficLogType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "traffic-traces", core_mesh.TrafficTraceType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "fault-injections", core_mesh.FaultInjectionType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "circuit-breakers", core_mesh.CircuitBreakerType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "retries", core_mesh.RetryType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(NewGetResourcesCmd(pctx, "secrets", core_system.SecretType, BasicResourceTablePrinter))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "zones", core_system.ZoneType, printZones), &pctx.ListContext))
 
-	cmd.AddCommand(newGetMeshCmd(ctx))
-	cmd.AddCommand(newGetDataplaneCmd(ctx))
-	cmd.AddCommand(newGetExternalServiceCmd(ctx))
-	cmd.AddCommand(newGetHealthCheckCmd(ctx))
-	cmd.AddCommand(newGetProxyTemplateCmd(ctx))
-	cmd.AddCommand(newGetTrafficLogCmd(ctx))
-	cmd.AddCommand(newGetTrafficPermissionCmd(ctx))
-	cmd.AddCommand(newGetTrafficRouteCmd(ctx))
-	cmd.AddCommand(newGetTrafficTraceCmd(ctx))
-	cmd.AddCommand(newGetFaultInjectionCmd(ctx))
-	cmd.AddCommand(newGetCircuitBreakerCmd(ctx))
-	cmd.AddCommand(newGetRetryCmd(ctx))
-	cmd.AddCommand(newGetSecretCmd(ctx))
-	cmd.AddCommand(newGetZoneCmd(ctx))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "mesh", core_mesh.MeshType, printMeshes))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "dataplane", core_mesh.DataplaneType, printDataplanes))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "external-service", core_mesh.ExternalServiceType, printExternalServices))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "healthcheck", core_mesh.HealthCheckType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "proxytemplate", core_mesh.ProxyTemplateType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "traffic-permission", core_mesh.TrafficPermissionType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "traffic-route", core_mesh.TrafficRouteType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "traffic-log", core_mesh.TrafficLogType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "traffic-trace", core_mesh.TrafficTraceType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "fault-injection", core_mesh.FaultInjectionType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "circuit-breaker", core_mesh.CircuitBreakerType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "retry", core_mesh.RetryType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "secret", core_system.SecretType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "zone", core_mesh.RetryType, printZones))
 	return cmd
 }
 
-func withPaginationArgs(cmd *cobra.Command, ctx *listContext) *cobra.Command {
-	cmd.PersistentFlags().IntVarP(&ctx.args.size, "size", "", 0, "maximum number of elements to return")
-	cmd.PersistentFlags().StringVarP(&ctx.args.offset, "offset", "", "", "the offset that indicates starting element of the resources list to retrieve")
+func WithPaginationArgs(cmd *cobra.Command, ctx *get_context.ListContext) *cobra.Command {
+	cmd.PersistentFlags().IntVarP(&ctx.Args.Size, "size", "", 0, "maximum number of elements to return")
+	cmd.PersistentFlags().StringVarP(&ctx.Args.Offset, "offset", "", "", "the offset that indicates starting element of the resources list to retrieve")
 	return cmd
 }
