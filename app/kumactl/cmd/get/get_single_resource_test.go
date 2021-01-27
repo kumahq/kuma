@@ -106,7 +106,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 			Expect(err).To(HaveOccurred())
 			// and
 			if resource == "mesh" {
-				Expect(outbuf.String()).To(Equal("Error: No resources found in unknown-resource mesh\n"))
+				Expect(outbuf.String()).To(Equal("Error: No resources found\n"))
 			} else {
 				Expect(outbuf.String()).To(Equal("Error: No resources found in default mesh\n"))
 			}

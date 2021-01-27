@@ -38,18 +38,23 @@ metadata:
 `, namespace)
 }
 
-func renderHelmFiles(templates []data.File, args interface{}, kubeClientConfig *rest.Config) ([]data.File, error) {
+func renderHelmFiles(
+	templates []data.File,
+	args interface{},
+	namespace string,
+	helmValuesPrefix string,
+	kubeClientConfig *rest.Config,
+) ([]data.File, error) {
 	chart, err := loadCharts(templates)
 	if err != nil {
 		return nil, errors.Errorf("Failed to load charts: %s", err)
 	}
 
-	overrideValues := generateOverrideValues(args)
+	overrideValues := generateOverrideValues(args, helmValuesPrefix)
 	if err := chartutil.ProcessDependencies(chart, overrideValues); err != nil {
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)
 	}
 
-	namespace := overrideValues["namespace"].(string)
 	options := generateReleaseOptions(chart.Metadata.Name, namespace)
 
 	valuesToRender, err := chartutil.ToRenderValues(chart, overrideValues, options, nil)
@@ -102,7 +107,7 @@ func loadCharts(templates []data.File) (*chart.Chart, error) {
 	return loadedChart, nil
 }
 
-func generateOverrideValues(args interface{}) map[string]interface{} {
+func generateOverrideValues(args interface{}, helmValuesPrefix string) map[string]interface{} {
 	overrideValues := map[string]interface{}{}
 
 	v := reflect.ValueOf(args)
@@ -126,6 +131,12 @@ func generateOverrideValues(args interface{}) map[string]interface{} {
 			root = root[n].(map[string]interface{})
 		}
 		root[splitTag[tagCount-1]] = adjustType(value)
+	}
+
+	if helmValuesPrefix != "" {
+		prefixed := map[string]interface{}{}
+		prefixed[helmValuesPrefix] = overrideValues
+		return prefixed
 	}
 
 	return overrideValues

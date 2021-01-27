@@ -6,6 +6,7 @@ import (
 	"time"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/pkg/errors"
@@ -18,7 +19,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func newInspectZonesCmd(ctx *inspectContext) *cobra.Command {
+func newInspectZonesCmd(ctx *cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "zones",
 		Short: "Inspect Zones",
@@ -33,7 +34,7 @@ func newInspectZonesCmd(ctx *inspectContext) *cobra.Command {
 				return err
 			}
 
-			switch format := output.Format(ctx.args.outputFormat); format {
+			switch format := output.Format(ctx.InspectContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printZoneOverviews(ctx.Now(), overviews, cmd.OutOrStdout())
 			default:
