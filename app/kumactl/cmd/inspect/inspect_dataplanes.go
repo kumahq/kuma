@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
@@ -20,8 +21,6 @@ import (
 )
 
 type inspectDataplanesContext struct {
-	*inspectContext
-
 	args struct {
 		tags    map[string]string
 		gateway bool
@@ -29,10 +28,8 @@ type inspectDataplanesContext struct {
 	}
 }
 
-func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
-	ctx := inspectDataplanesContext{
-		inspectContext: pctx,
-	}
+func newInspectDataplanesCmd(pctx *cmd.RootContext) *cobra.Command {
+	ctx := inspectDataplanesContext{}
 	cmd := &cobra.Command{
 		Use:   "dataplanes",
 		Short: "Inspect Dataplanes",
@@ -47,7 +44,7 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 				return err
 			}
 
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.InspectContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printDataplaneOverviews(pctx.Now(), overviews, cmd.OutOrStdout())
 			default:

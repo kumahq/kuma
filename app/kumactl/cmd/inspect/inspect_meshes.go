@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
@@ -14,7 +15,7 @@ import (
 	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
-func newInspectMeshesCmd(ctx *inspectContext) *cobra.Command {
+func newInspectMeshesCmd(ctx *cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "meshes",
 		Short: "Inspect Meshes",
@@ -29,7 +30,7 @@ func newInspectMeshesCmd(ctx *inspectContext) *cobra.Command {
 				return err
 			}
 
-			switch format := output.Format(ctx.args.outputFormat); format {
+			switch format := output.Format(ctx.InspectContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printMeshInsights(insights, cmd.OutOrStdout())
 			default:
