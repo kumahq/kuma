@@ -112,12 +112,15 @@ func newRunCmd() *cobra.Command {
 				cfg.ControlPlane.CaCert = string(cert)
 			}
 
+			shouldQuit := setupQuitChannel()
+
 			dataplane, err := envoy.New(envoy.Opts{
 				Config:    cfg,
 				Generator: bootstrapGenerator,
 				Dataplane: dp,
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
+				Quit:      shouldQuit,
 			})
 			if err != nil {
 				return err
@@ -130,7 +133,7 @@ func newRunCmd() *cobra.Command {
 			}
 
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
-			if err := componentMgr.Start(core.SetupSignalHandler()); err != nil {
+			if err := componentMgr.Start(shouldQuit); err != nil {
 				runLog.Error(err, "error while running Kuma DP")
 				return err
 			}
@@ -160,4 +163,18 @@ func writeFile(filename string, data []byte, perm os.FileMode) error {
 		return err
 	}
 	return ioutil.WriteFile(filename, data, perm)
+}
+
+func setupQuitChannel() chan struct{} {
+	quit := make(chan struct{})
+	quitOnSignal := core.SetupSignalHandler()
+	go func() {
+		<-quitOnSignal
+		runLog.Info("Kuma DP caught an exit signal")
+		if quit != nil {
+			close(quit)
+		}
+	}()
+
+	return quit
 }

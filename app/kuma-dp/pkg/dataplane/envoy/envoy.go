@@ -33,6 +33,7 @@ type Opts struct {
 	Dataplane *rest.Resource
 	Stdout    io.Writer
 	Stderr    io.Writer
+	Quit      chan struct{}
 }
 
 func New(opts Opts) (*Envoy, error) {
@@ -168,6 +169,10 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		} else {
 			runLog.Info("Envoy terminated successfully")
 		}
+		if e.opts.Quit != nil {
+			close(e.opts.Quit)
+		}
+
 		return err
 	}
 }
