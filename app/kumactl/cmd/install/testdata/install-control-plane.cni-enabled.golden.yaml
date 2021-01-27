@@ -13,7 +13,7 @@ metadata:
   name: kuma-cni
   namespace: kube-system
   labels:
-
+  
     app: kuma-cni
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -33,7 +33,7 @@ metadata:
   name: kuma-cni-config
   namespace: kube-system
   labels:
-
+  
     app: kuma-cni
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -197,7 +197,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -329,7 +329,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -422,10 +422,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -455,9 +455,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -590,7 +590,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -722,7 +722,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -815,10 +815,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -846,9 +846,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 status:
   acceptedNames:
     kind: ""
@@ -1386,7 +1386,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -1514,7 +1514,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -1607,10 +1607,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -1640,9 +1640,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -1775,7 +1775,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -1903,7 +1903,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -1996,10 +1996,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -2029,9 +2029,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -2164,7 +2164,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -2296,7 +2296,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -2389,10 +2389,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -2422,9 +2422,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -2557,7 +2557,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -2685,7 +2685,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -2778,10 +2778,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -2811,9 +2811,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -2946,7 +2946,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -3078,7 +3078,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -3171,10 +3171,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -3204,9 +3204,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -3339,7 +3339,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -3471,7 +3471,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -3564,10 +3564,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -3597,9 +3597,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -3732,7 +3732,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -3864,7 +3864,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -3957,10 +3957,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -3988,9 +3988,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 status:
   acceptedNames:
     kind: ""
@@ -4129,7 +4129,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -4261,7 +4261,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -4354,10 +4354,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -4387,9 +4387,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -4522,7 +4522,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -4654,7 +4654,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -4747,10 +4747,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -4780,9 +4780,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -4915,7 +4915,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -5047,7 +5047,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -5140,10 +5140,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -5173,9 +5173,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -5707,7 +5707,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -5839,7 +5839,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -5932,10 +5932,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -5965,9 +5965,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 status:
   acceptedNames:
     kind: ""
@@ -6106,7 +6106,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -6238,7 +6238,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -6331,10 +6331,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -6366,9 +6366,9 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 status:
   acceptedNames:
     kind: ""
@@ -6507,7 +6507,7 @@ spec:
                           this object.
                         type: string
                     required:
-                    - name
+                      - name
                     type: object
                   type: array
                 result:
@@ -6639,7 +6639,7 @@ spec:
                       type: string
                   type: object
               required:
-              - pending
+                - pending
               type: object
             labels:
               additionalProperties:
@@ -6732,10 +6732,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                - apiVersion
-                - kind
-                - name
-                - uid
+                  - apiVersion
+                  - kind
+                  - name
+                  - uid
                 type: object
               type: array
             resourceVersion:
@@ -6765,26 +6765,26 @@ spec:
           type: object
       type: object
   versions:
-  - name: v1alpha1
-    served: true
-    storage: true
+    - name: v1alpha1
+      served: true
+      storage: true
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: kuma-cni
   labels:
-
+  
     app: kuma-cni
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
-- apiGroups: [""]
-  resources:
-  - pods
-  - nodes
-  verbs:
-  - get
+  - apiGroups: [""]
+    resources:
+      - pods
+      - nodes
+    verbs:
+      - get
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -6794,102 +6794,102 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  - pods
-  - services
-  - configmaps
-  - nodes
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - ""
-  resources:
-  - events
-  verbs:
-  - create
-  - patch
-- apiGroups:
-  - kuma.io
-  resources:
-  - dataplanes
-  - dataplaneinsights
-  - meshes
-  - zones
-  - zoneinsights
-  - meshinsights
-  - serviceinsights
-  - proxytemplates
-  - trafficpermissions
-  - trafficroutes
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - kuma.io
-  resources:
-  - circuitbreakers
-  - externalservices
-  - faultinjections
-  - healthchecks
-  - retries
-  - trafficlogs
-  - traffictraces
-  verbs:
-  - get
-  - list
-  - watch
-- apiGroups:
-  - k8s.cni.cncf.io
-  resources:
-  - network-attachment-definitions
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - pods/finalizers
-  verbs:
-  - "*"
-- apiGroups:
-  - kuma.io
-  resources:
-  - meshes/finalizers
-  verbs:
-  - "*"
-- apiGroups:
-  - kuma.io
-  resources:
-  - dataplanes/finalizers
-  verbs:
-  - "*"
-# validate k8s token before issueing mTLS cert
-- apiGroups:
-  - authentication.k8s.io
-  resources:
-  - tokenreviews
-  verbs:
-  - create
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+      - pods
+      - services
+      - configmaps
+      - nodes
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - ""
+    resources:
+      - events
+    verbs:
+      - create
+      - patch
+  - apiGroups:
+      - kuma.io
+    resources:
+      - dataplanes
+      - dataplaneinsights
+      - meshes
+      - zones
+      - zoneinsights
+      - meshinsights
+      - serviceinsights
+      - proxytemplates
+      - trafficpermissions
+      - trafficroutes
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - kuma.io
+    resources:
+      - circuitbreakers
+      - externalservices
+      - faultinjections
+      - healthchecks
+      - retries
+      - trafficlogs
+      - traffictraces
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - k8s.cni.cncf.io
+    resources:
+      - network-attachment-definitions
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - pods/finalizers
+    verbs:
+      - "*"
+  - apiGroups:
+      - kuma.io
+    resources:
+      - meshes/finalizers
+    verbs:
+      - "*"
+  - apiGroups:
+      - kuma.io
+    resources:
+      - dataplanes/finalizers
+    verbs:
+      - "*"
+  # validate k8s token before issueing mTLS cert
+  - apiGroups:
+      - authentication.k8s.io
+    resources:
+      - tokenreviews
+    verbs:
+      - create
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: kuma-cni
   labels:
-
+  
     app: kuma-cni
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -6898,9 +6898,9 @@ roleRef:
   kind: ClusterRole
   name: kuma-cni
 subjects:
-- kind: ServiceAccount
-  name: kuma-cni
-  namespace: kube-system
+  - kind: ServiceAccount
+    name: kuma-cni
+    namespace: kube-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -6914,9 +6914,9 @@ roleRef:
   kind: ClusterRole
   name: kuma-control-plane
 subjects:
-- kind: ServiceAccount
-  name: kuma-control-plane
-  namespace: kuma-system
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
@@ -6927,30 +6927,30 @@ metadata:
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - secrets
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
-- apiGroups:
-  - ""
-  resources:
-  - configmaps
-  verbs:
-  - get
-  - list
-  - watch
-  - create
-  - update
-  - patch
-  - delete
+  - apiGroups:
+      - ""
+    resources:
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
+  - apiGroups:
+      - ""
+    resources:
+      - configmaps
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
+      - delete
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -6962,9 +6962,9 @@ roleRef:
   kind: Role
   name: kuma-control-plane
 subjects:
-- kind: ServiceAccount
-  name: kuma-control-plane
-  namespace: kuma-system
+  - kind: ServiceAccount
+    name: kuma-control-plane
+    namespace: kuma-system
 ---
 apiVersion: v1
 kind: Service
@@ -6980,20 +6980,20 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - port: 5681
-    name: http-api-server
-  - port: 5682
-    name: https-api-server
-  - port: 443
-    name: https-admission-server
-    targetPort: 5443
-  - port: 5676
-    name: mads-server
-  - port: 5678
-    name: dp-server
-  - port: 5653
-    name: dns-server
-    protocol: UDP
+    - port: 5681
+      name: http-api-server
+    - port: 5682
+      name: https-api-server
+    - port: 443
+      name: https-admission-server
+      targetPort: 5443
+    - port: 5676
+      name: mads-server
+    - port: 5678
+      name: dp-server
+    - port: 5653
+      name: dns-server
+      protocol: UDP
   selector:
     app: kuma-control-plane
     app.kubernetes.io/name: kuma
@@ -7033,57 +7033,57 @@ spec:
         checksum/config: a44dcb387240cfcf24c3e9cb49ab57adb12cf9853649159a8b8dee49cb90bfaa
     spec:
       nodeSelector:
-
+      
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       hostNetwork: true
       tolerations:
-      # Make sure kuma-cni-node gets scheduled on all nodes.
-      - effect: NoSchedule
-        operator: Exists
-      # Mark the pod as a critical add-on for rescheduling.
-      - key: CriticalAddonsOnly
-        operator: Exists
-      - effect: NoExecute
-        operator: Exists
+        # Make sure kuma-cni-node gets scheduled on all nodes.
+        - effect: NoSchedule
+          operator: Exists
+        # Mark the pod as a critical add-on for rescheduling.
+        - key: CriticalAddonsOnly
+          operator: Exists
+        - effect: NoExecute
+          operator: Exists
       priorityClassName: system-cluster-critical
       serviceAccountName: kuma-cni
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
       terminationGracePeriodSeconds: 5
       containers:
-      - name: install-cni
-        image: "docker.io/lobkovilya/install-cni:0.0.2"
-        imagePullPolicy: Always
-        command: ["/install-cni.sh"]
-        env:
-        # Name of the CNI config file to create.
-        - name: CNI_CONF_NAME
-          value: "kuma-cni.conf"
-        # The CNI network config to install on each node.
-        - name: CNI_NETWORK_CONFIG
-          valueFrom:
-            configMapKeyRef:
-              name: kuma-cni-config
-              key: cni_network_config
-        - name: CNI_NET_DIR
-          value: "/etc/cni/multus/net.d"
-        # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
-        - name: CHAINED_CNI_PLUGIN
-          value: "false"
-        volumeMounts:
-        - mountPath: /host/opt/cni/bin
-          name: cni-bin-dir
-        - mountPath: /host/etc/cni/net.d
-          name: cni-net-dir
+        - name: install-cni
+          image: "docker.io/lobkovilya/install-cni:0.0.2"
+          imagePullPolicy: Always
+          command: ["/install-cni.sh"]
+          env:
+            # Name of the CNI config file to create.
+            - name: CNI_CONF_NAME
+              value: "kuma-cni.conf"
+            # The CNI network config to install on each node.
+            - name: CNI_NETWORK_CONFIG
+              valueFrom:
+                configMapKeyRef:
+                  name: kuma-cni-config
+                  key: cni_network_config
+            - name: CNI_NET_DIR
+              value: "/etc/cni/multus/net.d"
+            # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
+            - name: CHAINED_CNI_PLUGIN
+              value: "false"
+          volumeMounts:
+            - mountPath: /host/opt/cni/bin
+              name: cni-bin-dir
+            - mountPath: /host/etc/cni/net.d
+              name: cni-net-dir
       volumes:
-      # Used to install CNI.
-      - name: cni-bin-dir
-        hostPath:
-          path: /var/lib/cni/bin
-      - name: cni-net-dir
-        hostPath:
-          path: /etc/cni/multus/net.d
+        # Used to install CNI.
+        - name: cni-bin-dir
+          hostPath:
+            path: /var/lib/cni/bin
+        - name: cni-net-dir
+          hostPath:
+            path: /etc/cni/multus/net.d
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -7109,7 +7109,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 9f338e194d02567321138ce2c3652db2b944e1a24adec76d6e6bcce190199442
-        checksum/tls-secrets: d7265831b6f233468406188b4f550dc084d41228a7a2e8206beadb801c68ffe1
+        checksum/tls-secrets: 919bdbb15294ac84873b45dbad39201769971b303b3e3c7a8c251ddfa9187b59
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -7117,7 +7117,7 @@ spec:
     spec:
       serviceAccountName: kuma-control-plane
       nodeSelector:
-
+        
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
@@ -7132,29 +7132,29 @@ spec:
             - name: KUMA_DP_SERVER_HDS_ENABLED
               value: "false"
             - name: KUMA_ENVIRONMENT
-              value: kubernetes
+              value: "kubernetes"
             - name: KUMA_GENERAL_TLS_CERT_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/tls.crt
+              value: "/var/run/secrets/kuma.io/tls-cert/tls.crt"
             - name: KUMA_GENERAL_TLS_KEY_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/tls.key
+              value: "/var/run/secrets/kuma.io/tls-cert/tls.key"
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-              value: kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1
+              value: "kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1"
             - name: KUMA_MODE
-              value: standalone
+              value: "standalone"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
-              value: /var/run/secrets/kuma.io/tls-cert
+              value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
               value: "5443"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
+              value: "/var/run/secrets/kuma.io/tls-cert/ca.crt"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
               value: "true"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
-              value: kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1
+              value: "kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
-              value: kuma-system
+              value: "kuma-system"
             - name: KUMA_STORE_TYPE
-              value: kubernetes
+              value: "kubernetes"
           args:
             - run
             - --log-level=info
@@ -7187,18 +7187,11 @@ spec:
               readOnly: true
       volumes:
         - name: general-tls-cert
-          mountPath: /var/run/secrets/kuma.io/tls-cert
-          readOnly: true
+          secret:
+            secretName: general-tls-secret
         - name: kuma-control-plane-config
-          mountPath: /etc/kuma.io/kuma-control-plane
-          readOnly: true
-      volumes:
-      - name: general-tls-cert
-        secret:
-          secretName: general-tls-secret
-      - name: kuma-control-plane-config
-        configMap:
-          name: kuma-control-plane-config
+          configMap:
+            name: kuma-control-plane-config
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
@@ -7206,74 +7199,76 @@ metadata:
   name: kuma-admission-mutating-webhook-configuration
   namespace: kuma-system
   labels:
-
+  
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
-- name: mesh.defaulter.kuma-admission.kuma.io
-  failurePolicy: Fail
-  clientConfig:
-    caBundle: XYZ
-    service:
-      namespace: kuma-system
-      name: kuma-control-plane
-      path: /default-kuma-io-v1alpha1-mesh
-  rules:
-  - apiGroups:
-    - kuma.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - meshes
-  sideEffects: None
-- name: owner-reference.kuma-admission.kuma.io
-  failurePolicy: Fail
-  clientConfig:
-    caBundle: XYZ
-    service:
-      namespace: kuma-system
-      name: kuma-control-plane
-      path: /owner-reference-kuma-io-v1alpha1
-  rules:
-  - apiGroups:
-    - kuma.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    resources:
-    - circuitbreakers
-    - externalservices
-    - faultinjections
-    - healthchecks
-    - retries
-    - proxytemplates
-    - trafficlogs
-    - trafficpermissions
-    - trafficroutes
-    - traffictraces
-  sideEffects: None
-- name: kuma-injector.kuma.io
-  failurePolicy: Ignore
-  clientConfig:
-    caBundle: XYZ
-    service:
-      namespace: kuma-system
-      name: kuma-control-plane
-      path: /inject-sidecar
-  rules:
-  - apiGroups:
-    - ""
-    apiVersions:
-    - v1
-    operations:
-    - CREATE
-    resources:
-    - pods
-  sideEffects: None
+  - name: mesh.defaulter.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /default-kuma-io-v1alpha1-mesh
+    rules:
+      - apiGroups:
+          - kuma.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - meshes
+    sideEffects: None
+  - name: owner-reference.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /owner-reference-kuma-io-v1alpha1
+    rules:
+      - apiGroups:
+          - kuma.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+        resources:
+          - circuitbreakers
+          - externalservices
+          - faultinjections
+          - healthchecks
+          - retries
+          - proxytemplates
+          - trafficlogs
+          - trafficpermissions
+          - trafficroutes
+          - traffictraces
+    
+      
+    sideEffects: None
+  - name: kuma-injector.kuma.io
+    failurePolicy: Ignore
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /inject-sidecar
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+        resources:
+          - pods
+    sideEffects: None
 ---
 apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
@@ -7281,81 +7276,83 @@ metadata:
   name: kuma-validating-webhook-configuration
   namespace: kuma-system
   labels:
-
+  
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
-- name: validator.kuma-admission.kuma.io
-  failurePolicy: Fail
-  clientConfig:
-    caBundle: XYZ
-    service:
-      namespace: kuma-system
-      name: kuma-control-plane
-      path: /validate-kuma-io-v1alpha1
-  rules:
-  - apiGroups:
-    - kuma.io
-    apiVersions:
-    - v1alpha1
-    operations:
-    - CREATE
-    - UPDATE
-    - DELETE
-    resources:
-    - circuitbreakers
-    - dataplanes
-    - externalservices
-    - faultinjections
-    - healthchecks
-    - retries
-    - meshes
-    - proxytemplates
-    - trafficlogs
-    - trafficpermissions
-    - trafficroutes
-    - traffictraces
-    - zones
-  sideEffects: None
-- name: service.validator.kuma-admission.kuma.io
-  failurePolicy: Ignore
-  clientConfig:
-    caBundle: XYZ
-    service:
-      namespace: kuma-system
-      name: kuma-control-plane
-      path: /validate-v1-service
-  rules:
-  - apiGroups:
-    - ""
-    apiVersions:
-    - v1
-    operations:
-    - CREATE
-    - UPDATE
-    resources:
-    - services
-  sideEffects: None
-- name: secret.validator.kuma-admission.kuma.io
-  namespaceSelector:
-    matchLabels:
-      kuma.io/system-namespace: "true"
-  failurePolicy: Ignore
-  clientConfig:
-    caBundle: XYZ
-    service:
-      namespace: kuma-system
-      name: kuma-control-plane
-      path: /validate-v1-secret
-  rules:
-  - apiGroups:
-    - ""
-    apiVersions:
-    - v1
-    operations:
-    - CREATE
-    - UPDATE
-    - DELETE
-    resources:
-    - secrets
-  sideEffects: None
+  - name: validator.kuma-admission.kuma.io
+    failurePolicy: Fail
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-kuma-io-v1alpha1
+    rules:
+      - apiGroups:
+          - kuma.io
+        apiVersions:
+          - v1alpha1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - circuitbreakers
+          - dataplanes
+          - externalservices
+          - faultinjections
+          - healthchecks
+          - retries
+          - meshes
+          - proxytemplates
+          - trafficlogs
+          - trafficpermissions
+          - trafficroutes
+          - traffictraces
+          - zones
+    
+      
+    sideEffects: None
+  - name: service.validator.kuma-admission.kuma.io
+    failurePolicy: Ignore
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-service
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - services
+    sideEffects: None
+  - name: secret.validator.kuma-admission.kuma.io
+    namespaceSelector:
+      matchLabels:
+        kuma.io/system-namespace: "true"
+    failurePolicy: Ignore
+    clientConfig:
+      caBundle: XYZ
+      service:
+        namespace: kuma-system
+        name: kuma-control-plane
+        path: /validate-v1-secret
+    rules:
+      - apiGroups:
+          - ""
+        apiVersions:
+          - v1
+        operations:
+          - CREATE
+          - UPDATE
+          - DELETE
+        resources:
+          - secrets
+    sideEffects: None

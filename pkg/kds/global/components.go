@@ -33,7 +33,7 @@ import (
 
 var (
 	kdsGlobalLog  = core.Log.WithName("kds-global")
-	providedTypes = []model.ResourceType{
+	ProvidedTypes = []model.ResourceType{
 		mesh.MeshType,
 		mesh.DataplaneType,
 		mesh.ExternalServiceType,
@@ -49,14 +49,14 @@ var (
 		system.SecretType,
 		system.ConfigType,
 	}
-	consumedTypes = []model.ResourceType{
+	ConsumedTypes = []model.ResourceType{
 		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
 	}
 )
 
 func Setup(rt runtime.Runtime) (err error) {
-	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes,
+	kdsServer, err := kds_server.New(kdsGlobalLog, rt, ProvidedTypes,
 		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
 		ProvidedFilter(rt.ResourceManager()), true)
 	if err != nil {
@@ -77,7 +77,7 @@ func Setup(rt runtime.Runtime) (err error) {
 			log.Error(err, "Global CP could not create a zone")
 			return errors.New("Global CP could not create a zone") // send back message without details. Remote CP will retry
 		}
-		sink := client.NewKDSSink(log, consumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
+		sink := client.NewKDSSink(log, ConsumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
 		go func() {
 			if err := sink.Start(session.Done()); err != nil {
 				log.Error(err, "KDSSink finished with an error")
@@ -157,7 +157,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 }
 
 func ConsumesType(typ model.ResourceType) bool {
-	for _, consumedTyp := range consumedTypes {
+	for _, consumedTyp := range ConsumedTypes {
 		if consumedTyp == typ {
 			return true
 		}
