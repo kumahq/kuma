@@ -90,9 +90,9 @@ var _ = Describe("kumactl install control-plane", func() {
 			Expect(err).ToNot(HaveOccurred())
 			expectedManifests := data.SplitYAML(data.File{Data: expected})
 
-			Expect(len(actualManifests)).To(Equal(len(expectedManifests)))
+			Expect(len(actualManifests)).To(Equal(len(expectedManifests)), golden.RerunMsg)
 			for i := range expectedManifests {
-				Expect(actualManifests[i]).To(MatchYAML(expectedManifests[i]))
+				Expect(actualManifests[i]).To(MatchYAML(expectedManifests[i]), golden.RerunMsg)
 			}
 		},
 		Entry("should generate Kubernetes resources with default settings", testCase{
