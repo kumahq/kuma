@@ -14,32 +14,12 @@ const OriginAdmin = "admin"
 
 var staticEnpointPaths = []*envoy_common.StaticEndpointPath{
 	{
-		Path:        "/clusters",
-		RewritePath: "/clusters",
-	},
-	{
-		Path:        "/config_dump",
-		RewritePath: "/config_dump",
-	},
-	{
-		Path:        "/listeners",
-		RewritePath: "/listeners",
-	},
-	{
-		Path:        "/listeners",
-		RewritePath: "/listeners",
-	},
-	{
-		Path:        "/quitquitquit",
-		RewritePath: "/quitquitquit",
-	},
-	{
 		Path:        "/ready",
 		RewritePath: "/ready",
 	},
 	{
-		Path:        "/stats",
-		RewritePath: "/stats",
+		Path:        "/",
+		RewritePath: "/",
 	},
 }
 
