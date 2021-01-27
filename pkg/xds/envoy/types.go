@@ -163,7 +163,9 @@ const (
 )
 
 type StaticEndpointPath struct {
-	Path        string
-	ClusterName string
-	RewritePath string
+	Path             string
+	ClusterName      string
+	RewritePath      string
+	Header           string
+	HeaderExactMatch string
 }

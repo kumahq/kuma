@@ -23,7 +23,7 @@ var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
 func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	routes := []*envoy_route.Route{}
 	for _, p := range c.Paths {
-		routes = append(routes, &envoy_route.Route{
+		route := &envoy_route.Route{
 			Match: &envoy_route.RouteMatch{
 				PathSpecifier: &envoy_route.RouteMatch_Prefix{
 					Prefix: p.Path,
@@ -37,7 +37,18 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 					PrefixRewrite: p.RewritePath,
 				},
 			},
-		})
+		}
+
+		if p.HeaderExactMatch != "" {
+			route.Match.Headers = []*envoy_route.HeaderMatcher{{
+				Name: p.Header,
+				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{
+					ExactMatch: p.HeaderExactMatch,
+				},
+			}}
+		}
+
+		routes = append(routes, route)
 	}
 
 	config := &envoy_hcm.HttpConnectionManager{
