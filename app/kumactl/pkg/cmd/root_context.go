@@ -5,6 +5,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
@@ -33,12 +34,13 @@ type RootRuntime struct {
 }
 
 type RootContext struct {
-	TypeArgs       map[string]core_model.ResourceType
-	Args           RootArgs
-	Runtime        RootRuntime
-	GetContext     GetContext
-	ListContext    ListContext
-	InspectContext InspectContext
+	TypeArgs         map[string]core_model.ResourceType
+	Args             RootArgs
+	Runtime          RootRuntime
+	GetContext       GetContext
+	ListContext      ListContext
+	InspectContext   InspectContext
+	InstallCpContext install_context.InstallCpContext
 }
 
 func DefaultRootContext() *RootContext {
@@ -68,6 +70,7 @@ func DefaultRootContext() *RootContext {
 			"secret":             system.SecretType,
 			"zone":               system.ZoneType,
 		},
+		InstallCpContext: install_context.DefaultInstallCpContext(),
 	}
 }
 

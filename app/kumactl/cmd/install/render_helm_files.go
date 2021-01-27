@@ -38,16 +38,19 @@ metadata:
 `, namespace)
 }
 
-// When Kuma chart is embedded into other chart all the values need to have a prefix. You can set this prefix with this var.
-var HELMValuesPrefix = ""
-
-func renderHelmFiles(templates []data.File, args interface{}, namespace string, kubeClientConfig *rest.Config) ([]data.File, error) {
+func renderHelmFiles(
+	templates []data.File,
+	args interface{},
+	namespace string,
+	helmValuesPrefix string,
+	kubeClientConfig *rest.Config,
+) ([]data.File, error) {
 	chart, err := loadCharts(templates)
 	if err != nil {
 		return nil, errors.Errorf("Failed to load charts: %s", err)
 	}
 
-	overrideValues := generateOverrideValues(args)
+	overrideValues := generateOverrideValues(args, helmValuesPrefix)
 	if err := chartutil.ProcessDependencies(chart, overrideValues); err != nil {
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)
 	}
@@ -104,7 +107,7 @@ func loadCharts(templates []data.File) (*chart.Chart, error) {
 	return loadedChart, nil
 }
 
-func generateOverrideValues(args interface{}) map[string]interface{} {
+func generateOverrideValues(args interface{}, helmValuesPrefix string) map[string]interface{} {
 	overrideValues := map[string]interface{}{}
 
 	v := reflect.ValueOf(args)
@@ -130,9 +133,9 @@ func generateOverrideValues(args interface{}) map[string]interface{} {
 		root[splitTag[tagCount-1]] = adjustType(value)
 	}
 
-	if HELMValuesPrefix != "" {
+	if helmValuesPrefix != "" {
 		prefixed := map[string]interface{}{}
-		prefixed[HELMValuesPrefix] = overrideValues
+		prefixed[helmValuesPrefix] = overrideValues
 		return prefixed
 	}
 
