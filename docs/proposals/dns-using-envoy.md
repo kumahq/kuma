@@ -15,7 +15,7 @@ This current setup has some limitations:
 - This DNS is not aware of the origin of requests, therefore isolation of meshes breaks as anyone can resolve any domain
 
 In this proposal we suggest using [Envoy's DNSFilter](https://www.envoyproxy.io/docs/envoy/latest/configuration/listeners/udp_filters/dns_filter) to replace the CP DNS.
-We add a new `DNS policy` to be able to control the configuration of the DNS.
+We add a new section in the Mesh Resource to be able to control the configuration of the DNS.
 
 ## Out of scope
 
@@ -33,16 +33,12 @@ We add a new `DNS policy` to be able to control the configuration of the DNS.
 
 ## Configuration model
 
-Here is a full example of the configuration
+Here is a full example of the configuration on the mesh.
 
 ```yaml
-type: DNS
-mesh: default
-name: dns-1
-selectors:
-  - match:
-      kuam.io/service: "*"
-spec:
+type: Mesh
+name: default 
+dns:
   domain: "kuma" # [Optional defaults to "mesh"] the TLD to use for services exposed with the DNS
   upstreamResolvers: # [Optional] A list of resolvers to use when we resolving names not in the TLD
     - "8.8.8.8"
@@ -54,17 +50,17 @@ spec:
 
 ## What needs to be done
 
-- Define this new policy resource
+- Add the configuration to the Mesh resource 
 - Add possibility to add UDP listeners to XDS
 - Add a new generator which will add the UDP listener with the DNSFilter to the XDS configuration
 
 ## Backward compatibility
 
-- By default, this feature won't be present until adding DNS policy
+- By default, this feature won't be used until adding DNS 
 - The default configuration will make DNS names similar to what is present by default in Kuma
 - Users pick the address and port at which the DNS server runs, thus being able to run both setups concurrently
 
-In a future version it will be possible to have a default DNS policy to replace Kuma DNS altogether.
+In a future version it will be possible to have a default DNS configuration to replace Kuma DNS altogether.
 
 ## Notes
 
