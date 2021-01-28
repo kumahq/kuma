@@ -23,7 +23,7 @@ func MatchGoldenEqual(goldenFilePath string) types.GomegaMatcher {
 		if expectedBytes, ok := expected.([]byte); ok {
 			expected = string(expectedBytes)
 		}
-		return gomega.BeEquivalentTo(expected)
+		return gomega.Equal(expected)
 	}, goldenFilePath)
 }
 
@@ -50,7 +50,7 @@ func (g *GoldenYAMLMatcher) Match(actual interface{}) (success bool, err error) 
 		return false, err
 	}
 	if golden.UpdateGoldenFiles() {
-		err := ioutil.WriteFile(g.GoldenFilePath, actualContent, 0644)
+		err := ioutil.WriteFile(g.GoldenFilePath, []byte(actualContent), 0644)
 		if err != nil {
 			return false, errors.Wrap(err, "could not update golden file")
 		}
@@ -59,7 +59,7 @@ func (g *GoldenYAMLMatcher) Match(actual interface{}) (success bool, err error) 
 	if err != nil {
 		return false, errors.Wrap(err, "could not read golden file")
 	}
-	return g.MatcherFn(expected).Match(string(actualContent))
+	return g.MatcherFn(expected).Match(actualContent)
 }
 
 func (g *GoldenYAMLMatcher) FailureMessage(actual interface{}) (message string) {
@@ -86,13 +86,13 @@ func (g *GoldenYAMLMatcher) NegatedFailureMessage(actual interface{}) (message s
 	return g.MatcherFn(expected).NegatedFailureMessage(actualContent)
 }
 
-func (g *GoldenYAMLMatcher) actualBytes(actual interface{}) ([]byte, error) {
+func (g *GoldenYAMLMatcher) actualBytes(actual interface{}) (string, error) {
 	switch actual := actual.(type) {
 	case []byte:
-		return actual, nil
+		return string(actual), nil
 	case string:
-		return []byte(actual), nil
+		return actual, nil
 	default:
-		return nil, errors.Errorf("not supported type %T for MatchGolden", actual)
+		return "", errors.Errorf("not supported type %T for MatchGolden", actual)
 	}
 }
