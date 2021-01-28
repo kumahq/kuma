@@ -357,7 +357,7 @@ var _ = Describe("PodToDataplane(..)", func() {
                     port: 6060
                     targetPort: diagnostics
 `},
-				expectedErr: `A service that selects pod example was bound, but it doesn't match any container ports.`,
+				expectedErr: `A service that selects pod example was found, but it doesn't match any container ports.`,
 			}),
 		)
 	})

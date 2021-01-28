@@ -113,7 +113,7 @@ func InboundInterfacesFor(zone string, pod *kube_core.Pod, services []*kube_core
 
 	if len(ifaces) == 0 {
 		if len(services) > 0 {
-			return nil, errors.Errorf("A service that selects pod %s was bound, but it doesn't match any container ports.", pod.GetName())
+			return nil, errors.Errorf("A service that selects pod %s was found, but it doesn't match any container ports.", pod.GetName())
 		}
 
 		ifaces = append(ifaces, inboundForServiceless(zone, pod)...)
