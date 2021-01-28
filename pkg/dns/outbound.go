@@ -28,12 +28,15 @@ func VIPOutbounds(
 
 		if dataplane.Spec.IsIngress() {
 			for _, service := range dataplane.Spec.Networking.Ingress.AvailableServices {
-				inService := service.Tags[mesh_proto.ServiceTag]
-				if _, found := serviceVIPMap[inService]; !found {
-					vip, err := ForwardLookup(vips, inService)
-					if err == nil {
-						serviceVIPMap[inService] = vip
-						services = append(services, inService)
+				if service.Mesh == dataplane.Meta.GetMesh() {
+					// Only add outbounds for services in the same mesh
+					inService := service.Tags[mesh_proto.ServiceTag]
+					if _, found := serviceVIPMap[inService]; !found {
+						vip, err := ForwardLookup(vips, inService)
+						if err == nil {
+							serviceVIPMap[inService] = vip
+							services = append(services, inService)
+						}
 					}
 				}
 			}
