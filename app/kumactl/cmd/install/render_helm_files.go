@@ -85,26 +85,15 @@ func loadCharts(templates []data.File) (*chart.Chart, error) {
 		})
 	}
 
-	loadedChart, err := loader.LoadFiles(files)
-	if err != nil {
-		return nil, err
-	}
-
-	// Filter out the pre- templates
-	loadedTemplates := loadedChart.Templates
-	loadedChart.Templates = []*chart.File{}
-
-	for _, t := range loadedTemplates {
-		if !strings.HasPrefix(t.Name, "templates/pre-") &&
-			!strings.HasPrefix(t.Name, "templates/post-") {
-			loadedChart.Templates = append(loadedChart.Templates, &chart.File{
-				Name: t.Name,
-				Data: t.Data,
-			})
+	var fileteredFiles []*loader.BufferedFile
+	for _, f := range files {
+		if strings.Contains(f.Name, "templates/pre-") || strings.Contains(f.Name, "templates/post-") {
+			continue
 		}
+		fileteredFiles = append(fileteredFiles, f)
 	}
 
-	return loadedChart, nil
+	return loader.LoadFiles(fileteredFiles)
 }
 
 func generateOverrideValues(args interface{}, helmValuesPrefix string) map[string]interface{} {

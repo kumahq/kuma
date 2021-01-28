@@ -396,7 +396,7 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	}
 
 	if opts.cni {
-		err = c.WaitApp(cniApp, cniNamespace, 1)
+		err = c.WaitApp(CNIApp, CNINamespace, 1)
 		if err != nil {
 			return err
 		}
