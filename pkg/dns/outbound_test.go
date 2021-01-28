@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -69,7 +71,7 @@ var _ = Describe("VIPOutbounds", func() {
 		}
 
 		// when
-		outbounds := dns.VIPOutbounds(dataplane.Meta.GetName(), dataplanes.Items, vipList, externalServices.Items)
+		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, vipList, externalServices.Items)
 		// and
 		Expect(outbounds).To(HaveLen(4))
 		// and
@@ -138,7 +140,7 @@ var _ = Describe("VIPOutbounds", func() {
 		}
 
 		// when
-		outbounds := dns.VIPOutbounds(dataplane.Meta.GetName(), dataplanes.Items, vipList, externalServices.Items)
+		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, vipList, externalServices.Items)
 		// and
 		Expect(outbounds).To(HaveLen(1))
 		// and

@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/dns"
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -77,7 +79,11 @@ func (p *PodConverter) OutboundInterfacesFor(
 		}
 	}
 
-	outbounds = append(outbounds, dns.VIPOutbounds(pod.Name, dataplanes, vips, externalServicesRes)...)
+	resourceKey := model.ResourceKey{
+		Mesh: MeshFor(pod),
+		Name: pod.Name,
+	}
+	outbounds = append(outbounds, dns.VIPOutbounds(resourceKey, dataplanes, vips, externalServicesRes)...)
 	return outbounds, nil
 }
 

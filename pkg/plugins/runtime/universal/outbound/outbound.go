@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 
@@ -77,7 +79,7 @@ func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 			if dp.Spec.Networking.GetTransparentProxying() == nil {
 				continue
 			}
-			newOutbounds := dns.VIPOutbounds(dp.Meta.GetName(), dpList.Items, v.resolver.GetVIPs(), externalServices.Items)
+			newOutbounds := dns.VIPOutbounds(model.MetaToResourceKey(dp.Meta), dpList.Items, v.resolver.GetVIPs(), externalServices.Items)
 
 			if outboundsEqual(newOutbounds, dp.Spec.Networking.Outbound) {
 				continue

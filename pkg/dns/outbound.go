@@ -3,6 +3,8 @@ package dns
 import (
 	"sort"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -14,7 +16,7 @@ import (
 const VIPListenPort = uint32(80)
 
 func VIPOutbounds(
-	name string,
+	resourceKey model.ResourceKey,
 	dataplanes []*core_mesh.DataplaneResource,
 	vips vips.List,
 	externalServices []*core_mesh.ExternalServiceResource,
@@ -22,7 +24,7 @@ func VIPOutbounds(
 	serviceVIPMap := map[string]string{}
 	services := []string{}
 	for _, dataplane := range dataplanes {
-		if dataplane.Meta.GetName() == name {
+		if resourceKey == model.MetaToResourceKey(dataplane.Meta) {
 			continue
 		}
 
