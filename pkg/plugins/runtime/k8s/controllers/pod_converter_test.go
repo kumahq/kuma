@@ -357,7 +357,7 @@ var _ = Describe("PodToDataplane(..)", func() {
                     port: 6060
                     targetPort: diagnostics
 `},
-				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, this Pod doesn't have any container ports that would satisfy matching Service(s).`,
+				expectedErr: `A service that selects pod example was bound, but it doesn't match any container ports.`,
 			}),
 		)
 	})
