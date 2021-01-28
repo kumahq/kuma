@@ -74,7 +74,7 @@ func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 		}
 		dpsUpdated := 0
 		for _, dp := range dpList.Items {
-			if dp.Spec.Networking.GetTransparentProxying() == nil {
+			if dp.Spec.Networking.GetTransparentProxying() == nil || dp.Spec.IsIngress() {
 				continue
 			}
 			newOutbounds := dns.VIPOutbounds(dp.Meta.GetName(), dpList.Items, v.resolver.GetVIPs(), externalServices.Items)
