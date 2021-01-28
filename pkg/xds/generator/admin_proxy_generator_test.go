@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/kumahq/kuma/pkg/test/runtime"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -37,6 +39,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 			ctx := context.Context{
 				ControlPlane: nil,
 				Mesh:         context.MeshContext{},
+				EnvoyAdmin:   &runtime.DummyEnvoyAdmin{},
 			}
 
 			proxy := &xds.Proxy{

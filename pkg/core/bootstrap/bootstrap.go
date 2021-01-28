@@ -4,6 +4,8 @@ import (
 	"context"
 	"net"
 
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
 
@@ -89,6 +91,7 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
+	builder.WithEnvoyAdmin(admin.NewEnvoyAdmin(builder.ResourceManager()))
 	builder.WithAPIManager(customization.NewAPIList())
 
 	if err := initializeAfterBootstrap(cfg, builder); err != nil {

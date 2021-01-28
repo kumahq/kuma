@@ -282,6 +282,9 @@ resources:
                             cluster: kuma:envoy:admin
                             prefixRewrite: /ready
                         - match:
+                            headers:
+                              - exactMatch: Bearer token
+                                name: Authorization
                             prefix: /
                           route:
                             cluster: kuma:envoy:admin

@@ -3,6 +3,8 @@ package context
 import (
 	"io/ioutil"
 
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -12,6 +14,7 @@ type Context struct {
 	ControlPlane   *ControlPlaneContext
 	Mesh           MeshContext
 	ConnectionInfo ConnectionInfo
+	EnvoyAdmin     admin.EnvoyAdmin
 }
 
 type ConnectionInfo struct {

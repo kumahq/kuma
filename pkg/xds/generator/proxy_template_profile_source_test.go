@@ -6,6 +6,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/test/runtime"
+
 	"github.com/golang/protobuf/proto"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -86,6 +88,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						Spec: &mesh_proto.Mesh{},
 					},
 				},
+				EnvoyAdmin: &runtime.DummyEnvoyAdmin{},
 			}
 
 			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())

@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"fmt"
+
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -20,6 +22,7 @@ var staticEnpointPaths = []*envoy_common.StaticEndpointPath{
 	{
 		Path:        "/",
 		RewritePath: "/",
+		Header:      "Authorization",
 	},
 }
 
@@ -54,6 +57,14 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 
 	for _, se := range staticEnpointPaths {
 		se.ClusterName = envoyAdminClusterName
+		if se.Header != "" {
+			token, err := ctx.EnvoyAdmin.GenerateAPIToken(proxy.Dataplane)
+			if err != nil {
+				return nil, err
+			}
+
+			se.HeaderExactMatch = fmt.Sprintf("Bearer %s", token)
+		}
 	}
 
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
