@@ -2,7 +2,6 @@ package completion_test
 
 import (
 	"bytes"
-	"io/ioutil"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -10,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/pkg/test/golden"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var _ = Describe("kumactl completion", func() {
@@ -43,17 +42,9 @@ var _ = Describe("kumactl completion", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stderr.Bytes()).To(BeNil())
 
-			// and output matches golden files
+			// and
 			actual := stdout.Bytes()
-			goldenFilePath := filepath.Join("testdata", given.goldenFile)
-			if golden.UpdateGoldenFiles() {
-				err := ioutil.WriteFile(goldenFilePath, actual, 0664)
-				Expect(err).ToNot(HaveOccurred())
-			}
-			expected, err := ioutil.ReadFile(goldenFilePath)
-			Expect(err).ToNot(HaveOccurred())
-			Expect(len(actual)).To(Equal(len(expected)), golden.RerunMsg)
-			Expect(string(actual)).To(Equal(string(expected)))
+			Expect(actual).To(MatchGoldenEqual(filepath.Join("testdata", given.goldenFile)))
 		},
 		Entry("should generate bash completion code", testCase{
 			extraArgs: []string{
