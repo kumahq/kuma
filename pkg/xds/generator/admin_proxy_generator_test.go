@@ -37,9 +37,9 @@ var _ = Describe("AdminProxyGenerator", func() {
 			parseResource(bytes, dataplane)
 
 			ctx := context.Context{
-				ControlPlane: nil,
-				Mesh:         context.MeshContext{},
-				EnvoyAdmin:   &runtime.DummyEnvoyAdmin{},
+				ControlPlane:     nil,
+				Mesh:             context.MeshContext{},
+				EnvoyAdminClient: &runtime.DummyEnvoyAdminClient{},
 			}
 
 			proxy := &xds.Proxy{

@@ -88,7 +88,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						Spec: &mesh_proto.Mesh{},
 					},
 				},
-				EnvoyAdmin: &runtime.DummyEnvoyAdmin{},
+				EnvoyAdminClient: &runtime.DummyEnvoyAdminClient{},
 			}
 
 			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())

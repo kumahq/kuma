@@ -18,7 +18,7 @@ type xdsContextBuilder struct {
 	resManager            manager.ReadOnlyResourceManager
 	connectionInfoTracker ConnectionInfoTracker
 	lookupIP              lookup.LookupIPFunc
-	envoyAdmin            admin.EnvoyAdmin
+	envoyAdminClient      admin.EnvoyAdminClient
 
 	cpContext *xds_context.ControlPlaneContext
 }
@@ -28,13 +28,13 @@ func newXDSContextBuilder(
 	connectionInfoTracker ConnectionInfoTracker,
 	resManager manager.ReadOnlyResourceManager,
 	lookupIP lookup.LookupIPFunc,
-	envoyAdmin admin.EnvoyAdmin,
+	envoyAdminClient admin.EnvoyAdminClient,
 ) *xdsContextBuilder {
 	return &xdsContextBuilder{
 		resManager:            resManager,
 		connectionInfoTracker: connectionInfoTracker,
 		lookupIP:              lookupIP,
-		envoyAdmin:            envoyAdmin,
+		envoyAdminClient:      envoyAdminClient,
 		cpContext:             cpContext,
 	}
 }
@@ -62,9 +62,9 @@ func (c *xdsContextBuilder) buildMeshedContext(streamId int64, meshName string, 
 
 func (c *xdsContextBuilder) buildContext(streamId int64) *xds_context.Context {
 	return &xds_context.Context{
-		ControlPlane:   c.cpContext,
-		ConnectionInfo: c.connectionInfoTracker.ConnectionInfo(streamId),
-		Mesh:           xds_context.MeshContext{},
-		EnvoyAdmin:     c.envoyAdmin,
+		ControlPlane:     c.cpContext,
+		ConnectionInfo:   c.connectionInfoTracker.ConnectionInfo(streamId),
+		Mesh:             xds_context.MeshContext{},
+		EnvoyAdminClient: c.envoyAdminClient,
 	}
 }

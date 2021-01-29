@@ -64,7 +64,7 @@ type Builder struct {
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
-	ea       admin.EnvoyAdmin
+	eac      admin.EnvoyAdminClient
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
 	apim     api_server.APIManager
@@ -164,8 +164,8 @@ func (b *Builder) WithLookupIP(lif lookup.LookupIPFunc) *Builder {
 	return b
 }
 
-func (b *Builder) WithEnvoyAdmin(ea admin.EnvoyAdmin) *Builder {
-	b.ea = ea
+func (b *Builder) WithEnvoyAdminClient(eac admin.EnvoyAdminClient) *Builder {
+	b.eac = eac
 	return b
 }
 
@@ -212,8 +212,8 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.lif == nil {
 		return nil, errors.Errorf("LookupIP func has not been configured")
 	}
-	if b.ea == nil {
-		return nil, errors.Errorf("EnvoyAdmin func has not been configured")
+	if b.eac == nil {
+		return nil, errors.Errorf("EnvoyAdminClient has not been configured")
 	}
 	if b.metrics == nil {
 		return nil, errors.Errorf("Metrics has not been configured")
@@ -239,7 +239,7 @@ func (b *Builder) Build() (Runtime, error) {
 			configm:  b.configm,
 			leadInfo: b.leadInfo,
 			lif:      b.lif,
-			ea:       b.ea,
+			eac:      b.eac,
 			metrics:  b.metrics,
 			erf:      b.erf,
 			apim:     b.apim,

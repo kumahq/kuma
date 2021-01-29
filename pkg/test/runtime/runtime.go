@@ -70,7 +70,7 @@ func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 	builder.WithLookupIP(net.LookupIP)
-	builder.WithEnvoyAdmin(&DummyEnvoyAdmin{})
+	builder.WithEnvoyAdminClient(&DummyEnvoyAdminClient{})
 	builder.WithEventReaderFactory(events.NewEventBus())
 	builder.WithAPIManager(customization.NewAPIList())
 
@@ -106,13 +106,13 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.ResourceMana
 	return customizableManager
 }
 
-type DummyEnvoyAdmin struct {
+type DummyEnvoyAdminClient struct {
 }
 
-func (d *DummyEnvoyAdmin) GenerateAPIToken(dp *mesh_core.DataplaneResource) (string, error) {
+func (d *DummyEnvoyAdminClient) GenerateAPIToken(dp *mesh_core.DataplaneResource) (string, error) {
 	return "token", nil
 }
 
-func (a *DummyEnvoyAdmin) PostQuit(dataplane *mesh_core.DataplaneResource) error {
+func (a *DummyEnvoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) error {
 	return nil
 }

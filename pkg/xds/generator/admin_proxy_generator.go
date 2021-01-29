@@ -58,7 +58,7 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 	for _, se := range staticEnpointPaths {
 		se.ClusterName = envoyAdminClusterName
 		if se.Header != "" {
-			token, err := ctx.EnvoyAdmin.GenerateAPIToken(proxy.Dataplane)
+			token, err := ctx.EnvoyAdminClient.GenerateAPIToken(proxy.Dataplane)
 			if err != nil {
 				return nil, err
 			}

@@ -11,10 +11,10 @@ import (
 )
 
 type Context struct {
-	ControlPlane   *ControlPlaneContext
-	Mesh           MeshContext
-	ConnectionInfo ConnectionInfo
-	EnvoyAdmin     admin.EnvoyAdmin
+	ControlPlane     *ControlPlaneContext
+	Mesh             MeshContext
+	ConnectionInfo   ConnectionInfo
+	EnvoyAdminClient admin.EnvoyAdminClient
 }
 
 type ConnectionInfo struct {

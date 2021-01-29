@@ -91,7 +91,7 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
-	builder.WithEnvoyAdmin(admin.NewEnvoyAdmin(builder.ResourceManager(), builder.Config()))
+	builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(builder.ResourceManager(), builder.Config()))
 	builder.WithAPIManager(customization.NewAPIList())
 
 	if err := initializeAfterBootstrap(cfg, builder); err != nil {
