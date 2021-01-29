@@ -65,6 +65,21 @@ func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 	if err := v.rorm.List(ctx, meshes); err != nil {
 		return err
 	}
+
+	// First get all ingresses
+	var ingresses []*mesh.DataplaneResource
+	for _, m := range meshes.Items {
+		dpList := &mesh.DataplaneResourceList{}
+		if err := v.rorm.List(ctx, dpList, store.ListByMesh(m.Meta.GetName())); err != nil {
+			return err
+		}
+
+		for _, dp := range dpList.Items {
+			if dp.Spec.IsIngress() {
+				ingresses = append(ingresses, dp)
+			}
+		}
+	}
 	for _, m := range meshes.Items {
 		dpList := &mesh.DataplaneResourceList{}
 		if err := v.rorm.List(ctx, dpList, store.ListByMesh(m.Meta.GetName())); err != nil {
@@ -79,7 +94,10 @@ func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 			if dp.Spec.Networking.GetTransparentProxying() == nil {
 				continue
 			}
-			newOutbounds := dns.VIPOutbounds(model.MetaToResourceKey(dp.Meta), dpList.Items, v.resolver.GetVIPs(), externalServices.Items)
+			allDps := make([]*mesh.DataplaneResource, len(ingresses)+len(dpList.Items))
+			copy(allDps[:len(ingresses)], ingresses)
+			copy(allDps[len(ingresses):], dpList.Items)
+			newOutbounds := dns.VIPOutbounds(model.MetaToResourceKey(dp.Meta), allDps, v.resolver.GetVIPs(), externalServices.Items)
 
 			if outboundsEqual(newOutbounds, dp.Spec.Networking.Outbound) {
 				continue
