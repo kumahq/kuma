@@ -15,7 +15,7 @@ func MatchGoldenYAML(goldenFilePath string) types.GomegaMatcher {
 }
 
 func MatchGoldenJSON(goldenFilePath string) types.GomegaMatcher {
-	return MatchGolden(gomega.MatchYAML, goldenFilePath)
+	return MatchGolden(gomega.MatchJSON, goldenFilePath)
 }
 
 func MatchGoldenEqual(goldenFilePath string) types.GomegaMatcher {
