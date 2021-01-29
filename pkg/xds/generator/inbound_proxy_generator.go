@@ -27,6 +27,11 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	}
 	resources := model.NewResourceSet()
 	for i, endpoint := range endpoints {
+		// we do not create inbounds for serviceless
+		if endpoint.IsServiceLess() {
+			continue
+		}
+
 		iface := proxy.Dataplane.Spec.Networking.Inbound[i]
 		protocol := mesh_core.ParseProtocol(iface.GetProtocol())
 
