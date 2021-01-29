@@ -112,3 +112,7 @@ type DummyEnvoyAdmin struct {
 func (d *DummyEnvoyAdmin) GenerateAPIToken(dp *mesh_core.DataplaneResource) (string, error) {
 	return "token", nil
 }
+
+func (a *DummyEnvoyAdmin) PostQuit(dataplane *mesh_core.DataplaneResource) error {
+	return nil
+}
