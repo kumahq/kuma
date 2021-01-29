@@ -149,6 +149,8 @@ apiServer:
 runtime:
   # Kubernetes-specific configuration
   kubernetes:
+    # Service name of the Kuma Control Plane. It is used to point Kuma DP to proper URL.
+    controlPlaneServiceName: kuma-control-plane
     # Admission WebHook Server configuration
     admissionServer:
       # Address the Admission WebHook Server should be listening on
