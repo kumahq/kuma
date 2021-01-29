@@ -248,7 +248,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode != config_core.Global {
-		address := fmt.Sprintf("https://kuma-control-plane.%s:%d", rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
+		address := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
 			address,

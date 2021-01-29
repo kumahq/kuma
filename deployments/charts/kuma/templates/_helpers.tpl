@@ -104,6 +104,8 @@ env:
   value: "kubernetes"
 - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
   value: {{ .Release.Namespace | quote }}
+- name: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
+  value: {{ include "kuma.controlPlane.serviceName" . }}
 - name: KUMA_GENERAL_TLS_CERT_FILE
   value: /var/run/secrets/kuma.io/tls-cert/tls.crt
 - name: KUMA_GENERAL_TLS_KEY_FILE

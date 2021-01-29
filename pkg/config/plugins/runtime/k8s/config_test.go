@@ -1,11 +1,11 @@
 package k8s_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"time"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,6 +25,8 @@ var _ = Describe("Config", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
+		Expect(cfg.ControlPlaneServiceName).To(Equal("custom-control-plane"))
+
 		Expect(cfg.AdmissionServer.Address).To(Equal("127.0.0.2"))
 		Expect(cfg.AdmissionServer.Port).To(Equal(uint32(8442)))
 		Expect(cfg.AdmissionServer.CertDir).To(Equal("/var/secret/kuma-cp"))
@@ -65,15 +67,10 @@ var _ = Describe("Config", func() {
 
 		// when
 		actual, err := config.ToYAML(cfg)
-		// then
-		Expect(err).ToNot(HaveOccurred())
 
-		// when
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(actual).To(MatchYAML(expected))
+		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "default-config.golden.yaml")))
 	})
 
 	It("should have validators", func() {

@@ -34,3 +34,4 @@ injector:
   initContainer:
     image: kuma-init:latest
 marshalingCacheExpirationTime: 1s
+controlPlaneServiceName: custom-control-plane
