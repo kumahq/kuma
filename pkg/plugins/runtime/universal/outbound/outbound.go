@@ -61,24 +61,21 @@ func (v *VIPOutboundsReconciler) Start(stop <-chan struct{}) error {
 }
 
 func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
+	// First get all ingresses
+	var ingresses []*mesh.DataplaneResource
+	dpList := &mesh.DataplaneResourceList{}
+	if err := v.rorm.List(ctx, dpList); err != nil {
+		return err
+	}
+	for _, dp := range dpList.Items {
+		if dp.Spec.IsIngress() {
+			ingresses = append(ingresses, dp)
+		}
+	}
+	// Then add outbounds to each Dataplane
 	meshes := &mesh.MeshResourceList{}
 	if err := v.rorm.List(ctx, meshes); err != nil {
 		return err
-	}
-
-	// First get all ingresses
-	var ingresses []*mesh.DataplaneResource
-	for _, m := range meshes.Items {
-		dpList := &mesh.DataplaneResourceList{}
-		if err := v.rorm.List(ctx, dpList, store.ListByMesh(m.Meta.GetName())); err != nil {
-			return err
-		}
-
-		for _, dp := range dpList.Items {
-			if dp.Spec.IsIngress() {
-				ingresses = append(ingresses, dp)
-			}
-		}
 	}
 	for _, m := range meshes.Items {
 		dpList := &mesh.DataplaneResourceList{}
