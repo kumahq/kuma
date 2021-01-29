@@ -5,6 +5,7 @@ import (
 	"sync"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
@@ -54,6 +55,7 @@ type RuntimeContext interface {
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
+	XDSHooks() *xds_hooks.Hooks
 }
 
 var _ Runtime = &runtime{}
@@ -108,6 +110,7 @@ type runtimeContext struct {
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
 	apim     api_server.APIInstaller
+	xdsh     *xds_hooks.Hooks
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -169,6 +172,11 @@ func (rc *runtimeContext) LeaderInfo() component.LeaderInfo {
 func (rc *runtimeContext) LookupIP() lookup.LookupIPFunc {
 	return rc.lif
 }
+
 func (rc *runtimeContext) APIInstaller() api_server.APIInstaller {
 	return rc.apim
+}
+
+func (rc *runtimeContext) XDSHooks() *xds_hooks.Hooks {
+	return rc.xdsh
 }

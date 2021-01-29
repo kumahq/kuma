@@ -20,12 +20,13 @@ import (
 )
 
 var (
-	meshResources = meshResourceTypes(map[core_model.ResourceType]bool{
+	// HashMeshExcludedResources defines Mesh-scoped resources that are not used in XDS therefore when counting hash mesh we can skip them
+	HashMeshExcludedResources = map[core_model.ResourceType]bool{
 		core_mesh.DataplaneInsightType:  true,
 		core_mesh.DataplaneOverviewType: true,
 		core_mesh.ServiceInsightType:    true,
 		core_system.ConfigType:          true,
-	})
+	}
 )
 
 func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.ResourceType {
@@ -53,7 +54,7 @@ func RegisterXDS(rt core_runtime.Runtime, server *grpc.Server) error {
 	if err != nil {
 		return err
 	}
-	meshSnapshotCache, err := mesh.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Store.Cache.ExpirationTime, meshResources, rt.LookupIP(), rt.Metrics())
+	meshSnapshotCache, err := mesh.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Store.Cache.ExpirationTime, meshResourceTypes(HashMeshExcludedResources), rt.LookupIP(), rt.Metrics())
 	if err != nil {
 		return err
 	}

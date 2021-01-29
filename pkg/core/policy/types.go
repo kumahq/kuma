@@ -23,3 +23,5 @@ type DataplanePolicy interface {
 	core_model.Resource
 	Selectors() []*mesh_proto.Selector
 }
+
+type InboundDataplanePolicyMap map[mesh_proto.InboundInterface]DataplanePolicy
