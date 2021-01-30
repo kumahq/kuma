@@ -3,6 +3,8 @@ package mesh
 import (
 	"context"
 
+	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -15,7 +17,7 @@ func ensureSigningKey(resManager manager.ResourceManager, meshName string) (crea
 	if err != nil {
 		return false, errors.Wrap(err, "could not create a signing key")
 	}
-	key := issuer.SigningKeyResourceKey(meshName)
+	key := issuer.SigningKeyResourceKey(tokens_builtin.DataplaneTokenPrefix, meshName)
 	err = resManager.Get(context.Background(), signingKey, core_store.GetBy(key))
 	if err == nil {
 		return false, nil

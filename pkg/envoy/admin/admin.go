@@ -11,6 +11,8 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -19,6 +21,8 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 )
+
+const envoyAdminClientTokenPrefix = "envoy-admin-client-token"
 
 type EnvoyAdminClient interface {
 	GenerateAPIToken(dataplane *mesh_core.DataplaneResource) (string, error)
@@ -66,18 +70,22 @@ func (a *envoyAdminClient) GenerateAPIToken(dataplane *mesh_core.DataplaneResour
 
 	return hex.EncodeToString(mac.Sum(nil)), nil
 }
+
 func (a *envoyAdminClient) getSigningKeyString(mesh string) (string, error) {
-	signingKey, err := issuer.CreateSigningKey()
-	if err != nil {
-		return "", errors.Wrap(err, "could not create a signing key")
-	}
-	key := issuer.SigningKeyResourceKey(mesh)
-	err = a.rm.Get(context.Background(), signingKey, core_store.GetBy(key))
+	signingKey := system.NewSecretResource()
+	key := issuer.SigningKeyResourceKey(envoyAdminClientTokenPrefix, mesh)
+	err := a.rm.Get(context.Background(), signingKey, core_store.GetBy(key))
 	if err == nil {
-		return "", nil
+		return signingKey.Spec.GetData().String(), nil
 	}
 	if !core_store.IsResourceNotFound(err) {
 		return "", errors.Wrap(err, "could not retrieve a resource")
+	}
+
+	// Key not found, create it
+	signingKey, err = issuer.CreateSigningKey()
+	if err != nil {
+		return "", errors.Wrap(err, "could not create a signing key")
 	}
 	if err := a.rm.Create(context.Background(), signingKey, core_store.CreateBy(key)); err != nil {
 		return "", errors.Wrap(err, "could not create a resource")
