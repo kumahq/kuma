@@ -1,6 +1,7 @@
 package admin
 
 import (
+	"bytes"
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
@@ -8,8 +9,9 @@ import (
 	"fmt"
 	"net"
 	"net/http"
-	"net/url"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/core"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
@@ -24,6 +26,8 @@ import (
 
 const envoyAdminClientTokenPrefix = "envoy-admin-client-token"
 
+var log = core.Log.WithName("envoy-admin")
+
 type EnvoyAdminClient interface {
 	GenerateAPIToken(dataplane *mesh_core.DataplaneResource) (string, error)
 	PostQuit(dataplane *mesh_core.DataplaneResource) error
@@ -33,6 +37,7 @@ type envoyAdminClient struct {
 	rm         manager.ResourceManager
 	cfg        kuma_cp.Config
 	httpClient *http.Client
+	scheme     string
 }
 
 func NewEnvoyAdminClient(rm manager.ResourceManager, cfg kuma_cp.Config) EnvoyAdminClient {
@@ -42,12 +47,13 @@ func NewEnvoyAdminClient(rm manager.ResourceManager, cfg kuma_cp.Config) EnvoyAd
 		httpClient: &http.Client{
 			Transport: &http.Transport{
 				Dial: (&net.Dialer{
-					Timeout: 5 * time.Second,
+					Timeout: 3 * time.Second,
 				}).Dial,
-				TLSHandshakeTimeout: 5 * time.Second,
+				TLSHandshakeTimeout: 3 * time.Second,
 			},
-			Timeout: 3 * time.Second,
+			Timeout: 5 * time.Second,
 		},
+		scheme: "http", // TODO figure an HTTPS listener
 	}
 }
 
@@ -101,15 +107,22 @@ func (a *envoyAdminClient) adminAddress(dataplane *mesh_core.DataplaneResource) 
 }
 
 func (a *envoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) error {
-	request := &http.Request{
-		Method: "POST",
-		URL: &url.URL{
-			Scheme: "https",
-			Host:   a.adminAddress(dataplane),
-			Path:   quitquitquit,
-		},
-		Header: nil,
+	token, err := a.GenerateAPIToken(dataplane)
+	if err != nil {
+		return err
 	}
+
+	body := bytes.NewReader([]byte(""))
+	url := fmt.Sprintf("%s://%s/%s", a.scheme, a.adminAddress(dataplane), quitquitquit)
+
+	request, err := http.NewRequest("POST", url, body)
+	if err != nil {
+		return err
+	}
+
+	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	log.V(1).Info("Sendig", "Method", request.Method, "URL", request.URL, "Header", request.Header)
 
 	// Envoy will not send back any response, so do we not check the response
 	response, err := a.httpClient.Do(request)
@@ -117,6 +130,10 @@ func (a *envoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) erro
 		return errors.Wrapf(err, "unable to send POST to %s", quitquitquit)
 	}
 	defer response.Body.Close()
+
+	if response.StatusCode != http.StatusOK {
+		return errors.Errorf("Envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
+	}
 
 	return nil
 }
