@@ -105,7 +105,7 @@ jobs:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-      CLANG_FORMAT_PATH: clang-format-12
+      CLANG_FORMAT_PATH: clang-format-13
       # if GOPATH is not set, `golang-ci` fails with an obscure message
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
@@ -215,7 +215,7 @@ jobs:
     # we need a large resource class to satisfy the needs of golangci-lint run under `make check`
     resource_class: large
     environment:
-      CLANG_FORMAT_PATH: clang-format-12
+      CLANG_FORMAT_PATH: clang-format-13
     steps:
     - checkout
     - restore_cache:
@@ -243,7 +243,7 @@ jobs:
 
          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
-         apt update && apt install -y clang-format-12
+         apt update && apt install -y clang-format-13
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check

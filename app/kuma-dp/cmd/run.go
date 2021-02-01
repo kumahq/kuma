@@ -1,12 +1,9 @@
 package cmd
 
 import (
-	"crypto/tls"
 	"io/ioutil"
-	"net/http"
 	"os"
 	"path/filepath"
-	"time"
 
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
 
@@ -19,23 +16,13 @@ import (
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-var (
-	runLog = dataplaneLog.WithName("run")
-	// overridable by tests
-	bootstrapGenerator = envoy.NewRemoteBootstrapGenerator(&http.Client{
-		Timeout:   10 * time.Second,
-		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
-	},
-	)
-)
+var runLog = dataplaneLog.WithName("run")
 
-func newRunCmd() *cobra.Command {
+func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cfg := kuma_dp.DefaultConfig()
 	cmd := &cobra.Command{
 		Use:   "run",
@@ -116,7 +103,7 @@ func newRunCmd() *cobra.Command {
 
 			dataplane, err := envoy.New(envoy.Opts{
 				Config:    cfg,
-				Generator: bootstrapGenerator,
+				Generator: rootCtx.BootstrapGenerator,
 				Dataplane: dp,
 				Stdout:    cmd.OutOrStdout(),
 				Stderr:    cmd.OutOrStderr(),
@@ -127,13 +114,12 @@ func newRunCmd() *cobra.Command {
 			}
 			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
 
-			componentMgr := component.NewManager(leader_memory.NewNeverLeaderElector())
-			if err := componentMgr.Add(server, dataplane); err != nil {
+			if err := rootCtx.ComponentManager.Add(server, dataplane); err != nil {
 				return err
 			}
 
 			runLog.Info("starting Kuma DP", "version", kuma_version.Build.Version)
-			if err := componentMgr.Start(shouldQuit); err != nil {
+			if err := rootCtx.ComponentManager.Start(shouldQuit); err != nil {
 				runLog.Error(err, "error while running Kuma DP")
 				return err
 			}
