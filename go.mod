@@ -44,7 +44,7 @@ require (
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v0.12.0
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
-	go.uber.org/multierr v1.3.0
+	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	golang.org/x/tools v0.0.0-20210111221946-d33bae441459 // indirect
