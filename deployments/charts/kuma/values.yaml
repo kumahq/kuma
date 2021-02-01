@@ -10,7 +10,9 @@ patchSystemNamespace: true
 
 # -- Whether ot not install new CRDs before upgrade  (if any were introduced
 #    with the new version of Kuma)
-installNewCrdsWhenUpgrade: true
+installCrdsOnUpgrade:
+  enabled: true
+  imagePullSecrets: []
 
 controlPlane:
   # -- Kuma CP log level: one of off,info,debug

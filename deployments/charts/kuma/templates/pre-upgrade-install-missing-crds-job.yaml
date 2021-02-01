@@ -1,4 +1,4 @@
-{{- if .Values.installNewCrdsWhenUpgrade }}
+{{- if .Values.installCrdsOnUpgrade.enabled }}
   {{- $serviceAccountName := printf "%s-install-missing-crds" (include "kuma.name" .) }}
 apiVersion: v1
 kind: ServiceAccount
@@ -10,19 +10,11 @@ metadata:
     "helm.sh/hook-delete-policy": "before-hook-creation,hook-succeeded,hook-failed"
   labels:
   {{- include "kuma.labels" . | nindent 4 }}
-{{- with .Values.hooks }}
-{{- with .preUpgrade }}
-{{- with .installMissingCrds }}
-{{- with .serviceAccount }}
-{{- with .imagePullSecrets }}
+{{- with .Values.installCrdsOnUpgrade.imagePullSecrets }}
 imagePullSecrets:
   {{- range . }}
   - name: {{ . | quote }}
   {{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
-{{- end }}
 {{- end }}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
