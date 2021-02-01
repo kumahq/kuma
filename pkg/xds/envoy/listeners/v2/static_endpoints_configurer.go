@@ -2,10 +2,13 @@ package v2
 
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
+	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/kumahq/kuma/pkg/tls"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
@@ -16,6 +19,7 @@ import (
 type StaticEndpointsConfigurer struct {
 	StatsName string
 	Paths     []*envoy_common.StaticEndpointPath
+	Tls       bool
 }
 
 var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
@@ -81,5 +85,43 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 			TypedConfig: pbst,
 		},
 	})
+
+	if c.Tls {
+		keyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, "localhost")
+		if err != nil {
+			return err
+		}
+
+		tlsContext := &envoy_auth.DownstreamTlsContext{
+			CommonTlsContext: &envoy_auth.CommonTlsContext{
+				TlsCertificates: []*envoy_auth.TlsCertificate{
+					{
+						CertificateChain: &envoy_core.DataSource{
+							Specifier: &envoy_core.DataSource_InlineBytes{
+								InlineBytes: keyPair.CertPEM,
+							},
+						},
+						PrivateKey: &envoy_core.DataSource{
+							Specifier: &envoy_core.DataSource_InlineBytes{
+								InlineBytes: keyPair.KeyPEM,
+							},
+						},
+					},
+				},
+			},
+		}
+		pbst, err = proto.MarshalAnyDeterministic(tlsContext)
+		if err != nil {
+			return err
+		}
+
+		filterChain.TransportSocket = &envoy_core.TransportSocket{
+			Name: "envoy.transport_sockets.tls",
+			ConfigType: &envoy_core.TransportSocket_TypedConfig{
+				TypedConfig: pbst,
+			},
+		}
+	}
+
 	return nil
 }

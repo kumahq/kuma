@@ -1,10 +1,13 @@
 package v3
 
 import (
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
+	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/kumahq/kuma/pkg/tls"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
@@ -15,6 +18,7 @@ import (
 type StaticEndpointsConfigurer struct {
 	StatsName string
 	Paths     []*envoy_common.StaticEndpointPath
+	Tls       bool
 }
 
 var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
@@ -22,7 +26,7 @@ var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
 func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	routes := []*envoy_route.Route{}
 	for _, p := range c.Paths {
-		routes = append(routes, &envoy_route.Route{
+		route := &envoy_route.Route{
 			Match: &envoy_route.RouteMatch{
 				PathSpecifier: &envoy_route.RouteMatch_Prefix{
 					Prefix: p.Path,
@@ -36,7 +40,18 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 					PrefixRewrite: p.RewritePath,
 				},
 			},
-		})
+		}
+
+		if p.HeaderExactMatch != "" {
+			route.Match.Headers = []*envoy_route.HeaderMatcher{{
+				Name: p.Header,
+				HeaderMatchSpecifier: &envoy_route.HeaderMatcher_ExactMatch{
+					ExactMatch: p.HeaderExactMatch,
+				},
+			}}
+		}
+
+		routes = append(routes, route)
 	}
 
 	config := &envoy_hcm.HttpConnectionManager{
@@ -69,5 +84,43 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 			TypedConfig: pbst,
 		},
 	})
+
+	if c.Tls {
+		keyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, "localhost")
+		if err != nil {
+			return err
+		}
+
+		tlsContext := &envoy_tls.DownstreamTlsContext{
+			CommonTlsContext: &envoy_tls.CommonTlsContext{
+				TlsCertificates: []*envoy_tls.TlsCertificate{
+					{
+						CertificateChain: &envoy_core.DataSource{
+							Specifier: &envoy_core.DataSource_InlineBytes{
+								InlineBytes: keyPair.CertPEM,
+							},
+						},
+						PrivateKey: &envoy_core.DataSource{
+							Specifier: &envoy_core.DataSource_InlineBytes{
+								InlineBytes: keyPair.KeyPEM,
+							},
+						},
+					},
+				},
+			},
+		}
+		pbst, err = proto.MarshalAnyDeterministic(tlsContext)
+		if err != nil {
+			return err
+		}
+
+		filterChain.TransportSocket = &envoy_core.TransportSocket{
+			Name: "envoy.transport_sockets.tls",
+			ConfigType: &envoy_core.TransportSocket_TypedConfig{
+				TypedConfig: pbst,
+			},
+		}
+	}
+
 	return nil
 }

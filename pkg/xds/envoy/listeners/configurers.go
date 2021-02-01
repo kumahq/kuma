@@ -59,10 +59,27 @@ func StaticEndpoints(statsName string, paths []*envoy_common.StaticEndpointPath)
 		config.AddV2(&v2.StaticEndpointsConfigurer{
 			StatsName: statsName,
 			Paths:     paths,
+			Tls:       false,
 		})
 		config.AddV3(&v3.StaticEndpointsConfigurer{
 			StatsName: statsName,
 			Paths:     paths,
+			Tls:       false,
+		})
+	})
+}
+
+func StaticTlsEndpoints(statsName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+		config.AddV2(&v2.StaticEndpointsConfigurer{
+			StatsName: statsName,
+			Paths:     paths,
+			Tls:       true,
+		})
+		config.AddV3(&v3.StaticEndpointsConfigurer{
+			StatsName: statsName,
+			Paths:     paths,
+			Tls:       true,
 		})
 	})
 }
@@ -91,13 +108,15 @@ func HttpConnectionManager(statsName string) FilterChainBuilderOpt {
 	})
 }
 
-func FilterChainMatch(serverNames ...string) FilterChainBuilderOpt {
+func FilterChainMatch(transport string, serverNames ...string) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV2(&v2.FilterChainMatchConfigurer{
-			ServerNames: serverNames,
+			ServerNames:       serverNames,
+			TransportProtocol: transport,
 		})
 		config.AddV3(&v3.FilterChainMatchConfigurer{
-			ServerNames: serverNames,
+			ServerNames:       serverNames,
+			TransportProtocol: transport,
 		})
 	})
 }

@@ -107,12 +107,17 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.ResourceMana
 }
 
 type DummyEnvoyAdminClient struct {
+	PostQuitCalled *int
 }
 
 func (d *DummyEnvoyAdminClient) GenerateAPIToken(dp *mesh_core.DataplaneResource) (string, error) {
 	return "token", nil
 }
 
-func (a *DummyEnvoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) error {
+func (d *DummyEnvoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) error {
+	if d.PostQuitCalled != nil {
+		*d.PostQuitCalled++
+	}
+
 	return nil
 }

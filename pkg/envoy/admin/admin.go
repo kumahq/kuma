@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/hmac"
 	"crypto/sha256"
+	"crypto/tls"
 	"encoding/hex"
 	"fmt"
 	"net"
@@ -50,10 +51,13 @@ func NewEnvoyAdminClient(rm manager.ResourceManager, cfg kuma_cp.Config) EnvoyAd
 					Timeout: 3 * time.Second,
 				}).Dial,
 				TLSHandshakeTimeout: 3 * time.Second,
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
 			},
 			Timeout: 5 * time.Second,
 		},
-		scheme: "http", // TODO figure an HTTPS listener
+		scheme: "https",
 	}
 }
 
