@@ -951,7 +951,7 @@ spec:
                           this object.
                         type: string
                     required:
-                      - name
+                    - name
                     type: object
                   type: array
                 result:
@@ -1083,7 +1083,7 @@ spec:
                       type: string
                   type: object
               required:
-                - pending
+              - pending
               type: object
             labels:
               additionalProperties:
@@ -1176,10 +1176,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                  - apiVersion
-                  - kind
-                  - name
-                  - uid
+                - apiVersion
+                - kind
+                - name
+                - uid
                 type: object
               type: array
             resourceVersion:
@@ -1209,9 +1209,9 @@ spec:
           type: object
       type: object
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true
 status:
   acceptedNames:
     kind: ""
@@ -5272,7 +5272,7 @@ spec:
                           this object.
                         type: string
                     required:
-                      - name
+                    - name
                     type: object
                   type: array
                 result:
@@ -5404,7 +5404,7 @@ spec:
                       type: string
                   type: object
               required:
-                - pending
+              - pending
               type: object
             labels:
               additionalProperties:
@@ -5497,10 +5497,10 @@ spec:
                     description: 'UID of the referent. More info: http://kubernetes.io/docs/user-guide/identifiers#uids'
                     type: string
                 required:
-                  - apiVersion
-                  - kind
-                  - name
-                  - uid
+                - apiVersion
+                - kind
+                - name
+                - uid
                 type: object
               type: array
             resourceVersion:
@@ -5530,9 +5530,9 @@ spec:
           type: object
       type: object
   versions:
-    - name: v1alpha1
-      served: true
-      storage: true
+  - name: v1alpha1
+    served: true
+    storage: true
 status:
   acceptedNames:
     kind: ""
@@ -6942,7 +6942,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 9f338e194d02567321138ce2c3652db2b944e1a24adec76d6e6bcce190199442
-        checksum/tls-secrets: d7265831b6f233468406188b4f550dc084d41228a7a2e8206beadb801c68ffe1
+        checksum/tls-secrets: 919bdbb15294ac84873b45dbad39201769971b303b3e3c7a8c251ddfa9187b59
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -6950,7 +6950,7 @@ spec:
     spec:
       serviceAccountName: kuma-control-plane
       nodeSelector:
-
+        
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
@@ -6978,6 +6978,8 @@ spec:
               value: "/var/run/secrets/kuma.io/tls-cert"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
               value: "5443"
+            - name: KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME
+              value: "kuma-control-plane"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/ca.crt"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
@@ -7032,7 +7034,7 @@ metadata:
   name: kuma-admission-mutating-webhook-configuration
   namespace: kuma-system
   labels:
-
+  
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -7081,6 +7083,8 @@ webhooks:
           - trafficpermissions
           - trafficroutes
           - traffictraces
+    
+      
     sideEffects: None
   - name: kuma-injector.kuma.io
     failurePolicy: Ignore
@@ -7107,7 +7111,7 @@ metadata:
   name: kuma-validating-webhook-configuration
   namespace: kuma-system
   labels:
-
+  
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -7142,6 +7146,8 @@ webhooks:
           - trafficroutes
           - traffictraces
           - zones
+    
+      
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
     failurePolicy: Ignore

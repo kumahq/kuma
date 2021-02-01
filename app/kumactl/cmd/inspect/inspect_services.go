@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -14,21 +15,17 @@ import (
 )
 
 type inspectServicesContext struct {
-	*inspectContext
-
 	mesh string
 }
 
-func newInspectServicesCmd(pctx *inspectContext) *cobra.Command {
-	ctx := inspectServicesContext{
-		inspectContext: pctx,
-	}
+func newInspectServicesCmd(pctx *cmd.RootContext) *cobra.Command {
+	ctx := inspectServicesContext{}
 	cmd := &cobra.Command{
 		Use:   "services",
 		Short: "Inspect Services",
 		Long:  `Inspect Services.`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			client, err := ctx.CurrentServiceOverviewClient()
+			client, err := pctx.CurrentServiceOverviewClient()
 			if err != nil {
 				return err
 			}
@@ -37,7 +34,7 @@ func newInspectServicesCmd(pctx *inspectContext) *cobra.Command {
 				return err
 			}
 
-			switch format := output.Format(ctx.args.outputFormat); format {
+			switch format := output.Format(pctx.InspectContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printServiceInsights(insights, cmd.OutOrStdout())
 			default:
