@@ -482,7 +482,7 @@ func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
 	}
 
 	if opts.cni {
-		if err := c.WaitApp(cniApp, cniNamespace, 1); err != nil {
+		if err := c.WaitApp(CNIApp, CNINamespace, 1); err != nil {
 			return err
 		}
 	}
