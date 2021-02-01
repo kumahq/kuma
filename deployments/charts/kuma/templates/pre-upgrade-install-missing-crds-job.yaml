@@ -88,7 +88,7 @@ data:
   save_missing_crds.sh: |
     #!/usr/bin/env sh
 
-    missing_crds="$(kumactl install crds --not-installed)"
+    missing_crds="$(kumactl install crds --only-missing)"
 
     if [ -n "${missing_crds}" ]; then
       echo "found missing crds - saving to /kuma/missing/crds.yaml"

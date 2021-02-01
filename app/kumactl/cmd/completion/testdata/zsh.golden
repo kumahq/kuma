@@ -871,7 +871,7 @@ function _kumactl_install_control-plane {
 
 function _kumactl_install_crds {
   _arguments \
-    '--not-installed[install only resources which are not already present in a cluster]' \
+    '--only-missing[install only resources which are not already present in a cluster]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'

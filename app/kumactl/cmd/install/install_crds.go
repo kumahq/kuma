@@ -21,7 +21,7 @@ import (
 const KumaCrdApiGroup = "kuma.io"
 
 type InstallCrdsArgs struct {
-	NotInstalled bool
+	OnlyMissing bool
 }
 
 func newInstallCrdsCmd() *cobra.Command {
@@ -36,7 +36,7 @@ func newInstallCrdsCmd() *cobra.Command {
 				return errors.Wrap(err, "Failed to read CRD files")
 			}
 
-			if !args.NotInstalled {
+			if !args.OnlyMissing {
 				singleFile := data.JoinYAML(wantCrdFiles)
 
 				if _, err := cmd.OutOrStdout().Write(singleFile.Data); err != nil {
@@ -88,7 +88,7 @@ func newInstallCrdsCmd() *cobra.Command {
 		},
 	}
 
-	cmd.Flags().BoolVar(&args.NotInstalled, "not-installed", false, "install only resources which are not already present in a cluster")
+	cmd.Flags().BoolVar(&args.OnlyMissing, "only-missing", false, "install only resources which are not already present in a cluster")
 
 	return cmd
 }
