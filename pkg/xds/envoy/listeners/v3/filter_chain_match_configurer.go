@@ -9,8 +9,10 @@ type FilterChainMatchConfigurer struct {
 
 func (f *FilterChainMatchConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	filterChain.FilterChainMatch = &envoy_listener.FilterChainMatch{
-		ServerNames:       f.ServerNames,
-		TransportProtocol: f.TransportProtocol,
+		ServerNames: f.ServerNames,
+	}
+	if f.TransportProtocol != "" {
+		filterChain.FilterChainMatch.TransportProtocol = f.TransportProtocol
 	}
 	return nil
 }

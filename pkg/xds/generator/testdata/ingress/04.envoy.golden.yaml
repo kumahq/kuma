@@ -135,6 +135,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - backend{mesh=mesh1,version=v2}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:
@@ -149,6 +150,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - backend{mesh=mesh1,region=eu}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:
@@ -163,6 +165,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - backend{mesh=mesh1}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:
@@ -176,6 +179,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - backend{mesh=mesh2,version=v2}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:
@@ -190,6 +194,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - backend{mesh=mesh2,region=eu}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:
@@ -204,6 +209,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - backend{mesh=mesh2}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:
@@ -217,6 +223,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - frontend{cloud=gke,mesh=mesh2,region=eu}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:
@@ -232,6 +239,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - frontend{cloud=aks,mesh=mesh2}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:
@@ -246,6 +254,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - frontend{mesh=mesh2}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:
@@ -259,6 +268,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - frontend{mesh=mesh2,version=v2}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:

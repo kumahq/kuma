@@ -63,6 +63,7 @@ resources:
         - filterChainMatch:
             serverNames:
               - backend{mesh=mesh1}
+            transportProtocol: tls
           filters:
             - name: envoy.filters.network.tcp_proxy
               typedConfig:

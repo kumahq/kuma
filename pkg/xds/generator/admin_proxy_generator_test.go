@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/kumahq/kuma/pkg/tls"
+
 	"github.com/kumahq/kuma/pkg/test/runtime"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -19,6 +21,14 @@ import (
 )
 
 var _ = Describe("AdminProxyGenerator", func() {
+	// overridable by unit tests
+	generator.NewSelfSignedCert = func(commonName string, certType tls.CertType, hosts ...string) (tls.KeyPair, error) {
+		return tls.KeyPair{
+			CertPEM: []byte("LS0=="),
+			KeyPEM:  []byte("LS0=="),
+		}, nil
+	}
+
 	generator := generator.AdminProxyGenerator{}
 
 	type testCase struct {

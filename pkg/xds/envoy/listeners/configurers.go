@@ -4,6 +4,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/tls"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	v2 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v2"
@@ -59,27 +60,25 @@ func StaticEndpoints(statsName string, paths []*envoy_common.StaticEndpointPath)
 		config.AddV2(&v2.StaticEndpointsConfigurer{
 			StatsName: statsName,
 			Paths:     paths,
-			Tls:       false,
 		})
 		config.AddV3(&v3.StaticEndpointsConfigurer{
 			StatsName: statsName,
 			Paths:     paths,
-			Tls:       false,
 		})
 	})
 }
 
-func StaticTlsEndpoints(statsName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
+func StaticTlsEndpoints(statsName string, keyPair *tls.KeyPair, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV2(&v2.StaticEndpointsConfigurer{
 			StatsName: statsName,
 			Paths:     paths,
-			Tls:       true,
+			KeyPair:   keyPair,
 		})
 		config.AddV3(&v3.StaticEndpointsConfigurer{
 			StatsName: statsName,
 			Paths:     paths,
-			Tls:       true,
+			KeyPair:   keyPair,
 		})
 	})
 }

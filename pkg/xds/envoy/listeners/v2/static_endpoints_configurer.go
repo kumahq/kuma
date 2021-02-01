@@ -8,6 +8,7 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/kumahq/kuma/pkg/tls"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -19,7 +20,7 @@ import (
 type StaticEndpointsConfigurer struct {
 	StatsName string
 	Paths     []*envoy_common.StaticEndpointPath
-	Tls       bool
+	KeyPair   *tls.KeyPair
 }
 
 var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
@@ -86,24 +87,19 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 		},
 	})
 
-	if c.Tls {
-		keyPair, err := tls.NewSelfSignedCert("admin", tls.ServerCertType, "localhost")
-		if err != nil {
-			return err
-		}
-
+	if c.KeyPair != nil {
 		tlsContext := &envoy_auth.DownstreamTlsContext{
 			CommonTlsContext: &envoy_auth.CommonTlsContext{
 				TlsCertificates: []*envoy_auth.TlsCertificate{
 					{
 						CertificateChain: &envoy_core.DataSource{
 							Specifier: &envoy_core.DataSource_InlineBytes{
-								InlineBytes: keyPair.CertPEM,
+								InlineBytes: c.KeyPair.CertPEM,
 							},
 						},
 						PrivateKey: &envoy_core.DataSource{
 							Specifier: &envoy_core.DataSource_InlineBytes{
-								InlineBytes: keyPair.KeyPEM,
+								InlineBytes: c.KeyPair.KeyPEM,
 							},
 						},
 					},
