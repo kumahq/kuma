@@ -31,7 +31,7 @@ type PodStatusReconciler struct {
 	ResourceManager   manager.ResourceManager
 	Log               logr.Logger
 	ResourceConverter k8s_common.Converter
-	EnvoyAdminClien   admin.EnvoyAdminClient
+	EnvoyAdminClient  admin.EnvoyAdminClient
 }
 
 func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -69,6 +69,7 @@ func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 		dataplane := &mesh_k8s.Dataplane{}
 		if err := r.Get(ctx, req.NamespacedName, dataplane); err != nil {
 			if kube_apierrs.IsNotFound(err) {
+				log.V(1).Info("dataplane is not found", "name", req.NamespacedName)
 				return kube_ctrl.Result{}, nil
 			}
 			log.Error(err, "unable to fetch Dataplane")
@@ -81,7 +82,7 @@ func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 			return kube_ctrl.Result{}, err
 		}
 
-		err := r.EnvoyAdminClien.PostQuit(dp)
+		err := r.EnvoyAdminClient.PostQuit(dp)
 		if err != nil {
 			// We do not want the reconciler to ever fail. Just log the error
 			log.Error(err, "envoy admin client failed")

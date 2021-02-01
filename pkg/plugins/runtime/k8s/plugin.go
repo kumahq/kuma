@@ -160,7 +160,7 @@ func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conv
 		Scheme:            mgr.GetScheme(),
 		Log:               core.Log.WithName("controllers").WithName("Pod"),
 		ResourceConverter: converter,
-		EnvoyAdminClien:   rt.EnvoyAdminClient(),
+		EnvoyAdminClient:  rt.EnvoyAdminClient(),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
