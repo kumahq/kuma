@@ -21,14 +21,6 @@ import (
 )
 
 var _ = Describe("AdminProxyGenerator", func() {
-	// overridable by unit tests
-	generator.NewSelfSignedCert = func(commonName string, certType tls.CertType, hosts ...string) (tls.KeyPair, error) {
-		return tls.KeyPair{
-			CertPEM: []byte("LS0=="),
-			KeyPEM:  []byte("LS0=="),
-		}, nil
-	}
-
 	generator := generator.AdminProxyGenerator{}
 
 	type testCase struct {
@@ -47,7 +39,12 @@ var _ = Describe("AdminProxyGenerator", func() {
 			parseResource(bytes, dataplane)
 
 			ctx := context.Context{
-				ControlPlane:     nil,
+				ControlPlane: &context.ControlPlaneContext{
+					AdminProxyKeyPair: &tls.KeyPair{
+						CertPEM: []byte("LS0=="),
+						KeyPEM:  []byte("LS0=="),
+					},
+				},
 				Mesh:             context.MeshContext{},
 				EnvoyAdminClient: &runtime.DummyEnvoyAdminClient{},
 			}

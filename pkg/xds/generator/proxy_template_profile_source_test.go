@@ -5,6 +5,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/tls"
+
 	"github.com/kumahq/kuma/pkg/test/runtime"
 
 	"github.com/golang/protobuf/proto"
@@ -77,7 +79,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				},
 				ControlPlane: &xds_context.ControlPlaneContext{
 					SdsTlsCert: []byte("12345"),
-					CLACache:   &dummyCLACache{outboundTargets: outboundTargets},
+					AdminProxyKeyPair: &tls.KeyPair{
+						CertPEM: []byte("LS0=="),
+						KeyPEM:  []byte("LS0=="),
+					},
+					CLACache: &dummyCLACache{outboundTargets: outboundTargets},
 				},
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
