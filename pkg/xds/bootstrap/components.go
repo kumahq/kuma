@@ -13,6 +13,7 @@ func RegisterBootstrap(rt core_runtime.Runtime, mux *http.ServeMux) error {
 		rt.Config().BootstrapServer,
 		rt.Config().DpServer.TlsCertFile,
 		rt.Config().DpServer.Auth.Type != dp_server.DpServerAuthNone,
+		rt.Config().DpServer.Hds.Enabled,
 	)
 	if err != nil {
 		return err

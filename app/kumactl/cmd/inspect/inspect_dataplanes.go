@@ -2,7 +2,6 @@ package inspect
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -12,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/printers"
 	"github.com/kumahq/kuma/app/kumactl/pkg/output/table"
@@ -21,8 +21,6 @@ import (
 )
 
 type inspectDataplanesContext struct {
-	*inspectContext
-
 	args struct {
 		tags    map[string]string
 		gateway bool
@@ -30,10 +28,8 @@ type inspectDataplanesContext struct {
 	}
 }
 
-func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
-	ctx := inspectDataplanesContext{
-		inspectContext: pctx,
-	}
+func newInspectDataplanesCmd(pctx *cmd.RootContext) *cobra.Command {
+	ctx := inspectDataplanesContext{}
 	cmd := &cobra.Command{
 		Use:   "dataplanes",
 		Short: "Inspect Dataplanes",
@@ -48,7 +44,7 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 				return err
 			}
 
-			switch format := output.Format(pctx.args.outputFormat); format {
+			switch format := output.Format(pctx.InspectContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printDataplaneOverviews(pctx.Now(), overviews, cmd.OutOrStdout())
 			default:
@@ -66,42 +62,20 @@ func newInspectDataplanesCmd(pctx *inspectContext) *cobra.Command {
 	return cmd
 }
 
-func getStatus(dataplane *mesh_proto.Dataplane, dataplaneInsight *mesh_proto.DataplaneInsight) (string, []string) {
-	proxyOnline := dataplaneInsight.IsOnline()
-
-	var errs []string
-
-	for _, inbound := range dataplane.Networking.Inbound {
-		if inbound.Health != nil && !inbound.Health.Ready {
-			errs = append(errs, fmt.Sprintf("inbound[port=%d,svc=%s] is not ready", inbound.Port, inbound.Tags[mesh_proto.ServiceTag]))
-		}
-	}
-
-	allInboundsOffline := len(errs) == len(dataplane.Networking.Inbound)
-	allInboundsOnline := len(errs) == 0
-
-	if !proxyOnline || allInboundsOffline {
-		return "Offline", errs
-	}
-	if !allInboundsOnline {
-		return "Partially degraded", errs
-	}
-	return "Online", nil
-}
-
-func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
+func printDataplaneOverviews(now time.Time, dataplaneOverviews *mesh_core.DataplaneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
 		Headers: []string{"MESH", "NAME", "TAGS", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "CERT REGENERATED AGO", "CERT EXPIRATION", "CERT REGENERATIONS", "KUMA-DP VERSION", "ENVOY VERSION", "NOTES"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
 				defer func() { i++ }()
-				if len(dataplaneInsights.Items) <= i {
+				if len(dataplaneOverviews.Items) <= i {
 					return nil
 				}
-				meta := dataplaneInsights.Items[i].Meta
-				dataplane := dataplaneInsights.Items[i].Spec.Dataplane
-				dataplaneInsight := dataplaneInsights.Items[i].Spec.DataplaneInsight
+				meta := dataplaneOverviews.Items[i].Meta
+				dataplane := dataplaneOverviews.Items[i].Spec.Dataplane
+				dataplaneInsight := dataplaneOverviews.Items[i].Spec.DataplaneInsight
+				dataplaneOverview := dataplaneOverviews.Items[i]
 
 				lastSubscription, lastConnected := dataplaneInsight.GetLatestSubscription()
 				totalResponsesSent := dataplaneInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
@@ -110,7 +84,7 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 				totalResponsesRejected := dataplaneInsight.Sum(func(s *mesh_proto.DiscoverySubscription) uint64 {
 					return s.GetStatus().GetTotal().GetResponsesRejected()
 				})
-				status, errs := getStatus(dataplane, dataplaneInsight)
+				status, errs := dataplaneOverview.GetStatus()
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
 				var certExpiration *time.Time
@@ -139,7 +113,7 @@ func printDataplaneOverviews(now time.Time, dataplaneInsights *mesh_core.Datapla
 					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
 					dataplane.TagSet().String(),          // TAGS
-					status,                               // STATUS
+					status.String(),                      // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO
 					table.Number(totalResponsesSent),     // TOTAL UPDATES

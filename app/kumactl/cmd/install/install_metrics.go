@@ -20,6 +20,8 @@ type metricsTemplateArgs struct {
 	KumaPrometheusSdImage     string
 	KumaPrometheusSdVersion   string
 	KumaCpAddress             string
+	WithoutPrometheus         bool
+	WithoutGrafana            bool
 	DashboardDataplane        string
 	DashboardMesh             string
 	DashboardServiceToService string
@@ -31,6 +33,8 @@ var DefaultMetricsTemplateArgs = metricsTemplateArgs{
 	KumaPrometheusSdImage:   "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd",
 	KumaPrometheusSdVersion: kuma_version.Build.Version,
 	KumaCpAddress:           "grpc://kuma-control-plane.kuma-system:5676",
+	WithoutPrometheus:       false,
+	WithoutGrafana:          false,
 }
 
 func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -74,7 +78,9 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			}
 			args.DashboardCP = dashboard.String()
 
-			renderedFiles, err := renderFiles(yamlTemplateFiles, args, simpleTemplateRenderer)
+			filter := getExcludePrefixesFilter(args.WithoutPrometheus, args.WithoutGrafana)
+
+			renderedFiles, err := renderFilesWithFilter(yamlTemplateFiles, args, simpleTemplateRenderer, filter)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render template files")
 			}
@@ -96,5 +102,23 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.Flags().StringVar(&args.KumaPrometheusSdImage, "kuma-prometheus-sd-image", args.KumaPrometheusSdImage, "image name of Kuma Prometheus SD")
 	cmd.Flags().StringVar(&args.KumaPrometheusSdVersion, "kuma-prometheus-sd-version", args.KumaPrometheusSdVersion, "version of Kuma Prometheus SD")
 	cmd.Flags().StringVar(&args.KumaCpAddress, "kuma-cp-address", args.KumaCpAddress, "the address of Kuma CP")
+	cmd.Flags().BoolVar(&args.WithoutPrometheus, "without-prometheus", args.WithoutPrometheus, "disable Prometheus resources generation")
+	cmd.Flags().BoolVar(&args.WithoutGrafana, "without-grafana", args.WithoutGrafana, "disable Grafana resources generation")
 	return cmd
+}
+
+func getExcludePrefixesFilter(withoutPrometheus, withoutGrafana bool) ExcludePrefixesFilter {
+	prefixes := []string{}
+
+	if withoutPrometheus {
+		prefixes = append(prefixes, "/prometheus")
+	}
+
+	if withoutGrafana {
+		prefixes = append(prefixes, "/grafana")
+	}
+
+	return ExcludePrefixesFilter{
+		Prefixes: prefixes,
+	}
 }

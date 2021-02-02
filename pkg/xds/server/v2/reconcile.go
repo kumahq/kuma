@@ -75,12 +75,12 @@ func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {
 	return new
 }
 
-func equalSnapshots(old, new map[string]envoy_types.Resource) bool {
+func equalSnapshots(old, new map[string]envoy_types.ResourceWithTtl) bool {
 	if len(new) != len(old) {
 		return false
 	}
 	for key, newValue := range new {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue, oldValue) {
+		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue.Resource, oldValue.Resource) {
 			return false
 		}
 	}

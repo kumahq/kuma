@@ -285,6 +285,8 @@ Flags:
       --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd")
       --kuma-prometheus-sd-version string   version of Kuma Prometheus SD (default "latest")
       --namespace string                    namespace to install metrics to (default "kuma-metrics")
+      --without-grafana                     disable Grafana resources generation
+      --without-prometheus                  disable Prometheus resources generation
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -384,33 +386,33 @@ Usage:
 
 Available Commands:
   circuit-breaker     Show a single CircuitBreaker resource
-  circuit-breakers    Show CircuitBreakers
+  circuit-breakers    Show CircuitBreaker
   dataplane           Show a single Dataplane resource
-  dataplanes          Show Dataplanes
+  dataplanes          Show Dataplane
   external-service    Show a single ExternalService resource
-  external-services   Show ExternalServices
-  fault-injection     Show a single Fault-Injection resource
-  fault-injections    Show FaultInjections
+  external-services   Show ExternalService
+  fault-injection     Show a single FaultInjection resource
+  fault-injections    Show FaultInjection
   healthcheck         Show a single HealthCheck resource
-  healthchecks        Show HealthChecks
+  healthchecks        Show HealthCheck
   mesh                Show a single Mesh resource
-  meshes              Show Meshes
-  proxytemplate       Show a single Proxytemplate resource
-  proxytemplates      Show ProxyTemplates
-  retries             Show Retries
-  retry               Show a single retry resource
+  meshes              Show Mesh
+  proxytemplate       Show a single ProxyTemplate resource
+  proxytemplates      Show ProxyTemplate
+  retries             Show Retry
+  retry               Show a single Retry resource
   secret              Show a single Secret resource
-  secrets             Show Secrets
+  secrets             Show Secret
   traffic-log         Show a single TrafficLog resource
-  traffic-logs        Show TrafficLogs
+  traffic-logs        Show TrafficLog
   traffic-permission  Show a single TrafficPermission resource
-  traffic-permissions Show TrafficPermissions
+  traffic-permissions Show TrafficPermission
   traffic-route       Show a single TrafficRoute resource
-  traffic-routes      Show TrafficRoutes
+  traffic-routes      Show TrafficRoute
   traffic-trace       Show a single TrafficTrace resource
-  traffic-traces      Show TrafficTraces
-  zone                Show a single Zone resource
-  zones               Show Zones
+  traffic-traces      Show TrafficTrace
+  zone                Show a single Retry resource
+  zones               Show Zone
 
 Flags:
   -h, --help            help for get
@@ -427,7 +429,7 @@ Use "kumactl get [command] --help" for more information about a command.
 ### kumactl get meshes
 
 ```
-Show Meshes.
+Show Mesh entities.
 
 Usage:
   kumactl get meshes [flags]
@@ -447,7 +449,7 @@ Global Flags:
 ### kumactl get dataplanes
 
 ```
-Show Dataplanes.
+Show Dataplane entities.
 
 Usage:
   kumactl get dataplanes [flags]
@@ -467,7 +469,7 @@ Global Flags:
 ### kumactl get healthchecks
 
 ```
-Show HealthChecks.
+Show HealthCheck entities.
 
 Usage:
   kumactl get healthchecks [flags]
@@ -487,7 +489,7 @@ Global Flags:
 ### kumactl get retries
 
 ```
-Show Retries.
+Show Retry entities.
 
 Usage:
   kumactl get retries [flags]
@@ -507,7 +509,7 @@ Global Flags:
 ### kumactl get proxytemplates
 
 ```
-Show ProxyTemplates.
+Show ProxyTemplate entities.
 
 Usage:
   kumactl get proxytemplates [flags]
@@ -567,7 +569,7 @@ Global Flags:
 ### kumactl get traffic-routes
 
 ```
-Show TrafficRoutes.
+Show TrafficRoute entities.
 
 Usage:
   kumactl get traffic-routes [flags]
@@ -645,7 +647,7 @@ Global Flags:
 ### kumactl get secrets
 
 ```
-Show Secrets.
+Show Secret entities.
 
 Usage:
   kumactl get secrets [flags]

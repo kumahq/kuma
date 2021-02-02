@@ -49,6 +49,33 @@ stats_config:
   - tag_name: listener
     regex: '((.+?)\.)rbac\.'
 
+{{ if .HdsEnabled }}
+hds_config:
+  api_type: GRPC
+  transport_api_version: V3
+  grpc_services:
+  - googleGrpc:
+{{ if .DataplaneTokenPath }}
+      callCredentials:
+      - fromPlugin:
+          name: envoy.grpc_credentials.file_based_metadata
+          typedConfig:
+            '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+            secretData:
+              filename: {{ .DataplaneTokenPath }}
+      credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
+{{ end }}
+{{ if .CertBytes}}
+      channelCredentials:
+        sslCredentials:
+          rootCerts:
+            inlineBytes: {{ .CertBytes }}
+{{ end }}
+      statPrefix: hds
+      targetUri: {{ .XdsHost }}:{{ .XdsPort }}
+  set_node_on_first_message_only: true
+{{ end }}
+
 dynamic_resources:
   lds_config:
     ads: {}

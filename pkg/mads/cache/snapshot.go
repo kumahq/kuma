@@ -12,8 +12,14 @@ import (
 
 // NewSnapshot creates a snapshot from response types and a version.
 func NewSnapshot(version string, assignments map[string]envoy_types.Resource) *Snapshot {
+	withTtl := make(map[string]envoy_types.ResourceWithTtl, len(assignments))
+	for name, res := range assignments {
+		withTtl[name] = envoy_types.ResourceWithTtl{
+			Resource: res,
+		}
+	}
 	return &Snapshot{
-		MonitoringAssignments: envoy_cache.Resources{Version: version, Items: assignments},
+		MonitoringAssignments: envoy_cache.Resources{Version: version, Items: withTtl},
 	}
 }
 
@@ -40,6 +46,23 @@ func (s *Snapshot) Consistent() error {
 
 // GetResources selects snapshot resources by type.
 func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
+	if s == nil {
+		return nil
+	}
+
+	resources := s.GetResourcesAndTtl(typ)
+	if resources == nil {
+		return nil
+	}
+
+	withoutTtl := make(map[string]envoy_types.Resource, len(resources))
+	for name, res := range resources {
+		withoutTtl[name] = res.Resource
+	}
+	return withoutTtl
+}
+
+func (s *Snapshot) GetResourcesAndTtl(typ string) map[string]envoy_types.ResourceWithTtl {
 	if s == nil {
 		return nil
 	}

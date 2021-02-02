@@ -13,7 +13,7 @@ func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Long:  `Install various Kuma components.`,
 	}
 	// sub-commands
-	cmd.AddCommand(newInstallControlPlaneCmd(pctx))
+	cmd.AddCommand(newInstallControlPlaneCmd(&pctx.InstallCpContext))
 	cmd.AddCommand(newInstallMetrics(pctx))
 	cmd.AddCommand(newInstallTracing())
 	cmd.AddCommand(newInstallDNS())

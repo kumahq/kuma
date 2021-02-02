@@ -76,7 +76,8 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 
 	httpGrpcAccessLog := &access_loggers_grpc.HttpGrpcAccessLogConfig{
 		CommonConfig: &access_loggers_grpc.CommonGrpcAccessLogConfig{
-			LogName: fmt.Sprintf("%s;%s", cfg.Address, format.String()),
+			LogName:             fmt.Sprintf("%s;%s", cfg.Address, format.String()),
+			TransportApiVersion: envoy_core.ApiVersion_V3,
 			GrpcService: &envoy_core.GrpcService{
 				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
 					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
@@ -108,8 +109,16 @@ func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (
 	}
 
 	fileAccessLog := &access_loggers_file.FileAccessLog{
-		AccessLogFormat: &access_loggers_file.FileAccessLog_Format{
-			Format: format.String(), // todo
+		AccessLogFormat: &access_loggers_file.FileAccessLog_LogFormat{
+			LogFormat: &envoy_core.SubstitutionFormatString{
+				Format: &envoy_core.SubstitutionFormatString_TextFormatSource{
+					TextFormatSource: &envoy_core.DataSource{
+						Specifier: &envoy_core.DataSource_InlineString{
+							InlineString: format.String(),
+						},
+					},
+				},
+			},
 		},
 		Path: cfg.Path,
 	}

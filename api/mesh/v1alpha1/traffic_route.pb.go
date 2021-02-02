@@ -380,8 +380,8 @@ func (*TrafficRoute_LoadBalancer_RoundRobin) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_traffic_route_proto_rawDescGZIP(), []int{0, 1, 0}
 }
 
-// LeastRequest uses different algorithms depending on whether hosts have the
-// same or different weights
+// LeastRequest uses different algorithms depending on whether hosts have
+// the same or different weights
 type TrafficRoute_LoadBalancer_LeastRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

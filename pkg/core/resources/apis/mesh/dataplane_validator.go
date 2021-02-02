@@ -189,7 +189,28 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 		}
 	}
 	result.Add(validateTags(inbound.Tags))
+	result.Add(validateServiceProbe(inbound.ServiceProbe))
 	return result
+}
+
+func validateServiceProbe(serviceProbe *mesh_proto.Dataplane_Networking_Inbound_ServiceProbe) (err validators.ValidationError) {
+	if serviceProbe == nil {
+		return
+	}
+	path := validators.RootedAt("serviceProbe")
+	if serviceProbe.Interval != nil {
+		err.Add(ValidateDuration(path.Field("interval"), serviceProbe.Interval))
+	}
+	if serviceProbe.Timeout != nil {
+		err.Add(ValidateDuration(path.Field("timeout"), serviceProbe.Timeout))
+	}
+	if serviceProbe.UnhealthyThreshold != nil {
+		err.Add(ValidateThreshold(path.Field("unhealthyThreshold"), serviceProbe.UnhealthyThreshold.GetValue()))
+	}
+	if serviceProbe.HealthyThreshold != nil {
+		err.Add(ValidateThreshold(path.Field("healthyThreshold"), serviceProbe.HealthyThreshold.GetValue()))
+	}
+	return
 }
 
 func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) validators.ValidationError {

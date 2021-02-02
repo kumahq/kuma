@@ -149,6 +149,8 @@ apiServer:
 runtime:
   # Kubernetes-specific configuration
   kubernetes:
+    # Service name of the Kuma Control Plane. It is used to point Kuma DP to proper URL.
+    controlPlaneServiceName: kuma-control-plane
     # Admission WebHook Server configuration
     admissionServer:
       # Address the Admission WebHook Server should be listening on
@@ -344,3 +346,26 @@ dpServer:
     # Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
     # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
     type: "" # ENV: KUMA_DP_SERVER_AUTH_TYPE
+  # Hds defines a Health Discovery Service configuration
+  hds:
+    # Enabled if true then Envoy will actively check application's ports, but only on Universal.
+    # On Kubernetes this feature disabled for now regardless the flag value
+    enabled: true # ENV: KUMA_DP_SERVER_HDS_ENABLED
+    # Interval for Envoy to send statuses for HealthChecks
+    interval: 5s # ENV: KUMA_DP_SERVER_HDS_INTERVAL
+    # RefreshInterval is an interval for re-genarting configuration for Dataplanes connected to the Control Plane
+    refreshInterval: 10s # ENV: KUMA_DP_SERVER_HDS_REFRESH_INTERVAL
+    # Check defines a HealthCheck configuration
+    checkDefaults:
+      # Timeout is a time to wait for a health check response. If the timeout is reached the
+      # health check attempt will be considered a failure
+      timeout: 2s # ENV: KUMA_DP_SERVER_HDS_CHECK_TIMEOUT
+      # Interval between health checks
+      interval: 1s # ENV: KUMA_DP_SERVER_HDS_CHECK_INTERVAL
+      # NoTrafficInterval is a special health check interval that is used when a cluster has
+      #	never had traffic routed to it
+      noTrafficInterval: 1s # ENV: KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL
+      # HealthyThreshold is a number of healthy health checks required before a host is marked healthy
+      healthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD
+      # UnhealthyThreshold is a number of unhealthy health checks required before a host is marked unhealthy
+      unhealthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD

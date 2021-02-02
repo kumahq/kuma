@@ -2515,7 +2515,7 @@ data:
       "version": 1,
       "description": "Statistics of a single Dataplane in Kuma Service Mesh"
     }
-
+    
   kuma-mesh.json: |
     {
       "__inputs": [
@@ -3265,7 +3265,7 @@ data:
       "version": 1,
       "description": "Statistics of the single Mesh in Kuma Service Mesh"
     }
-
+    
   kuma-service-to-service.json: |
     {
       "__inputs": [
@@ -4112,48 +4112,6 @@ data:
     }
   kuma-cp.json: |
     {
-      "__inputs": [
-        {
-          "name": "DS_PROMETHEUS",
-          "label": "Prometheus",
-          "description": "",
-          "type": "datasource",
-          "pluginId": "prometheus",
-          "pluginName": "Prometheus"
-        }
-      ],
-      "__requires": [
-        {
-          "type": "panel",
-          "id": "gauge",
-          "name": "Gauge",
-          "version": ""
-        },
-        {
-          "type": "grafana",
-          "id": "grafana",
-          "name": "Grafana",
-          "version": "7.1.4"
-        },
-        {
-          "type": "panel",
-          "id": "graph",
-          "name": "Graph",
-          "version": ""
-        },
-        {
-          "type": "datasource",
-          "id": "prometheus",
-          "name": "Prometheus",
-          "version": "1.0.0"
-        },
-        {
-          "type": "panel",
-          "id": "table",
-          "name": "Table",
-          "version": ""
-        }
-      ],
       "annotations": {
         "list": [
           {
@@ -4170,8 +4128,7 @@ data:
       "editable": true,
       "gnetId": null,
       "graphTooltip": 0,
-      "id": null,
-      "iteration": 1605541874479,
+      "iteration": 1611213414839,
       "links": [],
       "panels": [
         {
@@ -4732,6 +4689,7 @@ data:
           "renderer": "flot",
           "seriesOverrides": [
             {
+              "$$hashKey": "object:1365",
               "alias": "Errors",
               "color": "#F2495C"
             }
@@ -5124,6 +5082,416 @@ data:
             "x": 0,
             "y": 25
           },
+          "id": 73,
+          "panels": [],
+          "title": "Health Discovery Service (HDS): CP-DP communication",
+          "type": "row"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 0,
+            "y": 26
+          },
+          "hiddenSeries": false,
+          "id": 75,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "percentage": false,
+          "pluginVersion": "7.1.4",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hds_responses_sent{instance=~\"$instance\"}[1m]))",
+              "interval": "",
+              "legendFormat": "endpoint health responses",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(hds_requests_received{instance=~\"$instance\"}[1m]))",
+              "interval": "",
+              "legendFormat": "health check requests",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "HDS message exchange",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:310",
+              "format": "ops",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:311",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 0,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 6,
+            "y": 26
+          },
+          "hiddenSeries": false,
+          "id": 77,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 2,
+          "nullPointMode": "null",
+          "percentage": false,
+          "pluginVersion": "7.1.4",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "hds_streams_active{instance=~\"$instance\"}",
+              "interval": "",
+              "legendFormat": "{{ instance }}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "HDS active connections",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:797",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:798",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "description": "Number of Envoy HDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected dataplanes * KUMA_DP_SERVER_HDS_REFRESH_INTERVAL",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 26
+          },
+          "hiddenSeries": false,
+          "id": 79,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "percentage": false,
+          "pluginVersion": "7.1.4",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [
+            {
+              "$$hashKey": "object:1727",
+              "alias": "Errors",
+              "color": "#F2495C"
+            }
+          ],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hds_generation_count{instance=~\"$instance\"}[1m])) - sum(rate(hds_generation_errors{instance=~\"$instance\"}[1m]))",
+              "interval": "",
+              "legendFormat": "Success",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(xds_generation_errors{instance=~\"$instance\"}[1m]))",
+              "interval": "",
+              "legendFormat": "Errors",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "HDS config generations",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:1493",
+              "format": "ops",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:1494",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "description": "How much it took to generate Envoy configuration for a single dataplane",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 26
+          },
+          "hiddenSeries": false,
+          "id": 81,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "percentage": false,
+          "pluginVersion": "7.1.4",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "xds_generation{quantile=\"0.99\",instance=~\"$instance\"}",
+              "interval": "",
+              "legendFormat": "{{ instance }}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Latency of HDS config generation (99th percentile)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:1825",
+              "format": "ms",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:1826",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "collapsed": false,
+          "datasource": "Prometheus",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 34
+          },
           "id": 5,
           "panels": [],
           "title": "API Server - Management of the Control Plane",
@@ -5147,7 +5515,7 @@ data:
             "h": 8,
             "w": 16,
             "x": 0,
-            "y": 26
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 2,
@@ -5246,7 +5614,7 @@ data:
             "h": 8,
             "w": 8,
             "x": 16,
-            "y": 26
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 9,
@@ -5346,7 +5714,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 34
+            "y": 43
           },
           "id": 54,
           "panels": [],
@@ -5372,7 +5740,7 @@ data:
             "h": 7,
             "w": 16,
             "x": 0,
-            "y": 35
+            "y": 44
           },
           "hiddenSeries": false,
           "id": 55,
@@ -5471,7 +5839,7 @@ data:
             "h": 7,
             "w": 8,
             "x": 16,
-            "y": 35
+            "y": 44
           },
           "hiddenSeries": false,
           "id": 56,
@@ -5571,7 +5939,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 42
+            "y": 51
           },
           "id": 22,
           "panels": [],
@@ -5597,7 +5965,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 43
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 52,
@@ -5737,7 +6105,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 43
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 50,
@@ -5832,7 +6200,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 43
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 42,
@@ -5939,7 +6307,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 43
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 19,
@@ -6022,7 +6390,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 51
+            "y": 60
           },
           "id": 26,
           "panels": [],
@@ -6048,7 +6416,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 52
+            "y": 61
           },
           "hiddenSeries": false,
           "id": 61,
@@ -6145,7 +6513,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 52
+            "y": 61
           },
           "hiddenSeries": false,
           "id": 66,
@@ -6242,7 +6610,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 60
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 57,
@@ -6384,7 +6752,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 60
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 58,
@@ -6479,7 +6847,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 60
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 59,
@@ -6586,7 +6954,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 60
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 60,
@@ -6681,7 +7049,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 68
+            "y": 77
           },
           "hiddenSeries": false,
           "id": 62,
@@ -6823,7 +7191,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 68
+            "y": 77
           },
           "hiddenSeries": false,
           "id": 63,
@@ -6918,7 +7286,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 68
+            "y": 77
           },
           "hiddenSeries": false,
           "id": 64,
@@ -7025,7 +7393,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 68
+            "y": 77
           },
           "hiddenSeries": false,
           "id": 65,
@@ -7108,7 +7476,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 76
+            "y": 85
           },
           "id": 46,
           "panels": [],
@@ -7133,7 +7501,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 77
+            "y": 86
           },
           "hiddenSeries": false,
           "id": 48,
@@ -7227,7 +7595,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 77
+            "y": 86
           },
           "hiddenSeries": false,
           "id": 49,
@@ -7318,7 +7686,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 85
+            "y": 94
           },
           "id": 11,
           "panels": [],
@@ -7344,7 +7712,7 @@ data:
             "h": 9,
             "w": 7,
             "x": 0,
-            "y": 86
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 12,
@@ -7440,7 +7808,7 @@ data:
             "h": 9,
             "w": 5,
             "x": 7,
-            "y": 86
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 14,
@@ -7552,7 +7920,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 86
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 13,
@@ -7638,7 +8006,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 95
+            "y": 104
           },
           "id": 35,
           "panels": [],
@@ -7663,7 +8031,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 96
+            "y": 105
           },
           "hiddenSeries": false,
           "id": 30,
@@ -7757,7 +8125,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 96
+            "y": 105
           },
           "hiddenSeries": false,
           "id": 31,
@@ -7851,7 +8219,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 96
+            "y": 105
           },
           "hiddenSeries": false,
           "id": 33,
@@ -7945,7 +8313,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 96
+            "y": 105
           },
           "hiddenSeries": false,
           "id": 32,
@@ -8022,7 +8390,7 @@ data:
           }
         }
       ],
-      "refresh": false,
+      "refresh": "5s",
       "schemaVersion": 26,
       "style": "dark",
       "tags": [],
@@ -8030,7 +8398,11 @@ data:
         "list": [
           {
             "allValue": null,
-            "current": {},
+            "current": {
+              "selected": false,
+              "text": "All",
+              "value": "$__all"
+            },
             "datasource": "Prometheus",
             "definition": "label_values(cp_info, zone)",
             "hide": 0,
@@ -8052,7 +8424,11 @@ data:
           },
           {
             "allValue": null,
-            "current": {},
+            "current": {
+              "selected": false,
+              "text": "All",
+              "value": "$__all"
+            },
             "datasource": "Prometheus",
             "definition": "label_values(cp_info{zone=~\"$zone\"}, instance)",
             "hide": 0,

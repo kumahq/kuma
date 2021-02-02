@@ -147,6 +147,7 @@ var _ = Describe("Config WS", func() {
           },
           "runtime": {
             "kubernetes": {
+              "controlPlaneServiceName": "kuma-control-plane",
               "admissionServer": {
                 "address": "",
                 "certDir": "",
@@ -218,6 +219,18 @@ var _ = Describe("Config WS", func() {
             "tlsKeyFile": "",
             "auth": {
               "type": ""
+            },
+            "hds": {
+              "checkDefaults": {
+                "healthyThreshold": 1,
+                "interval": "1s",
+                "noTrafficInterval": "1s",
+                "timeout": "2s",
+                "unhealthyThreshold": 1
+              },
+              "enabled": true,
+              "interval": "5s",
+              "refreshInterval": "10s"
             }
           },
           "store": {

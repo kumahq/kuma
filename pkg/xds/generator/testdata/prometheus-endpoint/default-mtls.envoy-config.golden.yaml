@@ -1,20 +1,4 @@
 resources:
-  - name: kuma:envoy:admin
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      altStatName: kuma_envoy_admin
-      connectTimeout: 5s
-      loadAssignment:
-        clusterName: kuma:envoy:admin
-        endpoints:
-          - lbEndpoints:
-              - endpoint:
-                  address:
-                    socketAddress:
-                      address: 127.0.0.1
-                      portValue: 9902
-      name: kuma:envoy:admin
-      type: STATIC
   - name: kuma:metrics:prometheus
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Listener
