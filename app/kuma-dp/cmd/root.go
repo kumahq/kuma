@@ -15,8 +15,8 @@ var (
 	dataplaneLog = core.Log.WithName("kuma-dp")
 )
 
-// newRootCmd represents the base command when called without any subcommands.
-func newRootCmd() *cobra.Command {
+// NewRootCmd represents the base command when called without any subcommands.
+func NewRootCmd(rootCtx *RootContext) *cobra.Command {
 	args := struct {
 		logLevel string
 	}{}
@@ -41,13 +41,13 @@ func newRootCmd() *cobra.Command {
 	// root flags
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.InfoLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 	// sub-commands
-	cmd.AddCommand(newRunCmd())
+	cmd.AddCommand(newRunCmd(rootCtx))
 	cmd.AddCommand(version.NewVersionCmd())
 	return cmd
 }
 
 func DefaultRootCmd() *cobra.Command {
-	return newRootCmd()
+	return NewRootCmd(DefaultRootContext())
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
