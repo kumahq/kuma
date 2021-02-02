@@ -71,6 +71,7 @@ func RegisterXDS(
 func DefaultReconciler(rt core_runtime.Runtime, xdsContext v2.XdsContext) xds_sync.SnapshotReconciler {
 	return &reconciler{
 		&templateSnapshotGenerator{
+			ResourceSetHooks: rt.XDSHooks().ResourceSetHooks(),
 			ProxyTemplateResolver: &xds_template.SimpleProxyTemplateResolver{
 				ReadOnlyResourceManager: rt.ReadOnlyResourceManager(),
 				DefaultProxyTemplate:    xds_template.DefaultProxyTemplate,
@@ -83,6 +84,7 @@ func DefaultReconciler(rt core_runtime.Runtime, xdsContext v2.XdsContext) xds_sy
 func DefaultIngressReconciler(rt core_runtime.Runtime, xdsContext v2.XdsContext) xds_sync.SnapshotReconciler {
 	return &reconciler{
 		generator: &templateSnapshotGenerator{
+			ResourceSetHooks: rt.XDSHooks().ResourceSetHooks(),
 			ProxyTemplateResolver: &xds_template.StaticProxyTemplateResolver{
 				Template: xds_template.IngressProxyTemplate,
 			},

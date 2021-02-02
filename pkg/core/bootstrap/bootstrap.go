@@ -6,6 +6,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
 
 	"github.com/pkg/errors"
@@ -91,6 +92,7 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
 	builder.WithAPIManager(customization.NewAPIList())
+	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 
 	if err := initializeAfterBootstrap(cfg, builder); err != nil {

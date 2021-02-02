@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
 
@@ -59,6 +61,18 @@ func (v *VIPOutboundsReconciler) Start(stop <-chan struct{}) error {
 }
 
 func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
+	// First get all ingresses
+	var ingresses []*mesh.DataplaneResource
+	dpList := &mesh.DataplaneResourceList{}
+	if err := v.rorm.List(ctx, dpList); err != nil {
+		return err
+	}
+	for _, dp := range dpList.Items {
+		if dp.Spec.IsIngress() {
+			ingresses = append(ingresses, dp)
+		}
+	}
+	// Then add outbounds to each Dataplane
 	meshes := &mesh.MeshResourceList{}
 	if err := v.rorm.List(ctx, meshes); err != nil {
 		return err
@@ -73,11 +87,16 @@ func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 			return err
 		}
 		dpsUpdated := 0
+
+		allDps := make([]*mesh.DataplaneResource, len(ingresses)+len(dpList.Items))
+		copy(allDps[:len(ingresses)], ingresses)
+		copy(allDps[len(ingresses):], dpList.Items)
+
 		for _, dp := range dpList.Items {
 			if dp.Spec.Networking.GetTransparentProxying() == nil {
 				continue
 			}
-			newOutbounds := dns.VIPOutbounds(dp.Meta.GetName(), dpList.Items, v.resolver.GetVIPs(), externalServices.Items)
+			newOutbounds := dns.VIPOutbounds(model.MetaToResourceKey(dp.Meta), allDps, v.resolver.GetVIPs(), externalServices.Items)
 
 			if outboundsEqual(newOutbounds, dp.Spec.Networking.Outbound) {
 				continue
