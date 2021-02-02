@@ -6,6 +6,7 @@ import (
 	"os"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/pkg/errors"
 
@@ -42,6 +43,7 @@ type BuilderContext interface {
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIManager() api_server.APIManager
+	XDSHooks() *xds_hooks.Hooks
 }
 
 var _ BuilderContext = &Builder{}
@@ -65,6 +67,7 @@ type Builder struct {
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
 	apim     api_server.APIManager
+	xdsh     *xds_hooks.Hooks
 	closeCh  <-chan struct{}
 	*runtimeInfo
 }
@@ -176,6 +179,11 @@ func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
 	return b
 }
 
+func (b *Builder) WithXDSHooks(xdsh *xds_hooks.Hooks) *Builder {
+	b.xdsh = xdsh
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -213,6 +221,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.apim == nil {
 		return nil, errors.Errorf("APIManager has not been configured")
 	}
+	if b.xdsh == nil {
+		return nil, errors.Errorf("XDSHooks has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -231,6 +242,7 @@ func (b *Builder) Build() (Runtime, error) {
 			metrics:  b.metrics,
 			erf:      b.erf,
 			apim:     b.apim,
+			xdsh:     b.xdsh,
 		},
 		Manager: b.cm,
 	}, nil
@@ -284,9 +296,11 @@ func (b *Builder) Metrics() metrics.Metrics {
 func (b *Builder) EventReaderFactory() events.ListenerFactory {
 	return b.erf
 }
-
 func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
+}
+func (b *Builder) XDSHooks() *xds_hooks.Hooks {
+	return b.xdsh
 }
 func (b *Builder) CloseCh() <-chan struct{} {
 	return b.closeCh
