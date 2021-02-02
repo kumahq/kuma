@@ -4,6 +4,7 @@ import (
 	"net"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
@@ -73,6 +74,7 @@ func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	builder.WithEnvoyAdminClient(&DummyEnvoyAdminClient{})
 	builder.WithEventReaderFactory(events.NewEventBus())
 	builder.WithAPIManager(customization.NewAPIList())
+	builder.WithXDSHooks(&xds_hooks.Hooks{})
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)
