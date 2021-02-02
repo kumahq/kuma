@@ -72,7 +72,7 @@ var _ = Describe("StaticEndpointsConfigurer", func() {
                     virtualHosts:
                     - domains:
                       - '*'
-                      name: envoy_admin
+                      name: kuma_metrics_prometheus
                       routes:
                       - match:
                           prefix: /non-standard-path

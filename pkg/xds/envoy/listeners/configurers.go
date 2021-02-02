@@ -55,30 +55,30 @@ func OriginalDstForwarder() ListenerBuilderOpt {
 	})
 }
 
-func StaticEndpoints(statsName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
+func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV2(&v2.StaticEndpointsConfigurer{
-			StatsName: statsName,
-			Paths:     paths,
+			VirtualHostName: virtualHostName,
+			Paths:           paths,
 		})
 		config.AddV3(&v3.StaticEndpointsConfigurer{
-			StatsName: statsName,
-			Paths:     paths,
+			VirtualHostName: virtualHostName,
+			Paths:           paths,
 		})
 	})
 }
 
-func StaticTlsEndpoints(statsName string, keyPair *tls.KeyPair, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
+func StaticTlsEndpoints(virtualHostName string, keyPair *tls.KeyPair, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV2(&v2.StaticEndpointsConfigurer{
-			StatsName: statsName,
-			Paths:     paths,
-			KeyPair:   keyPair,
+			VirtualHostName: virtualHostName,
+			Paths:           paths,
+			KeyPair:         keyPair,
 		})
 		config.AddV3(&v3.StaticEndpointsConfigurer{
-			StatsName: statsName,
-			Paths:     paths,
-			KeyPair:   keyPair,
+			VirtualHostName: virtualHostName,
+			Paths:           paths,
+			KeyPair:         keyPair,
 		})
 	})
 }

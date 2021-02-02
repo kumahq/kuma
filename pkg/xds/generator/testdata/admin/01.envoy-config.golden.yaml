@@ -1,85 +1,85 @@
 resources:
-  - name: kuma:envoy:admin
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      altStatName: kuma_envoy_admin
-      connectTimeout: 5s
-      loadAssignment:
-        clusterName: kuma:envoy:admin
-        endpoints:
-          - lbEndpoints:
-              - endpoint:
-                  address:
-                    socketAddress:
-                      address: 127.0.0.1
-                      portValue: 9901
-      name: kuma:envoy:admin
-      type: STATIC
-  - name: kuma:envoy:admin
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 192.168.0.1
-          portValue: 9901
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.http_connection_manager
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                httpFilters:
-                  - name: envoy.filters.http.router
-                routeConfig:
-                  validateClusters: false
-                  virtualHosts:
-                    - domains:
-                        - '*'
-                      name: envoy_admin
-                      routes:
-                        - match:
-                            prefix: /ready
-                          route:
-                            cluster: kuma:envoy:admin
-                            prefixRewrite: /ready
-                statPrefix: kuma_envoy_admin
-        - filterChainMatch:
-            transportProtocol: tls
-          filters:
-            - name: envoy.filters.network.http_connection_manager
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                httpFilters:
-                  - name: envoy.filters.http.router
-                routeConfig:
-                  validateClusters: false
-                  virtualHosts:
-                    - domains:
-                        - '*'
-                      name: envoy_admin
-                      routes:
-                        - match:
-                            headers:
-                              - exactMatch: Bearer token
-                                name: Authorization
-                            prefix: /
-                          route:
-                            cluster: kuma:envoy:admin
-                            prefixRewrite: /
-                statPrefix: kuma_envoy_admin
-          transportSocket:
-            name: envoy.transport_sockets.tls
-            typedConfig:
-              '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
-              commonTlsContext:
-                tlsCertificates:
-                  - certificateChain:
-                      inlineBytes: TFMwPT0=
-                    privateKey:
-                      inlineBytes: TFMwPT0=
-      listenerFilters:
-        - name: envoy.filters.listener.tls_inspector
-          typedConfig:
-            '@type': type.googleapis.com/google.protobuf.Empty
-            value: {}
-      name: kuma:envoy:admin
-      trafficDirection: INBOUND
+- name: kuma:envoy:admin
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    altStatName: kuma_envoy_admin
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: kuma:envoy:admin
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 9901
+    name: kuma:envoy:admin
+    type: STATIC
+- name: kuma:envoy:admin
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 9901
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: kuma_envoy_admin
+              routes:
+              - match:
+                  prefix: /ready
+                route:
+                  cluster: kuma:envoy:admin
+                  prefixRewrite: /ready
+          statPrefix: kuma_envoy_admin
+    - filterChainMatch:
+        transportProtocol: tls
+      filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: kuma_envoy_admin
+              routes:
+              - match:
+                  headers:
+                  - exactMatch: Bearer token
+                    name: Authorization
+                  prefix: /
+                route:
+                  cluster: kuma:envoy:admin
+                  prefixRewrite: /
+          statPrefix: kuma_envoy_admin
+      transportSocket:
+        name: envoy.transport_sockets.tls
+        typedConfig:
+          '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+          commonTlsContext:
+            tlsCertificates:
+            - certificateChain:
+                inlineBytes: TFMwPT0=
+              privateKey:
+                inlineBytes: TFMwPT0=
+    listenerFilters:
+    - name: envoy.filters.listener.tls_inspector
+      typedConfig:
+        '@type': type.googleapis.com/google.protobuf.Empty
+        value: {}
+    name: kuma:envoy:admin
+    trafficDirection: INBOUND

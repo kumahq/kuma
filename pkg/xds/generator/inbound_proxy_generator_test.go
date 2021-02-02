@@ -25,8 +25,8 @@ import (
 var _ = Describe("InboundProxyGenerator", func() {
 
 	type testCase struct {
-		dataplaneFile   string
-		envoyConfigFile string
+		dataplaneFile string
+		expected      string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -154,25 +154,24 @@ var _ = Describe("InboundProxyGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "inbound-proxy", given.envoyConfigFile))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "inbound-proxy", given.expected))
 		},
 		Entry("01. transparent_proxying=false, ip_addresses=0, ports=0", testCase{
-			dataplaneFile:   "1-dataplane.input.yaml",
-			envoyConfigFile: "1-envoy-config.golden.yaml",
+			dataplaneFile: "1-dataplane.input.yaml",
+			expected:      "1-envoy-config.golden.yaml",
 		}),
 		Entry("02. transparent_proxying=true, ip_addresses=0, ports=0", testCase{
-			dataplaneFile:   "2-dataplane.input.yaml",
-			envoyConfigFile: "2-envoy-config.golden.yaml",
+			dataplaneFile: "2-dataplane.input.yaml",
+			expected:      "2-envoy-config.golden.yaml",
 		}),
 		Entry("03. transparent_proxying=false, ip_addresses=2, ports=2", testCase{
-			dataplaneFile:   "3-dataplane.input.yaml",
-			envoyConfigFile: "3-envoy-config.golden.yaml",
+			dataplaneFile: "3-dataplane.input.yaml",
+			expected:      "3-envoy-config.golden.yaml",
 		}),
 		Entry("04. transparent_proxying=true, ip_addresses=2, ports=2", testCase{
-			dataplaneFile:   "4-dataplane.input.yaml",
-			envoyConfigFile: "4-envoy-config.golden.yaml",
+			dataplaneFile: "4-dataplane.input.yaml",
+			expected:      "4-envoy-config.golden.yaml",
 		}),
 	)
 })

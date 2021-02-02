@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -62,9 +61,8 @@ var _ = Describe("IngressGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.expected))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "ingress", given.expected))
 		},
 		Entry("01. default trafficroute, single mesh", testCase{
 			dataplane: `

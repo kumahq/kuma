@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
@@ -26,9 +25,9 @@ import (
 var _ = Describe("PrometheusEndpointGenerator", func() {
 
 	type testCase struct {
-		ctx          xds_context.Context
-		proxy        *core_xds.Proxy
-		expectedFile string
+		ctx      xds_context.Context
+		proxy    *core_xds.Proxy
+		expected string
 	}
 
 	DescribeTable("should not generate Envoy xDS resources unless Prometheus metrics have been enabled Mesh-wide",
@@ -213,9 +212,8 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "prometheus-endpoint", given.expectedFile))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "prometheus-endpoint", given.expected))
 		},
 		Entry("should support a Dataplane without custom metrics configuration", testCase{
 			ctx: xds_context.Context{
@@ -264,7 +262,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					AdminPort: 9902,
 				},
 			},
-			expectedFile: "default.envoy-config.golden.yaml",
+			expected: "default.envoy-config.golden.yaml",
 		}),
 		Entry("should support a Dataplane with custom metrics configuration", testCase{
 			ctx: xds_context.Context{
@@ -317,7 +315,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					AdminPort: 9902,
 				},
 			},
-			expectedFile: "custom.envoy-config.golden.yaml",
+			expected: "custom.envoy-config.golden.yaml",
 		}),
 		Entry("should support a Dataplane with mTLS on", testCase{
 			ctx: xds_context.Context{
@@ -381,7 +379,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					AdminPort: 9902,
 				},
 			},
-			expectedFile: "default-mtls.envoy-config.golden.yaml",
+			expected: "default-mtls.envoy-config.golden.yaml",
 		}),
 		Entry("should support a Dataplane with mTLS on (skipMTLS not explicitly defined)", testCase{
 			ctx: xds_context.Context{
@@ -444,7 +442,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					AdminPort: 9902,
 				},
 			},
-			expectedFile: "default-mtls.envoy-config.golden.yaml",
+			expected: "default-mtls.envoy-config.golden.yaml",
 		}),
 		Entry("should support a Dataplane with mTLS on but skipMTLS true", testCase{
 			ctx: xds_context.Context{
@@ -508,7 +506,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					AdminPort: 9902,
 				},
 			},
-			expectedFile: "default.envoy-config.golden.yaml",
+			expected: "default.envoy-config.golden.yaml",
 		}),
 	)
 

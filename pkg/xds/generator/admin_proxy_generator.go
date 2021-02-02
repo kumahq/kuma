@@ -18,7 +18,6 @@ const OriginAdmin = "admin"
 
 var staticEnpointPaths = []*envoy_common.StaticEndpointPath{
 	{
-		ClusterName: "baw",
 		Path:        "/ready",
 		RewritePath: "/ready",
 	},

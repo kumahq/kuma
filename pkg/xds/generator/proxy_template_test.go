@@ -106,7 +106,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 		type testCase struct {
 			dataplane         string
 			proxyTemplateFile string
-			envoyConfigFile   string
+			expected          string
 		}
 
 		DescribeTable("Generate Envoy xDS resources",
@@ -179,9 +179,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", "template-proxy", given.envoyConfigFile))
-				Expect(err).ToNot(HaveOccurred())
-				Expect(actual).To(MatchYAML(expected))
+				// and output matches golden files
+				ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "template-proxy", given.expected))
 			},
 			Entry("should support a combination of pre-defined profiles and raw xDS resources", testCase{
 				dataplane: `
@@ -195,7 +194,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
                       servicePort: 8080
 `,
 				proxyTemplateFile: "1-proxy-template.input.yaml",
-				envoyConfigFile:   "1-envoy-config.golden.yaml",
+				expected:          "1-envoy-config.golden.yaml",
 			}),
 		)
 

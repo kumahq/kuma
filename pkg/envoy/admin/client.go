@@ -12,8 +12,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core"
-
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/pkg/errors"
@@ -26,8 +24,6 @@ import (
 )
 
 const envoyAdminClientTokenPrefix = "envoy-admin-client-token"
-
-var log = core.Log.WithName("envoy-admin")
 
 type EnvoyAdminClient interface {
 	GenerateAPIToken(dataplane *mesh_core.DataplaneResource) (string, error)
@@ -67,7 +63,7 @@ const (
 
 func (a *envoyAdminClient) GenerateAPIToken(dataplane *mesh_core.DataplaneResource) (string, error) {
 	mesh := dataplane.Meta.GetMesh()
-	key, err := a.getSigningKeyString(mesh)
+	key, err := a.getOrCreateSigningKey(mesh)
 	if err != nil {
 		return "", err
 	}
@@ -81,7 +77,7 @@ func (a *envoyAdminClient) GenerateAPIToken(dataplane *mesh_core.DataplaneResour
 	return hex.EncodeToString(mac.Sum(nil)), nil
 }
 
-func (a *envoyAdminClient) getSigningKeyString(mesh string) (string, error) {
+func (a *envoyAdminClient) getOrCreateSigningKey(mesh string) (string, error) {
 	signingKey := system.NewSecretResource()
 	key := issuer.SigningKeyResourceKey(envoyAdminClientTokenPrefix, mesh)
 	err := a.rm.Get(context.Background(), signingKey, core_store.GetBy(key))
@@ -126,8 +122,6 @@ func (a *envoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) erro
 
 	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
 
-	log.V(1).Info("Sendig", "Method", request.Method, "URL", request.URL, "Header", request.Header)
-
 	// Envoy will not send back any response, so do we not check the response
 	response, err := a.httpClient.Do(request)
 	if err != nil {
@@ -136,7 +130,7 @@ func (a *envoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) erro
 	defer response.Body.Close()
 
 	if response.StatusCode != http.StatusOK {
-		return errors.Errorf("Envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
+		return errors.Errorf("envoy response [%d %s] [%s]", response.StatusCode, response.Status, response.Body)
 	}
 
 	return nil

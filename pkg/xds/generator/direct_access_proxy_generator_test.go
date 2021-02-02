@@ -37,10 +37,10 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 	generator := generator.DirectAccessProxyGenerator{}
 
 	type testCase struct {
-		dataplaneFile   string
-		dataplanesFile  string
-		meshFile        string
-		envoyConfigFile string
+		dataplaneFile  string
+		dataplanesFile string
+		meshFile       string
+		expected       string
 	}
 
 	DescribeTable("should generate envoy config",
@@ -95,34 +95,33 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "direct-access", given.envoyConfigFile))
-			Expect(err).ToNot(HaveOccurred())
 
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "direct-access", given.expected))
 		},
 		Entry("should not generate resources when transparent proxy is off", testCase{
-			dataplaneFile:   "01.dataplane.input.yaml",
-			dataplanesFile:  "01.dataplanes.input.yaml",
-			meshFile:        "01.mesh.input.yaml",
-			envoyConfigFile: "01.envoy-config.golden.yaml",
+			dataplaneFile:  "01.dataplane.input.yaml",
+			dataplanesFile: "01.dataplanes.input.yaml",
+			meshFile:       "01.mesh.input.yaml",
+			expected:       "01.envoy-config.golden.yaml",
 		}),
 		Entry("should not generate resources when there are no direct access services", testCase{
-			dataplaneFile:   "02.dataplane.input.yaml",
-			dataplanesFile:  "02.dataplanes.input.yaml",
-			meshFile:        "02.mesh.input.yaml",
-			envoyConfigFile: "02.envoy-config.golden.yaml",
+			dataplaneFile:  "02.dataplane.input.yaml",
+			dataplanesFile: "02.dataplanes.input.yaml",
+			meshFile:       "02.mesh.input.yaml",
+			expected:       "02.envoy-config.golden.yaml",
 		}),
 		Entry("should generate direct access for all services except taken endpoints by outbound", testCase{
-			dataplaneFile:   "03.dataplane.input.yaml",
-			dataplanesFile:  "03.dataplanes.input.yaml",
-			meshFile:        "03.mesh.input.yaml",
-			envoyConfigFile: "03.envoy-config.golden.yaml",
+			dataplaneFile:  "03.dataplane.input.yaml",
+			dataplanesFile: "03.dataplanes.input.yaml",
+			meshFile:       "03.mesh.input.yaml",
+			expected:       "03.envoy-config.golden.yaml",
 		}),
 		Entry("should generate direct access for given services", testCase{
-			dataplaneFile:   "04.dataplane.input.yaml",
-			dataplanesFile:  "04.dataplanes.input.yaml",
-			meshFile:        "04.mesh.input.yaml",
-			envoyConfigFile: "04.envoy-config.golden.yaml",
+			dataplaneFile:  "04.dataplane.input.yaml",
+			dataplanesFile: "04.dataplanes.input.yaml",
+			meshFile:       "04.mesh.input.yaml",
+			expected:       "04.envoy-config.golden.yaml",
 		}),
 	)
 })

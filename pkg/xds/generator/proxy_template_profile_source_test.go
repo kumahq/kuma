@@ -2,7 +2,6 @@ package generator_test
 
 import (
 	"context"
-	"io/ioutil"
 	"path/filepath"
 	"time"
 
@@ -40,10 +39,10 @@ var _ model.CLACache = &dummyCLACache{}
 var _ = Describe("ProxyTemplateProfileSource", func() {
 
 	type testCase struct {
-		mesh            string
-		dataplane       string
-		profile         string
-		envoyConfigFile string
+		mesh      string
+		dataplane string
+		profile   string
+		expected  string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -182,9 +181,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "profile-source", given.envoyConfigFile))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "profile-source", given.expected))
 		},
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCase{
 			mesh: `
@@ -208,8 +206,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - port: 59200
                 service: elastic
 `,
-			profile:         mesh_core.ProfileDefaultProxy,
-			envoyConfigFile: "1-envoy-config.golden.yaml",
+			profile:  mesh_core.ProfileDefaultProxy,
+			expected: "1-envoy-config.golden.yaml",
 		}),
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true", testCase{
 			mesh: `
@@ -236,8 +234,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006
 `,
-			profile:         mesh_core.ProfileDefaultProxy,
-			envoyConfigFile: "2-envoy-config.golden.yaml",
+			profile:  mesh_core.ProfileDefaultProxy,
+			expected: "2-envoy-config.golden.yaml",
 		}),
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true", testCase{
 			mesh: `
@@ -271,8 +269,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - port: 59200
                 service: elastic
 `,
-			profile:         mesh_core.ProfileDefaultProxy,
-			envoyConfigFile: "3-envoy-config.golden.yaml",
+			profile:  mesh_core.ProfileDefaultProxy,
+			expected: "3-envoy-config.golden.yaml",
 		}),
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true", testCase{
 			mesh: `
@@ -309,8 +307,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006
 `,
-			profile:         mesh_core.ProfileDefaultProxy,
-			envoyConfigFile: "4-envoy-config.golden.yaml",
+			profile:  mesh_core.ProfileDefaultProxy,
+			expected: "4-envoy-config.golden.yaml",
 		}),
 	)
 })

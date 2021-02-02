@@ -32,8 +32,8 @@ var _ = Describe("AdminProxyGenerator", func() {
 	generator := generator.AdminProxyGenerator{}
 
 	type testCase struct {
-		dataplaneFile   string
-		envoyConfigFile string
+		dataplaneFile string
+		expected      string
 	}
 
 	DescribeTable("should generate envoy config",
@@ -70,14 +70,13 @@ var _ = Describe("AdminProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "admin", given.envoyConfigFile))
-			Expect(err).ToNot(HaveOccurred())
 
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "admin", given.expected))
 		},
 		Entry("should generate admin resources", testCase{
-			dataplaneFile:   "01.dataplane.input.yaml",
-			envoyConfigFile: "01.envoy-config.golden.yaml",
+			dataplaneFile: "01.dataplane.input.yaml",
+			expected:      "01.envoy-config.golden.yaml",
 		}),
 	)
 })

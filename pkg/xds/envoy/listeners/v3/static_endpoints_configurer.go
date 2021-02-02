@@ -5,8 +5,9 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
+
+	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 
 	"github.com/kumahq/kuma/pkg/tls"
 
@@ -17,9 +18,9 @@ import (
 )
 
 type StaticEndpointsConfigurer struct {
-	StatsName string
-	Paths     []*envoy_common.StaticEndpointPath
-	KeyPair   *tls.KeyPair
+	VirtualHostName string
+	Paths           []*envoy_common.StaticEndpointPath
+	KeyPair         *tls.KeyPair
 }
 
 var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
@@ -56,7 +57,7 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 	}
 
 	config := &envoy_hcm.HttpConnectionManager{
-		StatPrefix: util_xds.SanitizeMetric(c.StatsName),
+		StatPrefix: util_xds.SanitizeMetric(c.VirtualHostName),
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
 		HttpFilters: []*envoy_hcm.HttpFilter{{
 			Name: "envoy.filters.http.router",
@@ -64,7 +65,7 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 		RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: &envoy_route.RouteConfiguration{
 				VirtualHosts: []*envoy_route.VirtualHost{{
-					Name:    "envoy_admin",
+					Name:    c.VirtualHostName,
 					Domains: []string{"*"},
 					Routes:  routes,
 				}},
@@ -87,24 +88,7 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 	})
 
 	if c.KeyPair != nil {
-		tlsContext := &envoy_tls.DownstreamTlsContext{
-			CommonTlsContext: &envoy_tls.CommonTlsContext{
-				TlsCertificates: []*envoy_tls.TlsCertificate{
-					{
-						CertificateChain: &envoy_core.DataSource{
-							Specifier: &envoy_core.DataSource_InlineBytes{
-								InlineBytes: c.KeyPair.CertPEM,
-							},
-						},
-						PrivateKey: &envoy_core.DataSource{
-							Specifier: &envoy_core.DataSource_InlineBytes{
-								InlineBytes: c.KeyPair.KeyPEM,
-							},
-						},
-					},
-				},
-			},
-		}
+		tlsContext := xds_tls.StaticDownstreamTlsContext(c.KeyPair)
 		pbst, err = proto.MarshalAnyDeterministic(tlsContext)
 		if err != nil {
 			return err

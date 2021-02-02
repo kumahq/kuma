@@ -2,12 +2,13 @@ package v2
 
 import (
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_auth "github.com/envoyproxy/go-control-plane/envoy/api/v2/auth"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/api/v2/listener"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/http_connection_manager/v2"
 	"github.com/golang/protobuf/ptypes/wrappers"
+
+	envoy_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v2"
 
 	"github.com/kumahq/kuma/pkg/tls"
 
@@ -18,9 +19,9 @@ import (
 )
 
 type StaticEndpointsConfigurer struct {
-	StatsName string
-	Paths     []*envoy_common.StaticEndpointPath
-	KeyPair   *tls.KeyPair
+	VirtualHostName string
+	Paths           []*envoy_common.StaticEndpointPath
+	KeyPair         *tls.KeyPair
 }
 
 var _ FilterChainConfigurer = &StaticEndpointsConfigurer{}
@@ -56,8 +57,9 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 		routes = append(routes, route)
 	}
 
+	sanitizedVirtualHostName := util_xds.SanitizeMetric(c.VirtualHostName)
 	config := &envoy_hcm.HttpConnectionManager{
-		StatPrefix: util_xds.SanitizeMetric(c.StatsName),
+		StatPrefix: sanitizedVirtualHostName,
 		CodecType:  envoy_hcm.HttpConnectionManager_AUTO,
 		HttpFilters: []*envoy_hcm.HttpFilter{{
 			Name: "envoy.filters.http.router",
@@ -65,7 +67,7 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 		RouteSpecifier: &envoy_hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: &envoy_api.RouteConfiguration{
 				VirtualHosts: []*envoy_route.VirtualHost{{
-					Name:    "envoy_admin",
+					Name:    sanitizedVirtualHostName,
 					Domains: []string{"*"},
 					Routes:  routes,
 				}},
@@ -88,24 +90,7 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 	})
 
 	if c.KeyPair != nil {
-		tlsContext := &envoy_auth.DownstreamTlsContext{
-			CommonTlsContext: &envoy_auth.CommonTlsContext{
-				TlsCertificates: []*envoy_auth.TlsCertificate{
-					{
-						CertificateChain: &envoy_core.DataSource{
-							Specifier: &envoy_core.DataSource_InlineBytes{
-								InlineBytes: c.KeyPair.CertPEM,
-							},
-						},
-						PrivateKey: &envoy_core.DataSource{
-							Specifier: &envoy_core.DataSource_InlineBytes{
-								InlineBytes: c.KeyPair.KeyPEM,
-							},
-						},
-					},
-				},
-			},
-		}
+		tlsContext := envoy_tls.StaticDownstreamTlsContext(c.KeyPair)
 		pbst, err = proto.MarshalAnyDeterministic(tlsContext)
 		if err != nil {
 			return err

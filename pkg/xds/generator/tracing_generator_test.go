@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -25,9 +24,9 @@ import (
 var _ = Describe("TracingProxyGenerator", func() {
 
 	type testCase struct {
-		ctx          xds_context.Context
-		proxy        *core_xds.Proxy
-		expectedFile string
+		ctx      xds_context.Context
+		proxy    *core_xds.Proxy
+		expected string
 	}
 
 	DescribeTable("should not generate Envoy xDS resources unless tracing is present",
@@ -72,10 +71,8 @@ var _ = Describe("TracingProxyGenerator", func() {
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "tracing", given.expectedFile))
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "tracing", given.expected))
 		},
 		Entry("should create cluster for Zipkin", testCase{
 			proxy: &model.Proxy{
@@ -102,7 +99,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 					},
 				},
 			},
-			expectedFile: "zipkin.envoy-config.golden.yaml",
+			expected: "zipkin.envoy-config.golden.yaml",
 		}),
 	)
 })

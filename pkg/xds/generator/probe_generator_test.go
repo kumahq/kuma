@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -55,9 +54,8 @@ var _ = Describe("ProbeGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "probe", given.expected))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "probe", given.expected))
 		},
 		Entry("base probes", testCase{
 			dataplane: `
