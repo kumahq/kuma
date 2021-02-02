@@ -224,11 +224,15 @@ func (c *K8sControlPlane) GetGlobaStatusAPI() string {
 }
 
 func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
+	dpType := ""
+	if service == "ingress" {
+		dpType = "ingress"
+	}
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
 		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
-		[]byte(fmt.Sprintf(`{"mesh": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, service)),
+		[]byte(fmt.Sprintf(`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, dpType, service)),
 		map[string]string{"content-type": "application/json"},
 		200,
 		DefaultRetries,

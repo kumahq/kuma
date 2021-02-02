@@ -197,9 +197,23 @@ spec:
 	)
 }
 
-func EchoServerUniversal(id, mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
+func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
-		fs = append(fs, WithMesh(mesh), WithAppname(AppModeEchoServer), WithId(id), WithToken(token))
+		opts := newDeployOpt(fs...)
+		args := []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo " + echo + "\n\"'"}
+		appYaml := ""
+		if opts.protocol == "" {
+			opts.protocol = "http"
+		}
+		switch {
+		case opts.transparent:
+			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", "8080", redirectPortInbound, redirectPortOutbound)
+		case opts.serviceProbe:
+			appYaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, mesh, "8080", "80", "8080", opts.protocol)
+		default:
+			appYaml = fmt.Sprintf(EchoServerDataplane, mesh, "8080", "80", "8080", opts.protocol)
+		}
+		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeEchoServer), WithToken(token), WithArgs(args), WithYaml(appYaml))
 		return cluster.DeployApp(fs...)
 	}
 }
@@ -207,7 +221,7 @@ func EchoServerUniversal(id, mesh, token string, fs ...DeployOptionsFunc) Instal
 func IngressUniversal(mesh, token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
-		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, true, []string{})
+		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, true, []string{})
 		if err != nil {
 			return err
 		}
@@ -274,9 +288,21 @@ spec:
 	)
 }
 
-func DemoClientUniversal(mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
+func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
-		fs = append(fs, WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token))
+		opts := newDeployOpt(fs...)
+		args := []string{"ncat", "-lvk", "-p", "3000"}
+		appYaml := ""
+		if opts.transparent {
+			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", redirectPortInbound, redirectPortOutbound)
+		} else {
+			if opts.serviceProbe {
+				appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", "80", "8080")
+			} else {
+				appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", "80", "8080")
+			}
+		}
+		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token), WithArgs(args), WithYaml(appYaml))
 		return cluster.DeployApp(fs...)
 	}
 }
