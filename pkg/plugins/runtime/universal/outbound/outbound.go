@@ -87,13 +87,15 @@ func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 			return err
 		}
 		dpsUpdated := 0
+
+		allDps := make([]*mesh.DataplaneResource, len(ingresses)+len(dpList.Items))
+		copy(allDps[:len(ingresses)], ingresses)
+		copy(allDps[len(ingresses):], dpList.Items)
+
 		for _, dp := range dpList.Items {
 			if dp.Spec.Networking.GetTransparentProxying() == nil {
 				continue
 			}
-			allDps := make([]*mesh.DataplaneResource, len(ingresses)+len(dpList.Items))
-			copy(allDps[:len(ingresses)], ingresses)
-			copy(allDps[len(ingresses):], dpList.Items)
 			newOutbounds := dns.VIPOutbounds(model.MetaToResourceKey(dp.Meta), allDps, v.resolver.GetVIPs(), externalServices.Items)
 
 			if outboundsEqual(newOutbounds, dp.Spec.Networking.Outbound) {
