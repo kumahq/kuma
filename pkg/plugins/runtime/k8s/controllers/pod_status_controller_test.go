@@ -23,7 +23,7 @@ import (
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
 )
 
-var _ = FDescribe("PodStatusReconciler", func() {
+var _ = Describe("PodStatusReconciler", func() {
 
 	var kubeClient kube_client.Client
 	var reconciler *PodStatusReconciler
