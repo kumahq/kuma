@@ -52,6 +52,12 @@ func (p *PodConverter) OutboundInterfacesFor(
 			converterLog.Error(err, "could not get K8S Service for service tag")
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
+
+		// Do not generate outbounds for service-less
+		if isServiceLess(port) {
+			continue
+		}
+
 		if isHeadlessService(service) {
 			// Generate outbound listeners for every endpoint of services.
 			for _, endpoint := range endpoints[serviceTag] {
@@ -91,10 +97,17 @@ func isHeadlessService(svc *kube_core.Service) bool {
 	return svc.Spec.ClusterIP == "None"
 }
 
+func isServiceLess(port uint32) bool {
+	return port == mesh_proto.TCPPortReserved
+}
+
 func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32, error) {
-	name, ns, port, err := ParseService(serviceTag)
+	name, ns, port, err := parseService(serviceTag)
 	if err != nil {
-		return nil, 0, errors.Errorf("failed to parse `service` host %q as FQDN", serviceTag)
+		return nil, 0, errors.Wrapf(err, "failed to parse `service` host %q as FQDN", serviceTag)
+	}
+	if isServiceLess(port) {
+		return nil, port, nil
 	}
 
 	svc := &kube_core.Service{}
@@ -105,17 +118,24 @@ func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32
 	return svc, port, nil
 }
 
-func ParseService(host string) (name string, namespace string, port uint32, err error) {
+func parseService(host string) (name string, namespace string, port uint32, err error) {
 	// split host into <name>_<namespace>_svc_<port>
 	segments := strings.Split(host, "_")
-	if len(segments) != 4 {
+	switch len(segments) {
+	case 4:
+		p, err := strconv.Atoi(segments[3])
+		if err != nil {
+			return "", "", 0, err
+		}
+		port = uint32(p)
+	case 3:
+		// service less service names have no port, so we just put the reserved
+		// one here to note that this service is actually
+		port = mesh_proto.TCPPortReserved
+	default:
 		return "", "", 0, errors.Errorf("service tag in unexpected format")
 	}
-	p, err := strconv.Atoi(segments[3])
-	if err != nil {
-		return "", "", 0, err
-	}
-	port = uint32(p)
+
 	name, namespace = segments[0], segments[1]
 	return
 }

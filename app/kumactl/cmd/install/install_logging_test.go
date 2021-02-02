@@ -2,7 +2,6 @@ package install_test
 
 import (
 	"bytes"
-	"io/ioutil"
 	"path/filepath"
 
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -12,7 +11,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
 
 var _ = Describe("kumactl install logging", func() {
@@ -49,31 +47,14 @@ var _ = Describe("kumactl install logging", func() {
 
 			// when
 			err := rootCmd.Execute()
+
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			// and
 			Expect(stderr.Bytes()).To(BeNil())
 
-			// when
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			expectedManifests := data.SplitYAML(data.File{Data: expected})
-
-			// when
+			// and output matches golden files
 			actual := stdout.Bytes()
-			// then
-			Expect(actual).To(MatchYAML(expected))
-			// and
-			actualManifests := data.SplitYAML(data.File{Data: actual})
-
-			// and
-			Expect(len(actualManifests)).To(Equal(len(expectedManifests)))
-			// and
-			for i := range expectedManifests {
-				Expect(actualManifests[i]).To(MatchYAML(expectedManifests[i]))
-			}
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", given.goldenFile))
 		},
 		Entry("should generate Kubernetes resources with default settings", testCase{
 			extraArgs:  nil,

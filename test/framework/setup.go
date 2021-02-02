@@ -228,19 +228,6 @@ func IngressUniversal(mesh, token string) InstallFunc {
 
 func DemoClientK8s(mesh string) InstallFunc {
 	const name = "demo-client"
-	service := `
-apiVersion: v1
-kind: Service
-metadata:
-  name: demo-client
-  namespace: kuma-test
-spec:
-  ports:
-    - port: 3000
-      name: http
-  selector:
-    app: demo-client
-`
 	deployment := `
 apiVersion: apps/v1
 kind: Deployment
@@ -281,9 +268,7 @@ spec:
               memory: 128Mi
 `
 	return Combine(
-		YamlK8s(service),
 		YamlK8s(fmt.Sprintf(deployment, mesh)),
-		WaitService(TestNamespace, name),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
 	)

@@ -123,7 +123,7 @@ spec:
 					return "", err
 				}
 
-				expectedServices := []string{"demo-client_kuma-test_svc_3000", "echo-server_kuma-test_svc_80", "jaeger-query"}
+				expectedServices := []string{"demo-client_kuma-test_svc", "echo-server_kuma-test_svc_80", "jaeger-query"}
 				if !reflect.DeepEqual(services, expectedServices) {
 					return "", errors.Errorf("services not traced. Expected %q, got %q", expectedServices, services)
 				}

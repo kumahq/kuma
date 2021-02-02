@@ -1,31 +1,27 @@
 admissionServer:
   address: ""
-  certDir: ""
   port: 5443
+  certDir: ""
 injector:
-  cniEnabled: false
-  virtualProbesEnabled: true
-  virtualProbesPort: 9000
   sidecarContainer:
     image: kuma/kuma-dp:latest
-    redirectPortOutbound: 15001
     redirectPortInbound: 15006
+    redirectPortOutbound: 15001
     uid: 5678
     gid: 5678
     adminPort: 9901
     drainTime: 30s
-
     readinessProbe:
       initialDelaySeconds: 1
-      timeoutSeconds:      3
-      periodSeconds:       5
-      successThreshold:    1
-      failureThreshold:    12
+      timeoutSeconds: 3
+      periodSeconds: 5
+      successThreshold: 1
+      failureThreshold: 12
     livenessProbe:
       initialDelaySeconds: 60
-      timeoutSeconds:      3
-      periodSeconds:       5
-      failureThreshold:    12
+      timeoutSeconds: 3
+      periodSeconds: 5
+      failureThreshold: 12
     resources:
       requests:
         cpu: 50m
@@ -35,12 +31,16 @@ injector:
         memory: 512Mi
   initContainer:
     image: kuma/kuma-init:latest
+  cniEnabled: false
+  virtualProbesEnabled: true
+  virtualProbesPort: 9000
   sidecarTraffic:
     excludeInboundPorts: []
     excludeOutboundPorts: []
-  caCertFile: ""
   exceptions:
     labels:
-      openshift.io/build.name: "*"
-      openshift.io/deployer-pod-for.name: "*"
+      openshift.io/build.name: '*'
+      openshift.io/deployer-pod-for.name: '*'
+  caCertFile: ""
 marshalingCacheExpirationTime: 5m0s
+controlPlaneServiceName: kuma-control-plane
