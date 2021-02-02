@@ -6,6 +6,7 @@ import (
 	"os"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 
 	"github.com/pkg/errors"
 
@@ -42,6 +43,7 @@ type BuilderContext interface {
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIManager() api_server.APIManager
+	DpServer() *dp_server.DpServer
 }
 
 var _ BuilderContext = &Builder{}
@@ -65,6 +67,7 @@ type Builder struct {
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
 	apim     api_server.APIManager
+	dps      *dp_server.DpServer
 	closeCh  <-chan struct{}
 	*runtimeInfo
 }
@@ -176,6 +179,11 @@ func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
 	return b
 }
 
+func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
+	b.dps = dps
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -213,6 +221,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.apim == nil {
 		return nil, errors.Errorf("APIManager has not been configured")
 	}
+	if b.dps == nil {
+		return nil, errors.Errorf("DpServer has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -231,6 +242,7 @@ func (b *Builder) Build() (Runtime, error) {
 			metrics:  b.metrics,
 			erf:      b.erf,
 			apim:     b.apim,
+			dps:      b.dps,
 		},
 		Manager: b.cm,
 	}, nil
@@ -287,6 +299,9 @@ func (b *Builder) EventReaderFactory() events.ListenerFactory {
 
 func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
+}
+func (b *Builder) DpServer() *dp_server.DpServer {
+	return b.dps
 }
 func (b *Builder) CloseCh() <-chan struct{} {
 	return b.closeCh

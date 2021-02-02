@@ -5,7 +5,6 @@ import (
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
-	"google.golang.org/grpc"
 
 	hds_metrics "github.com/kumahq/kuma/pkg/hds/metrics"
 
@@ -25,7 +24,11 @@ var (
 	hdsServerLog = core.Log.WithName("hds-server")
 )
 
-func RegisterHDS(rt core_runtime.Runtime, grpcSrv *grpc.Server) error {
+func Setup(rt core_runtime.Runtime) error {
+	if rt.Config().DpServer.Hds.Enabled {
+		return nil
+	}
+
 	snapshotCache := util_xds_v3.NewSnapshotCache(false, hasher{}, util_xds.NewLogger(hdsServerLog))
 
 	callbacks, err := DefaultCallbacks(rt, snapshotCache)
@@ -36,7 +39,7 @@ func RegisterHDS(rt core_runtime.Runtime, grpcSrv *grpc.Server) error {
 	srv := hds_server.New(context.Background(), snapshotCache, callbacks)
 
 	hdsServerLog.Info("registering Health Discovery Service in Dataplane Server")
-	envoy_service_health.RegisterHealthDiscoveryServiceServer(grpcSrv, srv)
+	envoy_service_health.RegisterHealthDiscoveryServiceServer(rt.DpServer().GrpcServer(), srv)
 	return nil
 }
 
