@@ -8,17 +8,15 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
-	"github.com/kumahq/kuma/pkg/xds/generator"
-
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	model "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var _ = Describe("TracingProxyGenerator", func() {
@@ -72,7 +70,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and output matches golden files
-			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "tracing", given.expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "tracing", given.expected)))
 		},
 		Entry("should create cluster for Zipkin", testCase{
 			proxy: &model.Proxy{

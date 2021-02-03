@@ -5,15 +5,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/tls"
-
-	"github.com/kumahq/kuma/pkg/test/runtime"
-
 	"github.com/golang/protobuf/proto"
-
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
-
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -22,9 +14,14 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/runtime"
+	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -188,7 +185,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and output matches golden files
-			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "profile-source", given.expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "profile-source", given.expected)))
 		},
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCase{
 			mesh: `

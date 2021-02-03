@@ -8,18 +8,16 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/generator"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	model "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var _ = Describe("PrometheusEndpointGenerator", func() {
@@ -213,7 +211,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and output matches golden files
-			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "prometheus-endpoint", given.expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "prometheus-endpoint", given.expected)))
 		},
 		Entry("should support a Dataplane without custom metrics configuration", testCase{
 			ctx: xds_context.Context{

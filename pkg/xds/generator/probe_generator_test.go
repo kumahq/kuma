@@ -10,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -55,7 +56,7 @@ var _ = Describe("ProbeGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and output matches golden files
-			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "probe", given.expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "probe", given.expected)))
 		},
 		Entry("base probes", testCase{
 			dataplane: `

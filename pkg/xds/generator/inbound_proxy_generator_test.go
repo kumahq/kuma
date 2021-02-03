@@ -6,7 +6,6 @@ import (
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -14,12 +13,12 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("InboundProxyGenerator", func() {
@@ -155,7 +154,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and output matches golden files
-			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "inbound-proxy", given.expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "inbound-proxy", given.expected)))
 		},
 		Entry("01. transparent_proxying=false, ip_addresses=0, ports=0", testCase{
 			dataplaneFile: "1-dataplane.input.yaml",

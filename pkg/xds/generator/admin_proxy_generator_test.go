@@ -4,20 +4,19 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	"github.com/kumahq/kuma/pkg/tls"
-
-	"github.com/kumahq/kuma/pkg/test/runtime"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/runtime"
+	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("AdminProxyGenerator", func() {
@@ -69,7 +68,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and output matches golden files
-			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "admin", given.expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "admin", given.expected)))
 		},
 		Entry("should generate admin resources", testCase{
 			dataplaneFile: "01.dataplane.input.yaml",

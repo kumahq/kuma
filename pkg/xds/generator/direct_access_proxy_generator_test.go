@@ -5,21 +5,21 @@ import (
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	"github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 func parseResource(bytes []byte, resource core_model.Resource) {
@@ -97,7 +97,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and output matches golden files
-			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", "direct-access", given.expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "direct-access", given.expected)))
 		},
 		Entry("should not generate resources when transparent proxy is off", testCase{
 			dataplaneFile:  "01.dataplane.input.yaml",
