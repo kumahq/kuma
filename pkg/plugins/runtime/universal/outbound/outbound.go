@@ -93,7 +93,7 @@ func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 		copy(allDps[len(ingresses):], dpList.Items)
 
 		for _, dp := range dpList.Items {
-			if dp.Spec.Networking.GetTransparentProxying() == nil {
+			if dp.Spec.Networking.GetTransparentProxying() == nil || dp.Spec.IsIngress() {
 				continue
 			}
 			newOutbounds := dns.VIPOutbounds(model.MetaToResourceKey(dp.Meta), allDps, v.resolver.GetVIPs(), externalServices.Items)
