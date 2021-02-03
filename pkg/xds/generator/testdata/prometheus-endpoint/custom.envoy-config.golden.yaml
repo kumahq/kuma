@@ -1,30 +1,30 @@
 resources:
-  - name: kuma:metrics:prometheus
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      trafficDirection: INBOUND
-      address:
-        socketAddress:
-          address: 192.168.0.1
-          portValue: 8765
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.http_connection_manager
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                httpFilters:
-                  - name: envoy.filters.http.router
-                routeConfig:
-                  validateClusters: false
-                  virtualHosts:
-                    - domains:
-                        - '*'
-                      name: envoy_admin
-                      routes:
-                        - match:
-                            prefix: /even-more-non-standard-path
-                          route:
-                            cluster: kuma:envoy:admin
-                            prefixRewrite: /stats/prometheus
-                statPrefix: kuma_metrics_prometheus
-      name: kuma:metrics:prometheus
+- name: kuma:metrics:prometheus
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 192.168.0.1
+        portValue: 8765
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: kuma_metrics_prometheus
+              routes:
+              - match:
+                  prefix: /even-more-non-standard-path
+                route:
+                  cluster: kuma:envoy:admin
+                  prefixRewrite: /stats/prometheus
+          statPrefix: kuma_metrics_prometheus
+    name: kuma:metrics:prometheus
+    trafficDirection: INBOUND

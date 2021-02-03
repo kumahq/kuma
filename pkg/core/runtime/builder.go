@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 
 	"github.com/pkg/errors"
@@ -62,6 +64,7 @@ type Builder struct {
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
+	eac      admin.EnvoyAdminClient
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
 	apim     api_server.APIManager
@@ -161,6 +164,11 @@ func (b *Builder) WithLookupIP(lif lookup.LookupIPFunc) *Builder {
 	return b
 }
 
+func (b *Builder) WithEnvoyAdminClient(eac admin.EnvoyAdminClient) *Builder {
+	b.eac = eac
+	return b
+}
+
 func (b *Builder) WithMetrics(metrics metrics.Metrics) *Builder {
 	b.metrics = metrics
 	return b
@@ -204,6 +212,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.lif == nil {
 		return nil, errors.Errorf("LookupIP func has not been configured")
 	}
+	if b.eac == nil {
+		return nil, errors.Errorf("EnvoyAdminClient has not been configured")
+	}
 	if b.metrics == nil {
 		return nil, errors.Errorf("Metrics has not been configured")
 	}
@@ -228,6 +239,7 @@ func (b *Builder) Build() (Runtime, error) {
 			configm:  b.configm,
 			leadInfo: b.leadInfo,
 			lif:      b.lif,
+			eac:      b.eac,
 			metrics:  b.metrics,
 			erf:      b.erf,
 			apim:     b.apim,

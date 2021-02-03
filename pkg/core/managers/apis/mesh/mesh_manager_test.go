@@ -109,8 +109,12 @@ var _ = Describe("Mesh Manager", func() {
 			err = resStore.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey("route-all-mesh-1", meshName))
 			Expect(err).ToNot(HaveOccurred())
 
-			// and Signing Key for the mesh exists
-			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(meshName)))
+			// and Dataplane Token Signing Key for the mesh exists
+			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName)))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and Envoy Admin Client Signing Key for the mesh exists
+			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, meshName)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -236,7 +240,7 @@ var _ = Describe("Mesh Manager", func() {
 			secrets = &system.SecretResourceList{}
 			err = secretManager.List(context.Background(), secrets, store.ListByMesh("demo-2"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(secrets.Items).To(HaveLen(1)) // default signing key
+			Expect(secrets.Items).To(HaveLen(2)) // two default signing keys
 		})
 
 		It("should not delete Mesh if there are Dataplanes attached", func() {
