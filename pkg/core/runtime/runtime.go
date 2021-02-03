@@ -4,6 +4,8 @@ import (
 	"context"
 	"sync"
 
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
@@ -52,6 +54,7 @@ type RuntimeContext interface {
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	LookupIP() lookup.LookupIPFunc
+	EnvoyAdminClient() admin.EnvoyAdminClient
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
@@ -107,6 +110,7 @@ type runtimeContext struct {
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
+	eac      admin.EnvoyAdminClient
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
 	apim     api_server.APIInstaller
@@ -171,6 +175,10 @@ func (rc *runtimeContext) LeaderInfo() component.LeaderInfo {
 
 func (rc *runtimeContext) LookupIP() lookup.LookupIPFunc {
 	return rc.lif
+}
+
+func (rc *runtimeContext) EnvoyAdminClient() admin.EnvoyAdminClient {
+	return rc.eac
 }
 
 func (rc *runtimeContext) APIInstaller() api_server.APIInstaller {
