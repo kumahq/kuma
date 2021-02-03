@@ -23,7 +23,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-// PodStatusReconciler creates default resources for created Mesh
+// PodStatusReconciler tracks pods status changes and signals kuma-dp when it has to complete
 type PodStatusReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder

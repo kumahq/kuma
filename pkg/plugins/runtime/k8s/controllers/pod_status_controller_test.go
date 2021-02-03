@@ -57,7 +57,12 @@ var _ = Describe("PodStatusReconciler", func() {
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
-					Name:      "pod-with-kuma-sidecar-workload-not-terminated",
+					Name:      "pod-with-kuma-sidecar-workload-not-owned-by-a-job",
+					OwnerReferences: []kube_meta.OwnerReference{
+						{
+							Kind: "ReplicaSet",
+						},
+					},
 				},
 				Status: kube_core.PodStatus{
 					ContainerStatuses: []kube_core.ContainerStatus{
@@ -79,7 +84,12 @@ var _ = Describe("PodStatusReconciler", func() {
 			&kube_core.Pod{
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
-					Name:      "pod-with-kuma-sidecar-workload-terminated",
+					Name:      "pod-with-kuma-sidecar-workload-not-terminated",
+					OwnerReferences: []kube_meta.OwnerReference{
+						{
+							Kind: "Job",
+						},
+					},
 				},
 				Status: kube_core.PodStatus{
 					ContainerStatuses: []kube_core.ContainerStatus{
@@ -92,7 +102,65 @@ var _ = Describe("PodStatusReconciler", func() {
 						{
 							Name: "workload",
 							State: kube_core.ContainerState{
-								Terminated: &kube_core.ContainerStateTerminated{},
+								Terminated: nil,
+							},
+						},
+					},
+				},
+			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "pod-with-kuma-sidecar-workload-not-terminated-successfully",
+					OwnerReferences: []kube_meta.OwnerReference{
+						{
+							Kind: "Job",
+						},
+					},
+				},
+				Status: kube_core.PodStatus{
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							Name: util_k8s.KumaSidecarContainerName,
+							State: kube_core.ContainerState{
+								Terminated: nil,
+							},
+						},
+						{
+							Name: "workload",
+							State: kube_core.ContainerState{
+								Terminated: &kube_core.ContainerStateTerminated{
+									ExitCode: -1,
+								},
+							},
+						},
+					},
+				},
+			},
+			&kube_core.Pod{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace: "demo",
+					Name:      "pod-with-kuma-sidecar-workload-terminated",
+					OwnerReferences: []kube_meta.OwnerReference{
+						{
+							Kind: "Job",
+						},
+					},
+				},
+				Status: kube_core.PodStatus{
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							Name: util_k8s.KumaSidecarContainerName,
+							State: kube_core.ContainerState{
+								Terminated: nil,
+							},
+						},
+						{
+							Name: "workload",
+							State: kube_core.ContainerState{
+								Terminated: &kube_core.ContainerStateTerminated{
+									ExitCode: 0,
+								},
 							},
 						},
 					},
@@ -102,28 +170,6 @@ var _ = Describe("PodStatusReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
 					Name:      "pod-with-kuma-sidecar-workload-terminated",
-				},
-			},
-			&kube_core.Pod{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "pod-with-kuma-sidecar-terminated",
-				},
-				Status: kube_core.PodStatus{
-					ContainerStatuses: []kube_core.ContainerStatus{
-						{
-							Name: util_k8s.KumaSidecarContainerName,
-							State: kube_core.ContainerState{
-								Terminated: &kube_core.ContainerStateTerminated{},
-							},
-						},
-						{
-							Name: "workload",
-							State: kube_core.ContainerState{
-								Terminated: nil,
-							},
-						},
-					},
 				},
 			},
 		)
@@ -173,6 +219,22 @@ var _ = Describe("PodStatusReconciler", func() {
 		Expect(postQuitCalled).To(Equal(0))
 	})
 
+	It("should ignore Pods with kuma sidecar, not owned by a job", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-not-owned-by-a-job"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+		// and
+		Expect(postQuitCalled).To(Equal(0))
+	})
+
 	It("should ignore Pods with kuma sidecar terminated", func() {
 		// given
 		req := kube_ctrl.Request{
@@ -193,6 +255,22 @@ var _ = Describe("PodStatusReconciler", func() {
 		// given
 		req := kube_ctrl.Request{
 			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-not-terminated"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		// and
+		Expect(result).To(BeZero())
+		// and
+		Expect(postQuitCalled).To(Equal(0))
+	})
+
+	It("should ignore Pods with workload not terminated successfully", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "pod-with-kuma-sidecar-workload-not-terminated-successfully"},
 		}
 
 		// when

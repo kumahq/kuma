@@ -156,7 +156,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	reconciler := &controllers.PodStatusReconciler{
 		Client:            mgr.GetClient(),
-		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-generator"),
+		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-jobs-syncer"),
 		Scheme:            mgr.GetScheme(),
 		Log:               core.Log.WithName("controllers").WithName("Pod"),
 		ResourceConverter: converter,
