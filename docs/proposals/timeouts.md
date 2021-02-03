@@ -168,17 +168,17 @@ Envoy allows users to configure plenty of different timeouts. All of them are ap
 
 ## Proposed solution
 
-In order to satisfy all the use cases we can introduce 2 new policies: `OutboundTimeout` and `InboundTimeouts`.
+In order to satisfy all the use cases we can introduce 2 new policies: `Timeout` and `InboundTimeout`.
 
-### OutboundTimeout
+### Timeout
 
 Service A -> SRC Envoy -> -> -> DST Envoy -> Service B
 
-OutboundTimeout policy is a connection policy so it will be applied to the pair of service (A and B in the example). 
+Timeout policy is a connection policy so it will be applied to the pair of service (A and B in the example). 
 The idea of the policy is to instruct Service A how to request Service B. Example:
 
 ```yaml
-type: OutboundTimeout
+type: Timeout
 mesh: default
 name: default-timeouts-srv-B
 sources:
@@ -210,12 +210,12 @@ this `default-timeouts-srv-B` and every service which is trying to consume Servi
 
 At the same time if you are an owner of Service A you can override this policy for your service and put different timeout 
 values. From the Service B perspective `default-timeouts-srv-B` policy has an advisory nature, every service can override it,
-`OutboundTimeout` policy is not purposed to protect Service B. In order to protect Service B from abusive clients with long
+`Timeout` policy is not purposed to protect Service B. In order to protect Service B from abusive clients with long
 requests it’s better to use `InboundTimeouts`.
 
 ### InboundTimeout
 
-Unlike the `OutboundTimeout` this policy is matched for the Dataplane rather than pair of services (applied only to the Dataplanes of the Service B). `InboundTimeout` has the same configuration, but values are mapped to the different Envoy timeouts:
+Unlike the `Timeout` this policy is matched for the Dataplane rather than pair of services (applied only to the Dataplanes of the Service B). `InboundTimeout` has the same configuration, but values are mapped to the different Envoy timeouts:
 
 ```yaml
 type: InboundTimeout
