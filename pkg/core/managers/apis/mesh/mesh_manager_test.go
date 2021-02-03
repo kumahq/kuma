@@ -240,7 +240,7 @@ var _ = Describe("Mesh Manager", func() {
 			secrets = &system.SecretResourceList{}
 			err = secretManager.List(context.Background(), secrets, store.ListByMesh("demo-2"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(secrets.Items).To(HaveLen(1)) // default signing key
+			Expect(secrets.Items).To(HaveLen(2)) // two default signing keys
 		})
 
 		It("should not delete Mesh if there are Dataplanes attached", func() {
