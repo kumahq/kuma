@@ -3,8 +3,6 @@ package mesh
 import (
 	"context"
 
-	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
-
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
@@ -111,8 +109,12 @@ var _ = Describe("Mesh Manager", func() {
 			err = resStore.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey("route-all-mesh-1", meshName))
 			Expect(err).ToNot(HaveOccurred())
 
-			// and Signing Key for the mesh exists
-			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(tokens_builtin.DataplaneTokenPrefix, meshName)))
+			// and Dataplane Token Signing Key for the mesh exists
+			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName)))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and Envoy Admin Client Signing Key for the mesh exists
+			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, meshName)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 

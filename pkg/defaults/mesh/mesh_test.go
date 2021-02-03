@@ -3,8 +3,6 @@ package mesh_test
 import (
 	"context"
 
-	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -43,8 +41,12 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		err = resManager.Get(context.Background(), core_mesh.NewTrafficRouteResource(), core_store.GetByKey("route-all-default", model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		// and Signing Key for the mesh exists
-		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(tokens_builtin.DataplaneTokenPrefix, model.DefaultMesh)))
+		// and Dataplane Token Signing Key for the mesh exists
+		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, model.DefaultMesh)))
+		Expect(err).ToNot(HaveOccurred())
+
+		// and Envoy Admin Client Signing Key for the mesh exists
+		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, model.DefaultMesh)))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -64,7 +66,9 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		Expect(err).ToNot(HaveOccurred())
 		err = resManager.Get(context.Background(), core_mesh.NewTrafficRouteResource(), core_store.GetByKey("route-all-default", model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
-		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(tokens_builtin.DataplaneTokenPrefix, model.DefaultMesh)))
+		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, model.DefaultMesh)))
+		Expect(err).ToNot(HaveOccurred())
+		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, model.DefaultMesh)))
 		Expect(err).ToNot(HaveOccurred())
 	})
 })

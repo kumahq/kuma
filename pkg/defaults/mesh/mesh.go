@@ -3,8 +3,6 @@ package mesh
 import (
 	"sync"
 
-	tokens_builtin "github.com/kumahq/kuma/pkg/tokens/builtin"
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -46,14 +44,24 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default TrafficRoute already exist", "mesh", meshName, "name", defaultTrafficRouteKey(meshName).Name)
 	}
 
-	created, err = ensureSigningKey(resManager, meshName)
+	created, err = ensureDataplaneTokenSigningKey(resManager, meshName)
 	if err != nil {
-		return errors.Wrap(err, "could not create default Signing Key")
+		return errors.Wrap(err, "could not create default Dataplane Token Signing Key")
 	}
 	if created {
-		log.Info("default Signing Key created", "mesh", meshName, "name", issuer.SigningKeyResourceKey(tokens_builtin.DataplaneTokenPrefix, meshName).Name)
+		log.Info("default Signing Key created", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName).Name)
 	} else {
-		log.Info("default Signing Key already exist", "mesh", meshName, "name", issuer.SigningKeyResourceKey(tokens_builtin.DataplaneTokenPrefix, meshName).Name)
+		log.Info("default Signing Key already exist", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName).Name)
+	}
+
+	created, err = ensureEnvoyAdminClientSigningKey(resManager, meshName)
+	if err != nil {
+		return errors.Wrap(err, "could not create default Envoy Admin Client Token Signing Key")
+	}
+	if created {
+		log.Info("default Signing Key created", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, meshName).Name)
+	} else {
+		log.Info("default Signing Key already exist", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, meshName).Name)
 	}
 	return nil
 }
