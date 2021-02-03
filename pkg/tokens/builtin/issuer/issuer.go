@@ -14,9 +14,6 @@ type DpType = string
 const (
 	DpTypeDataplane = "dataplane"
 	DpTypeIngress   = "ingress"
-
-	DataplaneTokenPrefix        = "dataplane-token"
-	EnvoyAdminClientTokenPrefix = "envoy-admin-client-token"
 )
 
 type DataplaneIdentity struct {

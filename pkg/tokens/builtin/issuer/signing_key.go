@@ -22,7 +22,12 @@ import (
 
 var log = core.Log.WithName("tokens")
 
-const defaultRsaBits = 2048
+const (
+	defaultRsaBits = 2048
+
+	DataplaneTokenPrefix        = "dataplane-token"
+	EnvoyAdminClientTokenPrefix = "envoy-admin-client-token"
+)
 
 func SigningKeyNotFound(meshName string) error {
 	return errors.Errorf("there is no Signing Key in the Control Plane for Mesh %q. Make sure the Mesh exist. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens.", meshName)

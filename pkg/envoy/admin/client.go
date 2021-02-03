@@ -42,6 +42,7 @@ func NewEnvoyAdminClient(rm manager.ResourceManager, cfg kuma_cp.Config) EnvoyAd
 				}).Dial,
 				TLSHandshakeTimeout: 3 * time.Second,
 				TLSClientConfig: &tls.Config{
+					// we do not want to explicitly verify the https
 					InsecureSkipVerify: true,
 				},
 			},
@@ -83,9 +84,9 @@ func (a *envoyAdminClient) getOrCreateSigningKey(mesh string) (string, error) {
 func (a *envoyAdminClient) adminAddress(dataplane *mesh_core.DataplaneResource) string {
 	ip := dataplane.GetIP()
 	// TODO: this will work perfectly fine with K8s, but will fail for Universal
-	// The real allocated admin port is part of the DP metadata, but it is attached to a particular CP (the one that
-	// bootstrapped the DP), so we can not reliably use that. A better approach would be to include the admin port
-	// in the DataplenInsights.
+	// The real allocated admin port is part of the DP metadata, but it is attached to a particular CP,
+	// so we can not reliably use that. A better approach would be to include the admin port
+	// in the DataplaneInsights.
 	portUint := a.cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort
 
 	return fmt.Sprintf("%s:%d", ip, portUint)
