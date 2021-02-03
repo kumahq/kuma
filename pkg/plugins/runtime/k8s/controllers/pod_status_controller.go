@@ -48,6 +48,18 @@ func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 		return kube_ctrl.Result{}, err
 	}
 
+	// we process only Pods owned by a Job
+	isJob := false
+	for _, o := range pod.GetObjectMeta().GetOwnerReferences() {
+		if o.Kind == "Job" {
+			isJob = true
+			break
+		}
+	}
+	if !isJob {
+		return kube_ctrl.Result{}, nil
+	}
+
 	hasSidecar := false
 	for _, cs := range pod.Status.ContainerStatuses {
 		if cs.Name == util_k8s.KumaSidecarContainerName {
@@ -56,8 +68,9 @@ func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 				// the sidecar already terminated
 				return kube_ctrl.Result{}, nil
 			}
-		} else if cs.State.Terminated == nil {
+		} else if cs.State.Terminated == nil || cs.State.Terminated.ExitCode != 0 {
 			// at least one non-sidecar container not terminated
+			// or did not completed successfully
 			// no need to tell envoy to quit yet
 			return kube_ctrl.Result{}, nil
 		}
