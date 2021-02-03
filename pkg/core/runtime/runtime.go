@@ -5,8 +5,8 @@ import (
 	"sync"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/dns/resolver"

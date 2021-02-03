@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -13,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	"github.com/kumahq/kuma/pkg/config"
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
@@ -22,26 +22,32 @@ import (
 
 var runLog = dataplaneLog.WithName("run")
 
+// PersistentPreRunE in root command sets the logger and initial config
+// PreRunE loads the Kuma DP config
+// PostRunE actually runs all the components with loaded config
+// To extend Kuma DP, plug your code in RunE. Use RootContext.Config and add components to RootContext.ComponentManager
 func newRunCmd(rootCtx *RootContext) *cobra.Command {
-	cfg := kuma_dp.DefaultConfig()
+	cfg := rootCtx.Config
+	var dp *rest.Resource
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Dataplane (Envoy)",
 		Long:  `Launch Dataplane (Envoy).`,
-		RunE: func(cmd *cobra.Command, _ []string) error {
+		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// only support configuration via environment variables and args
-			if err := config.Load("", &cfg); err != nil {
+			if err := config.Load("", cfg); err != nil {
 				runLog.Error(err, "unable to load configuration")
 				return err
 			}
-			if conf, err := config.ToJson(&cfg); err == nil {
+			if conf, err := config.ToJson(cfg); err == nil {
 				runLog.Info("effective configuration", "config", string(conf))
 			} else {
 				runLog.Error(err, "unable to format effective configuration", "config", cfg)
 				return err
 			}
 
-			dp, err := readDataplaneResource(cmd, &cfg)
+			var err error
+			dp, err = readDataplaneResource(cmd, cfg)
 			if err != nil {
 				runLog.Error(err, "unable to read provided dataplane")
 				return err
@@ -98,11 +104,13 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				}
 				cfg.ControlPlane.CaCert = string(cert)
 			}
-
+			return nil
+		},
+		PostRunE: func(cmd *cobra.Command, _ []string) error {
 			shouldQuit := setupQuitChannel()
 
 			dataplane, err := envoy.New(envoy.Opts{
-				Config:    cfg,
+				Config:    *cfg,
 				Generator: rootCtx.BootstrapGenerator,
 				Dataplane: dp,
 				Stdout:    cmd.OutOrStdout(),

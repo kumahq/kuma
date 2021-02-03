@@ -6,8 +6,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/pkg/errors"
 

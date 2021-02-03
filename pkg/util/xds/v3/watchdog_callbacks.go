@@ -4,8 +4,8 @@ import (
 	"context"
 	"sync"
 
-	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"

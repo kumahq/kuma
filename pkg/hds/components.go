@@ -25,7 +25,7 @@ var (
 )
 
 func Setup(rt core_runtime.Runtime) error {
-	if rt.Config().DpServer.Hds.Enabled {
+	if !rt.Config().DpServer.Hds.Enabled {
 		return nil
 	}
 

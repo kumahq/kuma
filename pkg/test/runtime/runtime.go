@@ -4,8 +4,8 @@ import (
 	"net"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
-	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
