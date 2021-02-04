@@ -2,12 +2,12 @@ package bootstrap_test
 
 import (
 	"context"
-	"io/ioutil"
 	"path/filepath"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
 	. "github.com/onsi/ginkgo"
@@ -104,9 +104,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			// and config is as expected
 			actual, err := util_proto.ToYAML(bootstrapConfig)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.expectedConfigFile))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", given.expectedConfigFile)))
 
 			// and
 			Expect(version).To(Equal(given.expectedBootstrapVersion))
