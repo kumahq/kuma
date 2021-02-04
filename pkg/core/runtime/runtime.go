@@ -173,14 +173,11 @@ func (rc *runtimeContext) LeaderInfo() component.LeaderInfo {
 func (rc *runtimeContext) LookupIP() lookup.LookupIPFunc {
 	return rc.lif
 }
-<<<<<<< HEAD
-=======
 
 func (rc *runtimeContext) EnvoyAdminClient() admin.EnvoyAdminClient {
 	return rc.eac
 }
 
->>>>>>> 6abfff314... chore(*) kuma-dp expose more envoy admin endpoints (#1481)
 func (rc *runtimeContext) APIInstaller() api_server.APIInstaller {
 	return rc.apim
 }
