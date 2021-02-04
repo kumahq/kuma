@@ -790,6 +790,7 @@ function _kumactl_install {
   cmnds)
     commands=(
       "control-plane:Install Kuma Control Plane on Kubernetes"
+      "crds:Install Kuma Custom Resource Definitions on Kubernetes"
       "dns:Install DNS to Kubernetes"
       "logging:Install Logging backend in Kubernetes cluster (Loki)"
       "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
@@ -803,6 +804,9 @@ function _kumactl_install {
   case "$words[1]" in
   control-plane)
     _kumactl_install_control-plane
+    ;;
+  crds)
+    _kumactl_install_crds
     ;;
   dns)
     _kumactl_install_dns
@@ -860,6 +864,14 @@ function _kumactl_install_control-plane {
     '--use-node-port[use NodePort instead of LoadBalancer]' \
     '--without-kubernetes-connection[install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades]' \
     '--zone[set the Kuma zone name]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_crds {
+  _arguments \
+    '--only-missing[install only resources which are not already present in a cluster]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
