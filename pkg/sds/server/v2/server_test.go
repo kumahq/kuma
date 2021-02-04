@@ -9,6 +9,7 @@ import (
 
 	prometheus_client "github.com/prometheus/client_model/go"
 
+	sds_server "github.com/kumahq/kuma/pkg/sds/server"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
 
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
@@ -133,6 +134,7 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// start the runtime
+		Expect(sds_server.Setup(runtime)).To(Succeed())
 		Expect(dp_server.SetupServer(runtime)).To(Succeed())
 		stop = make(chan struct{})
 		go func() {

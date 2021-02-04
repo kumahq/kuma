@@ -6,7 +6,6 @@ import (
 
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
-	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -32,7 +31,6 @@ func RegisterXDS(
 	meshSnapshotCache *mesh.Cache,
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	rt core_runtime.Runtime,
-	server *grpc.Server,
 ) error {
 	xdsContext := v2.NewXdsContext()
 
@@ -66,7 +64,7 @@ func RegisterXDS(
 	srv := envoy_server.NewServer(context.Background(), xdsContext.Cache(), callbacks)
 
 	xdsServerLog.Info("registering Aggregated Discovery Service V2 in Dataplane Server")
-	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(server, srv)
+	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), srv)
 	return nil
 }
 
