@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/pkg/errors"
@@ -46,6 +47,7 @@ type BuilderContext interface {
 	EventReaderFactory() events.ListenerFactory
 	APIManager() api_server.APIManager
 	XDSHooks() *xds_hooks.Hooks
+	DpServer() *dp_server.DpServer
 }
 
 var _ BuilderContext = &Builder{}
@@ -71,6 +73,7 @@ type Builder struct {
 	erf      events.ListenerFactory
 	apim     api_server.APIManager
 	xdsh     *xds_hooks.Hooks
+	dps      *dp_server.DpServer
 	closeCh  <-chan struct{}
 	*runtimeInfo
 }
@@ -192,6 +195,11 @@ func (b *Builder) WithXDSHooks(xdsh *xds_hooks.Hooks) *Builder {
 	return b
 }
 
+func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
+	b.dps = dps
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -235,6 +243,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.xdsh == nil {
 		return nil, errors.Errorf("XDSHooks has not been configured")
 	}
+	if b.dps == nil {
+		return nil, errors.Errorf("DpServer has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -255,6 +266,7 @@ func (b *Builder) Build() (Runtime, error) {
 			erf:      b.erf,
 			apim:     b.apim,
 			xdsh:     b.xdsh,
+			dps:      b.dps,
 		},
 		Manager: b.cm,
 	}, nil
@@ -313,6 +325,9 @@ func (b *Builder) APIManager() api_server.APIManager {
 }
 func (b *Builder) XDSHooks() *xds_hooks.Hooks {
 	return b.xdsh
+}
+func (b *Builder) DpServer() *dp_server.DpServer {
+	return b.dps
 }
 func (b *Builder) CloseCh() <-chan struct{} {
 	return b.closeCh

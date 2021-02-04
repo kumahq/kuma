@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	leader_memory "github.com/kumahq/kuma/pkg/plugins/leader/memory"
 )
@@ -14,14 +15,17 @@ import (
 type RootContext struct {
 	ComponentManager   component.Manager
 	BootstrapGenerator envoy.BootstrapConfigFactoryFunc
+	Config             *kumadp.Config
 }
 
 func DefaultRootContext() *RootContext {
+	config := kumadp.DefaultConfig()
 	return &RootContext{
 		ComponentManager: component.NewManager(leader_memory.NewNeverLeaderElector()),
 		BootstrapGenerator: envoy.NewRemoteBootstrapGenerator(&http.Client{
 			Timeout:   10 * time.Second,
 			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 		}),
+		Config: &config,
 	}
 }

@@ -1,4 +1,4 @@
-package dp_server
+package server
 
 import (
 	"context"
@@ -98,4 +98,8 @@ func (d *DpServer) handle(writer http.ResponseWriter, request *http.Request) {
 
 func (d *DpServer) HTTPMux() *http.ServeMux {
 	return d.httpMux
+}
+
+func (d *DpServer) GrpcServer() *grpc.Server {
+	return d.grpcServer
 }

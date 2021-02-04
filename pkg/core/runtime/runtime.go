@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/envoy/admin"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -59,6 +60,7 @@ type RuntimeContext interface {
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
 	XDSHooks() *xds_hooks.Hooks
+	DpServer() *dp_server.DpServer
 }
 
 var _ Runtime = &runtime{}
@@ -115,6 +117,7 @@ type runtimeContext struct {
 	erf      events.ListenerFactory
 	apim     api_server.APIInstaller
 	xdsh     *xds_hooks.Hooks
+	dps      *dp_server.DpServer
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -183,6 +186,9 @@ func (rc *runtimeContext) EnvoyAdminClient() admin.EnvoyAdminClient {
 
 func (rc *runtimeContext) APIInstaller() api_server.APIInstaller {
 	return rc.apim
+}
+func (rc *runtimeContext) DpServer() *dp_server.DpServer {
+	return rc.dps
 }
 
 func (rc *runtimeContext) XDSHooks() *xds_hooks.Hooks {

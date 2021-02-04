@@ -1,12 +1,12 @@
-package v2
+package v3
 
 import (
 	"context"
 	"sync"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 )
@@ -62,7 +62,7 @@ func (cb *watchdogCallbacks) OnStreamClosed(streamID int64) {
 
 // OnStreamRequest is called once a request is received on a stream.
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
-func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequest) error {
+func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy_discovery.DiscoveryRequest) error {
 	cb.mu.RLock() // read access to the map of all ADS streams
 	watchdog := cb.streams[streamID]
 	cb.mu.RUnlock()
