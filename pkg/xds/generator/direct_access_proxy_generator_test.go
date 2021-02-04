@@ -5,21 +5,21 @@ import (
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	util_yaml "github.com/kumahq/kuma/pkg/util/yaml"
 	"github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 func parseResource(bytes []byte, resource core_model.Resource) {
@@ -37,10 +37,10 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 	generator := generator.DirectAccessProxyGenerator{}
 
 	type testCase struct {
-		dataplaneFile   string
-		dataplanesFile  string
-		meshFile        string
-		envoyConfigFile string
+		dataplaneFile  string
+		dataplanesFile string
+		meshFile       string
+		expected       string
 	}
 
 	DescribeTable("should generate envoy config",
@@ -95,34 +95,33 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "direct-access", given.envoyConfigFile))
-			Expect(err).ToNot(HaveOccurred())
 
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "direct-access", given.expected)))
 		},
 		Entry("should not generate resources when transparent proxy is off", testCase{
-			dataplaneFile:   "01.dataplane.input.yaml",
-			dataplanesFile:  "01.dataplanes.input.yaml",
-			meshFile:        "01.mesh.input.yaml",
-			envoyConfigFile: "01.envoy-config.golden.yaml",
+			dataplaneFile:  "01.dataplane.input.yaml",
+			dataplanesFile: "01.dataplanes.input.yaml",
+			meshFile:       "01.mesh.input.yaml",
+			expected:       "01.envoy-config.golden.yaml",
 		}),
 		Entry("should not generate resources when there are no direct access services", testCase{
-			dataplaneFile:   "02.dataplane.input.yaml",
-			dataplanesFile:  "02.dataplanes.input.yaml",
-			meshFile:        "02.mesh.input.yaml",
-			envoyConfigFile: "02.envoy-config.golden.yaml",
+			dataplaneFile:  "02.dataplane.input.yaml",
+			dataplanesFile: "02.dataplanes.input.yaml",
+			meshFile:       "02.mesh.input.yaml",
+			expected:       "02.envoy-config.golden.yaml",
 		}),
 		Entry("should generate direct access for all services except taken endpoints by outbound", testCase{
-			dataplaneFile:   "03.dataplane.input.yaml",
-			dataplanesFile:  "03.dataplanes.input.yaml",
-			meshFile:        "03.mesh.input.yaml",
-			envoyConfigFile: "03.envoy-config.golden.yaml",
+			dataplaneFile:  "03.dataplane.input.yaml",
+			dataplanesFile: "03.dataplanes.input.yaml",
+			meshFile:       "03.mesh.input.yaml",
+			expected:       "03.envoy-config.golden.yaml",
 		}),
 		Entry("should generate direct access for given services", testCase{
-			dataplaneFile:   "04.dataplane.input.yaml",
-			dataplanesFile:  "04.dataplanes.input.yaml",
-			meshFile:        "04.mesh.input.yaml",
-			envoyConfigFile: "04.envoy-config.golden.yaml",
+			dataplaneFile:  "04.dataplane.input.yaml",
+			dataplanesFile: "04.dataplanes.input.yaml",
+			meshFile:       "04.mesh.input.yaml",
+			expected:       "04.envoy-config.golden.yaml",
 		}),
 	)
 })

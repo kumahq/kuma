@@ -1,8 +1,13 @@
 package generator
 
 import (
+	"fmt"
+
+	"github.com/pkg/errors"
+
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
@@ -10,7 +15,20 @@ import (
 
 // OriginAdmin is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginAdmin = "admin"
-const adminReadyEndpoint = "/ready"
+
+var staticEnpointPaths = []*envoy_common.StaticEndpointPath{
+	{
+		Path:        "/ready",
+		RewritePath: "/ready",
+	},
+}
+
+var staticTlsEnpointPaths = []*envoy_common.StaticEndpointPath{
+	{
+		Path:        "/",
+		RewritePath: "/",
+	},
+}
 
 // AdminProxyGenerator generates resources to expose some endpoints of Admin API on public interface.
 // By default, Admin API is exposed only on loopback interface because of security reasons.
@@ -41,13 +59,34 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 
 	resources := core_xds.NewResourceSet()
 
+	for _, se := range staticEnpointPaths {
+		se.ClusterName = envoyAdminClusterName
+	}
+
+	for _, se := range staticTlsEnpointPaths {
+		se.ClusterName = envoyAdminClusterName
+
+		token, err := ctx.EnvoyAdminClient.GenerateAPIToken(proxy.Dataplane)
+		if err != nil {
+			return nil, errors.Wrapf(err, "unable to generate the API token")
+		}
+		se.Header = "Authorization"
+		se.HeaderExactMatch = fmt.Sprintf("Bearer %s", token)
+	}
+
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
 	if proxy.Dataplane.Spec.GetNetworking().Address != "127.0.0.1" {
 		listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.InboundListener(envoy_names.GetAdminListenerName(), proxy.Dataplane.Spec.GetNetworking().Address, adminPort)).
-			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-				Configure(envoy_listeners.StaticEndpoint(envoy_names.GetAdminListenerName(), adminReadyEndpoint, adminReadyEndpoint, envoyAdminClusterName)),
-			)).
+			Configure(envoy_listeners.TLSInspector()).
+			Configure(
+				envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+					Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticEnpointPaths)),
+				),
+				envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+					Configure(envoy_listeners.FilterChainMatch("tls")).
+					Configure(envoy_listeners.StaticTlsEndpoints(envoy_names.GetAdminListenerName(), ctx.ControlPlane.AdminProxyKeyPair, staticTlsEnpointPaths)),
+				)).
 			Build()
 		if err != nil {
 			return nil, err
