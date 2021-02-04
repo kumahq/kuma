@@ -21,7 +21,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
-	github.com/gruntwork-io/terratest v0.27.5
+	github.com/gruntwork-io/terratest v0.30.15
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
