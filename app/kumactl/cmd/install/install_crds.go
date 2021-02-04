@@ -2,7 +2,6 @@ package install
 
 import (
 	"context"
-	"strings"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -10,28 +9,22 @@ import (
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
-	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
 
 	k8s_apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
 
-const KumaCrdApiGroup = "kuma.io"
-
-type InstallCrdsArgs struct {
-	OnlyMissing bool
-}
-
-func newInstallCrdsCmd() *cobra.Command {
-	args := InstallCrdsArgs{}
+func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
+	args := ctx.Args
 
 	cmd := &cobra.Command{
 		Use:   "crds",
 		Short: "Install Kuma Custom Resource Definitions on Kubernetes",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			wantCrdFiles, err := GetCrdsFiles()
+			wantCrdFiles, err := ctx.InstallCrdTemplateFiles(args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read CRD files")
 			}
@@ -66,7 +59,7 @@ func newInstallCrdsCmd() *cobra.Command {
 				return errors.Wrap(err, "Failed obtaining CRDs from Kubernetes cluster")
 			}
 
-			installedCrds := filterKumaCrdNames(getCrdNamesFromList(crds))
+			installedCrds := ctx.FilterCrdNamesToInstall(getCrdNamesFromList(crds))
 			for _, installedCrdName := range installedCrds {
 				delete(crdsToInstallMap, installedCrdName)
 			}
@@ -93,18 +86,6 @@ func newInstallCrdsCmd() *cobra.Command {
 	return cmd
 }
 
-func filterKumaCrdNames(crdNames []string) []string {
-	var result []string
-
-	for _, name := range crdNames {
-		if strings.HasSuffix(name, KumaCrdApiGroup) {
-			result = append(result, name)
-		}
-	}
-
-	return result
-}
-
 func getCrdNamesFromList(crds *v1beta1.CustomResourceDefinitionList) []string {
 	var names []string
 
@@ -129,17 +110,4 @@ func mapCrdNamesToFiles(files []data.File) (map[string]data.File, error) {
 	}
 
 	return result, nil
-}
-
-func GetCrdsFiles() (data.FileList, error) {
-	helmFiles, err := data.ReadFiles(controlplane.HelmTemplates)
-	if err != nil {
-		return nil, err
-	}
-
-	crdFiles := helmFiles.Filter(func(file data.File) bool {
-		return strings.HasPrefix(file.FullPath, "/crds")
-	})
-
-	return crdFiles, nil
 }
