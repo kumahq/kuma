@@ -53,7 +53,7 @@ func DefaultDataplaneWatchdogFactory(
 ) (DataplaneWatchdogFactory, error) {
 	dataplaneProxyBuilder := defaultDataplaneProxyBuilder(rt, metadataTracker, apiVersion)
 	ingressProxyBuilder := defaultIngressProxyBuilder(rt, metadataTracker, apiVersion)
-	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, connectionInfoTracker, rt.ReadOnlyResourceManager(), rt.LookupIP())
+	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, connectionInfoTracker, rt.ReadOnlyResourceManager(), rt.LookupIP(), rt.EnvoyAdminClient())
 
 	deps := DataplaneWatchdogDependencies{
 		resManager:            rt.ResourceManager(),

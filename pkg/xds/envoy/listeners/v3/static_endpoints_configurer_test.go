@@ -1,4 +1,4 @@
-package v2_test
+package v3_test
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -9,9 +9,10 @@ import (
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
-var _ = Describe("StaticEndpointConfigurer", func() {
+var _ = Describe("StaticEndpointsConfigurer", func() {
 
 	type testCase struct {
 		listenerName    string
@@ -25,10 +26,17 @@ var _ = Describe("StaticEndpointConfigurer", func() {
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
-			listener, err := NewListenerBuilder(envoy.APIV2).
+			listener, err := NewListenerBuilder(envoy.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
-				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV2).
-					Configure(StaticEndpoint(given.listenerName, given.path, "/stats/prometheus", given.clusterName)))).
+				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
+					Configure(StaticEndpoints(given.listenerName,
+						[]*envoy_common.StaticEndpointPath{
+							{
+								ClusterName: given.clusterName,
+								Path:        given.path,
+								RewritePath: "/stats/prometheus",
+							},
+						})))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -56,7 +64,7 @@ var _ = Describe("StaticEndpointConfigurer", func() {
             - filters:
               - name: envoy.filters.network.http_connection_manager
                 typedConfig:
-                  '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                  '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   httpFilters:
                   - name: envoy.filters.http.router
                   routeConfig:
@@ -64,7 +72,7 @@ var _ = Describe("StaticEndpointConfigurer", func() {
                     virtualHosts:
                     - domains:
                       - '*'
-                      name: envoy_admin
+                      name: kuma:metrics:prometheus
                       routes:
                       - match:
                           prefix: /non-standard-path

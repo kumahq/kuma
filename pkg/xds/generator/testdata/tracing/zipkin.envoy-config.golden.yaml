@@ -1,17 +1,17 @@
 resources:
-  - name: tracing:zipkin
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      altStatName: tracing_zipkin
-      connectTimeout: 5s
-      loadAssignment:
-        clusterName: tracing:zipkin
-        endpoints:
-          - lbEndpoints:
-              - endpoint:
-                  address:
-                    socketAddress:
-                      address: zipkin.us
-                      portValue: 9090
-      name: tracing:zipkin
-      type: STRICT_DNS
+- name: tracing:zipkin
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    altStatName: tracing_zipkin
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: tracing:zipkin
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: zipkin.us
+                portValue: 9090
+    name: tracing:zipkin
+    type: STRICT_DNS
