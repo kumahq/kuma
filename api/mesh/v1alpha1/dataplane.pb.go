@@ -744,6 +744,7 @@ func (x *Dataplane_Networking_Inbound_Health) GetReady() bool {
 	return false
 }
 
+// ServiceProbe defines parameters for probing service's port
 type Dataplane_Networking_Inbound_ServiceProbe struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -756,9 +757,11 @@ type Dataplane_Networking_Inbound_ServiceProbe struct {
 	// Number of consecutive unhealthy checks before considering a host
 	// unhealthy.
 	UnhealthyThreshold *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=unhealthy_threshold,json=unhealthyThreshold,proto3" json:"unhealthy_threshold,omitempty"`
-	// Number of consecutive healthy checks before considering a host healthy.
-	HealthyThreshold *wrappers.UInt32Value                          `protobuf:"bytes,4,opt,name=healthy_threshold,json=healthyThreshold,proto3" json:"healthy_threshold,omitempty"`
-	Tcp              *Dataplane_Networking_Inbound_ServiceProbe_Tcp `protobuf:"bytes,5,opt,name=tcp,proto3" json:"tcp,omitempty"`
+	// Number of consecutive healthy checks before considering a host
+	// healthy.
+	HealthyThreshold *wrappers.UInt32Value `protobuf:"bytes,4,opt,name=healthy_threshold,json=healthyThreshold,proto3" json:"healthy_threshold,omitempty"`
+	// Tcp checker tries to establish tcp connection with destination
+	Tcp *Dataplane_Networking_Inbound_ServiceProbe_Tcp `protobuf:"bytes,5,opt,name=tcp,proto3" json:"tcp,omitempty"`
 }
 
 func (x *Dataplane_Networking_Inbound_ServiceProbe) Reset() {
