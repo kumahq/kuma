@@ -12,7 +12,7 @@ type InstallCrdsArgs struct {
 }
 
 type InstallCrdsContext struct {
-	Args                   InstallCrdsArgs
+	Args                    InstallCrdsArgs
 	InstallCrdTemplateFiles func(InstallCrdsArgs) (data.FileList, error)
 	FilterCrdNamesToInstall func([]string) []string
 }
