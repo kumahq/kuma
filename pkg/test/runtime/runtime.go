@@ -4,12 +4,14 @@ import (
 	"net"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -69,8 +71,10 @@ func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	builder.WithCaManager("builtin", builtin.NewBuiltinCaManager(builder.ResourceManager()))
 	builder.WithLeaderInfo(&component.LeaderInfoComponent{})
 	builder.WithLookupIP(net.LookupIP)
+	builder.WithEnvoyAdminClient(&DummyEnvoyAdminClient{})
 	builder.WithEventReaderFactory(events.NewEventBus())
 	builder.WithAPIManager(customization.NewAPIList())
+	builder.WithXDSHooks(&xds_hooks.Hooks{})
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)
@@ -102,4 +106,20 @@ func newResourceManager(builder *core_runtime.Builder) core_manager.ResourceMana
 	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), secret_cipher.None(), nil)
 	customManagers[system.SecretType] = secretManager
 	return customizableManager
+}
+
+type DummyEnvoyAdminClient struct {
+	PostQuitCalled *int
+}
+
+func (d *DummyEnvoyAdminClient) GenerateAPIToken(dp *mesh_core.DataplaneResource) (string, error) {
+	return "token", nil
+}
+
+func (d *DummyEnvoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) error {
+	if d.PostQuitCalled != nil {
+		*d.PostQuitCalled++
+	}
+
+	return nil
 }

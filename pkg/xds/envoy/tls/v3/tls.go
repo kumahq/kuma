@@ -6,13 +6,15 @@ import (
 	envoy_tls "github.com/envoyproxy/go-control-plane/envoy/extensions/transport_sockets/tls/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
+	"github.com/kumahq/kuma/pkg/tls"
+
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	"github.com/kumahq/kuma/pkg/xds/envoy/tls"
+	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
 
 // CreateDownstreamTlsContext creates DownstreamTlsContext for incoming connections
@@ -62,11 +64,11 @@ func CreateUpstreamTlsContext(ctx xds_context.Context, metadata *core_xds.Datapl
 }
 
 func createCommonTlsContext(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, validationSANMatcher *envoy_type_matcher.StringMatcher) (*envoy_tls.CommonTlsContext, error) {
-	meshCaSecret, err := sdsSecretConfig(ctx, tls.MeshCaResource, metadata)
+	meshCaSecret, err := sdsSecretConfig(ctx, xds_tls.MeshCaResource, metadata)
 	if err != nil {
 		return nil, err
 	}
-	identitySecret, err := sdsSecretConfig(ctx, tls.IdentityCertResource, metadata)
+	identitySecret, err := sdsSecretConfig(ctx, xds_tls.IdentityCertResource, metadata)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +204,7 @@ func dataSourceFromBytes(bytes []byte) *envoy_core.DataSource {
 func MeshSpiffeIDPrefixMatcher(mesh string) *envoy_type_matcher.StringMatcher {
 	return &envoy_type_matcher.StringMatcher{
 		MatchPattern: &envoy_type_matcher.StringMatcher_Prefix{
-			Prefix: tls.MeshSpiffeIDPrefix(mesh),
+			Prefix: xds_tls.MeshSpiffeIDPrefix(mesh),
 		},
 	}
 }
@@ -210,7 +212,28 @@ func MeshSpiffeIDPrefixMatcher(mesh string) *envoy_type_matcher.StringMatcher {
 func ServiceSpiffeIDMatcher(mesh string, service string) *envoy_type_matcher.StringMatcher {
 	return &envoy_type_matcher.StringMatcher{
 		MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
-			Exact: tls.ServiceSpiffeID(mesh, service),
+			Exact: xds_tls.ServiceSpiffeID(mesh, service),
+		},
+	}
+}
+
+func StaticDownstreamTlsContext(keyPair *tls.KeyPair) *envoy_tls.DownstreamTlsContext {
+	return &envoy_tls.DownstreamTlsContext{
+		CommonTlsContext: &envoy_tls.CommonTlsContext{
+			TlsCertificates: []*envoy_tls.TlsCertificate{
+				{
+					CertificateChain: &envoy_core.DataSource{
+						Specifier: &envoy_core.DataSource_InlineBytes{
+							InlineBytes: keyPair.CertPEM,
+						},
+					},
+					PrivateKey: &envoy_core.DataSource{
+						Specifier: &envoy_core.DataSource_InlineBytes{
+							InlineBytes: keyPair.KeyPEM,
+						},
+					},
+				},
+			},
 		},
 	}
 }

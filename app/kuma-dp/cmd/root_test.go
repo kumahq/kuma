@@ -8,7 +8,7 @@ import (
 var _ = Describe("root", func() {
 	It("should be possible to run `kuma-dp` without a sub-command", func() {
 		// given
-		cmd := newRootCmd()
+		cmd := NewRootCmd(DefaultRootContext())
 		cmd.SetArgs([]string{})
 		// when
 		err := cmd.Execute()
