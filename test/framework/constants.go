@@ -36,9 +36,6 @@ const (
 	kumaCPAPIPort        = 5681
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 
-	cniApp       = "kuma-cni"
-	cniNamespace = "kube-system"
-
 	redirectPortInbound  = "15006"
 	redirectPortOutbound = "15001"
 )
@@ -48,6 +45,9 @@ var HelmSubChartPrefix = ""
 
 var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
+
+var CNIApp = "kuma-cni"
+var CNINamespace = "kube-system"
 
 var KumaImageRegistry = "kuma"
 var KumaCPImageRepo = "kuma-cp"

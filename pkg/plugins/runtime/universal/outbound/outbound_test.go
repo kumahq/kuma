@@ -134,6 +134,124 @@ var _ = Describe("UpdateOutbound", func() {
 			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(0))
 		})
 
+		It("should update dataplane outbounds when new service in the same mesh is added to an ingress", func() {
+			// when
+			err := rm.Create(context.Background(), &mesh.DataplaneResource{
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+							AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+								{
+									Mesh: "default",
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "service-2",
+									},
+								},
+							},
+						},
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port: 8081,
+								Tags: map[string]string{
+									"kuma.io/service": "ingress",
+								},
+							},
+						},
+					},
+				},
+			}, store.CreateByKey("dp-2", "default"))
+			Expect(err).ToNot(HaveOccurred())
+			err = vipOutboundsReconciler.UpdateVIPOutbounds(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+			// then
+			dp1 := mesh.NewDataplaneResource()
+			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(1))
+			Expect(dp1.Spec.Networking.Outbound[0].Tags["kuma.io/service"]).To(Equal("service-2"))
+			Expect(dp1.Spec.Networking.Outbound[0].Address).To(Equal("240.0.0.2"))
+		})
+
+		It("shouldn't update dataplane outbounds when new service in a different mesh is added to an ingress", func() {
+			// when
+			err := rm.Create(context.Background(), &mesh.DataplaneResource{
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+							AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+								{
+									Mesh: "other-mesh",
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "service-2",
+									},
+								},
+							},
+						},
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port: 8081,
+								Tags: map[string]string{
+									"kuma.io/service": "ingress",
+								},
+							},
+						},
+					},
+				},
+			}, store.CreateByKey("dp-2", "default"))
+			Expect(err).ToNot(HaveOccurred())
+			err = vipOutboundsReconciler.UpdateVIPOutbounds(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+			// then
+			dp1 := mesh.NewDataplaneResource()
+			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(0))
+		})
+
+		It("should update dataplane outbounds when new service is added to an ingress in a different mesh", func() {
+			// when
+			err := rm.Create(context.Background(), mesh.NewMeshResource(), store.CreateByKey("another-mesh", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			err = rm.Create(context.Background(), &mesh.DataplaneResource{
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+							AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+								{
+									Mesh: "default",
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "service-2",
+									},
+								},
+							},
+						},
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+							{
+								Port: 8081,
+								Tags: map[string]string{
+									"kuma.io/service": "ingress",
+								},
+							},
+						},
+					},
+				},
+			}, store.CreateByKey("dp-2", "another-mesh"))
+			Expect(err).ToNot(HaveOccurred())
+			err = vipOutboundsReconciler.UpdateVIPOutbounds(context.Background())
+			Expect(err).ToNot(HaveOccurred())
+			// then
+			dp1 := mesh.NewDataplaneResource()
+			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(1))
+			Expect(dp1.Spec.Networking.Outbound[0].Tags["kuma.io/service"]).To(Equal("service-2"))
+			Expect(dp1.Spec.Networking.Outbound[0].Address).To(Equal("240.0.0.2"))
+		})
+
 		Context("outbounds already updated", func() {
 			BeforeEach(func() {
 				err := rm.Create(context.Background(), &mesh.DataplaneResource{
