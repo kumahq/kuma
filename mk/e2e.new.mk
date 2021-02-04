@@ -44,12 +44,8 @@ test/e2e/test: PKG_LIST=./test/e2e/...
 test/e2e/test:
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
-<<<<<<< HEAD
-		$(GO_TEST) -v -timeout=45m ./test/e2e/...
-=======
 	API_VERSION="$(API_VERSION)" \
 		$(GO_TEST) -v -timeout=45m $(PKG_LIST)
->>>>>>> 4d2d01cd0... chore(kuma-cp) support other service name in DP injector (#1491)
 
 # test/e2e/debug is used for quicker feedback of E2E tests (ex. debugging flaky tests)
 # It runs tests with fail fast which means you don't have to wait for all tests to get information that something failed
