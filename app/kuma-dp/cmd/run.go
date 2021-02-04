@@ -116,12 +116,13 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			shouldQuit := setupQuitChannel()
 
 			dataplane, err := envoy.New(envoy.Opts{
-				Config:    *cfg,
-				Generator: rootCtx.BootstrapGenerator,
-				Dataplane: dp,
-				Stdout:    cmd.OutOrStdout(),
-				Stderr:    cmd.OutOrStderr(),
-				Quit:      shouldQuit,
+				Config:          *cfg,
+				Generator:       rootCtx.BootstrapGenerator,
+				Dataplane:       dp,
+				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
+				Stdout:          cmd.OutOrStdout(),
+				Stderr:          cmd.OutOrStderr(),
+				Quit:            shouldQuit,
 			})
 			if err != nil {
 				return err

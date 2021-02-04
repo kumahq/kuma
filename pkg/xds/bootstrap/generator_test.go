@@ -192,6 +192,9 @@ var _ = Describe("bootstrapGenerator", func() {
 				Name:               "name.namespace",
 				AdminPort:          1234,
 				DataplaneTokenPath: "/tmp/token",
+				DynamicMetadata: map[string]string{
+					"test": "value",
+				},
 				DataplaneResource: `
 {
   "type": "Dataplane",
