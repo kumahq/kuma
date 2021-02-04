@@ -60,7 +60,7 @@ hds_config:
       - fromPlugin:
           name: envoy.grpc_credentials.file_based_metadata
           typedConfig:
-            '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+            '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
             secretData:
               filename: {{ .DataplaneTokenPath }}
       credentialsFactoryName: envoy.grpc_credentials.file_based_metadata

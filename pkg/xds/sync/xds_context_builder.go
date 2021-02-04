@@ -3,6 +3,8 @@ package sync
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -16,6 +18,7 @@ type xdsContextBuilder struct {
 	resManager            manager.ReadOnlyResourceManager
 	connectionInfoTracker ConnectionInfoTracker
 	lookupIP              lookup.LookupIPFunc
+	envoyAdminClient      admin.EnvoyAdminClient
 
 	cpContext *xds_context.ControlPlaneContext
 }
@@ -25,11 +28,13 @@ func newXDSContextBuilder(
 	connectionInfoTracker ConnectionInfoTracker,
 	resManager manager.ReadOnlyResourceManager,
 	lookupIP lookup.LookupIPFunc,
+	envoyAdminClient admin.EnvoyAdminClient,
 ) *xdsContextBuilder {
 	return &xdsContextBuilder{
 		resManager:            resManager,
 		connectionInfoTracker: connectionInfoTracker,
 		lookupIP:              lookupIP,
+		envoyAdminClient:      envoyAdminClient,
 		cpContext:             cpContext,
 	}
 }
@@ -57,8 +62,9 @@ func (c *xdsContextBuilder) buildMeshedContext(streamId int64, meshName string, 
 
 func (c *xdsContextBuilder) buildContext(streamId int64) *xds_context.Context {
 	return &xds_context.Context{
-		ControlPlane:   c.cpContext,
-		ConnectionInfo: c.connectionInfoTracker.ConnectionInfo(streamId),
-		Mesh:           xds_context.MeshContext{},
+		ControlPlane:     c.cpContext,
+		ConnectionInfo:   c.connectionInfoTracker.ConnectionInfo(streamId),
+		Mesh:             xds_context.MeshContext{},
+		EnvoyAdminClient: c.envoyAdminClient,
 	}
 }

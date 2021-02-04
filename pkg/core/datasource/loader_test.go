@@ -120,4 +120,19 @@ var _ = Describe("DataSource Loader", func() {
 			Expect(data).To(Equal([]byte("abc")))
 		})
 	})
+
+	Context("Inline string", func() {
+		It("should load from inline string", func() {
+			// when
+			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
+				Type: &system_proto.DataSource_InlineString{
+					InlineString: "abc",
+				},
+			})
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(data).To(Equal([]byte("abc")))
+		})
+	})
 })
