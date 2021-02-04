@@ -2,18 +2,14 @@ package install_test
 
 import (
 	"bytes"
-	"io/ioutil"
 	"path/filepath"
-
-	"github.com/kumahq/kuma/app/kumactl/cmd"
-	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
-	"github.com/kumahq/kuma/pkg/test/golden"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/app/kumactl/cmd"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/tls"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -79,21 +75,7 @@ var _ = Describe("kumactl install control-plane", func() {
 
 			// and output matches golden files
 			actual := stdout.Bytes()
-			actualManifests := data.SplitYAML(data.File{Data: actual})
-
-			goldenFilePath := filepath.Join("testdata", given.goldenFile)
-			if golden.UpdateGoldenFiles() {
-				err := ioutil.WriteFile(goldenFilePath, actual, 0664)
-				Expect(err).ToNot(HaveOccurred())
-			}
-			expected, err := ioutil.ReadFile(goldenFilePath)
-			Expect(err).ToNot(HaveOccurred())
-			expectedManifests := data.SplitYAML(data.File{Data: expected})
-
-			Expect(len(actualManifests)).To(Equal(len(expectedManifests)), golden.RerunMsg)
-			for i := range expectedManifests {
-				Expect(actualManifests[i]).To(MatchYAML(expectedManifests[i]), golden.RerunMsg)
-			}
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", given.goldenFile))
 		},
 		Entry("should generate Kubernetes resources with default settings", testCase{
 			extraArgs: []string{
