@@ -37,6 +37,8 @@ func (l *loader) Load(ctx context.Context, mesh string, source *system_proto.Dat
 		data, err = l.loadSecret(ctx, mesh, source.GetSecret())
 	case *system_proto.DataSource_Inline:
 		data, err = source.GetInline().GetValue(), nil
+	case *system_proto.DataSource_InlineString:
+		data, err = []byte(source.GetInlineString()), nil
 	case *system_proto.DataSource_File:
 		data, err = ioutil.ReadFile(source.GetFile())
 	default:
