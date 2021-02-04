@@ -271,4 +271,16 @@ metadata:
 			return stdout, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 503 Service Unavailable"))
 	})
+
+	It("should support jobs", func() {
+		// Remote 1
+		// k8s access remote k8s service
+		err := DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_80.mesh")(remote_1)
+		Expect(err).ToNot(HaveOccurred())
+
+		// Remote 2
+		// k8s access remote universal service
+		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_8080.mesh")(remote_2)
+		Expect(err).ToNot(HaveOccurred())
+	})
 })
