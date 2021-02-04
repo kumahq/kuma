@@ -29,10 +29,14 @@ var runLog = dataplaneLog.WithName("run")
 func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cfg := rootCtx.Config
 	var dp *rest.Resource
+	var tmpDir string
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Dataplane (Envoy)",
 		Long:  `Launch Dataplane (Envoy).`,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return nil
+		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
 			// only support configuration via environment variables and args
 			if err := config.Load("", cfg); err != nil {
@@ -68,16 +72,11 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 
 			if cfg.DataplaneRuntime.ConfigDir == "" {
-				tmpDir, err := ioutil.TempDir("", "kuma-dp-")
+				tmpDir, err = ioutil.TempDir("", "kuma-dp-")
 				if err != nil {
 					runLog.Error(err, "unable to create a temporary directory to store generated Envoy config at")
 					return err
 				}
-				defer func() {
-					if err := os.RemoveAll(tmpDir); err != nil {
-						runLog.Error(err, "unable to remove a temporary directory with a generated Envoy config")
-					}
-				}()
 				cfg.DataplaneRuntime.ConfigDir = tmpDir
 				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
 			}
@@ -107,6 +106,13 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
+			if tmpDir != "" { // clean up temp dir if it was created
+				defer func() {
+					if err := os.RemoveAll(tmpDir); err != nil {
+						runLog.Error(err, "unable to remove a temporary directory with a generated Envoy config")
+					}
+				}()
+			}
 			shouldQuit := setupQuitChannel()
 
 			dataplane, err := envoy.New(envoy.Opts{
