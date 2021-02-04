@@ -336,6 +336,11 @@ jobs:
           export PATH=$HOME/go/bin:$PATH
           make dev/tools
     - run:
+        name: "Setup Helm"
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          helm repo add kuma https://kumahq.github.io/charts
+    - run:
         name: "Run integration tests"
         command: |
           export PATH=$HOME/go/bin:$PATH
