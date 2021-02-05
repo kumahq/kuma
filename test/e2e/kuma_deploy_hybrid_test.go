@@ -283,4 +283,18 @@ metadata:
 		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_8080.mesh")(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 	})
+
+	It("should support failing jobs", func() {
+		// setup traffic permission
+		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-non-default", nonDefaultMesh) // remove builtin traffic permission
+		Expect(err).ToNot(HaveOccurred())
+
+		err = YamlUniversal(trafficPermissionAllTo2Remote(nonDefaultMesh))(global)
+		Expect(err).ToNot(HaveOccurred())
+
+		// Remote 1
+		// k8s can not access remote k8s service
+		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_8080.mesh")(remote_1)
+		Expect(err).To(HaveOccurred())
+	})
 })
