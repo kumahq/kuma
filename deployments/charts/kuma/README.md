@@ -13,6 +13,7 @@ A Helm chart for the Kuma Control Plane
 | global.image.registry | string | `"kong-docker-kuma-docker.bintray.io"` | Default registry for all Kuma Images |
 | global.image.tag | string | `nil` | The default tag for all Kuma images, which itself defaults to .Chart.AppVersion |
 | patchSystemNamespace | bool | `true` | Whether or not to patch the target namespace with the system label |
+| installCrdsOnUpgrade | object | `{"enabled":true,"imagePullSecrets":[]}` | Whether ot not install new CRDs before upgrade  (if any were introduced    with the new version of Kuma) |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,remote,global |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
@@ -66,6 +67,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
+| kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 
 ## Custom Resource Definitions
 

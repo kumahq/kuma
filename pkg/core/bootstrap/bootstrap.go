@@ -8,6 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	"github.com/kumahq/kuma/pkg/dp-server/server"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/pkg/errors"
@@ -95,6 +96,7 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(builder.ResourceManager(), builder.Config()))
 	builder.WithAPIManager(customization.NewAPIList())
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
+	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 
 	if err := initializeAfterBootstrap(cfg, builder); err != nil {
 		return nil, err

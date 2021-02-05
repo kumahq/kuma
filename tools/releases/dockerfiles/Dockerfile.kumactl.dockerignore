@@ -3,3 +3,4 @@
 !tools/releases/templates/LICENSE
 !tools/releases/templates/NOTICE
 !tools/releases/templates/README
+!tools/releases/templates/install_missing_crds.sh
