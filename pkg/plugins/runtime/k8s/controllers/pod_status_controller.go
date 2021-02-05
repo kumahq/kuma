@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/envoy/admin"
@@ -97,8 +98,7 @@ func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 
 		err := r.EnvoyAdminClient.PostQuit(dp)
 		if err != nil {
-			// We do not want the reconciler to ever fail. Just log the error
-			log.Error(err, "envoy admin client failed")
+			return kube_ctrl.Result{}, errors.Wrapf(err, "envoy admin client failed. Most probably the pod is already going down.")
 		}
 	}
 
