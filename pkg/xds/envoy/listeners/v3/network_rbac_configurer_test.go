@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/xds"
+
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -18,21 +20,22 @@ import (
 var _ = Describe("NetworkRbacConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		clusters        []envoy_common.ClusterSubset
-		rbacEnabled     bool
-		permission      *mesh_core.TrafficPermissionResource
-		expected        string
+		listenerName     string
+		listenerProtocol xds.SocketAddressProtocol
+		listenerAddress  string
+		listenerPort     uint32
+		statsName        string
+		clusters         []envoy_common.ClusterSubset
+		rbacEnabled      bool
+		permission       *mesh_core.TrafficPermissionResource
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerProtocol, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(TcpProxy(given.statsName, given.clusters...)).
 					Configure(NetworkRBAC(given.listenerName, given.rbacEnabled, given.permission)))).

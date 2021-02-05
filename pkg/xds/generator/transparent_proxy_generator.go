@@ -65,7 +65,7 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	}
 
 	inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.InboundListener(inboundName, "0.0.0.0", redirectPortInbound)).
+		Configure(envoy_listeners.InboundListener(inboundName, model.SocketAddressProtocolTCP, "0.0.0.0", redirectPortInbound)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxy(inboundName, envoy_common.ClusterSubset{ClusterName: inboundName})))).
 		Configure(envoy_listeners.OriginalDstForwarder()).

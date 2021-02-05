@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/xds"
+
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
@@ -14,18 +16,19 @@ import (
 var _ = Describe("HttpConnectionManagerConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		expected        string
+		listenerName     string
+		listenerProtocol xds.SocketAddressProtocol
+		listenerAddress  string
+		listenerPort     uint32
+		statsName        string
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV2).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerProtocol, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV2).
 					Configure(HttpConnectionManager(given.statsName)))).
 				Build()

@@ -94,6 +94,14 @@ type CLACache interface {
 	GetCLA(ctx context.Context, meshName, meshHash, service string, apiVersion envoy_common.APIVersion) (proto.Message, error)
 }
 
+// SocketAddressProtocol is the L4 protocol the listener should bind to
+type SocketAddressProtocol int32
+
+const (
+	SocketAddressProtocolTCP SocketAddressProtocol = 0
+	SocketAddressProtocolUDP SocketAddressProtocol = 1
+)
+
 type Proxy struct {
 	Id         ProxyId
 	APIVersion envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.

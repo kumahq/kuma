@@ -20,21 +20,22 @@ import (
 var _ = Describe("ServerMtlsConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		clusters        []envoy_common.ClusterSubset
-		ctx             xds_context.Context
-		metadata        core_xds.DataplaneMetadata
-		expected        string
+		listenerName     string
+		listenerProtocol core_xds.SocketAddressProtocol
+		listenerAddress  string
+		listenerPort     uint32
+		statsName        string
+		clusters         []envoy_common.ClusterSubset
+		ctx              xds_context.Context
+		metadata         core_xds.DataplaneMetadata
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerProtocol, given.listenerAddress, given.listenerPort)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(ServerSideMTLS(given.ctx, &given.metadata)).
 					Configure(TcpProxy(given.statsName, given.clusters...)))).

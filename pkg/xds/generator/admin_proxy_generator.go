@@ -77,7 +77,7 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
 	if proxy.Dataplane.Spec.GetNetworking().Address != "127.0.0.1" {
 		listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.InboundListener(envoy_names.GetAdminListenerName(), proxy.Dataplane.Spec.GetNetworking().Address, adminPort)).
+			Configure(envoy_listeners.InboundListener(envoy_names.GetAdminListenerName(), core_xds.SocketAddressProtocolTCP, proxy.Dataplane.Spec.GetNetworking().Address, adminPort)).
 			Configure(envoy_listeners.TLSInspector()).
 			Configure(
 				envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).

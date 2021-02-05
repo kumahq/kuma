@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/xds"
+
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
@@ -14,17 +16,18 @@ import (
 var _ = Describe("InboundListenerConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		expected        string
+		listenerName     string
+		listenerProtocol xds.SocketAddressProtocol
+		listenerAddress  string
+		listenerPort     uint32
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerProtocol, given.listenerAddress, given.listenerPort)).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -35,10 +38,11 @@ var _ = Describe("InboundListenerConfigurer", func() {
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
 		},
-		Entry("basic listener", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
-			listenerAddress: "192.168.0.1",
-			listenerPort:    8080,
+		Entry("basic TCP listener", testCase{
+			listenerName:     "inbound:192.168.0.1:8080",
+			listenerProtocol: xds.SocketAddressProtocolTCP,
+			listenerAddress:  "192.168.0.1",
+			listenerPort:     8080,
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
@@ -46,6 +50,21 @@ var _ = Describe("InboundListenerConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
+`,
+		}),
+		Entry("basic UDP listener", testCase{
+			listenerName:     "inbound:192.168.0.1:8080",
+			listenerProtocol: xds.SocketAddressProtocolUDP,
+			listenerAddress:  "192.168.0.1",
+			listenerPort:     8080,
+			expected: `
+            name: inbound:192.168.0.1:8080
+            trafficDirection: INBOUND
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 8080
+                protocol: UDP
 `,
 		}),
 	)
