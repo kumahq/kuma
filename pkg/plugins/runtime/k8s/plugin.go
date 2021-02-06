@@ -90,6 +90,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addPodReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
+	if err := addPodStatusReconciler(mgr, rt, converter); err != nil {
+		return err
+	}
 	if err := addDNS(mgr, rt, converter); err != nil {
 		return err
 	}
@@ -146,6 +149,18 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		ResourceConverter: converter,
 		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
 		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+	reconciler := &controllers.PodStatusReconciler{
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-jobs-syncer"),
+		Scheme:            mgr.GetScheme(),
+		Log:               core.Log.WithName("controllers").WithName("Pod"),
+		ResourceConverter: converter,
+		EnvoyAdminClient:  rt.EnvoyAdminClient(),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
