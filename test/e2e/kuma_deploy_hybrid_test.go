@@ -238,6 +238,17 @@ metadata:
 			"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
+
+		// Remote 1
+		// check for job support
+		// k8s access remote k8s service
+		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_80.mesh")(remote_1)
+		Expect(err).ToNot(HaveOccurred())
+
+		// Remote 2
+		// k8s access remote universal service
+		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_8080.mesh")(remote_2)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should sync traffic permissions", func() {
@@ -270,31 +281,12 @@ metadata:
 				"curl", "-v", "-m", "3", "localhost:4001")
 			return stdout, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 503 Service Unavailable"))
-	})
-
-	It("should support jobs", func() {
-		// Remote 1
-		// k8s access remote k8s service
-		err := DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_80.mesh")(remote_1)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Remote 2
-		// k8s access remote universal service
-		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_8080.mesh")(remote_2)
-		Expect(err).ToNot(HaveOccurred())
-	})
-
-	It("should support failing jobs", func() {
-		// setup traffic permission
-		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-non-default", nonDefaultMesh) // remove builtin traffic permission
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlUniversal(trafficPermissionAllTo2Remote(nonDefaultMesh))(global)
-		Expect(err).ToNot(HaveOccurred())
 
 		// Remote 1
+		// check for failing job support
 		// k8s can not access remote k8s service
 		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_8080.mesh")(remote_1)
 		Expect(err).To(HaveOccurred())
 	})
+
 })
