@@ -6,6 +6,10 @@ API_VERSION ?= v2
 KUMA_UNIVERSAL_DOCKER_IMAGE ?= kuma-universal
 KUMA_UNIVERSAL_DOCKERFILE ?= test/dockerfiles/Dockerfile.universal
 
+TEST_NAMES = $(shell ls -1 ./test/e2e)
+ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
+PKG_LIST ?= $(ALL_TESTS)
+
 define gen-k8sclusters
 .PHONY: test/e2e/kind/start/cluster/$1
 test/e2e/kind/start/cluster/$1:
@@ -29,6 +33,10 @@ endef
 
 $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
 
+.PHHONY: test/e2e/list
+test/e2e/list:
+	@echo $(ALL_TESTS)
+
 .PHONY: docker/build/universal
 docker/build/universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/kumactl/kumactl
 	DOCKER_BUILDKIT=1 \
@@ -41,7 +49,6 @@ test/e2e/kind/start: $(K8SCLUSTERS_START_TARGETS)
 test/e2e/kind/stop: $(K8SCLUSTERS_STOP_TARGETS)
 
 .PHONY: test/e2e/test
-test/e2e/test: PKG_LIST=./test/e2e/...
 test/e2e/test:
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
@@ -54,7 +61,6 @@ test/e2e/test:
 # GINKGO_EDITOR_INTEGRATION is required to work with focused test. Normally they exit with non 0 code which prevents clusters to be cleaned up.
 # We run ginkgo instead of "go test" to fail fast (builtin "go test" fail fast does not seem to work with individual ginkgo tests)
 .PHONY: test/e2e/debug
-test/e2e/debug: PKG_LIST=./test/e2e/...
 test/e2e/debug: build/kumactl images docker/build/universal test/e2e/kind/start
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
