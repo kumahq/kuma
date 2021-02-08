@@ -19,6 +19,7 @@ func Setup(rt runtime.Runtime) error {
 		rt.Config().DNSServer.Port,
 		rt.DNSResolver(),
 		rt.Metrics(),
+		DnsNameToKumaCompliant,
 	)
 	if err != nil {
 		return err
