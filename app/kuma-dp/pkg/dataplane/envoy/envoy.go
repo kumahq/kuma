@@ -12,8 +12,8 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
@@ -25,14 +25,23 @@ var (
 	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 )
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource, ev EnvoyVersion) (proto.Message, error)
+type BootstrapParams struct {
+	Dataplane        *rest.Resource
+	BootstrapVersion types.BootstrapVersion
+	EnvoyVersion     EnvoyVersion
+	DynamicMetadata  map[string]string
+}
+
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error)
 
 type Opts struct {
-	Config    kuma_dp.Config
-	Generator BootstrapConfigFactoryFunc
-	Dataplane *rest.Resource
-	Stdout    io.Writer
-	Stderr    io.Writer
+	Config          kuma_dp.Config
+	Generator       BootstrapConfigFactoryFunc
+	Dataplane       *rest.Resource
+	DynamicMetadata map[string]string
+	Stdout          io.Writer
+	Stderr          io.Writer
+	Quit            chan struct{}
 }
 
 func New(opts Opts) (*Envoy, error) {
@@ -108,7 +117,12 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	}
 	runLog.Info("fetched Envoy version", "version", envoyVersion)
 	runLog.Info("generating bootstrap configuration")
-	bootstrapConfig, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, e.opts.Dataplane, *envoyVersion)
+	bootstrapConfig, version, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
+		Dataplane:        e.opts.Dataplane,
+		BootstrapVersion: types.BootstrapVersion(e.opts.Config.Dataplane.BootstrapVersion),
+		EnvoyVersion:     *envoyVersion,
+		DynamicMetadata:  e.opts.DynamicMetadata,
+	})
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 	}
@@ -141,10 +155,13 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		// so, let's turn it off to simplify getting started experience.
 		"--disable-hot-restart",
 	}
+	if version != "" { // version is always send by Kuma CP, but we check empty for backwards compatibility reasons (new Kuma DP connects to old Kuma CP)
+		args = append(args, "--bootstrap-version", string(version))
+	}
 	command := exec.CommandContext(ctx, resolvedPath, args...)
 	command.Stdout = e.opts.Stdout
 	command.Stderr = e.opts.Stderr
-	runLog.Info("starting Envoy")
+	runLog.Info("starting Envoy", "args", args)
 	if err := command.Start(); err != nil {
 		runLog.Error(err, "the envoy executable was found at "+resolvedPath+" but an error occurred when executing it")
 		return err
@@ -165,6 +182,10 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		} else {
 			runLog.Info("Envoy terminated successfully")
 		}
+		if e.opts.Quit != nil {
+			close(e.opts.Quit)
+		}
+
 		return err
 	}
 }

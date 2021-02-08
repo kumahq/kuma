@@ -1,6 +1,7 @@
 package resolver
 
 import (
+	"strings"
 	"sync"
 
 	"github.com/miekg/dns"
@@ -12,6 +13,7 @@ import (
 type DNSResolver interface {
 	GetDomain() string
 	SetVIPs(list vips.List)
+	GetVIPs() vips.List
 	SetVIPsChangedHandler(handler vips.ChangeHandler)
 
 	ForwardLookup(service string) (string, error)
@@ -45,6 +47,12 @@ func (s *dnsResolver) SetVIPs(list vips.List) {
 	if s.handler != nil {
 		s.handler(s.viplist)
 	}
+}
+
+func (s *dnsResolver) GetVIPs() vips.List {
+	s.RLock()
+	defer s.RUnlock()
+	return s.viplist
 }
 
 func (s *dnsResolver) SetVIPsChangedHandler(handler vips.ChangeHandler) {
@@ -118,7 +126,10 @@ func (s *dnsResolver) serviceFromName(name string) (string, error) {
 		return "", errors.Errorf("wrong DNS name: %s", name)
 	}
 
-	service := split[0]
+	// If it terminates with the domain we remove it.
+	if split[len(split)-1] == s.domain {
+		split = split[0 : len(split)-1]
+	}
 
-	return service, nil
+	return strings.Join(split, "."), nil
 }

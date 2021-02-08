@@ -2063,6 +2063,35 @@ _kumactl_install_control-plane()
     noun_aliases=()
 }
 
+_kumactl_install_crds()
+{
+    last_command="kumactl_install_crds"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--only-missing")
+    local_nonpersistent_flags+=("--only-missing")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_install_dns()
 {
     last_command="kumactl_install_dns"
@@ -2152,6 +2181,10 @@ _kumactl_install_metrics()
     flags+=("--namespace=")
     two_word_flags+=("--namespace")
     local_nonpersistent_flags+=("--namespace=")
+    flags+=("--without-grafana")
+    local_nonpersistent_flags+=("--without-grafana")
+    flags+=("--without-prometheus")
+    local_nonpersistent_flags+=("--without-prometheus")
     flags+=("--config-file=")
     two_word_flags+=("--config-file")
     flags+=("--log-level=")
@@ -2257,6 +2290,7 @@ _kumactl_install()
 
     commands=()
     commands+=("control-plane")
+    commands+=("crds")
     commands+=("dns")
     commands+=("logging")
     commands+=("metrics")

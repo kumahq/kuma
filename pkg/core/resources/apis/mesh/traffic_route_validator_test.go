@@ -163,6 +163,28 @@ var _ = Describe("TrafficRoute", func() {
                   message: mandatory tag "kuma.io/service" is missing
 `,
 			}),
+			Entry("wrong ring hash function in the load balancer", testCase{
+				route: `
+                sources:
+                - match:
+                    kuma.io/service: '*'
+                destinations:
+                - match:
+                    kuma.io/service: '*'
+                conf:
+                  split:
+                  - destination:
+                      kuma.io/service: 'backend'
+                  loadBalancer:
+                    ringHash:
+                      hashFunction: 'INVALID_HASH_FUNCTION'
+`,
+				expected: `
+                violations:
+                - field: conf.loadBalancer.ringHash.hashFunction
+                  message: must have a valid hash function
+`,
+			}),
 		)
 	})
 })

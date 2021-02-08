@@ -80,16 +80,199 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									Port:        8080,
 									ServicePort: 80,
 									Tags: map[string]string{
-										"service": "mobile",
-										"version": "v1",
+										mesh_proto.ServiceTag: "mobile",
+										"version":             "v1",
 									},
 								},
 								{
 									Port:        8090,
 									ServicePort: 90,
 									Tags: map[string]string{
-										"service": "metrics",
-										"version": "v1",
+										mesh_proto.ServiceTag: "metrics",
+										"version":             "v1",
+									},
+								},
+							},
+						},
+					},
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								Id:                     "1",
+								ControlPlaneInstanceId: "node-001",
+								ConnectTime:            util_proto.MustTimestampProto(t1),
+								Status: &mesh_proto.DiscoverySubscriptionStatus{
+									Total: &mesh_proto.DiscoveryServiceStats{
+										ResponsesSent:     10,
+										ResponsesRejected: 1,
+									},
+								},
+								Version: &mesh_proto.Version{
+									KumaDp: &mesh_proto.KumaDpVersion{
+										Version:   "1.0.0",
+										GitTag:    "v1.0.0",
+										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+										BuildDate: "2019-08-07T11:26:06Z",
+									},
+									Envoy: &mesh_proto.EnvoyVersion{
+										Version: "1.16.0",
+										Build:   "hash/1.16.0/RELEASE",
+									},
+								},
+							},
+							{
+								Id:                     "2",
+								ControlPlaneInstanceId: "node-002",
+								ConnectTime:            util_proto.MustTimestampProto(t2),
+								Status: &mesh_proto.DiscoverySubscriptionStatus{
+									Total: &mesh_proto.DiscoveryServiceStats{
+										ResponsesSent:     20,
+										ResponsesRejected: 2,
+									},
+								},
+								Version: &mesh_proto.Version{
+									KumaDp: &mesh_proto.KumaDpVersion{
+										Version:   "1.0.2",
+										GitTag:    "v1.0.2",
+										GitCommit: "9d868cd8681c4021bb4a10bf2306ca613ba4de42",
+										BuildDate: "2020-08-07T11:26:06Z",
+									},
+									Envoy: &mesh_proto.EnvoyVersion{
+										Version: "1.16.1",
+										Build:   "hash/1.16.1/RELEASE",
+									},
+								},
+							},
+						},
+						MTLS: &mesh_proto.DataplaneInsight_MTLS{
+							CertificateExpirationTime: &timestamp.Timestamp{
+								Seconds: 1588926502,
+							},
+							LastCertificateRegeneration: &timestamp.Timestamp{
+								Seconds: 1563306488,
+							},
+							CertificateRegenerations: 10,
+						},
+					},
+				},
+			},
+			{
+				Meta: &test_model.ResourceMeta{
+					Mesh:             "default",
+					Name:             "degraded-dp",
+					CreationTime:     t1,
+					ModificationTime: now,
+				},
+				Spec: &mesh_proto.DataplaneOverview{
+					Dataplane: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "127.0.0.1",
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Port:        8080,
+									ServicePort: 80,
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "example",
+									},
+								},
+								{
+									Port:        9001,
+									ServicePort: 81,
+									Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "example",
+									},
+								},
+							},
+						},
+					},
+					DataplaneInsight: &mesh_proto.DataplaneInsight{
+						Subscriptions: []*mesh_proto.DiscoverySubscription{
+							{
+								Id:                     "1",
+								ControlPlaneInstanceId: "node-001",
+								ConnectTime:            util_proto.MustTimestampProto(t1),
+								Status: &mesh_proto.DiscoverySubscriptionStatus{
+									Total: &mesh_proto.DiscoveryServiceStats{
+										ResponsesSent:     10,
+										ResponsesRejected: 1,
+									},
+								},
+								Version: &mesh_proto.Version{
+									KumaDp: &mesh_proto.KumaDpVersion{
+										Version:   "1.0.0",
+										GitTag:    "v1.0.0",
+										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+										BuildDate: "2019-08-07T11:26:06Z",
+									},
+									Envoy: &mesh_proto.EnvoyVersion{
+										Version: "1.16.0",
+										Build:   "hash/1.16.0/RELEASE",
+									},
+								},
+							},
+							{
+								Id:                     "2",
+								ControlPlaneInstanceId: "node-002",
+								ConnectTime:            util_proto.MustTimestampProto(t2),
+								Status: &mesh_proto.DiscoverySubscriptionStatus{
+									Total: &mesh_proto.DiscoveryServiceStats{
+										ResponsesSent:     20,
+										ResponsesRejected: 2,
+									},
+								},
+								Version: &mesh_proto.Version{
+									KumaDp: &mesh_proto.KumaDpVersion{
+										Version:   "1.0.2",
+										GitTag:    "v1.0.2",
+										GitCommit: "9d868cd8681c4021bb4a10bf2306ca613ba4de42",
+										BuildDate: "2020-08-07T11:26:06Z",
+									},
+									Envoy: &mesh_proto.EnvoyVersion{
+										Version: "1.16.1",
+										Build:   "hash/1.16.1/RELEASE",
+									},
+								},
+							},
+						},
+						MTLS: &mesh_proto.DataplaneInsight_MTLS{
+							CertificateExpirationTime: &timestamp.Timestamp{
+								Seconds: 1588926502,
+							},
+							LastCertificateRegeneration: &timestamp.Timestamp{
+								Seconds: 1563306488,
+							},
+							CertificateRegenerations: 10,
+						},
+					},
+				},
+			},
+			{
+				Meta: &test_model.ResourceMeta{
+					Mesh:             "default",
+					Name:             "offline-dp",
+					CreationTime:     t1,
+					ModificationTime: now,
+				},
+				Spec: &mesh_proto.DataplaneOverview{
+					Dataplane: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							Address: "127.0.0.1",
+							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+								{
+									Port:        8080,
+									ServicePort: 80,
+									Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "example",
+									},
+								},
+								{
+									Port:        9001,
+									ServicePort: 81,
+									Health:      &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false},
+									Tags: map[string]string{
+										mesh_proto.ServiceTag: "example",
 									},
 								},
 							},
@@ -172,7 +355,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 									Port:        8080,
 									ServicePort: 80,
 									Tags: map[string]string{
-										"service": "example",
+										"kuma.io/service": "example",
 									},
 								},
 							},
@@ -234,6 +417,15 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
 
+		byLine := func(s string) []string {
+			lines := strings.Split(s, "\n")
+			var trimmedLines []string
+			for _, line := range lines {
+				trimmedLines = append(trimmedLines, strings.TrimSpace(line))
+			}
+			return trimmedLines
+		}
+
 		DescribeTable("kumactl inspect dataplanes -o table|json|yaml",
 			func(given testCase) {
 				// given
@@ -257,14 +449,14 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				outputFormat: "",
 				goldenFile:   "inspect-dataplanes.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
-					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+					return WithTransform(byLine, Equal(byLine(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
 				goldenFile:   "inspect-dataplanes.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
-					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+					return WithTransform(byLine, Equal(byLine(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support JSON output", testCase{
@@ -284,14 +476,14 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 				// given
 				rootCmd.SetArgs([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "dataplanes", "--tag", "service=mobile", "--tag", "version=v1"})
+					"inspect", "dataplanes", "--tag", "kuma.io/service=mobile", "--tag", "version=v1"})
 
 				// when
 				err := rootCmd.Execute()
 				// then
 				Expect(err).ToNot(HaveOccurred())
 				// and
-				Expect(testClient.receivedTags).To(HaveKeyWithValue("service", "mobile"))
+				Expect(testClient.receivedTags).To(HaveKeyWithValue(mesh_proto.ServiceTag, "mobile"))
 				Expect(testClient.receivedTags).To(HaveKeyWithValue("version", "v1"))
 			})
 		})

@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/pkg/errors"
 
@@ -23,7 +27,6 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/core/secrets/store"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -34,7 +37,6 @@ type BuilderContext interface {
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
 	ResourceManager() core_manager.ResourceManager
-	XdsContext() core_xds.XdsContext
 	Config() kuma_cp.Config
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
@@ -44,6 +46,8 @@ type BuilderContext interface {
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIManager() api_server.APIManager
+	XDSHooks() *xds_hooks.Hooks
+	DpServer() *dp_server.DpServer
 }
 
 var _ BuilderContext = &Builder{}
@@ -58,16 +62,18 @@ type Builder struct {
 	rm       core_manager.ResourceManager
 	rom      core_manager.ReadOnlyResourceManager
 	cam      core_ca.Managers
-	xds      core_xds.XdsContext
 	dsl      datasource.Loader
 	ext      context.Context
 	dns      resolver.DNSResolver
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
+	eac      admin.EnvoyAdminClient
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
 	apim     api_server.APIManager
+	xdsh     *xds_hooks.Hooks
+	dps      *dp_server.DpServer
 	closeCh  <-chan struct{}
 	*runtimeInfo
 }
@@ -134,11 +140,6 @@ func (b *Builder) WithDataSourceLoader(loader datasource.Loader) *Builder {
 	return b
 }
 
-func (b *Builder) WithXdsContext(xds core_xds.XdsContext) *Builder {
-	b.xds = xds
-	return b
-}
-
 func (b *Builder) WithExtensions(ext context.Context) *Builder {
 	b.ext = ext
 	return b
@@ -169,6 +170,11 @@ func (b *Builder) WithLookupIP(lif lookup.LookupIPFunc) *Builder {
 	return b
 }
 
+func (b *Builder) WithEnvoyAdminClient(eac admin.EnvoyAdminClient) *Builder {
+	b.eac = eac
+	return b
+}
+
 func (b *Builder) WithMetrics(metrics metrics.Metrics) *Builder {
 	b.metrics = metrics
 	return b
@@ -181,6 +187,16 @@ func (b *Builder) WithEventReaderFactory(erf events.ListenerFactory) *Builder {
 
 func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
 	b.apim = apim
+	return b
+}
+
+func (b *Builder) WithXDSHooks(xdsh *xds_hooks.Hooks) *Builder {
+	b.xdsh = xdsh
+	return b
+}
+
+func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
+	b.dps = dps
 	return b
 }
 
@@ -197,9 +213,6 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.rom == nil {
 		return nil, errors.Errorf("ReadOnlyResourceManager has not been configured")
 	}
-	if b.xds == nil {
-		return nil, errors.Errorf("xDS Context has not been configured")
-	}
 	if b.dsl == nil {
 		return nil, errors.Errorf("DataSourceLoader has not been configured")
 	}
@@ -215,6 +228,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.lif == nil {
 		return nil, errors.Errorf("LookupIP func has not been configured")
 	}
+	if b.eac == nil {
+		return nil, errors.Errorf("EnvoyAdminClient has not been configured")
+	}
 	if b.metrics == nil {
 		return nil, errors.Errorf("Metrics has not been configured")
 	}
@@ -223,6 +239,12 @@ func (b *Builder) Build() (Runtime, error) {
 	}
 	if b.apim == nil {
 		return nil, errors.Errorf("APIManager has not been configured")
+	}
+	if b.xdsh == nil {
+		return nil, errors.Errorf("XDSHooks has not been configured")
+	}
+	if b.dps == nil {
+		return nil, errors.Errorf("DpServer has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
@@ -233,16 +255,18 @@ func (b *Builder) Build() (Runtime, error) {
 			rs:       b.rs,
 			ss:       b.ss,
 			cam:      b.cam,
-			xds:      b.xds,
 			dsl:      b.dsl,
 			ext:      b.ext,
 			dns:      b.dns,
 			configm:  b.configm,
 			leadInfo: b.leadInfo,
 			lif:      b.lif,
+			eac:      b.eac,
 			metrics:  b.metrics,
 			erf:      b.erf,
 			apim:     b.apim,
+			xdsh:     b.xdsh,
+			dps:      b.dps,
 		},
 		Manager: b.cm,
 	}, nil
@@ -268,9 +292,6 @@ func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager
 }
 func (b *Builder) CaManagers() core_ca.Managers {
 	return b.cam
-}
-func (b *Builder) XdsContext() core_xds.XdsContext {
-	return b.xds
 }
 func (b *Builder) Config() kuma_cp.Config {
 	return b.cfg
@@ -299,9 +320,14 @@ func (b *Builder) Metrics() metrics.Metrics {
 func (b *Builder) EventReaderFactory() events.ListenerFactory {
 	return b.erf
 }
-
 func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
+}
+func (b *Builder) XDSHooks() *xds_hooks.Hooks {
+	return b.xdsh
+}
+func (b *Builder) DpServer() *dp_server.DpServer {
+	return b.dps
 }
 func (b *Builder) CloseCh() <-chan struct{} {
 	return b.closeCh

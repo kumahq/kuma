@@ -5,42 +5,19 @@ import (
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	"github.com/kumahq/kuma/pkg/core/permissions"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	core_system "github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	"github.com/kumahq/kuma/pkg/xds/cache/cla"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
+	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
 )
 
 var (
-	xdsServerLog  = core.Log.WithName("xds-server")
-	meshResources = meshResourceTypes(map[core_model.ResourceType]bool{
-		core_mesh.DataplaneInsightType:  true,
-		core_mesh.DataplaneOverviewType: true,
-		core_mesh.ServiceInsightType:    true,
-		core_system.ConfigType:          true,
-	})
+	xdsServerLog = core.Log.WithName("xds-server")
 )
 
-func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.ResourceType {
-	types := []core_model.ResourceType{}
-	for _, typ := range registry.Global().ListTypes() {
-		r, err := registry.Global().NewObject(typ)
-		if err != nil {
-			panic(err)
-		}
-		if r.Scope() == core_model.ScopeMesh && !exclude[typ] {
-			types = append(types, typ)
-		}
-	}
-	return types
-}
-
-func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker DataplaneMetadataTracker) *dataplaneProxyBuilder {
-	return &dataplaneProxyBuilder{
+func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker DataplaneMetadataTracker, apiVersion envoy.APIVersion) *DataplaneProxyBuilder {
+	return &DataplaneProxyBuilder{
 		ResManager:            rt.ReadOnlyResourceManager(),
 		LookupIP:              rt.LookupIP(),
 		DataSourceLoader:      rt.DataSourceLoader(),
@@ -49,15 +26,17 @@ func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker Datap
 		LogsMatcher:           logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		FaultInjectionMatcher: faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		Zone:                  rt.Config().Multizone.Remote.Zone,
+		apiVersion:            apiVersion,
 	}
 }
 
-func defaultIngressProxyBuilder(rt core_runtime.Runtime, metadataTracker DataplaneMetadataTracker) *ingressProxyBuilder {
-	return &ingressProxyBuilder{
+func defaultIngressProxyBuilder(rt core_runtime.Runtime, metadataTracker DataplaneMetadataTracker, apiVersion envoy.APIVersion) *IngressProxyBuilder {
+	return &IngressProxyBuilder{
 		ResManager:         rt.ResourceManager(),
 		ReadOnlyResManager: rt.ReadOnlyResourceManager(),
 		LookupIP:           rt.LookupIP(),
 		MetadataTracker:    metadataTracker,
+		apiVersion:         apiVersion,
 	}
 }
 
@@ -67,24 +46,14 @@ func DefaultDataplaneWatchdogFactory(
 	connectionInfoTracker ConnectionInfoTracker,
 	dataplaneReconciler SnapshotReconciler,
 	ingressReconciler SnapshotReconciler,
+	xdsMetrics *xds_metrics.Metrics,
+	meshSnapshotCache *mesh.Cache,
+	envoyCpCtx *xds_context.ControlPlaneContext,
+	apiVersion envoy.APIVersion,
 ) (DataplaneWatchdogFactory, error) {
-	claCache, err := cla.NewCache(rt.ReadOnlyResourceManager(), rt.DataSourceLoader(), rt.Config().Multizone.Remote.Zone, rt.Config().Store.Cache.ExpirationTime, rt.LookupIP(), rt.Metrics())
-	if err != nil {
-		return nil, err
-	}
-	dataplaneProxyBuilder := defaultDataplaneProxyBuilder(rt, metadataTracker)
-	ingressProxyBuilder := defaultIngressProxyBuilder(rt, metadataTracker)
-	meshSnapshotCache, err := mesh.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Store.Cache.ExpirationTime, meshResources, rt.LookupIP(), rt.Metrics())
-	if err != nil {
-		return nil, err
-	}
-
-	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache)
-	if err != nil {
-		return nil, err
-	}
-
-	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, connectionInfoTracker, rt.ReadOnlyResourceManager(), rt.LookupIP())
+	dataplaneProxyBuilder := defaultDataplaneProxyBuilder(rt, metadataTracker, apiVersion)
+	ingressProxyBuilder := defaultIngressProxyBuilder(rt, metadataTracker, apiVersion)
+	xdsContextBuilder := newXDSContextBuilder(envoyCpCtx, connectionInfoTracker, rt.ReadOnlyResourceManager(), rt.LookupIP(), rt.EnvoyAdminClient())
 
 	deps := DataplaneWatchdogDependencies{
 		resManager:            rt.ResourceManager(),
@@ -96,7 +65,7 @@ func DefaultDataplaneWatchdogFactory(
 		meshCache:             meshSnapshotCache,
 	}
 	return NewDataplaneWatchdogFactory(
-		rt.Metrics(),
+		xdsMetrics,
 		rt.Config().XdsServer.DataplaneConfigurationRefreshInterval,
 		deps,
 	)

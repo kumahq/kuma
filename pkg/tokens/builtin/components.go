@@ -7,6 +7,6 @@ import (
 
 func NewDataplaneTokenIssuer(resManager manager.ReadOnlyResourceManager) (issuer.DataplaneTokenIssuer, error) {
 	return issuer.NewDataplaneTokenIssuer(func(meshName string) ([]byte, error) {
-		return issuer.GetSigningKey(resManager, meshName)
+		return issuer.GetSigningKey(resManager, issuer.DataplaneTokenPrefix, meshName)
 	}), nil
 }

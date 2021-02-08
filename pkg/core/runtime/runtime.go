@@ -4,7 +4,11 @@ import (
 	"context"
 	"sync"
 
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/dns/resolver"
@@ -22,7 +26,6 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
 // Runtime represents initialized application state.
@@ -40,7 +43,6 @@ type RuntimeInfo interface {
 
 type RuntimeContext interface {
 	Config() kuma_cp.Config
-	XDS() core_xds.XdsContext
 	DataSourceLoader() datasource.Loader
 	ResourceManager() core_manager.ResourceManager
 	ResourceStore() core_store.ResourceStore
@@ -53,9 +55,12 @@ type RuntimeContext interface {
 	ConfigManager() config_manager.ConfigManager
 	LeaderInfo() component.LeaderInfo
 	LookupIP() lookup.LookupIPFunc
+	EnvoyAdminClient() admin.EnvoyAdminClient
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIInstaller() api_server.APIInstaller
+	XDSHooks() *xds_hooks.Hooks
+	DpServer() *dp_server.DpServer
 }
 
 var _ Runtime = &runtime{}
@@ -101,16 +106,18 @@ type runtimeContext struct {
 	cs       core_store.ResourceStore
 	rom      core_manager.ReadOnlyResourceManager
 	cam      ca.Managers
-	xds      core_xds.XdsContext
 	dsl      datasource.Loader
 	ext      context.Context
 	dns      resolver.DNSResolver
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
+	eac      admin.EnvoyAdminClient
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
 	apim     api_server.APIInstaller
+	xdsh     *xds_hooks.Hooks
+	dps      *dp_server.DpServer
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -127,10 +134,6 @@ func (rc *runtimeContext) CaManagers() ca.Managers {
 
 func (rc *runtimeContext) Config() kuma_cp.Config {
 	return rc.cfg
-}
-
-func (rc *runtimeContext) XDS() core_xds.XdsContext {
-	return rc.xds
 }
 
 func (rc *runtimeContext) DataSourceLoader() datasource.Loader {
@@ -176,6 +179,18 @@ func (rc *runtimeContext) LeaderInfo() component.LeaderInfo {
 func (rc *runtimeContext) LookupIP() lookup.LookupIPFunc {
 	return rc.lif
 }
+
+func (rc *runtimeContext) EnvoyAdminClient() admin.EnvoyAdminClient {
+	return rc.eac
+}
+
 func (rc *runtimeContext) APIInstaller() api_server.APIInstaller {
 	return rc.apim
+}
+func (rc *runtimeContext) DpServer() *dp_server.DpServer {
+	return rc.dps
+}
+
+func (rc *runtimeContext) XDSHooks() *xds_hooks.Hooks {
+	return rc.xdsh
 }

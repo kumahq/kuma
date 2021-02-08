@@ -14,6 +14,7 @@ import (
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/config/plugins/resources/postgres"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/test/testenvconfig"
 )
 
@@ -82,6 +83,7 @@ var _ = Describe("Config loader", func() {
 			}
 
 			// then
+			Expect(cfg.BootstrapServer.APIVersion).To(Equal(envoy.APIV3))
 			Expect(cfg.BootstrapServer.Params.AdminPort).To(Equal(uint32(1234)))
 			Expect(cfg.BootstrapServer.Params.XdsHost).To(Equal("kuma-control-plane"))
 			Expect(cfg.BootstrapServer.Params.XdsPort).To(Equal(uint32(4321)))
@@ -131,6 +133,8 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
+
+			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
 
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -212,6 +216,14 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
 			Expect(cfg.DpServer.Auth.Type).To(Equal("dpToken"))
 			Expect(cfg.DpServer.Port).To(Equal(9876))
+			Expect(cfg.DpServer.Hds.Enabled).To(BeFalse())
+			Expect(cfg.DpServer.Hds.Interval).To(Equal(11 * time.Second))
+			Expect(cfg.DpServer.Hds.RefreshInterval).To(Equal(12 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.Timeout).To(Equal(5 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.Interval).To(Equal(6 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.NoTrafficInterval).To(Equal(7 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
+			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
 			Expect(cfg.SdsServer.DataplaneConfigurationRefreshInterval).To(Equal(11 * time.Second))
 		},
@@ -245,6 +257,7 @@ store:
     conflictRetryBaseBackoff: 4s
     conflictRetryMaxTimes: 10
 bootstrapServer:
+  apiVersion: v3
   params:
     adminPort: 1234
     adminAccessLogPath: /access/log/test
@@ -280,6 +293,7 @@ runtime:
   universal:
     dataplaneCleanupAge: 1h
   kubernetes:
+    controlPlaneServiceName: custom-control-plane
     admissionServer:
       address: 127.0.0.2
       port: 9443
@@ -381,12 +395,23 @@ dpServer:
   port: 9876
   auth:
     type: dpToken
+  hds:
+    enabled: false
+    interval: 11s
+    refreshInterval: 12s
+    checkDefaults:
+      timeout: 5s
+      interval: 6s
+      noTrafficInterval: 7s
+      healthyThreshold: 8
+      unhealthyThreshold: 9
 sdsServer:
   dataplaneConfigurationRefreshInterval: 11s
 `,
 		}),
 		Entry("from env variables", testCase{
 			envVars: map[string]string{
+				"KUMA_BOOTSTRAP_SERVER_API_VERSION":                                                        "v3",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":                                                  "1234",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST":                                                    "kuma-control-plane",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT":                                                    "4321",
@@ -428,6 +453,7 @@ sdsServer:
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                                              "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":                            "12s",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
+				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":                                         "127.0.0.2",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                                            "9443",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR":                                        "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
@@ -495,6 +521,14 @@ sdsServer:
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
 				"KUMA_DP_SERVER_AUTH_TYPE":                                                                 "dpToken",
 				"KUMA_DP_SERVER_PORT":                                                                      "9876",
+				"KUMA_DP_SERVER_HDS_ENABLED":                                                               "false",
+				"KUMA_DP_SERVER_HDS_INTERVAL":                                                              "11s",
+				"KUMA_DP_SERVER_HDS_REFRESH_INTERVAL":                                                      "12s",
+				"KUMA_DP_SERVER_HDS_CHECK_TIMEOUT":                                                         "5s",
+				"KUMA_DP_SERVER_HDS_CHECK_INTERVAL":                                                        "6s",
+				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
+				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
+				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
 				"KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "11s",
 			},
 			yamlFileConfig: "",

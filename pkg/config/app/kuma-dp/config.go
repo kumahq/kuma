@@ -102,6 +102,9 @@ type Dataplane struct {
 	AdminPort config_types.PortRange `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
 	// Drain time for listeners.
 	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
+	// BootstrapVersion defines bootstrap version (and API version) of xDS config.
+	// If empty, default version defined in Kuma CP will be used.
+	BootstrapVersion string `yaml:"bootstrapVersion" envconfig:"kuma_dataplane_bootstrap_version"`
 }
 
 // DataplaneRuntime defines the context in which dataplane (Envoy) runs.

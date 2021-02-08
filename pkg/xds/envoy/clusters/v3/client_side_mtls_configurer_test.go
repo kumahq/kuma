@@ -76,6 +76,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             name: testCluster
             transportSocket:
               name: envoy.transport_sockets.tls
@@ -99,6 +100,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_mesh_ca
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -112,6 +115,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                   inlineBytes: Q0VSVElGSUNBVEU=
                             statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
+                        transportApiVersion: V3
+                      resourceApiVersion: V3
             type: EDS`,
 		}),
 		Entry("cluster with many different tag sets", testCase{
@@ -158,6 +163,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             name: testCluster
             transportSocketMatches:
             - match:
@@ -185,6 +191,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                       inlineBytes: Q0VSVElGSUNBVEU=
                                 statPrefix: sds_mesh_ca
                                 targetUri: kuma-control-plane:5677
+                            transportApiVersion: V3
+                          resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
@@ -198,6 +206,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
                   sni: backend{cluster=1,mesh=default}
             - match:
                 cluster: "2"
@@ -224,6 +234,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                       inlineBytes: Q0VSVElGSUNBVEU=
                                 statPrefix: sds_mesh_ca
                                 targetUri: kuma-control-plane:5677
+                            transportApiVersion: V3
+                          resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
@@ -237,6 +249,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_identity_cert
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
                   sni: backend{cluster=2,mesh=default}
             type: EDS`,
 		}),
@@ -283,6 +297,7 @@ var _ = Describe("EdsClusterConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             name: testCluster
             transportSocket:
               name: envoy.transport_sockets.tls
@@ -314,6 +329,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                               credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                               statPrefix: sds_mesh_ca
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -335,6 +352,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                             credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                             statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
+                        transportApiVersion: V3
+                      resourceApiVersion: V3
                 sni: backend{mesh=default,version=v1}
             type: EDS`,
 		}),

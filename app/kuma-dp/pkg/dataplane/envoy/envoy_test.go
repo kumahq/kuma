@@ -12,16 +12,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/proto"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
 var _ = Describe("Envoy", func() {
@@ -73,12 +68,9 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, EnvoyVersion) (proto.Message, error) {
-				return &envoy_bootstrap.Bootstrap{
-					Node: &envoy_core.Node{
-						Id: "example",
-					},
-				}, nil
+			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+				return []byte(`node:
+  id: example`), types.BootstrapV2, nil
 			}
 			expectedConfigFile := filepath.Join(configDir, "bootstrap.yaml")
 
@@ -120,7 +112,7 @@ var _ = Describe("Envoy", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-c %s --drain-time-s 15 --disable-hot-restart", expectedConfigFile)))
+			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-c %s --drain-time-s 15 --disable-hot-restart --bootstrap-version 2", expectedConfigFile)))
 
 			By("verifying the contents Envoy config file")
 			// when
@@ -144,8 +136,8 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, EnvoyVersion) (proto.Message, error) {
-				return &envoy_bootstrap.Bootstrap{}, nil
+			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+				return nil, "", nil
 			}
 
 			By("starting a mock dataplane")
@@ -186,8 +178,8 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, EnvoyVersion) (proto.Message, error) {
-				return &envoy_bootstrap.Bootstrap{}, nil
+			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+				return nil, "", nil
 			}
 
 			By("starting a mock dataplane")

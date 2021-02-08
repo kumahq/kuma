@@ -12,13 +12,13 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/kumahq/kuma/pkg/xds/envoy"
-
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/validators"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
+	envoy_bootstrap_v2 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
+	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 
@@ -33,21 +33,22 @@ import (
 )
 
 type BootstrapGenerator interface {
-	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error)
+	Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, types.BootstrapVersion, error)
 }
 
 func NewDefaultBootstrapGenerator(
 	resManager core_manager.ResourceManager,
-	config *bootstrap_config.BootstrapParamsConfig,
+	config *bootstrap_config.BootstrapServerConfig,
 	dpServerCertFile string,
 	dpAuthEnabled bool,
+	hdsEnabled bool,
 ) (BootstrapGenerator, error) {
 	hostsAndIps, err := hostsAndIPsFromCertFile(dpServerCertFile)
 	if err != nil {
 		return nil, err
 	}
-	if config.XdsHost != "" && !hostsAndIps[config.XdsHost] {
-		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", config.XdsHost, hostsAndIps.slice())
+	if config.Params.XdsHost != "" && !hostsAndIps[config.Params.XdsHost] {
+		return nil, errors.Errorf("hostname: %s set by KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST is not available in the DP Server certificate. Available hostnames: %q. Change the hostname or generate certificate with proper hostname.", config.Params.XdsHost, hostsAndIps.slice())
 	}
 	return &bootstrapGenerator{
 		resManager:    resManager,
@@ -55,40 +56,40 @@ func NewDefaultBootstrapGenerator(
 		xdsCertFile:   dpServerCertFile,
 		dpAuthEnabled: dpAuthEnabled,
 		hostsAndIps:   hostsAndIps,
+		hdsEnabled:    hdsEnabled,
 	}, nil
 }
 
 type bootstrapGenerator struct {
 	resManager    core_manager.ResourceManager
-	config        *bootstrap_config.BootstrapParamsConfig
+	config        *bootstrap_config.BootstrapServerConfig
 	dpAuthEnabled bool
 	xdsCertFile   string
 	hostsAndIps   SANSet
+	hdsEnabled    bool
 }
 
-func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, error) {
+func (b *bootstrapGenerator) Generate(ctx context.Context, request types.BootstrapRequest) (proto.Message, types.BootstrapVersion, error) {
 	if err := b.validateRequest(request); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	proxyId, err := core_xds.BuildProxyId(request.Mesh, request.Name)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	dataplane, err := b.dataplaneFor(ctx, request, proxyId)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
-	bootstrapCfg, err := b.generateFor(*proxyId, dataplane, request)
-	if err != nil {
-		return nil, err
-	}
-	return bootstrapCfg, nil
+	return b.generateFor(*proxyId, dataplane, request)
 }
 
 var DpTokenRequired = errors.New("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
+
+var InvalidBootstrapVersion = errors.New(`Invalid BootstrapVersion. Available values are: "2", "3"`)
 
 func SANMismatchErr(host string, sans []string) error {
 	return errors.Errorf("A data plane proxy is trying to connect to the control plane using %q address, but the certificate in the control plane has the following SANs %q. "+
@@ -109,7 +110,7 @@ func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) err
 	if b.dpAuthEnabled && request.DataplaneTokenPath == "" {
 		return DpTokenRequired
 	}
-	if b.config.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
+	if b.config.Params.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
 		if !b.hostsAndIps[request.Host] {
 			return SANMismatchErr(request.Host, b.hostsAndIps.slice())
 		}
@@ -164,37 +165,37 @@ func (b *bootstrapGenerator) validateMeshExist(ctx context.Context, mesh string)
 	return nil
 }
 
-func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *core_mesh.DataplaneResource, request types.BootstrapRequest) (*envoy_bootstrap.Bootstrap, error) {
+func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *core_mesh.DataplaneResource, request types.BootstrapRequest) (proto.Message, types.BootstrapVersion, error) {
 	// if dataplane has no service - fill this with placeholder. Otherwise take the first service
 	service := dataplane.Spec.GetIdentifyingService()
 
-	adminPort := b.config.AdminPort
+	adminPort := b.config.Params.AdminPort
 	if request.AdminPort != 0 {
 		adminPort = request.AdminPort
 	}
 
 	if err := b.verifyAdminPort(adminPort, dataplane); err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	var certBytes = ""
 	if b.xdsCertFile != "" {
 		cert, err := ioutil.ReadFile(b.xdsCertFile)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		certBytes = base64.StdEncoding.EncodeToString(cert)
 	}
-	accessLogSocket := envoy.AccessLogSocketName(request.Name, request.Mesh)
+	accessLogSocket := envoy_common.AccessLogSocketName(request.Name, request.Mesh)
 	params := configParameters{
 		Id:                 proxyId.String(),
 		Service:            service,
-		AdminAddress:       b.config.AdminAddress,
+		AdminAddress:       b.config.Params.AdminAddress,
 		AdminPort:          adminPort,
-		AdminAccessLogPath: b.config.AdminAccessLogPath,
+		AdminAccessLogPath: b.config.Params.AdminAccessLogPath,
 		XdsHost:            b.xdsHost(request),
-		XdsPort:            b.config.XdsPort,
-		XdsConnectTimeout:  b.config.XdsConnectTimeout,
+		XdsPort:            b.config.Params.XdsPort,
+		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout,
 		AccessLogPipe:      accessLogSocket,
 		DataplaneTokenPath: request.DataplaneTokenPath,
 		DataplaneResource:  request.DataplaneResource,
@@ -205,14 +206,16 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		KumaDpBuildDate:    request.Version.KumaDp.BuildDate,
 		EnvoyVersion:       request.Version.Envoy.Version,
 		EnvoyBuild:         request.Version.Envoy.Build,
+		HdsEnabled:         b.hdsEnabled,
+		DynamicMetadata:    request.DynamicMetadata,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
-	return b.configForParameters(params)
+	return b.configForParameters(params, request.BootstrapVersion)
 }
 
 func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
-	if b.config.XdsHost != "" { // XdsHost from config takes precedence over Host from request
-		return b.config.XdsHost
+	if b.config.Params.XdsHost != "" { // XdsHost from config takes precedence over Host from request
+		return b.config.Params.XdsHost
 	} else {
 		return request.Host
 	}
@@ -230,8 +233,33 @@ func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_m
 	return nil
 }
 
-func (b *bootstrapGenerator) configForParameters(params configParameters) (*envoy_bootstrap.Bootstrap, error) {
-	tmpl, err := template.New("bootstrap").Parse(configTemplate)
+func (b *bootstrapGenerator) configForParameters(params configParameters, version types.BootstrapVersion) (proto.Message, types.BootstrapVersion, error) {
+	switch {
+	// V2
+	case version == types.BootstrapV2:
+		fallthrough
+	case version == "" && b.config.APIVersion == envoy_common.APIV2: // if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
+		cfg, err := b.configForParametersV2(params)
+		if err != nil {
+			return nil, "", err
+		}
+		return cfg, types.BootstrapV2, nil
+	// V3
+	case version == types.BootstrapV3:
+		fallthrough
+	case version == "" && b.config.APIVersion == envoy_common.APIV3: // if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
+		cfg, err := b.configForParametersV3(params)
+		if err != nil {
+			return nil, "", err
+		}
+		return cfg, types.BootstrapV3, nil
+	default:
+		return nil, "", InvalidBootstrapVersion
+	}
+}
+
+func (b *bootstrapGenerator) configForParametersV2(params configParameters) (proto.Message, error) {
+	tmpl, err := template.New("bootstrap").Parse(configTemplateV2)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to parse config template")
 	}
@@ -239,7 +267,26 @@ func (b *bootstrapGenerator) configForParameters(params configParameters) (*envo
 	if err := tmpl.Execute(&buf, params); err != nil {
 		return nil, errors.Wrap(err, "failed to render config template")
 	}
-	config := &envoy_bootstrap.Bootstrap{}
+	config := &envoy_bootstrap_v2.Bootstrap{}
+	if err := util_proto.FromYAML(buf.Bytes(), config); err != nil {
+		return nil, errors.Wrap(err, "failed to parse bootstrap config")
+	}
+	if err := config.Validate(); err != nil {
+		return nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
+	}
+	return config, nil
+}
+
+func (b *bootstrapGenerator) configForParametersV3(params configParameters) (proto.Message, error) {
+	tmpl, err := template.New("bootstrap").Parse(configTemplateV3)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse config template")
+	}
+	var buf bytes.Buffer
+	if err := tmpl.Execute(&buf, params); err != nil {
+		return nil, errors.Wrap(err, "failed to render config template")
+	}
+	config := &envoy_bootstrap_v3.Bootstrap{}
 	if err := util_proto.FromYAML(buf.Bytes(), config); err != nil {
 		return nil, errors.Wrap(err, "failed to parse bootstrap config")
 	}
@@ -266,6 +313,9 @@ func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
 		return nil, errors.Wrap(err, "could not read certificate")
 	}
 	pemCert, _ := pem.Decode(certBytes)
+	if pemCert == nil {
+		return nil, errors.Wrap(err, "could not parse certificate")
+	}
 	cert, err := x509.ParseCertificate(pemCert.Bytes)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not parse certificate")

@@ -85,7 +85,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 	}
 }
 
-func NewDataplaneInsightStore(resManager manager.ResourceManager) ZoneInsightStore {
+func NewZonesInsightStore(resManager manager.ResourceManager) ZoneInsightStore {
 	return &zoneInsightStore{resManager}
 }
 

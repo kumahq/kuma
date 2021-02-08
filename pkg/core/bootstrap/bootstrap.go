@@ -4,8 +4,12 @@ import (
 	"context"
 	"net"
 
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	"github.com/kumahq/kuma/pkg/dp-server/server"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/pkg/errors"
 
@@ -37,7 +41,6 @@ import (
 	runtime_reports "github.com/kumahq/kuma/pkg/core/runtime/reports"
 	secret_cipher "github.com/kumahq/kuma/pkg/core/secrets/cipher"
 	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
 
@@ -86,13 +89,14 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 		return nil, err
 	}
 
-	initializeXds(builder)
-
 	leaderInfoComponent := &component.LeaderInfoComponent{}
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
+	builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(builder.ResourceManager(), builder.Config()))
 	builder.WithAPIManager(customization.NewAPIList())
+	builder.WithXDSHooks(&xds_hooks.Hooks{})
+	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
 
 	if err := initializeAfterBootstrap(cfg, builder); err != nil {
 		return nil, err
@@ -265,10 +269,6 @@ func initializeConfigStore(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 		builder.WithConfigStore(cs)
 		return nil
 	}
-}
-
-func initializeXds(builder *core_runtime.Builder) {
-	builder.WithXdsContext(core_xds.NewXdsContext())
 }
 
 func initializeCaManagers(builder *core_runtime.Builder) error {

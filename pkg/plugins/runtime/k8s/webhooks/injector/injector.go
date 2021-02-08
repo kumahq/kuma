@@ -7,8 +7,10 @@ import (
 	"strings"
 
 	"github.com/pkg/errors"
+	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/core"
@@ -22,11 +24,6 @@ import (
 	kube_api "k8s.io/apimachinery/pkg/api/resource"
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
-)
-
-const (
-	KumaSidecarContainerName = "kuma-sidecar"
-	KumaInitContainerName    = "kuma-init"
 )
 
 const (
@@ -199,7 +196,7 @@ func (i *KumaInjector) namespaceFor(pod *kube_core.Pod) (*kube_core.Namespace, e
 func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Namespace) kube_core.Container {
 	mesh := meshName(pod, ns)
 	return kube_core.Container{
-		Name:            KumaSidecarContainerName,
+		Name:            util.KumaSidecarContainerName,
 		Image:           i.cfg.SidecarContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Args: []string{
@@ -271,11 +268,10 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 		},
 		LivenessProbe: &kube_core.Probe{
 			Handler: kube_core.Handler{
-				Exec: &kube_core.ExecAction{
-					Command: []string{
-						"wget",
-						"-qO-",
-						fmt.Sprintf("http://127.0.0.1:%d/ready", i.cfg.SidecarContainer.AdminPort),
+				HTTPGet: &kube_core.HTTPGetAction{
+					Path: "/ready",
+					Port: kube_intstr.IntOrString{
+						IntVal: int32(i.cfg.SidecarContainer.AdminPort),
 					},
 				},
 			},
@@ -287,11 +283,10 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 		},
 		ReadinessProbe: &kube_core.Probe{
 			Handler: kube_core.Handler{
-				Exec: &kube_core.ExecAction{
-					Command: []string{
-						"wget",
-						"-qO-",
-						fmt.Sprintf("http://127.0.0.1:%d/ready", i.cfg.SidecarContainer.AdminPort),
+				HTTPGet: &kube_core.HTTPGetAction{
+					Path: "/ready",
+					Port: kube_intstr.IntOrString{
+						IntVal: int32(i.cfg.SidecarContainer.AdminPort),
 					},
 				},
 			},
@@ -353,7 +348,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	excludeInboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
 	excludeOutboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPorts)
 	return kube_core.Container{
-		Name:            KumaInitContainerName,
+		Name:            util.KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Args: []string{

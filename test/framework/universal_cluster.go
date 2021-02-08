@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -67,6 +68,14 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	}
 	if opts.globalAddress != "" {
 		env = append(env, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
+	}
+	if opts.hdsDisabled {
+		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
+	}
+
+	apiVersion := os.Getenv(envAPIVersion)
+	if apiVersion != "" {
+		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+apiVersion)
 	}
 
 	switch mode {
@@ -183,15 +192,23 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	switch appname {
 	case AppModeEchoServer:
 		if transparent {
-			dpyaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, opts.mesh, "80", "80", redirectPortInbound, redirectPortOutbound)
+			dpyaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, opts.mesh, "8080", "80", "8080", redirectPortInbound, redirectPortOutbound)
 		} else {
-			dpyaml = fmt.Sprintf(EchoServerDataplane, opts.mesh, "8080", "80", "8080")
+			if opts.serviceProbe {
+				dpyaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, opts.mesh, "8080", "80", "8080")
+			} else {
+				dpyaml = fmt.Sprintf(EchoServerDataplane, opts.mesh, "8080", "80", "8080")
+			}
 		}
 	case AppModeDemoClient:
 		if transparent {
 			dpyaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, opts.mesh, "3000", redirectPortInbound, redirectPortOutbound)
 		} else {
-			dpyaml = fmt.Sprintf(DemoClientDataplane, opts.mesh, "13000", "3000", "80", "8080")
+			if opts.serviceProbe {
+				dpyaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, opts.mesh, "13000", "3000", "80", "8080")
+			} else {
+				dpyaml = fmt.Sprintf(DemoClientDataplane, opts.mesh, "13000", "3000", "80", "8080")
+			}
 		}
 	}
 
@@ -200,10 +217,12 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		return err
 	}
 
-	app.CreateMainApp([]string{}, args)
-	err = app.mainApp.Start()
-	if err != nil {
-		return err
+	if !opts.proxyOnly {
+		app.CreateMainApp([]string{}, args)
+		err = app.mainApp.Start()
+		if err != nil {
+			return err
+		}
 	}
 
 	c.apps[appname] = app

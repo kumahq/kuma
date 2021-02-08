@@ -61,7 +61,6 @@ var _ = Describe("kumactl inspect zones", func() {
 		sampleZoneOverview = []*system_core.ZoneOverviewResource{
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:             "default",
 					Name:             "zone-1",
 					CreationTime:     t1,
 					ModificationTime: now,
@@ -126,6 +125,14 @@ var _ = Describe("kumactl inspect zones", func() {
 										},
 									},
 								},
+								Version: &system_proto.Version{
+									KumaCp: &system_proto.KumaCpVersion{
+										Version:   "1.0.0",
+										GitTag:    "v1.0.0",
+										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+										BuildDate: "2019-08-07T11:26:06Z",
+									},
+								},
 							},
 							{
 								Id:               "2",
@@ -137,6 +144,14 @@ var _ = Describe("kumactl inspect zones", func() {
 										ResponsesRejected: 2,
 									},
 								},
+								Version: &system_proto.Version{
+									KumaCp: &system_proto.KumaCpVersion{
+										Version:   "1.0.0",
+										GitTag:    "v1.0.0",
+										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+										BuildDate: "2019-08-07T11:26:06Z",
+									},
+								},
 							},
 						},
 					},
@@ -144,7 +159,6 @@ var _ = Describe("kumactl inspect zones", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:             "default",
 					Name:             "zone-2",
 					CreationTime:     t1,
 					ModificationTime: now,
@@ -171,7 +185,6 @@ var _ = Describe("kumactl inspect zones", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:             "default",
 					Name:             "zone-3",
 					CreationTime:     t1,
 					ModificationTime: now,
@@ -184,6 +197,14 @@ var _ = Describe("kumactl inspect zones", func() {
 								Id:               "1",
 								GlobalInstanceId: "node-001",
 								ConnectTime:      util_proto.MustTimestampProto(t2),
+								Version: &system_proto.Version{
+									KumaCp: &system_proto.KumaCpVersion{
+										Version:   "1.0.0",
+										GitTag:    "v1.0.0",
+										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+										BuildDate: "2019-08-07T11:26:06Z",
+									},
+								},
 							},
 						},
 					},

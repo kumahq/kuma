@@ -51,6 +51,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             outlierDetection:
               enforcingConsecutive5xx: 100
               enforcingConsecutiveGatewayFailure: 0
@@ -74,6 +75,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             outlierDetection:
               enforcingConsecutive5xx: 0
               enforcingConsecutiveGatewayFailure: 100
@@ -97,6 +99,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             outlierDetection:
               enforcingConsecutive5xx: 0
               enforcingConsecutiveGatewayFailure: 0
@@ -122,6 +125,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             outlierDetection:
               consecutive5xx: 21
               consecutiveGatewayFailure: 11
@@ -148,6 +152,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             outlierDetection:
               enforcingConsecutive5xx: 0
               enforcingConsecutiveGatewayFailure: 0
@@ -176,6 +181,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             outlierDetection:
               enforcingConsecutive5xx: 0
               enforcingConsecutiveGatewayFailure: 0
@@ -203,6 +209,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             outlierDetection:
               enforcingConsecutive5xx: 0
               enforcingConsecutiveGatewayFailure: 0
@@ -231,6 +238,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
             edsClusterConfig:
               edsConfig:
                 ads: {}
+                resourceApiVersion: V3
             outlierDetection:
               enforcingConsecutive5xx: 0
               enforcingConsecutiveGatewayFailure: 0

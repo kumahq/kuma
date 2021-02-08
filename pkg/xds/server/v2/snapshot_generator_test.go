@@ -13,9 +13,10 @@ import (
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	util_cache "github.com/kumahq/kuma/pkg/util/cache"
+	util_cache_v2 "github.com/kumahq/kuma/pkg/util/cache/v2"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/template"
 )
 
@@ -73,6 +74,7 @@ var _ = Describe("Reconcile", func() {
 					},
 					Spec: &dataplane,
 				},
+				APIVersion: envoy_common.APIV2,
 				Policies: model.MatchedPolicies{
 					TrafficPermissions: model.TrafficPermissionMap{
 						mesh_proto.InboundInterface{
@@ -116,7 +118,7 @@ var _ = Describe("Reconcile", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			resp, err := util_cache.ToDeltaDiscoveryResponse(s)
+			resp, err := util_cache_v2.ToDeltaDiscoveryResponse(s)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// when

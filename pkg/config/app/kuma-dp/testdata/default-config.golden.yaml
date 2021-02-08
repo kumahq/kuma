@@ -8,5 +8,6 @@ controlPlane:
 dataplane:
   mesh: default
   drainTime: 30s
+  bootstrapVersion: ""
 dataplaneRuntime:
   binaryPath: envoy

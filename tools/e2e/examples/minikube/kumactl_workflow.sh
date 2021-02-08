@@ -2,7 +2,7 @@
 
 set -e
 
-function run() {
+run() {
     command=$@
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
     echo '$' $command
@@ -12,7 +12,7 @@ function run() {
     echo
 }
 
-function workflow() {
+workflow() {
 
     run kumactl config view
 

@@ -11,18 +11,11 @@ import (
 	net_url "net/url"
 	"strings"
 
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	// import only limited proto definitions from Go Control Plane to save kuma-dp size
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v2alpha"
-	_ "github.com/envoyproxy/go-control-plane/envoy/config/grpc_credential/v3"
-	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -49,17 +42,17 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_types.Resource, ev EnvoyVersion) (proto.Message, error) {
+func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 
 	if bootstrapUrl.Scheme == "https" {
 		if cfg.ControlPlane.CaCert != "" {
 			certPool := x509.NewCertPool()
 			if ok := certPool.AppendCertsFromPEM([]byte(cfg.ControlPlane.CaCert)); !ok {
-				return nil, errors.New("could not add certificate")
+				return nil, "", errors.New("could not add certificate")
 			}
 			b.client.Transport = &http.Transport{
 				TLSClientConfig: &tls.Config{
@@ -73,19 +66,21 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 
 	backoff, err := retry.NewConstant(cfg.ControlPlane.Retry.Backoff)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not create retry backoff")
+		return nil, "", errors.Wrap(err, "could not create retry backoff")
 	}
 	backoff = retry.WithMaxDuration(cfg.ControlPlane.Retry.MaxDuration, backoff)
 	var respBytes []byte
+	var version types.BootstrapVersion
 	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")
-		respBytes, err = b.requestForBootstrap(bootstrapUrl, cfg, dp, ev)
+		respBytes, version, err = b.requestForBootstrap(bootstrapUrl, cfg, params)
 		if err == nil {
 			return nil
 		}
 		if IsInvalidRequestErr(err) { // there is no point in retrying invalid request
 			return err
 		}
+
 		switch err {
 		case DpNotFoundErr:
 			log.Info("Dataplane entity is not yet found in the Control Plane. If you are running on Kubernetes, CP is most likely still in the process of converting Pod to Dataplane. Retrying.", "backoff", cfg.ControlPlane.Retry.Backoff)
@@ -95,24 +90,18 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 		return retry.RetryableError(err)
 	})
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
-
-	bootstrap := envoy_bootstrap.Bootstrap{}
-	if err := util_proto.FromYAML(respBytes, &bootstrap); err != nil {
-		return nil, errors.Wrap(err, "could not parse the bootstrap configuration")
-	}
-
-	return &bootstrap, nil
+	return respBytes, version, nil
 }
 
-func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, dp *rest_types.Resource, ev EnvoyVersion) ([]byte, error) {
+func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error) {
 	url.Path = "/bootstrap"
 	var dataplaneResource string
-	if dp != nil {
-		dpJSON, err := json.Marshal(dp)
+	if params.Dataplane != nil {
+		dpJSON, err := json.Marshal(params.Dataplane)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 		dataplaneResource = string(dpJSON)
 	}
@@ -124,6 +113,7 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		AdminPort:          cfg.Dataplane.AdminPort.Lowest(),
 		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
 		DataplaneResource:  dataplaneResource,
+		BootstrapVersion:   params.BootstrapVersion,
 		Version: types.Version{
 			KumaDp: types.KumaDpVersion{
 				Version:   kuma_version.Build.Version,
@@ -132,39 +122,40 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 				BuildDate: kuma_version.Build.BuildDate,
 			},
 			Envoy: types.EnvoyVersion{
-				Version: ev.Version,
-				Build:   ev.Build,
+				Version: params.EnvoyVersion.Version,
+				Build:   params.EnvoyVersion.Build,
 			},
 		},
+		DynamicMetadata: params.DynamicMetadata,
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not marshal request to json")
+		return nil, "", errors.Wrap(err, "could not marshal request to json")
 	}
 	resp, err := b.client.Post(url.String(), "application/json", bytes.NewReader(jsonBytes))
 	if err != nil {
-		return nil, errors.Wrap(err, "request to bootstrap server failed")
+		return nil, "", errors.Wrap(err, "request to bootstrap server failed")
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK {
 		bodyBytes, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return nil, errors.Wrapf(err, "Unable to read the response with status code: %d. Make sure you are using https URL", resp.StatusCode)
+			return nil, "", errors.Wrapf(err, "Unable to read the response with status code: %d. Make sure you are using https URL", resp.StatusCode)
 		}
 		if resp.StatusCode == http.StatusNotFound && len(bodyBytes) == 0 {
-			return nil, DpNotFoundErr
+			return nil, "", DpNotFoundErr
 		}
 		if resp.StatusCode == http.StatusNotFound && string(bodyBytes) == "404: Page Not Found" { // response body of Go HTTP Server when hit for invalid endpoint
-			return nil, errors.New("There is no /bootstrap endpoint for provided CP address. Double check if the address passed to the CP has a DP Server port (5678 by default), not HTTP API (5681 by default)")
+			return nil, "", errors.New("There is no /bootstrap endpoint for provided CP address. Double check if the address passed to the CP has a DP Server port (5678 by default), not HTTP API (5681 by default)")
 		}
 		if resp.StatusCode/100 == 4 {
-			return nil, InvalidRequestErr(string(bodyBytes))
+			return nil, "", InvalidRequestErr(string(bodyBytes))
 		}
-		return nil, errors.Errorf("unexpected status code: %d", resp.StatusCode)
+		return nil, "", errors.Errorf("unexpected status code: %d", resp.StatusCode)
 	}
 	respBytes, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return nil, errors.Wrap(err, "could not read the body of the response")
+		return nil, "", errors.Wrap(err, "could not read the body of the response")
 	}
-	return respBytes, nil
+	return respBytes, types.BootstrapVersion(resp.Header.Get(types.BootstrapVersionHeader)), nil
 }

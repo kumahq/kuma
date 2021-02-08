@@ -27,6 +27,9 @@ var (
 				Weight:      100,
 				Destination: mesh_proto.MatchAnyService(),
 			}},
+			LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+				LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+			},
 		},
 	}
 )

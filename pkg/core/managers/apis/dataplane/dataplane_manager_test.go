@@ -181,4 +181,41 @@ var _ = Describe("Dataplane Manager", func() {
 		Expect(actual.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag]).To(Equal("zone-1"))
 	})
 
+	It("should set health.ready to false if serviceProbe is provided and health is nil", func() {
+		// setup
+		s := memory.NewStore()
+		manager := dataplane.NewDataplaneManager(s, "zone-1")
+		err := s.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// given
+		input := mesh_core.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "10.0.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+						{
+							Port:    3030,
+							Address: "10.0.0.1",
+							Tags: map[string]string{
+								mesh_proto.ServiceTag: "service-1",
+							},
+							ServiceProbe: &mesh_proto.Dataplane_Networking_Inbound_ServiceProbe{
+								Tcp: &mesh_proto.Dataplane_Networking_Inbound_ServiceProbe_Tcp{},
+							},
+						},
+					},
+				},
+			},
+		}
+
+		err = manager.Create(context.Background(), &input, store.CreateByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+
+		actual := mesh_core.NewDataplaneResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("dp1", "default"))
+		Expect(err).ToNot(HaveOccurred())
+		Expect(actual.Spec.Networking.Inbound[0].Health).ToNot(BeNil())
+		Expect(actual.Spec.Networking.Inbound[0].Health.Ready).To(BeFalse())
+	})
 })

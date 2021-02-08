@@ -41,6 +41,9 @@ message KDSSubscription {
 
   // Status of the KDS subscription.
   KDSSubscriptionStatus status = 5 [ (validate.rules).message.required = true ];
+
+  // Version of Remote Kuma CP.
+  Version version = 6;
 }
 
 // KDSSubscriptionStatus defines status of an KDS subscription.
@@ -66,4 +69,27 @@ message KDSServiceStats {
 
   // Number of xDS responses NACKed by the Dataplane.
   uint64 responses_rejected = 3;
+}
+
+// Version defines version of Kuma ControlPlane
+message Version {
+
+  // Version of Remote Kuma CP
+  KumaCpVersion kumaCp = 1;
+}
+
+// KumaCpVersion describes details of Kuma ControlPlane version
+message KumaCpVersion {
+
+  // Version number of Kuma ControlPlane
+  string version = 1;
+
+  // Git tag of Kuma ControlPlane version
+  string gitTag = 2;
+
+  // Git commit of Kuma ControlPlane version
+  string gitCommit = 3;
+
+  // Build date of Kuma ControlPlane version
+  string buildDate = 4;
 }

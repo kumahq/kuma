@@ -1,0 +1,23 @@
+items:
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: backend
+    online: 5
+    total: 10
+    type: ServiceOverview
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: web
+    online: 20
+    total: 20
+    type: ServiceOverview
+  - creationTime: "0001-01-01T00:00:00Z"
+    mesh: mesh-1
+    modificationTime: "0001-01-01T00:00:00Z"
+    name: orders
+    total: 5
+    type: ServiceOverview
+next: null
+total: 3

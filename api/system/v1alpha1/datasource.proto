@@ -16,5 +16,7 @@ message DataSource {
     string file = 2;
     // Data source is inline bytes.
     google.protobuf.BytesValue inline = 3;
+    // Data source is inline string
+    string inlineString = 4;
   }
 }

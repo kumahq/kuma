@@ -54,6 +54,7 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
         edsClusterConfig:
           edsConfig:
             ads: {}
+            resourceApiVersion: V3
         name: testCluster
         transportSocketMatches:
         - match: {}

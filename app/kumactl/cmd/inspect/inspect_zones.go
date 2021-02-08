@@ -6,6 +6,7 @@ import (
 	"time"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/pkg/errors"
@@ -18,7 +19,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
-func newInspectZonesCmd(ctx *inspectContext) *cobra.Command {
+func newInspectZonesCmd(ctx *cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "zones",
 		Short: "Inspect Zones",
@@ -33,7 +34,7 @@ func newInspectZonesCmd(ctx *inspectContext) *cobra.Command {
 				return err
 			}
 
-			switch format := output.Format(ctx.args.outputFormat); format {
+			switch format := output.Format(ctx.InspectContext.Args.OutputFormat); format {
 			case output.TableFormat:
 				return printZoneOverviews(ctx.Now(), overviews, cmd.OutOrStdout())
 			default:
@@ -50,7 +51,7 @@ func newInspectZonesCmd(ctx *inspectContext) *cobra.Command {
 
 func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"MESH", "NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS"},
+		Headers: []string{"NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "REMOTE-CP VERSION"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -75,14 +76,21 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 				}
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
+				var remoteCpVersion string
+				if lastSubscription.GetVersion() != nil {
+					if lastSubscription.Version.KumaCp != nil {
+						remoteCpVersion = lastSubscription.Version.KumaCp.Version
+					}
+				}
+
 				return []string{
-					meta.GetMesh(),                       // MESH
 					meta.GetName(),                       // NAME,
 					onlineStatus,                         // STATUS
 					table.Ago(lastConnected, now),        // LAST CONNECTED AGO
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO
 					table.Number(totalResponsesSent),     // TOTAL UPDATES
 					table.Number(totalResponsesRejected), // TOTAL ERRORS
+					remoteCpVersion,                      // REMOTE-CP VERSION
 				}
 			}
 		}(),

@@ -13,10 +13,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -25,29 +23,17 @@ import (
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/test"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("run", func() {
 
 	var backupSetupSignalHandler func() <-chan struct{}
-	var backupBootstrapGenerator envoy.BootstrapConfigFactoryFunc
 
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
-		backupBootstrapGenerator = bootstrapGenerator
-		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource, version envoy.EnvoyVersion) (proto.Message, error) {
-			bootstrap := envoy_bootstrap.Bootstrap{}
-			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
-			Expect(err).ToNot(HaveOccurred())
-			err = util_proto.FromYAML(respBytes, &bootstrap)
-			Expect(err).ToNot(HaveOccurred())
-			return &bootstrap, nil
-		}
 	})
 	AfterEach(func() {
 		core.SetupSignalHandler = backupSetupSignalHandler
-		bootstrapGenerator = backupBootstrapGenerator
 	})
 
 	var stopCh chan struct{}
@@ -118,7 +104,13 @@ var _ = Describe("run", func() {
 			}
 
 			// given
-			cmd := newRootCmd()
+			rootCtx := DefaultRootContext()
+			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+				respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
+				Expect(err).ToNot(HaveOccurred())
+				return respBytes, "", nil
+			}
+			cmd := NewRootCmd(rootCtx)
 			cmd.SetArgs(append([]string{"run"}, given.args...))
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
@@ -310,7 +302,7 @@ var _ = Describe("run", func() {
 		defer l.Close()
 
 		// given
-		cmd := newRootCmd()
+		cmd := NewRootCmd(DefaultRootContext())
 		cmd.SetArgs([]string{
 			"run",
 			"--cp-address", "http://localhost:1234",

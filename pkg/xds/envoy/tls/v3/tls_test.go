@@ -106,6 +106,8 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_mesh_ca
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -119,6 +121,8 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                                   inlineBytes: Q0VSVElGSUNBVEU=
                             statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
+                        transportApiVersion: V3
+                      resourceApiVersion: V3
                 requireClientCertificate: true
 `,
 			}),
@@ -143,6 +147,8 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_mesh_ca
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -156,6 +162,8 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                                   inlineBytes: Q0VSVElGSUNBVEU=
                             statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
+                        transportApiVersion: V3
+                      resourceApiVersion: V3
                 requireClientCertificate: true
 `,
 			}),
@@ -191,6 +199,8 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                               credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                               statPrefix: sds_mesh_ca
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -212,6 +222,8 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                             credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                             statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
+                        transportApiVersion: V3
+                      resourceApiVersion: V3
                 requireClientCertificate: true
 `,
 			}),
@@ -312,6 +324,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_mesh_ca
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -325,6 +339,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                                   inlineBytes: Q0VSVElGSUNBVEU=
                             statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
+                        transportApiVersion: V3
+                      resourceApiVersion: V3
 `,
 			}),
 			Entry("dataplane without a token", testCase{
@@ -349,6 +365,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                                     inlineBytes: Q0VSVElGSUNBVEU=
                               statPrefix: sds_mesh_ca
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -362,6 +380,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                                   inlineBytes: Q0VSVElGSUNBVEU=
                             statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
+                        transportApiVersion: V3
+                      resourceApiVersion: V3
 `,
 			}),
 			Entry("dataplane with a token", testCase{
@@ -396,6 +416,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                               credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                               statPrefix: sds_mesh_ca
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
                   - name: identity_cert
                     sdsConfig:
@@ -417,6 +439,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                             credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                             statPrefix: sds_identity_cert
                             targetUri: kuma-control-plane:5677
+                        transportApiVersion: V3
+                      resourceApiVersion: V3
 `,
 			}),
 		)

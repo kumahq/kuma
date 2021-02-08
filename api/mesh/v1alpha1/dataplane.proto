@@ -5,7 +5,8 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/v1alpha1/metrics.proto";
-
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
 // Dataplane defines configuration of a side-car proxy.
@@ -76,6 +77,30 @@ message Dataplane {
       // equal to nil we consider dataplane as healthy. Unhealthy dataplanes
       // will be excluded from Endpoints Discovery Service (EDS)
       Health health = 7;
+
+      // ServiceProbe defines parameters for probing service's port
+      message ServiceProbe {
+        // Interval between consecutive health checks.
+        google.protobuf.Duration interval = 1;
+
+        // Maximum time to wait for a health check response.
+        google.protobuf.Duration timeout = 2;
+
+        // Number of consecutive unhealthy checks before considering a host
+        // unhealthy.
+        google.protobuf.UInt32Value unhealthy_threshold = 3;
+
+        // Number of consecutive healthy checks before considering a host
+        // healthy.
+        google.protobuf.UInt32Value healthy_threshold = 4;
+
+        message Tcp {}
+        // Tcp checker tries to establish tcp connection with destination
+        Tcp tcp = 5;
+      }
+
+      // ServiceProbe defines parameters for probing service's port
+      ServiceProbe serviceProbe = 8;
     }
 
     // Outbound describes a service consumed by the dataplane.

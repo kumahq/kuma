@@ -14,7 +14,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/envoy/accesslog"
+	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
@@ -76,7 +76,8 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 
 	httpGrpcAccessLog := &access_loggers_grpc.HttpGrpcAccessLogConfig{
 		CommonConfig: &access_loggers_grpc.CommonGrpcAccessLogConfig{
-			LogName: fmt.Sprintf("%s;%s", cfg.Address, format.String()),
+			LogName:             fmt.Sprintf("%s;%s", cfg.Address, format.String()),
+			TransportApiVersion: envoy_core.ApiVersion_V3,
 			GrpcService: &envoy_core.GrpcService{
 				TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
 					EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
@@ -86,9 +87,9 @@ func tcpAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (*
 			},
 		},
 	}
-	// if err := format.ConfigureHttpLog(httpGrpcAccessLog); err != nil {
-	// 	return nil, errors.Wrapf(err, "failed to configure %T according to the format string: %s", httpGrpcAccessLog, format)
-	// } // todo
+	if err := format.ConfigureHttpLog(httpGrpcAccessLog); err != nil {
+		return nil, errors.Wrapf(err, "failed to configure %T according to the format string: %s", httpGrpcAccessLog, format)
+	}
 	marshalled, err := proto.MarshalAnyDeterministic(httpGrpcAccessLog)
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not marshall %T", httpGrpcAccessLog)
@@ -108,8 +109,16 @@ func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (
 	}
 
 	fileAccessLog := &access_loggers_file.FileAccessLog{
-		AccessLogFormat: &access_loggers_file.FileAccessLog_Format{
-			Format: format.String(), // todo
+		AccessLogFormat: &access_loggers_file.FileAccessLog_LogFormat{
+			LogFormat: &envoy_core.SubstitutionFormatString{
+				Format: &envoy_core.SubstitutionFormatString_TextFormatSource{
+					TextFormatSource: &envoy_core.DataSource{
+						Specifier: &envoy_core.DataSource_InlineString{
+							InlineString: format.String(),
+						},
+					},
+				},
+			},
 		},
 		Path: cfg.Path,
 	}

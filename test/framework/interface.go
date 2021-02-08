@@ -23,12 +23,18 @@ type deployOptions struct {
 	installationMode InstallationMode
 	skipDefaultMesh  bool
 	helmReleaseName  string
+	helmChartPath    *string
+	helmChartVersion string
 	helmOpts         map[string]string
+	noHelmOpts       []string
 	ctlOpts          map[string]string
 	env              map[string]string
 	ingress          bool
 	cni              bool
 	cpReplicas       int
+	proxyOnly        bool
+	hdsDisabled      bool
+	serviceProbe     bool
 
 	// app specific
 	namespace   string
@@ -40,6 +46,24 @@ type deployOptions struct {
 }
 
 type DeployOptionsFunc func(*deployOptions)
+
+func ProxyOnly() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.proxyOnly = true
+	}
+}
+
+func ServiceProbe() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.serviceProbe = true
+	}
+}
+
+func WithHDS(enabled bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.hdsDisabled = !enabled
+	}
+}
 
 func WithGlobalAddress(address string) DeployOptionsFunc {
 	return func(o *deployOptions) {
@@ -73,12 +97,30 @@ func WithHelmReleaseName(name string) DeployOptionsFunc {
 	}
 }
 
+func WithHelmChartPath(path string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.helmChartPath = &path
+	}
+}
+
+func WithHelmChartVersion(version string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.helmChartVersion = version
+	}
+}
+
 func WithHelmOpt(name, value string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		if o.helmOpts == nil {
 			o.helmOpts = map[string]string{}
 		}
 		o.helmOpts[name] = value
+	}
+}
+
+func WithoutHelmOpt(name string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.noHelmOpts = append(o.noHelmOpts, name)
 	}
 }
 

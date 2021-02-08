@@ -2,7 +2,7 @@
 
 A Helm chart for the Kuma Control Plane
 
-![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.4.6](https://img.shields.io/badge/Version-0.4.6-informational?style=flat-square) ![AppVersion: 1.0.5](https://img.shields.io/badge/AppVersion-1.0.5-informational?style=flat-square)
+![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.4.7](https://img.shields.io/badge/Version-0.4.7-informational?style=flat-square) ![AppVersion: 1.0.6](https://img.shields.io/badge/AppVersion-1.0.6-informational?style=flat-square)
 
 **Homepage:** <https://github.com/kumahq/kuma>
 
@@ -13,6 +13,7 @@ A Helm chart for the Kuma Control Plane
 | global.image.registry | string | `"kong-docker-kuma-docker.bintray.io"` | Default registry for all Kuma Images |
 | global.image.tag | string | `nil` | The default tag for all Kuma images, which itself defaults to .Chart.AppVersion |
 | patchSystemNamespace | bool | `true` | Whether or not to patch the target namespace with the system label |
+| installCrdsOnUpgrade | object | `{"enabled":true,"imagePullSecrets":[]}` | Whether ot not install new CRDs before upgrade  (if any were introduced    with the new version of Kuma) |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
 | controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,remote,global |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
@@ -44,6 +45,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.image.repository | string | `"kuma-cp"` | Kuma CP image repository |
 | controlPlane.secrets | list of { Env: string, Secret: string, Key: string } | `nil` | Secrets to add as environment variables, where `Env` is the name of the env variable, `Secret` is the name of the Secret, and `Key` is the key of the Secret value to use |
 | controlPlane.envVars | object | `{}` | Additional environment variables that will be passed to the control plane |
+| controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |
+| controlPlane.webhooks.ownerReference.additionalRules | string | `""` | Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma. |
 | cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |
 | cni.chained | bool | `false` | Install CNI in chained mode |
 | cni.netDir | string | `"/etc/cni/multus/net.d"` | Set the CNI install directory |
@@ -64,6 +67,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
+| kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 
 ## Custom Resource Definitions
 

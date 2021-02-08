@@ -23,7 +23,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	dp_server "github.com/kumahq/kuma/pkg/dp-server"
+	"github.com/kumahq/kuma/pkg/dp-server/server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
@@ -35,7 +35,6 @@ var _ = Describe("Bootstrap Server", func() {
 
 	var stop chan struct{}
 	var resManager manager.ResourceManager
-	var config *bootstrap_config.BootstrapParamsConfig
 	var baseUrl string
 	var metrics core_metrics.Metrics
 
@@ -59,9 +58,9 @@ var _ = Describe("Bootstrap Server", func() {
 
 	BeforeEach(func() {
 		resManager = manager.NewResourceManager(memory.NewStore())
-		config = bootstrap_config.DefaultBootstrapParamsConfig()
-		config.XdsHost = "localhost"
-		config.XdsPort = 5678
+		config := bootstrap_config.DefaultBootstrapServerConfig()
+		config.Params.XdsHost = "localhost"
+		config.Params.XdsPort = 5678
 
 		port, err := test.GetFreePort()
 		baseUrl = "https://localhost:" + strconv.Itoa(port)
@@ -74,9 +73,9 @@ var _ = Describe("Bootstrap Server", func() {
 			TlsCertFile: filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
 			TlsKeyFile:  filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
 		}
-		dpServer := dp_server.NewDpServer(dpServerCfg, metrics)
+		dpServer := server.NewDpServer(dpServerCfg, metrics)
 
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, true)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,

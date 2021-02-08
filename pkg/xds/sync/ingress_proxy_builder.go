@@ -9,18 +9,21 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/ingress"
 	xds_topology "github.com/kumahq/kuma/pkg/xds/topology"
 )
 
-type ingressProxyBuilder struct {
+type IngressProxyBuilder struct {
 	ResManager         manager.ResourceManager
 	ReadOnlyResManager manager.ReadOnlyResourceManager
 	LookupIP           lookup.LookupIPFunc
 	MetadataTracker    DataplaneMetadataTracker
+
+	apiVersion envoy.APIVersion
 }
 
-func (p *ingressProxyBuilder) build(key core_model.ResourceKey, streamId int64) (*xds.Proxy, error) {
+func (p *IngressProxyBuilder) build(key core_model.ResourceKey, streamId int64) (*xds.Proxy, error) {
 	ctx := context.Background()
 
 	dp, err := p.resolveDataplane(ctx, key)
@@ -47,15 +50,16 @@ func (p *ingressProxyBuilder) build(key core_model.ResourceKey, streamId int64) 
 	}
 
 	proxy := &xds.Proxy{
-		Id:        xds.FromResourceKey(key),
-		Dataplane: dp,
-		Metadata:  p.MetadataTracker.Metadata(streamId),
-		Routing:   *routing,
+		Id:         xds.FromResourceKey(key),
+		APIVersion: p.apiVersion,
+		Dataplane:  dp,
+		Metadata:   p.MetadataTracker.Metadata(streamId),
+		Routing:    *routing,
 	}
 	return proxy, nil
 }
 
-func (p *ingressProxyBuilder) resolveDataplane(ctx context.Context, key core_model.ResourceKey) (*core_mesh.DataplaneResource, error) {
+func (p *IngressProxyBuilder) resolveDataplane(ctx context.Context, key core_model.ResourceKey) (*core_mesh.DataplaneResource, error) {
 	dataplane := core_mesh.NewDataplaneResource()
 
 	if err := p.ReadOnlyResManager.Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
@@ -70,7 +74,7 @@ func (p *ingressProxyBuilder) resolveDataplane(ctx context.Context, key core_mod
 	return resolvedDp, nil
 }
 
-func (p *ingressProxyBuilder) resolveRouting(ctx context.Context, dataplane *core_mesh.DataplaneResource, dataplanes *core_mesh.DataplaneResourceList) (*xds.Routing, error) {
+func (p *IngressProxyBuilder) resolveRouting(ctx context.Context, dataplane *core_mesh.DataplaneResource, dataplanes *core_mesh.DataplaneResourceList) (*xds.Routing, error) {
 	destinations := ingress.BuildDestinationMap(dataplane)
 	endpoints := ingress.BuildEndpointMap(destinations, dataplanes.Items)
 	routes := &core_mesh.TrafficRouteResourceList{}

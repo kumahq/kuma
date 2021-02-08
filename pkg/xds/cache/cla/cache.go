@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+
 	"github.com/kumahq/kuma/pkg/core/datasource"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -12,7 +14,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/metrics"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/patrickmn/go-cache"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -21,7 +22,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -67,12 +69,12 @@ func NewCache(
 	}, nil
 }
 
-func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
-	key := fmt.Sprintf("%s:%s:%s", meshName, service, meshHash)
+func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string, apiVersion envoy_common.APIVersion) (proto.Message, error) {
+	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, service, meshHash)
 	value, found := c.cache.Get(key)
 	if found {
 		c.metrics.WithLabelValues("get", "hit").Inc()
-		return value.(*envoy_api_v2.ClusterLoadAssignment), nil
+		return value.(proto.Message), nil
 	}
 	o := c.onceMap.Get(key)
 	c.metrics.WithLabelValues("get", "hit-wait").Inc()
@@ -92,7 +94,10 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string) 
 			return nil, err
 		}
 		endpointMap := topology.BuildEndpointMap(mesh, c.zone, dataplanes.Items, externalServices.Items, c.dsl)
-		cla := endpoints.CreateClusterLoadAssignment(service, endpointMap[service])
+		cla, err := envoy_endpoints.CreateClusterLoadAssignment(service, endpointMap[service], apiVersion)
+		if err != nil {
+			return nil, err
+		}
 		c.cache.SetDefault(key, cla)
 		c.onceMap.Delete(key)
 		return cla, nil
@@ -100,5 +105,5 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string) 
 	if o.Err != nil {
 		return nil, o.Err
 	}
-	return o.Value.(*envoy_api_v2.ClusterLoadAssignment), nil
+	return o.Value.(proto.Message), nil
 }

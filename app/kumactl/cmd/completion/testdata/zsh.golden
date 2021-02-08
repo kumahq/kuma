@@ -323,33 +323,33 @@ function _kumactl_get {
   cmnds)
     commands=(
       "circuit-breaker:Show a single CircuitBreaker resource"
-      "circuit-breakers:Show CircuitBreakers"
+      "circuit-breakers:Show CircuitBreaker"
       "dataplane:Show a single Dataplane resource"
-      "dataplanes:Show Dataplanes"
+      "dataplanes:Show Dataplane"
       "external-service:Show a single ExternalService resource"
-      "external-services:Show ExternalServices"
-      "fault-injection:Show a single Fault-Injection resource"
-      "fault-injections:Show FaultInjections"
+      "external-services:Show ExternalService"
+      "fault-injection:Show a single FaultInjection resource"
+      "fault-injections:Show FaultInjection"
       "healthcheck:Show a single HealthCheck resource"
-      "healthchecks:Show HealthChecks"
+      "healthchecks:Show HealthCheck"
       "mesh:Show a single Mesh resource"
-      "meshes:Show Meshes"
-      "proxytemplate:Show a single Proxytemplate resource"
-      "proxytemplates:Show ProxyTemplates"
-      "retries:Show Retries"
-      "retry:Show a single retry resource"
+      "meshes:Show Mesh"
+      "proxytemplate:Show a single ProxyTemplate resource"
+      "proxytemplates:Show ProxyTemplate"
+      "retries:Show Retry"
+      "retry:Show a single Retry resource"
       "secret:Show a single Secret resource"
-      "secrets:Show Secrets"
+      "secrets:Show Secret"
       "traffic-log:Show a single TrafficLog resource"
-      "traffic-logs:Show TrafficLogs"
+      "traffic-logs:Show TrafficLog"
       "traffic-permission:Show a single TrafficPermission resource"
-      "traffic-permissions:Show TrafficPermissions"
+      "traffic-permissions:Show TrafficPermission"
       "traffic-route:Show a single TrafficRoute resource"
-      "traffic-routes:Show TrafficRoutes"
+      "traffic-routes:Show TrafficRoute"
       "traffic-trace:Show a single TrafficTrace resource"
-      "traffic-traces:Show TrafficTraces"
-      "zone:Show a single Zone resource"
-      "zones:Show Zones"
+      "traffic-traces:Show TrafficTrace"
+      "zone:Show a single Retry resource"
+      "zones:Show Zone"
     )
     _describe "command" commands
     ;;
@@ -790,6 +790,7 @@ function _kumactl_install {
   cmnds)
     commands=(
       "control-plane:Install Kuma Control Plane on Kubernetes"
+      "crds:Install Kuma Custom Resource Definitions on Kubernetes"
       "dns:Install DNS to Kubernetes"
       "logging:Install Logging backend in Kubernetes cluster (Loki)"
       "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
@@ -803,6 +804,9 @@ function _kumactl_install {
   case "$words[1]" in
   control-plane)
     _kumactl_install_control-plane
+    ;;
+  crds)
+    _kumactl_install_crds
     ;;
   dns)
     _kumactl_install_dns
@@ -865,6 +869,14 @@ function _kumactl_install_control-plane {
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
 }
 
+function _kumactl_install_crds {
+  _arguments \
+    '--only-missing[install only resources which are not already present in a cluster]' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
 function _kumactl_install_dns {
   _arguments \
     '--namespace[namespace to look for Kuma Control Plane service]:' \
@@ -888,6 +900,8 @@ function _kumactl_install_metrics {
     '--kuma-prometheus-sd-image[image name of Kuma Prometheus SD]:' \
     '--kuma-prometheus-sd-version[version of Kuma Prometheus SD]:' \
     '--namespace[namespace to install metrics to]:' \
+    '--without-grafana[disable Grafana resources generation]' \
+    '--without-prometheus[disable Prometheus resources generation]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'

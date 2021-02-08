@@ -31,6 +31,9 @@ const (
 	RegularDpType DpType = "regular"
 	IngressDpType DpType = "ingress"
 	GatewayDpType DpType = "gateway"
+
+	// Used for Service-less dataplanes
+	TCPPortReserved = 49151 // IANA Reserved
 )
 
 type DpType string
@@ -54,6 +57,10 @@ type InboundInterface struct {
 
 func (i InboundInterface) String() string {
 	return fmt.Sprintf("%s:%d:%d", i.DataplaneIP, i.DataplanePort, i.WorkloadPort)
+}
+
+func (i *InboundInterface) IsServiceLess() bool {
+	return i.DataplanePort == TCPPortReserved
 }
 
 type OutboundInterface struct {
@@ -351,6 +358,9 @@ func (d *Dataplane) GetIdentifyingService() string {
 }
 
 func (d *Dataplane) IsIngress() bool {
+	if d.GetNetworking() == nil {
+		return false
+	}
 	return d.Networking.Ingress != nil
 }
 

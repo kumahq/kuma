@@ -17,9 +17,9 @@ import (
 
 type DataplaneWatchdogDependencies struct {
 	resManager            manager.ResourceManager
-	dataplaneProxyBuilder *dataplaneProxyBuilder
+	dataplaneProxyBuilder *DataplaneProxyBuilder
 	dataplaneReconciler   SnapshotReconciler
-	ingressProxyBuilder   *ingressProxyBuilder
+	ingressProxyBuilder   *IngressProxyBuilder
 	ingressReconciler     SnapshotReconciler
 	xdsContextBuilder     *xdsContextBuilder
 	meshCache             *mesh.Cache

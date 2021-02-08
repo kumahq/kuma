@@ -73,3 +73,9 @@ var _ xds.DiscoveryRequest = &discoveryRequest{}
 type discoveryResponse struct {
 	*envoy_api_v2.DiscoveryResponse
 }
+
+var _ xds.DiscoveryResponse = &discoveryResponse{}
+
+func (d *discoveryResponse) Proto() proto.Message {
+	return d
+}
