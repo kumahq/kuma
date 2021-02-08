@@ -8,6 +8,12 @@ global:
 # -- Whether or not to patch the target namespace with the system label
 patchSystemNamespace: true
 
+# -- Whether ot not install new CRDs before upgrade  (if any were introduced
+#    with the new version of Kuma)
+installCrdsOnUpgrade:
+  enabled: true
+  imagePullSecrets: []
+
 controlPlane:
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
@@ -117,6 +123,14 @@ controlPlane:
   # -- Additional environment variables that will be passed to the control plane
   envVars: {}
 
+  webhooks:
+    validator:
+      # -- Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma.
+      additionalRules: ""
+    ownerReference:
+      # -- Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma.
+      additionalRules: ""
+
 cni:
   # -- Install Kuma with CNI instead of proxy init container
   enabled: false
@@ -170,3 +184,8 @@ ingress:
     annotations: {}
     # -- Port on which Ingress is exposed
     port: 10001
+
+kumactl:
+  image:
+    # -- The kumactl image repository
+    repository: kumactl

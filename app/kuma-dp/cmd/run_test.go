@@ -13,7 +13,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 
 	. "github.com/onsi/ginkgo"
@@ -29,20 +28,12 @@ import (
 var _ = Describe("run", func() {
 
 	var backupSetupSignalHandler func() <-chan struct{}
-	var backupBootstrapGenerator envoy.BootstrapConfigFactoryFunc
 
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
-		backupBootstrapGenerator = bootstrapGenerator
-		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource, _ types.BootstrapVersion, version envoy.EnvoyVersion) ([]byte, types.BootstrapVersion, error) {
-			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
-			Expect(err).ToNot(HaveOccurred())
-			return respBytes, "", nil
-		}
 	})
 	AfterEach(func() {
 		core.SetupSignalHandler = backupSetupSignalHandler
-		bootstrapGenerator = backupBootstrapGenerator
 	})
 
 	var stopCh chan struct{}
@@ -113,7 +104,13 @@ var _ = Describe("run", func() {
 			}
 
 			// given
-			cmd := newRootCmd()
+			rootCtx := DefaultRootContext()
+			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+				respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
+				Expect(err).ToNot(HaveOccurred())
+				return respBytes, "", nil
+			}
+			cmd := NewRootCmd(rootCtx)
 			cmd.SetArgs(append([]string{"run"}, given.args...))
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
@@ -305,7 +302,7 @@ var _ = Describe("run", func() {
 		defer l.Close()
 
 		// given
-		cmd := newRootCmd()
+		cmd := NewRootCmd(DefaultRootContext())
 		cmd.SetArgs([]string{
 			"run",
 			"--cp-address", "http://localhost:1234",

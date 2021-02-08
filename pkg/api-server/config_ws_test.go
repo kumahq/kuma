@@ -147,6 +147,7 @@ var _ = Describe("Config WS", func() {
           },
           "runtime": {
             "kubernetes": {
+              "controlPlaneServiceName": "kuma-control-plane",
               "admissionServer": {
                 "address": "",
                 "certDir": "",

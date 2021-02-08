@@ -87,7 +87,7 @@ func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy.Discover
 	}
 
 	if runnable != nil {
-		// kick off watchdag for that stream
+		// kick off watchdog for that stream
 		go runnable.Start(stopCh)
 	}
 	return nil

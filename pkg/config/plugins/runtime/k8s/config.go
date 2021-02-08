@@ -15,6 +15,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 		AdmissionServer: AdmissionServerConfig{
 			Port: 5443,
 		},
+		ControlPlaneServiceName: "kuma-control-plane",
 		Injector: Injector{
 			CNIEnabled:           false,
 			VirtualProbesEnabled: true,
@@ -81,6 +82,8 @@ type KubernetesRuntimeConfig struct {
 	// marshaled objects will be stored in the cache. If equal to 0s then
 	// cache is turned off
 	MarshalingCacheExpirationTime time.Duration `yaml:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
+	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
+	ControlPlaneServiceName string `yaml:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
 }
 
 // Configuration of the Admission WebHook Server implemented by the Control Plane.

@@ -207,6 +207,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		EnvoyVersion:       request.Version.Envoy.Version,
 		EnvoyBuild:         request.Version.Envoy.Build,
 		HdsEnabled:         b.hdsEnabled,
+		DynamicMetadata:    request.DynamicMetadata,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params, request.BootstrapVersion)

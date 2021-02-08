@@ -25,14 +25,23 @@ var (
 	runLog = core.Log.WithName("kuma-dp").WithName("run").WithName("envoy")
 )
 
-type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, dp *rest.Resource, bootstrapVersion types.BootstrapVersion, ev EnvoyVersion) ([]byte, types.BootstrapVersion, error)
+type BootstrapParams struct {
+	Dataplane        *rest.Resource
+	BootstrapVersion types.BootstrapVersion
+	EnvoyVersion     EnvoyVersion
+	DynamicMetadata  map[string]string
+}
+
+type BootstrapConfigFactoryFunc func(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error)
 
 type Opts struct {
-	Config    kuma_dp.Config
-	Generator BootstrapConfigFactoryFunc
-	Dataplane *rest.Resource
-	Stdout    io.Writer
-	Stderr    io.Writer
+	Config          kuma_dp.Config
+	Generator       BootstrapConfigFactoryFunc
+	Dataplane       *rest.Resource
+	DynamicMetadata map[string]string
+	Stdout          io.Writer
+	Stderr          io.Writer
+	Quit            chan struct{}
 }
 
 func New(opts Opts) (*Envoy, error) {
@@ -108,7 +117,12 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	}
 	runLog.Info("fetched Envoy version", "version", envoyVersion)
 	runLog.Info("generating bootstrap configuration")
-	bootstrapConfig, version, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, e.opts.Dataplane, types.BootstrapVersion(e.opts.Config.Dataplane.BootstrapVersion), *envoyVersion)
+	bootstrapConfig, version, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
+		Dataplane:        e.opts.Dataplane,
+		BootstrapVersion: types.BootstrapVersion(e.opts.Config.Dataplane.BootstrapVersion),
+		EnvoyVersion:     *envoyVersion,
+		DynamicMetadata:  e.opts.DynamicMetadata,
+	})
 	if err != nil {
 		return errors.Errorf("Failed to generate Envoy bootstrap config. %v", err)
 	}
@@ -168,6 +182,10 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		} else {
 			runLog.Info("Envoy terminated successfully")
 		}
+		if e.opts.Quit != nil {
+			close(e.opts.Quit)
+		}
+
 		return err
 	}
 }

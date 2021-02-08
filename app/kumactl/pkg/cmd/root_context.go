@@ -5,10 +5,15 @@ import (
 
 	"github.com/pkg/errors"
 
+	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
+	inspect_context "github.com/kumahq/kuma/app/kumactl/cmd/inspect/context"
+	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	util_files "github.com/kumahq/kuma/pkg/util/files"
@@ -30,9 +35,22 @@ type RootRuntime struct {
 	NewAPIServerClient         func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
 }
 
+// RootContext contains variables, functions and components that can be overridden when extending kumactl or running the test.
+// Example:
+//
+// rootCtx := kumactl_cmd.DefaultRootContext()
+// rootCtx.InstallCpContext.Args.ControlPlane_image_tag = "0.0.1"
+// rootCmd := cmd.NewRootCmd(rootCtx)
+// err := rootCmd.Execute()
 type RootContext struct {
-	Args    RootArgs
-	Runtime RootRuntime
+	TypeArgs          map[string]core_model.ResourceType
+	Args              RootArgs
+	Runtime           RootRuntime
+	GetContext        get_context.GetContext
+	ListContext       get_context.ListContext
+	InspectContext    inspect_context.InspectContext
+	InstallCpContext  install_context.InstallCpContext
+	InstallCRDContext install_context.InstallCrdsContext
 }
 
 func DefaultRootContext() *RootContext {
@@ -46,7 +64,36 @@ func DefaultRootContext() *RootContext {
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
 			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
 		},
+		TypeArgs: map[string]core_model.ResourceType{
+			"mesh":               core_mesh.MeshType,
+			"dataplane":          core_mesh.DataplaneType,
+			"externalservice":    core_mesh.ExternalServiceType,
+			"healthcheck":        core_mesh.HealthCheckType,
+			"proxytemplate":      core_mesh.ProxyTemplateType,
+			"traffic-log":        core_mesh.TrafficLogType,
+			"traffic-permission": core_mesh.TrafficPermissionType,
+			"traffic-route":      core_mesh.TrafficRouteType,
+			"traffic-trace":      core_mesh.TrafficTraceType,
+			"fault-injection":    core_mesh.FaultInjectionType,
+			"circuit-breaker":    core_mesh.CircuitBreakerType,
+			"retry":              core_mesh.RetryType,
+			"secret":             system.SecretType,
+			"zone":               system.ZoneType,
+		},
+		InstallCpContext:  install_context.DefaultInstallCpContext(),
+		InstallCRDContext: install_context.DefaultInstallCrdsContext(),
 	}
+}
+
+func (rc *RootContext) TypeForArg(arg string) (core_model.ResourceType, error) {
+	typ, ok := rc.TypeArgs[arg]
+	if !ok {
+		return "", errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, "+
+			"healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, "+
+			"traffic-trace, fault-injection, circuit-breaker, retry, secret, zone",
+			arg)
+	}
+	return typ, nil
 }
 
 func (rc *RootContext) LoadConfig() error {

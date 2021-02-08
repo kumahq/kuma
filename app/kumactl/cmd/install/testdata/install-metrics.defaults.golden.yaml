@@ -2515,7 +2515,7 @@ data:
       "version": 1,
       "description": "Statistics of a single Dataplane in Kuma Service Mesh"
     }
-
+    
   kuma-mesh.json: |
     {
       "__inputs": [
@@ -3265,7 +3265,7 @@ data:
       "version": 1,
       "description": "Statistics of the single Mesh in Kuma Service Mesh"
     }
-
+    
   kuma-service-to-service.json: |
     {
       "__inputs": [
