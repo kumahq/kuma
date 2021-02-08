@@ -13,9 +13,10 @@ import (
 
 // RootContext contains variables, functions and components that can be overridden when extending kuma-dp or running the test.
 type RootContext struct {
-	ComponentManager   component.Manager
-	BootstrapGenerator envoy.BootstrapConfigFactoryFunc
-	Config             *kumadp.Config
+	ComponentManager         component.Manager
+	BootstrapGenerator       envoy.BootstrapConfigFactoryFunc
+	BootstrapDynamicMetadata map[string]string
+	Config                   *kumadp.Config
 }
 
 func DefaultRootContext() *RootContext {
@@ -26,6 +27,7 @@ func DefaultRootContext() *RootContext {
 			Timeout:   10 * time.Second,
 			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 		}),
-		Config: &config,
+		Config:                   &config,
+		BootstrapDynamicMetadata: map[string]string{},
 	}
 }

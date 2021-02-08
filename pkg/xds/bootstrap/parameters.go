@@ -22,4 +22,5 @@ type configParameters struct {
 	EnvoyVersion       string
 	EnvoyBuild         string
 	HdsEnabled         bool
+	DynamicMetadata    map[string]string
 }
