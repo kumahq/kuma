@@ -8,7 +8,7 @@ KUMA_UNIVERSAL_DOCKERFILE ?= test/dockerfiles/Dockerfile.universal
 
 TEST_NAMES = $(shell ls -1 ./test/e2e)
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
-PKG_LIST ?= $(ALL_TESTS)
+E2E_PKG_LIST ?= $(ALL_TESTS)
 
 define gen-k8sclusters
 .PHONY: test/e2e/kind/start/cluster/$1
@@ -50,10 +50,12 @@ test/e2e/kind/stop: $(K8SCLUSTERS_STOP_TARGETS)
 
 .PHONY: test/e2e/test
 test/e2e/test:
-	K8SCLUSTERS="$(K8SCLUSTERS)" \
-	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
-	API_VERSION="$(API_VERSION)" \
-		$(GO_TEST) -v -timeout=45m $(PKG_LIST)
+	for t in $(E2E_PKG_LIST); do \
+	    K8SCLUSTERS="$(K8SCLUSTERS)" \
+	    KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
+	    API_VERSION="$(API_VERSION)" \
+		    $(GO_TEST) -v -timeout=45m $$t; \
+    done
 
 # test/e2e/debug is used for quicker feedback of E2E tests (ex. debugging flaky tests)
 # It runs tests with fail fast which means you don't have to wait for all tests to get information that something failed
@@ -66,7 +68,7 @@ test/e2e/debug: build/kumactl images docker/build/universal test/e2e/kind/start
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 	API_VERSION="$(API_VERSION)" \
 	GINKGO_EDITOR_INTEGRATION=true \
-		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(PKG_LIST)
+		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
 	$(MAKE) test/e2e/kind/stop
 
 .PHONY: test/e2e
