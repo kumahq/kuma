@@ -188,35 +188,27 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	}
 	dpOverviews := core_mesh.NewDataplaneOverviews(*dp, *dpInsights)
 
-	incTotal := func(svc string) {
-		if _, ok := insight.Services[svc]; !ok {
-			insight.Services[svc] = &mesh_proto.ServiceInsight_DataplaneStat{}
-		}
-		insight.Services[svc].Total++
-	}
-
 	for _, dpOverview := range dpOverviews.Items {
 		status, _ := dpOverview.GetStatus()
 
-		switch status {
-		case core_mesh.Online:
-			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
-				incTotal(inbound.GetService())
-				insight.Services[inbound.GetService()].Online++
+		for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
+			svcName := inbound.GetService()
+
+			if _, ok := insight.Services[svcName]; !ok {
+				insight.Services[svcName] = &mesh_proto.ServiceInsight_DataplaneStat{}
 			}
-		case core_mesh.Offline:
-			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
-				incTotal(inbound.GetService())
-				insight.Services[inbound.GetService()].Offline++
-			}
-		case core_mesh.PartiallyDegraded:
-			for _, inbound := range dpOverview.Spec.Dataplane.Networking.Inbound {
-				incTotal(inbound.GetService())
-				if inbound.Health != nil && !inbound.Health.Ready {
-					insight.Services[inbound.GetService()].Offline++
-				} else {
-					insight.Services[inbound.GetService()].Online++
-				}
+
+			svc := insight.Services[svcName]
+
+			svc.Total++
+
+			switch status {
+			case core_mesh.Online:
+				svc.Online++
+			case core_mesh.Offline:
+				svc.Offline++
+			case core_mesh.PartiallyDegraded:
+				svc.PartiallyDegraded++
 			}
 		}
 	}
@@ -271,8 +263,54 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 			Envoy:  map[string]*mesh_proto.MeshInsight_DataplaneStat{},
 		},
 	}
+
+	dataplanes := &core_mesh.DataplaneResourceList{}
+
+	if err := r.rm.List(context.Background(), dataplanes, store.ListByMesh(mesh)); err != nil {
+		return err
+	}
+
+	insight.Dataplanes.Total = uint32(len(dataplanes.GetItems()))
+
+	dpInsights := &core_mesh.DataplaneInsightResourceList{}
+
+	if err := r.rm.List(context.Background(), dpInsights, store.ListByMesh(mesh)); err != nil {
+		return err
+	}
+
+	dpOverviews := core_mesh.NewDataplaneOverviews(*dataplanes, *dpInsights)
+
+	for _, dpOverview := range dpOverviews.Items {
+		dpInsight := dpOverview.Spec.DataplaneInsight
+		dpSubscription, _ := dpInsight.GetLatestSubscription()
+		kumaDpVersion := getOrDefault(dpSubscription.GetVersion().GetKumaDp().GetVersion())
+		envoyVersion := getOrDefault(dpSubscription.GetVersion().GetEnvoy().GetVersion())
+		ensureVersionExists(kumaDpVersion, insight.DpVersions.KumaDp)
+		ensureVersionExists(envoyVersion, insight.DpVersions.Envoy)
+
+		status, _ := dpOverview.GetStatus()
+
+		switch status {
+		case core_mesh.Online:
+			insight.Dataplanes.Online++
+			insight.DpVersions.KumaDp[kumaDpVersion].Online++
+			insight.DpVersions.Envoy[envoyVersion].Online++
+		case core_mesh.PartiallyDegraded:
+			insight.Dataplanes.PartiallyDegraded++
+			insight.DpVersions.KumaDp[kumaDpVersion].PartiallyDegraded++
+			insight.DpVersions.Envoy[envoyVersion].PartiallyDegraded++
+		case core_mesh.Offline:
+			insight.Dataplanes.Offline++
+			insight.DpVersions.KumaDp[kumaDpVersion].Offline++
+			insight.DpVersions.Envoy[envoyVersion].Offline++
+		}
+
+		updateTotal(kumaDpVersion, insight.DpVersions.KumaDp)
+		updateTotal(envoyVersion, insight.DpVersions.Envoy)
+	}
+
 	for _, resType := range registry.Global().ListTypes() {
-		if !meshScoped(resType) {
+		if !meshScoped(resType) || resType == core_mesh.DataplaneType || resType == core_mesh.DataplaneInsightType {
 			continue
 		}
 		list, err := registry.Global().NewList(resType)
@@ -282,33 +320,10 @@ func (r *resyncer) createOrUpdateMeshInsight(mesh string) error {
 		if err := r.rm.List(context.Background(), list, store.ListByMesh(mesh)); err != nil {
 			return err
 		}
-		switch resType {
-		case core_mesh.DataplaneType:
-			insight.Dataplanes.Total = uint32(len(list.GetItems()))
-		case core_mesh.DataplaneInsightType:
-			for _, dpInsight := range list.(*core_mesh.DataplaneInsightResourceList).Items {
-				dpSubscription, _ := dpInsight.Spec.GetLatestSubscription()
-				kumaDpVersion := getOrDefault(dpSubscription.GetVersion().GetKumaDp().GetVersion())
-				envoyVersion := getOrDefault(dpSubscription.GetVersion().GetEnvoy().GetVersion())
-				ensureVersionExists(kumaDpVersion, insight.DpVersions.KumaDp)
-				ensureVersionExists(envoyVersion, insight.DpVersions.Envoy)
-				if dpInsight.Spec.IsOnline() {
-					insight.Dataplanes.Online++
-					insight.DpVersions.KumaDp[kumaDpVersion].Online++
-					insight.DpVersions.Envoy[envoyVersion].Online++
-				} else {
-					insight.Dataplanes.Offline++
-					insight.DpVersions.KumaDp[kumaDpVersion].Offline++
-					insight.DpVersions.Envoy[envoyVersion].Offline++
-				}
-				updateTotal(kumaDpVersion, insight.DpVersions.KumaDp)
-				updateTotal(envoyVersion, insight.DpVersions.Envoy)
-			}
-		default:
-			if len(list.GetItems()) != 0 {
-				insight.Policies[string(resType)] = &mesh_proto.MeshInsight_PolicyStat{
-					Total: uint32(len(list.GetItems())),
-				}
+
+		if len(list.GetItems()) != 0 {
+			insight.Policies[string(resType)] = &mesh_proto.MeshInsight_PolicyStat{
+				Total: uint32(len(list.GetItems())),
 			}
 		}
 	}
