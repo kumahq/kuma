@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("Test Universal Transparent Proxy deployment", func() {
 
-	const iterations = 100
+	const iterations = 10
 
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
@@ -57,6 +57,19 @@ var _ = Describe("Test Universal Transparent Proxy deployment", func() {
 				func() (string, error) {
 					stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
 						"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_8080.mesh")
+					if err != nil {
+						return "should retry", err
+					}
+					if strings.Contains(stdout, "HTTP/1.1 200 OK") {
+						return "Accessing service successful", nil
+					}
+					return "should retry", errors.Errorf("should retry")
+				})
+			retry.DoWithRetry(cluster.GetTesting(), "curl remote service with dots",
+				DefaultRetries, DefaultTimeout,
+				func() (string, error) {
+					stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+						"curl", "-v", "-m", "3", "echo-server.kuma-test.svc.8080.mesh")
 					if err != nil {
 						return "should retry", err
 					}
