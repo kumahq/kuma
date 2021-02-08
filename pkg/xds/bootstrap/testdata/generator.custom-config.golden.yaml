@@ -59,6 +59,8 @@ node:
       8443, "tags": { "kuma.io/protocol": "http2", "kuma.io/service": "backend" }
       }, ] } }'
     dataplaneTokenPath: /tmp/token
+    dynamicMetadata:
+      test: value
     version:
       envoy:
         build: hash/1.15.0/RELEASE
