@@ -6,16 +6,16 @@ set -e
 # Utility functions
 #
 
-function resolve_ip {
+resolve_ip() {
   getent hosts ${DATAPLANE_HOSTNAME} 2>/dev/null | awk -e '{ print $1 }'
 }
 
-function fail {
+fail() {
   printf 'Error: %s\n' "${1}" >&2  ## Send message to stderr. Exclude >&2 if you don't want it that way.
   exit "${2-1}"                    ## Return a code specified by $2 or 1 by default.
 }
 
-function create_dataplane {
+create_dataplane() {
   DATAPLANE_HOSTNAME="$1"
   DATAPLANE_PUBLIC_PORT=$2
   DATAPLANE_LOCAL_PORT=$3

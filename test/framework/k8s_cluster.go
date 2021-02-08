@@ -282,15 +282,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 	return c.controlplane.InstallCP(args...)
 }
 
-// deployKumaViaHelm uses Helm to install kuma
-// using the kuma helm chart
-func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
-	// run from test/e2e
-	helmChartPath, err := filepath.Abs(HelmChartPath)
-	if err != nil {
-		return err
-	}
-
+func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) map[string]string {
 	values := map[string]string{
 		"controlPlane.mode":                      mode,
 		"global.image.tag":                       kuma_version.Build.Version,
@@ -300,9 +292,11 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		"dataPlane.initImage.repository":         KumaInitImageRepo,
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(opts.skipDefaultMesh),
 	}
+
 	if opts.cpReplicas != 0 {
 		values["controlPlane.replicas"] = strconv.Itoa(opts.cpReplicas)
 	}
+
 	for opt, value := range opts.helmOpts {
 		values[opt] = value
 	}
@@ -319,8 +313,12 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	case core.Global:
 		values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
 	case core.Remote:
-		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
+		values["controlPlane.zone"] = kumactlOpts.CPName
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
+	}
+
+	for _, value := range opts.noHelmOpts {
+		delete(values, value)
 	}
 
 	prefixedValues := map[string]string{}
@@ -328,9 +326,31 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		prefixedValues[HelmSubChartPrefix+k] = v
 	}
 
+	return prefixedValues
+}
+
+type helmFn func(testing.TestingT, *helm.Options, string, string) error
+
+func (c *K8sCluster) processViaHelm(mode string, opts *deployOptions, fn helmFn) error {
+	// run from test/e2e
+	helmChart, err := filepath.Abs(HelmChartPath)
+	if err != nil {
+		return err
+	}
+
+	if opts.helmChartPath != nil {
+		helmChart = *opts.helmChartPath
+	}
+
+	values := genValues(mode, opts, c.GetKumactlOptions())
+
 	helmOpts := &helm.Options{
-		SetValues:      prefixedValues,
+		SetValues:      values,
 		KubectlOptions: c.GetKubectlOptions(KumaNamespace),
+	}
+
+	if opts.helmChartVersion != "" {
+		helmOpts.Version = opts.helmChartVersion
 	}
 
 	releaseName := opts.helmReleaseName
@@ -348,7 +368,19 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		}
 	}
 
-	return helm.InstallE(c.t, helmOpts, helmChartPath, releaseName)
+	return fn(c.t, helmOpts, helmChart, releaseName)
+}
+
+// deployKumaViaHelm uses Helm to install kuma
+// using the kuma helm chart
+func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
+	return c.processViaHelm(mode, opts, helm.InstallE)
+}
+
+// upgradeKumaViaHelm uses Helm to upgrade kuma
+// using the kuma helm chart
+func (c *K8sCluster) upgradeKumaViaHelm(mode string, opts *deployOptions) error {
+	return c.processViaHelm(mode, opts, helm.UpgradeE)
 }
 
 func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
@@ -408,6 +440,58 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 
 	err = c.controlplane.FinalizeAdd()
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
+	if c.controlplane == nil {
+		return errors.New("To upgrade Kuma has to be installed first")
+	}
+
+	opts := newDeployOpt(fs...)
+	if opts.cpReplicas != 0 {
+		c.controlplane.replicas = opts.cpReplicas
+	}
+
+	switch mode {
+	case core.Remote:
+		if opts.globalAddress == "" {
+			return errors.Errorf("GlobalAddress expected for remote")
+		}
+	}
+
+	if err := c.upgradeKumaViaHelm(mode, opts); err != nil {
+		return err
+	}
+
+	if err := c.WaitApp(KumaServiceName, KumaNamespace, c.controlplane.replicas); err != nil {
+		return err
+	}
+
+	if opts.cni {
+		if err := c.WaitApp(CNIApp, CNINamespace, 1); err != nil {
+			return err
+		}
+	}
+
+	if !opts.skipDefaultMesh {
+		// wait for the mesh
+		_, err := retry.DoWithRetryE(c.t,
+			"get default mesh",
+			DefaultRetries,
+			DefaultTimeout,
+			func() (s string, err error) {
+				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+			})
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := c.controlplane.FinalizeAdd(); err != nil {
 		return err
 	}
 
