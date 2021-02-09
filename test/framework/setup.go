@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/logger"
+	"github.com/gruntwork-io/terratest/modules/testing"
+
 	"github.com/kumahq/kuma/pkg/tls"
 
 	"github.com/go-errors/errors"
@@ -86,6 +89,51 @@ func WaitPodsAvailable(namespace, app string) InstallFunc {
 		}
 		for _, p := range pods {
 			err := k8s.WaitUntilPodAvailableE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), DefaultRetries, DefaultTimeout)
+			if err != nil {
+				return err
+			}
+		}
+		return nil
+	}
+}
+
+func WaitUntilPodCompleteE(t testing.TestingT, options *k8s.KubectlOptions, podName string, retries int, sleepBetweenRetries time.Duration) error {
+	statusMsg := fmt.Sprintf("Wait for pod %s to be provisioned.", podName)
+	message, err := retry.DoWithRetryE(
+		t,
+		statusMsg,
+		retries,
+		sleepBetweenRetries,
+		func() (string, error) {
+			pod, err := k8s.GetPodE(t, options, podName)
+			if err != nil {
+				return "", err
+			}
+			for _, cs := range pod.Status.ContainerStatuses {
+				if cs.State.Terminated == nil || cs.State.Terminated.ExitCode != 0 {
+					return "", errors.Errorf("Pod is not complete yet")
+				}
+			}
+			return "Pod is now complete", nil
+		},
+	)
+	if err != nil {
+		logger.Logf(t, "Timedout waiting for Pod to be completed: %s", err)
+		return err
+	}
+	logger.Logf(t, message)
+	return nil
+}
+
+func WaitPodsComplete(namespace, app string) InstallFunc {
+	return func(c Cluster) error {
+		pods, err := k8s.ListPodsE(c.GetTesting(), c.GetKubectlOptions(namespace),
+			kube_meta.ListOptions{LabelSelector: fmt.Sprintf("app=%s", app)})
+		if err != nil {
+			return err
+		}
+		for _, p := range pods {
+			err := WaitUntilPodCompleteE(c.GetTesting(), c.GetKubectlOptions(namespace), p.GetName(), DefaultRetries, DefaultTimeout)
 			if err != nil {
 				return err
 			}
@@ -286,6 +334,44 @@ spec:
 		WaitService(TestNamespace, name),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
+	)
+}
+
+func DemoClientJobK8s(mesh, destination string) InstallFunc {
+	const name = "demo-job-client"
+	deployment := `
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: demo-job-client
+  namespace: kuma-test
+  labels:
+    app: demo-job-client
+spec:
+  template:
+    metadata:
+      annotations:
+        kuma.io/mesh: %s
+      labels:
+        app: demo-job-client
+    spec:
+      containers:
+      - name: demo-job-client
+        image: kuma-universal
+        imagePullPolicy: IfNotPresent
+        command: [ "curl" ]
+        args:
+          - -v
+          - -m
+          - "3"
+          - --fail
+          - %s
+      restartPolicy: OnFailure
+`
+	return Combine(
+		YamlK8s(fmt.Sprintf(deployment, mesh, destination)),
+		WaitNumPods(1, name),
+		WaitPodsComplete(TestNamespace, name),
 	)
 }
 
