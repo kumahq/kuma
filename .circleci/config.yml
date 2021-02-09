@@ -336,11 +336,6 @@ jobs:
           export PATH=$HOME/go/bin:$PATH
           make dev/tools
     - run:
-        name: "Setup Helm"
-        command: |
-          export PATH=$HOME/go/bin:$PATH
-          helm repo add kuma https://kumahq.github.io/charts
-    - run:
         name: "Run integration tests"
         command: |
           export PATH=$HOME/go/bin:$PATH
@@ -348,6 +343,56 @@ jobs:
     - store_artifacts:
         path: build/coverage
         destination: /coverage
+
+  e2e:
+    executor: vm
+    parameters:
+      api:
+        description: XDS API version
+        type: string
+        default: v2
+    parallelism: 2
+    environment:
+      GOPATH: /home/circleci/.go-kuma-go
+    steps:
+      - checkout
+      - run:
+          name: "Install Go"
+          command: |
+            apt update && apt install -y curl git make
+            # see https://golang.org/doc/install#tarball
+            curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
+      - restore_cache:
+          keys:
+            # prefer the exact match
+            - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+      - run:
+          name: "Download Go modules"
+          command: |
+            export PATH=$HOME/go/bin:$PATH
+            go mod download
+      # since execution of go commands might change contents of "go.sum", we have to save cache immediately
+      - save_cache:
+          key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+          paths:
+            - "/home/circleci/.go-kuma-go"
+      - run:
+          name: "Install all development tools"
+          command: |
+            export PATH=$HOME/go/bin:$PATH
+            make dev/tools
+      - run:
+          name: "Setup Helm"
+          command: |
+            export PATH=$HOME/go/bin:$PATH
+            helm repo add kuma https://kumahq.github.io/charts
+      - run:
+          name: "Run E2E tests"
+          command: |
+            export PATH=$HOME/go/bin:$PATH
+            export E2E_PKG_LIST=$(make test/e2e/list | circleci tests split --split-by=timings)
+            export API_VERSION=<< parameters.api >>
+            make test/e2e
 
   build:
     executor: golang
@@ -611,13 +656,11 @@ workflows:
         # custom parameters
         kubernetes_version: v1.18.9
         use_local_kuma_images: true
-    - integration:
+    - e2e:
         <<: *commit_workflow_filters
         name: test/e2e
         requires:
           - images
-        # custom parameters
-        target: test/e2e
 
   kuma-master:
     jobs:
@@ -698,20 +741,18 @@ workflows:
           # custom parameters
           kubernetes_version: v1.18.9
           use_local_kuma_images: true
-      - integration:
+      - e2e:
           <<: *master_workflow_filters
           name: test/e2e
           requires:
             - images
-          # custom parameters
-          target: test/e2e
-      - integration:
+      - e2e:
           <<: *commit_workflow_filters
           name: test/e2e V3
           requires:
             - images
           # custom parameters
-          target: test/e2e API_VERSION=v3
+          api: v3
 
   kuma-release:
     jobs:

@@ -37,7 +37,7 @@ var _ = Describe("DNS server", func() {
 			m, err := core_metrics.NewMetrics("Standalone")
 			metrics = m
 			Expect(err).ToNot(HaveOccurred())
-			server, err := NewDNSServer(port, dnsResolver, metrics)
+			server, err := NewDNSServer(port, dnsResolver, metrics, DnsNameToKumaCompliant)
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
@@ -185,6 +185,33 @@ var _ = Describe("DNS server", func() {
 
 			// then
 			Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("my.service.mesh.\t60\tIN\tA\t%s", ip)))
+
+			// and metrics are published
+			Expect(test_metrics.FindMetric(metrics, "dns_server")).ToNot(BeNil())
+			Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "resolved").Counter.GetValue()).To(Equal(1.0))
+		})
+
+		It("should resolve converted services with '.'", func() {
+			// given
+			var err error
+			dnsResolver.SetVIPs(vips.List{
+				"my-service_test-namespace_svc_80": "240.0.0.1",
+			})
+			ip, err = dnsResolver.ForwardLookupFQDN("my-service_test-namespace_svc_80.mesh")
+			Expect(err).ToNot(HaveOccurred())
+
+			// when
+			client := new(dns.Client)
+			message := new(dns.Msg)
+			_ = message.SetQuestion("my-service.test-namespace.svc.80.mesh.", dns.TypeA)
+			var response *dns.Msg
+			Eventually(func() error {
+				response, _, err = client.Exchange(message, fmt.Sprintf("127.0.0.1:%d", port))
+				return err
+			}).ShouldNot(HaveOccurred())
+
+			// then
+			Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("my-service.test-namespace.svc.80.mesh.\t60\tIN\tA\t%s", ip)))
 
 			// and metrics are published
 			Expect(test_metrics.FindMetric(metrics, "dns_server")).ToNot(BeNil())

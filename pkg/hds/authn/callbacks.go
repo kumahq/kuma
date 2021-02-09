@@ -3,9 +3,11 @@ package authn
 import (
 	"context"
 	"sync"
+	"time"
 
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/pkg/errors"
+	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc/metadata"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -20,18 +22,28 @@ const authorization = "authorization"
 
 // Inspired by pkg/xds/auth/callbacks.go
 
-func NewCallbacks(resManager core_manager.ResourceManager, authenticator xds_auth.Authenticator) hds_callbacks.Callbacks {
+type DPNotFoundRetry struct {
+	Backoff  time.Duration
+	MaxTimes uint
+}
+
+func NewCallbacks(resManager core_manager.ResourceManager, authenticator xds_auth.Authenticator, dpNotFoundRetry DPNotFoundRetry) hds_callbacks.Callbacks {
+	if dpNotFoundRetry.Backoff == 0 { // backoff cannot be 0
+		dpNotFoundRetry.Backoff = 1 * time.Millisecond
+	}
 	return &authn{
-		resManager:    resManager,
-		authenticator: authenticator,
-		contexts:      map[core_xds.StreamID]context.Context{},
-		authenticated: map[core_xds.StreamID]string{},
+		resManager:      resManager,
+		authenticator:   authenticator,
+		contexts:        map[core_xds.StreamID]context.Context{},
+		authenticated:   map[core_xds.StreamID]string{},
+		dpNotFoundRetry: dpNotFoundRetry,
 	}
 }
 
 type authn struct {
-	resManager    core_manager.ResourceManager
-	authenticator xds_auth.Authenticator
+	resManager      core_manager.ResourceManager
+	authenticator   xds_auth.Authenticator
+	dpNotFoundRetry DPNotFoundRetry
 
 	sync.RWMutex // protects contexts and authenticated
 	// contexts stores context for every stream, since Context from which we can extract auth data is only available in OnStreamOpen
@@ -130,11 +142,19 @@ func (a *authn) authenticate(credential xds_auth.Credential, nodeID string) erro
 	if err != nil {
 		return errors.Wrap(err, "HDS request must have a valid Proxy Id")
 	}
-	err = a.resManager.Get(context.Background(), dataplane, core_store.GetByKey(proxyId.Name, proxyId.Mesh))
-	if err != nil {
+	// Retry on DP not found because HDS is initiated in the parallel with XDS.
+	// It is very likely that Dataplane is not yet created.
+	// We could just close the stream with an error and Envoy would retry, but to have better UX (not printing confusing logs) it's better to retry
+	backoff, _ := retry.NewConstant(a.dpNotFoundRetry.Backoff)
+	backoff = retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), backoff)
+	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+		err := a.resManager.Get(context.Background(), dataplane, core_store.GetByKey(proxyId.Name, proxyId.Mesh))
 		if core_store.IsResourceNotFound(err) {
-			return errors.New("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp")
+			return retry.RetryableError(errors.New("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
 		}
+		return err
+	})
+	if err != nil {
 		return err
 	}
 
