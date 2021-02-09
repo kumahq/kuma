@@ -1,4 +1,4 @@
-package e2e_test
+package deploy_test
 
 import (
 	"strings"

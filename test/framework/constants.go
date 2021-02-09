@@ -40,7 +40,7 @@ const (
 	redirectPortOutbound = "15001"
 )
 
-var HelmChartPath = "../../deployments/charts/kuma"
+var HelmChartPath = "../../../deployments/charts/kuma"
 var HelmSubChartPrefix = ""
 
 var KumaNamespace = "kuma-system"

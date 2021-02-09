@@ -1,4 +1,4 @@
-package e2e_test
+package tracing_test
 
 import (
 	"fmt"
