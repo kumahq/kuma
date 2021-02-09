@@ -71,7 +71,7 @@ var _ = Describe("Auth Callbacks", func() {
 		memStore := memory.NewStore()
 		resManager = core_manager.NewResourceManager(memStore)
 		testAuth = &testAuthenticator{}
-		callbacks = util_xds_v2.AdaptCallbacks(auth.NewCallbacks(resManager, testAuth))
+		callbacks = util_xds_v2.AdaptCallbacks(auth.NewCallbacks(resManager, testAuth, auth.DPNotFoundRetry{}))
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
@@ -195,7 +195,7 @@ var _ = Describe("Auth Callbacks", func() {
 		})
 
 		// then
-		Expect(err).To(MatchError("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
+		Expect(err).To(MatchError("retryable: dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
 	})
 
 	It("should throw an error on authentication fail", func() {
