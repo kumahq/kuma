@@ -3,8 +3,10 @@ package auth
 import (
 	"context"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
+	"github.com/sethvargo/go-retry"
 	"google.golang.org/grpc/metadata"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -18,20 +20,32 @@ import (
 
 const authorization = "authorization"
 
-func NewCallbacks(resManager core_manager.ResourceManager, authenticator Authenticator) util_xds.Callbacks {
+// DPNotFoundRetry if callbacks are used in xDS other than ADS.
+// It might be useful to have a retry when dataplane is not found, because on Universal ADS is creating it.
+type DPNotFoundRetry struct {
+	Backoff  time.Duration
+	MaxTimes uint
+}
+
+func NewCallbacks(resManager core_manager.ResourceManager, authenticator Authenticator, dpNotFoundRetry DPNotFoundRetry) util_xds.Callbacks {
+	if dpNotFoundRetry.Backoff == 0 { // backoff cannot be 0
+		dpNotFoundRetry.Backoff = 1 * time.Millisecond
+	}
 	return &authCallbacks{
-		resManager:    resManager,
-		authenticator: authenticator,
-		contexts:      map[core_xds.StreamID]context.Context{},
-		authenticated: map[core_xds.StreamID]string{},
+		resManager:      resManager,
+		authenticator:   authenticator,
+		contexts:        map[core_xds.StreamID]context.Context{},
+		authenticated:   map[core_xds.StreamID]string{},
+		dpNotFoundRetry: dpNotFoundRetry,
 	}
 }
 
 // authCallback checks if the DiscoveryRequest is authorized, ie. if it has a valid Dataplane Token/Service Account Token.
 type authCallbacks struct {
 	util_xds.NoopCallbacks
-	resManager    core_manager.ResourceManager
-	authenticator Authenticator
+	resManager      core_manager.ResourceManager
+	authenticator   Authenticator
+	dpNotFoundRetry DPNotFoundRetry
 
 	sync.RWMutex // protects contexts and authenticated
 	// contexts stores context for every stream, since Context from which we can extract auth data is only available in OnStreamOpen
@@ -112,11 +126,16 @@ func (a *authCallbacks) authenticate(credential Credential, req util_xds.Discove
 		if err != nil {
 			return errors.Wrap(err, "SDS request must have a valid Proxy Id")
 		}
-		err = a.resManager.Get(context.Background(), dataplane, core_store.GetByKey(proxyId.Name, proxyId.Mesh))
-		if err != nil {
+		backoff, _ := retry.NewConstant(a.dpNotFoundRetry.Backoff)
+		backoff = retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), backoff)
+		err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+			err := a.resManager.Get(ctx, dataplane, core_store.GetByKey(proxyId.Name, proxyId.Mesh))
 			if core_store.IsResourceNotFound(err) {
-				return errors.New("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp")
+				return retry.RetryableError(errors.New("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
 			}
+			return err
+		})
+		if err != nil {
 			return err
 		}
 	}
