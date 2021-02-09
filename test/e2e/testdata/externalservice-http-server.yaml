@@ -4,10 +4,11 @@ kind: Service
 metadata:
   name: externalservice-http-server
   namespace: externalservice-namespace
+  annotations:
+    80.service.kuma.io/protocol: http
 spec:
   ports:
     - port: 80
-      appProtocol: http
       name: http
       targetPort: 80
   selector:
