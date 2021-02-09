@@ -24,3 +24,7 @@ func DnsNameToKumaCompliant(name string) (string, error) {
 
 	return strings.Replace(name, ".", "_", toReplace-1), nil
 }
+
+func KumaCompliantToDnsName(name string) (string, error) {
+	return strings.ReplaceAll(name, "_", "."), nil
+}

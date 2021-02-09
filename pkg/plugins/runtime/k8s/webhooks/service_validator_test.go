@@ -3,6 +3,8 @@ package webhooks_test
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -41,7 +43,14 @@ var _ = Describe("ServiceValidator", func() {
 	DescribeTable("should make a proper admission verdict",
 		func(given testCase) {
 			// setup
-			validator := &ServiceValidator{}
+			resolver := resolver.NewDNSResolver("mesh")
+			resolver.SetVIPs(map[string]string{
+				"kuma-test_kuma-example_svc_80": "240.0.0.1",
+			})
+			validator := &ServiceValidator{
+				Resolver: resolver,
+			}
+
 			// when
 			err := validator.InjectDecoder(decoder)
 			// then
@@ -180,6 +189,135 @@ var _ = Describe("ServiceValidator", func() {
               metadata: {}
               reason: Invalid
               status: Failure
+            uid: ""
+`,
+		}),
+		Entry("invalid ExternalName", testCase{
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Service
+                version: v1
+              name: backend
+              namespace: kuma-example
+              object:
+                apiVersion: v1
+                kind: Service
+                metadata:
+                  name: frontend
+                  namespace: kuma-example
+                  annotations:
+                    ingress.kubernetes.io/service-upstream: "true"
+                spec:
+                  type: ExternalName
+                  externalName: kuma-test_kuma-example_svc_80.mesh
+              operation: UPDATE
+`,
+			expected: `
+            allowed: false
+            status:
+              code: 422
+              details:
+                causes:
+                - field: service.Spec.ExternalName
+                  message: kuma-test_kuma-example_svc_80.mesh is not a canonical DNS name, please
+                    consider using kuma-test.kuma-example.svc.80.mesh
+                  reason: FieldValueInvalid
+                - field: service.Spec.ExternalName
+                  message: unable to resolve kuma-test.kuma-example.svc.80.mesh. Please check
+                    the format is <service-name>.<namespace>.svc.<port>.mesh
+                  reason: FieldValueInvalid
+                kind: Service
+                name: frontend
+              message: 'service.Spec.ExternalName: kuma-test_kuma-example_svc_80.mesh is not a
+                canonical DNS name, please consider using kuma-test.kuma-example.svc.80.mesh;
+                service.Spec.ExternalName: unable to resolve kuma-test.kuma-example.svc.80.mesh.
+                Please check the format is <service-name>.<namespace>.svc.<port>.mesh'
+              metadata: {}
+              reason: Invalid
+              status: Failure
+            uid: ""
+`,
+		}),
+		Entry("unable to resolve the ExternalName", testCase{
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Service
+                version: v1
+              name: backend
+              namespace: kuma-example
+              object:
+                apiVersion: v1
+                kind: Service
+                metadata:
+                  name: frontend
+                  namespace: kuma-example
+                  annotations:
+                    ingress.kubernetes.io/service-upstream: "true"
+                spec:
+                  type: ExternalName
+                  externalName: example-server.kuma-example.svc.80.mesh
+              operation: UPDATE
+`,
+			expected: `
+            allowed: false
+            status:
+              code: 422
+              details:
+                causes:
+                - field: service.Spec["ExternalName"]
+                  message: unable to resolve example-server.kuma-example.svc.80.mesh. Please check
+                    the format is <service-name>.<namespace>.svc.<port>.mesh
+                  reason: FieldValueInvalid
+                kind: Service
+                name: frontend
+              message: 'service.Spec["ExternalName"]: unable to resolve example-server.kuma-example.svc.80.mesh.
+                Please check the format is <service-name>.<namespace>.svc.<port>.mesh'
+              metadata: {}
+              reason: Invalid
+              status: Failure
+            uid: ""
+`,
+		}),
+		Entry("able to resolve the ExternalName", testCase{
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Service
+                version: v1
+              name: backend
+              namespace: kuma-example
+              object:
+                apiVersion: v1
+                kind: Service
+                metadata:
+                  name: frontend
+                  namespace: kuma-example
+                  annotations:
+                    ingress.kubernetes.io/service-upstream: "true"
+                spec:
+                  type: ExternalName
+                  externalName: kuma-test.kuma-example.svc.80.mesh
+              operation: UPDATE
+`,
+			expected: `
+            allowed: true
+            status:
+              code: 200
+              metadata: {}
             uid: ""
 `,
 		}),

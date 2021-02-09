@@ -244,7 +244,9 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 	mgr.GetWebhookServer().Register(path, composite.WebHook())
 	log.Info("Registering a validation composite webhook", "path", path)
 
-	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
+	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{
+		Resolver: rt.DNSResolver(),
+	}})
 	log.Info("Registering a validation webhook for v1/Service", "path", "/validate-v1-service")
 
 	client, ok := k8s_extensions.FromSecretClientContext(rt.Extensions())
