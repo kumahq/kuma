@@ -23,6 +23,12 @@ node:
       envoy:
         version: "{{ .EnvoyVersion }}"
         build: "{{ .EnvoyBuild }}"
+{{if .DynamicMetadata }}
+    dynamicMetadata:
+{{ range $key, $value := .DynamicMetadata }}
+      {{ $key }}: "{{ $value }}"
+{{ end }}
+{{ end }}
 
 {{if .AdminPort }}
 admin:

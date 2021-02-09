@@ -92,6 +92,16 @@ func (cs *K8sClusters) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	return nil
 }
 
+func (cs *K8sClusters) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
+	for name, c := range cs.clusters {
+		if err := c.UpgradeKuma(mode, fs...); err != nil {
+			return errors.Wrapf(err, "Upgrade Kuma on %s failed: %v", name, err)
+		}
+	}
+
+	return nil
+}
+
 func (cs *K8sClusters) GetKuma() ControlPlane {
 	panic("Not supported at this level.")
 }

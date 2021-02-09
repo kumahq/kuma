@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -70,6 +71,11 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	}
 	if opts.hdsDisabled {
 		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
+	}
+
+	apiVersion := os.Getenv(envAPIVersion)
+	if apiVersion != "" {
+		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+apiVersion)
 	}
 
 	switch mode {

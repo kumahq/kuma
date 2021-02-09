@@ -16,7 +16,6 @@ import (
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
-	rest_types "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
@@ -43,7 +42,7 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_types.Resource, bootstrapVersion types.BootstrapVersion, ev EnvoyVersion) ([]byte, types.BootstrapVersion, error) {
+func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
 		return nil, "", err
@@ -74,7 +73,7 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 	var version types.BootstrapVersion
 	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		log.Info("trying to fetch bootstrap configuration from the Control Plane")
-		respBytes, version, err = b.requestForBootstrap(bootstrapUrl, cfg, dp, bootstrapVersion, ev)
+		respBytes, version, err = b.requestForBootstrap(bootstrapUrl, cfg, params)
 		if err == nil {
 			return nil
 		}
@@ -96,11 +95,11 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, dp *rest_type
 	return respBytes, version, nil
 }
 
-func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, dp *rest_types.Resource, bootstrapVersion types.BootstrapVersion, ev EnvoyVersion) ([]byte, types.BootstrapVersion, error) {
+func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error) {
 	url.Path = "/bootstrap"
 	var dataplaneResource string
-	if dp != nil {
-		dpJSON, err := json.Marshal(dp)
+	if params.Dataplane != nil {
+		dpJSON, err := json.Marshal(params.Dataplane)
 		if err != nil {
 			return nil, "", err
 		}
@@ -114,7 +113,7 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		AdminPort:          cfg.Dataplane.AdminPort.Lowest(),
 		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
 		DataplaneResource:  dataplaneResource,
-		BootstrapVersion:   bootstrapVersion,
+		BootstrapVersion:   params.BootstrapVersion,
 		Version: types.Version{
 			KumaDp: types.KumaDpVersion{
 				Version:   kuma_version.Build.Version,
@@ -123,10 +122,11 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 				BuildDate: kuma_version.Build.BuildDate,
 			},
 			Envoy: types.EnvoyVersion{
-				Version: ev.Version,
-				Build:   ev.Build,
+				Version: params.EnvoyVersion.Version,
+				Build:   params.EnvoyVersion.Build,
 			},
 		},
+		DynamicMetadata: params.DynamicMetadata,
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {
