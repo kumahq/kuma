@@ -17,10 +17,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestE2E(t *testing.T) {
+func TestE2EHelm(t *testing.T) {
 	if framework.IsK8sClustersStarted() {
 		RegisterFailHandler(Fail)
-		RunSpecs(t, "E2E Suite")
+		RunSpecs(t, "E2E Helm Suite")
 	} else {
 		t.SkipNow()
 	}
