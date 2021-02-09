@@ -13,7 +13,6 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 
 	. "github.com/onsi/ginkgo"
@@ -106,7 +105,7 @@ var _ = Describe("run", func() {
 
 			// given
 			rootCtx := DefaultRootContext()
-			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource, _ types.BootstrapVersion, version envoy.EnvoyVersion) ([]byte, types.BootstrapVersion, error) {
+			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, types.BootstrapVersion, error) {
 				respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
 				return respBytes, "", nil
