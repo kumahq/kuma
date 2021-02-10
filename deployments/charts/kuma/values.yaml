@@ -185,6 +185,27 @@ ingress:
     # -- Port on which Ingress is exposed
     port: 10001
 
+  # Horizontal Pod Autoscaling configuration
+  autoscaling:
+    # -- Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster
+    enabled: false
+
+    # -- The minimum Ingress pods to allow
+    minReplicas: 2
+    # -- The max Ingress pods to scale to
+    maxReplicas: 5
+
+    # -- For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used
+    targetCPUUtilizationPercentage: 80
+    # -- For clusters that do support autoscaling/v2beta, use metrics
+    metrics:
+      - type: Resource
+        resource:
+          name: cpu
+          target:
+            type: Utilization
+            averageUtilization: 80
+
 kumactl:
   image:
     # -- The kumactl image repository

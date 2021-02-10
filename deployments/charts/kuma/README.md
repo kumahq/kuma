@@ -2,7 +2,7 @@
 
 A Helm chart for the Kuma Control Plane
 
-![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.4.8](https://img.shields.io/badge/Version-0.4.8-informational?style=flat-square) ![AppVersion: 1.0.7](https://img.shields.io/badge/AppVersion-1.0.7-informational?style=flat-square)
+![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.4.8](https://img.shields.io/badge/Version-0.4.8-informational?style=flat-square) ![AppVersion: 1.0.8](https://img.shields.io/badge/AppVersion-1.0.8-informational?style=flat-square)
 
 **Homepage:** <https://github.com/kumahq/kuma>
 
@@ -67,6 +67,11 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
+| ingress.autoscaling.enabled | bool | `false` | Whether to enable Horizontal Pod Autoscaling, which requires the [Metrics Server](https://github.com/kubernetes-sigs/metrics-server) in the cluster |
+| ingress.autoscaling.minReplicas | int | `2` | The minimum Ingress pods to allow |
+| ingress.autoscaling.maxReplicas | int | `5` | The max Ingress pods to scale to |
+| ingress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
+| ingress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 
 ## Custom Resource Definitions
