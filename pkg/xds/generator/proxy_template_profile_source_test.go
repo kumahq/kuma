@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+
 	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"

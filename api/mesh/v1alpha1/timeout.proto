@@ -9,32 +9,30 @@ import "google/protobuf/duration.proto";
 
 message Timeout {
 
-    // List of selectors to match dataplanes that are sources of traffic.
-    repeated Selector sources = 1;
+  // List of selectors to match dataplanes that are sources of traffic.
+  repeated Selector sources = 1;
 
-    // List of selectors to match services that are destinations of traffic.
-    repeated Selector destinations = 2;
+  // List of selectors to match services that are destinations of traffic.
+  repeated Selector destinations = 2;
 
-    message Conf {
+  message Conf {
 
-        google.protobuf.Duration connect_timeout = 1;
+    google.protobuf.Duration connect_timeout = 1;
 
-        message Tcp {
-            google.protobuf.Duration idle_timeout = 1;
-        }
-        Tcp tcp = 2;
+    message Tcp { google.protobuf.Duration idle_timeout = 1; }
+    Tcp tcp = 2;
 
-        message Http {
-            google.protobuf.Duration request_timeout = 1;
-            google.protobuf.Duration idle_timeout = 2;
-        }
-        Http http = 3;
-
-        message Grpc {
-            google.protobuf.Duration stream_idle_timeout = 1;
-            google.protobuf.Duration max_stream_duration = 2;
-        }
-        Grpc grpc = 4;
+    message Http {
+      google.protobuf.Duration request_timeout = 1;
+      google.protobuf.Duration idle_timeout = 2;
     }
-    Conf conf = 3;
+    Http http = 3;
+
+    message Grpc {
+      google.protobuf.Duration stream_idle_timeout = 1;
+      google.protobuf.Duration max_stream_duration = 2;
+    }
+    Grpc grpc = 4;
+  }
+  Conf conf = 3;
 }

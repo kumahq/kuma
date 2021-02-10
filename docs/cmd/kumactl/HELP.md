@@ -403,6 +403,8 @@ Available Commands:
   retry               Show a single Retry resource
   secret              Show a single Secret resource
   secrets             Show Secret
+  timeout             Show a single Timeout resource
+  timeouts            Show Timeout
   traffic-log         Show a single TrafficLog resource
   traffic-logs        Show TrafficLog
   traffic-permission  Show a single TrafficPermission resource

@@ -145,7 +145,6 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 		filterChainBuilder.
 			Configure(envoy_listeners.Timeout(timeoutPolicyConf, protocol))
 		return filterChainBuilder
-
 	}()
 	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort)).
@@ -160,9 +159,7 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 
 func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *model.Proxy, clusters envoy_common.Clusters) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
-	clusterNames := []string{}
 	for _, clusterName := range clusters.ClusterNames() {
-		clusterNames = append(clusterNames, clusterName)
 		serviceName := clusters.Tags(clusterName)[0][kuma_mesh.ServiceTag]
 		tags := clusters.Tags(clusterName)
 		lb := clusters.Lb(clusterName)
@@ -202,28 +199,6 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 			Resource: edsCluster,
 		})
 	}
-
-	//clusterConfig := &envoy_extensions_clusters_aggregate_v3.ClusterConfig{
-	//	Clusters: clusterNames,
-	//}
-	//pbst, err := proto.MarshalAnyDeterministic(clusterConfig)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//aggCluster := &envoy_api_v2.Cluster{
-	//	Name: "aggcluster",
-	//	ClusterDiscoveryType: &envoy_api_v2.Cluster_ClusterType{
-	//		ClusterType: &envoy_api_v2.Cluster_CustomClusterType{
-	//			Name:        "envoy.clusters.aggregate",
-	//			TypedConfig: pbst,
-	//		},
-	//	},
-	//}
-	//resources.Add(&model.Resource{
-	//	Name:     "aggcluster",
-	//	Origin:   OriginOutbound,
-	//	Resource: aggCluster,
-	//})
 
 	return resources, nil
 }

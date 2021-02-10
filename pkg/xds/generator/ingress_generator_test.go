@@ -3,10 +3,11 @@ package generator_test
 import (
 	"path/filepath"
 
-	"github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -62,8 +63,6 @@ var _ = Describe("IngressGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			//expected, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.expected))
-			//Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "ingress", given.expected)))
 		},
 		Entry("01. default trafficroute, single mesh", testCase{

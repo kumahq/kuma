@@ -102,4 +102,3 @@ func (t *TimeoutResource) validateConfGrpc(path validators.PathBuilder, conf *v1
 	err.Add(validateDuration_GreaterThan0OrNil(path.Field("streamIdleTimeout"), conf.StreamIdleTimeout))
 	return
 }
-

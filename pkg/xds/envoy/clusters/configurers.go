@@ -209,13 +209,11 @@ func StrictDNSCluster(name string, endpoints []core_xds.Endpoint) ClusterBuilder
 			Endpoints: endpoints,
 		})
 		config.AddV2(&v2.AltStatNameConfigurer{})
-		//config.AddV2(&v2.TimeoutConfigurer{})
 		config.AddV3(&v3.StrictDNSClusterConfigurer{
 			Name:      name,
 			Endpoints: endpoints,
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
-		//config.AddV3(&v3.TimeoutConfigurer{})
 	})
 }
 

@@ -93,8 +93,6 @@ type Cluster struct {
 	hasExternalService bool
 	lb                 *mesh_proto.TrafficRoute_LoadBalancer
 	timeout            *mesh_proto.Timeout_Conf
-	//connectTimeout     time.Duration
-	//httpIdleTimeout    *time.Duration
 }
 
 func (c *Cluster) Add(subset ClusterSubset) {
@@ -104,8 +102,6 @@ func (c *Cluster) Add(subset ClusterSubset) {
 	}
 	c.lb = subset.Lb
 	c.timeout = subset.Timeout
-	//c.connectTimeout = subset.ConnectTimeout
-	//c.httpIdleTimeout = subset.HTTPIdleTimeout
 }
 
 func (c *Cluster) Tags() []Tags {

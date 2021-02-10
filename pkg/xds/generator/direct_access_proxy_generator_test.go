@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
+
 	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"

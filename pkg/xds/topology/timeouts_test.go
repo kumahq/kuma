@@ -4,6 +4,10 @@ import (
 	"context"
 	"time"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/durationpb"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -11,9 +15,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 var _ = Describe("Timeout", func() {
@@ -23,7 +24,6 @@ var _ = Describe("Timeout", func() {
 	var dataplane *core_mesh.DataplaneResource
 
 	BeforeEach(func() {
-		ctx = ctx
 		rm = core_manager.NewResourceManager(memory.NewStore())
 
 		err := rm.Create(ctx, core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
