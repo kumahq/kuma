@@ -2,6 +2,7 @@ package hds
 
 import (
 	"context"
+	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
@@ -52,7 +53,11 @@ func DefaultCallbacks(rt core_runtime.Runtime, cache util_xds_v3.SnapshotCache) 
 	}
 
 	return hds_callbacks.Chain{
-		authn.NewCallbacks(rt.ResourceManager(), authenticator),
+		authn.NewCallbacks(rt.ResourceManager(), authenticator, authn.DPNotFoundRetry{
+			// Usually the difference between DP is created from ADS and HDS is initiated is less than 1 second, but just in case we set this higher.
+			Backoff:  1 * time.Second,
+			MaxTimes: 30,
+		}),
 		tracker.NewCallbacks(hdsServerLog, rt.ResourceManager(), rt.ReadOnlyResourceManager(),
 			cache, rt.Config().DpServer.Hds, hasher{}, metrics),
 	}, nil
