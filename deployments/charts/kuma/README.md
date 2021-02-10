@@ -47,6 +47,8 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.envVars | object | `{}` | Additional environment variables that will be passed to the control plane |
 | controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |
 | controlPlane.webhooks.ownerReference.additionalRules | string | `""` | Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma. |
+| controlPlane.podDisruptionBudget.enabled | bool | `false` | Weather to enable a Pod Disruption Budget for the control plane pods |
+| controlPlane.podDisruptionBudget.maxUnavailable | string | `"50%"` | The maximum percentage of unavailable control plane pods |
 | cni.enabled | bool | `false` | Install Kuma with CNI instead of proxy init container |
 | cni.chained | bool | `false` | Install CNI in chained mode |
 | cni.netDir | string | `"/etc/cni/multus/net.d"` | Set the CNI install directory |
@@ -72,6 +74,8 @@ A Helm chart for the Kuma Control Plane
 | ingress.autoscaling.maxReplicas | int | `5` | The max Ingress pods to scale to |
 | ingress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | ingress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
+| ingress.autoscaling.podDisruptionBudget.enabled | bool | `false` | Weather to enable a Pod Disruption Budget for the ingress pods |
+| ingress.autoscaling.podDisruptionBudget.maxUnavailable | string | `"50%"` | The maximum percentage of unavailable ingress pods |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 
 ## Custom Resource Definitions

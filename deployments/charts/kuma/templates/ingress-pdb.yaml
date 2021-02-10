@@ -1,0 +1,20 @@
+{{- if .Values.ingress.podDisruptionBudget.enabled }}
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "kuma.name" . }}-ingress
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kuma.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.ingress.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.ingress.podDisruptionBudget.minAvailable }}
+  {{- end  }}
+  {{- if .Values.ingress.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.ingress.podDisruptionBudget.maxUnavailable }}
+  {{- end  }}
+  selector:
+    matchLabels:
+      {{- include "kuma.selectorLabels" . | nindent 6 }}
+      app: kuma-ingress
+{{- end }}

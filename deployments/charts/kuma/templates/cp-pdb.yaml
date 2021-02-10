@@ -1,0 +1,20 @@
+{{- if .Values.controlPlane.podDisruptionBudget.enabled }}
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kuma.labels" . | nindent 4 }}
+spec:
+  {{- if .Values.controlPlane.podDisruptionBudget.minAvailable }}
+  minAvailable: {{ .Values.controlPlane.podDisruptionBudget.minAvailable }}
+  {{- end  }}
+  {{- if .Values.controlPlane.podDisruptionBudget.maxUnavailable }}
+  maxUnavailable: {{ .Values.controlPlane.podDisruptionBudget.maxUnavailable }}
+  {{- end  }}
+  selector:
+    matchLabels:
+      {{- include "kuma.selectorLabels" . | nindent 6 }}
+      app: kuma-control-plane
+{{- end }}
