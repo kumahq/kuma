@@ -34,6 +34,9 @@ type ServiceName = string
 // RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
 type RouteMap map[mesh_proto.OutboundInterface]*mesh_core.TrafficRouteResource
 
+// TimeoutMap holds the most specific TimeoutResource for each OutboundInterface
+type TimeoutMap map[mesh_proto.OutboundInterface]*mesh_core.TimeoutResource
+
 // TagSelectorSet is a set of unique TagSelectors.
 type TagSelectorSet []mesh_proto.TagSelector
 
@@ -121,6 +124,7 @@ type MatchedPolicies struct {
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
 	FaultInjections    FaultInjectionMap
+	Timeouts           TimeoutMap
 }
 
 type CaSecret struct {

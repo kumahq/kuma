@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 
 	"github.com/ghodss/yaml"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -95,10 +96,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "direct-access", given.envoyConfigFile))
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "direct-access", given.envoyConfigFile)))
 		},
 		Entry("should not generate resources when transparent proxy is off", testCase{
 			dataplaneFile:   "01.dataplane.input.yaml",

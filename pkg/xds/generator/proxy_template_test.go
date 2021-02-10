@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -179,9 +180,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", "template-proxy", given.envoyConfigFile))
-				Expect(err).ToNot(HaveOccurred())
-				Expect(actual).To(MatchYAML(expected))
+				Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "template-proxy", given.envoyConfigFile)))
 			},
 			Entry("should support a combination of pre-defined profiles and raw xDS resources", testCase{
 				dataplane: `

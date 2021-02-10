@@ -6,6 +6,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -154,9 +155,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "inbound-proxy", given.envoyConfigFile))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "inbound-proxy", given.envoyConfigFile)))
 		},
 		Entry("01. transparent_proxying=false, ip_addresses=0, ports=0", testCase{
 			dataplaneFile:   "1-dataplane.input.yaml",

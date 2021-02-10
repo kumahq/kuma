@@ -3,7 +3,7 @@ resources:
     resource:
       '@type': type.googleapis.com/envoy.api.v2.Cluster
       altStatName: kuma_envoy_admin
-      connectTimeout: 5s
+      connectTimeout: 10s
       loadAssignment:
         clusterName: kuma:envoy:admin
         endpoints:

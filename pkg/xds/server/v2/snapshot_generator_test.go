@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -126,9 +127,7 @@ var _ = Describe("Reconcile", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "envoy-config.golden.yaml"))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "envoy-config.golden.yaml")))
 		})
 	})
 })

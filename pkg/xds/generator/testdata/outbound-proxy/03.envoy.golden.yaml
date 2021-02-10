@@ -1,414 +1,426 @@
 resources:
-  - name: api-grpc
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: api-grpc
-      endpoints:
-        - lbEndpoints:
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.4
-                    portValue: 8089
-              loadBalancingWeight: 1
-              metadata:
-                filterMetadata:
-                  envoy.lb:
-                    kuma.io/protocol: grpc
-                  envoy.transport_socket_match:
-                    kuma.io/protocol: grpc
-  - name: api-http
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: api-http
-      endpoints:
-        - lbEndpoints:
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.4
-                    portValue: 8084
-              loadBalancingWeight: 1
-              metadata:
-                filterMetadata:
-                  envoy.lb:
-                    kuma.io/protocol: http
-                    region: us
-                  envoy.transport_socket_match:
-                    kuma.io/protocol: http
-                    region: us
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.5
-                    portValue: 8085
-              loadBalancingWeight: 1
-              metadata:
-                filterMetadata:
-                  envoy.lb:
-                    kuma.io/protocol: http
-                    region: eu
-                  envoy.transport_socket_match:
-                    kuma.io/protocol: http
-                    region: eu
-  - name: api-http2
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: api-http2
-      endpoints:
-        - lbEndpoints:
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.4
-                    portValue: 8088
-              loadBalancingWeight: 1
-              metadata:
-                filterMetadata:
-                  envoy.lb:
-                    kuma.io/protocol: http2
-                  envoy.transport_socket_match:
-                    kuma.io/protocol: http2
-  - name: api-tcp
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: api-tcp
-      endpoints:
-        - lbEndpoints:
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.6
-                    portValue: 8086
-              loadBalancingWeight: 1
-              metadata:
-                filterMetadata:
-                  envoy.lb:
-                    kuma.io/protocol: http
-                    region: us
-                  envoy.transport_socket_match:
-                    kuma.io/protocol: http
-                    region: us
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.7
-                    portValue: 8087
-              loadBalancingWeight: 1
-              metadata:
-                filterMetadata:
-                  envoy.lb:
-                    region: eu
-                  envoy.transport_socket_match:
-                    region: eu
-  - name: backend
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: backend
-      endpoints:
-        - lbEndpoints:
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.1
-                    portValue: 8081
-              loadBalancingWeight: 1
-              metadata:
-                filterMetadata:
-                  envoy.lb:
-                    region: us
-                  envoy.transport_socket_match:
-                    region: us
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.2
-                    portValue: 8082
-              loadBalancingWeight: 1
-  - name: db
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: db
-      endpoints:
-        - lbEndpoints:
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.3
-                    portValue: 5432
-              loadBalancingWeight: 1
-              metadata:
+- name: api-grpc
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: api-grpc
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.4
+              portValue: 8089
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: grpc
+            envoy.transport_socket_match:
+              kuma.io/protocol: grpc
+- name: api-http
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: api-http
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.4
+              portValue: 8084
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              region: us
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              region: us
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.5
+              portValue: 8085
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              region: eu
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              region: eu
+- name: api-http2
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: api-http2
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.4
+              portValue: 8088
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http2
+            envoy.transport_socket_match:
+              kuma.io/protocol: http2
+- name: api-tcp
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: api-tcp
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.6
+              portValue: 8086
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              kuma.io/protocol: http
+              region: us
+            envoy.transport_socket_match:
+              kuma.io/protocol: http
+              region: us
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.7
+              portValue: 8087
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              region: eu
+            envoy.transport_socket_match:
+              region: eu
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: backend
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.1
+              portValue: 8081
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              region: us
+            envoy.transport_socket_match:
+              region: us
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.2
+              portValue: 8082
+        loadBalancingWeight: 1
+- name: db
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: db
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.3
+              portValue: 5432
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              role: master
+            envoy.transport_socket_match:
+              role: master
+- name: api-grpc
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    http2ProtocolOptions: {}
+    lbPolicy: RANDOM
+    name: api-grpc
+    type: EDS
+- name: api-http
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    commonHttpProtocolOptions:
+      idleTimeout: 0s
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    http2ProtocolOptions: {}
+    name: api-http
+    outlierDetection:
+      enforcingConsecutive5xx: 100
+      enforcingConsecutiveGatewayFailure: 0
+      enforcingConsecutiveLocalOriginFailure: 0
+      enforcingFailurePercentage: 0
+      enforcingSuccessRate: 0
+    type: EDS
+- name: api-http2
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    commonHttpProtocolOptions:
+      idleTimeout: 0s
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    http2ProtocolOptions: {}
+    lbPolicy: RING_HASH
+    name: api-http2
+    ringHashLbConfig:
+      hashFunction: MURMUR_HASH_2
+      maximumRingSize: "1024"
+      minimumRingSize: "64"
+    type: EDS
+- name: api-tcp
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    http2ProtocolOptions: {}
+    lbPolicy: LEAST_REQUEST
+    leastRequestLbConfig:
+      choiceCount: 4
+    name: api-tcp
+    type: EDS
+- name: backend
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    http2ProtocolOptions: {}
+    lbPolicy: MAGLEV
+    name: backend
+    type: EDS
+- name: db
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    http2ProtocolOptions: {}
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - role
+    name: db
+    type: EDS
+- name: outbound:127.0.0.1:18080
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 18080
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          cluster: backend
+          idleTimeout: 0s
+          statPrefix: backend
+    name: outbound:127.0.0.1:18080
+    trafficDirection: OUTBOUND
+- name: outbound:127.0.0.1:40001
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 40001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          accessLog:
+          - name: envoy.access_loggers.file
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
+              format: |+
+                [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "gateway" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
+
+              path: /var/log
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: outbound:api-http
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=gateway&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: api-http
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: api-http
+                  timeout: 0s
+          statPrefix: api-http
+    name: outbound:127.0.0.1:40001
+    trafficDirection: OUTBOUND
+- name: outbound:127.0.0.1:40002
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 40002
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          accessLog:
+          - name: envoy.access_loggers.http_grpc
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
+              commonConfig:
+                grpcService:
+                  envoyGrpc:
+                    clusterName: access_log_sink
+                logName: |+
+                  logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(gateway)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+
+          cluster: api-tcp
+          idleTimeout: 0s
+          statPrefix: api-tcp
+    name: outbound:127.0.0.1:40002
+    trafficDirection: OUTBOUND
+- name: outbound:127.0.0.1:40003
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 40003
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          commonHttpProtocolOptions:
+            idleTimeout: 0s
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: outbound:api-http2
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=gateway&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: api-http2
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: api-http2
+                  timeout: 0s
+          statPrefix: api-http2
+    name: outbound:127.0.0.1:40003
+    trafficDirection: OUTBOUND
+- name: outbound:127.0.0.1:40004
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 40004
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.grpc_stats
+            typedConfig:
+              '@type': type.googleapis.com/envoy.config.filter.http.grpc_stats.v2alpha.FilterConfig
+              emitFilterState: true
+              statsForAllMethods: true
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: outbound:api-grpc
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=gateway&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: api-grpc
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  cluster: api-grpc
+                  timeout: 0s
+          statPrefix: api-grpc
+          streamIdleTimeout: 0s
+    name: outbound:127.0.0.1:40004
+    trafficDirection: OUTBOUND
+- name: outbound:127.0.0.1:54321
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 54321
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          idleTimeout: 0s
+          statPrefix: db
+          weightedClusters:
+            clusters:
+            - metadataMatch:
                 filterMetadata:
                   envoy.lb:
                     role: master
-                  envoy.transport_socket_match:
-                    role: master
-  - name: api-grpc
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: { }
-      http2ProtocolOptions: { }
-      lbPolicy: RANDOM
-      name: api-grpc
-      type: EDS
-  - name: api-http
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: { }
-      http2ProtocolOptions: { }
-      name: api-http
-      outlierDetection:
-        enforcingConsecutive5xx: 100
-        enforcingConsecutiveGatewayFailure: 0
-        enforcingConsecutiveLocalOriginFailure: 0
-        enforcingFailurePercentage: 0
-        enforcingSuccessRate: 0
-      type: EDS
-  - name: api-http2
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-      http2ProtocolOptions: {}
-      lbPolicy: RING_HASH
-      name: api-http2
-      ringHashLbConfig:
-        hashFunction: MURMUR_HASH_2
-        maximumRingSize: "1024"
-        minimumRingSize: "64"
-      type: EDS
-  - name: api-tcp
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-      http2ProtocolOptions: {}
-      lbPolicy: LEAST_REQUEST
-      leastRequestLbConfig:
-        choiceCount: 4
-      name: api-tcp
-      type: EDS
-  - name: backend
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-      http2ProtocolOptions: {}
-      lbPolicy: MAGLEV
-      name: backend
-      type: EDS
-  - name: db
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-      http2ProtocolOptions: {}
-      lbSubsetConfig:
-        fallbackPolicy: ANY_ENDPOINT
-        subsetSelectors:
-          - fallbackPolicy: NO_FALLBACK
-            keys:
-              - role
-      name: db
-      type: EDS
-  - name: outbound:127.0.0.1:18080
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 127.0.0.1
-          portValue: 18080
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.tcp_proxy
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                cluster: backend
-                statPrefix: backend
-      name: outbound:127.0.0.1:18080
-      trafficDirection: OUTBOUND
-  - name: outbound:127.0.0.1:40001
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 127.0.0.1
-          portValue: 40001
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.http_connection_manager
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                accessLog:
-                  - name: envoy.access_loggers.file
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
-                      format: |+
-                        [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "gateway" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
-
-                      path: /var/log
-                httpFilters:
-                  - name: envoy.filters.http.router
-                routeConfig:
-                  name: outbound:api-http
-                  validateClusters: false
-                  requestHeadersToAdd:
-                    - header:
-                        key: x-kuma-tags
-                        value: '&kuma.io/service=gateway&'
-                  virtualHosts:
-                    - domains:
-                        - '*'
-                      name: api-http
-                      routes:
-                        - match:
-                            prefix: /
-                          route:
-                            cluster: api-http
-                            timeout: 0s
-                statPrefix: api-http
-      name: outbound:127.0.0.1:40001
-      trafficDirection: OUTBOUND
-  - name: outbound:127.0.0.1:40002
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 127.0.0.1
-          portValue: 40002
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.tcp_proxy
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                accessLog:
-                  - name: envoy.access_loggers.http_grpc
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
-                      commonConfig:
-                        grpcService:
-                          envoyGrpc:
-                            clusterName: access_log_sink
-                        logName: |+
-                          logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(gateway)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-
-                cluster: api-tcp
-                statPrefix: api-tcp
-      name: outbound:127.0.0.1:40002
-      trafficDirection: OUTBOUND
-  - name: outbound:127.0.0.1:40003
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 127.0.0.1
-          portValue: 40003
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.http_connection_manager
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                httpFilters:
-                  - name: envoy.filters.http.router
-                routeConfig:
-                  name: outbound:api-http2
-                  validateClusters: false
-                  requestHeadersToAdd:
-                    - header:
-                        key: x-kuma-tags
-                        value: '&kuma.io/service=gateway&'
-                  virtualHosts:
-                    - domains:
-                        - '*'
-                      name: api-http2
-                      routes:
-                        - match:
-                            prefix: /
-                          route:
-                            cluster: api-http2
-                            timeout: 0s
-                statPrefix: api-http2
-      name: outbound:127.0.0.1:40003
-      trafficDirection: OUTBOUND
-  - name: outbound:127.0.0.1:40004
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 127.0.0.1
-          portValue: 40004
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.http_connection_manager
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                httpFilters:
-                  - name: envoy.filters.http.grpc_stats
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.http.grpc_stats.v2alpha.FilterConfig
-                      emitFilterState: true
-                      statsForAllMethods: true
-                  - name: envoy.filters.http.router
-                routeConfig:
-                  name: outbound:api-grpc
-                  validateClusters: false
-                  requestHeadersToAdd:
-                    - header:
-                        key: x-kuma-tags
-                        value: '&kuma.io/service=gateway&'
-                  virtualHosts:
-                    - domains:
-                        - '*'
-                      name: api-grpc
-                      routes:
-                        - match:
-                            prefix: /
-                          route:
-                            cluster: api-grpc
-                            timeout: 0s
-                statPrefix: api-grpc
-      name: outbound:127.0.0.1:40004
-      trafficDirection: OUTBOUND
-  - name: outbound:127.0.0.1:54321
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 127.0.0.1
-          portValue: 54321
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.tcp_proxy
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                statPrefix: db
-                weightedClusters:
-                  clusters:
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            role: master
-                      name: db
-                      weight: 10
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            role: replica
-                      name: db
-                      weight: 90
-      name: outbound:127.0.0.1:54321
-      trafficDirection: OUTBOUND
+              name: db
+              weight: 10
+            - metadataMatch:
+                filterMetadata:
+                  envoy.lb:
+                    role: replica
+              name: db
+              weight: 90
+    name: outbound:127.0.0.1:54321
+    trafficDirection: OUTBOUND

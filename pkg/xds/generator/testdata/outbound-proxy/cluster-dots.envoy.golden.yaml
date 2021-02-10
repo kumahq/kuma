@@ -1,80 +1,82 @@
 resources:
-  - name: backend.kuma-system
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: backend.kuma-system
-      endpoints:
-        - lbEndpoints:
-            - endpoint:
-                address:
-                  socketAddress:
-                    address: 192.168.0.1
-                    portValue: 8082
-              loadBalancingWeight: 1
-  - name: db
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
-      clusterName: db
-  - name: backend.kuma-system
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      altStatName: backend_kuma-system
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-      http2ProtocolOptions: {}
-      name: backend.kuma-system
-      type: EDS
-  - name: db
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      edsClusterConfig:
-        edsConfig:
-          ads: {}
-      http2ProtocolOptions: {}
-      lbSubsetConfig:
-        fallbackPolicy: ANY_ENDPOINT
-        subsetSelectors:
-          - fallbackPolicy: NO_FALLBACK
-            keys:
-              - version
-      name: db
-      type: EDS
-  - name: outbound:127.0.0.1:18080
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 127.0.0.1
-          portValue: 18080
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.tcp_proxy
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                cluster: backend.kuma-system
-                statPrefix: backend_kuma-system
-      name: outbound:127.0.0.1:18080
-      trafficDirection: OUTBOUND
-  - name: outbound:127.0.0.1:54321
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 127.0.0.1
-          portValue: 54321
-      filterChains:
-        - filters:
-            - name: envoy.filters.network.tcp_proxy
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-                cluster: db
-                metadataMatch:
-                  filterMetadata:
-                    envoy.lb:
-                      version: 3.2.0
-                statPrefix: db_kuma-system
-      name: outbound:127.0.0.1:54321
-      trafficDirection: OUTBOUND
+- name: backend.kuma-system
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: backend.kuma-system
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.1
+              portValue: 8082
+        loadBalancingWeight: 1
+- name: db
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: db
+- name: backend.kuma-system
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    altStatName: backend_kuma-system
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    http2ProtocolOptions: {}
+    name: backend.kuma-system
+    type: EDS
+- name: db
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+    http2ProtocolOptions: {}
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - version
+    name: db
+    type: EDS
+- name: outbound:127.0.0.1:18080
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 18080
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          cluster: backend.kuma-system
+          idleTimeout: 0s
+          statPrefix: backend_kuma-system
+    name: outbound:127.0.0.1:18080
+    trafficDirection: OUTBOUND
+- name: outbound:127.0.0.1:54321
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 54321
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          cluster: db
+          idleTimeout: 0s
+          metadataMatch:
+            filterMetadata:
+              envoy.lb:
+                version: 3.2.0
+          statPrefix: db_kuma-system
+    name: outbound:127.0.0.1:54321
+    trafficDirection: OUTBOUND

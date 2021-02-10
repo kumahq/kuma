@@ -138,6 +138,7 @@ func (i IngressGenerator) generateCDS(
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
 			Configure(envoy_clusters.EdsCluster(service)).
 			Configure(envoy_clusters.LbSubset(i.lbSubsets(service, destinationsPerService))).
+			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
 		if err != nil {
 			return nil, err

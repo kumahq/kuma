@@ -1,9 +1,9 @@
 package generator_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -72,10 +72,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "tracing", given.expectedFile))
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "tracing", given.expectedFile)))
 		},
 		Entry("should create cluster for Zipkin", testCase{
 			proxy: &model.Proxy{

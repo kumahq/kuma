@@ -1,9 +1,9 @@
 package generator_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -361,10 +361,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			actual, err := util_proto.ToYAML(resp)
 			// then
 			Expect(err).ToNot(HaveOccurred())
-
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "outbound-proxy", given.expected))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy", given.expected)))
 		},
 		Entry("01. transparent_proxying=false, mtls=false, outbound=0", testCase{
 			ctx:       plainCtx,
@@ -573,8 +570,6 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "outbound-proxy", "cluster-dots.envoy.golden.yaml"))
-		Expect(err).ToNot(HaveOccurred())
-		Expect(actual).To(MatchYAML(expected))
+		Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy", "cluster-dots.envoy.golden.yaml")))
 	})
 })

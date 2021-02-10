@@ -1,9 +1,9 @@
 package generator_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -62,9 +62,9 @@ var _ = Describe("IngressGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.expected))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			//expected, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.expected))
+			//Expect(err).ToNot(HaveOccurred())
+			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "ingress", given.expected)))
 		},
 		Entry("01. default trafficroute, single mesh", testCase{
 			dataplane: `

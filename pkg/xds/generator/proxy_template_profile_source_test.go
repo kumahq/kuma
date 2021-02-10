@@ -2,11 +2,11 @@ package generator_test
 
 import (
 	"context"
-	"io/ioutil"
 	"path/filepath"
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
@@ -179,9 +179,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "profile-source", given.envoyConfigFile))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "profile-source", given.envoyConfigFile)))
 		},
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCase{
 			mesh: `
