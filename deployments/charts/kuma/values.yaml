@@ -215,12 +215,12 @@ ingress:
           target:
             type: Utilization
             averageUtilization: 80
-    # Pod Distruption Budget Configuration
-    podDisruptionBudget:
-      # -- Weather to enable a Pod Disruption Budget for the ingress pods
-      enabled: false
-      # -- The maximum percentage of unavailable ingress pods
-      maxUnavailable: "50%"
+  # Pod Distruption Budget Configuration
+  podDisruptionBudget:
+    # -- Weather to enable a Pod Disruption Budget for the ingress pods
+    enabled: false
+    # -- The maximum percentage of unavailable ingress pods
+    maxUnavailable: "50%"
 
     # -- For affinity configurations
     affinity: {}

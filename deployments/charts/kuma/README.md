@@ -75,9 +75,9 @@ A Helm chart for the Kuma Control Plane
 | ingress.autoscaling.maxReplicas | int | `5` | The max Ingress pods to scale to |
 | ingress.autoscaling.targetCPUUtilizationPercentage | int | `80` | For clusters that don't support autoscaling/v2beta, autoscaling/v1 is used |
 | ingress.autoscaling.metrics | list | `[{"resource":{"name":"cpu","target":{"averageUtilization":80,"type":"Utilization"}},"type":"Resource"}]` | For clusters that do support autoscaling/v2beta, use metrics |
-| ingress.autoscaling.podDisruptionBudget.enabled | bool | `false` | Weather to enable a Pod Disruption Budget for the ingress pods |
-| ingress.autoscaling.podDisruptionBudget.maxUnavailable | string | `"50%"` | The maximum percentage of unavailable ingress pods |
-| ingress.autoscaling.affinity | object | `{}` | For affinity configurations |
+| ingress.podDisruptionBudget.enabled | bool | `false` | Weather to enable a Pod Disruption Budget for the ingress pods |
+| ingress.podDisruptionBudget.maxUnavailable | string | `"50%"` | The maximum percentage of unavailable ingress pods |
+| ingress.podDisruptionBudget.affinity | object | `{}` | For affinity configurations |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 
 ## Custom Resource Definitions
