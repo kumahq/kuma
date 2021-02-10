@@ -55,25 +55,6 @@ var _ = Describe("PodToDataplane(..)", func() {
       podIP: 192.168.0.1
 `
 
-	gatewayPod := `
-    metadata:
-      namespace: demo
-      name: example
-      labels:
-        app: example
-        version: "0.1"
-      annotations:
-        kuma.io/gateway: enabled
-    spec:
-      containers:
-      - ports:
-        - containerPort: 7070
-        - containerPort: 6060
-          name: metrics
-    status:
-      podIP: 192.168.0.1
-`
-
 	ParseServices := func(values []string) ([]*kube_core.Service, error) {
 		services := make([]*kube_core.Service, len(values))
 		for i, value := range values {
@@ -117,11 +98,14 @@ var _ = Describe("PodToDataplane(..)", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// services for pod
-			bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.servicesForPod))
-			Expect(err).ToNot(HaveOccurred())
-			YAMLs := util_yaml.SplitYAML(string(bytes))
-			services, err := ParseServices(YAMLs)
-			Expect(err).ToNot(HaveOccurred())
+			services := []*kube_core.Service{}
+			if given.servicesForPod != "" {
+				bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.servicesForPod))
+				Expect(err).ToNot(HaveOccurred())
+				YAMLs := util_yaml.SplitYAML(string(bytes))
+				services, err = ParseServices(YAMLs)
+				Expect(err).ToNot(HaveOccurred())
+			}
 
 			// other services
 			var serviceGetter kube_client.Reader
@@ -238,6 +222,14 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "12.services-for-pod.yaml",
 			dataplane:      "12.dataplane.yaml",
 		}),
+		Entry("13. Pod without a service", testCase{
+			pod:       "13.pod.yaml",
+			dataplane: "13.dataplane.yaml",
+		}),
+		Entry("14. Gateway pod without a service", testCase{
+			pod:       "14.pod.yaml",
+			dataplane: "14.dataplane.yaml",
+		}),
 	)
 
 	DescribeTable("should convert Pod into a Dataplane YAML version",
@@ -346,16 +338,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(given.expectedErr))
 			},
-			Entry("regular Pod without Services", testCase{
-				pod:         pod,
-				services:    nil,
-				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, there are no Services that select this Pod.`,
-			}),
-			Entry("gateway Pod without Services", testCase{
-				pod:         gatewayPod,
-				services:    nil,
-				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, there are no Services that select this Pod.`,
-			}),
 			Entry("Pod with a Service but mismatching ports", testCase{
 				pod: pod,
 				services: []string{`
@@ -375,7 +357,7 @@ var _ = Describe("PodToDataplane(..)", func() {
                     port: 6060
                     targetPort: diagnostics
 `},
-				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, this Pod doesn't have any container ports that would satisfy matching Service(s).`,
+				expectedErr: `A service that selects pod example was found, but it doesn't match any container ports.`,
 			}),
 		)
 	})
@@ -419,7 +401,7 @@ var _ = Describe("MeshFor(..)", func() {
 	)
 })
 
-var _ = Describe("InboundTagsFor(..)", func() {
+var _ = Describe("InboundTagsForService(..)", func() {
 
 	type testCase struct {
 		isGateway      bool
@@ -462,7 +444,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			}
 
 			// expect
-			Expect(InboundTagsFor(given.zone, pod, svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
+			Expect(InboundTagsForService(given.zone, pod, svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
 		},
 		Entry("Pod without labels", testCase{
 			isGateway: false,
