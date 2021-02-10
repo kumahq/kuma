@@ -230,6 +230,7 @@ data:
       editable: true
       options:
         path: /etc/grafana/provisioning/dashboards
+
   kuma-dataplane.json: |
     {
       "__inputs": [
@@ -2516,6 +2517,7 @@ data:
       "description": "Statistics of a single Dataplane in Kuma Service Mesh"
     }
     
+
   kuma-mesh.json: |
     {
       "__inputs": [
@@ -3266,6 +3268,7 @@ data:
       "description": "Statistics of the single Mesh in Kuma Service Mesh"
     }
     
+
   kuma-service-to-service.json: |
     {
       "__inputs": [
@@ -4110,6 +4113,7 @@ data:
       "version": 1,
       "description": "Statistics of the traffic between services in Kuma Service Mesh"
     }
+
   kuma-cp.json: |
     {
       "annotations": {
@@ -9525,7 +9529,7 @@ spec:
             - mountPath: "/var/run/kuma.io/prometheus-sd"
               name: kuma-prometheus-sd-volume
         - name: kuma-prometheus-sd
-          image: kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd:0.0.1
+          image: 0.0.1:0.0.1
           imagePullPolicy: IfNotPresent
           args:
             - run
