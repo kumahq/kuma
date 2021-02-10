@@ -7,17 +7,15 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/test/matchers"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("OutboundProxyGenerator", func() {
@@ -362,7 +360,9 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			actual, err := util_proto.ToYAML(resp)
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy", given.expected)))
+
+			// and output matches golden files
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy", given.expected)))
 		},
 		Entry("01. transparent_proxying=false, mtls=false, outbound=0", testCase{
 			ctx:       plainCtx,
@@ -571,6 +571,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy", "cluster-dots.envoy.golden.yaml")))
+		// and output matches golden files
+		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy", "cluster-dots.envoy.golden.yaml")))
 	})
 })

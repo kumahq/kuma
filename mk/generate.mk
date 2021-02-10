@@ -56,9 +56,22 @@ generate/kumactl/install/k8s/tracing:
 generate/kuma-cp/migrations:
 	GOFLAGS='${GOFLAGS}' go generate ./pkg/plugins/resources/postgres/migrations/...
 
+KUMA_GUI_GIT=https://github.com/kumahq/kuma-gui.git
+KUMA_GUI_VERSION=master
+KUMA_GUI_FOLDER=app/kuma-ui/data/resources
+KUMA_GUI_WORK_FOLDER=app/kuma-ui/data/work
+
 .PHONY: generate/gui
 generate/gui: ## Generate gGOFLAGSo files with GUI static files to embed it into binary
 	GOFLAGS='${GOFLAGS}' go generate ./app/kuma-ui/pkg/resources/...
+
+.PHONY: upgrade/gui
+upgrade/gui:
+	rm -rf $(KUMA_GUI_WORK_FOLDER); \
+	git clone --depth 1 -b $(KUMA_GUI_VERSION) https://github.com/kumahq/kuma-gui.git $(KUMA_GUI_WORK_FOLDER); \
+	pushd $(KUMA_GUI_WORK_FOLDER) && yarn install && yarn build && popd; \
+	rm -rf $(KUMA_GUI_FOLDER) && mv $(KUMA_GUI_WORK_FOLDER)/dist/ $(KUMA_GUI_FOLDER); \
+	rm -rf $(KUMA_GUI_WORK_FOLDER)
 
 .PHONY: generate/envoy-imports
 generate/envoy-imports:

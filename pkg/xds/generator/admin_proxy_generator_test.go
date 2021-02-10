@@ -4,24 +4,27 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/ginkgo/extensions/table"
+	. "github.com/onsi/gomega"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
+	"github.com/kumahq/kuma/pkg/test/runtime"
+	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("AdminProxyGenerator", func() {
 	generator := generator.AdminProxyGenerator{}
 
 	type testCase struct {
-		dataplaneFile   string
-		envoyConfigFile string
+		dataplaneFile string
+		expected      string
 	}
 
 	DescribeTable("should generate envoy config",
@@ -35,8 +38,14 @@ var _ = Describe("AdminProxyGenerator", func() {
 			parseResource(bytes, dataplane)
 
 			ctx := context.Context{
-				ControlPlane: nil,
-				Mesh:         context.MeshContext{},
+				ControlPlane: &context.ControlPlaneContext{
+					AdminProxyKeyPair: &tls.KeyPair{
+						CertPEM: []byte("LS0=="),
+						KeyPEM:  []byte("LS0=="),
+					},
+				},
+				Mesh:             context.MeshContext{},
+				EnvoyAdminClient: &runtime.DummyEnvoyAdminClient{},
 			}
 
 			proxy := &xds.Proxy{
@@ -57,14 +66,13 @@ var _ = Describe("AdminProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "admin", given.envoyConfigFile))
-			Expect(err).ToNot(HaveOccurred())
 
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "admin", given.expected)))
 		},
 		Entry("should generate admin resources", testCase{
-			dataplaneFile:   "01.dataplane.input.yaml",
-			envoyConfigFile: "01.envoy-config.golden.yaml",
+			dataplaneFile: "01.dataplane.input.yaml",
+			expected:      "01.envoy-config.golden.yaml",
 		}),
 	)
 })

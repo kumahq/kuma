@@ -4,6 +4,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/tls"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	v2 "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v2"
@@ -54,19 +55,30 @@ func OriginalDstForwarder() ListenerBuilderOpt {
 	})
 }
 
-func StaticEndpoint(statsName string, path string, rewritePath string, clusterName string) FilterChainBuilderOpt {
+func StaticEndpoints(virtualHostName string, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
-		config.AddV2(&v2.StaticEndpointConfigurer{
-			StatsName:   statsName,
-			Path:        path,
-			RewritePath: rewritePath,
-			ClusterName: clusterName,
+		config.AddV2(&v2.StaticEndpointsConfigurer{
+			VirtualHostName: virtualHostName,
+			Paths:           paths,
 		})
-		config.AddV3(&v3.StaticEndpointConfigurer{
-			StatsName:   statsName,
-			Path:        path,
-			RewritePath: rewritePath,
-			ClusterName: clusterName,
+		config.AddV3(&v3.StaticEndpointsConfigurer{
+			VirtualHostName: virtualHostName,
+			Paths:           paths,
+		})
+	})
+}
+
+func StaticTlsEndpoints(virtualHostName string, keyPair *tls.KeyPair, paths []*envoy_common.StaticEndpointPath) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+		config.AddV2(&v2.StaticEndpointsConfigurer{
+			VirtualHostName: virtualHostName,
+			Paths:           paths,
+			KeyPair:         keyPair,
+		})
+		config.AddV3(&v3.StaticEndpointsConfigurer{
+			VirtualHostName: virtualHostName,
+			Paths:           paths,
+			KeyPair:         keyPair,
 		})
 	})
 }
@@ -95,13 +107,15 @@ func HttpConnectionManager(statsName string) FilterChainBuilderOpt {
 	})
 }
 
-func FilterChainMatch(serverNames ...string) FilterChainBuilderOpt {
+func FilterChainMatch(transport string, serverNames ...string) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV2(&v2.FilterChainMatchConfigurer{
-			ServerNames: serverNames,
+			ServerNames:       serverNames,
+			TransportProtocol: transport,
 		})
 		config.AddV3(&v3.FilterChainMatchConfigurer{
-			ServerNames: serverNames,
+			ServerNames:       serverNames,
+			TransportProtocol: transport,
 		})
 	})
 }

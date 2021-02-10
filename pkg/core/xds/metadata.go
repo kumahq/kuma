@@ -19,6 +19,7 @@ const (
 	fieldDataplaneTokenPath         = "dataplaneTokenPath"
 	fieldDataplaneAdminPort         = "dataplane.admin.port"
 	fieldDataplaneDataplaneResource = "dataplane.resource"
+	fieldDynamicMetadata            = "dynamicMetadata"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -39,6 +40,7 @@ type DataplaneMetadata struct {
 	DataplaneTokenPath string
 	DataplaneResource  *core_mesh.DataplaneResource
 	AdminPort          uint32
+	DynamicMetadata    map[string]string
 }
 
 func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
@@ -60,6 +62,13 @@ func (m *DataplaneMetadata) GetAdminPort() uint32 {
 		return 0
 	}
 	return m.AdminPort
+}
+
+func (m *DataplaneMetadata) GetDynamicMetadata(key string) string {
+	if m == nil || m.DynamicMetadata == nil {
+		return ""
+	}
+	return m.DynamicMetadata[key]
 }
 
 func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMetadata {
@@ -87,6 +96,13 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
 		}
 		metadata.DataplaneResource = dp
+	}
+	if value := xdsMetadata.Fields[fieldDynamicMetadata]; value != nil {
+		dynamicMetadata := map[string]string{}
+		for field, val := range value.GetStructValue().GetFields() {
+			dynamicMetadata[field] = val.GetStringValue()
+		}
+		metadata.DynamicMetadata = dynamicMetadata
 	}
 	return &metadata
 }

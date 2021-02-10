@@ -7,11 +7,10 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	"github.com/kumahq/kuma/pkg/test/matchers"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -63,7 +62,8 @@ var _ = Describe("IngressGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(actual).To(matchers.MatchGoldenYAML(filepath.Join("testdata", "ingress", given.expected)))
+			// and output matches golden files
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.expected)))
 		},
 		Entry("01. default trafficroute, single mesh", testCase{
 			dataplane: `

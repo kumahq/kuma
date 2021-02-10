@@ -168,3 +168,11 @@ const (
 	TrafficDirectionInbound     TrafficDirection = "INBOUND"
 	TrafficDirectionUnspecified TrafficDirection = "UNSPECIFIED"
 )
+
+type StaticEndpointPath struct {
+	Path             string
+	ClusterName      string
+	RewritePath      string
+	Header           string
+	HeaderExactMatch string
+}
