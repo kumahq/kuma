@@ -390,7 +390,7 @@ jobs:
           name: "Run E2E tests"
           command: |
             export PATH=$HOME/go/bin:$PATH
-            export E2E_PKG_LIST=$(make test/e2e/list | circleci tests split --split-by=timings)
+            export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
             export API_VERSION=<< parameters.api >>
             make test/e2e
 
