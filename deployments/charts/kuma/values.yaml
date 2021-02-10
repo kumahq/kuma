@@ -56,6 +56,9 @@ controlPlane:
     kubernetes.io/os: linux
     kubernetes.io/arch: amd64
 
+  # -- For affinity configurations
+  affinity: {}
+
   # -- Failure policy of the mutating webhook implemented by the Kuma Injector component
   injectorFailurePolicy: Ignore
 
@@ -218,6 +221,9 @@ ingress:
       enabled: false
       # -- The maximum percentage of unavailable ingress pods
       maxUnavailable: "50%"
+
+    # -- For affinity configurations
+    affinity: {}
 
 kumactl:
   image:

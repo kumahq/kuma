@@ -147,3 +147,7 @@ spec:
         - name: {{ include "kuma.name" . }}-control-plane-config
           configMap:
             name: {{ include "kuma.name" . }}-control-plane-config
+      {{- if .Values.controlPlane.affinity }}
+      affinity:
+{{ toYaml .Values.controlPlane.affinity | indent 8 }}
+      {{- end }}

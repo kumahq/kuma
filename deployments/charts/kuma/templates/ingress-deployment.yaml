@@ -96,4 +96,8 @@ spec:
         - name: {{ include "kuma.name" . }}-tls-cert
           secret:
             secretName: {{ include "kuma.name" . }}-tls-cert
+      {{- if .Values.ingress.affinity }}
+      affinity:
+{{ toYaml .Values.ingress.affinity | indent 8 }}
+      {{- end }}
 {{- end }}
