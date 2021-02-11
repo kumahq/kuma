@@ -7191,6 +7191,7 @@ rules:
       - faultinjections
       - healthchecks
       - retries
+      - timeouts
       - trafficlogs
       - traffictraces
     verbs:
