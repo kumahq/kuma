@@ -340,6 +340,8 @@ function _kumactl_get {
       "retry:Show a single Retry resource"
       "secret:Show a single Secret resource"
       "secrets:Show Secret"
+      "timeout:Show a single Timeout resource"
+      "timeouts:Show Timeout"
       "traffic-log:Show a single TrafficLog resource"
       "traffic-logs:Show TrafficLog"
       "traffic-permission:Show a single TrafficPermission resource"
@@ -409,6 +411,12 @@ function _kumactl_get {
     ;;
   secrets)
     _kumactl_get_secrets
+    ;;
+  timeout)
+    _kumactl_get_timeout
+    ;;
+  timeouts)
+    _kumactl_get_timeouts
     ;;
   traffic-log)
     _kumactl_get_traffic-log
@@ -597,6 +605,24 @@ function _kumactl_get_secret {
 
 function _kumactl_get_secrets {
   _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_timeout {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_timeouts {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
