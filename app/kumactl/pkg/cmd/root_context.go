@@ -43,13 +43,15 @@ type RootRuntime struct {
 // rootCmd := cmd.NewRootCmd(rootCtx)
 // err := rootCmd.Execute()
 type RootContext struct {
-	TypeArgs         map[string]core_model.ResourceType
-	Args             RootArgs
-	Runtime          RootRuntime
-	GetContext       get_context.GetContext
-	ListContext      get_context.ListContext
-	InspectContext   inspect_context.InspectContext
-	InstallCpContext install_context.InstallCpContext
+	TypeArgs              map[string]core_model.ResourceType
+	Args                  RootArgs
+	Runtime               RootRuntime
+	GetContext            get_context.GetContext
+	ListContext           get_context.ListContext
+	InspectContext        inspect_context.InspectContext
+	InstallCpContext      install_context.InstallCpContext
+	InstallMetricsContext install_context.InstallMetricsContext
+	InstallCRDContext     install_context.InstallCrdsContext
 }
 
 func DefaultRootContext() *RootContext {
@@ -79,7 +81,9 @@ func DefaultRootContext() *RootContext {
 			"secret":             system.SecretType,
 			"zone":               system.ZoneType,
 		},
-		InstallCpContext: install_context.DefaultInstallCpContext(),
+		InstallCpContext:      install_context.DefaultInstallCpContext(),
+		InstallCRDContext:     install_context.DefaultInstallCrdsContext(),
+		InstallMetricsContext: install_context.DefaultInstallMetricsContext(),
 	}
 }
 

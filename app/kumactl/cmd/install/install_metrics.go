@@ -3,6 +3,7 @@ package install
 import (
 	"strings"
 
+	"github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 
 	"github.com/pkg/errors"
@@ -11,34 +12,10 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/metrics"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-type metricsTemplateArgs struct {
-	Namespace                 string
-	Mesh                      string
-	KumaPrometheusSdImage     string
-	KumaPrometheusSdVersion   string
-	KumaCpAddress             string
-	WithoutPrometheus         bool
-	WithoutGrafana            bool
-	DashboardDataplane        string
-	DashboardMesh             string
-	DashboardServiceToService string
-	DashboardCP               string
-}
-
-var DefaultMetricsTemplateArgs = metricsTemplateArgs{
-	Namespace:               "kuma-metrics",
-	KumaPrometheusSdImage:   "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd",
-	KumaPrometheusSdVersion: kuma_version.Build.Version,
-	KumaCpAddress:           "grpc://kuma-control-plane.kuma-system:5676",
-	WithoutPrometheus:       false,
-	WithoutGrafana:          false,
-}
-
 func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
-	args := DefaultMetricsTemplateArgs
+	args := pctx.InstallMetricsContext.TemplateArgs
 	cmd := &cobra.Command{
 		Use:   "metrics",
 		Short: "Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)",
@@ -58,25 +35,37 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			args.DashboardDataplane = dashboard.String()
+			args.Dashboards = append(args.Dashboards, context.Dashboard{
+				FileName: "kuma-dataplane.json",
+				Content:  dashboard.String(),
+			})
 
 			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-mesh.json")
 			if err != nil {
 				return err
 			}
-			args.DashboardMesh = dashboard.String()
+			args.Dashboards = append(args.Dashboards, context.Dashboard{
+				FileName: "kuma-mesh.json",
+				Content:  dashboard.String(),
+			})
 
 			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-service-to-service.json")
 			if err != nil {
 				return err
 			}
-			args.DashboardServiceToService = dashboard.String()
+			args.Dashboards = append(args.Dashboards, context.Dashboard{
+				FileName: "kuma-service-to-service.json",
+				Content:  dashboard.String(),
+			})
 
 			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-cp.json")
 			if err != nil {
 				return err
 			}
-			args.DashboardCP = dashboard.String()
+			args.Dashboards = append(args.Dashboards, context.Dashboard{
+				FileName: "kuma-cp.json",
+				Content:  dashboard.String(),
+			})
 
 			filter := getExcludePrefixesFilter(args.WithoutPrometheus, args.WithoutGrafana)
 

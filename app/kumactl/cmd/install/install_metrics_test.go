@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/cmd/install"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -35,13 +35,14 @@ var _ = Describe("kumactl install metrics", func() {
 			GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
 			BuildDate: "2019-08-07T11:26:06Z",
 		}
-		install.DefaultMetricsTemplateArgs.KumaPrometheusSdVersion = "0.0.1"
 	})
 
 	DescribeTable("should generate Kubernetes resources",
 		func(given testCase) {
 			// given
-			rootCmd := cmd.DefaultRootCmd()
+			rootCtx := kumactl_cmd.DefaultRootContext()
+			rootCtx.InstallMetricsContext.TemplateArgs.KumaPrometheusSdVersion = "0.0.1"
+			rootCmd := cmd.NewRootCmd(rootCtx)
 			rootCmd.SetArgs(append([]string{"install", "metrics"}, given.extraArgs...))
 			rootCmd.SetOut(stdout)
 			rootCmd.SetErr(stderr)

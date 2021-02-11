@@ -5,7 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
+	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/pkg/errors"
 
@@ -42,6 +46,8 @@ type BuilderContext interface {
 	Metrics() metrics.Metrics
 	EventReaderFactory() events.ListenerFactory
 	APIManager() api_server.APIManager
+	XDSHooks() *xds_hooks.Hooks
+	DpServer() *dp_server.DpServer
 }
 
 var _ BuilderContext = &Builder{}
@@ -62,9 +68,12 @@ type Builder struct {
 	configm  config_manager.ConfigManager
 	leadInfo component.LeaderInfo
 	lif      lookup.LookupIPFunc
+	eac      admin.EnvoyAdminClient
 	metrics  metrics.Metrics
 	erf      events.ListenerFactory
 	apim     api_server.APIManager
+	xdsh     *xds_hooks.Hooks
+	dps      *dp_server.DpServer
 	closeCh  <-chan struct{}
 	*runtimeInfo
 }
@@ -161,6 +170,11 @@ func (b *Builder) WithLookupIP(lif lookup.LookupIPFunc) *Builder {
 	return b
 }
 
+func (b *Builder) WithEnvoyAdminClient(eac admin.EnvoyAdminClient) *Builder {
+	b.eac = eac
+	return b
+}
+
 func (b *Builder) WithMetrics(metrics metrics.Metrics) *Builder {
 	b.metrics = metrics
 	return b
@@ -173,6 +187,16 @@ func (b *Builder) WithEventReaderFactory(erf events.ListenerFactory) *Builder {
 
 func (b *Builder) WithAPIManager(apim api_server.APIManager) *Builder {
 	b.apim = apim
+	return b
+}
+
+func (b *Builder) WithXDSHooks(xdsh *xds_hooks.Hooks) *Builder {
+	b.xdsh = xdsh
+	return b
+}
+
+func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
+	b.dps = dps
 	return b
 }
 
@@ -204,6 +228,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.lif == nil {
 		return nil, errors.Errorf("LookupIP func has not been configured")
 	}
+	if b.eac == nil {
+		return nil, errors.Errorf("EnvoyAdminClient has not been configured")
+	}
 	if b.metrics == nil {
 		return nil, errors.Errorf("Metrics has not been configured")
 	}
@@ -212,6 +239,12 @@ func (b *Builder) Build() (Runtime, error) {
 	}
 	if b.apim == nil {
 		return nil, errors.Errorf("APIManager has not been configured")
+	}
+	if b.xdsh == nil {
+		return nil, errors.Errorf("XDSHooks has not been configured")
+	}
+	if b.dps == nil {
+		return nil, errors.Errorf("DpServer has not been configured")
 	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
@@ -228,9 +261,12 @@ func (b *Builder) Build() (Runtime, error) {
 			configm:  b.configm,
 			leadInfo: b.leadInfo,
 			lif:      b.lif,
+			eac:      b.eac,
 			metrics:  b.metrics,
 			erf:      b.erf,
 			apim:     b.apim,
+			xdsh:     b.xdsh,
+			dps:      b.dps,
 		},
 		Manager: b.cm,
 	}, nil
@@ -284,9 +320,14 @@ func (b *Builder) Metrics() metrics.Metrics {
 func (b *Builder) EventReaderFactory() events.ListenerFactory {
 	return b.erf
 }
-
 func (b *Builder) APIManager() api_server.APIManager {
 	return b.apim
+}
+func (b *Builder) XDSHooks() *xds_hooks.Hooks {
+	return b.xdsh
+}
+func (b *Builder) DpServer() *dp_server.DpServer {
+	return b.dps
 }
 func (b *Builder) CloseCh() <-chan struct{} {
 	return b.closeCh
