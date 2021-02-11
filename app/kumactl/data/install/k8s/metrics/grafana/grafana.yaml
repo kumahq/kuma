@@ -149,14 +149,10 @@ data:
       editable: true
       options:
         path: /etc/grafana/provisioning/dashboards
-  kuma-dataplane.json: |
-{{ .DashboardDataplane | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
-  kuma-mesh.json: |
-{{ .DashboardMesh | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
-  kuma-service-to-service.json: |
-{{ .DashboardServiceToService | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
-  kuma-cp.json: |
-{{ .DashboardCP | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
+{{ range $dashboard := .Dashboards }}
+{{ $dashboard.FileName | indent 2 }}: |
+{{ $dashboard.Content | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
+{{ end }}
 ---
 apiVersion: v1
 kind: ServiceAccount
