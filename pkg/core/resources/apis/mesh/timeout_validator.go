@@ -46,20 +46,6 @@ func (t *TimeoutResource) validateConf() (err validators.ValidationError) {
 		return
 	}
 
-	counter := 0
-	if conf.Tcp != nil {
-		counter++
-	}
-	if conf.Http != nil {
-		counter++
-	}
-	if conf.Grpc != nil {
-		counter++
-	}
-	if counter > 1 {
-		err.AddViolationAt(path, "only zero or one section must be specified")
-	}
-
 	err.Add(t.validateConfTcp(path.Field("tcp"), conf.GetTcp()))
 	err.Add(t.validateConfHttp(path.Field("http"), conf.GetHttp()))
 	err.Add(t.validateConfGrpc(path.Field("grpc"), conf.GetGrpc()))
@@ -100,5 +86,6 @@ func (t *TimeoutResource) validateConfGrpc(path validators.PathBuilder, conf *v1
 		return
 	}
 	err.Add(validateDuration_GreaterThan0OrNil(path.Field("streamIdleTimeout"), conf.StreamIdleTimeout))
+	err.Add(validateDuration_GreaterThan0OrNil(path.Field("maxStreamDuration"), conf.MaxStreamDuration))
 	return
 }
