@@ -96,6 +96,7 @@ type Timeout_Conf struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// ConnectTimeout defines time to establish connection
 	ConnectTimeout *duration.Duration `protobuf:"bytes,1,opt,name=connect_timeout,json=connectTimeout,proto3" json:"connect_timeout,omitempty"`
 	Tcp            *Timeout_Conf_Tcp  `protobuf:"bytes,2,opt,name=tcp,proto3" json:"tcp,omitempty"`
 	Http           *Timeout_Conf_Http `protobuf:"bytes,3,opt,name=http,proto3" json:"http,omitempty"`
@@ -162,11 +163,13 @@ func (x *Timeout_Conf) GetGrpc() *Timeout_Conf_Grpc {
 	return nil
 }
 
+// Tcp defines timeouts that are applied when the protocol is TCP
 type Timeout_Conf_Tcp struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// IdleTimeout is defined as the period in which there are no bytes sent or received on either the upstream or downstream connection
 	IdleTimeout *duration.Duration `protobuf:"bytes,1,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
 }
 
@@ -209,13 +212,16 @@ func (x *Timeout_Conf_Tcp) GetIdleTimeout() *duration.Duration {
 	return nil
 }
 
+// Http defines timeouts that are applied when the protocol is HTTP
 type Timeout_Conf_Http struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// RequestTimeout is a span between the point at which the entire downstream request (i.e. end-of-stream) has been processed and when the upstream response has been completely processed
 	RequestTimeout *duration.Duration `protobuf:"bytes,1,opt,name=request_timeout,json=requestTimeout,proto3" json:"request_timeout,omitempty"`
-	IdleTimeout    *duration.Duration `protobuf:"bytes,2,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
+	// IdleTimeout is the time at which a downstream or upstream connection will be terminated if there are no active streams
+	IdleTimeout *duration.Duration `protobuf:"bytes,2,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
 }
 
 func (x *Timeout_Conf_Http) Reset() {
@@ -264,12 +270,15 @@ func (x *Timeout_Conf_Http) GetIdleTimeout() *duration.Duration {
 	return nil
 }
 
+// Grpc defines timeouts that are applied when the protocol is GRPC
 type Timeout_Conf_Grpc struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
+	// StreamIdleTimeout is the amount of time that the connection manager will allow a stream to exist with no upstream or downstream activity
 	StreamIdleTimeout *duration.Duration `protobuf:"bytes,1,opt,name=stream_idle_timeout,json=streamIdleTimeout,proto3" json:"stream_idle_timeout,omitempty"`
+	// MaxStreamDuration is the maximum time that a stream’s lifetime will span
 	MaxStreamDuration *duration.Duration `protobuf:"bytes,2,opt,name=max_stream_duration,json=maxStreamDuration,proto3" json:"max_stream_duration,omitempty"`
 }
 

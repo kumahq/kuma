@@ -16,20 +16,36 @@ message Timeout {
   repeated Selector destinations = 2;
 
   message Conf {
-
+    // ConnectTimeout defines time to establish connection
     google.protobuf.Duration connect_timeout = 1;
 
-    message Tcp { google.protobuf.Duration idle_timeout = 1; }
+    // Tcp defines timeouts that are applied when the protocol is TCP
+    message Tcp {
+      // IdleTimeout is defined as the period in which there are no bytes sent
+      // or received on either the upstream or downstream connection
+      google.protobuf.Duration idle_timeout = 1;
+    }
     Tcp tcp = 2;
 
+    // Http defines timeouts that are applied when the protocol is HTTP
     message Http {
+      // RequestTimeout is a span between the point at which the entire
+      // downstream request (i.e. end-of-stream) has been processed and when the
+      // upstream response has been completely processed
       google.protobuf.Duration request_timeout = 1;
+      // IdleTimeout is the time at which a downstream or upstream connection
+      // will be terminated if there are no active streams
       google.protobuf.Duration idle_timeout = 2;
     }
     Http http = 3;
 
+    // Grpc defines timeouts that are applied when the protocol is GRPC
     message Grpc {
+      // StreamIdleTimeout is the amount of time that the connection manager
+      // will allow a stream to exist with no upstream or downstream activity
       google.protobuf.Duration stream_idle_timeout = 1;
+      // MaxStreamDuration is the maximum time that a stream’s lifetime will
+      // span
       google.protobuf.Duration max_stream_duration = 2;
     }
     Grpc grpc = 4;
