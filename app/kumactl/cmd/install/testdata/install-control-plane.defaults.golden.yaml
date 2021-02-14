@@ -1229,7 +1229,7 @@ spec:
   names:
     kind: Timeout
     plural: timeouts
-  scope: ""
+  scope: Cluster
   validation:
     openAPIV3Schema:
       description: Timeout is the Schema for the timeout API
@@ -7166,6 +7166,7 @@ rules:
       - proxytemplates
       - trafficpermissions
       - trafficroutes
+      - timeouts
     verbs:
       - get
       - list
@@ -7182,7 +7183,6 @@ rules:
       - faultinjections
       - healthchecks
       - retries
-      - timeouts
       - trafficlogs
       - traffictraces
     verbs:
