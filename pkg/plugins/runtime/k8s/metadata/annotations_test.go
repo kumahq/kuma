@@ -63,7 +63,7 @@ var _ = Describe("Kubernetes Annotations", func() {
 			_, err := metadata.Annotations(annotations).GetMap("key1")
 
 			// then
-			Expect(err).To(MatchError(`invalid format. Map in "key1" has to be provided in the following format: key1=value2;key2=value2`))
+			Expect(err).To(MatchError(`invalid format. Map in "key1" has to be provided in the following format: key1=value1;key2=value2`))
 		})
 	})
 })
