@@ -38,7 +38,7 @@ func RegisterXDS(
 	if err != nil {
 		return err
 	}
-	authCallbacks := auth.NewCallbacks(rt.ResourceManager(), authenticator)
+	authCallbacks := auth.NewCallbacks(rt.ResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
 
 	metadataTracker := xds_callbacks.NewDataplaneMetadataTracker()
 	connectionInfoTracker := xds_callbacks.NewConnectionInfoTracker()

@@ -1,10 +1,13 @@
-package e2e_test
+package helm_test
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/gruntwork-io/terratest/modules/random"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 
@@ -21,7 +24,8 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var _ = Describe("Test Remote and Global", func() {
+var _ = Describe("Test Remote and Global with Helm chart", func() {
+
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -37,11 +41,8 @@ metadata:
 	var c1, c2 Cluster
 	var global, remote ControlPlane
 	var optsGlobal, optsRemote []DeployOptionsFunc
-	var originalKumaNamespace = KumaNamespace
 
 	BeforeEach(func() {
-		// set the new namespace
-		KumaNamespace = "other-kuma-system"
 		var err error
 		clusters, err = NewK8sClusters(
 			[]string{Kuma1, Kuma2},
@@ -49,6 +50,16 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		c1 = clusters.GetCluster(Kuma1)
+		c2 = clusters.GetCluster(Kuma2)
+
+		releaseName := fmt.Sprintf(
+			"kuma-%s",
+			strings.ToLower(random.UniqueId()),
+		)
+		optsGlobal = []DeployOptionsFunc{
+			WithInstallationMode(HelmInstallationMode),
+			WithHelmReleaseName(releaseName),
+		}
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
@@ -58,10 +69,11 @@ metadata:
 		global = c1.GetKuma()
 		Expect(global).ToNot(BeNil())
 
-		c2 = clusters.GetCluster(Kuma2)
 		optsRemote = []DeployOptionsFunc{
-			WithIngress(),
+			WithInstallationMode(HelmInstallationMode),
+			WithHelmReleaseName(releaseName),
 			WithGlobalAddress(global.GetKDSServerAddress()),
+			WithHelmOpt("ingress.enabled", "true"),
 		}
 
 		err = NewClusterSetup().
@@ -102,24 +114,16 @@ metadata:
 		if ShouldSkipCleanup() {
 			return
 		}
-
-		defer func() {
-			// restore the original namespace
-			KumaNamespace = originalKumaNamespace
-		}()
-
-		err := c2.DeleteNamespace(TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = c1.DeleteKuma(optsGlobal...)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = c2.DeleteKuma(optsRemote...)
-		Expect(err).ToNot(HaveOccurred())
+		// tear down apps
+		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
+		// tear down Kuma
+		Expect(c1.DeleteKuma(optsGlobal...)).To(Succeed())
+		Expect(c2.DeleteKuma(optsRemote...)).To(Succeed())
+		// tear down clusters
+		Expect(clusters.DismissCluster()).To(Succeed())
 	})
 
-	It("should deploy Remote and Global on 2 clusters", func() {
-		// when check if remote is online
+	It("Should deploy Remote and Global on 2 clusters", func() {
 		clustersStatus := api_server.Zones{}
 		Eventually(func() (bool, error) {
 			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
@@ -136,7 +140,7 @@ metadata:
 			return clustersStatus[0].Active, nil
 		}, time.Minute, DefaultTimeout).Should(BeTrue())
 
-		// then remote is online
+		// then
 		active := true
 		for _, cluster := range clustersStatus {
 			if !cluster.Active {

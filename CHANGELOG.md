@@ -1,5 +1,19 @@
 # CHANGELOG
 
+## [1.0.7]
+> Released on  2021/02/10
+
+Changes:
+* feat: upgraded GUI to include charts [#1532](https://github.com//kumahq/kuma/pull/1532) [#1545](https://github.com//kumahq/kuma/pull/1545)
+* feat: support Kubernetes Jobs [#1497](https://github.com//kumahq/kuma/pull/1497) [#1480](https://github.com//kumahq/kuma/pull/1480) [#1481](https://github.com//kumahq/kuma/pull/1481)
+* feat: support Service-less Pods [#1460](https://github.com//kumahq/kuma/pull/1460)
+* chore: resolve both DNS compliant and non-compliant names [#1485](https://github.com//kumahq/kuma/pull/1485) [#1533](https://github.com//kumahq/kuma/pull/1533)
+* chore: support Helm chart upgrades through `kumactl install crds` [#1419](https://github.com//kumahq/kuma/pull/1419)
+* fix: Avoid computing vips for ingress [#1490](https://github.com//kumahq/kuma/pull/1490)
+  👍contributed by @lahabana
+* fix: Fix mesh outbound leak in VIPs [#1489](https://github.com//kumahq/kuma/pull/1489)
+  👍contributed by @lahabana
+
 ## [1.0.6]
 > Released on  2021/01/22
 

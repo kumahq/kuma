@@ -12,6 +12,7 @@ In alphabetical order:
 
 * Austin Cawley-Edwards([austince](https://github.com/austince)) (austin.cawley@gmail.com)
 * Bart Smykla ([bartsmykla](https://github.com/bartsmykla)) (bartek@smykla.com)
+* Charly Molter ([lahabana](https://github.com/lahabana)) (charly@molter.io)
 * Ilya Lobkov ([lobkovilya](https://github.com/lobkovilya)) (ilya.lobkov@konghq.com)
 * Jakub Dyszkiewicz ([jakubdyszkiewicz](https://github.com/jakubdyszkiewicz)) (jakub.dyszkiewicz@konghq.com)
 * Marco Palladino ([subnetmarco](https://github.com/subnetmarco)) (marco@konghq.com)
