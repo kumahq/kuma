@@ -135,7 +135,7 @@ func (a Annotations) GetMap(key string) (map[string]string, error) {
 	for _, pair := range pairs {
 		kvSplit := strings.Split(pair, "=")
 		if len(kvSplit) != 2 {
-			return nil, errors.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value2;key2=value2", key)
+			return nil, errors.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
 		}
 		result[kvSplit[0]] = kvSplit[1]
 	}
