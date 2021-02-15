@@ -18,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
 )
@@ -51,7 +50,7 @@ func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multizone.Remote.Zone
 	kdsServer, err := kds_server.New(kdsRemoteLog, rt, ProvidedTypes,
 		zone, rt.Config().Multizone.Remote.KDS.RefreshInterval,
-		providedFilter(zone), false)
+		rt.KDSContext().RemoteProvidedFilter, false)
 	if err != nil {
 		return err
 	}
@@ -75,18 +74,15 @@ func Setup(rt core_runtime.Runtime) error {
 		}()
 		return nil
 	})
-	muxClient := mux.NewClient(rt.Config().Multizone.Remote.GlobalAddress, zone, onSessionStarted, *rt.Config().Multizone.Remote.KDS, rt.Metrics())
+	muxClient := mux.NewClient(
+		rt.Config().Multizone.Remote.GlobalAddress,
+		zone,
+		onSessionStarted,
+		*rt.Config().Multizone.Remote.KDS,
+		rt.Metrics(),
+		rt.KDSContext().RemoteClientCtx,
+	)
 	return rt.Add(component.NewResilientComponent(kdsRemoteLog.WithName("mux-client"), muxClient))
-}
-
-// providedFilter filter Resources provided by Remote, specifically Ingresses that belongs to another zones
-func providedFilter(clusterName string) reconcile.ResourceFilter {
-	return func(_ string, r model.Resource) bool {
-		if r.GetType() == mesh.DataplaneType {
-			return clusterName == util.ZoneTag(r)
-		}
-		return r.GetType() == mesh.DataplaneInsightType
-	}
 }
 
 func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory) *kds_client.Callbacks {

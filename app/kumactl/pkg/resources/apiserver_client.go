@@ -7,6 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/pkg/api-server/types"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
@@ -18,7 +19,7 @@ type ApiServerClient interface {
 }
 
 func NewAPIServerClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (ApiServerClient, error) {
-	client, err := apiServerClient(coordinates)
+	client, err := kumactl_client.ApiServerClient(coordinates)
 	if err != nil {
 		return nil, err
 	}

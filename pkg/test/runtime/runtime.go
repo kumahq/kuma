@@ -5,6 +5,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	"github.com/kumahq/kuma/pkg/dp-server/server"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -77,6 +78,7 @@ func BuilderFor(cfg kuma_cp.Config) (*core_runtime.Builder, error) {
 	builder.WithAPIManager(customization.NewAPIList())
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, metrics))
+	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Remote.Zone))
 
 	_ = initializeConfigManager(cfg, builder)
 	_ = initializeDNSResolver(cfg, builder)

@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/kumahq/kuma/pkg/envoy/admin"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
@@ -48,6 +49,7 @@ type BuilderContext interface {
 	APIManager() api_server.APIManager
 	XDSHooks() *xds_hooks.Hooks
 	DpServer() *dp_server.DpServer
+	KDSContext() *kds_context.Context
 }
 
 var _ BuilderContext = &Builder{}
@@ -74,6 +76,7 @@ type Builder struct {
 	apim     api_server.APIManager
 	xdsh     *xds_hooks.Hooks
 	dps      *dp_server.DpServer
+	kdsctx   *kds_context.Context
 	closeCh  <-chan struct{}
 	*runtimeInfo
 }
@@ -200,6 +203,11 @@ func (b *Builder) WithDpServer(dps *dp_server.DpServer) *Builder {
 	return b
 }
 
+func (b *Builder) WithKDSContext(kdsctx *kds_context.Context) *Builder {
+	b.kdsctx = kdsctx
+	return b
+}
+
 func (b *Builder) Build() (Runtime, error) {
 	if b.cm == nil {
 		return nil, errors.Errorf("ComponentManager has not been configured")
@@ -246,6 +254,9 @@ func (b *Builder) Build() (Runtime, error) {
 	if b.dps == nil {
 		return nil, errors.Errorf("DpServer has not been configured")
 	}
+	if b.kdsctx == nil {
+		return nil, errors.Errorf("KDSContext has not been configured")
+	}
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
@@ -267,6 +278,7 @@ func (b *Builder) Build() (Runtime, error) {
 			apim:     b.apim,
 			xdsh:     b.xdsh,
 			dps:      b.dps,
+			kdsctx:   b.kdsctx,
 		},
 		Manager: b.cm,
 	}, nil
@@ -328,6 +340,9 @@ func (b *Builder) XDSHooks() *xds_hooks.Hooks {
 }
 func (b *Builder) DpServer() *dp_server.DpServer {
 	return b.dps
+}
+func (b *Builder) KDSContext() *kds_context.Context {
+	return b.kdsctx
 }
 func (b *Builder) CloseCh() <-chan struct{} {
 	return b.closeCh

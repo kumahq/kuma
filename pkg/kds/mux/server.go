@@ -33,7 +33,7 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 
 type server struct {
 	config    multizone.KdsServerConfig
-	callbacks Callbacks
+	callbacks []Callbacks
 	metrics   core_metrics.Metrics
 }
 
@@ -41,7 +41,7 @@ var (
 	_ component.Component = &server{}
 )
 
-func NewServer(callbacks Callbacks, config multizone.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
+func NewServer(callbacks []Callbacks, config multizone.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
 	return &server{
 		callbacks: callbacks,
 		config:    config,
@@ -109,8 +109,11 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 	stop := make(chan struct{})
 	session := NewSession(clientID, stream, stop)
 	defer close(stop)
-	if err := s.callbacks.OnSessionStarted(session); err != nil {
-		return err
+	for _, callbacks := range s.callbacks {
+		if err := callbacks.OnSessionStarted(session); err != nil {
+			log.Info("closing KDS stream", "reason", err.Error())
+			return err
+		}
 	}
 	<-stream.Context().Done()
 	log.Info("KDS stream is closed")
