@@ -149,6 +149,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.VirtualProbesPort).To(Equal(uint32(1111)))
 			Expect(cfg.Runtime.Kubernetes.Injector.CNIEnabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.Image).To(Equal("test-image:test"))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.EnvVars).To(Equal(map[string]string{"a": "b", "c": "d"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.RedirectPortInbound).To(Equal(uint32(2020)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.RedirectPortOutbound).To(Equal(uint32(1010)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.UID).To(Equal(int64(100)))
@@ -336,6 +337,9 @@ runtime:
           periodSeconds: 18
           failureThreshold: 22
           timeoutSeconds: 24
+        envVars:
+          a: b
+          c: d
       sidecarTraffic:
         excludeInboundPorts:
         - 1234
@@ -469,6 +473,7 @@ sdsServer:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND":                 "2020",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_OUTBOUND":                "1010",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED":                                             "true",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS":                              "a:b,c:d",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_UID":                                   "100",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT":                            "1099",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_DRAIN_TIME":                            "33s",
