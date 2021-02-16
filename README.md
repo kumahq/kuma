@@ -17,6 +17,8 @@ Users that require enterprise-level support for Kuma can explore the [enterprise
 
 Built by Envoy contributors at Kong 🦍.
 
+[![][kuma-gui]][kuma-url]
+
 **Need help?** In your journey with Kuma you can get in touch with the broader community via the official [Slack chat](https://kuma.io/community).
 
 [Installation](https://kuma.io/install) |
@@ -99,10 +101,6 @@ With Kuma, our application teams can stop building connectivity management code 
 * **Platform-Agnostic**: Support for Kubernetes, VMs, and bare metal. Including hybrid deployments.
 * **Transparent Proxying**: Out of the box transparent proxying on Kubernetes, VMs and any other platform.
 * **Network Overlay**: Create a configurable Mesh overlay across different Kubernetes clusters and namespaces.
-
-Below you can find a snapshot of the GUI that ships with Kuma:
-
-[![][kuma-gui]][kuma-url]
 
 ## Distributions
 
