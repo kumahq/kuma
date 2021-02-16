@@ -67,7 +67,7 @@ func (r *postgresResourceStore) Create(_ context.Context, resource model.Resourc
 	version := 0
 	statement := `INSERT INTO resources VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10);`
 	_, err = r.db.Exec(statement, opts.Name, opts.Mesh, resource.GetType(), version, string(bytes),
-		opts.CreationTime, opts.CreationTime, ownerName, ownerMesh, ownerType)
+		opts.CreationTime.UTC(), opts.CreationTime.UTC(), ownerName, ownerMesh, ownerType)
 	if err != nil {
 		if strings.Contains(err.Error(), duplicateKeyErrorMsg) {
 			return store.ErrorResourceAlreadyExists(resource.GetType(), opts.Name, opts.Mesh)
@@ -103,7 +103,7 @@ func (r *postgresResourceStore) Update(_ context.Context, resource model.Resourc
 		statement,
 		string(bytes),
 		newVersion,
-		opts.ModificationTime,
+		opts.ModificationTime.UTC(),
 		resource.GetMeta().GetName(),
 		resource.GetMeta().GetMesh(),
 		resource.GetType(),
@@ -167,8 +167,8 @@ func (r *postgresResourceStore) Get(_ context.Context, resource model.Resource, 
 		Name:             opts.Name,
 		Mesh:             opts.Mesh,
 		Version:          strconv.Itoa(version),
-		CreationTime:     creationTime,
-		ModificationTime: modificationTime,
+		CreationTime:     creationTime.Local(),
+		ModificationTime: modificationTime.Local(),
 	}
 	resource.SetMeta(meta)
 
@@ -228,9 +228,11 @@ func rowToItem(resources model.ResourceList, rows *sql.Rows) (model.Resource, er
 	}
 
 	meta := &resourceMetaObject{
-		Name:    name,
-		Mesh:    mesh,
-		Version: strconv.Itoa(version),
+		Name:             name,
+		Mesh:             mesh,
+		Version:          strconv.Itoa(version),
+		CreationTime:     creationTime.Local(),
+		ModificationTime: modificationTime.Local(),
 	}
 	item.SetMeta(meta)
 
