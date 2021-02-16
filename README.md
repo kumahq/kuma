@@ -142,5 +142,5 @@ limitations under the License.
 
 [kuma-url]: https://kuma.io/
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png
-[kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui-v3.png
+[kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui-v3.jpg
 [kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits-v2.png
