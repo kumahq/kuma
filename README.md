@@ -68,6 +68,8 @@ spec:
 
 The above example can also be applied on virtual machines via the built-in `kumactl` CLI.
 
+With Kuma, our application teams can stop building connectivity management code in every service and every application, and they can rely on modern service mesh infrastructure instead to improve their efficiency and the overall agility of the organization:
+
 [![][kuma-benefits]][kuma-url]
 
 ## Features
