@@ -176,7 +176,7 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 	defer r.serviceInsightMux.Unlock()
 
 	insight := &mesh_proto.ServiceInsight{
-		Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{},
+		Services: map[string]*mesh_proto.ServiceInsight_Service{},
 	}
 	dp := &core_mesh.DataplaneResourceList{}
 	if err := r.rm.List(context.Background(), dp, store.ListByMesh(mesh)); err != nil {
@@ -195,21 +195,40 @@ func (r *resyncer) createOrUpdateServiceInsight(mesh string) error {
 			svcName := inbound.GetService()
 
 			if _, ok := insight.Services[svcName]; !ok {
-				insight.Services[svcName] = &mesh_proto.ServiceInsight_DataplaneStat{}
+				insight.Services[svcName] = &mesh_proto.ServiceInsight_Service{
+					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{},
+				}
 			}
 
-			svc := insight.Services[svcName]
+			dataplanes := insight.Services[svcName].Dataplanes
 
-			svc.Total++
+			dataplanes.Total++
 
 			switch status {
 			case core_mesh.Online:
-				svc.Online++
+				dataplanes.Online++
 			case core_mesh.Offline:
-				svc.Offline++
+				dataplanes.Offline++
 			case core_mesh.PartiallyDegraded:
-				svc.PartiallyDegraded++
+				if inbound.Health != nil && !inbound.Health.Ready {
+					dataplanes.Offline++
+				} else {
+					dataplanes.Online++
+				}
 			}
+		}
+	}
+
+	for _, svc := range insight.Services {
+		online, total := svc.Dataplanes.Online, svc.Dataplanes.Total
+
+		switch {
+		case online == 0:
+			svc.Status = mesh_proto.ServiceInsight_Service_offline
+		case online == total:
+			svc.Status = mesh_proto.ServiceInsight_Service_online
+		case online < total:
+			svc.Status = mesh_proto.ServiceInsight_Service_partially_degraded
 		}
 	}
 

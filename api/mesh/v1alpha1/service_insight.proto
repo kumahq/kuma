@@ -8,11 +8,26 @@ import "google/protobuf/timestamp.proto";
 
 message ServiceInsight {
   google.protobuf.Timestamp last_sync = 1;
-  message DataplaneStat {
-    uint32 total = 1;
-    uint32 online = 2;
-    uint32 offline = 3;
-    uint32 partially_degraded = 4;
+
+  message Service {
+    enum Status {
+      none = 0; // should not be used
+      offline = 1;
+      partially_degraded = 2;
+      online = 3;
+    }
+
+    Status status = 1;
+
+    message DataplaneStat {
+      uint32 total = 1;
+      uint32 online = 2;
+      uint32 offline = 3;
+    }
+
+    DataplaneStat dataplanes = 2;
   }
-  map<string, DataplaneStat> services = 2;
+
+  map<string, Service> services = 2;
+
 }

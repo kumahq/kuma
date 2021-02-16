@@ -353,10 +353,10 @@ var _ = Describe("Insight Persistence", func() {
 		service := serviceInsight.Spec.Services["backend-1"]
 
 		// then
-		Expect(service.Total).To(Equal(uint32(4)))
-		Expect(service.Online).To(Equal(uint32(2)))
-		Expect(service.PartiallyDegraded).To(Equal(uint32(1)))
-		Expect(service.Offline).To(Equal(uint32(1)))
+		Expect(service.Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
+		Expect(service.Dataplanes.Total).To(Equal(uint32(4)))
+		Expect(service.Dataplanes.Online).To(Equal(uint32(2)))
+		Expect(service.Dataplanes.Offline).To(Equal(uint32(2)))
 	})
 
 	It("should return correct dataplanes statuses in mesh insights", func() {
