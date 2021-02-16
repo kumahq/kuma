@@ -107,5 +107,10 @@ var _ = Describe("getCommonProtocol()", func() {
 			another:  mesh_core.ProtocolTCP,
 			expected: mesh_core.ProtocolTCP,
 		}),
+		Entry("`udp` and `udp`", testCase{
+			one:      mesh_core.ProtocolUDP,
+			another:  mesh_core.ProtocolUDP,
+			expected: mesh_core.ProtocolUDP,
+		}),
 	)
 })

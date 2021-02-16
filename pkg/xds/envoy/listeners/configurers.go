@@ -131,17 +131,19 @@ func SourceMatcher(address string) FilterChainBuilderOpt {
 	})
 }
 
-func InboundListener(listenerName string, address string, port uint32) ListenerBuilderOpt {
+func InboundListener(listenerName string, address string, port uint32, protocol mesh_core.Protocol) ListenerBuilderOpt {
 	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
 		config.AddV2(&v2.InboundListenerConfigurer{
 			ListenerName: listenerName,
 			Address:      address,
 			Port:         port,
+			Protocol:     protocol,
 		})
 		config.AddV3(&v3.InboundListenerConfigurer{
 			ListenerName: listenerName,
 			Address:      address,
 			Port:         port,
+			Protocol:     protocol,
 		})
 	})
 }
@@ -161,17 +163,19 @@ func NetworkRBAC(statsName string, rbacEnabled bool, permission *mesh_core.Traff
 	})
 }
 
-func OutboundListener(listenerName string, address string, port uint32) ListenerBuilderOpt {
+func OutboundListener(listenerName string, address string, port uint32, protocol mesh_core.Protocol) ListenerBuilderOpt {
 	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
 		config.AddV2(&v2.OutboundListenerConfigurer{
 			ListenerName: listenerName,
 			Address:      address,
 			Port:         port,
+			Protocol:     protocol,
 		})
 		config.AddV3(&v3.OutboundListenerConfigurer{
 			ListenerName: listenerName,
 			Address:      address,
 			Port:         port,
+			Protocol:     protocol,
 		})
 	})
 }
@@ -342,5 +346,18 @@ func Retry(
 				Protocol: protocol,
 			})
 		}
+	})
+}
+
+func UDPProxy(statsName string, cluster envoy_common.ClusterSubset) ListenerBuilderOpt {
+	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+		config.AddV2(&v2.UDPProxyConfigurer{
+			StatsName: statsName,
+			Cluster:   cluster,
+		})
+		config.AddV3(&v3.UDPProxyConfigurer{
+			StatsName: statsName,
+			Cluster:   cluster,
+		})
 	})
 }

@@ -5,6 +5,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
@@ -15,19 +16,20 @@ import (
 var _ = Describe("StaticEndpointsConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		path            string
-		clusterName     string
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		path             string
+		clusterName      string
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
 					Configure(StaticEndpoints(given.listenerName,
 						[]*envoy_common.StaticEndpointPath{
@@ -48,11 +50,12 @@ var _ = Describe("StaticEndpointsConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("prometheus endpoint without transparent proxying", testCase{
-			listenerName:    "kuma:metrics:prometheus",
-			listenerAddress: "192.168.0.1",
-			listenerPort:    8080,
-			path:            "/non-standard-path",
-			clusterName:     "kuma:envoy:admin",
+			listenerName:     "kuma:metrics:prometheus",
+			listenerAddress:  "192.168.0.1",
+			listenerPort:     8080,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			path:             "/non-standard-path",
+			clusterName:      "kuma:envoy:admin",
 			expected: `
             name: kuma:metrics:prometheus
             trafficDirection: INBOUND

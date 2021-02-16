@@ -87,11 +87,15 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).
 				Configure(envoy_listeners.NetworkRBAC(inboundListenerName, ctx.Mesh.Resource.MTLSEnabled(), proxy.Policies.TrafficPermissions[endpoint]))
 		}()
-		inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort)).
+		inboundListenerBuilder := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
+			Configure(envoy_listeners.InboundListener(inboundListenerName, endpoint.DataplaneIP, endpoint.DataplanePort, protocol)).
 			Configure(envoy_listeners.FilterChain(filterChainBuilder)).
-			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
-			Build()
+			Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying()))
+
+		if protocol == mesh_core.ProtocolUDP {
+			inboundListenerBuilder = inboundListenerBuilder.Configure(envoy_listeners.UDPProxy(localClusterName, envoy_common.ClusterSubset{ClusterName: localClusterName}))
+		}
+		inboundListener, err := inboundListenerBuilder.Build()
 		if err != nil {
 			return nil, errors.Wrapf(err, "%s: could not generate listener %s", validators.RootedAt("dataplane").Field("networking").Field("inbound").Index(i), inboundListenerName)
 		}

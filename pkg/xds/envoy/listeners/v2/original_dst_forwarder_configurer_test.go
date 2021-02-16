@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -14,19 +16,20 @@ import (
 var _ = Describe("OriginalDstForwarderConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		clusters        []envoy_common.ClusterSubset
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		statsName        string
+		clusters         []envoy_common.ClusterSubset
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV2).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(TcpProxy(given.statsName, given.clusters...)))).
 				Configure(OriginalDstForwarder()).
@@ -41,11 +44,12 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic tcp_proxy with original destination forwarder", testCase{
-			listenerName:    "catch_all",
-			listenerAddress: "0.0.0.0",
-			listenerPort:    12345,
-			statsName:       "pass_through",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "pass_through", Weight: 200}},
+			listenerName:     "catch_all",
+			listenerAddress:  "0.0.0.0",
+			listenerPort:     12345,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "pass_through",
+			clusters:         []envoy_common.ClusterSubset{{ClusterName: "pass_through", Weight: 200}},
 			expected: `
             name: catch_all
             trafficDirection: OUTBOUND

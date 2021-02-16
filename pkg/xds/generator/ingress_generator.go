@@ -70,9 +70,10 @@ func (i IngressGenerator) generateLDS(
 	apiVersion envoy_common.APIVersion,
 ) (envoy_common.NamedResource, error) {
 	inbound := ingress.Spec.Networking.Inbound[0]
+	protocol := core_mesh.ParseProtocol(inbound.GetProtocol())
 	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), inbound.Port)
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(apiVersion).
-		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port)).
+		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port, protocol)).
 		Configure(envoy_listeners.TLSInspector())
 
 	if !ingress.Spec.HasAvailableServices() {

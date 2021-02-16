@@ -65,6 +65,12 @@ var _ = Describe("InferServiceProtocol()", func() {
 			},
 			expected: mesh_core.ProtocolGRPC,
 		}),
+		Entry("one-item list: `kuma.io/protocol: udp`", testCase{
+			endpoints: []core_xds.Endpoint{
+				{Tags: map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "udp"}},
+			},
+			expected: mesh_core.ProtocolUDP,
+		}),
 		Entry("one-item list: `kuma.io/protocol: not-yet-supported-protocol`", testCase{
 			endpoints: []core_xds.Endpoint{
 				{Tags: map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "not-yet-supported-protocol"}},
@@ -140,6 +146,13 @@ var _ = Describe("InferServiceProtocol()", func() {
 				{Tags: map[string]string{"kuma.io/service": "backend", "region": "eu", "kuma.io/protocol": "tcp"}},
 			},
 			expected: mesh_core.ProtocolTCP,
+		}),
+		Entry("multi-item list: `kuma.io/protocol: udp` on every endpoint", testCase{
+			endpoints: []core_xds.Endpoint{
+				{Tags: map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "udp"}},
+				{Tags: map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "udp"}},
+			},
+			expected: mesh_core.ProtocolUDP,
 		}),
 	)
 })

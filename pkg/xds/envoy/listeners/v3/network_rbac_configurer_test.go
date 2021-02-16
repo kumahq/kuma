@@ -18,21 +18,22 @@ import (
 var _ = Describe("NetworkRbacConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		clusters        []envoy_common.ClusterSubset
-		rbacEnabled     bool
-		permission      *mesh_core.TrafficPermissionResource
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol mesh_core.Protocol
+		statsName        string
+		clusters         []envoy_common.ClusterSubset
+		rbacEnabled      bool
+		permission       *mesh_core.TrafficPermissionResource
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(TcpProxy(given.statsName, given.clusters...)).
 					Configure(NetworkRBAC(given.listenerName, given.rbacEnabled, given.permission)))).
@@ -47,12 +48,13 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic tcp_proxy with network RBAC enabled", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
-			listenerAddress: "192.168.0.1",
-			listenerPort:    8080,
-			statsName:       "localhost:8080",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
-			rbacEnabled:     true,
+			listenerName:     "inbound:192.168.0.1:8080",
+			listenerAddress:  "192.168.0.1",
+			listenerPort:     8080,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "localhost:8080",
+			clusters:         []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
+			rbacEnabled:      true,
 			permission: &mesh_core.TrafficPermissionResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "tp-1",
@@ -107,12 +109,13 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 `,
 		}),
 		Entry("basic tcp_proxy with network RBAC disabled", testCase{
-			listenerName:    "inbound:192.168.0.1:8080",
-			listenerAddress: "192.168.0.1",
-			listenerPort:    8080,
-			statsName:       "localhost:8080",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
-			rbacEnabled:     false,
+			listenerName:     "inbound:192.168.0.1:8080",
+			listenerAddress:  "192.168.0.1",
+			listenerPort:     8080,
+			listenerProtocol: mesh_core.ProtocolTCP,
+			statsName:        "localhost:8080",
+			clusters:         []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
+			rbacEnabled:      false,
 			permission: &mesh_core.TrafficPermissionResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "tp-1",

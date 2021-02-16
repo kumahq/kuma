@@ -4,6 +4,7 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -24,7 +25,7 @@ var _ = Describe("TracingConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080)).
+				Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, mesh_core.ProtocolTCP)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
 					Configure(HttpConnectionManager("localhost:8080")).
 					Configure(Tracing(given.backend)))).
