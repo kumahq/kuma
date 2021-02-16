@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -119,26 +118,22 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(pods).To(HaveLen(1))
 
+		_, _, err = remoteK8s.ExecWithRetries(TestNamespace, pods[0].GetName(), "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+		Expect(err).ToNot(HaveOccurred())
+
 		var counter1, counter2, counter3 int
-		for i := 0; i < 100; i++ {
+		const numOfRequest = 100
+
+		for i := 0; i < numOfRequest; i++ {
 			var stdout string
+
 			cmd := []string{"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh"}
-			_, err := retry.DoWithRetryE(
-				remoteK8s.GetTesting(),
-				fmt.Sprintf("kubectl exec -- %s", strings.Join(cmd, " ")),
-				DefaultRetries,
-				DefaultTimeout,
-				func() (string, error) {
-					var err error
-					stdout, _, err = remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
-					if err != nil {
-						Expect(err).ToNot(MatchError("command terminated with exit code 56"))
-						return "", nil
-					}
-					return "", err
-				},
-			)
-			Expect(err).ToNot(HaveOccurred())
+			stdout, _, err = remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
+			if err != nil {
+				Expect(err).ToNot(MatchError("command terminated with exit code 56"))
+				continue
+			}
 
 			switch {
 			case strings.Contains(stdout, "Echo echo-universal-1"):
@@ -150,6 +145,9 @@ metadata:
 			}
 		}
 		Expect(counter2).To(Equal(0))
-		Expect(math.Abs(float64(counter3-counter1)) <= 4).To(BeTrue())
+		// more than 90 percent of requests reached either service instance
+		Expect(counter1+counter3 > 0.9*numOfRequest).To(BeTrue())
+		// requests are almost evenly distributed among 2 healthy instances
+		Expect(math.Abs(float64(counter3-counter1)) < 0.1*float64(counter1+counter3)).To(BeTrue())
 	})
 })
