@@ -221,7 +221,7 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 }
 
 func (r *resourceEndpoints) meshFromRequest(request *restful.Request) string {
-	if r.ResourceFactory().Scope() == model.ScopeMesh {
+	if r.ResourceFactory().Scope() == model.ScopeMesh || r.ResourceFactory().Scope() == model.ScopeMeshOrGlobal {
 		return request.PathParameter("mesh")
 	}
 	return ""

@@ -92,15 +92,19 @@ func (v *SecretValidator) validate(ctx context.Context, secret *kube_core.Secret
 	}
 
 	// validate mesh exists
-	mesh := mesh_k8s.Mesh{}
-	key := kube_types.NamespacedName{
-		Name: meshOfSecret(secret),
-	}
-	if err := v.Client.Get(ctx, key, &mesh); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(meshLabel), "mesh does not exist")
-		} else {
-			return errors.Wrap(err, "could not fetch mesh")
+	secretMesh := meshOfSecret(secret)
+	if secretMesh != "" {
+		mesh := mesh_k8s.Mesh{}
+		// validate mesh only when
+		key := kube_types.NamespacedName{
+			Name: secretMesh,
+		}
+		if err := v.Client.Get(ctx, key, &mesh); err != nil {
+			if kube_apierrs.IsNotFound(err) {
+				verr.AddViolationAt(validators.RootedAt("metadata").Field("labels").Key(meshLabel), "mesh does not exist")
+			} else {
+				return errors.Wrap(err, "could not fetch mesh")
+			}
 		}
 	}
 
@@ -123,11 +127,7 @@ func isKumaSecret(secret *kube_core.Secret) bool {
 }
 
 func meshOfSecret(secret *kube_core.Secret) string {
-	meshName := secret.GetLabels()[meshLabel]
-	if meshName == "" {
-		return "default"
-	}
-	return meshName
+	return secret.GetLabels()[meshLabel] // note that secret can be global scoped, in this case, this should be a empty
 }
 
 func (v *SecretValidator) InjectDecoder(d *admission.Decoder) error {

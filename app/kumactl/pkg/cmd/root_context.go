@@ -134,10 +134,7 @@ func (rc *RootContext) CurrentControlPlane() (*config_proto.ControlPlane, error)
 }
 
 func (rc *RootContext) CurrentMesh() string {
-	if rc.Args.Mesh != "" {
-		return rc.Args.Mesh
-	}
-	return core_model.DefaultMesh
+	return rc.Args.Mesh
 }
 
 func (rc *RootContext) Now() time.Time {

@@ -35,7 +35,7 @@ func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.Re
 		if err != nil {
 			panic(err)
 		}
-		if r.Scope() == core_model.ScopeMesh && !exclude[typ] {
+		if r.Scope() != core_model.ScopeGlobal && !exclude[typ] {
 			types = append(types, typ)
 		}
 	}

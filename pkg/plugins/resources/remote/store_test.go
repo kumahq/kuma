@@ -50,8 +50,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "traffic-routes"),
-				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
+				sample_core.TrafficRouteType: core_rest.NewResourceApi("traffic-routes"),
+				mesh.MeshType:                core_rest.NewResourceApi("meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -68,8 +68,8 @@ var _ = Describe("RemoteStore", func() {
 		}
 		apis := &core_rest.ApiDescriptor{
 			Resources: map[core_model.ResourceType]core_rest.ResourceApi{
-				sample_core.TrafficRouteType: core_rest.NewResourceApi(sample_core.TrafficRouteType, "traffic-routes"),
-				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
+				sample_core.TrafficRouteType: core_rest.NewResourceApi("traffic-routes"),
+				mesh.MeshType:                core_rest.NewResourceApi("meshes"),
 			},
 		}
 		return remote.NewStore(client, apis)
@@ -496,7 +496,7 @@ var _ = Describe("RemoteStore", func() {
 
 			// when
 			resource := mesh.NewMeshResource()
-			err := store.Delete(context.Background(), resource, core_store.DeleteByKey(meshName, meshName))
+			err := store.Delete(context.Background(), resource, core_store.DeleteByKey(meshName, core_model.NoMesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

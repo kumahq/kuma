@@ -3,8 +3,6 @@ package rest
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -19,37 +17,28 @@ type ResourceApi interface {
 	Item(mesh string, name string) string
 }
 
-func NewResourceApi(resType model.ResourceType, path string) ResourceApi {
-	res, _ := registry.Global().NewObject(resType)
-	if res.Scope() == model.ScopeGlobal {
-		return &nonMeshedApi{CollectionPath: path}
+func NewResourceApi(path string) ResourceApi {
+	return &resourceApi{CollectionPath: path}
+}
+
+type resourceApi struct {
+	CollectionPath string
+}
+
+func (r *resourceApi) List(mesh string) string {
+	if mesh == "" {
+		return fmt.Sprintf("/%s", r.CollectionPath)
 	} else {
-		return &meshedApi{CollectionPath: path}
+		return fmt.Sprintf("/meshes/%s/%s", mesh, r.CollectionPath)
 	}
 }
 
-type meshedApi struct {
-	CollectionPath string
-}
-
-func (r *meshedApi) List(mesh string) string {
-	return fmt.Sprintf("/meshes/%s/%s", mesh, r.CollectionPath)
-}
-
-func (r meshedApi) Item(mesh string, name string) string {
-	return fmt.Sprintf("/meshes/%s/%s/%s", mesh, r.CollectionPath, name)
-}
-
-type nonMeshedApi struct {
-	CollectionPath string
-}
-
-func (r *nonMeshedApi) List(string) string {
-	return fmt.Sprintf("/%s", r.CollectionPath)
-}
-
-func (r *nonMeshedApi) Item(string, name string) string {
-	return fmt.Sprintf("/%s/%s", r.CollectionPath, name)
+func (r *resourceApi) Item(mesh string, name string) string {
+	if mesh == "" {
+		return fmt.Sprintf("/%s/%s", r.CollectionPath, name)
+	} else {
+		return fmt.Sprintf("/meshes/%s/%s/%s", mesh, r.CollectionPath, name)
+	}
 }
 
 var _ Api = &ApiDescriptor{}

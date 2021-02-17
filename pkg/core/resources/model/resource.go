@@ -31,6 +31,8 @@ type ResourceScope string
 const (
 	ScopeMesh   = "Mesh"
 	ScopeGlobal = "Global"
+	// A marker that a resource can but does not have to be bound to a Mesh
+	ScopeMeshOrGlobal = "MeshOrGlobal"
 )
 
 type Resource interface {

@@ -198,6 +198,15 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 			endpoints.addDeleteEndpoint(ws, "/"+definition.Path)
 			endpoints.addFindEndpoint(ws, "/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/"+definition.Path)
+		case model.ScopeMeshOrGlobal:
+			endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.Path)
+			endpoints.addDeleteEndpoint(ws, "/"+definition.Path)
+			endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
+			endpoints.addFindEndpoint(ws, "/"+definition.Path)
 		}
 	}
 }

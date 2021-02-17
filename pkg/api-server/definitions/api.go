@@ -13,7 +13,7 @@ func Apis(wss ...ResourceWsDefinition) core_rest.Api {
 	mapping := make(map[core_model.ResourceType]core_rest.ResourceApi)
 	for _, ws := range wss {
 		resourceType := ws.ResourceFactory().GetType()
-		mapping[resourceType] = core_rest.NewResourceApi(resourceType, ws.Path)
+		mapping[resourceType] = core_rest.NewResourceApi(ws.Path)
 	}
 	return &core_rest.ApiDescriptor{
 		Resources: mapping,

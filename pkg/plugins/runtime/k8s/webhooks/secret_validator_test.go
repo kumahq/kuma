@@ -33,6 +33,9 @@ var _ = Describe("ServiceValidator", func() {
 			ObjectMeta: kube_meta.ObjectMeta{
 				Name:      "secret-in-use",
 				Namespace: "default",
+				Labels: map[string]string{
+					"kuma.io/mesh": "default",
+				},
 			},
 			Data: map[string][]byte{
 				"value": []byte("dGVzdAo="),
@@ -46,6 +49,25 @@ var _ = Describe("ServiceValidator", func() {
 			ObjectMeta: kube_meta.ObjectMeta{
 				Name:      "secret-not-in-use",
 				Namespace: "default",
+				Labels: map[string]string{
+					"kuma.io/mesh": "default",
+				},
+			},
+			Data: map[string][]byte{
+				"value": []byte("dGVzdAo="),
+			},
+			Type: "system.kuma.io/secret",
+		}
+		err = k8sClient.Create(context.Background(), secret)
+		Expect(err).ToNot(HaveOccurred())
+
+		secret = &kube_core.Secret{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name:      "global-secret",
+				Namespace: "default",
+				Labels: map[string]string{
+					"kuma.io/mesh": "",
+				},
 			},
 			Data: map[string][]byte{
 				"value": []byte("dGVzdAo="),
@@ -116,7 +138,7 @@ var _ = Describe("ServiceValidator", func() {
             uid: ""
 `,
 		}),
-		Entry("should allow Secret without mesh label (defaults to 'default')", testCase{
+		Entry("should allow Secret without mesh label (defaults to global)", testCase{
 			request: `
             apiVersion: admission.k8s.io/v1
             kind: AdmissionReview
@@ -127,6 +149,37 @@ var _ = Describe("ServiceValidator", func() {
                 kind: Secret
                 version: v1
               name: sec-1
+              namespace: kuma-system
+              object:
+                apiVersion: v1
+                kind: Secret
+                metadata:
+                  name: sec-1
+                  namespace: kuma-system
+                data:
+                  value: dGVzdAo=
+                type: system.kuma.io/secret
+              operation: CREATE
+`,
+			expected: `
+            allowed: true
+            status:
+              code: 200
+              metadata: {}
+            uid: ""
+`,
+		}),
+		Entry("should allow global Secret", testCase{
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Secret
+                version: v1
+              name: global-secret
               namespace: kuma-system
               object:
                 apiVersion: v1

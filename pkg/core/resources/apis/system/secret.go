@@ -50,7 +50,7 @@ func (t *SecretResource) Validate() error {
 	return nil
 }
 func (t *SecretResource) Scope() model.ResourceScope {
-	return model.ScopeMesh
+	return model.ScopeMeshOrGlobal
 }
 
 var _ model.ResourceList = &SecretResourceList{}

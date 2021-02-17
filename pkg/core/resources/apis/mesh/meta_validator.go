@@ -23,11 +23,16 @@ func ValidateMeta(name, mesh string, scope model.ResourceScope) validators.Valid
 
 func ValidateMesh(mesh string, scope model.ResourceScope) validators.ValidationError {
 	var err validators.ValidationError
-	if scope == model.ScopeMesh {
+	switch scope {
+	case model.ScopeMesh:
 		if mesh == "" {
 			err.AddViolation("mesh", "cannot be empty")
 		}
 		if !nameMeshRegexp.MatchString(mesh) {
+			err.AddViolation("mesh", "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.")
+		}
+	case model.ScopeMeshOrGlobal:
+		if mesh != "" && !nameMeshRegexp.MatchString(mesh) {
 			err.AddViolation("mesh", "invalid characters. Valid characters are numbers, lowercase latin letters and '-', '_' symbols.")
 		}
 	}

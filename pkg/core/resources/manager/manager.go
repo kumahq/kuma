@@ -53,7 +53,7 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 	opts := store.NewCreateOptions(fs...)
 
 	var owner model.Resource
-	if resource.Scope() == model.ScopeMesh {
+	if resource.Scope() == model.ScopeMesh || (resource.Scope() == model.ScopeMeshOrGlobal && opts.Mesh != "") {
 		owner = core_mesh.NewMeshResource()
 		if err := r.Store.Get(ctx, owner, store.GetByKey(opts.Mesh, model.NoMesh)); err != nil {
 			return MeshNotFound(opts.Mesh)
