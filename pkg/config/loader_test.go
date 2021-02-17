@@ -177,6 +177,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.TlsCertFile).To(Equal("/tmp/cert"))
 			Expect(cfg.General.TlsKeyFile).To(Equal("/tmp/key"))
 			Expect(cfg.General.DNSCacheTTL).To(Equal(19 * time.Second))
+			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
 
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
 			Expect(cfg.Mode).To(Equal(config_core.Remote))
@@ -349,6 +350,7 @@ general:
   tlsKeyFile: /tmp/key
   tlsCertFile: /tmp/cert
   dnsCacheTTL: 19s
+  workDir: /custom/work/dir
 guiServer:
   apiServerUrl: http://localhost:1234
 mode: remote
@@ -490,6 +492,7 @@ sdsServer:
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
 				"KUMA_GENERAL_DNS_CACHE_TTL":                                                               "19s",
+				"KUMA_GENERAL_WORK_DIR":                                                                    "/custom/work/dir",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                                                     "https://kuma,https://someapi",
 				"KUMA_GUI_SERVER_API_SERVER_URL":                                                           "http://localhost:1234",
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
