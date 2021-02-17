@@ -37,4 +37,33 @@ var _ = Describe("Kubernetes Annotations", func() {
 			Expect(exist).To(BeTrue())
 		})
 	})
+
+	Context("GetMap()", func() {
+		It("should parse value to map", func() {
+			// given
+			annotations := map[string]string{
+				"key1": "TEST1=1;TEST2=2",
+			}
+
+			// when
+			m, err := metadata.Annotations(annotations).GetMap("key1")
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(m).To(Equal(map[string]string{"TEST1": "1", "TEST2": "2"}))
+		})
+
+		It("should return error if value has wrong format", func() {
+			// given
+			annotations := map[string]string{
+				"key1": "TESTTEST",
+			}
+
+			// when
+			_, err := metadata.Annotations(annotations).GetMap("key1")
+
+			// then
+			Expect(err).To(MatchError(`invalid format. Map in "key1" has to be provided in the following format: key1=value1;key2=value2`))
+		})
+	})
 })

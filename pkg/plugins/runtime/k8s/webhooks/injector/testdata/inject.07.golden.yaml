@@ -5,8 +5,8 @@ metadata:
     kuma.io/mesh: default
     kuma.io/sidecar-injected: "true"
     kuma.io/transparent-proxying: enabled
-    kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/transparent-proxying-inbound-port: "15006"
+    kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
   creationTimestamp: null
@@ -41,18 +41,6 @@ spec:
         fieldRef:
           apiVersion: v1
           fieldPath: status.podIP
-    - name: KUMA_CONTROL_PLANE_URL
-      value: http://kuma-control-plane.kuma-system:5681
-    - name: KUMA_DATAPLANE_MESH
-      value: default
-    - name: KUMA_DATAPLANE_NAME
-      value: $(POD_NAME).$(POD_NAMESPACE)
-    - name: KUMA_DATAPLANE_ADMIN_PORT
-      value: "9901"
-    - name: KUMA_DATAPLANE_DRAIN_TIME
-      value: 31s
-    - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
-      value: /var/run/secrets/kubernetes.io/serviceaccount/token
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----
@@ -74,23 +62,35 @@ spec:
         aOKow0ze+zHVFqTHbjnCqEV3hnsUyRUwsBln9+jDJXgwZM/tMlVJrZCh0Sle9Y5Z
         MOB0fCf6sTMNRTGg5Lpl6uIYM/5INpmHVMo3n7MBSnpEDAUS2bf/uo5gIiq6XCdp
         -----END CERTIFICATE-----
+    - name: KUMA_CONTROL_PLANE_URL
+      value: http://kuma-control-plane.kuma-system:5681
+    - name: KUMA_DATAPLANE_ADMIN_PORT
+      value: "9901"
+    - name: KUMA_DATAPLANE_DRAIN_TIME
+      value: 31s
+    - name: KUMA_DATAPLANE_MESH
+      value: default
+    - name: KUMA_DATAPLANE_NAME
+      value: $(POD_NAME).$(POD_NAMESPACE)
+    - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+      value: /var/run/secrets/kubernetes.io/serviceaccount/token
     image: kuma/kuma-sidecar:latest
     imagePullPolicy: IfNotPresent
     livenessProbe:
+      failureThreshold: 212
       httpGet:
         path: /ready
         port: 9901
-      failureThreshold: 212
       initialDelaySeconds: 260
       periodSeconds: 25
       successThreshold: 1
       timeoutSeconds: 23
     name: kuma-sidecar
     readinessProbe:
+      failureThreshold: 112
       httpGet:
         path: /ready
         port: 9901
-      failureThreshold: 112
       initialDelaySeconds: 11
       periodSeconds: 15
       successThreshold: 11

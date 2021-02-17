@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -43,6 +44,10 @@ const (
 
 	// KumaVirtualProbesPortAnnotation is an insecure port for listening virtual probes
 	KumaVirtualProbesPortAnnotation = "kuma.io/virtual-probes-port"
+
+	// KumaSidecarEnvVarsAnnotation is a ; separated list of env vars that will be applied on Kuma Sidecar
+	// Example value: TEST1=1;TEST2=2
+	KumaSidecarEnvVarsAnnotation = "kuma.io/sidecar-env-vars"
 
 	// KumaMetricsPrometheusPort allows to override `Mesh`-wide default port
 	KumaMetricsPrometheusPort = "prometheus.metrics.kuma.io/port"
@@ -116,4 +121,23 @@ func (a Annotations) GetBool(key string) (bool, bool, error) {
 		return false, false, err
 	}
 	return b, true, nil
+}
+
+// GetMap returns map from annotation. Example: "kuma.io/sidecar-env-vars: TEST1=1;TEST2=2"
+func (a Annotations) GetMap(key string) (map[string]string, error) {
+	value, ok := a[key]
+	if !ok {
+		return nil, nil
+	}
+	result := map[string]string{}
+
+	pairs := strings.Split(value, ";")
+	for _, pair := range pairs {
+		kvSplit := strings.Split(pair, "=")
+		if len(kvSplit) != 2 {
+			return nil, errors.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
+		}
+		result[kvSplit[0]] = kvSplit[1]
+	}
+	return result, nil
 }

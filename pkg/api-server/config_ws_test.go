@@ -159,6 +159,7 @@ var _ = Describe("Config WS", func() {
                   "image": "kuma/kuma-init:latest"
                 },
                 "sidecarContainer": {
+                  "envVars": {},
                   "adminPort": 9901,
                   "drainTime": "30s",
                   "gid": 5678,

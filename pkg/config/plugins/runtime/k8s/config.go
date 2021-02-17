@@ -157,6 +157,8 @@ type SidecarContainer struct {
 	LivenessProbe SidecarLivenessProbe `yaml:"livenessProbe,omitempty"`
 	// Compute resource requirements.
 	Resources SidecarResources `yaml:"resources,omitempty"`
+	// EnvVars are additional environment variables that can be placed on Kuma DP sidecar
+	EnvVars map[string]string `yaml:"envVars" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_env_vars"`
 }
 
 // SidecarReadinessProbe defines periodic probe of container service readiness.
