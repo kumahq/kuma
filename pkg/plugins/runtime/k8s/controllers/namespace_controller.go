@@ -130,11 +130,11 @@ func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
 		return errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
 	}
-	if err := k8scnicncfio.CNIAddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.CNIGroupVersion)
+	if err := k8scnicncfio.AddToScheme(mgr.GetScheme()); err != nil {
+		return errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.GroupVersion)
 	}
-	if err := k8scnicncfio.CRDAddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.CRDGroupVersion)
+	if err := v1beta1.AddToScheme(mgr.GetScheme()); err != nil {
+		return errors.Wrapf(err, "could not add %q to scheme", v1beta1.SchemeGroupVersion)
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Namespace{}, builder.WithPredicates(namespaceEvents)).

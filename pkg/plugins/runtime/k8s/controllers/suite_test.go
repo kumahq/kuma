@@ -4,6 +4,8 @@ import (
 	"path/filepath"
 	"testing"
 
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
 	. "github.com/onsi/ginkgo"
@@ -47,9 +49,9 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).NotTo(HaveOccurred())
 	err = kube_core.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
-	err = k8scnicncfio.CNIAddToScheme(k8sClientScheme)
+	err = k8scnicncfio.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
-	err = k8scnicncfio.CRDAddToScheme(k8sClientScheme)
+	err = v1beta1.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
