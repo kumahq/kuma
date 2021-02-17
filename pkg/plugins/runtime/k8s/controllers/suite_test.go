@@ -47,7 +47,9 @@ var _ = BeforeSuite(func(done Done) {
 	Expect(err).NotTo(HaveOccurred())
 	err = kube_core.AddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
-	err = k8scnicncfio.AddToScheme(k8sClientScheme)
+	err = k8scnicncfio.CNIAddToScheme(k8sClientScheme)
+	Expect(err).NotTo(HaveOccurred())
+	err = k8scnicncfio.CRDAddToScheme(k8sClientScheme)
 	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
