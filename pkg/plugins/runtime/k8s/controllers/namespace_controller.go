@@ -3,6 +3,11 @@ package controllers
 import (
 	"context"
 
+	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -34,6 +39,16 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 	log := r.Log.WithValues("namespace", req.Name)
 	ctx := context.Background()
 
+	hasNAD, err := r.hasNetworkAttachmentDefinition()
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
+
+	if !hasNAD {
+		log.V(1).Info("network-attachment-definitions.k8s.cni.cncf.io not found")
+		return kube_ctrl.Result{}, nil
+	}
+
 	ns := &kube_core.Namespace{}
 	if err := r.Get(ctx, req.NamespacedName, ns); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -61,6 +76,22 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 		err := r.deleteNetworkAttachmentDefinition(log, req.Name)
 		return kube_ctrl.Result{}, err
 	}
+}
+
+func (r *NamespaceReconciler) hasNetworkAttachmentDefinition() (bool, error) {
+	crds := v1beta1.CustomResourceDefinitionList{}
+	err := r.Client.List(context.Background(), &crds)
+	if err != nil {
+		return false, errors.Wrap(err, "could not fetch CustomResourceDefinitionList")
+	}
+
+	for _, crd := range crds.Items {
+		if crd.GetName() == "network-attachment-definitions.k8s.cni.cncf.io" {
+			return true, err
+		}
+	}
+
+	return false, nil
 }
 
 func (r *NamespaceReconciler) createOrUpdateNetworkAttachmentDefinition(namespace string) error {
