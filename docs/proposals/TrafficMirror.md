@@ -36,7 +36,7 @@ spec:
           kuma.io/service: redis_default_svc_6379
           version: '1.0'
         mirror:
-          weight: 50 # percentage of traffic to be sent to the mirrored service.
+        - percentage: 50 # percentage of traffic to be sent to the mirrored service.
           destination:
             kuma.io/service: redis_default_svc_6379
             version: '2.0'
