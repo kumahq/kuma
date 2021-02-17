@@ -21,7 +21,7 @@ func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 	switch c.Protocol {
 	case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
 		return UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {
-			proxy.IdleTimeout = ptypes.DurationProto(c.Conf.GetTCPIdleTimeout())
+			proxy.IdleTimeout = ptypes.DurationProto(c.Conf.GetTcp().GetIdleTimeout().AsDuration())
 			return nil
 		})
 	case core_mesh.ProtocolHTTP, core_mesh.ProtocolHTTP2:
@@ -33,7 +33,7 @@ func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 		})
 	case core_mesh.ProtocolGRPC:
 		return UpdateHTTPConnectionManager(filterChain, func(manager *envoy_hcm.HttpConnectionManager) error {
-			manager.StreamIdleTimeout = ptypes.DurationProto(c.Conf.GetGRPCStreamIdleTimeout())
+			manager.StreamIdleTimeout = ptypes.DurationProto(c.Conf.GetGrpc().GetStreamIdleTimeout().AsDuration())
 			return nil
 		})
 	default:

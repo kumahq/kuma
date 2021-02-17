@@ -29,7 +29,7 @@ func (t *TimeoutConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 		options := &envoy_upstream_http.HttpProtocolOptions{
 			CommonHttpProtocolOptions: &envoy_core.HttpProtocolOptions{
-				IdleTimeout: ptypes.DurationProto(t.Conf.GetHTTPIdleTimeout()),
+				IdleTimeout: ptypes.DurationProto(t.Conf.GetHttp().GetIdleTimeout().AsDuration()),
 			},
 		}
 		pbst, err := proto.MarshalAnyDeterministic(options)
@@ -40,10 +40,10 @@ func (t *TimeoutConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 			"envoy.extensions.upstreams.http.v3.HttpProtocolOptions": pbst,
 		}
 	case mesh_core.ProtocolGRPC:
-		if maxStreamDuration := t.Conf.GetGRPCMaxStreamDuration(); maxStreamDuration != nil {
+		if maxStreamDuration := t.Conf.GetGrpc().GetMaxStreamDuration().AsDuration(); maxStreamDuration != 0 {
 			options := &envoy_upstream_http.HttpProtocolOptions{
 				CommonHttpProtocolOptions: &envoy_core.HttpProtocolOptions{
-					MaxStreamDuration: ptypes.DurationProto(*maxStreamDuration),
+					MaxStreamDuration: ptypes.DurationProto(maxStreamDuration),
 				},
 			}
 			pbst, err := proto.MarshalAnyDeterministic(options)

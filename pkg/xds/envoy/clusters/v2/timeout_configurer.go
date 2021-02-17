@@ -25,12 +25,12 @@ func (t *TimeoutConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	switch t.Protocol {
 	case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 		cluster.CommonHttpProtocolOptions = &envoy_api_v2_core.HttpProtocolOptions{
-			IdleTimeout: ptypes.DurationProto(t.Conf.GetHTTPIdleTimeout()),
+			IdleTimeout: ptypes.DurationProto(t.Conf.GetHttp().GetIdleTimeout().AsDuration()),
 		}
 	case mesh_core.ProtocolGRPC:
-		if maxStreamDuration := t.Conf.GetGRPCMaxStreamDuration(); maxStreamDuration != nil {
+		if maxStreamDuration := t.Conf.GetGrpc().GetMaxStreamDuration().AsDuration(); maxStreamDuration != 0 {
 			cluster.CommonHttpProtocolOptions = &envoy_api_v2_core.HttpProtocolOptions{
-				MaxStreamDuration: ptypes.DurationProto(*maxStreamDuration),
+				MaxStreamDuration: ptypes.DurationProto(maxStreamDuration),
 			}
 		}
 	}

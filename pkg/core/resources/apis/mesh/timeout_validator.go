@@ -1,7 +1,7 @@
 package mesh
 
 import (
-	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -53,7 +53,7 @@ func (t *TimeoutResource) validateConf() (err validators.ValidationError) {
 	return
 }
 
-func (t *TimeoutResource) validateConfTcp(path validators.PathBuilder, conf *v1alpha1.Timeout_Conf_Tcp) (err validators.ValidationError) {
+func (t *TimeoutResource) validateConfTcp(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Tcp) (err validators.ValidationError) {
 	if conf == nil {
 		return
 	}
@@ -64,7 +64,7 @@ func (t *TimeoutResource) validateConfTcp(path validators.PathBuilder, conf *v1a
 	return validateDuration_GreaterThan0(path.Field("idleTimeout"), conf.IdleTimeout)
 }
 
-func (t *TimeoutResource) validateConfHttp(path validators.PathBuilder, conf *v1alpha1.Timeout_Conf_Http) (err validators.ValidationError) {
+func (t *TimeoutResource) validateConfHttp(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Http) (err validators.ValidationError) {
 	if conf == nil {
 		return
 	}
@@ -77,7 +77,7 @@ func (t *TimeoutResource) validateConfHttp(path validators.PathBuilder, conf *v1
 	return
 }
 
-func (t *TimeoutResource) validateConfGrpc(path validators.PathBuilder, conf *v1alpha1.Timeout_Conf_Grpc) (err validators.ValidationError) {
+func (t *TimeoutResource) validateConfGrpc(path validators.PathBuilder, conf *mesh_proto.Timeout_Conf_Grpc) (err validators.ValidationError) {
 	if conf == nil {
 		return
 	}

@@ -33,7 +33,7 @@ func (c DefaultRouteConfigurer) Configure(virtualHost *envoy_route.VirtualHost) 
 func (c DefaultRouteConfigurer) routeAction() *envoy_route.RouteAction {
 	routeAction := envoy_route.RouteAction{}
 	if len(c.Subsets) != 0 {
-		routeAction.Timeout = ptypes.DurationProto(c.Subsets[0].Timeout.GetHTTPRequestTimeout())
+		routeAction.Timeout = ptypes.DurationProto(c.Subsets[0].Timeout.GetHttp().GetRequestTimeout().AsDuration())
 	}
 	if len(c.Subsets) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{

@@ -46,7 +46,6 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 
 	err, created = ensureDefaultTimeout(resManager, meshName)
 	if err != nil {
-		log.Error(err, "")
 		return errors.Wrap(err, "could not create default Timeout")
 	}
 	if created {
