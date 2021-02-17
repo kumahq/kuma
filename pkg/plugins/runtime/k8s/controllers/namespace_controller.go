@@ -106,6 +106,22 @@ func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		return errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.CRDGroupVersion)
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
-		For(&kube_core.Namespace{}).
+		For(&kube_core.Namespace{}, builder.WithPredicates(namespaceEvents)).
 		Complete(r)
+}
+
+// we only want status event updates
+var namespaceEvents = predicate.Funcs{
+	CreateFunc: func(event event.CreateEvent) bool {
+		return true
+	},
+	DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
+		return false
+	},
+	UpdateFunc: func(updateEvent event.UpdateEvent) bool {
+		return true
+	},
+	GenericFunc: func(genericEvent event.GenericEvent) bool {
+		return false
+	},
 }
