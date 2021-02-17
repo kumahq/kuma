@@ -23,8 +23,8 @@ define KIND_EXAMPLE_DATAPLANE_NAME
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
 endef
 
-CI_KIND_VERSION ?= v0.9.0
-CI_KUBERNETES_VERSION ?= v1.18.8@sha256:f4bcc97a0ad6e7abaf3f643d890add7efe6ee4ab90baeb374b4f41a4c95567eb
+CI_KIND_VERSION ?= v0.10.0
+CI_KUBERNETES_VERSION ?= v1.20.2@sha256:8f7ea6e7642c0da54f04a7ee10431549c0257315b3a634f6ef2fecaaedb19bab
 
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 

@@ -146,18 +146,25 @@ func ServiceTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) strin
 	return fmt.Sprintf("%s_%s_svc_%d", svc.Name, svc.Namespace, svcPort.Port)
 }
 
-// ProtocolTagFor infers service protocol from a `<port>.service.kuma.io/protocol` annotation.
+// ProtocolTagFor infers service protocol from a `<port>.service.kuma.io/protocol` annotation or `appProtocol`.
 func ProtocolTagFor(svc *kube_core.Service, svcPort *kube_core.ServicePort) string {
+	var protocolValue string
 	protocolAnnotation := fmt.Sprintf("%d.service.kuma.io/protocol", svcPort.Port)
-	protocolValue := svc.Annotations[protocolAnnotation]
+
+	if svcPort.AppProtocol != nil {
+		protocolValue = *svcPort.AppProtocol
+	} else {
+		protocolValue = svc.Annotations[protocolAnnotation]
+	}
+
 	if protocolValue == "" {
-		// if `<port>.service.kuma.io/protocol` annotation is missing or has an empty value
+		// if `appProtocol` or `<port>.service.kuma.io/protocol` is missing or has an empty value
 		// we want Dataplane to have a `protocol: tcp` tag in order to get user's attention
 		return mesh_core.ProtocolTCP
 	}
-	// if `<port>.service.kuma.io/protocol` annotation is present but has an invalid value
+	// if `appProtocol` or `<port>.service.kuma.io/protocol` field is present but has an invalid value
 	// we still want Dataplane to have a `protocol: <value as is>` tag in order to make it clear
-	// to a user that at least `<port>.service.kuma.io/protocol` has an effect
+	// to a user that at least `appProtocol` or `<port>.service.kuma.io/protocol` has an effect
 	return protocolValue
 }
 
