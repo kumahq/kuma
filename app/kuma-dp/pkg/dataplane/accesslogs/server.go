@@ -4,13 +4,8 @@ import (
 	"fmt"
 	"io"
 	"net"
-<<<<<<< HEAD
-	"sync/atomic"
-=======
 	"os"
-
-	"github.com/pkg/errors"
->>>>>>> efbbd0bf6... fix(kuma-dp) close/unlink the dp access log unix socket (#1574)
+	"sync/atomic"
 
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 
