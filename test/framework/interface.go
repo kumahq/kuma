@@ -39,13 +39,34 @@ type deployOptions struct {
 	// app specific
 	namespace   string
 	appname     string
-	id          string
+	name        string
+	appYaml     string
+	appArgs     []string
 	token       string
 	transparent bool
+	protocol    string
 	mesh        string
 }
 
 type DeployOptionsFunc func(*deployOptions)
+
+func WithYaml(appYaml string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.appYaml = appYaml
+	}
+}
+
+func WithProtocol(protocol string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.protocol = protocol
+	}
+}
+
+func WithArgs(appArgs []string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.appArgs = appArgs
+	}
+}
 
 func ProxyOnly() DeployOptionsFunc {
 	return func(o *deployOptions) {
@@ -163,9 +184,9 @@ func WithAppname(appname string) DeployOptionsFunc {
 	}
 }
 
-func WithId(id string) DeployOptionsFunc {
+func WithName(name string) DeployOptionsFunc {
 	return func(o *deployOptions) {
-		o.id = id
+		o.name = name
 	}
 }
 

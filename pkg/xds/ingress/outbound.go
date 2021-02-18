@@ -16,7 +16,7 @@ func BuildEndpointMap(destinations core_xds.DestinationMap, dataplanes []*mesh_c
 		if dataplane.Spec.IsIngress() {
 			continue
 		}
-		for _, inbound := range dataplane.Spec.Networking.GetInbound() {
+		for _, inbound := range dataplane.Spec.GetNetworking().GetHealthyInbounds() {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			selectors, ok := destinations[service]
 			if !ok {

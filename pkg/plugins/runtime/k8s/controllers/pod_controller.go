@@ -75,6 +75,11 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, nil
 	}
 
+	// skip a Pod if is complete/terminated (most probably a completed job)
+	if r.isPodComplete(pod) {
+		return kube_ctrl.Result{}, nil
+	}
+
 	// for Pods marked with ingress annotation special type of Dataplane will be injected
 	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaIngressAnnotation)
 	if err != nil {
@@ -286,6 +291,20 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 			ToRequests: &ConfigMapToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("configmap-to-pods-mapper"), SystemNamespace: r.SystemNamespace},
 		}).
 		Complete(r)
+}
+
+func (r *PodReconciler) isPodComplete(pod *kube_core.Pod) bool {
+	for _, cs := range pod.Status.ContainerStatuses {
+		// the sidecar amy or may not be terminated yet
+		if cs.Name == util_k8s.KumaSidecarContainerName {
+			continue
+		}
+		if cs.State.Terminated == nil {
+			// at least one container not terminated, therefore pod is still active
+			return false
+		}
+	}
+	return true
 }
 
 type ServiceToPodsMapper struct {
