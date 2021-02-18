@@ -66,17 +66,11 @@ func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_co
 		if dataplane.Spec.IsIngress() {
 			continue
 		}
-		for _, inbound := range dataplane.Spec.Networking.GetInbound() {
+		for _, inbound := range dataplane.Spec.GetNetworking().GetHealthyInbounds() {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?
-
-			// if inbound.Health == nil we consider Dataplane as healthy in order to be compatible with Universal
-			// where we Kuma doesn't fill inbound.Health automatically
-			if inbound.Health != nil && !inbound.Health.Ready {
-				continue
-			}
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
 				Target:   iface.DataplaneIP,
 				Port:     iface.DataplanePort,

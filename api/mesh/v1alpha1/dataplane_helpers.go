@@ -139,6 +139,16 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	return iface
 }
 
+func (n *Dataplane_Networking) GetHealthyInbounds() (inbounds []*Dataplane_Networking_Inbound) {
+	for _, inbound := range n.GetInbound() {
+		if inbound.Health != nil && !inbound.Health.Ready {
+			continue
+		}
+		inbounds = append(inbounds, inbound)
+	}
+	return
+}
+
 // Matches is simply an alias for MatchTags to make source code more aesthetic.
 func (d *Dataplane) Matches(selector TagSelector) bool {
 	if d != nil {
