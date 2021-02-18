@@ -153,4 +153,27 @@ var _ = Describe("NamespaceReconciler", func() {
 		Expect(nads.Items).To(HaveLen(0))
 	})
 
+	It("should skip creating NetworkAttachmentDefinition when CRD is absent in the cluster", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{
+				Namespace: "non-system-ns-with-sidecar-injection",
+				Name:      "non-system-ns-with-sidecar-injection",
+			},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
+
+		// and NetworkAttachmentDefinition is created
+		nads := &v1.NetworkAttachmentDefinitionList{}
+		err = kubeClient.List(context.Background(), nads)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nads.Items).To(HaveLen(0))
+	})
+
 })

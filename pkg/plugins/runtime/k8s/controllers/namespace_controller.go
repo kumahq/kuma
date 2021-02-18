@@ -79,19 +79,16 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 }
 
 func (r *NamespaceReconciler) hasNetworkAttachmentDefinition() (bool, error) {
-	crds := v1beta1.CustomResourceDefinitionList{}
-	err := r.Client.List(context.Background(), &crds)
+	crd := v1beta1.CustomResourceDefinition{}
+	err := r.Client.Get(context.Background(), kube_client.ObjectKey{Name: "network-attachment-definitions.k8s.cni.cncf.io"}, &crd)
 	if err != nil {
-		return false, errors.Wrap(err, "could not fetch CustomResourceDefinitionList")
-	}
-
-	for _, crd := range crds.Items {
-		if crd.GetName() == "network-attachment-definitions.k8s.cni.cncf.io" {
-			return true, err
+		if kube_apierrs.IsNotFound(err) {
+			return false, nil
 		}
+		return false, errors.Wrap(err, "could not get network-attachment-definitions.k8s.cni.cncf.io")
 	}
 
-	return false, nil
+	return true, nil
 }
 
 func (r *NamespaceReconciler) createOrUpdateNetworkAttachmentDefinition(namespace string) error {
@@ -141,7 +138,7 @@ func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Complete(r)
 }
 
-// we only want status event updates
+// we only want create and update events
 var namespaceEvents = predicate.Funcs{
 	CreateFunc: func(event event.CreateEvent) bool {
 		return true
