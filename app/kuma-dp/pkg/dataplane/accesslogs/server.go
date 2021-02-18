@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"os"
 	"sync/atomic"
 
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -90,10 +91,29 @@ func (s *accessLogServer) StreamAccessLogs(stream envoy_accesslog.AccessLogServi
 func (s *accessLogServer) Start(stop <-chan struct{}) error {
 	envoy_accesslog.RegisterAccessLogServiceServer(s.server, s)
 
+	_, err := os.Stat(s.address)
+	if err == nil {
+		// File is accessible try to rename it to verify it is not open
+		newName := s.address + ".bak"
+		err := os.Rename(s.address, newName)
+		if err != nil {
+			return errors.Errorf("file %s exists and probably opened by another kuam-dp instance", s.address)
+		}
+		err = os.Remove(newName)
+		if err != nil {
+			return errors.Errorf("not able the delete the backup file %s", newName)
+		}
+	}
+
 	lis, err := net.Listen("unix", s.address)
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		lis.Close()
+	}()
+
 	logger.Info("starting Access Log Server", "address", fmt.Sprintf("unix://%s", s.address))
 	errCh := make(chan error, 1)
 	go func() {
