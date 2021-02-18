@@ -310,6 +310,6 @@ func (g *GeneralConfig) Validate() error {
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
 		DNSCacheTTL: 10 * time.Second,
-		WorkDir:     "./kuma",
+		WorkDir:     "/usr/local/kuma",
 	}
 }

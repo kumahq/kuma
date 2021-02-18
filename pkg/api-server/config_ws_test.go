@@ -101,7 +101,7 @@ var _ = Describe("Config WS", func() {
             "dnsCacheTTL": "10s",
             "tlsCertFile": "",
             "tlsKeyFile": "",
-            "workDir": "./kuma"
+            "workDir": "/usr/local/kuma"
           },
           "guiServer": {
             "apiServerUrl": ""
