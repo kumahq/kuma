@@ -85,7 +85,7 @@ func autoconfigureTLS(cfg *kuma_cp.Config) error {
 	}
 	crtFile, keyFile, err := saveKeyPair(cert, workDir(cfg.General.WorkDir))
 	if err != nil {
-		return errors.Wrap(err, "failed to save auto-generated TLS certificate")
+		return errors.Errorf("failed to save auto-generated TLS cert and key into a working directory: %v, working directory could be changed using KUMA_GENERAL_WORK_DIR environment variable", err)
 	}
 	cfg.General.TlsCertFile = crtFile
 	cfg.General.TlsKeyFile = keyFile
