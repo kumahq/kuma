@@ -36,5 +36,5 @@ store:
   type: postgres
 diagnostics:
   serverPort: %d
-`))
+`), "")
 })

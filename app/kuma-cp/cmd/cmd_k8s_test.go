@@ -83,5 +83,5 @@ diagnostics:
 `,
 			admissionServerPort,
 			filepath.Join("testdata"))
-	}))
+	}), "")
 })
