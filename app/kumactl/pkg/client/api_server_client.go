@@ -1,4 +1,4 @@
-package resources
+package client
 
 import (
 	"net/http"
@@ -16,7 +16,7 @@ const (
 	Timeout = 60 * time.Second
 )
 
-func apiServerClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
+func ApiServerClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (util_http.Client, error) {
 	baseURL, err := url.Parse(coordinates.Url)
 	if err != nil {
 		return nil, errors.Wrapf(err, "Failed to parse API Server URL")
