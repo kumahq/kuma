@@ -240,5 +240,44 @@ var _ = Describe("HealthCheckConfigurer", func() {
             name: testCluster
             type: EDS`,
 		}),
+		Entry("HealthCheck with jitter", testCase{
+			clusterName: "testCluster",
+			healthCheck: &mesh_core.HealthCheckResource{
+				Spec: &mesh_proto.HealthCheck{
+					Sources: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
+					},
+					Destinations: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
+					},
+					Conf: &mesh_proto.HealthCheck_Conf{
+						Interval:              ptypes.DurationProto(5 * time.Second),
+						Timeout:               ptypes.DurationProto(4 * time.Second),
+						UnhealthyThreshold:    3,
+						HealthyThreshold:      2,
+						InitialJitter:         ptypes.DurationProto(6 * time.Second),
+						IntervalJitter:        ptypes.DurationProto(7 * time.Second),
+						IntervalJitterPercent: 50,
+					},
+				},
+			},
+			expected: `
+            connectTimeout: 5s
+            edsClusterConfig:
+              edsConfig:
+                ads: {}
+                resourceApiVersion: V3
+            healthChecks:
+            - healthyThreshold: 2
+              interval: 5s
+              tcpHealthCheck: {}
+              timeout: 4s
+              unhealthyThreshold: 3
+              initialJitter: 6s
+              intervalJitter: 7s
+              intervalJitterPercent: 50
+            name: testCluster
+            type: EDS`,
+		}),
 	)
 })
