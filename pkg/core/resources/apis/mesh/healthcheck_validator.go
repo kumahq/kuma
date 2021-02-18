@@ -97,6 +97,12 @@ func (d *HealthCheckResource) validateConf() (err validators.ValidationError) {
 	err.Add(ValidateDuration(path.Field("timeout"), d.Spec.Conf.Timeout))
 	err.Add(ValidateThreshold(path.Field("unhealthyThreshold"), d.Spec.Conf.UnhealthyThreshold))
 	err.Add(ValidateThreshold(path.Field("healthyThreshold"), d.Spec.Conf.HealthyThreshold))
+	if d.Spec.Conf.InitialJitter != nil {
+		err.Add(ValidateDuration(path.Field("initialJitter"), d.Spec.Conf.InitialJitter))
+	}
+	if d.Spec.Conf.IntervalJitter != nil {
+		err.Add(ValidateDuration(path.Field("intervalJitter"), d.Spec.Conf.IntervalJitter))
+	}
 	if d.Spec.Conf.GetHttp() != nil {
 		err.Add(d.validateConfHttp(path.Field("http")))
 	}

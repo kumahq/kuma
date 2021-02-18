@@ -103,10 +103,13 @@ func (e *HealthCheckConfigurer) Configure(cluster *envoy_api.Cluster) error {
 		HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
 			TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
 		},
-		Interval:           activeChecks.Interval,
-		Timeout:            activeChecks.Timeout,
-		UnhealthyThreshold: &wrappers.UInt32Value{Value: activeChecks.UnhealthyThreshold},
-		HealthyThreshold:   &wrappers.UInt32Value{Value: activeChecks.HealthyThreshold},
+		Interval:              activeChecks.Interval,
+		Timeout:               activeChecks.Timeout,
+		UnhealthyThreshold:    &wrappers.UInt32Value{Value: activeChecks.UnhealthyThreshold},
+		HealthyThreshold:      &wrappers.UInt32Value{Value: activeChecks.HealthyThreshold},
+		InitialJitter:         activeChecks.InitialJitter,
+		IntervalJitter:        activeChecks.IntervalJitter,
+		IntervalJitterPercent: activeChecks.IntervalJitterPercent,
 	}
 
 	if tcp := activeChecks.GetTcp(); tcp != nil {
