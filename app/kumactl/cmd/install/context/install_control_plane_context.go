@@ -57,7 +57,7 @@ type ImageEnvSecret struct {
 
 type InstallCpContext struct {
 	Args                   InstallControlPlaneArgs
-	InstallCpTemplateFiles func(InstallControlPlaneArgs) (data.FileList, error)
+	InstallCpTemplateFiles func(*InstallControlPlaneArgs) (data.FileList, error)
 	NewSelfSignedCert      func(commonName string, certType tls.CertType, hosts ...string) (tls.KeyPair, error)
 	// When Kuma chart is embedded into other chart all the values need to have a prefix. You can set this prefix with this var.
 	HELMValuesPrefix string
@@ -97,7 +97,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			Ingress_service_type:                      "LoadBalancer",
 		},
 		NewSelfSignedCert: tls.NewSelfSignedCert,
-		InstallCpTemplateFiles: func(args InstallControlPlaneArgs) (data.FileList, error) {
+		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
 			return data.ReadFiles(controlplane.HelmTemplates)
 		},
 		HELMValuesPrefix: "",
