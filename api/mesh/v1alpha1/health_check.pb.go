@@ -110,6 +110,25 @@ type HealthCheck_Conf struct {
 	UnhealthyThreshold uint32 `protobuf:"varint,3,opt,name=unhealthy_threshold,json=unhealthyThreshold,proto3" json:"unhealthy_threshold,omitempty"`
 	// Number of consecutive healthy checks before considering a host healthy.
 	HealthyThreshold uint32 `protobuf:"varint,4,opt,name=healthy_threshold,json=healthyThreshold,proto3" json:"healthy_threshold,omitempty"`
+<<<<<<< HEAD
+=======
+	// If specified, Envoy will start health checking after for a random time in
+	// ms between 0 and initial_jitter. This only applies to the first health
+	// check.
+	InitialJitter *duration.Duration `protobuf:"bytes,7,opt,name=initial_jitter,json=initialJitter,proto3" json:"initial_jitter,omitempty"`
+	// If specified, during every interval Envoy will add interval_jitter to the
+	// wait time.
+	IntervalJitter *duration.Duration `protobuf:"bytes,8,opt,name=interval_jitter,json=intervalJitter,proto3" json:"interval_jitter,omitempty"`
+	// If specified, during every interval Envoy will add interval_ms *
+	// interval_jitter_percent / 100 to the wait time. If interval_jitter_ms and
+	// interval_jitter_percent are both set, both of them will be used to
+	// increase the wait time.
+	IntervalJitterPercent uint32 `protobuf:"varint,9,opt,name=interval_jitter_percent,json=intervalJitterPercent,proto3" json:"interval_jitter_percent,omitempty"`
+	// Types that are assignable to Protocol:
+	//	*HealthCheck_Conf_Tcp_
+	//	*HealthCheck_Conf_Http_
+	Protocol isHealthCheck_Conf_Protocol `protobuf_oneof:"protocol"`
+>>>>>>> 29bbdc546... fix(kuma-cp) network attachment definitions for CNI (#1569)
 }
 
 func (x *HealthCheck_Conf) Reset() {
