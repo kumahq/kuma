@@ -2,12 +2,13 @@ package healthcheck_test
 
 import (
 	"fmt"
-	"math"
 	"strings"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -118,9 +119,25 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 		Expect(pods).To(HaveLen(1))
 
-		_, _, err = remoteK8s.ExecWithRetries(TestNamespace, pods[0].GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-		Expect(err).ToNot(HaveOccurred())
+		cmd := []string{"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh"}
+
+		checkInstance := func(instance string) {
+			_, err = retry.DoWithRetryE(remoteK8s.GetTesting(), fmt.Sprintf("kubectl exec -- %s", strings.Join(cmd, " ")),
+				DefaultRetries, DefaultTimeout, func() (string, error) {
+					stdout, _, err := remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
+					if err != nil {
+						return "", err
+					}
+					if !strings.Contains(stdout, instance) {
+						return "", errors.New("wrong instance")
+					}
+					return "", nil
+				},
+			)
+		}
+
+		checkInstance("echo-universal-1")
+		checkInstance("echo-universal-2")
 
 		var counter1, counter2, counter3 int
 		const numOfRequest = 100
@@ -128,12 +145,8 @@ metadata:
 		for i := 0; i < numOfRequest; i++ {
 			var stdout string
 
-			cmd := []string{"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh"}
 			stdout, _, err = remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
-			if err != nil {
-				Expect(err).ToNot(MatchError("command terminated with exit code 56"))
-				continue
-			}
+			Expect(err).ToNot(HaveOccurred())
 
 			switch {
 			case strings.Contains(stdout, "Echo echo-universal-1"):
@@ -144,10 +157,10 @@ metadata:
 				counter3++
 			}
 		}
+
 		Expect(counter2).To(Equal(0))
-		// more than 90 percent of requests reached either service instance
-		Expect(counter1+counter3 > 0.9*numOfRequest).To(BeTrue())
-		// requests are almost evenly distributed among 2 healthy instances
-		Expect(math.Abs(float64(counter3-counter1)) < 0.1*float64(counter1+counter3)).To(BeTrue())
+		Expect(counter1 > 0).To(BeTrue())
+		Expect(counter3 > 0).To(BeTrue())
+		Expect(counter1 + counter3).To(Equal(numOfRequest))
 	})
 })
