@@ -3,6 +3,9 @@ package mux
 import (
 	"fmt"
 	"net"
+	"time"
+
+	"google.golang.org/grpc/keepalive"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -16,7 +19,10 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
-const grpcMaxConcurrentStreams = 1000000
+const (
+	grpcMaxConcurrentStreams = 1000000
+	grpcKeepAliveTime        = 15 * time.Second
+)
 
 var (
 	muxServerLog = core.Log.WithName("mux-server")
@@ -52,6 +58,14 @@ func NewServer(callbacks []Callbacks, config multizone.KdsServerConfig, metrics 
 func (s *server) Start(stop <-chan struct{}) error {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			Time:    grpcKeepAliveTime,
+			Timeout: grpcKeepAliveTime,
+		}),
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             grpcKeepAliveTime,
+			PermitWithoutStream: true,
+		}),
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	useTLS := s.config.TlsCertFile != ""
