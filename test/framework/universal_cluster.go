@@ -79,7 +79,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		cmd = append(cmd, "--config-file", confPath)
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, true, caps)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, true, caps)
 	if err != nil {
 		return err
 	}
@@ -149,21 +149,12 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	opts := newDeployOpt(fs...)
 	appname := opts.appname
 	token := opts.token
-	id := opts.id
 	transparent := opts.transparent
+	dpyaml := opts.appYaml
+	args := opts.appArgs
 
 	if opts.mesh == "" {
 		opts.mesh = "default"
-	}
-
-	var args []string
-	switch appname {
-	case AppModeEchoServer:
-		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo " + id + "\n\"'"}
-	case AppModeDemoClient:
-		args = []string{"ncat", "-lvk", "-p", "3000"}
-	default:
-		return errors.Errorf("not supported app type %s", appname)
 	}
 
 	caps := []string{}
@@ -171,7 +162,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppMode(appname), c.verbose, caps)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), c.verbose, caps)
 	if err != nil {
 		return err
 	}
@@ -182,31 +173,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 
 	ip := app.ip
 
-	dpyaml := ""
-	switch appname {
-	case AppModeEchoServer:
-		if transparent {
-			dpyaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, opts.mesh, "8080", "80", "8080", redirectPortInbound, redirectPortOutbound)
-		} else {
-			if opts.serviceProbe {
-				dpyaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, opts.mesh, "8080", "80", "8080")
-			} else {
-				dpyaml = fmt.Sprintf(EchoServerDataplane, opts.mesh, "8080", "80", "8080")
-			}
-		}
-	case AppModeDemoClient:
-		if transparent {
-			dpyaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, opts.mesh, "3000", redirectPortInbound, redirectPortOutbound)
-		} else {
-			if opts.serviceProbe {
-				dpyaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, opts.mesh, "13000", "3000", "80", "8080")
-			} else {
-				dpyaml = fmt.Sprintf(DemoClientDataplane, opts.mesh, "13000", "3000", "80", "8080")
-			}
-		}
-	}
-
-	err = c.CreateDP(app, appname, ip, dpyaml, token)
+	err = c.CreateDP(app, opts.name, ip, dpyaml, token)
 	if err != nil {
 		return err
 	}
@@ -219,7 +186,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		}
 	}
 
-	c.apps[appname] = app
+	c.apps[opts.name] = app
 
 	return nil
 }

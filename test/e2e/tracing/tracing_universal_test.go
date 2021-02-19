@@ -59,9 +59,9 @@ selectors:
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal("universal", "default", echoServerToken)(cluster)
+		err = EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal("default", demoClientToken)(cluster)
+		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
