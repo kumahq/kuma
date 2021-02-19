@@ -11,8 +11,6 @@ Changes:
 * fix: remove the datplane of any completed Pod [#1576](https://github.com//kumahq/kuma/pull/1576)
 * fix: check health while configure the ingress [#1508](https://github.com//kumahq/kuma/pull/1508)
 * fix: close/unlink the dp access log unix socket [#1574](https://github.com//kumahq/kuma/pull/1574)
-* chore(*) bump kind to 0.10.0 and test against K8s 1.20 [#1518](https://github.com//kumahq/kuma/pull/1518) [#1575](https://github.com//kumahq/kuma/pull/1575)
-  👍contributed by mergify[bot]
 
 ## [1.0.7]
 > Released on  2021/02/10
