@@ -60,7 +60,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -89,7 +89,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:     "raw-name",
@@ -117,7 +117,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -147,7 +147,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -188,7 +188,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -264,7 +264,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				},
 				raw:      nil,
 				expected: `{}`,
@@ -288,7 +288,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -349,7 +349,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -408,7 +408,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",

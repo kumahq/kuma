@@ -48,7 +48,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 						Mesh: "demo",
 					},
 				},
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 			},
 		}),
 	)
@@ -86,7 +86,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 						},
 					},
 				},
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 				Policies: model.MatchedPolicies{
 					TracingBackend: &mesh_proto.TracingBackend{
 						Name: "zipkin",

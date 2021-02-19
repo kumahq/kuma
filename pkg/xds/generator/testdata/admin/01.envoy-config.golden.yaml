@@ -1,7 +1,7 @@
 resources:
 - name: kuma:envoy:admin
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: kuma_envoy_admin
     connectTimeout: 5s
     loadAssignment:
@@ -17,7 +17,7 @@ resources:
     type: STATIC
 - name: kuma:envoy:admin
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 192.168.0.1
@@ -26,7 +26,7 @@ resources:
     - filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
           - name: envoy.filters.http.router
           routeConfig:
@@ -34,7 +34,7 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: kuma_envoy_admin
+              name: kuma:envoy:admin
               routes:
               - match:
                   prefix: /ready
@@ -47,7 +47,7 @@ resources:
       filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
           - name: envoy.filters.http.router
           routeConfig:
@@ -55,7 +55,7 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: kuma_envoy_admin
+              name: kuma:envoy:admin
               routes:
               - match:
                   headers:
@@ -69,7 +69,7 @@ resources:
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
-          '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             tlsCertificates:
             - certificateChain:

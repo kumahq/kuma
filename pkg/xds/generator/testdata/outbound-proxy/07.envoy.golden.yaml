@@ -1,7 +1,7 @@
 resources:
 - name: outbound:127.0.0.1:4040
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1

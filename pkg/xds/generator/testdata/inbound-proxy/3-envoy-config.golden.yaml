@@ -1,7 +1,7 @@
 resources:
 - name: localhost:8080
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8080
     connectTimeout: 5s
     loadAssignment:
@@ -17,7 +17,7 @@ resources:
     type: STATIC
 - name: localhost:8443
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8443
     connectTimeout: 5s
     loadAssignment:
@@ -33,7 +33,7 @@ resources:
     type: STATIC
 - name: inbound:192.168.0.1:443
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 192.168.0.1
@@ -42,18 +42,18 @@ resources:
     - filters:
       - name: envoy.filters.network.rbac
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
           rules: {}
           statPrefix: inbound_192_168_0_1_443.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
           statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
-          '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
@@ -72,6 +72,8 @@ resources:
                               inlineBytes: MTIzNDU=
                         statPrefix: sds_mesh_ca
                         targetUri: kuma-system:5677
+                    transportApiVersion: V3
+                  resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
@@ -85,12 +87,14 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_identity_cert
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.1:443
     trafficDirection: INBOUND
 - name: inbound:192.168.0.1:80
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 192.168.0.1
@@ -99,7 +103,7 @@ resources:
     - filters:
       - name: envoy.filters.network.rbac
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
           rules:
             policies:
               tp-1:
@@ -112,11 +116,11 @@ resources:
           statPrefix: inbound_192_168_0_1_80.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
           - name: envoy.filters.http.fault
             typedConfig:
-              '@type': type.googleapis.com/envoy.config.filter.http.fault.v2.HTTPFault
+              '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
               delay:
                 fixedDelay: 5s
                 percentage:
@@ -146,7 +150,7 @@ resources:
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
-          '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
@@ -165,6 +169,8 @@ resources:
                               inlineBytes: MTIzNDU=
                         statPrefix: sds_mesh_ca
                         targetUri: kuma-system:5677
+                    transportApiVersion: V3
+                  resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
@@ -178,12 +184,14 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_identity_cert
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.1:80
     trafficDirection: INBOUND
 - name: inbound:192.168.0.2:443
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 192.168.0.2
@@ -192,18 +200,18 @@ resources:
     - filters:
       - name: envoy.filters.network.rbac
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
           rules: {}
           statPrefix: inbound_192_168_0_2_443.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8443
           statPrefix: localhost_8443
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
-          '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
@@ -222,6 +230,8 @@ resources:
                               inlineBytes: MTIzNDU=
                         statPrefix: sds_mesh_ca
                         targetUri: kuma-system:5677
+                    transportApiVersion: V3
+                  resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
@@ -235,12 +245,14 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_identity_cert
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.2:443
     trafficDirection: INBOUND
 - name: inbound:192.168.0.2:80
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 192.168.0.2
@@ -249,12 +261,12 @@ resources:
     - filters:
       - name: envoy.filters.network.rbac
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
           rules: {}
           statPrefix: inbound_192_168_0_2_80.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
           - name: envoy.filters.http.router
           routeConfig:
@@ -276,7 +288,7 @@ resources:
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
-          '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
@@ -295,6 +307,8 @@ resources:
                               inlineBytes: MTIzNDU=
                         statPrefix: sds_mesh_ca
                         targetUri: kuma-system:5677
+                    transportApiVersion: V3
+                  resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
@@ -308,6 +322,8 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_identity_cert
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.2:80
     trafficDirection: INBOUND

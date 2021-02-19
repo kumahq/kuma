@@ -82,7 +82,7 @@ var _ = Describe("DirectAccessProxyGenerator", func() {
 
 			proxy := &xds.Proxy{
 				Dataplane:  dataplane,
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 			}
 
 			// when
