@@ -7,6 +7,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 import "mesh/v1alpha1/selector.proto";
 
 import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
 // HealthCheck defines configuration for health checking.
@@ -39,6 +40,63 @@ message HealthCheck {
 
     // Number of consecutive healthy checks before considering a host healthy.
     uint32 healthy_threshold = 4 [ (validate.rules).uint32 = {gt : 0} ];
+
+    // Tcp defines optional configuration for specifying bytes to send and
+    // expected response during the health check
+    message Tcp {
+      // Bytes which will be send during the health check to the target
+      google.protobuf.BytesValue send = 1;
+
+      // Bytes blocks expected as a response. When checking the response,
+      // “fuzzy” matching is performed such that each block must be found, and
+      // in the order specified, but not necessarily contiguous.
+      repeated google.protobuf.BytesValue receive = 2;
+    }
+
+    // Http defines optional Http configuration which will instruct the service
+    // the health check will be made for is an http service. It's mutually
+    // exclusive with the Tcp block so when provided you can't provide
+    // the Tcp configuration
+    message Http {
+      // The HTTP path which will be requested during the health check
+      // (ie. /health)
+      //  +required
+      string path = 1; //
+
+      message HeaderValue {
+        // Header name
+        //  +required
+        string key = 1;
+        // Header value
+        //  +optional
+        string value = 2;
+      }
+
+      message HeaderValueOption {
+        // Key/Value representation of the HTTP header
+        //  +required
+        HeaderValue header = 1;
+        // The bool value which if true (default) will mean the header values
+        // should be appended to already present ones
+        //  +optional
+        google.protobuf.BoolValue append = 2;
+      }
+
+      // The list of HTTP headers which should be added to each health check
+      // request
+      //  +optional
+      repeated HeaderValueOption request_headers_to_add = 2;
+
+      // List of HTTP response statuses which are considered healthy
+      //  +optional
+      repeated google.protobuf.UInt32Value expected_statuses = 3
+          [ (validate.rules).uint32 = {gte : 100, lt : 600} ];
+    }
+
+    oneof protocol {
+      Tcp tcp = 5;
+      Http http = 6;
+    }
   }
 
   // Configuration for various types of health checking.
