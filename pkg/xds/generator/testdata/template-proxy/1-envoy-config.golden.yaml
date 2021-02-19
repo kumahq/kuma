@@ -1,40 +1,4 @@
 resources:
-- name: inbound:passthrough
-  resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
-    altStatName: inbound_passthrough
-    connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
-    name: inbound:passthrough
-    type: ORIGINAL_DST
-    upstreamBindConfig:
-      sourceAddress:
-        address: 127.0.0.6
-        portValue: 0
-- name: localhost:8080
-  resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
-    altStatName: localhost_8080
-    connectTimeout: 5s
-    loadAssignment:
-      clusterName: localhost:8080
-      endpoints:
-      - lbEndpoints:
-        - endpoint:
-            address:
-              socketAddress:
-                address: 127.0.0.1
-                portValue: 8080
-    name: localhost:8080
-    type: STATIC
-- name: outbound:passthrough
-  resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
-    altStatName: outbound_passthrough
-    connectTimeout: 5s
-    lbPolicy: CLUSTER_PROVIDED
-    name: outbound:passthrough
-    type: ORIGINAL_DST
 - name: raw-name
   resource:
     '@type': type.googleapis.com/envoy.api.v2.Cluster
@@ -51,31 +15,66 @@ resources:
                 portValue: 8443
     name: localhost:8443
     type: STATIC
+- name: inbound:passthrough
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: inbound_passthrough
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: inbound:passthrough
+    type: ORIGINAL_DST
+    upstreamBindConfig:
+      sourceAddress:
+        address: 127.0.0.6
+        portValue: 0
+- name: localhost:8080
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: localhost_8080
+    connectTimeout: 5s
+    loadAssignment:
+      clusterName: localhost:8080
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 127.0.0.1
+                portValue: 8080
+    name: localhost:8080
+    type: STATIC
+- name: outbound:passthrough
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: outbound_passthrough
+    connectTimeout: 5s
+    lbPolicy: CLUSTER_PROVIDED
+    name: outbound:passthrough
+    type: ORIGINAL_DST
 - name: inbound:192.168.0.1:80
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 192.168.0.1
         portValue: 80
-    deprecatedV1:
-      bindToPort: false
+    bindToPort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.rbac
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
           rules: {}
           statPrefix: inbound_192_168_0_1_80.
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: localhost:8080
           statPrefix: localhost_8080
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
-          '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
@@ -94,6 +93,8 @@ resources:
                               inlineBytes: MTIzNDU=
                         statPrefix: sds_mesh_ca
                         targetUri: kuma-system:5677
+                    transportApiVersion: V3
+                  resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
@@ -107,12 +108,14 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_identity_cert
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.1:80
     trafficDirection: INBOUND
 - name: inbound:passthrough
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 0.0.0.0
@@ -121,7 +124,7 @@ resources:
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: inbound:passthrough
           statPrefix: inbound_passthrough
     name: inbound:passthrough
@@ -129,7 +132,7 @@ resources:
     useOriginalDst: true
 - name: outbound:passthrough
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 0.0.0.0
@@ -138,7 +141,7 @@ resources:
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: outbound:passthrough
           statPrefix: outbound_passthrough
     name: outbound:passthrough

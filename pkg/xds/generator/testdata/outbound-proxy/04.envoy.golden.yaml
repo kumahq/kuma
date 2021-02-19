@@ -109,12 +109,12 @@ resources:
               role: master
 - name: api-http
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     name: api-http
     outlierDetection:
       enforcingConsecutive5xx: 100
@@ -125,7 +125,7 @@ resources:
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
-        '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
           combinedValidationContext:
             defaultValidationContext:
@@ -144,6 +144,8 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_mesh_ca
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
           - name: identity_cert
             sdsConfig:
@@ -157,16 +159,23 @@ resources:
                           inlineBytes: MTIzNDU=
                     statPrefix: sds_identity_cert
                     targetUri: kuma-system:5677
+                transportApiVersion: V3
+              resourceApiVersion: V3
         sni: api-http{mesh=mesh1}
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: api-tcp
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     lbPolicy: LEAST_REQUEST
     leastRequestLbConfig:
       choiceCount: 4
@@ -174,7 +183,7 @@ resources:
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
-        '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
           combinedValidationContext:
             defaultValidationContext:
@@ -193,6 +202,8 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_mesh_ca
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
           - name: identity_cert
             sdsConfig:
@@ -206,22 +217,29 @@ resources:
                           inlineBytes: MTIzNDU=
                     statPrefix: sds_identity_cert
                     targetUri: kuma-system:5677
+                transportApiVersion: V3
+              resourceApiVersion: V3
         sni: api-tcp{mesh=mesh1}
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: backend
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     lbPolicy: MAGLEV
     name: backend
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
-        '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
           combinedValidationContext:
             defaultValidationContext:
@@ -240,6 +258,8 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_mesh_ca
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
           - name: identity_cert
             sdsConfig:
@@ -253,16 +273,23 @@ resources:
                           inlineBytes: MTIzNDU=
                     statPrefix: sds_identity_cert
                     targetUri: kuma-system:5677
+                transportApiVersion: V3
+              resourceApiVersion: V3
         sni: backend{mesh=mesh1}
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: db
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 5s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     lbSubsetConfig:
       fallbackPolicy: ANY_ENDPOINT
       subsetSelectors:
@@ -277,7 +304,7 @@ resources:
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
-          '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
@@ -296,6 +323,8 @@ resources:
                               inlineBytes: MTIzNDU=
                         statPrefix: sds_mesh_ca
                         targetUri: kuma-system:5677
+                    transportApiVersion: V3
+                  resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
@@ -309,6 +338,8 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_identity_cert
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           sni: db{mesh=mesh1,role=master}
     - match:
         role: replica
@@ -316,7 +347,7 @@ resources:
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
-          '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
@@ -335,6 +366,8 @@ resources:
                               inlineBytes: MTIzNDU=
                         statPrefix: sds_mesh_ca
                         targetUri: kuma-system:5677
+                    transportApiVersion: V3
+                  resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
@@ -348,46 +381,53 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_identity_cert
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           sni: db{mesh=mesh1,role=replica}
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: outbound:127.0.0.1:18080
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
         portValue: 18080
-    deprecatedV1:
-      bindToPort: false
+    bindToPort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
           statPrefix: backend
     name: outbound:127.0.0.1:18080
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:40001
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
         portValue: 40001
-    deprecatedV1:
-      bindToPort: false
+    bindToPort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           accessLog:
           - name: envoy.access_loggers.file
             typedConfig:
-              '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
-              format: |+
-                [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
+              '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+              logFormat:
+                textFormatSource:
+                  inlineString: |+
+                    [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "web" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
 
               path: /var/log
           httpFilters:
@@ -414,22 +454,21 @@ resources:
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:40002
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
         portValue: 40002
-    deprecatedV1:
-      bindToPort: false
+    bindToPort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           accessLog:
           - name: envoy.access_loggers.http_grpc
             typedConfig:
-              '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
+              '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
               commonConfig:
                 grpcService:
                   envoyGrpc:
@@ -437,24 +476,24 @@ resources:
                 logName: |+
                   logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(web)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
 
+                transportApiVersion: V3
           cluster: api-tcp
           statPrefix: api-tcp
     name: outbound:127.0.0.1:40002
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:54321
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
         portValue: 54321
-    deprecatedV1:
-      bindToPort: false
+    bindToPort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           statPrefix: db
           weightedClusters:
             clusters:

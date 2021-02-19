@@ -103,7 +103,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 	It("should cache Get() queries", func() {
 		By("getting CLA for the first time")
-		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV2)
+		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
 		Expect(countingManager.listQueries).To(Equal(2))
@@ -116,7 +116,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		Expect(js).To(MatchJSON(string(expected)))
 
 		By("getting cached CLA")
-		_, err = claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV2)
+		_, err = claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
 		Expect(countingManager.listQueries).To(Equal(2))
@@ -131,7 +131,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 		<-time.After(2 * time.Second)
 
-		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV2)
+		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(2))
 		Expect(countingManager.listQueries).To(Equal(4))
@@ -148,7 +148,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		for i := 0; i < 100; i++ {
 			wg.Add(1)
 			go func() {
-				cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV2)
+				cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
 				Expect(err).ToNot(HaveOccurred())
 
 				marshalled, err := json.Marshal(cla) // to imitate Read access to 'cla'
