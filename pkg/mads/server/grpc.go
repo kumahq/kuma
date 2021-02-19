@@ -3,6 +3,9 @@ package server
 import (
 	"fmt"
 	"net"
+	"time"
+
+	"google.golang.org/grpc/keepalive"
 
 	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 
@@ -14,7 +17,10 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
-const grpcMaxConcurrentStreams = 1000000
+const (
+	grpcMaxConcurrentStreams = 1000000
+	grpcKeepAliveTime        = 15 * time.Second
+)
 
 var (
 	grpcServerLog = core.Log.WithName("mads-server").WithName("grpc")
@@ -33,6 +39,14 @@ var (
 func (s *grpcServer) Start(stop <-chan struct{}) error {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			Time:    grpcKeepAliveTime,
+			Timeout: grpcKeepAliveTime,
+		}),
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             grpcKeepAliveTime,
+			PermitWithoutStream: true,
+		}),
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))

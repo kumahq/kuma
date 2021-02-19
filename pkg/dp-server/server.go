@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
+
+	"google.golang.org/grpc/keepalive"
 
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
@@ -19,7 +22,10 @@ import (
 
 var log = core.Log.WithName("dp-server")
 
-const grpcMaxConcurrentStreams = 1000000
+const (
+	grpcMaxConcurrentStreams = 1000000
+	grpcKeepAliveTime        = 15 * time.Second
+)
 
 type DpServer struct {
 	config         dp_server.DpServerConfig
@@ -33,6 +39,14 @@ var _ component.Component = &DpServer{}
 func NewDpServer(config dp_server.DpServerConfig, metrics metrics.Metrics) *DpServer {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			Time:    grpcKeepAliveTime,
+			Timeout: grpcKeepAliveTime,
+		}),
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             grpcKeepAliveTime,
+			PermitWithoutStream: true,
+		}),
 	}
 	grpcOptions = append(grpcOptions, metrics.GRPCServerInterceptors()...)
 	grpcServer := grpc.NewServer(grpcOptions...)
