@@ -3,8 +3,8 @@ kind: Pod
 metadata:
   creationTimestamp: null
   labels:
-    run: busybox
     openshift.io/deployer-pod-for.name: "1234"
+    run: busybox
   name: busybox
 spec:
   containers:

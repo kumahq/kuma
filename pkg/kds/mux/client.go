@@ -24,15 +24,17 @@ type client struct {
 	clientID  string
 	config    multizone.KdsClientConfig
 	metrics   metrics.Metrics
+	ctx       context.Context
 }
 
-func NewClient(globalURL string, clientID string, callbacks Callbacks, config multizone.KdsClientConfig, metrics metrics.Metrics) component.Component {
+func NewClient(globalURL string, clientID string, callbacks Callbacks, config multizone.KdsClientConfig, metrics metrics.Metrics, ctx context.Context) component.Component {
 	return &client{
 		callbacks: callbacks,
 		globalURL: globalURL,
 		clientID:  clientID,
 		config:    config,
 		metrics:   metrics,
+		ctx:       ctx,
 	}
 }
 
@@ -65,7 +67,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	}()
 	muxClient := mesh_proto.NewMultiplexServiceClient(conn)
 
-	withClientIDCtx := metadata.AppendToOutgoingContext(context.Background(), "client-id", c.clientID)
+	withClientIDCtx := metadata.AppendToOutgoingContext(c.ctx, "client-id", c.clientID)
 	stream, err := muxClient.StreamMessage(withClientIDCtx)
 	if err != nil {
 		return err
