@@ -118,7 +118,8 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should deploy Remote and Global on 2 clusters", func() {
+	FIt("should deploy Remote and Global on 2 clusters", func() {
+		Expect(true).To(BeFalse())
 		// when check if remote is online
 		clustersStatus := api_server.Zones{}
 		Eventually(func() (bool, error) {
