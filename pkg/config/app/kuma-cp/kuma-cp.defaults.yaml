@@ -100,6 +100,8 @@ xdsServer:
   dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
   # Interval for flushing status of Dataplanes connected to the Control Plane
   dataplaneStatusFlushInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
+  # Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
+  nackBackoff: 5s # ENV: KUMA_XDS_SERVER_NACK_BACKOFF
 
 # API Server configuration
 apiServer:
