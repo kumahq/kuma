@@ -86,7 +86,7 @@ func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_
 		if dp.Spec.IsIngress() {
 			continue
 		}
-		for _, dpInbound := range dp.Spec.GetNetworking().GetInbound() {
+		for _, dpInbound := range dp.Spec.GetNetworking().GetHealthyInbounds() {
 			tagSets.addInstanceOfTags(dp.GetMeta().GetMesh(), dpInbound.Tags)
 		}
 	}
