@@ -26,7 +26,10 @@
         "baseInterval": "0.008s",
         "maxInterval": "1s"
       },
-      "retriableStatusCodes": [500, 501]
+      "retriableStatusCodes": [
+        500,
+        501
+      ]
     }
   }
 }

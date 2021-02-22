@@ -1,27 +1,27 @@
 {
-    "type": "HealthCheck",
-    "mesh": "default",
-    "name": "healthcheck-1",
-    "creationTime": "0001-01-01T00:00:00Z",
-    "modificationTime": "0001-01-01T00:00:00Z",
-    "sources": [
-        {
-            "match": {
-                "service": "web"
-            }
-        }
-    ],
-    "destinations": [
-        {
-            "match": {
-                "service": "backend"
-            }
-        }
-    ],
-    "conf": {
-        "interval": "10s",
-        "timeout": "2s",
-        "unhealthyThreshold": 3,
-        "healthyThreshold": 1
+  "type": "HealthCheck",
+  "mesh": "default",
+  "name": "healthcheck-1",
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "sources": [
+    {
+      "match": {
+        "service": "web"
+      }
     }
+  ],
+  "destinations": [
+    {
+      "match": {
+        "service": "backend"
+      }
+    }
+  ],
+  "conf": {
+    "interval": "10s",
+    "timeout": "2s",
+    "unhealthyThreshold": 3,
+    "healthyThreshold": 1
+  }
 }

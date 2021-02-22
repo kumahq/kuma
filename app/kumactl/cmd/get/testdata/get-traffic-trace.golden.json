@@ -1,18 +1,18 @@
 {
-    "type": "TrafficTrace",
-    "mesh": "default",
-    "name": "traffic-trace-1",
-    "creationTime": "0001-01-01T00:00:00Z",
-    "modificationTime": "0001-01-01T00:00:00Z",
-    "selectors": [
-        {
-            "match": {
-                "service": "web1",
-                "version": "1.0"
-            }
-        }
-    ],
-    "conf": {
-        "backend": "zipkin"
+  "type": "TrafficTrace",
+  "mesh": "default",
+  "name": "traffic-trace-1",
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "selectors": [
+    {
+      "match": {
+        "service": "web1",
+        "version": "1.0"
+      }
     }
+  ],
+  "conf": {
+    "backend": "zipkin"
+  }
 }
