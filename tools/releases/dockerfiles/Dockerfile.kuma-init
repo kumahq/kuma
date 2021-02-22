@@ -1,4 +1,4 @@
-FROM ubuntu:bionic
+FROM ubuntu:focal
 
 RUN apt-get update && \
     apt-get -y install iptables && \
@@ -11,6 +11,6 @@ COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
 COPY $KUMA_ROOT/tools/releases/templates/README /kuma
 
-RUN adduser --system --disabled-password --group kumactl --uid 5678 
+RUN adduser --system --disabled-password --group kumactl --uid 5678
 
 ENTRYPOINT ["/usr/bin/kumactl", "install", "transparent-proxy"]
