@@ -23,7 +23,7 @@ func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 	}
 
 	switch c.Protocol {
-	case core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
+	case core_mesh.ProtocolUnknown, core_mesh.ProtocolTCP, core_mesh.ProtocolKafka:
 		return UpdateTCPProxy(filterChain, func(proxy *envoy_tcp.TcpProxy) error {
 			proxy.IdleTimeout = ptypes.DurationProto(c.Conf.GetTcp().GetIdleTimeout().AsDuration())
 			return nil
