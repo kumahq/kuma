@@ -17,23 +17,28 @@ resources:
     clusterName: db
 - name: backend.kuma-system
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: backend_kuma-system
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     name: backend.kuma-system
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: db
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     lbSubsetConfig:
       fallbackPolicy: ANY_ENDPOINT
       subsetSelectors:
@@ -42,9 +47,14 @@ resources:
         - version
     name: db
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: outbound:127.0.0.1:18080
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
@@ -53,15 +63,14 @@ resources:
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend.kuma-system
-          idleTimeout: 0s
           statPrefix: backend_kuma-system
     name: outbound:127.0.0.1:18080
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:54321
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
@@ -70,9 +79,8 @@ resources:
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: db
-          idleTimeout: 0s
           metadataMatch:
             filterMetadata:
               envoy.lb:

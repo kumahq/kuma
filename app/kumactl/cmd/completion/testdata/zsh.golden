@@ -70,7 +70,7 @@ function _kumactl {
 function _kumactl_apply {
   _arguments \
     '--dry-run[Resolve variable and prints result out without actual applying]' \
-    '(-f --file)'{-f,--file}'[Path to file to apply]:' \
+    '(-f --file)'{-f,--file}'[Path to file to apply. Pass `-` to read from stdin]:' \
     '(-v --var)'{-v,--var}'[Variable to replace in configuration]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \

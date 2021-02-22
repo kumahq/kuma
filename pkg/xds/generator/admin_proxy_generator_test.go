@@ -53,7 +53,7 @@ var _ = Describe("AdminProxyGenerator", func() {
 					AdminPort: 9901,
 				},
 				Dataplane:  dataplane,
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 			}
 
 			// when

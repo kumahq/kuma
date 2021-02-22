@@ -41,7 +41,7 @@ var _ = Describe("IngressGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					OutboundTargets:  given.outboundTargets,
 					TrafficRouteList: given.trafficRoutes,

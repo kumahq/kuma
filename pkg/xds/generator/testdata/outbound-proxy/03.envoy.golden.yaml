@@ -145,25 +145,28 @@ resources:
               role: master
 - name: api-grpc
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     lbPolicy: RANDOM
     name: api-grpc
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: api-http
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
-    commonHttpProtocolOptions:
-      idleTimeout: 0s
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     name: api-http
     outlierDetection:
       enforcingConsecutive5xx: 100
@@ -172,16 +175,19 @@ resources:
       enforcingFailurePercentage: 0
       enforcingSuccessRate: 0
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: api-http2
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
-    commonHttpProtocolOptions:
-      idleTimeout: 0s
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     lbPolicy: RING_HASH
     name: api-http2
     ringHashLbConfig:
@@ -189,38 +195,53 @@ resources:
       maximumRingSize: "1024"
       minimumRingSize: "64"
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: api-tcp
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     lbPolicy: LEAST_REQUEST
     leastRequestLbConfig:
       choiceCount: 4
     name: api-tcp
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: backend
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     lbPolicy: MAGLEV
     name: backend
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: db
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
-    http2ProtocolOptions: {}
+        resourceApiVersion: V3
     lbSubsetConfig:
       fallbackPolicy: ANY_ENDPOINT
       subsetSelectors:
@@ -229,9 +250,14 @@ resources:
         - role
     name: db
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: outbound:127.0.0.1:18080
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
@@ -240,15 +266,14 @@ resources:
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
-          idleTimeout: 0s
           statPrefix: backend
     name: outbound:127.0.0.1:18080
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:40001
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
@@ -257,17 +282,17 @@ resources:
     - filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           accessLog:
           - name: envoy.access_loggers.file
             typedConfig:
-              '@type': type.googleapis.com/envoy.config.accesslog.v2.FileAccessLog
-              format: |+
-                [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "gateway" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
+              '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+              logFormat:
+                textFormatSource:
+                  inlineString: |+
+                    [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "gateway" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
 
               path: /var/log
-          commonHttpProtocolOptions:
-            idleTimeout: 0s
           httpFilters:
           - name: envoy.filters.http.router
           routeConfig:
@@ -292,7 +317,7 @@ resources:
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:40002
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
@@ -301,11 +326,11 @@ resources:
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           accessLog:
           - name: envoy.access_loggers.http_grpc
             typedConfig:
-              '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
+              '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
               commonConfig:
                 grpcService:
                   envoyGrpc:
@@ -313,14 +338,14 @@ resources:
                 logName: |+
                   logstash:1234;[%START_TIME%] %RESPONSE_FLAGS% mesh1 10.0.0.1(gateway)->%UPSTREAM_HOST%(api-tcp) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
 
+                transportApiVersion: V3
           cluster: api-tcp
-          idleTimeout: 0s
           statPrefix: api-tcp
     name: outbound:127.0.0.1:40002
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:40003
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
@@ -329,9 +354,7 @@ resources:
     - filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-          commonHttpProtocolOptions:
-            idleTimeout: 0s
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
           - name: envoy.filters.http.router
           routeConfig:
@@ -356,7 +379,7 @@ resources:
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:40004
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
@@ -365,11 +388,11 @@ resources:
     - filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
           - name: envoy.filters.http.grpc_stats
             typedConfig:
-              '@type': type.googleapis.com/envoy.config.filter.http.grpc_stats.v2alpha.FilterConfig
+              '@type': type.googleapis.com/envoy.extensions.filters.http.grpc_stats.v3.FilterConfig
               emitFilterState: true
               statsForAllMethods: true
           - name: envoy.filters.http.router
@@ -391,12 +414,11 @@ resources:
                   cluster: api-grpc
                   timeout: 0s
           statPrefix: api-grpc
-          streamIdleTimeout: 0s
     name: outbound:127.0.0.1:40004
     trafficDirection: OUTBOUND
 - name: outbound:127.0.0.1:54321
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
@@ -405,8 +427,7 @@ resources:
     - filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
-          idleTimeout: 0s
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           statPrefix: db
           weightedClusters:
             clusters:

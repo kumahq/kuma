@@ -53,7 +53,7 @@ networking:
     servicePort: %s
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
-      kuma.io/protocol: http
+      kuma.io/protocol: %s
 `
 
 	EchoServerDataplaneWithServiceProbe = `
@@ -69,7 +69,7 @@ networking:
       tcp: {}
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
-      kuma.io/protocol: http
+      kuma.io/protocol: %s
 `
 
 	EchoServerDataplaneTransparentProxy = `
@@ -183,7 +183,7 @@ type UniversalApp struct {
 	verbose      bool
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, caps []string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMode, verbose bool, caps []string) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:            t,
 		ports:        map[string]string{},
@@ -198,7 +198,7 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 	}
 
 	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
+	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName)
 	for _, cap := range caps {
 		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
 	}
@@ -302,7 +302,7 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
 		"--dataplane-file=/kuma/dpyaml-" + appname,
-		"--dataplane-var", "name=dp-" + appname,
+		"--dataplane-var", "name=" + appname,
 		"--dataplane-var", "address=" + ip,
 		"--binary-path", "/usr/local/bin/envoy",
 	})

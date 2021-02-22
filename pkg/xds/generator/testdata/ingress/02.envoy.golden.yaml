@@ -1,7 +1,7 @@
 resources:
 - name: inbound:10.0.0.1:10001
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 10.0.0.1
