@@ -103,7 +103,7 @@ func autoconfigBootstrapXdsParams(cfg *kuma_cp.Config) {
 type workDir string
 
 func (w workDir) Open(name string) (*os.File, error) {
-	if err := os.Mkdir(string(w), 0700); err != nil && !os.IsExist(err) {
+	if err := os.MkdirAll(string(w), 0700); err != nil && !os.IsExist(err) {
 		return nil, err
 	}
 	return os.OpenFile(path.Join(string(w), name), os.O_RDWR|os.O_CREATE, 0600)
