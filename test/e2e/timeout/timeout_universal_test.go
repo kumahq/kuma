@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 var _ = Describe("Test Timeout policy on Universal", func() {
@@ -87,7 +88,7 @@ conf:
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		start := time.Now()
-		stdout, _, err = universalCluster.Exec("", "", "demo-client",
+		_, _, err = universalCluster.Exec("", "", "demo-client",
 			"curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		elapsed := time.Since(start)
