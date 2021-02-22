@@ -3,7 +3,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8080
-    connectTimeout: 5s
+    connectTimeout: 10s
     loadAssignment:
       clusterName: localhost:8080
       endpoints:
@@ -19,7 +19,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: localhost_8443
-    connectTimeout: 5s
+    connectTimeout: 10s
     loadAssignment:
       clusterName: localhost:8443
       endpoints:

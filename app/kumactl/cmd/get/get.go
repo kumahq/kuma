@@ -32,6 +32,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "fault-injections", core_mesh.FaultInjectionType, BasicResourceTablePrinter), &pctx.ListContext))
 	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "circuit-breakers", core_mesh.CircuitBreakerType, BasicResourceTablePrinter), &pctx.ListContext))
 	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "retries", core_mesh.RetryType, BasicResourceTablePrinter), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "timeouts", core_mesh.TimeoutType, BasicResourceTablePrinter), &pctx.ListContext))
 	cmd.AddCommand(NewGetResourcesCmd(pctx, "secrets", core_system.SecretType, BasicResourceTablePrinter))
 	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "zones", core_system.ZoneType, printZones), &pctx.ListContext))
 
@@ -47,6 +48,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(NewGetResourceCmd(pctx, "fault-injection", core_mesh.FaultInjectionType, BasicResourceTablePrinter))
 	cmd.AddCommand(NewGetResourceCmd(pctx, "circuit-breaker", core_mesh.CircuitBreakerType, BasicResourceTablePrinter))
 	cmd.AddCommand(NewGetResourceCmd(pctx, "retry", core_mesh.RetryType, BasicResourceTablePrinter))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "timeout", core_mesh.TimeoutType, BasicResourceTablePrinter))
 	cmd.AddCommand(NewGetResourceCmd(pctx, "secret", core_system.SecretType, BasicResourceTablePrinter))
 	cmd.AddCommand(NewGetResourceCmd(pctx, "zone", core_mesh.RetryType, printZones))
 	return cmd

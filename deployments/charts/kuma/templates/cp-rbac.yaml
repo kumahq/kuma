@@ -45,6 +45,7 @@ rules:
       - proxytemplates
       - trafficpermissions
       - trafficroutes
+      - timeouts
     verbs:
       - get
       - list

@@ -19,7 +19,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: backend_kuma-system
-    connectTimeout: 5s
+    connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -34,7 +34,7 @@ resources:
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
+    connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}

@@ -2,7 +2,7 @@ resources:
 - name: es2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
+    connectTimeout: 10s
     lbSubsetConfig:
       fallbackPolicy: ANY_ENDPOINT
       subsetSelectors:

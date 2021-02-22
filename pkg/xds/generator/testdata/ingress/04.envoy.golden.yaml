@@ -100,7 +100,7 @@ resources:
 - name: backend
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
+    connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}

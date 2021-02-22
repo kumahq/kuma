@@ -346,3 +346,16 @@ func Retry(
 		}
 	})
 }
+
+func Timeout(timeout *mesh_proto.Timeout_Conf, protocol mesh_core.Protocol) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+		config.AddV2(&v2.TimeoutConfigurer{
+			Conf:     timeout,
+			Protocol: protocol,
+		})
+		config.AddV3(&v3.TimeoutConfigurer{
+			Conf:     timeout,
+			Protocol: protocol,
+		})
+	})
+}

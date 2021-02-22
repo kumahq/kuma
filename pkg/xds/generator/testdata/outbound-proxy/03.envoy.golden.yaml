@@ -146,7 +146,7 @@ resources:
 - name: api-grpc
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
+    connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -162,7 +162,7 @@ resources:
 - name: api-http
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
+    connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -183,7 +183,7 @@ resources:
 - name: api-http2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
+    connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -203,7 +203,7 @@ resources:
 - name: api-tcp
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
+    connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -221,7 +221,7 @@ resources:
 - name: backend
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
+    connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
@@ -237,7 +237,7 @@ resources:
 - name: db
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 5s
+    connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}

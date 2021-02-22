@@ -3,7 +3,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: tracing_zipkin
-    connectTimeout: 5s
+    connectTimeout: 10s
     loadAssignment:
       clusterName: tracing:zipkin
       endpoints:

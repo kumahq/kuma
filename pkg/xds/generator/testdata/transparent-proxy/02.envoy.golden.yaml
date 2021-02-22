@@ -3,7 +3,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: inbound_passthrough
-    connectTimeout: 5s
+    connectTimeout: 10s
     lbPolicy: CLUSTER_PROVIDED
     name: inbound:passthrough
     type: ORIGINAL_DST
@@ -15,7 +15,7 @@ resources:
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     altStatName: outbound_passthrough
-    connectTimeout: 5s
+    connectTimeout: 10s
     lbPolicy: CLUSTER_PROVIDED
     name: outbound:passthrough
     type: ORIGINAL_DST

@@ -150,6 +150,11 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		return nil, err
 	}
 
+	timeouts, err := xds_topology.GetTimeouts(ctx, dataplane, p.ResManager)
+	if err != nil {
+		return nil, err
+	}
+
 	matchedPolicies := &xds.MatchedPolicies{
 		TrafficPermissions: matchedPermissions,
 		Logs:               matchedLogs,
@@ -159,6 +164,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		TracingBackend:     tracingBackend,
 		FaultInjections:    faultInjection,
 		Retries:            retries,
+		Timeouts:           timeouts,
 	}
 	return matchedPolicies, nil
 }

@@ -17,6 +17,7 @@ type ClusterSubset struct {
 	Tags              Tags
 	IsExternalService bool
 	Lb                *mesh_proto.TrafficRoute_LoadBalancer
+	Timeout           *mesh_proto.Timeout_Conf
 }
 
 type Tags map[string]string
@@ -91,6 +92,7 @@ type Cluster struct {
 	subsets            []ClusterSubset
 	hasExternalService bool
 	lb                 *mesh_proto.TrafficRoute_LoadBalancer
+	timeout            *mesh_proto.Timeout_Conf
 }
 
 func (c *Cluster) Add(subset ClusterSubset) {
@@ -99,6 +101,7 @@ func (c *Cluster) Add(subset ClusterSubset) {
 		c.hasExternalService = true
 	}
 	c.lb = subset.Lb
+	c.timeout = subset.Timeout
 }
 
 func (c *Cluster) Tags() []Tags {
@@ -115,6 +118,10 @@ func (c *Cluster) HasExternalService() bool {
 
 func (c *Cluster) Subsets() []ClusterSubset {
 	return c.subsets
+}
+
+func (c *Cluster) Timeout() *mesh_proto.Timeout_Conf {
+	return c.timeout
 }
 
 type Clusters map[string]*Cluster
