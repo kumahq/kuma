@@ -136,8 +136,8 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote3...)).
-			Install(EchoServerUniversal("universal", nonDefaultMesh, echoServerToken, WithTransparentProxy(true))).
-			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
+			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal", echoServerToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_3)
 		Expect(err).ToNot(HaveOccurred())
@@ -152,7 +152,7 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote4...)).
-			Install(DemoClientUniversal(nonDefaultMesh, demoClientToken)).
+			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken)).
 			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_4)
 		Expect(err).ToNot(HaveOccurred())

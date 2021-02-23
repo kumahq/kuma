@@ -9,6 +9,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
@@ -21,7 +22,7 @@ type ServiceOverviewClient interface {
 }
 
 func NewServiceOverviewClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (ServiceOverviewClient, error) {
-	client, err := apiServerClient(coordinates)
+	client, err := kumactl_client.ApiServerClient(coordinates)
 	if err != nil {
 		return nil, err
 	}

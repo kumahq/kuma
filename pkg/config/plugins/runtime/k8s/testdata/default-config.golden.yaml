@@ -29,6 +29,7 @@ injector:
       limits:
         cpu: 1000m
         memory: 512Mi
+    envVars: {}
   initContainer:
     image: kuma/kuma-init:latest
   cniEnabled: false

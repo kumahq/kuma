@@ -350,7 +350,7 @@ jobs:
       api:
         description: XDS API version
         type: string
-        default: v2
+        default: v3
     parallelism: 2
     environment:
       GOPATH: /home/circleci/.go-kuma-go
@@ -748,11 +748,11 @@ workflows:
             - images
       - e2e:
           <<: *commit_workflow_filters
-          name: test/e2e V3
+          name: test/e2e V2
           requires:
             - images
           # custom parameters
-          api: v3
+          api: v2
 
   kuma-release:
     jobs:

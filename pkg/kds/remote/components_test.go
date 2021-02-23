@@ -9,6 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -17,7 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
-	"github.com/kumahq/kuma/pkg/kds/global"
 	"github.com/kumahq/kuma/pkg/kds/remote"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -71,7 +71,7 @@ var _ = Describe("Remote Sync", func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, global.ProvidedFilter(manager.NewResourceManager(globalStore)))
+		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, kds_context.GlobalProvidedFilter(manager.NewResourceManager(globalStore)))
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)

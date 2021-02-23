@@ -167,7 +167,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 				Routing: model.Routing{
 					TrafficRoutes: model.RouteMap{
 						mesh_proto.OutboundInterface{
@@ -521,7 +521,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 				Spec: dataplane,
 			},
-			APIVersion: envoy_common.APIV2,
+			APIVersion: envoy_common.APIV3,
 			Routing: model.Routing{
 				TrafficRoutes: model.RouteMap{
 					mesh_proto.OutboundInterface{

@@ -88,12 +88,10 @@ func EdsCluster(name string) ClusterBuilderOpt {
 			Name: name,
 		})
 		config.AddV2(&v2.AltStatNameConfigurer{})
-		config.AddV2(&v2.TimeoutConfigurer{})
 		config.AddV3(&v3.EdsClusterConfigurer{
 			Name: name,
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
-		config.AddV3(&v3.TimeoutConfigurer{})
 	})
 }
 
@@ -146,6 +144,30 @@ func LB(lb *mesh_proto.TrafficRoute_LoadBalancer) ClusterBuilderOpt {
 	})
 }
 
+func Timeout(protocol mesh_core.Protocol, conf *mesh_proto.Timeout_Conf) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV2(&v2.TimeoutConfigurer{
+			Protocol: protocol,
+			Conf:     conf,
+		})
+		config.AddV3(&v3.TimeoutConfigurer{
+			Protocol: protocol,
+			Conf:     conf,
+		})
+	})
+}
+
+func DefaultTimeout() ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV2(&v2.TimeoutConfigurer{
+			Protocol: mesh_core.ProtocolTCP,
+		})
+		config.AddV3(&v3.TimeoutConfigurer{
+			Protocol: mesh_core.ProtocolTCP,
+		})
+	})
+}
+
 func PassThroughCluster(name string) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV2(&v2.PassThroughClusterConfigurer{
@@ -187,13 +209,11 @@ func StrictDNSCluster(name string, endpoints []core_xds.Endpoint) ClusterBuilder
 			Endpoints: endpoints,
 		})
 		config.AddV2(&v2.AltStatNameConfigurer{})
-		config.AddV2(&v2.TimeoutConfigurer{})
 		config.AddV3(&v3.StrictDNSClusterConfigurer{
 			Name:      name,
 			Endpoints: endpoints,
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
-		config.AddV3(&v3.TimeoutConfigurer{})
 	})
 }
 

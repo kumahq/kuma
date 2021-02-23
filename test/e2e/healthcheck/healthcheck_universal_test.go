@@ -29,9 +29,9 @@ var _ = Describe("Test application HealthCheck on Universal", func() {
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal("universal", "default", echoServerToken, ProxyOnly(), ServiceProbe())(cluster)
+		err = EchoServerUniversal("dp-echo-server", "default", "universal", echoServerToken, ProxyOnly(), ServiceProbe())(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal("default", demoClientToken, ServiceProbe())(cluster)
+		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken, ServiceProbe())(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
