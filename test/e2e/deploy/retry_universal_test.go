@@ -1,4 +1,4 @@
-package e2e_test
+package deploy_test
 
 import (
 	"strings"
@@ -43,8 +43,8 @@ var _ = Describe("Test Retry on Universal", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(DemoClientUniversal("default", demoClientToken)).
-			Install(EchoServerUniversal("universal1", "default", echoServerToken)).
+			Install(DemoClientUniversal("demo-client", "default", demoClientToken)).
+			Install(EchoServerUniversal("universal1", "default", "universal", echoServerToken)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -60,7 +60,7 @@ var _ = Describe("Test Retry on Universal", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	FIt("should retry on TCP connection failure", func() {
+	It("should retry on TCP connection failure", func() {
 		echoServerDataplane := `
 type: Dataplane
 mesh: default
