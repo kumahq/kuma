@@ -29,5 +29,4 @@ message ServiceInsight {
   }
 
   map<string, Service> services = 2;
-
 }
