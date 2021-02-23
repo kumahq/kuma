@@ -40,8 +40,8 @@ var _ = Describe("Versions WS", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
-		var data struct{
-			KumaDp map[string]struct{
+		var data struct {
+			KumaDp map[string]struct {
 				Envoy string
 			}
 		}
