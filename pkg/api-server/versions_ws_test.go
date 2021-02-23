@@ -14,7 +14,6 @@ import (
 )
 
 var _ = Describe("Versions WS", func() {
-
 	It("should return the supported versions", func() {
 		// setup
 		resourceStore := memory.NewStore()
