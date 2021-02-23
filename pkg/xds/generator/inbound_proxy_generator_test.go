@@ -71,7 +71,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 					},
 					Spec: &dataplane,
 				},
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 				Policies: model.MatchedPolicies{
 
 					TrafficPermissions: model.TrafficPermissionMap{

@@ -3,6 +3,8 @@ package controllers
 import (
 	"context"
 
+	"go.uber.org/multierr"
+
 	"github.com/pkg/errors"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -97,10 +99,18 @@ func (r *PodStatusReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 			return kube_ctrl.Result{}, err
 		}
 
+		var errs error
 		err := r.EnvoyAdminClient.PostQuit(dp)
 		if err != nil {
-			return kube_ctrl.Result{}, errors.Wrapf(err, "envoy admin client failed. Most probably the pod is already going down.")
+			errs = multierr.Append(errs, errors.Wrapf(err, "envoy admin client failed. Most probably the pod is already going down."))
 		}
+
+		err = r.Client.Delete(ctx, dataplane)
+		if err != nil {
+			errs = multierr.Append(errs, errors.Wrapf(err, "trying to delete the job's dataplane"))
+		}
+
+		return kube_ctrl.Result{}, errs
 	}
 
 	return kube_ctrl.Result{}, nil

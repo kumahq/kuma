@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -31,6 +32,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV2).
 				Configure(clusters.EdsCluster(given.clusterName)).
 				Configure(clusters.HealthCheck(given.healthCheck)).
+				Configure(clusters.Timeout(mesh_core.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
 				Build()
 
 			// then
@@ -232,6 +234,44 @@ var _ = Describe("HealthCheckConfigurer", func() {
                     value: foobaz
               timeout: 4s
               unhealthyThreshold: 3
+            name: testCluster
+            type: EDS`,
+		}),
+		Entry("HealthCheck with jitter", testCase{
+			clusterName: "testCluster",
+			healthCheck: &mesh_core.HealthCheckResource{
+				Spec: &mesh_proto.HealthCheck{
+					Sources: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
+					},
+					Destinations: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
+					},
+					Conf: &mesh_proto.HealthCheck_Conf{
+						Interval:              ptypes.DurationProto(5 * time.Second),
+						Timeout:               ptypes.DurationProto(4 * time.Second),
+						UnhealthyThreshold:    3,
+						HealthyThreshold:      2,
+						InitialJitter:         ptypes.DurationProto(6 * time.Second),
+						IntervalJitter:        ptypes.DurationProto(7 * time.Second),
+						IntervalJitterPercent: 50,
+					},
+				},
+			},
+			expected: `
+            connectTimeout: 5s
+            edsClusterConfig:
+              edsConfig:
+                ads: {}
+            healthChecks:
+            - healthyThreshold: 2
+              interval: 5s
+              tcpHealthCheck: {}
+              timeout: 4s
+              unhealthyThreshold: 3
+              initialJitter: 6s
+              intervalJitter: 7s
+              intervalJitterPercent: 50
             name: testCluster
             type: EDS`,
 		}),

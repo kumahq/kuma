@@ -24,6 +24,7 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_record "k8s.io/client-go/tools/record"
+	utilpointer "k8s.io/utils/pointer"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -86,6 +87,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Pod{
@@ -102,6 +108,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Pod{
@@ -118,6 +129,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Service{
@@ -146,9 +162,6 @@ var _ = Describe("PodReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
 					Name:      "example",
-					Annotations: map[string]string{
-						"80.service.kuma.io/protocol": "http",
-					},
 				},
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.1",
@@ -159,6 +172,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
+							AppProtocol: utilpointer.StringPtr("http"),
 						},
 						{
 							Protocol: "TCP",
@@ -349,12 +363,14 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - port: 8080
+            - health: {} 
+              port: 8080
               tags:
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
-            - port: 6060
+            - health: {} 
+              port: 6060
               tags:
                 app: sample
                 kuma.io/service: example_demo_svc_6061
@@ -421,12 +437,14 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - port: 8080
+            - health: {} 
+              port: 8080
               tags:
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
-            - port: 6060
+            - health: {} 
+              port: 6060
               tags:
                 app: sample
                 kuma.io/service: example_demo_svc_6061
