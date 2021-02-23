@@ -1,29 +1,16 @@
-FROM ubuntu:bionic as builder
+FROM ubuntu:focal
 
-ENV GOVERSION 1.15.6
-ENV GOROOT /opt/go
-ENV GOPATH /root/.go
+RUN apt-get update && \
+    apt-get -y install iptables && \
+    rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update
-RUN apt-get -y install wget
-
-RUN cd /opt && wget https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz && \
-    tar zxf go${GOVERSION}.linux-amd64.tar.gz && rm go${GOVERSION}.linux-amd64.tar.gz && \
-    ln -s /opt/go/bin/go /usr/bin/ && \
-    mkdir $GOPATH
-
-RUN GO111MODULE=on go get istio.io/istio/tools/istio-iptables@1.7.6
-
-FROM ubuntu:bionic
-
-COPY --from=builder /root/.go/bin/istio-iptables ./kuma-iptables
-
-RUN apt-get update
-RUN apt-get -y install iptables
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 
 RUN mkdir /kuma
 COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
-COPY $KUMA_ROOT/tools/releases/templates/NOTICE-kuma-init /kuma/NOTICE
+COPY $KUMA_ROOT/tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
 COPY $KUMA_ROOT/tools/releases/templates/README /kuma
 
-ENTRYPOINT ["./kuma-iptables"]
+RUN adduser --system --disabled-password --group kumactl --uid 5678
+
+ENTRYPOINT ["/usr/bin/kumactl", "install", "transparent-proxy"]
