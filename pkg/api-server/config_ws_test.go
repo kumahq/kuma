@@ -267,7 +267,8 @@ var _ = Describe("Config WS", func() {
           },
           "xdsServer": {
             "dataplaneConfigurationRefreshInterval": "1s",
-            "dataplaneStatusFlushInterval": "10s"
+            "dataplaneStatusFlushInterval": "10s",
+            "nackBackoff": "5s"
           },
           "diagnostics": {
             "serverPort": 5680,
