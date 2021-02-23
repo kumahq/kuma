@@ -113,11 +113,7 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 	}
 	container.Add(configWs)
 
-	versionsWs, err := versionsWs()
-	if err != nil {
-		return nil, errors.Wrap(err, "could not create versions webservice")
-	}
-	container.Add(versionsWs)
+	container.Add(versionsWs())
 
 	zonesWs := zonesWs(resManager)
 	container.Add(zonesWs)

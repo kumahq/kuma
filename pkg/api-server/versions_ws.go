@@ -36,7 +36,7 @@ var versions = []byte(`{
   }
 }`)
 
-func versionsWs() (*restful.WebService, error) {
+func versionsWs() *restful.WebService {
 	ws := new(restful.WebService).Path("/versions")
 
 	ws.Route(ws.GET("").To(func(req *restful.Request, resp *restful.Response) {
@@ -46,5 +46,5 @@ func versionsWs() (*restful.WebService, error) {
 		}
 	}))
 
-	return ws, nil
+	return ws
 }
