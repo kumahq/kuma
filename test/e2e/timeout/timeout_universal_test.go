@@ -1,7 +1,7 @@
 package timeout_test
 
 import (
-	"fmt"
+	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -92,8 +92,6 @@ conf:
 			"curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		elapsed := time.Since(start)
-		fmt.Printf("Elapsed time with FaultInjection: %v\n", elapsed)
-
 		Expect(elapsed > 5*time.Second).To(BeTrue())
 
 		// when apply Timeout policy
@@ -102,11 +100,9 @@ conf:
 
 		// then
 		Eventually(func() bool {
-			start := time.Now()
-			_, _, _ = universalCluster.Exec("", "", "demo-client",
-				"curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			elapsed := time.Since(start)
-			return 2*time.Second <= elapsed && elapsed < 3*time.Second
+			stdout, _, _ := universalCluster.Exec("", "", "demo-client",
+				"curl", "-v", "echo-server_kuma-test_svc_8080.mesh")
+			return strings.Contains(stdout, "upstream request timeout")
 		}, "30s", "500ms").Should(BeTrue())
 	})
 })
