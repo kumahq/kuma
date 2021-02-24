@@ -33,7 +33,7 @@ var defaultRetry = &mesh_proto.Retry{
 	},
 	Conf: &mesh_proto.Retry_Conf{
 		Http: &mesh_proto.Retry_Conf_Http{
-			NumRetries:    wrapperspb.UInt32(5),
+			NumRetries:    wrapperspb.UInt32(10),
 			PerTryTimeout: durationpb.New(time.Second),
 			BackOff: &mesh_proto.Retry_Conf_BackOff{
 				BaseInterval: durationpb.New(25 * time.Millisecond),
@@ -44,7 +44,7 @@ var defaultRetry = &mesh_proto.Retry{
 			MaxConnectAttempts: 5,
 		},
 		Grpc: &mesh_proto.Retry_Conf_Grpc{
-			NumRetries:    wrapperspb.UInt32(5),
+			NumRetries:    wrapperspb.UInt32(10),
 			PerTryTimeout: durationpb.New(time.Second),
 			BackOff: &mesh_proto.Retry_Conf_BackOff{
 				BaseInterval: durationpb.New(25 * time.Millisecond),
