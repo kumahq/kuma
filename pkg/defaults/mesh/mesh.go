@@ -54,6 +54,16 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default Timeout already exist", "mesh", meshName, "name", defaultTimeoutKey(meshName).Name)
 	}
 
+	err, created = ensureDefaultRetry(resManager, meshName)
+	if err != nil {
+		return errors.Wrap(err, "could not create default Retry")
+	}
+	if created {
+		log.Info("default Retry created", "mesh", meshName, "name", defaultRetryKey(meshName).Name)
+	} else {
+		log.Info("default Retry already exist", "mesh", meshName, "name", defaultRetryKey(meshName).Name)
+	}
+
 	created, err = ensureDataplaneTokenSigningKey(resManager, meshName)
 	if err != nil {
 		return errors.Wrap(err, "could not create default Dataplane Token Signing Key")
