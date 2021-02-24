@@ -169,7 +169,8 @@ type Timeout_Conf_Tcp struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// IdleTimeout is defined as the period in which there are no bytes sent or received on either the upstream or downstream connection
+	// IdleTimeout is defined as the period in which there are no bytes sent
+	// or received on either the upstream or downstream connection
 	IdleTimeout *duration.Duration `protobuf:"bytes,1,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
 }
 
@@ -218,9 +219,12 @@ type Timeout_Conf_Http struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// RequestTimeout is a span between the point at which the entire downstream request (i.e. end-of-stream) has been processed and when the upstream response has been completely processed
+	// RequestTimeout is a span between the point at which the entire
+	// downstream request (i.e. end-of-stream) has been processed and when the
+	// upstream response has been completely processed
 	RequestTimeout *duration.Duration `protobuf:"bytes,1,opt,name=request_timeout,json=requestTimeout,proto3" json:"request_timeout,omitempty"`
-	// IdleTimeout is the time at which a downstream or upstream connection will be terminated if there are no active streams
+	// IdleTimeout is the time at which a downstream or upstream connection
+	// will be terminated if there are no active streams
 	IdleTimeout *duration.Duration `protobuf:"bytes,2,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
 }
 
@@ -276,9 +280,11 @@ type Timeout_Conf_Grpc struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// StreamIdleTimeout is the amount of time that the connection manager will allow a stream to exist with no upstream or downstream activity
+	// StreamIdleTimeout is the amount of time that the connection manager
+	// will allow a stream to exist with no upstream or downstream activity
 	StreamIdleTimeout *duration.Duration `protobuf:"bytes,1,opt,name=stream_idle_timeout,json=streamIdleTimeout,proto3" json:"stream_idle_timeout,omitempty"`
-	// MaxStreamDuration is the maximum time that a stream’s lifetime will span
+	// MaxStreamDuration is the maximum time that a stream’s lifetime will
+	// span
 	MaxStreamDuration *duration.Duration `protobuf:"bytes,2,opt,name=max_stream_duration,json=maxStreamDuration,proto3" json:"max_stream_duration,omitempty"`
 }
 

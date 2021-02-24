@@ -7,8 +7,11 @@
       "name": "backend",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
-      "total": 10,
-      "online": 5
+      "status": "partially_degraded",
+      "dataplanes": {
+        "total": 10,
+        "online": 5
+      }
     },
     {
       "type": "ServiceOverview",
@@ -16,8 +19,11 @@
       "name": "web",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
-      "total": 20,
-      "online": 20
+      "status": "online",
+      "dataplanes": {
+        "total": 20,
+        "online": 20
+      }
     },
     {
       "type": "ServiceOverview",
@@ -25,7 +31,10 @@
       "name": "orders",
       "creationTime": "0001-01-01T00:00:00Z",
       "modificationTime": "0001-01-01T00:00:00Z",
-      "total": 5
+      "status": "offline",
+      "dataplanes": {
+        "total": 5
+      }
     }
   ],
   "next": null

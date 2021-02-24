@@ -205,6 +205,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.XdsServer.DataplaneStatusFlushInterval).To(Equal(7 * time.Second))
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval).To(Equal(21 * time.Second))
+			Expect(cfg.XdsServer.NACKBackoff).To(Equal(10 * time.Second))
 
 			Expect(cfg.Metrics.Zone.Enabled).To(BeFalse())
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
@@ -383,6 +384,7 @@ diagnostics:
 xdsServer:
   dataplaneConfigurationRefreshInterval: 21s
   dataplaneStatusFlushInterval: 7s
+  nackBackoff: 10s
 metrics:
   zone:
     enabled: false
@@ -516,6 +518,7 @@ sdsServer:
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":                                          "7s",
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "21s",
+				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
 				"KUMA_METRICS_ZONE_ENABLED":                                                                "false",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "27s",

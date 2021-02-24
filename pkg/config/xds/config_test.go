@@ -1,7 +1,6 @@
 package xds_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_xds "github.com/kumahq/kuma/pkg/config/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var _ = Describe("XdsServerConfig", func() {
@@ -77,15 +77,10 @@ var _ = Describe("XdsServerConfig", func() {
 
 		// when
 		actual, err := config.ToYAML(cfg)
-		// then
-		Expect(err).ToNot(HaveOccurred())
 
-		// when
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(actual).To(MatchYAML(expected))
+		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "default-config.golden.yaml")))
 	})
 
 	It("should have validators", func() {

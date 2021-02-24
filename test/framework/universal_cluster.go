@@ -211,7 +211,8 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 		return "", "", errors.Errorf("App %s not found", appname)
 	}
 	sshApp := NewSshApp(false, app.ports[sshPort], []string{}, cmd)
-	return sshApp.Out(), sshApp.Err(), sshApp.Run()
+	err := sshApp.Run()
+	return sshApp.Out(), sshApp.Err(), err
 }
 
 func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, cmd ...string) (string, string, error) {

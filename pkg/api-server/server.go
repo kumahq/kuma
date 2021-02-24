@@ -113,6 +113,8 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 	}
 	container.Add(configWs)
 
+	container.Add(versionsWs())
+
 	zonesWs := zonesWs(resManager)
 	container.Add(zonesWs)
 

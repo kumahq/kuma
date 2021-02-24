@@ -15,12 +15,12 @@ var _ model.Resource = &ServiceOverviewResource{}
 
 type ServiceOverviewResource struct {
 	Meta model.ResourceMeta
-	Spec *mesh_proto.ServiceInsight_DataplaneStat
+	Spec *mesh_proto.ServiceInsight_Service
 }
 
 func NewServiceOverviewResource() *ServiceOverviewResource {
 	return &ServiceOverviewResource{
-		Spec: &mesh_proto.ServiceInsight_DataplaneStat{},
+		Spec: &mesh_proto.ServiceInsight_Service{},
 	}
 }
 
@@ -41,7 +41,7 @@ func (t *ServiceOverviewResource) GetSpec() model.ResourceSpec {
 }
 
 func (t *ServiceOverviewResource) SetSpec(spec model.ResourceSpec) error {
-	serviceOverview, ok := spec.(*mesh_proto.ServiceInsight_DataplaneStat)
+	serviceOverview, ok := spec.(*mesh_proto.ServiceInsight_Service)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {

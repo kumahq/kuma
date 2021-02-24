@@ -63,6 +63,10 @@ func (d *discoveryRequest) HasErrors() bool {
 	return d.ErrorDetail != nil
 }
 
+func (d *discoveryRequest) ErrorMsg() string {
+	return d.GetErrorDetail().GetMessage()
+}
+
 var _ xds.DiscoveryRequest = &discoveryRequest{}
 
 type discoveryResponse struct {
