@@ -7139,13 +7139,23 @@ rules:
     resources:
       - namespaces
       - pods
-      - services
       - configmaps
       - nodes
     verbs:
       - get
       - list
       - watch
+  - apiGroups:
+      - ""
+    resources:
+      - services
+    verbs:
+      - get
+      - list
+      - watch
+      - create
+      - update
+      - patch
   - apiGroups:
       - ""
     resources:

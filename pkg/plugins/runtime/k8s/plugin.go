@@ -84,6 +84,9 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addNamespaceReconciler(mgr, rt); err != nil {
 		return err
 	}
+	if err := addServiceReconciler(mgr, rt); err != nil {
+		return err
+	}
 	if err := addMeshReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
@@ -104,6 +107,14 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 		Client:     mgr.GetClient(),
 		Log:        core.Log.WithName("controllers").WithName("Namespace"),
 		CNIEnabled: rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	reconciler := &k8s_controllers.ServiceReconciler{
+		Client: mgr.GetClient(),
+		Log:    core.Log.WithName("controllers").WithName("Service"),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
