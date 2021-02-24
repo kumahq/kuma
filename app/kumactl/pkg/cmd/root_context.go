@@ -79,6 +79,7 @@ func DefaultRootContext() *RootContext {
 			"circuit-breaker":    core_mesh.CircuitBreakerType,
 			"retry":              core_mesh.RetryType,
 			"secret":             system.SecretType,
+			"global-secret":      system.GlobalSecretType,
 			"zone":               system.ZoneType,
 		},
 		InstallCpContext:      install_context.DefaultInstallCpContext(),

@@ -327,6 +327,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	}
 	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator)
 	customManagers[system.SecretType] = secretManager
+	customManagers[system.GlobalSecretType] = secret_manager.NewGlobalSecretManager(builder.SecretStore(), cipher)
 
 	builder.WithResourceManager(customizableManager)
 
