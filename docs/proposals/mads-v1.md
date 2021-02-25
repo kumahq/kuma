@@ -32,7 +32,7 @@ we will need to expose this API externally.
 
 * There are some interesting discussions happening in the CNCF OpenTelemetry project, which defines standards for telemetry data/ systems
     around whether Service Discovery + scrape targets are within their scope
-  * It's looking like they are (see https://github.com/open-telemetry/opentelemetry-specification/issues/1078#issuecomment-780737017),
+  * It's looking like they are (see [open-telemetry/opentelemetry-specification#1078](https://github.com/open-telemetry/opentelemetry-specification/issues/1078#issuecomment-780737017)),
     though likely not for some time. If they do ( :crossed_fingers: ), I think we should move to implementing their standard
     and advocate for the same in Prometheus.
 
