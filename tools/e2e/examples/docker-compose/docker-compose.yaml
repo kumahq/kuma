@@ -112,7 +112,7 @@ services:
   # source and destination for network requests.
   #
   kuma-example-app:
-    image: nginx:latest
+    image: nginx:stable
     network_mode: service:kuma-example-app-namespace
     depends_on:
     - kuma-example-app-namespace

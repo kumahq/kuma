@@ -68,7 +68,7 @@ spec:
       serviceAccountName: demo-app-service-account
       containers:
       - name: demo-app
-        image: "nginx:latest"
+        image: "nginx:stable"
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 80
