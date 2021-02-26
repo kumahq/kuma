@@ -284,6 +284,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		args = append(args, k, v)
 	}
 
+	for k, v := range opts.env {
+		args = append(args, "--env-var", fmt.Sprintf("%s=%s", k, v))
+	}
+
 	return c.controlplane.InstallCP(args...)
 }
 

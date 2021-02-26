@@ -382,13 +382,13 @@ func (i *KumaInjector) FindServiceAccountToken(pod *kube_core.Pod) *kube_core.Vo
 }
 
 func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container, error) {
-	inboundPortsToIntercept := "*"
+	redirectInbound := "true"
 	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation)
 	if err != nil {
 		return kube_core.Container{}, err
 	}
 	if exist && enabled {
-		inboundPortsToIntercept = ""
+		redirectInbound = "false"
 	}
 	excludeInboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
 	excludeOutboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPorts)
@@ -396,25 +396,20 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 		Name:            util.KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
+		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
 		Args: []string{
-			"-p",
+			"--redirect-outbound-port",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
-			"-z",
+			"--redirect-inbound=" + redirectInbound,
+			"--redirect-inbound-port",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
-			"-u",
+			"--kuma-dp-uid",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
-			"-g",
-			fmt.Sprintf("%d", i.cfg.SidecarContainer.GID),
-			"-d",
+			"--exclude-inbound-ports",
 			excludeInboundPorts,
-			"-o",
+			"--exclude-outbound-ports",
 			excludeOutboundPorts,
-			"-m",
-			"REDIRECT",
-			"-i",
-			"*",
-			"-b",
-			inboundPortsToIntercept,
+			"--modify-resolv-conf=false",
 		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  new(int64), // way to get pointer to int64(0)

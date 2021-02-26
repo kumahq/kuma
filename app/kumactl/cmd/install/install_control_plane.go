@@ -47,7 +47,7 @@ This command requires that the KUBECONFIG environment is set`,
 				}
 			}
 
-			templateFiles, err := ctx.InstallCpTemplateFiles(args)
+			templateFiles, err := ctx.InstallCpTemplateFiles(&args)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
 			}

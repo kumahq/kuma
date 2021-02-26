@@ -16,6 +16,8 @@ type XdsServerConfig struct {
 	DataplaneConfigurationRefreshInterval time.Duration `yaml:"dataplaneConfigurationRefreshInterval" envconfig:"kuma_xds_server_dataplane_configuration_refresh_interval"`
 	// Interval for flushing status of Dataplanes connected to the Control Plane
 	DataplaneStatusFlushInterval time.Duration `yaml:"dataplaneStatusFlushInterval" envconfig:"kuma_xds_server_dataplane_status_flush_interval"`
+	// Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
+	NACKBackoff time.Duration `yaml:"nackBackoff" envconfig:"kuma_xds_server_nack_backoff"`
 }
 
 func (x *XdsServerConfig) Sanitize() {
@@ -35,5 +37,6 @@ func DefaultXdsServerConfig() *XdsServerConfig {
 	return &XdsServerConfig{
 		DataplaneConfigurationRefreshInterval: 1 * time.Second,
 		DataplaneStatusFlushInterval:          10 * time.Second,
+		NACKBackoff:                           5 * time.Second,
 	}
 }

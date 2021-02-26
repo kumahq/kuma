@@ -1,11 +1,11 @@
 conf:
   imports:
-    - default-proxy
-creationTime: 0001-01-01T00:00:00Z
+  - default-proxy
+creationTime: "0001-01-01T00:00:00Z"
 mesh: default
-modificationTime: 0001-01-01T00:00:00Z
+modificationTime: "0001-01-01T00:00:00Z"
 name: proxytemplate-1
 selectors:
-  - match:
-      service: "backend"
+- match:
+    service: backend
 type: ProxyTemplate

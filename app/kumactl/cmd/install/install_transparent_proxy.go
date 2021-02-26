@@ -19,6 +19,7 @@ type transparenProxyArgs struct {
 	DryRun               bool
 	ModifyIptables       bool
 	RedirectPortOutBound string
+	RedirectInbound      bool
 	RedirectPortInBound  string
 	ExcludeInboundPorts  string
 	ExcludeOutboundPorts string
@@ -33,6 +34,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		DryRun:               false,
 		ModifyIptables:       true,
 		RedirectPortOutBound: "15001",
+		RedirectInbound:      true,
 		RedirectPortInBound:  "15006",
 		ExcludeInboundPorts:  "",
 		ExcludeOutboundPorts: "",
@@ -129,6 +131,7 @@ runuser -u kuma-dp -- \
 	cmd.Flags().BoolVar(&args.DryRun, "dry-run", args.DryRun, "dry run")
 	cmd.Flags().BoolVar(&args.ModifyIptables, "modify-iptables", args.ModifyIptables, "modify the host iptables to redirect the traffic to Envoy")
 	cmd.Flags().StringVar(&args.RedirectPortOutBound, "redirect-outbound-port", args.RedirectPortOutBound, "outbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortOutbound`")
+	cmd.Flags().BoolVar(&args.RedirectInbound, "redirect-inbound", args.RedirectInbound, "redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.")
 	cmd.Flags().StringVar(&args.RedirectPortInBound, "redirect-inbound-port", args.RedirectPortInBound, "inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInbound`")
 	cmd.Flags().StringVar(&args.ExcludeInboundPorts, "exclude-inbound-ports", args.ExcludeInboundPorts, "a comma separated list of inbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
@@ -164,6 +167,7 @@ func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 	output, err := tp.Setup(&config.TransparentProxyConfig{
 		DryRun:               args.DryRun,
 		RedirectPortOutBound: args.RedirectPortOutBound,
+		RedirectInBound:      args.RedirectInbound,
 		RedirectPortInBound:  args.RedirectPortInBound,
 		ExcludeInboundPorts:  args.ExcludeInboundPorts,
 		ExcludeOutboundPorts: args.ExcludeOutboundPorts,

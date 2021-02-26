@@ -40,7 +40,9 @@ func (s *serviceInsightEndpoints) findResource(request *restful.Request, respons
 	} else {
 		stat := serviceInsight.Spec.Services[service]
 		if stat == nil {
-			stat = &v1alpha1.ServiceInsight_DataplaneStat{}
+			stat = &v1alpha1.ServiceInsight_Service{
+				Dataplanes: &v1alpha1.ServiceInsight_Service_DataplaneStat{},
+			}
 		}
 		res := rest.From.Resource(serviceInsight)
 		res.Meta.Name = service

@@ -120,24 +120,22 @@ spec:
     name: init
     resources: {}
   - args:
-    - -p
+    - --redirect-outbound-port
     - "15001"
-    - -z
+    - --redirect-inbound=true
+    - --redirect-inbound-port
     - "15006"
-    - -u
+    - --kuma-dp-uid
     - "5678"
-    - -g
-    - "5678"
-    - -d
+    - --exclude-inbound-ports
     - 1234,1235
-    - -o
+    - --exclude-outbound-ports
     - "1236"
-    - -m
-    - REDIRECT
-    - -i
-    - '*'
-    - -b
-    - '*'
+    - --modify-resolv-conf=false
+    command:
+    - /usr/bin/kumactl
+    - install
+    - transparent-proxy
     image: kuma/kuma-init:latest
     imagePullPolicy: IfNotPresent
     name: kuma-init

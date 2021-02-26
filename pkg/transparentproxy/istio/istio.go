@@ -29,7 +29,9 @@ func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (stri
 	viper.Set(constants.ProxyUID, cfg.UID)
 	viper.Set(constants.ProxyGID, cfg.GID)
 	viper.Set(constants.InboundInterceptionMode, "REDIRECT")
-	viper.Set(constants.InboundPorts, "*")
+	if cfg.RedirectInBound {
+		viper.Set(constants.InboundPorts, "*")
+	}
 	viper.Set(constants.LocalExcludePorts, cfg.ExcludeInboundPorts)
 	viper.Set(constants.ServiceCidr, "*")
 	viper.Set(constants.LocalOutboundPortsExclude, cfg.ExcludeOutboundPorts)

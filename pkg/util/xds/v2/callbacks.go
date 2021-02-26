@@ -64,6 +64,10 @@ func (d *discoveryRequest) HasErrors() bool {
 	return d.ErrorDetail != nil
 }
 
+func (d *discoveryRequest) ErrorMsg() string {
+	return d.GetErrorDetail().GetMessage()
+}
+
 func (d *discoveryRequest) Proto() proto.Message {
 	return d
 }

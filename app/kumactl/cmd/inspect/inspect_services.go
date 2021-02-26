@@ -67,9 +67,9 @@ func printServiceInsights(overviews *mesh.ServiceOverviewResourceList, out io.Wr
 				}
 				overview := overviews.Items[i]
 				return []string{
-					overview.Meta.GetName(),                                         // SERVICE
-					overview.GetStatus().String(),                                   // STATUS
-					fmt.Sprintf("%d/%d", overview.Spec.Online, overview.Spec.Total), // DATAPLANES
+					overview.Meta.GetName(),       // SERVICE
+					overview.GetStatus().String(), // STATUS
+					fmt.Sprintf("%d/%d", overview.Spec.Dataplanes.Online, overview.Spec.Dataplanes.Total), // DATAPLANES
 				}
 			}
 		}(),

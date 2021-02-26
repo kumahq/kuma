@@ -13,6 +13,7 @@ type DiscoveryRequest interface {
 	GetTypeUrl() string
 	GetResponseNonce() string
 	HasErrors() bool
+	ErrorMsg() string
 }
 
 // DiscoveryResponse defines interface over real Envoy's DiscoveryResponse.
