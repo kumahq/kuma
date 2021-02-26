@@ -409,6 +409,8 @@ Available Commands:
   external-services   Show ExternalService
   fault-injection     Show a single FaultInjection resource
   fault-injections    Show FaultInjection
+  global-secret       Show a single GlobalSecret resource
+  global-secrets      Show GlobalSecret
   healthcheck         Show a single HealthCheck resource
   healthchecks        Show HealthCheck
   mesh                Show a single Mesh resource

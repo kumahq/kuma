@@ -1,19 +1,19 @@
 {
-    "mesh": "default",
-    "name": "proxytemplate-1",
-    "type": "ProxyTemplate",
-    "creationTime": "0001-01-01T00:00:00Z",
-    "modificationTime": "0001-01-01T00:00:00Z",
-    "selectors": [
-        {
-            "match": {
-                "service": "backend"
-            }
-        }
-    ],
-    "conf": {
-        "imports": [
-            "default-proxy"
-        ]
+  "type": "ProxyTemplate",
+  "mesh": "default",
+  "name": "proxytemplate-1",
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "selectors": [
+    {
+      "match": {
+        "service": "backend"
+      }
     }
+  ],
+  "conf": {
+    "imports": [
+      "default-proxy"
+    ]
+  }
 }

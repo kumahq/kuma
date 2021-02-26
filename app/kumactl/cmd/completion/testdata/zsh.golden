@@ -330,6 +330,8 @@ function _kumactl_get {
       "external-services:Show ExternalService"
       "fault-injection:Show a single FaultInjection resource"
       "fault-injections:Show FaultInjection"
+      "global-secret:Show a single GlobalSecret resource"
+      "global-secrets:Show GlobalSecret"
       "healthcheck:Show a single HealthCheck resource"
       "healthchecks:Show HealthCheck"
       "mesh:Show a single Mesh resource"
@@ -381,6 +383,12 @@ function _kumactl_get {
     ;;
   fault-injections)
     _kumactl_get_fault-injections
+    ;;
+  global-secret)
+    _kumactl_get_global-secret
+    ;;
+  global-secrets)
+    _kumactl_get_global-secrets
     ;;
   healthcheck)
     _kumactl_get_healthcheck
@@ -517,6 +525,22 @@ function _kumactl_get_fault-injections {
   _arguments \
     '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
     '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_global-secret {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_global-secrets {
+  _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
