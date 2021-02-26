@@ -95,7 +95,7 @@ services:
     # However, `ports` settings are incompatible with `network_mode: service:...`
     # and had to be moved here.
     ports:
-    - "8000:8000"
+    - "8000:80"
     networks:
       kuma-example:
         aliases:
@@ -112,16 +112,7 @@ services:
   # source and destination for network requests.
   #
   kuma-example-app:
-    image: kong:1.1.2-alpine
-    volumes:
-    - ./kong.yaml:/etc/kong/kong.yaml
-    environment:
-    - KONG_PROXY_LISTEN=127.0.0.1:8000
-    - KONG_ADMIN_LISTEN=off
-    - KONG_DATABASE=off
-    - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yaml
-    # the following setting instructs Docker Compose to add `kuma-example-app` container
-    # to the network namespace of `kuma-example-app-namespace` container
+    image: nginx:stable
     network_mode: service:kuma-example-app-namespace
     depends_on:
     - kuma-example-app-namespace
@@ -194,7 +185,7 @@ services:
     - --show-error
     - --include
     - --fail
-    - http://kuma-example-app:8000/request
+    - http://kuma-example-app:8000/
     # the following setting instructs Docker Compose to add `kuma-example-client` container
     # to the network namespace of `kuma-example-client-namespace` container
     network_mode: service:kuma-example-client-namespace
