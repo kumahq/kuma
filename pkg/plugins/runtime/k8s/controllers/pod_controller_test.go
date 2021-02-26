@@ -87,6 +87,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Pod{
@@ -103,6 +108,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Pod{
@@ -119,6 +129,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Service{
@@ -348,12 +363,14 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - port: 8080
+            - health: {} 
+              port: 8080
               tags:
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
-            - port: 6060
+            - health: {} 
+              port: 6060
               tags:
                 app: sample
                 kuma.io/service: example_demo_svc_6061
@@ -420,12 +437,14 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - port: 8080
+            - health: {} 
+              port: 8080
               tags:
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
-            - port: 6060
+            - health: {} 
+              port: 6060
               tags:
                 app: sample
                 kuma.io/service: example_demo_svc_6061

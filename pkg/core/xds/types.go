@@ -34,6 +34,9 @@ type ServiceName = string
 // RouteMap holds the most specific TrafficRoute for each outbound interface of a Dataplane.
 type RouteMap map[mesh_proto.OutboundInterface]*mesh_core.TrafficRouteResource
 
+// TimeoutMap holds the most specific TimeoutResource for each OutboundInterface
+type TimeoutMap map[mesh_proto.OutboundInterface]*mesh_core.TimeoutResource
+
 // TagSelectorSet is a set of unique TagSelectors.
 type TagSelectorSet []mesh_proto.TagSelector
 
@@ -94,6 +97,14 @@ type CLACache interface {
 	GetCLA(ctx context.Context, meshName, meshHash, service string, apiVersion envoy_common.APIVersion) (proto.Message, error)
 }
 
+// SocketAddressProtocol is the L4 protocol the listener should bind to
+type SocketAddressProtocol int32
+
+const (
+	SocketAddressProtocolTCP SocketAddressProtocol = 0
+	SocketAddressProtocolUDP SocketAddressProtocol = 1
+)
+
 type Proxy struct {
 	Id         ProxyId
 	APIVersion envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
@@ -121,6 +132,7 @@ type MatchedPolicies struct {
 	TrafficTrace       *mesh_core.TrafficTraceResource
 	TracingBackend     *mesh_proto.TracingBackend
 	FaultInjections    FaultInjectionMap
+	Timeouts           TimeoutMap
 }
 
 type CaSecret struct {

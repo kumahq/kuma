@@ -15,150 +15,148 @@ metadata:
   name: busybox
 spec:
   containers:
-    - image: busybox
-      livenessProbe:
-        httpGet:
-          path: /8080/metrics
-          port: 19000
-        initialDelaySeconds: 3
-        periodSeconds: 3
-      name: busybox
-      readinessProbe:
-        httpGet:
-          path: /3001/metrics
-          port: 19000
-        initialDelaySeconds: 3
-        periodSeconds: 3
-      resources: {}
-      volumeMounts:
-        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-          name: default-token-w7dxf
-          readOnly: true
-    - args:
-        - run
-        - --log-level=info
-      env:
-        - name: POD_NAME
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.name
-        - name: POD_NAMESPACE
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: metadata.namespace
-        - name: INSTANCE_IP
-          valueFrom:
-            fieldRef:
-              apiVersion: v1
-              fieldPath: status.podIP
-        - name: KUMA_CONTROL_PLANE_URL
-          value: http://kuma-control-plane.kuma-system:5681
-        - name: KUMA_DATAPLANE_MESH
-          value: default
-        - name: KUMA_DATAPLANE_NAME
-          value: $(POD_NAME).$(POD_NAMESPACE)
-        - name: KUMA_DATAPLANE_ADMIN_PORT
-          value: "9901"
-        - name: KUMA_DATAPLANE_DRAIN_TIME
-          value: 31s
-        - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
-          value: /var/run/secrets/kubernetes.io/serviceaccount/token
-        - name: KUMA_CONTROL_PLANE_CA_CERT
-          value: |
-            -----BEGIN CERTIFICATE-----
-            MIIDLDCCAhSgAwIBAgIQHdPhxOfXgWuNxoFlV/EwqTANBgkqhkiG9w0BAQsFADAP
-            MQ0wCwYDVQQDEwRrdW1hMB4XDTIwMDkxNjEyMjg0NFoXDTMwMDkxNDEyMjg0NFow
-            DzENMAsGA1UEAxMEa3VtYTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
-            AOZGbWhSlQSRxFNt5p/2WCKFyHZ3CuwNgyLEP7nS4ZXykxsFbYSuV3bIgF7bT/uq
-            a5Qire+C60guhFbpLcPh2Z6UfgId69GlQzHMVYcmLGjVQuyAt4FMMkTfVEl5I4Oa
-            +2it3BvihVkKhUz8y5RR5KbqJfGp4Z20Fh6fttoCFbeODmvBsYJFmUQS+ifoyMY/
-            P3R03Su7g5iIvnz7tmkydoNC8nGRDzdD5C8fJvrVI1UX6JRGyLKt45oQXt1mxK10
-            5KaN2zNV2WtHsaJp9bwrPH+JiZGeZyvuh5UwrLdHCmqK7sm9TodGztUZY0VzAc4q
-            kYViXY8gUjfNm+cQrPO1kN8CAwEAAaOBgzCBgDAOBgNVHQ8BAf8EBAMCAqQwHQYD
-            VR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wHQYD
-            VR0OBBYEFGMDBPPiBFJ3mv2oA9CTqjemFTV2MB8GA1UdEQQYMBaCCWxvY2FsaG9z
-            dIIJbG9jYWxob3N0MA0GCSqGSIb3DQEBCwUAA4IBAQC/17QweOpGdb1MEBJ8XPG7
-            3sK/utoWLX1tjf8Su1Dga6CDT/eTWHZrWRf81KOVY07dle5SRIDK1QhfbGGtFP+T
-            vZkroousI9US2aCWlkeCZWGTnqvLmDoOujqagDoKRRuk4mQdtNNonxiL/wZtTFKi
-            +1iNjUVbLWiDXdBLxoRIVdLOzqb/MNxwElUyaTDAkopQyOWaTDkYPrGmaWjcsfPG
-            aOKow0ze+zHVFqTHbjnCqEV3hnsUyRUwsBln9+jDJXgwZM/tMlVJrZCh0Sle9Y5Z
-            MOB0fCf6sTMNRTGg5Lpl6uIYM/5INpmHVMo3n7MBSnpEDAUS2bf/uo5gIiq6XCdp
-            -----END CERTIFICATE-----
-      image: kuma/kuma-sidecar:latest
-      imagePullPolicy: IfNotPresent
-      livenessProbe:
-        httpGet:
-          path: /ready
-          port: 9901
-        failureThreshold: 212
-        initialDelaySeconds: 260
-        periodSeconds: 25
-        successThreshold: 1
-        timeoutSeconds: 23
-      name: kuma-sidecar
-      readinessProbe:
-        httpGet:
-          path: /ready
-          port: 9901
-        failureThreshold: 112
-        initialDelaySeconds: 11
-        periodSeconds: 15
-        successThreshold: 11
-        timeoutSeconds: 13
-      resources:
-        limits:
-          cpu: 1100m
-          memory: 1512Mi
-        requests:
-          cpu: 150m
-          memory: 164Mi
-      securityContext:
-        runAsGroup: 5678
-        runAsUser: 5678
-      volumeMounts:
-        - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
-          name: default-token-w7dxf
-          readOnly: true
+  - image: busybox
+    livenessProbe:
+      httpGet:
+        path: /8080/metrics
+        port: 19000
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    name: busybox
+    readinessProbe:
+      httpGet:
+        path: /3001/metrics
+        port: 19000
+      initialDelaySeconds: 3
+      periodSeconds: 3
+    resources: {}
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
+  - args:
+    - run
+    - --log-level=info
+    env:
+    - name: POD_NAME
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.name
+    - name: POD_NAMESPACE
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: metadata.namespace
+    - name: INSTANCE_IP
+      valueFrom:
+        fieldRef:
+          apiVersion: v1
+          fieldPath: status.podIP
+    - name: KUMA_CONTROL_PLANE_CA_CERT
+      value: |
+        -----BEGIN CERTIFICATE-----
+        MIIDLDCCAhSgAwIBAgIQHdPhxOfXgWuNxoFlV/EwqTANBgkqhkiG9w0BAQsFADAP
+        MQ0wCwYDVQQDEwRrdW1hMB4XDTIwMDkxNjEyMjg0NFoXDTMwMDkxNDEyMjg0NFow
+        DzENMAsGA1UEAxMEa3VtYTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+        AOZGbWhSlQSRxFNt5p/2WCKFyHZ3CuwNgyLEP7nS4ZXykxsFbYSuV3bIgF7bT/uq
+        a5Qire+C60guhFbpLcPh2Z6UfgId69GlQzHMVYcmLGjVQuyAt4FMMkTfVEl5I4Oa
+        +2it3BvihVkKhUz8y5RR5KbqJfGp4Z20Fh6fttoCFbeODmvBsYJFmUQS+ifoyMY/
+        P3R03Su7g5iIvnz7tmkydoNC8nGRDzdD5C8fJvrVI1UX6JRGyLKt45oQXt1mxK10
+        5KaN2zNV2WtHsaJp9bwrPH+JiZGeZyvuh5UwrLdHCmqK7sm9TodGztUZY0VzAc4q
+        kYViXY8gUjfNm+cQrPO1kN8CAwEAAaOBgzCBgDAOBgNVHQ8BAf8EBAMCAqQwHQYD
+        VR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wHQYD
+        VR0OBBYEFGMDBPPiBFJ3mv2oA9CTqjemFTV2MB8GA1UdEQQYMBaCCWxvY2FsaG9z
+        dIIJbG9jYWxob3N0MA0GCSqGSIb3DQEBCwUAA4IBAQC/17QweOpGdb1MEBJ8XPG7
+        3sK/utoWLX1tjf8Su1Dga6CDT/eTWHZrWRf81KOVY07dle5SRIDK1QhfbGGtFP+T
+        vZkroousI9US2aCWlkeCZWGTnqvLmDoOujqagDoKRRuk4mQdtNNonxiL/wZtTFKi
+        +1iNjUVbLWiDXdBLxoRIVdLOzqb/MNxwElUyaTDAkopQyOWaTDkYPrGmaWjcsfPG
+        aOKow0ze+zHVFqTHbjnCqEV3hnsUyRUwsBln9+jDJXgwZM/tMlVJrZCh0Sle9Y5Z
+        MOB0fCf6sTMNRTGg5Lpl6uIYM/5INpmHVMo3n7MBSnpEDAUS2bf/uo5gIiq6XCdp
+        -----END CERTIFICATE-----
+    - name: KUMA_CONTROL_PLANE_URL
+      value: http://kuma-control-plane.kuma-system:5681
+    - name: KUMA_DATAPLANE_ADMIN_PORT
+      value: "9901"
+    - name: KUMA_DATAPLANE_DRAIN_TIME
+      value: 31s
+    - name: KUMA_DATAPLANE_MESH
+      value: default
+    - name: KUMA_DATAPLANE_NAME
+      value: $(POD_NAME).$(POD_NAMESPACE)
+    - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
+      value: /var/run/secrets/kubernetes.io/serviceaccount/token
+    image: kuma/kuma-sidecar:latest
+    imagePullPolicy: IfNotPresent
+    livenessProbe:
+      failureThreshold: 212
+      httpGet:
+        path: /ready
+        port: 9901
+      initialDelaySeconds: 260
+      periodSeconds: 25
+      successThreshold: 1
+      timeoutSeconds: 23
+    name: kuma-sidecar
+    readinessProbe:
+      failureThreshold: 112
+      httpGet:
+        path: /ready
+        port: 9901
+      initialDelaySeconds: 11
+      periodSeconds: 15
+      successThreshold: 11
+      timeoutSeconds: 13
+    resources:
+      limits:
+        cpu: 1100m
+        memory: 1512Mi
+      requests:
+        cpu: 150m
+        memory: 164Mi
+    securityContext:
+      runAsGroup: 5678
+      runAsUser: 5678
+    volumeMounts:
+    - mountPath: /var/run/secrets/kubernetes.io/serviceaccount
+      name: default-token-w7dxf
+      readOnly: true
   initContainers:
-    - args:
-        - -p
-        - "15001"
-        - -z
-        - "15006"
-        - -u
-        - "5678"
-        - -g
-        - "5678"
-        - -d
-        - ""
-        - -o
-        - ""
-        - -m
-        - REDIRECT
-        - -i
-        - '*'
-        - -b
-        - '*'
-      image: kuma/kuma-init:latest
-      imagePullPolicy: IfNotPresent
-      name: kuma-init
-      resources:
-        limits:
-          cpu: 100m
-          memory: 50M
-        requests:
-          cpu: 10m
-          memory: 10M
-      securityContext:
-        capabilities:
-          add:
-            - NET_ADMIN
-        runAsGroup: 0
-        runAsUser: 0
+  - args:
+    - --redirect-outbound-port
+    - "15001"
+    - --redirect-inbound=true
+    - --redirect-inbound-port
+    - "15006"
+    - --kuma-dp-uid
+    - "5678"
+    - --exclude-inbound-ports
+    - ""
+    - --exclude-outbound-ports
+    - ""
+    - --modify-resolv-conf=false
+    command:
+    - /usr/bin/kumactl
+    - install
+    - transparent-proxy
+    image: kuma/kuma-init:latest
+    imagePullPolicy: IfNotPresent
+    name: kuma-init
+    resources:
+      limits:
+        cpu: 100m
+        memory: 50M
+      requests:
+        cpu: 10m
+        memory: 10M
+    securityContext:
+      capabilities:
+        add:
+        - NET_ADMIN
+      runAsGroup: 0
+      runAsUser: 0
   volumes:
-    - name: default-token-w7dxf
-      secret:
-        secretName: default-token-w7dxf
+  - name: default-token-w7dxf
+    secret:
+      secretName: default-token-w7dxf
 status: {}

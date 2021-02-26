@@ -27,6 +27,7 @@ import (
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap"
 )
@@ -148,11 +149,7 @@ var _ = Describe("Bootstrap Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.expectedConfigFile))
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(received).To(MatchYAML(expected))
+			Expect(received).To(matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedConfigFile)))
 		},
 		Entry("minimal data provided (universal)", testCase{
 			dataplaneName:      "dp-1",

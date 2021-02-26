@@ -3,6 +3,9 @@ package accesslogs
 import (
 	"fmt"
 	"net"
+	"os"
+
+	"github.com/pkg/errors"
 
 	v2 "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs/v2"
 	v3 "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs/v3"
@@ -40,10 +43,29 @@ func (s *accessLogServer) Start(stop <-chan struct{}) error {
 	v2.RegisterAccessLogServer(s.server)
 	v3.RegisterAccessLogServer(s.server)
 
+	_, err := os.Stat(s.address)
+	if err == nil {
+		// File is accessible try to rename it to verify it is not open
+		newName := s.address + ".bak"
+		err := os.Rename(s.address, newName)
+		if err != nil {
+			return errors.Errorf("file %s exists and probably opened by another kuam-dp instance", s.address)
+		}
+		err = os.Remove(newName)
+		if err != nil {
+			return errors.Errorf("not able the delete the backup file %s", newName)
+		}
+	}
+
 	lis, err := net.Listen("unix", s.address)
 	if err != nil {
 		return err
 	}
+
+	defer func() {
+		lis.Close()
+	}()
+
 	logger.Info("starting Access Log Server", "address", fmt.Sprintf("unix://%s", s.address))
 	errCh := make(chan error, 1)
 	go func() {

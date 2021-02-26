@@ -67,16 +67,44 @@ var _ = Describe("Service Insight Endpoints", func() {
 
 	BeforeEach(func() {
 		createServiceInsight("all-services-mesh-1", "mesh-1", &mesh_proto.ServiceInsight{
-			Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{
-				"backend":  {Total: 100, Online: 70, Offline: 30},
-				"frontend": {Total: 20, Online: 19, Offline: 1},
+			Services: map[string]*mesh_proto.ServiceInsight_Service{
+				"backend": {
+					Status: mesh_proto.ServiceInsight_Service_partially_degraded,
+					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
+						Total:   100,
+						Online:  70,
+						Offline: 30,
+					},
+				},
+				"frontend": {
+					Status: mesh_proto.ServiceInsight_Service_partially_degraded,
+					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
+						Total:   20,
+						Online:  19,
+						Offline: 1,
+					},
+				},
 			},
 		})
 
 		createServiceInsight("all-services-mesh-2", "mesh-2", &mesh_proto.ServiceInsight{
-			Services: map[string]*mesh_proto.ServiceInsight_DataplaneStat{
-				"db":    {Total: 10, Online: 9, Offline: 1},
-				"redis": {Total: 22, Online: 19, Offline: 3},
+			Services: map[string]*mesh_proto.ServiceInsight_Service{
+				"db": {
+					Status: mesh_proto.ServiceInsight_Service_partially_degraded,
+					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
+						Total:   10,
+						Online:  9,
+						Offline: 1,
+					},
+				},
+				"redis": {
+					Status: mesh_proto.ServiceInsight_Service_partially_degraded,
+					Dataplanes: &mesh_proto.ServiceInsight_Service_DataplaneStat{
+						Total:   22,
+						Online:  19,
+						Offline: 3,
+					},
+				},
 			},
 		})
 	})
@@ -93,9 +121,12 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  "name": "backend",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "total": 100,
-	  "online": 70,
-	  "offline": 30
+	  "status": "partially_degraded",
+	  "dataplanes": {
+	  	"total": 100,
+	  	"online": 70,
+	  	"offline": 30
+      }
 	},
 	{
 	  "type": "ServiceInsight",
@@ -103,9 +134,12 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  "name": "frontend",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "total": 20,
-	  "online": 19,
-	  "offline": 1
+      "status": "partially_degraded",
+      "dataplanes": {
+        "total": 20,
+        "online": 19,
+        "offline": 1
+      }
 	}
   ],
   "next": null
@@ -130,9 +164,12 @@ var _ = Describe("Service Insight Endpoints", func() {
   "name": "backend",
   "creationTime": "2018-07-17T16:05:36.995Z",
   "modificationTime": "2018-07-17T16:05:36.995Z",
-  "total": 100,
-  "online": 70,
-  "offline": 30
+  "status": "partially_degraded",
+  "dataplanes": {
+    "total": 100,
+    "online": 70,
+    "offline": 30
+  }
 }`
 
 			// when
@@ -177,9 +214,12 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  "name": "backend",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "total": 100,
-	  "online": 70,
-	  "offline": 30
+      "status": "partially_degraded",
+      "dataplanes": {
+	    "total": 100,
+	    "online": 70,
+	    "offline": 30
+      }
 	},
 	{
 	  "type": "ServiceInsight",
@@ -187,9 +227,12 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  "name": "frontend",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "total": 20,
-	  "online": 19,
-	  "offline": 1
+      "status": "partially_degraded",
+      "dataplanes": {
+	    "total": 20,
+	    "online": 19,
+	    "offline": 1
+      }
 	},
 	{
 	  "type": "ServiceInsight",
@@ -197,9 +240,12 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  "name": "db",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "total": 10,
-	  "online": 9,
-	  "offline": 1
+      "status": "partially_degraded",
+      "dataplanes": {
+	    "total": 10,
+	    "online": 9,
+	    "offline": 1
+      }
 	},
 	{
 	  "type": "ServiceInsight",
@@ -207,9 +253,12 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  "name": "redis",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "total": 22,
-	  "online": 19,
-	  "offline": 3
+      "status": "partially_degraded",
+      "dataplanes": {
+	    "total": 22,
+	    "online": 19,
+	    "offline": 3
+      }
 	}
   ],
   "next": null
@@ -228,9 +277,12 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  "name": "backend",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "total": 100,
-	  "online": 70,
-	  "offline": 30
+      "status": "partially_degraded",
+      "dataplanes": {
+	    "total": 100,
+	    "online": 70,
+	    "offline": 30
+      }
 	},
 	{
 	  "type": "ServiceInsight",
@@ -238,9 +290,12 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  "name": "frontend",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "total": 20,
-	  "online": 19,
-	  "offline": 1
+      "status": "partially_degraded",
+      "dataplanes": {
+	    "total": 20,
+	    "online": 19,
+	    "offline": 1
+      }
 	}
   ],
   "next": "http://{{address}}/service-insights?offset=2&size=2"
@@ -259,9 +314,12 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  "name": "db",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "total": 10,
-	  "online": 9,
-	  "offline": 1
+      "status": "partially_degraded",
+      "dataplanes": {
+	    "total": 10,
+	    "online": 9,
+	    "offline": 1
+      }
 	},
 	{
 	  "type": "ServiceInsight",
@@ -269,9 +327,12 @@ var _ = Describe("Service Insight Endpoints", func() {
 	  "name": "redis",
 	  "creationTime": "2018-07-17T16:05:36.995Z",
 	  "modificationTime": "2018-07-17T16:05:36.995Z",
-	  "total": 22,
-	  "online": 19,
-	  "offline": 3
+      "status": "partially_degraded",
+      "dataplanes": {
+	    "total": 22,
+	    "online": 19,
+	    "offline": 3
+      }
 	}
   ],
   "next": null

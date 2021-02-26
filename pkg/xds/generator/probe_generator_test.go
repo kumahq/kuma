@@ -38,7 +38,7 @@ var _ = Describe("ProbeGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 			}
 
 			// when

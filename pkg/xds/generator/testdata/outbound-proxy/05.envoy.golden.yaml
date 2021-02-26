@@ -1,8 +1,8 @@
 resources:
 - name: es
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
-    connectTimeout: 5s
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
     lbSubsetConfig:
       fallbackPolicy: ANY_ENDPOINT
       subsetSelectors:
@@ -27,20 +27,24 @@ resources:
                 kuma.io/protocol: http
     name: es
     type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
 - name: outbound:127.0.0.1:18081
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 127.0.0.1
         portValue: 18081
-    deprecatedV1:
-      bindToPort: false
+    bindToPort: false
     filterChains:
     - filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
           - name: envoy.filters.http.router
           routeConfig:

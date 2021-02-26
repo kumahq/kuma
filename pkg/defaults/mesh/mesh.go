@@ -44,6 +44,16 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default TrafficRoute already exist", "mesh", meshName, "name", defaultTrafficRouteKey(meshName).Name)
 	}
 
+	err, created = ensureDefaultTimeout(resManager, meshName)
+	if err != nil {
+		return errors.Wrap(err, "could not create default Timeout")
+	}
+	if created {
+		log.Info("default Timeout created", "mesh", meshName, "name", defaultTimeoutKey(meshName).Name)
+	} else {
+		log.Info("default Timeout already exist", "mesh", meshName, "name", defaultTimeoutKey(meshName).Name)
+	}
+
 	created, err = ensureDataplaneTokenSigningKey(resManager, meshName)
 	if err != nil {
 		return errors.Wrap(err, "could not create default Dataplane Token Signing Key")

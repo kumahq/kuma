@@ -36,9 +36,24 @@ Create or modify Kuma resources.
 Usage:
   kumactl apply [flags]
 
+Examples:
+
+Apply a resource from file
+$ kumactl apply -f resource.yaml
+
+Apply a resource from stdin
+$ echo "
+type: Mesh
+name: demo
+" | kumactl apply -f -
+
+Apply a resource from external URL
+$ kumactl apply -f https://example.com/resource.yaml
+
+
 Flags:
       --dry-run              Resolve variable and prints result out without actual applying
-  -f, --file string          Path to file to apply
+  -f, --file -               Path to file to apply. Pass - to read from stdin
   -h, --help                 help for apply
   -v, --var stringToString   Variable to replace in configuration (default [])
 
@@ -404,6 +419,8 @@ Available Commands:
   retry               Show a single Retry resource
   secret              Show a single Secret resource
   secrets             Show Secret
+  timeout             Show a single Timeout resource
+  timeouts            Show Timeout
   traffic-log         Show a single TrafficLog resource
   traffic-logs        Show TrafficLog
   traffic-permission  Show a single TrafficPermission resource

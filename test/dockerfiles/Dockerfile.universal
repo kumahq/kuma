@@ -1,7 +1,7 @@
 # using Envoy's base to copy the Envoy binary
 FROM envoyproxy/envoy-alpine:v1.17.0 as envoy
 
-FROM ubuntu:bionic as builder
+FROM ubuntu:focal as builder
 
 ENV GOVERSION 1.15.6
 ENV GOROOT /opt/go

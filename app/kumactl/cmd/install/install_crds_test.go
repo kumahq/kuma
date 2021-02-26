@@ -2,7 +2,6 @@ package install_test
 
 import (
 	"bytes"
-	"io/ioutil"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -10,7 +9,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
 
 var _ = Describe("kumactl install crds", func() {
@@ -43,25 +41,8 @@ var _ = Describe("kumactl install crds", func() {
 			Expect(stderr.Bytes()).To(BeNil())
 
 			// when
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			expectedManifests := data.SplitYAML(data.File{Data: expected})
-
-			// when
 			actual := stdout.Bytes()
-			// then
-			Expect(actual).To(MatchYAML(expected))
-			// and
-			actualManifests := data.SplitYAML(data.File{Data: actual})
-
-			// and
-			Expect(len(actualManifests)).To(Equal(len(expectedManifests)))
-			// and
-			for i := range expectedManifests {
-				Expect(actualManifests[i]).To(MatchYAML(expectedManifests[i]))
-			}
+			ExpectMatchesGoldenFiles(actual, filepath.Join("testdata", given.goldenFile))
 		},
 		Entry("should generate all Kuma's CRD resources", testCase{
 			extraArgs:  nil,

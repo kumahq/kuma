@@ -1,7 +1,7 @@
 resources:
 - name: backend
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: backend
     endpoints:
     - lbEndpoints:
@@ -39,11 +39,12 @@ resources:
               version: v2
 - name: backend
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Cluster
-    connectTimeout: 5s
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
+        resourceApiVersion: V3
     lbSubsetConfig:
       fallbackPolicy: ANY_ENDPOINT
       subsetSelectors:
@@ -54,7 +55,7 @@ resources:
     type: EDS
 - name: inbound:10.0.0.1:10001
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 10.0.0.1
@@ -67,7 +68,7 @@ resources:
       filters:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: backend
           metadataMatch:
             filterMetadata:

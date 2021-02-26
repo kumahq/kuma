@@ -1,7 +1,7 @@
 resources:
 - name: kuma:metrics:prometheus
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.Listener
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
         address: 192.168.0.1
@@ -14,7 +14,7 @@ resources:
       filters:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
           - name: envoy.filters.http.router
           routeConfig:
@@ -22,7 +22,7 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: kuma_metrics_prometheus
+              name: kuma:metrics:prometheus
               routes:
               - match:
                   prefix: /non-standard-path
@@ -33,12 +33,12 @@ resources:
     - filters:
       - name: envoy.filters.network.rbac
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.rbac.v2.RBAC
+          '@type': type.googleapis.com/envoy.extensions.filters.network.rbac.v3.RBAC
           rules: {}
           statPrefix: kuma_metrics_prometheus.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
-          '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           httpFilters:
           - name: envoy.filters.http.router
           routeConfig:
@@ -46,7 +46,7 @@ resources:
             virtualHosts:
             - domains:
               - '*'
-              name: kuma_metrics_prometheus
+              name: kuma:metrics:prometheus
               routes:
               - match:
                   prefix: /non-standard-path
@@ -57,7 +57,7 @@ resources:
       transportSocket:
         name: envoy.transport_sockets.tls
         typedConfig:
-          '@type': type.googleapis.com/envoy.api.v2.auth.DownstreamTlsContext
+          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.DownstreamTlsContext
           commonTlsContext:
             combinedValidationContext:
               defaultValidationContext:
@@ -76,6 +76,8 @@ resources:
                               inlineBytes: MTIzNDU=
                         statPrefix: sds_mesh_ca
                         targetUri: kuma-system:5677
+                    transportApiVersion: V3
+                  resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
@@ -89,6 +91,8 @@ resources:
                             inlineBytes: MTIzNDU=
                       statPrefix: sds_identity_cert
                       targetUri: kuma-system:5677
+                  transportApiVersion: V3
+                resourceApiVersion: V3
           requireClientCertificate: true
     name: kuma:metrics:prometheus
     trafficDirection: INBOUND

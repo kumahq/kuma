@@ -131,14 +131,16 @@ func SourceMatcher(address string) FilterChainBuilderOpt {
 	})
 }
 
-func InboundListener(listenerName string, address string, port uint32) ListenerBuilderOpt {
+func InboundListener(listenerName string, address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
 	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
 		config.AddV2(&v2.InboundListenerConfigurer{
+			Protocol:     protocol,
 			ListenerName: listenerName,
 			Address:      address,
 			Port:         port,
 		})
 		config.AddV3(&v3.InboundListenerConfigurer{
+			Protocol:     protocol,
 			ListenerName: listenerName,
 			Address:      address,
 			Port:         port,
@@ -342,5 +344,18 @@ func Retry(
 				Protocol: protocol,
 			})
 		}
+	})
+}
+
+func Timeout(timeout *mesh_proto.Timeout_Conf, protocol mesh_core.Protocol) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+		config.AddV2(&v2.TimeoutConfigurer{
+			Conf:     timeout,
+			Protocol: protocol,
+		})
+		config.AddV3(&v3.TimeoutConfigurer{
+			Conf:     timeout,
+			Protocol: protocol,
+		})
 	})
 }

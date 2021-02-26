@@ -78,7 +78,7 @@ var _ = Describe("Config WS", func() {
             "readOnly": false
           },
           "bootstrapServer": {
-            "apiVersion": "v2",
+            "apiVersion": "v3",
             "params": {
               "adminAccessLogPath": "/dev/null",
               "adminAddress": "127.0.0.1",
@@ -160,6 +160,7 @@ var _ = Describe("Config WS", func() {
                   "image": "kuma/kuma-init:latest"
                 },
                 "sidecarContainer": {
+                  "envVars": {},
                   "adminPort": 9901,
                   "drainTime": "30s",
                   "gid": 5678,
@@ -267,7 +268,8 @@ var _ = Describe("Config WS", func() {
           },
           "xdsServer": {
             "dataplaneConfigurationRefreshInterval": "1s",
-            "dataplaneStatusFlushInterval": "10s"
+            "dataplaneStatusFlushInterval": "10s",
+            "nackBackoff": "5s"
           },
           "diagnostics": {
             "serverPort": 5680,

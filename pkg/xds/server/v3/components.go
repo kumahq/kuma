@@ -58,6 +58,7 @@ func RegisterXDS(
 		util_xds_v3.AdaptCallbacks(metadataTracker),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.NewDataplaneLifecycle(rt.ResourceManager())),
 		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt)),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff)),
 		newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
 	}
 

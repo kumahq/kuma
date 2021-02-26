@@ -50,23 +50,32 @@ var _ = Describe("kumactl inspect services", func() {
 	serviceOverviewResources := []*core_mesh.ServiceOverviewResource{
 		{
 			Meta: &model.ResourceMeta{Mesh: "mesh-1", Name: "backend"},
-			Spec: &v1alpha1.ServiceInsight_DataplaneStat{
-				Online: 5,
-				Total:  10,
+			Spec: &v1alpha1.ServiceInsight_Service{
+				Status: v1alpha1.ServiceInsight_Service_partially_degraded,
+				Dataplanes: &v1alpha1.ServiceInsight_Service_DataplaneStat{
+					Online: 5,
+					Total:  10,
+				},
 			},
 		},
 		{
 			Meta: &model.ResourceMeta{Mesh: "mesh-1", Name: "web"},
-			Spec: &v1alpha1.ServiceInsight_DataplaneStat{
-				Online: 20,
-				Total:  20,
+			Spec: &v1alpha1.ServiceInsight_Service{
+				Status: v1alpha1.ServiceInsight_Service_online,
+				Dataplanes: &v1alpha1.ServiceInsight_Service_DataplaneStat{
+					Online: 20,
+					Total:  20,
+				},
 			},
 		},
 		{
 			Meta: &model.ResourceMeta{Mesh: "mesh-1", Name: "orders"},
-			Spec: &v1alpha1.ServiceInsight_DataplaneStat{
-				Online: 0,
-				Total:  5,
+			Spec: &v1alpha1.ServiceInsight_Service{
+				Status: v1alpha1.ServiceInsight_Service_offline,
+				Dataplanes: &v1alpha1.ServiceInsight_Service_DataplaneStat{
+					Online: 0,
+					Total:  5,
+				},
 			},
 		},
 	}

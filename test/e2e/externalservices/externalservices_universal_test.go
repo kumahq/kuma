@@ -87,7 +87,7 @@ networking:
 		err = NewClusterSetup().
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
-			Install(DemoClientUniversal("default", demoClientToken)).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 

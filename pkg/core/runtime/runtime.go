@@ -4,10 +4,10 @@ import (
 	"context"
 	"sync"
 
-	"github.com/kumahq/kuma/pkg/envoy/admin"
-
 	api_server "github.com/kumahq/kuma/pkg/api-server/customization"
 	dp_server "github.com/kumahq/kuma/pkg/dp-server/server"
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -61,6 +61,7 @@ type RuntimeContext interface {
 	APIInstaller() api_server.APIInstaller
 	XDSHooks() *xds_hooks.Hooks
 	DpServer() *dp_server.DpServer
+	KDSContext() *kds_context.Context
 }
 
 var _ Runtime = &runtime{}
@@ -118,6 +119,7 @@ type runtimeContext struct {
 	apim     api_server.APIInstaller
 	xdsh     *xds_hooks.Hooks
 	dps      *dp_server.DpServer
+	kdsctx   *kds_context.Context
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -193,4 +195,8 @@ func (rc *runtimeContext) DpServer() *dp_server.DpServer {
 
 func (rc *runtimeContext) XDSHooks() *xds_hooks.Hooks {
 	return rc.xdsh
+}
+
+func (rc *runtimeContext) KDSContext() *kds_context.Context {
+	return rc.kdsctx
 }

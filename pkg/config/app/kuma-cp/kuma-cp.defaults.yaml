@@ -66,7 +66,7 @@ store:
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
   # The version of Envoy API (available: "v2", "v3")
-  apiVersion: v2
+  apiVersion: v3
   # Parameters of bootstrap configuration
   params:
     # Address of Envoy Admin
@@ -100,6 +100,8 @@ xdsServer:
   dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
   # Interval for flushing status of Dataplanes connected to the Control Plane
   dataplaneStatusFlushInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
+  # Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
+  nackBackoff: 5s # ENV: KUMA_XDS_SERVER_NACK_BACKOFF
 
 # API Server configuration
 apiServer:
@@ -231,6 +233,8 @@ runtime:
             cpu: 1000m # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
             # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
             memory: 512Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
+        # Additional environment variables that can be placed on Kuma DP sidecar
+        envVars: # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS
       # InitContainer defines configuration of the Kuma init container
       initContainer:
         # Image name.
