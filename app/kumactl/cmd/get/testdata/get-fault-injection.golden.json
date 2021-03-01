@@ -1,21 +1,21 @@
 {
-    "type": "FaultInjection",
-    "mesh": "default",
-    "name": "fault-injection-1",
-    "creationTime": "0001-01-01T00:00:00Z",
-    "modificationTime": "0001-01-01T00:00:00Z",
-    "sources": [
-        {
-            "match": {
-                "service": "frontend",
-                "version": "0.1"
-            }
-        }
-    ],
-    "conf": {
-        "abort": {
-            "percentage": 50,
-            "httpStatus": 500
-        }
+  "type": "FaultInjection",
+  "mesh": "default",
+  "name": "fault-injection-1",
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "sources": [
+    {
+      "match": {
+        "service": "frontend",
+        "version": "0.1"
+      }
     }
+  ],
+  "conf": {
+    "abort": {
+      "percentage": 50,
+      "httpStatus": 500
+    }
+  }
 }

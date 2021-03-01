@@ -127,6 +127,44 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(secret.Meta.GetVersion()))
 		})
 
+		It("should create a new global secret", func() {
+			// given
+			secret := &secret_model.GlobalSecretResource{
+				Spec: &system_proto.Secret{
+					Data: &wrappers.BytesValue{
+						Value: []byte("example"),
+					},
+				},
+			}
+			expected := backend.ParseYAML(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/global-secret
+            data:
+              value: ZXhhbXBsZQ== # base64(example)
+`).(*kube_core.Secret)
+
+			// when
+			err := s.Create(context.Background(), secret, store.CreateByKey(name, noMesh))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(secret.Meta.GetName()).To(Equal(name))
+			Expect(secret.Meta.GetMesh()).To(Equal(noMesh))
+			Expect(secret.Meta.GetVersion()).ToNot(Equal(""))
+
+			// when
+			actual := kube_core.Secret{}
+			backend.Get(&actual, ns, name)
+
+			// then
+			Expect(actual.Data).To(Equal(expected.Data))
+			Expect(actual.Type).To(Equal(expected.Type))
+			// and
+			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(secret.Meta.GetVersion()))
+		})
+
 		It("should not create a duplicate resource", func() {
 			// setup
 			backend.AssertNotExists(&kube_core.Secret{}, "ignored", name)
@@ -175,6 +213,58 @@ var _ = Describe("KubernetesStore", func() {
 
 			// when
 			err := s.Get(context.Background(), secret, store.GetByKey(name, "demo"))
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			version := secret.Meta.GetVersion()
+
+			// when
+			secret.Spec.Data.Value = []byte("another")
+			err = s.Update(context.Background(), secret)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(secret.Meta.GetVersion()).ToNot(Equal(""))
+			Expect(secret.Meta.GetVersion()).ToNot(Equal(version))
+
+			// when
+			actual := kube_core.Secret{}
+			backend.Get(&actual, ns, name)
+
+			// then
+			Expect(actual.Data).To(Equal(expected.Data))
+			Expect(actual.Type).To(Equal(expected.Type))
+			// and
+			Expect(actual.ObjectMeta.ResourceVersion).To(Equal(secret.Meta.GetVersion()))
+		})
+
+		It("should update an existing global secret", func() {
+			// setup
+			initial := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/global-secret
+            metadata:
+              namespace: %s
+              name: %s
+            data:
+              value: ZXhhbXBsZQ== # base64(example)
+`, ns, name))
+			backend.Create(initial)
+			// and
+			expected := backend.ParseYAML(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/global-secret
+            data:
+              value: YW5vdGhlcg== # base64(another)
+`).(*kube_core.Secret)
+
+			// given
+			secret := secret_model.NewGlobalSecretResource()
+
+			// when
+			err := s.Get(context.Background(), secret, store.GetByKey(name, noMesh))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			version := secret.Meta.GetVersion()
@@ -326,6 +416,95 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(actual.Spec.Data.Value).To(Equal([]byte("example")))
 		})
 
+		It("should return an existing global secret", func() {
+			// setup
+			expected := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/global-secret
+            metadata:
+              namespace: %s
+              name: %s
+            data:
+              value: ZXhhbXBsZQ== # base64(example)
+`, ns, name))
+			backend.Create(expected)
+
+			// given
+			actual := secret_model.NewGlobalSecretResource()
+
+			// when
+			err := s.Get(context.Background(), actual, store.GetByKey(name, noMesh))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			Expect(actual.Meta.GetName()).To(Equal(name))
+			Expect(actual.Meta.GetMesh()).To(Equal(noMesh))
+			// and
+			Expect(actual.Spec.Data.Value).To(Equal([]byte("example")))
+		})
+
+		It("should not return global secret as regular secret", func() {
+			// setup
+			expected := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/global-secret
+            metadata:
+              namespace: %s
+              name: %s
+            data:
+              value: ZXhhbXBsZQ== # base64(example)
+`, ns, name))
+			backend.Create(expected)
+
+			// given
+			actual := secret_model.NewSecretResource()
+
+			// when
+			err := s.Get(context.Background(), actual, store.GetByKey(name, "default"))
+
+			// then
+			Expect(err).To(MatchError(`Resource not found: type="Secret" name="demo" mesh="default"`))
+
+			// when
+			err = s.Get(context.Background(), actual, store.GetByKey(name, noMesh))
+
+			// then
+			Expect(err).To(MatchError(`Resource not found: type="Secret" name="demo" mesh=""`))
+		})
+
+		It("should not return regular secret as global secret", func() {
+			// setup
+			expected := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/secret
+            metadata:
+              namespace: %s
+              name: %s
+            data:
+              value: ZXhhbXBsZQ== # base64(example)
+`, ns, name))
+			backend.Create(expected)
+
+			// given
+			actual := secret_model.NewGlobalSecretResource()
+
+			// when
+			err := s.Get(context.Background(), actual, store.GetByKey(name, "default"))
+
+			// then
+			Expect(err).To(MatchError(`Resource not found: type="GlobalSecret" name="demo" mesh="default"`))
+
+			// when
+			err = s.Get(context.Background(), actual, store.GetByKey(name, noMesh))
+
+			// then
+			Expect(err).To(MatchError(`Resource not found: type="GlobalSecret" name="demo" mesh=""`))
+		})
+
 		It("should return an existing resource with implicit default mesh", func() {
 			// setup
 			expected := backend.ParseYAML(fmt.Sprintf(`
@@ -384,17 +563,6 @@ var _ = Describe("KubernetesStore", func() {
 	})
 
 	Describe("Delete()", func() {
-		It("should succeed if resource is not found", func() {
-			// setup
-			backend.AssertNotExists(&kube_core.Secret{}, ns, name)
-
-			// when
-			err := s.Delete(context.Background(), secret_model.NewSecretResource(), store.DeleteByKey(name, "demo"))
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-		})
-
 		It("should delete an existing resource", func() {
 			// setup
 			initial := backend.ParseYAML(fmt.Sprintf(`
@@ -416,6 +584,65 @@ var _ = Describe("KubernetesStore", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			backend.AssertNotExists(&kube_core.Secret{}, ns, name)
+		})
+
+		It("should delete an existing global secret", func() {
+			// setup
+			initial := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/global-secret
+            metadata:
+              namespace: %s
+              name: %s
+`, ns, name))
+			backend.Create(initial)
+
+			// when
+			err := s.Delete(context.Background(), secret_model.NewGlobalSecretResource(), store.DeleteByKey(name, noMesh))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			// and
+			backend.AssertNotExists(&kube_core.Secret{}, ns, name)
+		})
+
+		It("should no delete an existing global secret if SecretResource is used", func() {
+			// setup
+			initial := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/global-secret
+            metadata:
+              namespace: %s
+              name: %s
+`, ns, name))
+			backend.Create(initial)
+
+			// when
+			err := s.Delete(context.Background(), secret_model.NewSecretResource(), store.DeleteByKey(name, noMesh))
+
+			// then
+			Expect(err).To(MatchError(`failed to delete k8s secret: Resource not found: type="Secret" name="demo" mesh=""`))
+		})
+
+		It("should no delete an existing mesh scoped secret if GlobalSecretResource", func() {
+			// setup
+			initial := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: Secret
+            type: system.kuma.io/secret
+            metadata:
+              namespace: %s
+              name: %s
+`, ns, name))
+			backend.Create(initial)
+
+			// when
+			err := s.Delete(context.Background(), secret_model.NewGlobalSecretResource(), store.DeleteByKey(name, "default"))
+
+			// then
+			Expect(err).To(MatchError(`failed to delete k8s secret: Resource not found: type="GlobalSecret" name="demo" mesh="default"`))
 		})
 	})
 
@@ -477,6 +704,18 @@ var _ = Describe("KubernetesStore", func() {
                   value: YW5vdGhlcg== # base64(another)
 `, ns, "three"))
 				backend.Create(three)
+
+				four := backend.ParseYAML(fmt.Sprintf(`
+                apiVersion: v1
+                kind: Secret
+                type: system.kuma.io/global-secret
+                metadata:
+                  namespace: %s
+                  name: %s
+                data:
+                  value: Zm91cg== # base64(four)
+`, ns, "four"))
+				backend.Create(four)
 			})
 
 			It("should return a list of secrets in all meshes", func() {
@@ -513,6 +752,19 @@ var _ = Describe("KubernetesStore", func() {
 				Expect(err).ToNot(HaveOccurred())
 				Expect(secrets.Items).To(HaveLen(1))
 				Expect(secrets.Items[0].Spec.Data.Value).To(Equal([]byte("another")))
+			})
+
+			It("should return a list of global secrets", func() {
+				// given
+				secrets := &secret_model.GlobalSecretResourceList{}
+
+				// when
+				err := s.List(context.Background(), secrets)
+
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				Expect(secrets.Items).To(HaveLen(1))
+				Expect(string(secrets.Items[0].Spec.Data.Value)).To(Equal("four"))
 			})
 		})
 

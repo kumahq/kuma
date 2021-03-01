@@ -83,7 +83,7 @@ var _ = Describe("ServiceValidator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(given.expected))
 		},
-		Entry("should allow properly constructed Secret", testCase{
+		Entry("should allow properly constructed mesh Secret", testCase{
 			request: `
             apiVersion: admission.k8s.io/v1
             kind: AdmissionReview
@@ -106,6 +106,37 @@ var _ = Describe("ServiceValidator", func() {
                 data:
                   value: dGVzdAo=
                 type: system.kuma.io/secret
+              operation: CREATE
+`,
+			expected: `
+            allowed: true
+            status:
+              code: 200
+              metadata: {}
+            uid: ""
+`,
+		}),
+		Entry("should allow properly constructed global Secret", testCase{
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Secret
+                version: v1
+              name: sec-1
+              namespace: kuma-system
+              object:
+                apiVersion: v1
+                kind: Secret
+                metadata:
+                  name: global-sec-1
+                  namespace: kuma-system
+                data:
+                  value: dGVzdAo=
+                type: system.kuma.io/global-secret
               operation: CREATE
 `,
 			expected: `
@@ -246,6 +277,48 @@ var _ = Describe("ServiceValidator", func() {
             uid: ""
 `,
 		}),
+		Entry("should not allow mesh in global Secret", testCase{
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Secret
+                version: v1
+              name: sec-1
+              namespace: kuma-system
+              object:
+                apiVersion: v1
+                kind: Secret
+                metadata:
+                  name: sec-1
+                  namespace: kuma-system
+                  labels:
+                    kuma.io/mesh: default
+                data:
+                  value: dGVzdAo=
+                type: system.kuma.io/global-secret
+              operation: CREATE
+`,
+			expected: `
+            allowed: false
+            status:
+              code: 422
+              details:
+                causes:
+                - field: metadata.labels["kuma.io/mesh"]
+                  message: mesh cannot be set on global secret
+                  reason: FieldValueInvalid
+                kind: Secret
+                name: sec-1
+              message: 'metadata.labels["kuma.io/mesh"]: mesh cannot be set on global secret'
+              metadata: {}
+              reason: Invalid
+              status: Failure
+            uid: ""`,
+		}),
 		Entry("should not allow Secret without data", testCase{
 			request: `
             apiVersion: admission.k8s.io/v1
@@ -267,6 +340,45 @@ var _ = Describe("ServiceValidator", func() {
                   labels:
                     kuma.io/mesh: default
                 type: system.kuma.io/secret
+              operation: CREATE
+`,
+			expected: `
+            allowed: false
+            status:
+              code: 422
+              details:
+                causes:
+                - field: data.value
+                  message: cannot be empty.
+                  reason: FieldValueInvalid
+                kind: Secret
+                name: sec-1
+              message: 'data.value: cannot be empty.'
+              metadata: {}
+              reason: Invalid
+              status: Failure
+            uid: ""
+`,
+		}),
+		Entry("should not allow global Secret without data", testCase{
+			request: `
+            apiVersion: admission.k8s.io/v1
+            kind: AdmissionReview
+            request:
+              uid: 12345
+              kind:
+                group: ""
+                kind: Secret
+                version: v1
+              name: sec-1
+              namespace: kuma-system
+              object:
+                apiVersion: v1
+                kind: Secret
+                metadata:
+                  name: sec-1
+                  namespace: kuma-system
+                type: system.kuma.io/global-secret
               operation: CREATE
 `,
 			expected: `

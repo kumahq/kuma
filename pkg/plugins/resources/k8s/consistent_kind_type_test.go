@@ -5,9 +5,17 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
+
+// Those types are not mapped directly to Kubernetes Resource
+var IgnoredTypes = map[model.ResourceType]bool{
+	system.SecretType:       true,
+	system.GlobalSecretType: true,
+	system.ConfigType:       true,
+}
 
 var _ = Describe("Consistent Kind Types", func() {
 	It("Kind for objects is the same as ResourceType", func() {
@@ -15,8 +23,8 @@ var _ = Describe("Consistent Kind Types", func() {
 		k8sTypes := k8s_registry.Global()
 
 		for _, typ := range types.ObjectTypes() {
-			if typ == system.SecretType || typ == system.ConfigType {
-				continue // ignore Secret since we cannot map it directly to Secret K8S resource
+			if IgnoredTypes[typ] {
+				continue
 			}
 
 			res, err := types.NewObject(typ)
@@ -33,8 +41,8 @@ var _ = Describe("Consistent Kind Types", func() {
 		k8sTypes := k8s_registry.Global()
 
 		for _, typ := range types.ListTypes() {
-			if typ == system.SecretType || typ == system.ConfigType {
-				continue // ignore Secret since we cannot map it directly to Secret K8S resource
+			if IgnoredTypes[typ] {
+				continue
 			}
 
 			res, err := types.NewObject(typ)

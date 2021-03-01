@@ -1,32 +1,32 @@
 {
-    "type": "TrafficRoute",
-    "mesh": "default",
-    "name": "traffic-route-1",
-    "creationTime": "0001-01-01T00:00:00Z",
-    "modificationTime": "0001-01-01T00:00:00Z",
-    "sources": [
-        {
-            "match": {
-                "service": "backend"
-            }
-        }
-    ],
-    "destinations": [
-        {
-            "match": {
-                "service": "redis"
-            }
-        }
-    ],
-    "conf": {
-        "split": [
-            {
-                "weight": 90,
-                "destination": {
-                    "service": "redis",
-                    "version": "1.0"
-                }
-            }
-        ]
+  "type": "TrafficRoute",
+  "mesh": "default",
+  "name": "traffic-route-1",
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "sources": [
+    {
+      "match": {
+        "service": "backend"
+      }
     }
+  ],
+  "destinations": [
+    {
+      "match": {
+        "service": "redis"
+      }
+    }
+  ],
+  "conf": {
+    "split": [
+      {
+        "weight": 90,
+        "destination": {
+          "service": "redis",
+          "version": "1.0"
+        }
+      }
+    ]
+  }
 }

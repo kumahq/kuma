@@ -35,3 +35,27 @@ func BasicResourceTablePrinter(rootTime time.Time, resources model.ResourceList,
 	}
 	return printers.NewTablePrinter().Print(data, out)
 }
+
+func BasicGlobalResourceTablePrinter(rootTime time.Time, resources model.ResourceList, out io.Writer) error {
+	items := resources.GetItems()
+	data := printers.Table{
+		Headers: []string{"NAME", "AGE"},
+		NextRow: func() func() []string {
+			i := 0
+			return func() []string {
+				defer func() { i++ }()
+				if len(items) <= i {
+					return nil
+				}
+				item := items[i]
+
+				return []string{
+					item.GetMeta().GetName(), // NAME
+					table.TimeSince(item.GetMeta().GetModificationTime(), rootTime), // AGE
+				}
+			}
+		}(),
+		Footer: table.PaginationFooter(resources),
+	}
+	return printers.NewTablePrinter().Print(data, out)
+}

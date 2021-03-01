@@ -1,21 +1,21 @@
 conf:
   http:
-    numRetries: 56
-    perTryTimeout: 10s
     backOff:
       baseInterval: 0.008s
       maxInterval: 1s
+    numRetries: 56
+    perTryTimeout: 10s
     retriableStatusCodes:
     - 500
     - 501
-creationTime: 0001-01-01T00:00:00Z
+creationTime: "0001-01-01T00:00:00Z"
 destinations:
-  - match:
-      service: backend
+- match:
+    service: backend
 mesh: default
-modificationTime: 0001-01-01T00:00:00Z
+modificationTime: "0001-01-01T00:00:00Z"
 name: retry-1
 sources:
-  - match:
-      service: web
+- match:
+    service: web
 type: Retry
