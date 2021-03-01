@@ -1,9 +1,11 @@
 package bootstrap
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path"
+	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -24,6 +26,7 @@ const (
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
+	autoconfigureGeneral(cfg)
 	autoconfigureDpServerAuth(cfg)
 	if err := autoconfigureTLS(cfg); err != nil {
 		return errors.Wrap(err, "could not autogenerate TLS certificate")
@@ -31,6 +34,16 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 	autoconfigureServersTLS(cfg)
 	autoconfigBootstrapXdsParams(cfg)
 	return nil
+}
+
+func autoconfigureGeneral(cfg *kuma_cp.Config) {
+	if cfg.General.WorkDir == "" {
+		workdir := "/opt/kuma"
+		if runtime.GOOS == "darwin" {
+			workdir = "~/Library/Kuma"
+		}
+		cfg.General.WorkDir = workdir
+	}
 }
 
 func autoconfigureDpServerAuth(cfg *kuma_cp.Config) {
@@ -63,6 +76,9 @@ func autoconfigureTLS(cfg *kuma_cp.Config) error {
 	if cfg.General.TlsCertFile != "" {
 		return nil
 	}
+	autoconfigureLog.Info(fmt.Sprintf("directory %v will be used as a working directory, "+
+		"it could be changed using KUMA_GENERAL_WORK_DIR environment variable", cfg.General.WorkDir))
+
 	if crtFile, keyFile, err := tryReadKeyPair(workDir(cfg.General.WorkDir)); err == nil {
 		cfg.General.TlsCertFile = crtFile
 		cfg.General.TlsKeyFile = keyFile
@@ -85,7 +101,8 @@ func autoconfigureTLS(cfg *kuma_cp.Config) error {
 	}
 	crtFile, keyFile, err := saveKeyPair(cert, workDir(cfg.General.WorkDir))
 	if err != nil {
-		return errors.Errorf("failed to save auto-generated TLS cert and key into a working directory: %v, working directory could be changed using KUMA_GENERAL_WORK_DIR environment variable", err)
+		return errors.Errorf("failed to save auto-generated TLS cert and key into a working directory: %v, "+
+			"working directory could be changed using KUMA_GENERAL_WORK_DIR environment variable", err)
 	}
 	cfg.General.TlsCertFile = crtFile
 	cfg.General.TlsKeyFile = keyFile
@@ -111,14 +128,15 @@ func (w workDir) Open(name string) (*os.File, error) {
 
 func tryReadKeyPair(dir workDir) (string, string, error) {
 	crtFile, err := dir.Open(crtFileName)
+	if err != nil {
+		return "", "", errors.Wrap(err, "failed to open a file with TLS cert")
+	}
 	defer func() {
 		if err := crtFile.Close(); err != nil {
 			autoconfigureLog.Error(err, "failed to close TLS cert file")
 		}
 	}()
-	if err != nil {
-		return "", "", errors.Wrap(err, "failed to open a file with TLS cert")
-	}
+
 	certPEM, err := ioutil.ReadFile(crtFile.Name())
 	if err != nil {
 		return "", "", err

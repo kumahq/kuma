@@ -47,7 +47,7 @@ require (
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	golang.org/x/tools v0.0.0-20210111221946-d33bae441459 // indirect
+	golang.org/x/tools v0.0.0-20210111221946-d33bae441459
 	google.golang.org/genproto v0.0.0-20201030142918-24207fddd1c3
 	google.golang.org/grpc v1.35.0
 	google.golang.org/protobuf v1.25.0

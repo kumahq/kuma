@@ -10,6 +10,8 @@ COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
 COPY $KUMA_ROOT/tools/releases/templates/README /kuma
 
+RUN mkdir -p /opt/kuma
+RUN chown -R nobody:nobody /opt/kuma
 USER nobody:nobody
 
 ENTRYPOINT ["kuma-cp"]

@@ -288,7 +288,7 @@ general:
   tlsCertFile: # ENV: KUMA_GENERAL_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.
   tlsKeyFile: # ENV: KUMA_GENERAL_TLS_KEY_FILE
-  workDir: "/usr/local/kuma"
+  workDir: ""
 
 # Web GUI Server configuration
 guiServer:
