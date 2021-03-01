@@ -61,9 +61,9 @@ var _ = Describe("InboundListenerConfigurer", func() {
             trafficDirection: INBOUND
             address:
               socketAddress:
+                protocol: UDP
                 address: 192.168.0.1
                 portValue: 8080
-                protocol: UDP
 `,
 		}),
 	)

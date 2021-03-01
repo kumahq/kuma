@@ -163,14 +163,16 @@ func NetworkRBAC(statsName string, rbacEnabled bool, permission *mesh_core.Traff
 	})
 }
 
-func OutboundListener(listenerName string, address string, port uint32) ListenerBuilderOpt {
+func OutboundListener(listenerName string, address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
 	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
 		config.AddV2(&v2.OutboundListenerConfigurer{
+			Protocol:     protocol,
 			ListenerName: listenerName,
 			Address:      address,
 			Port:         port,
 		})
 		config.AddV3(&v3.OutboundListenerConfigurer{
+			Protocol:     protocol,
 			ListenerName: listenerName,
 			Address:      address,
 			Port:         port,
