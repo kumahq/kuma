@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/mads"
 	"net"
 	"strconv"
 	"strings"
@@ -93,7 +94,8 @@ var log = core.Log.WithName("mads").WithName("generator")
 type MonitoringAssignmentsGenerator struct {
 }
 
-func (g MonitoringAssignmentsGenerator) Generate(args Args) ([]*core_xds.Resource, error) {
+// Generate implements mads.ResourceGenerator
+func (g MonitoringAssignmentsGenerator) Generate(args mads.Args) ([]*core_xds.Resource, error) {
 	meshIndex := g.indexMeshes(args.Meshes)
 
 	resources := make([]*core_xds.Resource, 0, len(args.Dataplanes))

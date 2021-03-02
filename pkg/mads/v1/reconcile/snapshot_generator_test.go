@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/mads/reconcile"
+	. "github.com/kumahq/kuma/pkg/mads/v1alpha1/reconcile"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
@@ -21,8 +21,8 @@ import (
 
 	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 
-	mads_cache "github.com/kumahq/kuma/pkg/mads/cache"
-	mads_generator "github.com/kumahq/kuma/pkg/mads/generator"
+	mads_cache "github.com/kumahq/kuma/pkg/mads/v1alpha1/cache"
+	mads_generator "github.com/kumahq/kuma/pkg/mads/v1alpha1/generator"
 
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )

@@ -1,11 +1,12 @@
 package generator_test
 
 import (
+	"github.com/kumahq/kuma/pkg/mads"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/mads/generator"
+	. "github.com/kumahq/kuma/pkg/mads/v1alpha1/generator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -33,7 +34,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				// setup
 				generator := MonitoringAssignmentsGenerator{}
 				// when
-				resources, err := generator.Generate(Args{
+				resources, err := generator.Generate(mads.Args{
 					Meshes:     given.meshes,
 					Dataplanes: given.dataplanes,
 				})

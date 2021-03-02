@@ -1,6 +1,7 @@
 package kuma_prometheus_sd
 
 import (
+	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds"
 	"net/url"
 
 	"github.com/pkg/errors"
@@ -29,6 +30,8 @@ type Config struct {
 	MonitoringAssignment MonitoringAssignmentConfig `yaml:"monitoringAssignment,omitempty"`
 	// Prometheus defines configuration related to integration with Prometheus.
 	Prometheus PrometheusConfig `yaml:"prometheus,omitempty"`
+	// ApiVersion defines the version of the MADS API to use.
+	ApiVersion xds.ApiVersion `yaml:"apiVersion,omitempty"`
 }
 
 var _ config.Config = &Config{}
@@ -36,6 +39,7 @@ var _ config.Config = &Config{}
 func (c *Config) Sanitize() {
 	c.MonitoringAssignment.Sanitize()
 	c.Prometheus.Sanitize()
+	// TODO: sanitize API version
 }
 
 func (c *Config) Validate() (errs error) {
@@ -45,6 +49,7 @@ func (c *Config) Validate() (errs error) {
 	if err := c.Prometheus.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Prometheus is not valid"))
 	}
+	// TODO: validate API version
 	return
 }
 

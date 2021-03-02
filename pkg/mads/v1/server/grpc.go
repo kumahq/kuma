@@ -7,7 +7,7 @@ import (
 
 	"google.golang.org/grpc/keepalive"
 
-	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
+	observability_proto_v1alpha1 "github.com/kumahq/kuma/api/observability/v1alpha1"
 
 	"google.golang.org/grpc"
 
@@ -53,7 +53,8 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	grpcServer := grpc.NewServer(grpcOptions...)
 
 	// register services
-	observability_proto.RegisterMonitoringAssignmentDiscoveryServiceServer(grpcServer, s.server)
+	observability_proto_v1alpha1.RegisterMonitoringAssignmentDiscoveryServiceServer(grpcServer, s.server)
+
 	s.metrics.RegisterGRPC(grpcServer)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))

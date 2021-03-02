@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
+	"github.com/kumahq/kuma/pkg/mads/v1alpha1"
 	"net/url"
 
 	"github.com/golang/protobuf/ptypes"
@@ -13,23 +14,21 @@ import (
 	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/metadata"
 
-	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 
-	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
-
-	"github.com/kumahq/kuma/pkg/mads"
+	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 )
 
 type Client struct {
 	conn   *grpc.ClientConn
-	client observability_proto.MonitoringAssignmentDiscoveryServiceClient
+	client observability_v1.MonitoringAssignmentDiscoveryServiceClient
 }
 
 type Stream struct {
-	stream         observability_proto.MonitoringAssignmentDiscoveryService_StreamMonitoringAssignmentsClient
-	latestACKed    *envoy.DiscoveryResponse
-	latestReceived *envoy.DiscoveryResponse
+	stream         observability_v1.MonitoringAssignmentDiscoveryService_StreamMonitoringAssignmentsClient
+	latestACKed    *envoy_sd.DiscoveryResponse
+	latestReceived *envoy_sd.DiscoveryResponse
 }
 
 func New(serverURL string) (*Client, error) {
@@ -52,7 +51,7 @@ func New(serverURL string) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	client := observability_proto.NewMonitoringAssignmentDiscoveryServiceClient(conn)
+	client := observability_v1.NewMonitoringAssignmentDiscoveryServiceClient(conn)
 	return &Client{
 		conn:   conn,
 		client: client,
@@ -75,14 +74,14 @@ func (c *Client) Close() error {
 }
 
 func (s *Stream) RequestAssignments(clientId string) error {
-	return s.stream.Send(&envoy.DiscoveryRequest{
+	return s.stream.Send(&envoy_sd.DiscoveryRequest{
 		VersionInfo:   "",
 		ResponseNonce: "",
 		Node: &envoy_core.Node{
 			Id: clientId,
 		},
 		ResourceNames: []string{},
-		TypeUrl:       mads.MonitoringAssignmentType,
+		TypeUrl:       v1alpha1.MonitoringAssignmentType,
 	})
 }
 
@@ -90,11 +89,11 @@ func (s *Stream) ACK() error {
 	if s.latestReceived == nil {
 		return nil
 	}
-	err := s.stream.Send(&envoy.DiscoveryRequest{
+	err := s.stream.Send(&envoy_sd.DiscoveryRequest{
 		VersionInfo:   s.latestReceived.VersionInfo,
 		ResponseNonce: s.latestReceived.Nonce,
 		ResourceNames: []string{},
-		TypeUrl:       mads.MonitoringAssignmentType,
+		TypeUrl:       v1alpha1.MonitoringAssignmentType,
 	})
 	if err == nil {
 		s.latestACKed = s.latestReceived
@@ -106,26 +105,26 @@ func (s *Stream) NACK(err error) error {
 	if s.latestReceived == nil {
 		return nil
 	}
-	return s.stream.Send(&envoy.DiscoveryRequest{
+	return s.stream.Send(&envoy_sd.DiscoveryRequest{
 		VersionInfo:   s.latestACKed.GetVersionInfo(),
 		ResponseNonce: s.latestReceived.Nonce,
 		ResourceNames: []string{},
-		TypeUrl:       mads.MonitoringAssignmentType,
+		TypeUrl:       v1alpha1.MonitoringAssignmentType,
 		ErrorDetail: &status.Status{
 			Message: fmt.Sprintf("%s", err),
 		},
 	})
 }
 
-func (s *Stream) WaitForAssignments() ([]*observability_proto.MonitoringAssignment, error) {
+func (s *Stream) WaitForAssignments() ([]*observability_v1.MonitoringAssignment, error) {
 	resp, err := s.stream.Recv()
 	if err != nil {
 		return nil, err
 	}
 	s.latestReceived = resp
-	assignments := make([]*observability_proto.MonitoringAssignment, len(resp.Resources))
+	assignments := make([]*observability_v1.MonitoringAssignment, len(resp.Resources))
 	for i := range resp.Resources {
-		assignment := &observability_proto.MonitoringAssignment{}
+		assignment := &observability_v1.MonitoringAssignment{}
 		if err := ptypes.UnmarshalAny(resp.Resources[i], assignment); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal MADS response: %v", resp)
 		}

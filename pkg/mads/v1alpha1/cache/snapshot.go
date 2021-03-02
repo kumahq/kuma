@@ -1,12 +1,12 @@
 package cache
 
 import (
+	"github.com/kumahq/kuma/pkg/mads/v1alpha1"
 	"github.com/pkg/errors"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 
-	"github.com/kumahq/kuma/pkg/mads"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 )
 
@@ -32,7 +32,7 @@ var _ util_xds.Snapshot = &Snapshot{}
 
 // GetSupportedTypes returns a list of xDS types supported by this snapshot.
 func (s *Snapshot) GetSupportedTypes() []string {
-	return []string{mads.MonitoringAssignmentType}
+	return []string{v1alpha1.MonitoringAssignmentType}
 }
 
 // Consistent check verifies that the dependent resources are exactly listed in the
@@ -67,7 +67,7 @@ func (s *Snapshot) GetResourcesAndTtl(typ string) map[string]envoy_types.Resourc
 		return nil
 	}
 	switch typ {
-	case mads.MonitoringAssignmentType:
+	case v1alpha1.MonitoringAssignmentType:
 		return s.MonitoringAssignments.Items
 	}
 	return nil
@@ -79,7 +79,7 @@ func (s *Snapshot) GetVersion(typ string) string {
 		return ""
 	}
 	switch typ {
-	case mads.MonitoringAssignmentType:
+	case v1alpha1.MonitoringAssignmentType:
 		return s.MonitoringAssignments.Version
 	}
 	return ""
@@ -94,7 +94,7 @@ func (s *Snapshot) WithVersion(typ string, version string) util_xds.Snapshot {
 		return s
 	}
 	switch typ {
-	case mads.MonitoringAssignmentType:
+	case v1alpha1.MonitoringAssignmentType:
 		return &Snapshot{
 			MonitoringAssignments: envoy_cache.Resources{Version: version, Items: s.MonitoringAssignments.Items},
 		}

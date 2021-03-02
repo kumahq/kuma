@@ -9,10 +9,10 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	mads_cache "github.com/kumahq/kuma/pkg/mads/cache"
+	mads_cache "github.com/kumahq/kuma/pkg/mads/v1alpha1/cache"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 
-	"github.com/kumahq/kuma/pkg/mads/generator"
+	"github.com/kumahq/kuma/pkg/mads/v1alpha1/generator"
 )
 
 func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator) SnapshotGenerator {

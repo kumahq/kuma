@@ -8,15 +8,15 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	mads_generator "github.com/kumahq/kuma/pkg/mads/generator"
-	mads_reconcile "github.com/kumahq/kuma/pkg/mads/reconcile"
+	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
+	mads_reconcile "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
 
 func NewSnapshotGenerator(rt core_runtime.Runtime) mads_reconcile.SnapshotGenerator {
@@ -33,7 +33,7 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,
 }
 
 func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration) envoy_xds.Callbacks {
-	return util_xds_v2.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
+	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
 		log := madsServerLog.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
@@ -50,10 +50,10 @@ func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration)
 	})
 }
 
-func NewXdsContext(log logr.Logger) (envoy_cache.NodeHash, util_xds.SnapshotCache) {
+func NewXdsContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) {
 	hasher := hasher{}
 	logger := util_xds.NewLogger(log)
-	return hasher, util_xds.NewSnapshotCache(false, hasher, logger)
+	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
 }
 
 type hasher struct {

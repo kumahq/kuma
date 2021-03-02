@@ -6,7 +6,7 @@ import (
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
-	. "github.com/kumahq/kuma/pkg/mads/cache"
+	. "github.com/kumahq/kuma/pkg/mads/v1alpha1/cache"
 
 	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
 )
