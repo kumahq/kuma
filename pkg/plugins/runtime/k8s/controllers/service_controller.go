@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
@@ -26,9 +27,10 @@ type ServiceReconciler struct {
 	Log logr.Logger
 }
 
-// Reconcile is in charge of creating NetworkAttachmentDefinition if CNI enabled and namespace has label 'kuma.io/sidecar-injection: enabled'
+// Reconcile is in charge of injecting "ingress.kubernetes.io/service-upstream" annotation to the Services
+// that are in Kuma enabled namespaces
 func (r *ServiceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
-	log := r.Log.WithValues("service", req.Name)
+	log := r.Log.WithValues("service", req.NamespacedName)
 	ctx := context.Background()
 
 	svc := &kube_core.Service{}
@@ -52,10 +54,11 @@ func (r *ServiceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, 
 		return kube_ctrl.Result{}, errors.Wrapf(err, "unable to check sidecar injection annotation on namespace %s", namespace.Name)
 	}
 	if !injected {
-		log.V(1).Info("not a Kuma service " + req.NamespacedName.String())
+		log.V(1).Info(req.NamespacedName.String() + "is not part of the mesh")
 		return kube_ctrl.Result{}, nil
 	}
 
+	log.Info("annotating service which is part of the mesh", "annotation", fmt.Sprintf("%s=%s", metadata.IngressServiceUpstream, metadata.AnnotationTrue))
 	svc.Annotations[metadata.IngressServiceUpstream] = metadata.AnnotationTrue
 
 	if err = r.Update(ctx, svc); err != nil {
