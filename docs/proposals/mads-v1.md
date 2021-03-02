@@ -41,9 +41,12 @@ we will need to expose this API externally.
 
 ### Design Goals
 * Make it clear which fields should be provided
-* Make it clear how fields can be mapped to Prometheus `Targets`
+* Make fields explicit, move slightly away from the generic Prometheus
+  * This will make the SD implementation on the Prometheus-side much more clear
+  * Currently, there is implicit implementation details shared between the MADS client and server
+  * We cannot have this if we are going to expose this API upstream
 * Keep the xDS discovery mechanism, but upgrade it to the latest version v3
-  * Fully support both xDS transport variants (HTTP + gRPC)
+* Fully support both xDS transport variants (HTTP + gRPC)
 * Keep the ability to provide groups of `Targets` with common labels
 * Keep the flexibility to provide arbitrary labels
 
@@ -61,21 +64,17 @@ import "google/api/annotations.proto";
 import "validate/validate.proto";
 
 // Monitoring Assignment Discovery Service (MADS).
-//  --> Alternative names:
-//      - Metric Target Discovery Service (MTDS)
 //
 // xDS API that is meant for consumption by monitoring systems, e.g. Prometheus.
 service MonitoringAssignmentDiscoveryService {
   // GRPC
   rpc DeltaMonitoringAssignments(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
-      returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse) {}
-
+          returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse) {}
   rpc StreamMonitoringAssignments(stream envoy.service.discovery.v3.DiscoveryRequest)
-      returns (stream envoy.service.discovery.v3.DiscoveryResponse) {}
-
+          returns (stream envoy.service.discovery.v3.DiscoveryResponse) {}
   // HTTP
   rpc FetchMonitoringAssignments(envoy.service.discovery.v3.DiscoveryRequest)
-      returns (envoy.service.discovery.v3.DiscoveryResponse) {
+          returns (envoy.service.discovery.v3.DiscoveryResponse) {
     option (google.api.http).post = "/v3/discovery:monitoringassignment";
     option (google.api.http).body = "*";
   }
@@ -83,28 +82,41 @@ service MonitoringAssignmentDiscoveryService {
 
 // MADS resource type.
 //
-// Describes a group of targets that need to be monitored.
+// Describes a group of targets on a single dataplane that need to be monitored.
 message MonitoringAssignment {
-
-  // MADS resource name.
+  // Dataplane name.
   //
-  // E.g., `/meshes/default/services/backend`
-  string service = 1 [ (validate.rules).string = {min_bytes : 1} ];
+  // E.g., `backend`
+  string name = 1 [ (validate.rules).string = {min_bytes : 1} ];
+
+  // Mesh of the dataplane.
+  //
+  // E.g., `default`
+  string mesh = 2 [ (validate.rules).string = {min_bytes : 1} ];
+
+  // Identifying service the dataplane is proxying.
+  //
+  // E.g., `backend-v1`
+  string service = 3 [ (validate.rules).string = {min_bytes : 1} ];
+
+  // List of targets that need to be monitored.
+  repeated Target targets = 4;
 
   // Describes a single target that needs to be monitored.
   message Target {
-    // Non-optional protocol + address (preferably IP) for the service
-    // E.g., `http://backend.svc` or `http://10.1.4.32`
-    string address = 1 [ (validate.rules).string = {min_bytes : 1} ];
+    // Scheme on which to scrape the target.
+    //E.g., `http`
+    string scheme = 1 [ (validate.rules).string = {min_bytes : 1} ];
+
+    // Address (preferably IP) for the service
+    // E.g., `backend.svc` or `10.1.4.32:9090`
+    string address = 2 [ (validate.rules).string = {min_bytes : 1} ];
+
     // Optional path to append to the address for scraping
     //E.g., `/metrics`
-    string metrics_path = 2;
-    // Non-optional identifier for the underlying process behind the service
-    // E.g., `backend-01`
-    string instance = 3 [ (validate.rules).string = {min_bytes : 1} ];
+    string metrics_path = 3;
 
-
-    // Labels associated with that particular target.
+    // Arbitrary labels associated with that particular target.
     //
     // E.g.,
     // `{
@@ -113,12 +125,9 @@ message MonitoringAssignment {
     map<string, string> labels = 4;
   }
 
-  // List of targets that need to be monitored.
-  repeated Target targets = 2;
-
-  // Labels associated with every target in that assignment.
+  // Arbitrary Labels associated with every target in the assignment.
   //
-  // E.g., `{"mesh" : "default"}`.
-  map<string, string> labels = 3;
+  // E.g., `{"zone" : "us-east-1", "team": "infra", "commit_hash": "620506a88"}`.
+  map<string, string> labels = 5;
 }
 ```
