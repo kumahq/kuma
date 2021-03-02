@@ -1,4 +1,4 @@
-package xds
+package v1alpha1
 
 import (
 	"fmt"

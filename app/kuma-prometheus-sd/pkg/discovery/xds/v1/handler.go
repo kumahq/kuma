@@ -1,9 +1,9 @@
-package xds
+package v1
 
 import (
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 
-	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
+	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 )
 
 type sourceList = map[string]bool
@@ -13,7 +13,7 @@ type Handler struct {
 	oldSourceList sourceList
 }
 
-func (h *Handler) Handle(assignments []*observability_proto.MonitoringAssignment, ch chan<- []*targetgroup.Group) {
+func (h *Handler) Handle(assignments []*observability_v1.MonitoringAssignment, ch chan<- []*targetgroup.Group) {
 	newGroups := h.converter.ConvertAll(assignments)
 	newSourceList := h.buildSourceList(newGroups)
 	removedGroups := h.buildRemovedGroups(newSourceList)

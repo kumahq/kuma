@@ -1,11 +1,11 @@
-package xds_test
+package v1alpha1_test
 
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds"
+	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/v1alpha1"
 
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
@@ -25,7 +25,7 @@ var _ = Describe("Converter", func() {
 		DescribeTable("should convert Kuma MonitoringAssignments into Prometheus Target Groups",
 			func(given testCase) {
 				// setup
-				c := Converter{}
+				c := v1alpha1.Converter{}
 				// when
 				actual := c.Convert(given.input)
 				// then
