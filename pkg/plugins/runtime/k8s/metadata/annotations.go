@@ -69,9 +69,16 @@ const (
 	KumaCNI                                       = "kuma-cni"
 )
 
+// Annotations related to the gateway
+const (
+	IngressServiceUpstream = "ingress.kubernetes.io/service-upstream"
+)
+
 const (
 	AnnotationEnabled  = "enabled"
 	AnnotationDisabled = "disabled"
+	AnnotationTrue     = "true"
+	AnnotationFalse    = "false"
 )
 
 type Annotations map[string]string
@@ -82,9 +89,9 @@ func (a Annotations) GetEnabled(key string) (bool, bool, error) {
 		return false, false, nil
 	}
 	switch value {
-	case AnnotationEnabled:
+	case AnnotationEnabled, AnnotationTrue:
 		return true, true, nil
-	case AnnotationDisabled:
+	case AnnotationDisabled, AnnotationFalse:
 		return false, true, nil
 	default:
 		return false, true, errors.Errorf("annotation \"%s\" has wrong value \"%s\", available values are: \"enabled\", \"disabled\"", key, value)
