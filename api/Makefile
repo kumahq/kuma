@@ -141,13 +141,16 @@ clean: ## Remove generated files
 	find . -name '*.pb.go' -delete
 	find . -name '*.pb.validate.go' -delete
 
-generate: clean protoc/mesh/v1alpha1 protoc/observability/v1alpha1 protoc/system/v1alpha1 ## Process .proto definitions
+generate: clean protoc/mesh/v1alpha1 protoc/observability/v1alpha1 protoc/observability/v1 protoc/system/v1alpha1 ## Process .proto definitions
 
 protoc/mesh/v1alpha1:
 	$(PROTOC_GO) mesh/v1alpha1/*.proto
 
 protoc/observability/v1alpha1:
 	$(PROTOC_GO) observability/v1alpha1/*.proto
+
+protoc/observability/v1:
+	$(PROTOC_GO) observability/v1/*.proto
 
 protoc/system/v1alpha1:
 	$(PROTOC_GO) system/v1alpha1/*.proto

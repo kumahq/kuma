@@ -32,7 +32,7 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-// MDS resource type.
+// MADS resource type.
 //
 // Describes a group of targets that need to be monitored.
 type MonitoringAssignment struct {
@@ -40,7 +40,7 @@ type MonitoringAssignment struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// MDS resource name.
+	// MADS resource name.
 	//
 	// E.g., `/meshes/default/services/backend` or
 	// `/meshes/default/dataplanes/backend-01`.
