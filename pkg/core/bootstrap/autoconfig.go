@@ -5,7 +5,6 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
-	"runtime"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -26,7 +25,9 @@ const (
 var autoconfigureLog = core.Log.WithName("bootstrap").WithName("auto-configure")
 
 func autoconfigure(cfg *kuma_cp.Config) error {
-	autoconfigureGeneral(cfg)
+	if err := autoconfigureGeneral(cfg); err != nil {
+		return err
+	}
 	autoconfigureDpServerAuth(cfg)
 	if err := autoconfigureTLS(cfg); err != nil {
 		return errors.Wrap(err, "could not autogenerate TLS certificate")
@@ -36,14 +37,15 @@ func autoconfigure(cfg *kuma_cp.Config) error {
 	return nil
 }
 
-func autoconfigureGeneral(cfg *kuma_cp.Config) {
+func autoconfigureGeneral(cfg *kuma_cp.Config) error {
 	if cfg.General.WorkDir == "" {
-		workdir := "/opt/kuma"
-		if runtime.GOOS == "darwin" {
-			workdir = "~/Library/Kuma"
+		home, err := os.UserHomeDir()
+		if err != nil {
+			return err
 		}
-		cfg.General.WorkDir = workdir
+		cfg.General.WorkDir = path.Join(home, ".kuma")
 	}
+	return nil
 }
 
 func autoconfigureDpServerAuth(cfg *kuma_cp.Config) {
