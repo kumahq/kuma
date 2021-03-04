@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/pkg/errors"
@@ -110,14 +111,16 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 	}
 	b.mutable["meshes_total"] = strconv.Itoa(len(meshes.Items))
 
-	zones, err := fetchZones(rt)
-	if err != nil {
-		return err
+	switch rt.Config().Mode {
+	case config_core.Standalone:
+		b.mutable["zones_total"] = strconv.Itoa(1)
+	case config_core.Global:
+		zones, err := fetchZones(rt)
+		if err != nil {
+			return err
+		}
+		b.mutable["zones_total"] = strconv.Itoa(len(zones.Items))
 	}
-	if len(zones.Items) > 0 {
-		b.mutable["zones_total"] = strconv.Itoa(len(meshes.Items))
-	}
-
 	return nil
 }
 
