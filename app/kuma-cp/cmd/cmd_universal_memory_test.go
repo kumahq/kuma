@@ -6,6 +6,8 @@ import (
 
 var _ = Describe("Universal In-Memory test", func() {
 	RunSmokeTest(StaticConfig(`
+general:
+  workDir: ./kuma-workdir
 apiServer:
   http:
     port: 0
@@ -18,5 +20,5 @@ store:
   type: memory
 diagnostics:
   serverPort: %d
-`))
+`), "./kuma-workdir")
 })

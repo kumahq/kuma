@@ -28,7 +28,7 @@ func (f ConfigFactoryFunc) GenerateConfig() string {
 	return f()
 }
 
-func RunSmokeTest(factory ConfigFactory) {
+func RunSmokeTest(factory ConfigFactory, workdir string) {
 	Describe("run", func() {
 		var stopCh chan struct{}
 		var errCh chan error
@@ -52,6 +52,10 @@ func RunSmokeTest(factory ConfigFactory) {
 		JustAfterEach(func() {
 			if configFile != nil {
 				err := os.Remove(configFile.Name())
+				Expect(err).ToNot(HaveOccurred())
+			}
+			if workdir != "" {
+				err := os.RemoveAll(workdir)
 				Expect(err).ToNot(HaveOccurred())
 			}
 		})

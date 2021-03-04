@@ -13,7 +13,7 @@ var _ = Describe("Auto configuration", func() {
 		// given
 		cfg := kuma_cp.DefaultConfig()
 		cfg.DpServer.Port = 1234
-
+		cfg.General.WorkDir = "./kuma"
 		// when
 		err := autoconfigure(&cfg)
 
