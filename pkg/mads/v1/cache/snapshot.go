@@ -8,7 +8,7 @@ import (
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 // NewSnapshot creates a snapshot from response types and a version.
@@ -29,7 +29,7 @@ type Snapshot struct {
 	MonitoringAssignments envoy_cache.Resources
 }
 
-var _ util_xds.Snapshot = &Snapshot{}
+var _ util_xds_v3.Snapshot = &Snapshot{}
 
 // GetSupportedTypes returns a list of xDS types supported by this snapshot.
 func (s *Snapshot) GetSupportedTypes() []string {
@@ -87,7 +87,7 @@ func (s *Snapshot) GetVersion(typ string) string {
 }
 
 // WithVersion creates a new snapshot with a different version for a given resource type.
-func (s *Snapshot) WithVersion(typ string, version string) util_xds.Snapshot {
+func (s *Snapshot) WithVersion(typ string, version string) util_xds_v3.Snapshot {
 	if s == nil {
 		return nil
 	}

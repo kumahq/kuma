@@ -2,6 +2,7 @@ package reconcile
 
 import (
 	"context"
+	"github.com/kumahq/kuma/pkg/mads"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 
@@ -11,11 +12,9 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	mads_cache "github.com/kumahq/kuma/pkg/mads/v1alpha1/cache"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
-
-	"github.com/kumahq/kuma/pkg/mads/v1alpha1/generator"
 )
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator) SnapshotGenerator {
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator mads.ResourceGenerator) SnapshotGenerator {
 	return &snapshotGenerator{
 		resourceManager:   resourceManager,
 		resourceGenerator: resourceGenerator,
@@ -24,7 +23,7 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 
 type snapshotGenerator struct {
 	resourceManager   core_manager.ReadOnlyResourceManager
-	resourceGenerator generator.ResourceGenerator
+	resourceGenerator mads.ResourceGenerator
 }
 
 func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.Node) (util_xds.Snapshot, error) {
@@ -38,7 +37,7 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.
 		return nil, err
 	}
 
-	args := generator.Args{
+	args := mads.Args{
 		Meshes:     meshes,
 		Dataplanes: dataplanes,
 	}

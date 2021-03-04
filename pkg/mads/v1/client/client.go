@@ -4,7 +4,7 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/mads/v1alpha1"
+	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
 	"net/url"
 
 	"github.com/golang/protobuf/ptypes"
@@ -81,7 +81,7 @@ func (s *Stream) RequestAssignments(clientId string) error {
 			Id: clientId,
 		},
 		ResourceNames: []string{},
-		TypeUrl:       v1alpha1.MonitoringAssignmentType,
+		TypeUrl:       mads_v1.MonitoringAssignmentType,
 	})
 }
 
@@ -93,7 +93,7 @@ func (s *Stream) ACK() error {
 		VersionInfo:   s.latestReceived.VersionInfo,
 		ResponseNonce: s.latestReceived.Nonce,
 		ResourceNames: []string{},
-		TypeUrl:       v1alpha1.MonitoringAssignmentType,
+		TypeUrl:       mads_v1.MonitoringAssignmentType,
 	})
 	if err == nil {
 		s.latestACKed = s.latestReceived
@@ -109,7 +109,7 @@ func (s *Stream) NACK(err error) error {
 		VersionInfo:   s.latestACKed.GetVersionInfo(),
 		ResponseNonce: s.latestReceived.Nonce,
 		ResourceNames: []string{},
-		TypeUrl:       v1alpha1.MonitoringAssignmentType,
+		TypeUrl:       mads_v1.MonitoringAssignmentType,
 		ErrorDetail: &status.Status{
 			Message: fmt.Sprintf("%s", err),
 		},

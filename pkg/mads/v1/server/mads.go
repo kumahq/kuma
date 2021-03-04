@@ -2,38 +2,42 @@ package server
 
 import (
 	"context"
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
-	"github.com/envoyproxy/go-control-plane/pkg/server/sotw/v2"
-	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
-	observability_v1alpha1 "github.com/kumahq/kuma/pkg/mads/v1alpha1"
 
-	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
+	envoy_sd "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/server/rest/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/server/sotw/v3"
+	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
+
+	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
+	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
 )
 
 type Server interface {
-	observability_proto.MonitoringAssignmentDiscoveryServiceServer
+	observability_v1.MonitoringAssignmentDiscoveryServiceServer
 }
 
 func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks) Server {
 	sotwServer := sotw.NewServer(context.Background(), config, callbacks)
-	return &server{sotwServer}
+	restServer := rest.NewServer(config, callbacks)
+	return &server{stream: sotwServer, rest: restServer}
 }
 
 var _ Server = &server{}
 
 type server struct {
-	sotw.Server
+	stream sotw.Server
+	rest rest.Server
 }
 
-func (s *server) DeltaMonitoringAssignments(stream observability_proto.MonitoringAssignmentDiscoveryService_DeltaMonitoringAssignmentsServer) error {
+func (s *server) DeltaMonitoringAssignments(stream observability_v1.MonitoringAssignmentDiscoveryService_DeltaMonitoringAssignmentsServer) error {
 	panic("not implemented") // we don't use delta on MADS for now
 }
 
-func (s *server) StreamMonitoringAssignments(stream observability_proto.MonitoringAssignmentDiscoveryService_StreamMonitoringAssignmentsServer) error {
-	return s.StreamHandler(stream, observability_v1alpha1.MonitoringAssignmentType)
+func (s *server) StreamMonitoringAssignments(stream observability_v1.MonitoringAssignmentDiscoveryService_StreamMonitoringAssignmentsServer) error {
+	return s.stream.StreamHandler(stream, mads_v1.MonitoringAssignmentType)
 }
 
-func (s *server) FetchMonitoringAssignments(ctx context.Context, request *envoy_api.DiscoveryRequest) (*envoy_api.DiscoveryResponse, error) {
-	panic("not implemented") // we don't need Fetch operation on MADS for now
+func (s *server) FetchMonitoringAssignments(ctx context.Context, request *envoy_sd.DiscoveryRequest) (*envoy_sd.DiscoveryResponse, error) {
+	return s.rest.Fetch(ctx, request)
 }

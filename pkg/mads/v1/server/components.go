@@ -23,12 +23,12 @@ func NewSnapshotGenerator(rt core_runtime.Runtime) mads_reconcile.SnapshotGenera
 	return mads_reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), mads_generator.MonitoringAssignmentsGenerator{})
 }
 
-func NewVersioner() util_xds.SnapshotVersioner {
-	return util_xds.SnapshotAutoVersioner{UUID: core.NewUUID}
+func NewVersioner() util_xds_v3.SnapshotVersioner {
+	return util_xds_v3.SnapshotAutoVersioner{UUID: core.NewUUID}
 }
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,
-	generator mads_reconcile.SnapshotGenerator, versioner util_xds.SnapshotVersioner) mads_reconcile.Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
+	generator mads_reconcile.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) mads_reconcile.Reconciler {
 	return mads_reconcile.NewReconciler(hasher, cache, generator, versioner)
 }
 

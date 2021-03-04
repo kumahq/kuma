@@ -2,15 +2,13 @@ package reconcile
 
 import (
 	"context"
-
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
-
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
-func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,
-	generator SnapshotGenerator, versioner util_xds.SnapshotVersioner) Reconciler {
+func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
+	generator SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) Reconciler {
 	return &reconciler{
 		hasher:    hasher,
 		cache:     cache,
@@ -21,9 +19,9 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,
 
 type reconciler struct {
 	hasher    envoy_cache.NodeHash
-	cache     util_xds.SnapshotCache
+	cache     util_xds_v3.SnapshotCache
 	generator SnapshotGenerator
-	versioner util_xds.SnapshotVersioner
+	versioner util_xds_v3.SnapshotVersioner
 }
 
 func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error {

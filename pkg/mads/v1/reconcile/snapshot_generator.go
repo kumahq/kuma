@@ -10,8 +10,8 @@ import (
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	mads_cache "github.com/kumahq/kuma/pkg/mads/v1alpha1/cache"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	mads_v1_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
+	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
 func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator mads.ResourceGenerator) SnapshotGenerator {
@@ -26,7 +26,7 @@ type snapshotGenerator struct {
 	resourceGenerator mads.ResourceGenerator
 }
 
-func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.Node) (util_xds.Snapshot, error) {
+func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.Node) (util_xds_v3.Snapshot, error) {
 	meshes, err := s.getMeshes(ctx)
 	if err != nil {
 		return nil, err
@@ -47,7 +47,7 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.
 		return nil, err
 	}
 
-	return mads_cache.NewSnapshot("", core_xds.ResourceList(resources).ToIndex()), nil
+	return mads_v1_cache.NewSnapshot("", core_xds.ResourceList(resources).ToIndex()), nil
 }
 
 func (s *snapshotGenerator) getMeshes(ctx context.Context) ([]*mesh_core.MeshResource, error) {
