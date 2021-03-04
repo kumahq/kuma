@@ -350,5 +350,43 @@ var _ = Describe("HealthCheckConfigurer", func() {
             name: testCluster
             type: EDS`,
 		}),
+		Entry("HealthCheck with event log path", testCase{
+			clusterName: "testCluster",
+			healthCheck: &mesh_core.HealthCheckResource{
+				Spec: &mesh_proto.HealthCheck{
+					Sources: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
+					},
+					Destinations: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
+					},
+					Conf: &mesh_proto.HealthCheck_Conf{
+						Interval:                     ptypes.DurationProto(5 * time.Second),
+						Timeout:                      ptypes.DurationProto(4 * time.Second),
+						NoTrafficInterval:            ptypes.DurationProto(6 * time.Second),
+						UnhealthyThreshold:           3,
+						HealthyThreshold:             2,
+						EventLogPath:                 "/event/log/path",
+						AlwaysLogHealthCheckFailures: &wrappers.BoolValue{Value: true},
+					},
+				},
+			},
+			expected: `
+            connectTimeout: 5s
+            edsClusterConfig:
+              edsConfig:
+                ads: {}
+            healthChecks:
+            - alwaysLogHealthCheckFailures: true
+              eventLogPath: /event/log/path
+              healthyThreshold: 2
+              interval: 5s
+              noTrafficInterval: 6s
+              tcpHealthCheck: {}
+              timeout: 4s
+              unhealthyThreshold: 3
+            name: testCluster
+            type: EDS`,
+		}),
 	)
 })
