@@ -1,7 +1,6 @@
 package externalservices_test
 
 import (
-	"fmt"
 	"strings"
 
 	. "github.com/onsi/ginkgo"
@@ -61,7 +60,6 @@ networking:
 		Eventually(func() bool {
 			stdout, _, _ := cluster.Exec("", "", "dp-demo-client",
 				"curl", "httpbin.mesh/get")
-			fmt.Println(stdout)
 			return strings.Contains(stdout, `"Host": "httpbin.org"`)
 		}, "30s", "500ms").Should(BeTrue())
 	})
