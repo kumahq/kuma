@@ -4,7 +4,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
@@ -104,19 +103,6 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return r.(*mesh.DataplaneResource).Spec.IsRemoteIngress(localZone)
 				}))
-			}
-			if rs.GetItemType() == system.ConfigType {
-				for _, resource := range rs.GetItems() {
-					if resource.GetMeta().GetName() == config_manager.ClusterIdConfigKey {
-						if trr, ok := resource.(*system.ConfigResource); ok {
-							clusterId := trr.Spec.Config
-							rt.SetClusterId(clusterId)
-							return nil
-						} else {
-							return model.ErrorInvalidItemType((*system.ConfigResource)(nil), resource)
-						}
-					}
-				}
 			}
 			return syncer.Sync(rs)
 		},
