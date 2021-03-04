@@ -20,7 +20,7 @@ var _ = Describe("LbSubset", func() {
 
 	type testCase struct {
 		clusterName string
-		tags        [][]string
+		tags        envoy.TagKeysSlice
 		expected    string
 	}
 
@@ -42,7 +42,7 @@ var _ = Describe("LbSubset", func() {
 		},
 		Entry("LbSubset is empty if there are no tags", testCase{
 			clusterName: "backend",
-			tags:        [][]string{},
+			tags:        []envoy.TagKeys{},
 			expected: `
             connectTimeout: 5s
             edsClusterConfig:
@@ -54,7 +54,7 @@ var _ = Describe("LbSubset", func() {
 		}),
 		Entry("LbSubset is set when more than service tag is set", testCase{
 			clusterName: "backend",
-			tags: [][]string{
+			tags: []envoy.TagKeys{
 				{"version"},
 				{"cluster", "version"},
 			},

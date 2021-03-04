@@ -50,12 +50,12 @@ resources:
       subsetSelectors:
       - fallbackPolicy: NO_FALLBACK
         keys:
-        - version
         - mesh
+        - version
       - fallbackPolicy: NO_FALLBACK
         keys:
-        - region
         - mesh
+        - region
       - fallbackPolicy: NO_FALLBACK
         keys:
         - mesh

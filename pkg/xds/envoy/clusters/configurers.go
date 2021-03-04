@@ -122,13 +122,13 @@ func HealthCheck(healthCheck *mesh_core.HealthCheckResource) ClusterBuilderOpt {
 //          kuma.io/service: backend
 //          version: v1
 //    Only one cluster "backend" is generated for such dataplane, but with lb subset by version.
-func LbSubset(keySets [][]string) ClusterBuilderOptFunc {
+func LbSubset(tagSets envoy.TagKeysSlice) ClusterBuilderOptFunc {
 	return func(config *ClusterBuilderConfig) {
 		config.AddV2(&v2.LbSubsetConfigurer{
-			KeySets: keySets,
+			TagKeySets: tagSets,
 		})
 		config.AddV3(&v3.LbSubsetConfigurer{
-			KeySets: keySets,
+			TagKeysSets: tagSets,
 		})
 	}
 }

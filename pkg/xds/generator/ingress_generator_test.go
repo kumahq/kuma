@@ -461,5 +461,65 @@ var _ = Describe("IngressGenerator", func() {
 				},
 			},
 		}),
+		Entry("05. trafficroute repeated", testCase{
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              ingress:
+                availableServices:
+                  - mesh: mesh1
+                    tags:
+                      kuma.io/service: backend
+                      version: v1
+                      region: eu
+                  - mesh: mesh1
+                    tags:
+                      kuma.io/service: backend
+                      version: v2
+                      region: us
+              inbound:
+                - port: 10001
+`,
+			expected: "05.envoy.golden.yaml",
+			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
+				"backend": {},
+			},
+			trafficRoutes: &mesh_core.TrafficRouteResourceList{
+				Items: []*mesh_core.TrafficRouteResource{
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchAnyService(),
+								}},
+							},
+						},
+					},
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchService("foo"),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchAnyService(),
+								}},
+							},
+						},
+					},
+				},
+			},
+		}),
 	)
 })

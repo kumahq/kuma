@@ -110,18 +110,14 @@ resources:
       subsetSelectors:
       - fallbackPolicy: NO_FALLBACK
         keys:
-        - version
         - mesh
+        - version
       - fallbackPolicy: NO_FALLBACK
         keys:
+        - mesh
         - region
-        - mesh
       - fallbackPolicy: NO_FALLBACK
         keys:
-        - mesh
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - version
         - mesh
     name: backend
     type: EDS

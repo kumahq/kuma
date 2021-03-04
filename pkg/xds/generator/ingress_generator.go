@@ -101,7 +101,7 @@ func (i IngressGenerator) generateLDS(
 					Configure(envoy_listeners.FilterChainMatch("tls", sni)).
 					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
 						ClusterName: service,
-						Tags:        meshDestination.WithoutTag(mesh_proto.ServiceTag),
+						Tags:        meshDestination.WithoutTags(mesh_proto.ServiceTag),
 					}))))
 		}
 	}
@@ -135,9 +135,11 @@ func (i IngressGenerator) generateCDS(
 	apiVersion envoy_common.APIVersion,
 ) (resources []*model.Resource, _ error) {
 	for _, service := range services {
+		tagSlice := envoy_common.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
+		tagKeySlice := tagSlice.ToTagKeySlice().Transform(envoy_common.Without(mesh_proto.ServiceTag), envoy_common.With("mesh"))
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
 			Configure(envoy_clusters.EdsCluster(service)).
-			Configure(envoy_clusters.LbSubset(i.lbSubsets(service, destinationsPerService))).
+			Configure(envoy_clusters.LbSubset(tagKeySlice)).
 			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
 		if err != nil {
@@ -150,17 +152,6 @@ func (i IngressGenerator) generateCDS(
 		})
 	}
 	return
-}
-func (_ IngressGenerator) lbSubsets(service string, destinationsPerService map[string][]envoy_common.Tags) [][]string {
-	selectors := [][]string{}
-	destinations := destinationsPerService[service]
-	destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
-
-	for _, destination := range destinations {
-		keys := append(destination.WithoutTag(mesh_proto.ServiceTag).Keys(), "mesh")
-		selectors = append(selectors, keys)
-	}
-	return selectors
 }
 
 func (_ IngressGenerator) generateEDS(
