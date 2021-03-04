@@ -52,9 +52,9 @@ items:
         spec:
           containers:
             -   env:
-                  - name: COLLECTOR_ZIPKIN_HTTP_PORT
+                  - name: COLLECTOR_ZIPKIN_HOST_PORT
                     value: "9411"
-                image: jaegertracing/all-in-one:1.18
+                image: jaegertracing/all-in-one:1.22
                 name: jaeger
                 ports:
                   - containerPort: 5775
