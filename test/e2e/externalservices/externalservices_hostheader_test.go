@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 var _ = Describe("ExternalService", func() {
