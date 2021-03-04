@@ -51,7 +51,7 @@ networking:
 	}
 
 	BeforeEach(func() {
-		universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Verbose)
+		universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 		deployOptsFuncs = []DeployOptionsFunc{}
 
 		err := NewClusterSetup().

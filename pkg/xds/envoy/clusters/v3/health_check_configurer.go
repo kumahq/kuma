@@ -127,7 +127,9 @@ func failTrafficOnPanic(cluster *envoy_cluster.Cluster, value *wrappers.BoolValu
 			ZoneAwareLbConfig: &envoy_cluster.Cluster_CommonLbConfig_ZoneAwareLbConfig{},
 		}
 	}
-	cluster.CommonLbConfig.GetZoneAwareLbConfig().FailTrafficOnPanic = value.GetValue()
+	if zoneAwareLbConfig := cluster.CommonLbConfig.GetZoneAwareLbConfig(); zoneAwareLbConfig != nil {
+		zoneAwareLbConfig.FailTrafficOnPanic = value.GetValue()
+	}
 }
 
 func (e *HealthCheckConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
