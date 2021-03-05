@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 )
 
@@ -25,14 +26,14 @@ func (c *clusterIDCreator) NeedLeaderElection() bool {
 
 func (c *clusterIDCreator) create() error {
 	resource := config_model.NewConfigResource()
-	err := c.configManager.Get(context.Background(), resource, store.GetByKey(config_manager.ClusterIdConfigKey, ""))
+	err := c.configManager.Get(context.Background(), resource, store.GetByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh))
 	if err != nil {
 		if !store.IsResourceNotFound(err) {
 			return err
 		}
 		resource.Spec.Config = core.NewUUID()
 		log.Info("creating cluster ID", "clusterID", resource.Spec.Config)
-		if err := c.configManager.Create(context.Background(), resource, store.CreateByKey(config_manager.ClusterIdConfigKey, "")); err != nil {
+		if err := c.configManager.Create(context.Background(), resource, store.CreateByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh)); err != nil {
 			return errors.Wrap(err, "could not create config")
 		}
 	}

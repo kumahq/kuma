@@ -7,6 +7,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	config_model "github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 )
@@ -47,7 +48,7 @@ func (c *clusterIDReader) NeedLeaderElection() bool {
 
 func (c *clusterIDReader) read() (string, error) {
 	resource := config_model.NewConfigResource()
-	err := c.rt.ConfigManager().Get(context.Background(), resource, store.GetByKey(config_manager.ClusterIdConfigKey, ""))
+	err := c.rt.ConfigManager().Get(context.Background(), resource, store.GetByKey(config_manager.ClusterIdConfigKey, core_model.NoMesh))
 	if err != nil {
 		if store.IsResourceNotFound(err) {
 			return "", nil
