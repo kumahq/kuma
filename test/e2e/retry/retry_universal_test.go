@@ -1,4 +1,4 @@
-package deploy_test
+package retry_test
 
 import (
 	"strings"
@@ -40,6 +40,9 @@ var _ = Describe("Test Retry on Universal", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
+		Expect(err).ToNot(HaveOccurred())
+
+		err = cluster.GetKumactlOptions().RunKumactl("delete", "retry", "retry-all-default")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
@@ -104,7 +107,8 @@ conf:
 			})
 
 		for i := 0; i < 10; i++ {
-			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			// -m 8 to wait for 8 seconds to beat the default 5s connect timeout
+			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "localhost:4001")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stderr).To(BeEmpty())
 			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -118,7 +122,7 @@ conf:
 		var errs []error
 
 		for i := 0; i < 10; i++ {
-			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "localhost:4001")
 
 			if err != nil {
 				errs = append(errs, err)
@@ -133,7 +137,7 @@ conf:
 		time.Sleep(5 * time.Second)
 
 		for i := 0; i < 10; i++ {
-			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "3", "--fail", "localhost:4001")
+			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "localhost:4001")
 			Expect(err).ToNot(HaveOccurred())
 			Expect(stderr).To(BeEmpty())
 			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))

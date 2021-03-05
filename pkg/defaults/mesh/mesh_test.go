@@ -41,6 +41,10 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		err = resManager.Get(context.Background(), core_mesh.NewTrafficRouteResource(), core_store.GetByKey("route-all-default", model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
 
+		// and default Retry for the mesh exists
+		err = resManager.Get(context.Background(), core_mesh.NewRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
+		Expect(err).ToNot(HaveOccurred())
+
 		// and Dataplane Token Signing Key for the mesh exists
 		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, model.DefaultMesh)))
 		Expect(err).ToNot(HaveOccurred())
@@ -65,6 +69,8 @@ var _ = Describe("EnsureDefaultMeshResources", func() {
 		err = resManager.Get(context.Background(), core_mesh.NewTrafficPermissionResource(), core_store.GetByKey("allow-all-default", model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
 		err = resManager.Get(context.Background(), core_mesh.NewTrafficRouteResource(), core_store.GetByKey("route-all-default", model.DefaultMesh))
+		Expect(err).ToNot(HaveOccurred())
+		err = resManager.Get(context.Background(), core_mesh.NewRetryResource(), core_store.GetByKey("retry-all-default", model.DefaultMesh))
 		Expect(err).ToNot(HaveOccurred())
 		err = resManager.Get(context.Background(), system.NewSecretResource(), core_store.GetBy(issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, model.DefaultMesh)))
 		Expect(err).ToNot(HaveOccurred())
