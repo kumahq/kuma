@@ -1,4 +1,4 @@
-package deploy_test
+package retry_test
 
 import (
 	"strings"
