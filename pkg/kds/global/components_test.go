@@ -7,6 +7,8 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
@@ -165,6 +167,35 @@ var _ = Describe("Global Sync", func() {
 			Expect(err).ToNot(HaveOccurred())
 			return len(actual.Items)
 		}, "3s", "100ms").Should(Equal(2))
+	})
+
+	It("should have up to date list of provided types", func() {
+		excludeTypes := map[model.ResourceType]bool{
+			mesh.DataplaneInsightType:  true,
+			mesh.DataplaneOverviewType: true,
+			mesh.ServiceInsightType:    true,
+			mesh.ServiceOverviewType:   true,
+		}
+
+		// take all mesh-scoped types and exclude types that won't be synced
+		actualProvidedTypes := []model.ResourceType{}
+		for _, typ := range registry.Global().ListTypes() {
+			obj, err := registry.Global().NewObject(typ)
+			Expect(err).ToNot(HaveOccurred())
+			if obj.Scope() == model.ScopeMesh && !excludeTypes[typ] {
+				actualProvidedTypes = append(actualProvidedTypes, typ)
+			}
+		}
+
+		// plus 2 global-scope types
+		extraTypes := []model.ResourceType{
+			mesh.MeshType,
+			system.ConfigType,
+		}
+
+		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
+
+		Expect(actualProvidedTypes).To(ConsistOf(global.ProvidedTypes))
 	})
 
 })
