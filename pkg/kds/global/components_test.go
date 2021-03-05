@@ -194,7 +194,7 @@ var _ = Describe("Global Sync", func() {
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
-
+		Expect(actualProvidedTypes).To(HaveLen(len(global.ProvidedTypes)))
 		Expect(actualProvidedTypes).To(ConsistOf(global.ProvidedTypes))
 	})
 

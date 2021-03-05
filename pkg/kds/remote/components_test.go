@@ -155,7 +155,7 @@ var _ = Describe("Remote Sync", func() {
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
-
+		Expect(actualConsumedTypes).To(HaveLen(len(remote.ConsumedTypes)))
 		Expect(actualConsumedTypes).To(ConsistOf(remote.ConsumedTypes))
 	})
 })
