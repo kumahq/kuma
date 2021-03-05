@@ -164,6 +164,9 @@ func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 		return errors.Wrapf(err, "unable to find the kuma-dp user")
 	}
 
+	if !args.DryRun {
+		_, _ = cmd.OutOrStdout().Write([]byte("kumactl is about to apply the iptables rules that will enable transparent proxying on the machine. The SSH connection may drop. If that happens, just reconnect again."))
+	}
 	output, err := tp.Setup(&config.TransparentProxyConfig{
 		DryRun:               args.DryRun,
 		RedirectPortOutBound: args.RedirectPortOutBound,
