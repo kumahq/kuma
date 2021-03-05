@@ -30,6 +30,15 @@ func (c DefaultRouteConfigurer) Configure(virtualHost *envoy_route.VirtualHost) 
 	return nil
 }
 
+func (c DefaultRouteConfigurer) hasExternal() bool {
+	for _, subset := range c.Subsets {
+		if subset.IsExternalService {
+			return true
+		}
+	}
+	return false
+}
+
 func (c DefaultRouteConfigurer) routeAction() *envoy_route.RouteAction {
 	routeAction := envoy_route.RouteAction{}
 	if len(c.Subsets) != 0 {
@@ -56,6 +65,11 @@ func (c DefaultRouteConfigurer) routeAction() *envoy_route.RouteAction {
 				Clusters:    weightedClusters,
 				TotalWeight: &wrappers.UInt32Value{Value: totalWeight},
 			},
+		}
+	}
+	if c.hasExternal() {
+		routeAction.HostRewriteSpecifier = &envoy_route.RouteAction_AutoHostRewrite{
+			AutoHostRewrite: &wrappers.BoolValue{Value: true},
 		}
 	}
 	return &routeAction

@@ -105,6 +105,9 @@ func (d *HealthCheckResource) validateConf() (err validators.ValidationError) {
 	if d.Spec.Conf.IntervalJitter != nil {
 		err.Add(ValidateDuration(path.Field("intervalJitter"), d.Spec.Conf.IntervalJitter))
 	}
+	if d.Spec.Conf.NoTrafficInterval != nil {
+		err.Add(ValidateDuration(path.Field("noTrafficInterval"), d.Spec.Conf.NoTrafficInterval))
+	}
 	err.Add(d.validatePercentage(path.Field("healthyPanicThreshold"), d.Spec.Conf.HealthyPanicThreshold))
 	if d.Spec.Conf.GetHttp() != nil {
 		err.Add(d.validateConfHttp(path.Field("http")))

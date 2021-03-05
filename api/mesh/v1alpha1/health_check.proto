@@ -66,6 +66,25 @@ message HealthCheck {
     // service.
     google.protobuf.BoolValue fail_traffic_on_panic = 11;
 
+    // Specifies the path to the file where Envoy can log health check events.
+    // If empty, no event log will be written.
+    string event_log_path = 12;
+
+    // If set to true, health check failure events will always be logged. If set
+    // to false, only the initial health check failure event will be logged. The
+    // default value is false.
+    google.protobuf.BoolValue always_log_health_check_failures = 13;
+
+    // The "no traffic interval" is a special health check interval that is used
+    // when a cluster has never had traffic routed to it. This lower interval
+    // allows cluster information to be kept up to date, without sending a
+    // potentially large amount of active health checking traffic for no reason.
+    // Once a cluster has been used for traffic routing, Envoy will shift back
+    // to using the standard health check interval that is defined. Note that
+    // this interval takes precedence over any other. The default value for "no
+    // traffic interval" is 60 seconds.
+    google.protobuf.Duration no_traffic_interval = 14;
+
     // Tcp defines optional configuration for specifying bytes to send and
     // expected response during the health check
     message Tcp {

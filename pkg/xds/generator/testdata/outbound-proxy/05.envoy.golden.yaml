@@ -62,6 +62,7 @@ resources:
               - match:
                   prefix: /
                 route:
+                  autoHostRewrite: true
                   cluster: es
                   metadataMatch:
                     filterMetadata:

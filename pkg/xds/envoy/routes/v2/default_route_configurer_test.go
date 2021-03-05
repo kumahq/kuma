@@ -103,5 +103,34 @@ var _ = Describe("DefaultRouteConfigurer", func() {
                 timeout: 0s
 `,
 		}),
+		Entry("subset with external service", testCase{
+			clusters: []envoy_common.ClusterSubset{
+				{ClusterName: "backend", Weight: 30, Tags: map[string]string{"version": "v1"}},
+				{ClusterName: "backend", Weight: 60, Tags: map[string]string{"version": "v2"}, IsExternalService: true},
+			},
+			expected: `
+            routes:
+            - match:
+                prefix: /
+              route:
+                autoHostRewrite: true
+                timeout: 0s
+                weightedClusters:
+                  clusters:
+                  - metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          version: v1
+                    name: backend
+                    weight: 30
+                  - metadataMatch:
+                      filterMetadata:
+                        envoy.lb:
+                          version: v2
+                    name: backend
+                    weight: 60
+                  totalWeight: 90
+`,
+		}),
 	)
 })
