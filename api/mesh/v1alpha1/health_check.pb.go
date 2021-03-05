@@ -134,15 +134,18 @@ type HealthCheck_Conf struct {
 	// Specifies the path to the file where Envoy can log health check events.
 	// If empty, no event log will be written.
 	EventLogPath string `protobuf:"bytes,12,opt,name=event_log_path,json=eventLogPath,proto3" json:"event_log_path,omitempty"`
-	// If set to true, health check failure events will always be logged. If set to false, only the
-	// initial health check failure event will be logged. The default value is false.
+	// If set to true, health check failure events will always be logged. If set
+	// to false, only the initial health check failure event will be logged. The
+	// default value is false.
 	AlwaysLogHealthCheckFailures *wrappers.BoolValue `protobuf:"bytes,13,opt,name=always_log_health_check_failures,json=alwaysLogHealthCheckFailures,proto3" json:"always_log_health_check_failures,omitempty"`
-	// The "no traffic interval" is a special health check interval that is used when a cluster has
-	// never had traffic routed to it. This lower interval allows cluster information to be kept up to
-	// date, without sending a potentially large amount of active health checking traffic for no
-	// reason. Once a cluster has been used for traffic routing, Envoy will shift back to using the
-	// standard health check interval that is defined. Note that this interval takes precedence over
-	// any other. The default value for "no traffic interval" is 60 seconds.
+	// The "no traffic interval" is a special health check interval that is used
+	// when a cluster has never had traffic routed to it. This lower interval
+	// allows cluster information to be kept up to date, without sending a
+	// potentially large amount of active health checking traffic for no reason.
+	// Once a cluster has been used for traffic routing, Envoy will shift back
+	// to using the standard health check interval that is defined. Note that
+	// this interval takes precedence over any other. The default value for "no
+	// traffic interval" is 60 seconds.
 	NoTrafficInterval *duration.Duration `protobuf:"bytes,14,opt,name=no_traffic_interval,json=noTrafficInterval,proto3" json:"no_traffic_interval,omitempty"`
 	// Types that are assignable to Protocol:
 	//	*HealthCheck_Conf_Tcp_

@@ -24,6 +24,8 @@ var _ = Describe("Standalone Postgres test", func() {
 	})
 
 	RunSmokeTest(StaticConfig(`
+general:
+  workDir: ./kuma-workdir
 apiServer:
   http:
     port: 0
@@ -36,5 +38,5 @@ store:
   type: postgres
 diagnostics:
   serverPort: %d
-`))
+`), "./kuma-workdir")
 })
