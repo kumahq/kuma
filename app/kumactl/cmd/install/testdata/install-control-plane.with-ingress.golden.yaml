@@ -7186,6 +7186,7 @@ rules:
       - trafficpermissions
       - trafficroutes
       - timeouts
+      - retries
     verbs:
       - get
       - list
@@ -7201,7 +7202,6 @@ rules:
       - externalservices
       - faultinjections
       - healthchecks
-      - retries
       - trafficlogs
       - traffictraces
     verbs:
