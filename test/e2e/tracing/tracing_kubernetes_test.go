@@ -84,7 +84,7 @@ spec:
 			return
 		}
 		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
-		Expect(k8s.KubectlDeleteFromStringE(cluster.GetTesting(), cluster.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))).To(Succeed())
+		Expect(cluster.DeleteNamespace(TestNamespace)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 

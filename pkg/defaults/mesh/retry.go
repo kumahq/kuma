@@ -34,7 +34,7 @@ var defaultRetry = &mesh_proto.Retry{
 	Conf: &mesh_proto.Retry_Conf{
 		Http: &mesh_proto.Retry_Conf_Http{
 			NumRetries:    wrapperspb.UInt32(5),
-			PerTryTimeout: durationpb.New(time.Second),
+			PerTryTimeout: durationpb.New(16 * time.Second), // this has to be greater than RequestTimeout from the default Timeout policy
 			BackOff: &mesh_proto.Retry_Conf_BackOff{
 				BaseInterval: durationpb.New(25 * time.Millisecond),
 				MaxInterval:  durationpb.New(250 * time.Millisecond),
@@ -45,7 +45,7 @@ var defaultRetry = &mesh_proto.Retry{
 		},
 		Grpc: &mesh_proto.Retry_Conf_Grpc{
 			NumRetries:    wrapperspb.UInt32(5),
-			PerTryTimeout: durationpb.New(time.Second),
+			PerTryTimeout: durationpb.New(16 * time.Second), // this has to be greater than RequestTimeout from the default Timeout policy
 			BackOff: &mesh_proto.Retry_Conf_BackOff{
 				BaseInterval: durationpb.New(25 * time.Millisecond),
 				MaxInterval:  durationpb.New(250 * time.Millisecond),

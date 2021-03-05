@@ -98,7 +98,7 @@ metadata:
 			return
 		}
 
-		_ = k8s.KubectlDeleteFromStringE(remoteK8s.GetTesting(), remoteK8s.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
+		Expect(remoteK8s.DeleteNamespace(TestNamespace)).To(Succeed())
 		err := remoteK8s.DeleteKuma(optsRemoteK8s...)
 		Expect(err).ToNot(HaveOccurred())
 

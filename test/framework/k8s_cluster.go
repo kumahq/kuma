@@ -119,7 +119,7 @@ func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 
 func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 	retry.DoWithRetry(c.t,
-		"Wait the Kuma Namespace to terminate.",
+		fmt.Sprintf("Wait for %s Namespace to terminate.", namespace),
 		DefaultRetries,
 		DefaultTimeout,
 		func() (string, error) {

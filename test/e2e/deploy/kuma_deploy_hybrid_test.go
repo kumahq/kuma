@@ -164,10 +164,12 @@ metadata:
 		if ShouldSkipCleanup() {
 			return
 		}
-		_ = k8s.KubectlDeleteFromStringE(remote_1.GetTesting(), remote_1.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
-		err := remote_1.DeleteKuma(optsRemote1...)
+		err := remote_1.DeleteNamespace(TestNamespace)
 		Expect(err).ToNot(HaveOccurred())
-		_ = k8s.KubectlDeleteFromStringE(remote_2.GetTesting(), remote_2.GetKubectlOptions(), namespaceWithSidecarInjection(TestNamespace))
+		err = remote_1.DeleteKuma(optsRemote1...)
+		Expect(err).ToNot(HaveOccurred())
+		err = remote_2.DeleteNamespace(TestNamespace)
+		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.DeleteKuma(optsRemote2...)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_3.DeleteKuma(optsRemote3...)
