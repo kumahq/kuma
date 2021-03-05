@@ -92,10 +92,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up GC")
 					return err
 				}
-				if err := clusterid.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up clusterID")
-					return err
-				}
 				if err := xds.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up XDS")
 					return err
@@ -158,10 +154,6 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up KDS Global")
 					return err
 				}
-				if err := clusterid.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up clusterID")
-					return err
-				}
 				if err := insights.Setup(rt); err != nil {
 					runLog.Error(err, "unable to set up Insights resyncer")
 					return err
@@ -172,6 +164,10 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 				}
 			}
 
+			if err := clusterid.Setup(rt); err != nil {
+				runLog.Error(err, "unable to set up clusterID")
+				return err
+			}
 			if err := diagnostics.SetupServer(rt); err != nil {
 				runLog.Error(err, "unable to set up Diagnostics server")
 				return err
