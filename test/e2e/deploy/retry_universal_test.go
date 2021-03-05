@@ -14,7 +14,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var _ = Describe("Test Retry on Universal", func() {
+var _ = PDescribe("Test Retry on Universal", func() {
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
