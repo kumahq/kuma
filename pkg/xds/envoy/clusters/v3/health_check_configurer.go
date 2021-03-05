@@ -141,13 +141,16 @@ func (e *HealthCheckConfigurer) Configure(cluster *envoy_cluster.Cluster) error 
 		HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
 			TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
 		},
-		Interval:              activeChecks.Interval,
-		Timeout:               activeChecks.Timeout,
-		UnhealthyThreshold:    &wrappers.UInt32Value{Value: activeChecks.UnhealthyThreshold},
-		HealthyThreshold:      &wrappers.UInt32Value{Value: activeChecks.HealthyThreshold},
-		InitialJitter:         activeChecks.InitialJitter,
-		IntervalJitter:        activeChecks.IntervalJitter,
-		IntervalJitterPercent: activeChecks.IntervalJitterPercent,
+		Interval:                     activeChecks.Interval,
+		Timeout:                      activeChecks.Timeout,
+		UnhealthyThreshold:           &wrappers.UInt32Value{Value: activeChecks.UnhealthyThreshold},
+		HealthyThreshold:             &wrappers.UInt32Value{Value: activeChecks.HealthyThreshold},
+		InitialJitter:                activeChecks.InitialJitter,
+		IntervalJitter:               activeChecks.IntervalJitter,
+		IntervalJitterPercent:        activeChecks.IntervalJitterPercent,
+		EventLogPath:                 activeChecks.EventLogPath,
+		AlwaysLogHealthCheckFailures: activeChecks.AlwaysLogHealthCheckFailures.GetValue(),
+		NoTrafficInterval:            activeChecks.NoTrafficInterval,
 	}
 
 	healthPanicThreshold(cluster, activeChecks.GetHealthyPanicThreshold())
