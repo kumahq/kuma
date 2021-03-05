@@ -7,6 +7,9 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/core"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -94,6 +97,41 @@ func httpHealthCheck(
 	}
 }
 
+func healthPanicThreshold(cluster *envoy_cluster.Cluster, value *wrappers.FloatValue) {
+	if value == nil {
+		return
+	}
+	if cluster.CommonLbConfig == nil {
+		cluster.CommonLbConfig = &envoy_cluster.Cluster_CommonLbConfig{}
+	}
+	cluster.CommonLbConfig.HealthyPanicThreshold = &envoy_type.Percent{Value: float64(value.Value)}
+}
+
+func failTrafficOnPanic(cluster *envoy_cluster.Cluster, value *wrappers.BoolValue) {
+	if value == nil {
+		return
+	}
+	if cluster.CommonLbConfig == nil {
+		cluster.CommonLbConfig = &envoy_cluster.Cluster_CommonLbConfig{}
+	}
+	if cluster.CommonLbConfig.GetLocalityWeightedLbConfig() != nil {
+		// used load balancing type doesn't support 'fail_traffic_on_panic', right now we don't use
+		// 'locality_weighted_lb_config' in Kuma, locality aware load balancing is implemented based on priority levels
+		core.Log.WithName("health-check-configurer").Error(
+			errors.New("unable to set 'fail_traffic_on_panic' for 'locality_weighted_lb_config' load balancer"),
+			"unable to configure 'fail_traffic_on_panic', parameter is ignored")
+		return
+	}
+	if cluster.CommonLbConfig.LocalityConfigSpecifier == nil {
+		cluster.CommonLbConfig.LocalityConfigSpecifier = &envoy_cluster.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
+			ZoneAwareLbConfig: &envoy_cluster.Cluster_CommonLbConfig_ZoneAwareLbConfig{},
+		}
+	}
+	if zoneAwareLbConfig := cluster.CommonLbConfig.GetZoneAwareLbConfig(); zoneAwareLbConfig != nil {
+		zoneAwareLbConfig.FailTrafficOnPanic = value.GetValue()
+	}
+}
+
 func (e *HealthCheckConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	if e.HealthCheck == nil || e.HealthCheck.Spec.Conf == nil {
 		return nil
@@ -111,6 +149,9 @@ func (e *HealthCheckConfigurer) Configure(cluster *envoy_cluster.Cluster) error 
 		IntervalJitter:        activeChecks.IntervalJitter,
 		IntervalJitterPercent: activeChecks.IntervalJitterPercent,
 	}
+
+	healthPanicThreshold(cluster, activeChecks.GetHealthyPanicThreshold())
+	failTrafficOnPanic(cluster, activeChecks.GetFailTrafficOnPanic())
 
 	if tcp := activeChecks.GetTcp(); tcp != nil {
 		healthCheck.HealthChecker = tcpHealthCheck(tcp)

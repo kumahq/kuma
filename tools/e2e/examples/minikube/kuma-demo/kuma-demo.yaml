@@ -34,6 +34,7 @@ metadata:
 spec:
   ports:
   - port: 8000
+    targetPort: 80
     name: http
   selector:
     app: demo-app
@@ -67,32 +68,22 @@ spec:
       serviceAccountName: demo-app-service-account
       containers:
       - name: demo-app
-        image: "kong:1.1.2-alpine"
+        image: "nginx:stable"
         imagePullPolicy: IfNotPresent
         ports:
-        - containerPort: 8000
-        env:
-        - name: KONG_ADMIN_LISTEN
-          value: "off"
-        - name: KONG_DATABASE
-          value: "off"
-        - name: KONG_DECLARATIVE_CONFIG
-          value: "/etc/kong/kong.yml"
-        volumeMounts:
-        - name: demo-app-config
-          mountPath: /etc/kong
+        - containerPort: 80
         livenessProbe:
           exec:
             command:
             - curl
             - -s
-            - http://localhost:8000
+            - http://localhost:80
         readinessProbe:
           exec:
             command:
             - curl
             - -s
-            - http://localhost:8000
+            - http://localhost:80
         resources:
           requests:
             cpu: 50m
@@ -159,7 +150,7 @@ spec:
         - --show-error
         - --include
         - --fail
-        - http://demo-app.kuma-demo:8000/request
+        - http://demo-app.kuma-demo:8000/
         resources:
           requests:
             cpu: 10m

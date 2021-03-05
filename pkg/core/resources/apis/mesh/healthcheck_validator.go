@@ -1,6 +1,8 @@
 package mesh
 
 import (
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -103,8 +105,16 @@ func (d *HealthCheckResource) validateConf() (err validators.ValidationError) {
 	if d.Spec.Conf.IntervalJitter != nil {
 		err.Add(ValidateDuration(path.Field("intervalJitter"), d.Spec.Conf.IntervalJitter))
 	}
+	err.Add(d.validatePercentage(path.Field("healthyPanicThreshold"), d.Spec.Conf.HealthyPanicThreshold))
 	if d.Spec.Conf.GetHttp() != nil {
 		err.Add(d.validateConfHttp(path.Field("http")))
+	}
+	return
+}
+
+func (d *HealthCheckResource) validatePercentage(path validators.PathBuilder, value *wrappers.FloatValue) (err validators.ValidationError) {
+	if value.GetValue() < 0.0 || value.GetValue() > 100.0 {
+		err.AddViolationAt(path, "must be in range [0.0 - 100.0]")
 	}
 	return
 }

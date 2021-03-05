@@ -288,6 +288,8 @@ type GeneralConfig struct {
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_general_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_general_tls_key_file"`
+	// WorkDir defines a path to the working directory
+	WorkDir string `yaml:"workDir" envconfig:"kuma_general_work_dir"`
 }
 
 var _ config.Config = &GeneralConfig{}
@@ -308,5 +310,6 @@ func (g *GeneralConfig) Validate() error {
 func DefaultGeneralConfig() *GeneralConfig {
 	return &GeneralConfig{
 		DNSCacheTTL: 10 * time.Second,
+		WorkDir:     "",
 	}
 }

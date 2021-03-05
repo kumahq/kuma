@@ -56,6 +56,16 @@ message HealthCheck {
     // increase the wait time.
     uint32 interval_jitter_percent = 9;
 
+    // Allows to configure panic threshold for Envoy cluster. If not specified,
+    // the default is 50%. To disable panic mode, set to 0%.
+    google.protobuf.FloatValue healthy_panic_threshold = 10;
+
+    // If set to true, Envoy will not consider any hosts when the cluster is in
+    // 'panic mode'. Instead, the cluster will fail all requests as if all hosts
+    // are unhealthy. This can help avoid potentially overwhelming a failing
+    // service.
+    google.protobuf.BoolValue fail_traffic_on_panic = 11;
+
     // Tcp defines optional configuration for specifying bytes to send and
     // expected response during the health check
     message Tcp {

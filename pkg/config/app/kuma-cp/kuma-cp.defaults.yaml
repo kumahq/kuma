@@ -31,13 +31,13 @@ store:
     maxOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
     # TLS settings
     tls:
-      # Mode of TLS connection. Available values (disable, require, verify-ca, verify-full)
+      # Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
       mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
-      # Path to TLS Certificate of the client. Used in require, verify-ca and verify-full modes
+      # Path to TLS Certificate of the client. Used in verifyCa and verifyFull modes
       certPath: # ENV: KUMA_STORE_POSTGRES_TLS_CERT_PATH
-      # Path to TLS Key of the client. Used in require, verify-ca and verify-full modes
+      # Path to TLS Key of the client. Used in verifyCa and verifyFull modes
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
-      # Path to the root certificate. Used in verify-ca and verify-full modes.
+      # Path to the root certificate. Used in verifyCa and verifyFull modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
     # MinReconnectInterval controls the duration to wait before trying to
     # re-establish the database connection after connection loss. After each
@@ -288,6 +288,7 @@ general:
   tlsCertFile: # ENV: KUMA_GENERAL_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.
   tlsKeyFile: # ENV: KUMA_GENERAL_TLS_KEY_FILE
+  workDir: ""
 
 # Web GUI Server configuration
 guiServer:
