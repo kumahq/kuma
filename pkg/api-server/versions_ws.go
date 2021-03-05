@@ -4,7 +4,7 @@ import (
 	"github.com/emicklei/go-restful"
 )
 
-var versions = []byte(`{
+var Versions = []byte(`{
   "kumaDp": {
     "1.0.0": {
       "envoy": "1.16.0"
@@ -41,7 +41,7 @@ func versionsWs() *restful.WebService {
 
 	ws.Route(ws.GET("").To(func(req *restful.Request, resp *restful.Response) {
 		resp.AddHeader("content-type", "application/json")
-		if _, err := resp.Write(versions); err != nil {
+		if _, err := resp.Write(Versions); err != nil {
 			log.Error(err, "Could not write the index response")
 		}
 	}))
