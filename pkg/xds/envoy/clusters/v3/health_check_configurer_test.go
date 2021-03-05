@@ -281,5 +281,82 @@ var _ = Describe("HealthCheckConfigurer", func() {
             name: testCluster
             type: EDS`,
 		}),
+		Entry("HealthCheck with panic threshold", testCase{
+			clusterName: "testCluster",
+			healthCheck: &mesh_core.HealthCheckResource{
+				Spec: &mesh_proto.HealthCheck{
+					Sources: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
+					},
+					Destinations: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
+					},
+					Conf: &mesh_proto.HealthCheck_Conf{
+						Interval:              ptypes.DurationProto(5 * time.Second),
+						Timeout:               ptypes.DurationProto(4 * time.Second),
+						UnhealthyThreshold:    3,
+						HealthyThreshold:      2,
+						HealthyPanicThreshold: &wrappers.FloatValue{Value: 90},
+					},
+				},
+			},
+			expected: `
+            commonLbConfig:
+              healthyPanicThreshold:
+                value: 90
+            connectTimeout: 5s
+            edsClusterConfig:
+              edsConfig:
+                ads: {}
+                resourceApiVersion: V3
+            healthChecks:
+            - healthyThreshold: 2
+              interval: 5s
+              tcpHealthCheck: {}
+              timeout: 4s
+              unhealthyThreshold: 3
+            name: testCluster
+            type: EDS`,
+		}),
+		Entry("HealthCheck with panic threshold, fail traffic on panic", testCase{
+			clusterName: "testCluster",
+			healthCheck: &mesh_core.HealthCheckResource{
+				Spec: &mesh_proto.HealthCheck{
+					Sources: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
+					},
+					Destinations: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
+					},
+					Conf: &mesh_proto.HealthCheck_Conf{
+						Interval:              ptypes.DurationProto(5 * time.Second),
+						Timeout:               ptypes.DurationProto(4 * time.Second),
+						UnhealthyThreshold:    3,
+						HealthyThreshold:      2,
+						HealthyPanicThreshold: &wrappers.FloatValue{Value: 90},
+						FailTrafficOnPanic:    &wrappers.BoolValue{Value: true},
+					},
+				},
+			},
+			expected: `
+            commonLbConfig:
+              healthyPanicThreshold:
+                value: 90
+              zoneAwareLbConfig:
+                failTrafficOnPanic: true
+            connectTimeout: 5s
+            edsClusterConfig:
+              edsConfig:
+                ads: {}
+                resourceApiVersion: V3
+            healthChecks:
+            - healthyThreshold: 2
+              interval: 5s
+              tcpHealthCheck: {}
+              timeout: 4s
+              unhealthyThreshold: 3
+            name: testCluster
+            type: EDS`,
+		}),
 	)
 })
