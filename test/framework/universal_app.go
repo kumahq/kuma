@@ -283,6 +283,59 @@ func (s *UniversalApp) CreateMainApp(env []string, args []string) {
 	s.mainApp = NewSshApp(s.verbose, s.ports[sshPort], env, args)
 }
 
+func (s *UniversalApp) OverrideDpVersion(version string) error {
+	// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"wget",
+		fmt.Sprintf("https://kong.bintray.com/kuma/kuma-%s-ubuntu-amd64.tar.gz", version),
+		"-O",
+		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"mkdir",
+		"-p",
+		"/tmp/kuma/",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"tar",
+		"xvzf",
+		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
+		"-C",
+		"/tmp/kuma/",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"cp",
+		fmt.Sprintf("/tmp/kuma/kuma-%s/bin/kuma-dp", version),
+		"/usr/bin/kuma-dp",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"cp",
+		fmt.Sprintf("/tmp/kuma/kuma-%s/bin/envoy", version),
+		"/usr/local/bin/envoy",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 	// create the token file on the app container
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()

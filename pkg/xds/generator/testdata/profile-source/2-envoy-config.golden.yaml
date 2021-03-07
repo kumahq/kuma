@@ -37,6 +37,7 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
+    http2ProtocolOptions: {}
     name: db
     transportSocket:
       name: envoy.transport_sockets.tls
@@ -79,11 +80,6 @@ resources:
               resourceApiVersion: V3
         sni: db{mesh=demo}
     type: EDS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          http2ProtocolOptions: {}
 - name: elastic
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -98,6 +94,7 @@ resources:
       tcpHealthCheck: {}
       timeout: 4s
       unhealthyThreshold: 3
+    http2ProtocolOptions: {}
     name: elastic
     transportSocket:
       name: envoy.transport_sockets.tls
@@ -140,11 +137,6 @@ resources:
               resourceApiVersion: V3
         sni: elastic{mesh=demo}
     type: EDS
-    typedExtensionProtocolOptions:
-      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
-        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
-        explicitHttpConfig:
-          http2ProtocolOptions: {}
 - name: inbound:passthrough
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

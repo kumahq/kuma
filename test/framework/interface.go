@@ -46,6 +46,7 @@ type deployOptions struct {
 	transparent bool
 	protocol    string
 	mesh        string
+	dpVersion   string
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -89,6 +90,13 @@ func WithHDS(enabled bool) DeployOptionsFunc {
 func WithGlobalAddress(address string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.globalAddress = address
+	}
+}
+
+// WithDPVersion only works with Universal now
+func WithDPVersion(version string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.dpVersion = version
 	}
 }
 

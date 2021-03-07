@@ -52,10 +52,8 @@ resources:
           - name: envoy.access_loggers.file
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-              logFormat:
-                textFormatSource:
-                  inlineString: |+
-                    [%START_TIME%] %RESPONSE_FLAGS% default (unknown)->%UPSTREAM_HOST%(external) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+              format: |+
+                [%START_TIME%] %RESPONSE_FLAGS% default (unknown)->%UPSTREAM_HOST%(external) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
 
               path: /var/log
           cluster: outbound:passthrough
