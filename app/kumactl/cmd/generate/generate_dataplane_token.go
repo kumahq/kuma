@@ -27,7 +27,7 @@ func NewGenerateDataplaneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 		Long:  `Generate Dataplane Token that is used to prove Dataplane identity.`,
 		Example: `
 Generate token bound by name and mesh
-$ kumactl generate dataplane-token --mesh demo --dataplane demo-01
+$ kumactl generate dataplane-token --mesh demo --name demo-01
 
 Generate token bound by mesh
 $ kumactl generate dataplane-token --mesh demo
