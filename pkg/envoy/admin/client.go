@@ -73,7 +73,7 @@ func (a *envoyAdminClient) GenerateAPIToken(dataplane *mesh_core.DataplaneResour
 }
 
 func (a *envoyAdminClient) getOrCreateSigningKey(mesh string) (string, error) {
-	key, err := issuer.GetSigningKey(a.rm, issuer.DataplaneTokenPrefix, mesh)
+	key, err := issuer.GetSigningKey(a.rm, issuer.EnvoyAdminClientTokenPrefix, mesh)
 	if err != nil {
 		return "", errors.Wrap(err, "unable to retrieve the signing key")
 	}
