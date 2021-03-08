@@ -152,18 +152,15 @@ metadata:
 		if ShouldSkipCleanup() {
 			return
 		}
-		err := cluster.DeleteKuma(deployOptsFuncs...)
+
+		err := cluster.DeleteNamespace(TestNamespace)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = cluster.DeleteKuma(deployOptsFuncs...)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = cluster.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
-
-		err = k8s.DeleteNamespaceE(cluster.GetTesting(),
-			cluster.GetKubectlOptions(TestNamespace),
-			TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-
-		cluster.(*K8sCluster).WaitNamespaceDelete(TestNamespace)
 	})
 
 	It("should route to external-service", func() {
