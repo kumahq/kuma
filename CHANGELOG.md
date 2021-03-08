@@ -1,5 +1,56 @@
 # CHANGELOG
 
+## [1.1.0]
+> Released on  2021/03/08
+
+* feat: default to xDS v3 [#1642](https://github.com//kumahq/kuma/pull/1642)
+  [#1589](https://github.com//kumahq/kuma/pull/1589)
+  [#1442](https://github.com//kumahq/kuma/pull/1442)
+  [#1399](https://github.com//kumahq/kuma/pull/1399)
+  [#1408](https://github.com//kumahq/kuma/pull/1408)
+  [#1383](https://github.com//kumahq/kuma/pull/1383)
+* feat: set timeouts [#1554](https://github.com//kumahq/kuma/pull/1554)
+* feat: add default retry policy [#1606](https://github.com//kumahq/kuma/pull/1606)
+* feat: appProtocol for application protocol [#1413](https://github.com//kumahq/kuma/pull/1413)
+  👍contributed by @tharun208
+* feat: Resource counter based on Mesh insights [#1423](https://github.com//kumahq/kuma/pull/1423)
+  👍contributed by @jewertow
+* feat: set auto_host_rewrite to true for ExternalServices [#1635](https://github.com//kumahq/kuma/pull/1635)
+* feat: health check add event log support [#1631](https://github.com//kumahq/kuma/pull/1631)
+* feat: introduce 'healthy_panic_theshold' for HealthCheck policy [#1625](https://github.com//kumahq/kuma/pull/1625)
+* feat: working directory for kuma-cp [#1573](https://github.com//kumahq/kuma/pull/1573)
+* feat: inject ingress.kubernetes.io/service-upstream [#1608](https://github.com//kumahq/kuma/pull/1608)
+* feat: global secrets [#1603](https://github.com//kumahq/kuma/pull/1603)
+* feat: NACK backoff [#1591](https://github.com//kumahq/kuma/pull/1591)
+* feat: degraded status in insights [#1563](https://github.com//kumahq/kuma/pull/1563)
+* chore: remove deprecated options [#1652](https://github.com//kumahq/kuma/pull/1652)
+* chore: inlineString in DataSource [#1514](https://github.com//kumahq/kuma/pull/1514)
+* chore: use `kumactl install transparent-proxy` in `kuma-init` [#1599](https://github.com//kumahq/kuma/pull/1599)
+* chore: expose versions endpoint to extension
+  [#1638](https://github.com//kumahq/kuma/pull/1638)
+  [#1639](https://github.com//kumahq/kuma/pull/1639)
+  [#1602](https://github.com//kumahq/kuma/pull/1602)
+* chore: sidecar env vars override [#1562](https://github.com//kumahq/kuma/pull/1562)
+* chore: Add support for UDP Listeners [#1568](https://github.com//kumahq/kuma/pull/1568)
+* chore: add msg on transparent proxy that ssh connection may drop [#1630](https://github.com//kumahq/kuma/pull/1630)
+* chore: Version bumps
+  Envoy 1.16.2 -> 1.17.1
+  Grafana 7.1.4 -> 7.4.3
+  Prometheus 2.18.2 -> 2.25.0
+  Jaeger 1.18 -> 1.22  
+  [#1637](https://github.com//kumahq/kuma/pull/1637) [#1619](https://github.com//kumahq/kuma/pull/1619)
+* chore: improve Kuma extensibility
+  [#1572](https://github.com//kumahq/kuma/pull/1572)
+  [#1550](https://github.com//kumahq/kuma/pull/1550)
+  [#1516](https://github.com//kumahq/kuma/pull/1516)
+  [#1513](https://github.com//kumahq/kuma/pull/1513)
+  [#1493](https://github.com//kumahq/kuma/pull/1493)
+* fix: Postgres TLS modes in kuma-cp.defaults.yaml [#1611](https://github.com//kumahq/kuma/pull/1611)
+  👍contributed by Andy Bailey
+* fix: typo [#1628](https://github.com//kumahq/kuma/pull/1628)
+  👍contributed by @pgold30
+* fix: require -f parameter to kumactl apply [#1590](https://github.com//kumahq/kuma/pull/1590)
+
 ## [1.0.8]
 > Released on  2021/02/19
 
@@ -82,7 +133,7 @@ Changes:
   👍contributed by @jewertow
 * feat: return Kuma DP and Envoy version in the output of `inspect dataplanes` [#1298](https://github.com//kumahq/kuma/pull/1298)
   👍contributed by @jewertow
-* feat: add horizontal pod autoscaler (bp #1271) [#1271](https://github.com//kumahq/kuma/pull/1271)
+* feat: add horizontal pod autoscaler [#1271](https://github.com//kumahq/kuma/pull/1271)
   👍contributed by @austince
 * fix: bug with lost update of Dataplane [#1313](https://github.com//kumahq/kuma/pull/1313)
 * fix: probe path gets a / prepended if not supplied [#1326](https://github.com//kumahq/kuma/pull/1326)
