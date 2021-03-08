@@ -51,11 +51,6 @@ var _ = Describe("Config WS", func() {
 		json := fmt.Sprintf(`
         {
           "apiServer": {
-            "catalog": {
-              "bootstrap": {
-                "url": ""
-              }
-            },
             "corsAllowedDomains": [
               ".*"
             ],
