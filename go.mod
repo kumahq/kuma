@@ -27,7 +27,7 @@ require (
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
-	github.com/lib/pq v1.9.0
+	github.com/lib/pq v1.10.0
 	github.com/miekg/dns v1.1.40
 	github.com/onsi/ginkgo v1.15.0
 	github.com/onsi/gomega v1.10.5
