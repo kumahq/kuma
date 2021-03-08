@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 
@@ -175,6 +176,7 @@ var _ = Describe("Global Sync", func() {
 			mesh.DataplaneOverviewType: true,
 			mesh.ServiceInsightType:    true,
 			mesh.ServiceOverviewType:   true,
+			sample.TrafficRouteType:    true,
 		}
 
 		// take all mesh-scoped types and exclude types that won't be synced
