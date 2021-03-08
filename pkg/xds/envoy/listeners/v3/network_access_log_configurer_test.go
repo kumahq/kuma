@@ -111,8 +111,6 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 				}),
 			},
 			expected: `
-            name: outbound:127.0.0.1:5432
-            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -126,14 +124,14 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                   - name: envoy.access_loggers.file
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                      logFormat:
-                        textFormatSource:
-                          inlineString: |+
-                            [%START_TIME%] %RESPONSE_FLAGS% demo 192.168.0.1(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-            
+                      format: |+
+                        [%START_TIME%] %RESPONSE_FLAGS% demo 192.168.0.1(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+
                       path: /tmp/log
                   cluster: db
                   statPrefix: db
+            name: outbound:127.0.0.1:5432
+            trafficDirection: OUTBOUND
 `,
 		}),
 		Entry("basic tcp_proxy with tcp access log", testCase{

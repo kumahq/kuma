@@ -1,7 +1,7 @@
 K8SCLUSTERS = kuma-1 kuma-2
 K8SCLUSTERS_START_TARGETS = $(addprefix test/e2e/kind/start/cluster/, $(K8SCLUSTERS))
 K8SCLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/kind/stop/cluster/, $(K8SCLUSTERS))
-API_VERSION ?= v2
+API_VERSION ?= v3
 
 KUMA_UNIVERSAL_DOCKER_IMAGE ?= kuma-universal
 KUMA_UNIVERSAL_DOCKERFILE ?= test/dockerfiles/Dockerfile.universal
