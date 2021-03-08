@@ -29,8 +29,8 @@ require (
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
 	github.com/lib/pq v1.10.0
 	github.com/miekg/dns v1.1.40
-	github.com/onsi/ginkgo v1.15.0
-	github.com/onsi/gomega v1.10.5
+	github.com/onsi/ginkgo v1.15.1
+	github.com/onsi/gomega v1.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.9.0
@@ -42,7 +42,7 @@ require (
 	github.com/slok/go-http-metrics v0.9.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
-	github.com/spiffe/spire v0.12.0
+	github.com/spiffe/spire v0.12.1
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.13.0
