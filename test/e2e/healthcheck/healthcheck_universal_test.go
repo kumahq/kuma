@@ -14,7 +14,7 @@ var _ = Describe("Test application HealthCheck on Universal", func() {
 	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
-		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Verbose)
+		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
 		deployOptsFuncs = []DeployOptionsFunc{}
 
 		err := NewClusterSetup().

@@ -46,12 +46,12 @@ name: %s
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
-			[]string{Kuma1, Kuma2, Kuma3},
+			[]string{Kuma3, Kuma4, Kuma5},
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Global
-		global = clusters.GetCluster(Kuma1)
+		global = clusters.GetCluster(Kuma5)
 		optsGlobal = []DeployOptionsFunc{}
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
@@ -76,7 +76,7 @@ name: %s
 		// first 2-3 load balancer requests, it's fine but tests should be rewritten
 
 		// Cluster 1
-		remote_1 = clusters.GetCluster(Kuma2)
+		remote_1 = clusters.GetCluster(Kuma3)
 		optsRemote1 = []DeployOptionsFunc{
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithHDS(false),
@@ -93,7 +93,7 @@ name: %s
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 2
-		remote_2 = clusters.GetCluster(Kuma3)
+		remote_2 = clusters.GetCluster(Kuma4)
 		optsRemote2 = []DeployOptionsFunc{
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithHDS(false),
@@ -116,14 +116,15 @@ name: %s
 		}
 		err := remote_1.DeleteKuma(optsRemote1...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_2.DeleteKuma(optsRemote2...)
-		Expect(err).ToNot(HaveOccurred())
-		err = global.DeleteKuma(optsGlobal...)
-		Expect(err).ToNot(HaveOccurred())
-
 		err = remote_1.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
+
+		err = remote_2.DeleteKuma(optsRemote2...)
+		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
+
+		err = global.DeleteKuma(optsGlobal...)
 		Expect(err).ToNot(HaveOccurred())
 		err = global.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())

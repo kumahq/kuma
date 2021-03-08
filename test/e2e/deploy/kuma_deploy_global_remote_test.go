@@ -116,6 +116,8 @@ metadata:
 
 		err = c2.DeleteKuma(optsRemote...)
 		Expect(err).ToNot(HaveOccurred())
+
+		Expect(clusters.DismissCluster()).To(Succeed())
 	})
 
 	It("should deploy Remote and Global on 2 clusters", func() {
