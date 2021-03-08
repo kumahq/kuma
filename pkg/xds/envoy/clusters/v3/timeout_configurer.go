@@ -24,7 +24,7 @@ func (t *TimeoutConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 	cluster.ConnectTimeout = ptypes.DurationProto(t.Conf.GetConnectTimeoutOrDefault(defaultConnectTimeout))
 	switch t.Protocol {
 	case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
-		// nolint:staticcheck keep deprecated options to be compatible with Envoy 1.16.x in Kuma 1.0.x
+		// nolint:staticcheck // keep deprecated options to be compatible with Envoy 1.16.x in Kuma 1.0.x
 		cluster.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{
 			IdleTimeout: ptypes.DurationProto(t.Conf.GetHttp().GetIdleTimeout().AsDuration()),
 		}
@@ -43,7 +43,7 @@ func (t *TimeoutConfigurer) Configure(cluster *envoy_cluster.Cluster) error {
 		// }
 	case mesh_core.ProtocolGRPC:
 		if maxStreamDuration := t.Conf.GetGrpc().GetMaxStreamDuration().AsDuration(); maxStreamDuration != 0 {
-			// nolint:staticcheck keep deprecated options to be compatible with Envoy 1.16.x in Kuma 1.0.x
+			// nolint:staticcheck // keep deprecated options to be compatible with Envoy 1.16.x in Kuma 1.0.x
 			cluster.CommonHttpProtocolOptions = &envoy_core.HttpProtocolOptions{
 				MaxStreamDuration: ptypes.DurationProto(maxStreamDuration),
 			}

@@ -11,7 +11,7 @@ type Http2Configurer struct {
 var _ ClusterConfigurer = &Http2Configurer{}
 
 func (p *Http2Configurer) Configure(c *envoy_cluster.Cluster) error {
-	// nolint:staticcheck keep deprecated options to be compatible with Envoy 1.16.x in Kuma 1.0.x
+	// nolint:staticcheck // keep deprecated options to be compatible with Envoy 1.16.x in Kuma 1.0.x
 	c.Http2ProtocolOptions = &envoy_core.Http2ProtocolOptions{}
 
 	// options := &envoy_upstream_http.HttpProtocolOptions{

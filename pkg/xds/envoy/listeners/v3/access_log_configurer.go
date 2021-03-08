@@ -121,7 +121,7 @@ func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (
 		// 	},
 		// },
 		AccessLogFormat: &access_loggers_file.FileAccessLog_Format{
-			// nolint:staticcheck keep deprecated options to be compatible with Envoy 1.16.x in Kuma 1.0.x
+			// nolint:staticcheck // keep deprecated options to be compatible with Envoy 1.16.x in Kuma 1.0.x
 			Format: format.String(),
 		},
 		Path: cfg.Path,
