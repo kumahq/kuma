@@ -44,6 +44,7 @@ var (
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
 		mesh.RetryType,
+		mesh.TimeoutType,
 		system.SecretType,
 		system.ConfigType,
 	}

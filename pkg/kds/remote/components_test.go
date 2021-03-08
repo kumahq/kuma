@@ -8,6 +8,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	kds_context "github.com/kumahq/kuma/pkg/kds/context"
 
@@ -125,5 +130,35 @@ var _ = Describe("Remote Sync", func() {
 		err = remoteStore.List(context.Background(), &actual)
 		Expect(err).ToNot(HaveOccurred())
 		closeFunc()
+	})
+
+	It("should have up to date list of consumed types", func() {
+		excludeTypes := map[model.ResourceType]bool{
+			mesh.DataplaneInsightType:  true,
+			mesh.DataplaneOverviewType: true,
+			mesh.ServiceInsightType:    true,
+			mesh.ServiceOverviewType:   true,
+			sample.TrafficRouteType:    true,
+		}
+
+		// take all mesh-scoped types and exclude types that won't be synced
+		actualConsumedTypes := []model.ResourceType{}
+		for _, typ := range registry.Global().ListTypes() {
+			obj, err := registry.Global().NewObject(typ)
+			Expect(err).ToNot(HaveOccurred())
+			if obj.Scope() == model.ScopeMesh && !excludeTypes[typ] {
+				actualConsumedTypes = append(actualConsumedTypes, typ)
+			}
+		}
+
+		// plus 2 global-scope types
+		extraTypes := []model.ResourceType{
+			mesh.MeshType,
+			system.ConfigType,
+		}
+
+		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
+		Expect(actualConsumedTypes).To(HaveLen(len(remote.ConsumedTypes)))
+		Expect(actualConsumedTypes).To(ConsistOf(remote.ConsumedTypes))
 	})
 })
