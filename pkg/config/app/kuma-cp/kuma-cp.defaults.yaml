@@ -136,16 +136,6 @@ apiServer:
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
   corsAllowedDomains:
     - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
-  catalog:
-    bootstrap:
-      # Public URL to reach Bootstrap server. ex: https://bootstrap.kuma.io:1234, its autoconfigured if blank
-      url: # ENV: KUMA_API_SERVER_CATALOG_BOOTSTRAP_URL
-    monitoringAssignment:
-      # Public URL to reach mad server. ex: https://mads.kuma.io:1234, its autoconfigured if blank
-      url: # ENV: KUMA_API_SERVER_CATALOG_MONITORING_ASSIGNMENT_URL
-    sds:
-      # Public url to reach SDS server. ex: https://sds.kuma.io:1234, its autoconfigured to XDS server if blank
-      url: # ENV: KUMA_API_SERVER_CATALOG_SDS_URL
 
 # Environment-specific configuration
 runtime:

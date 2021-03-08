@@ -129,7 +129,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.Auth.AllowFromLocalhost).To(Equal(false))
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
-			Expect(cfg.ApiServer.Catalog.Bootstrap.Url).To(Equal("https://test.bootstrap.url:1234/"))
 
 			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
@@ -286,9 +285,6 @@ apiServer:
   corsAllowedDomains:
     - https://kuma
     - https://someapi
-  catalog:
-    bootstrap:
-      url: https://test.bootstrap.url:1234/
 monitoringAssignmentServer:
   grpcPort: 3333
   assignmentRefreshInterval: 12s
@@ -457,7 +453,6 @@ sdsServer:
 				"KUMA_API_SERVER_HTTPS_TLS_KEY_FILE":                                                       "/key",
 				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
 				"KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST":                                                "false",
-				"KUMA_API_SERVER_CATALOG_BOOTSTRAP_URL":                                                    "https://test.bootstrap.url:1234/",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                                              "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":                            "12s",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",

@@ -13,10 +13,9 @@ type generateDataplaneTokenContext struct {
 	*kumactl_cmd.RootContext
 
 	args struct {
-		dataplane string // Deprecated: remove in next major version of Kuma 1.1
-		name      string
-		dpType    string
-		tags      map[string]string
+		name   string
+		dpType string
+		tags   map[string]string
 	}
 }
 
@@ -28,7 +27,7 @@ func NewGenerateDataplaneTokenCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 		Long:  `Generate Dataplane Token that is used to prove Dataplane identity.`,
 		Example: `
 Generate token bound by name and mesh
-$ kumactl generate dataplane-token --mesh demo --dataplane demo-01
+$ kumactl generate dataplane-token --mesh demo --name demo-01
 
 Generate token bound by mesh
 $ kumactl generate dataplane-token --mesh demo
@@ -50,9 +49,6 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 				tags[k] = strings.Split(v, ",")
 			}
 			name := ctx.args.name
-			if name == "" {
-				name = ctx.args.dataplane
-			}
 			token, err := client.Generate(name, pctx.Args.Mesh, tags, ctx.args.dpType)
 			if err != nil {
 				return errors.Wrap(err, "failed to generate a dataplane token")
@@ -60,10 +56,6 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 			_, err = cmd.OutOrStdout().Write([]byte(token))
 			return err
 		},
-	}
-	cmd.Flags().StringVar(&ctx.args.dataplane, "dataplane", "", "name of the Dataplane")
-	if err := cmd.Flags().MarkDeprecated("dataplane", "please use 'name' instead"); err != nil {
-		panic(err)
 	}
 	cmd.Flags().StringVar(&ctx.args.name, "name", "", "name of the Dataplane")
 	cmd.Flags().StringVar(&ctx.args.dpType, "type", "", `type of the Dataplane ("dataplane", "ingress")`)
