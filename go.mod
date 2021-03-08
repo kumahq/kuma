@@ -42,7 +42,7 @@ require (
 	github.com/slok/go-http-metrics v0.9.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
-	github.com/spiffe/spire v0.12.0
+	github.com/spiffe/spire v0.12.1
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
 	go.uber.org/multierr v1.6.0
 	go.uber.org/zap v1.13.0

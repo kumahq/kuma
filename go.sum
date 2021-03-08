@@ -1102,8 +1102,8 @@ github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc h1:YeGvOZLHZxE8nr
 github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc/go.mod h1:HyNeJnVYkDyQgB2qcSPxVYkAA2F3lQu51bDxNpFcKxY=
 github.com/spiffe/go-spiffe/v2 v2.0.0-beta.4 h1:tF4to8mhz24XGez/Vn9YPdmKrhg50M+zLGt1cbGuZbI=
 github.com/spiffe/go-spiffe/v2 v2.0.0-beta.4/go.mod h1:TEfgrEcyFhuSuvqohJt6IxENUNeHfndWCCV1EX7UaVk=
-github.com/spiffe/spire v0.12.0 h1:6NRPDVaTx5aErrrgSCQSYdG8o91M5mEshPRKW7xjG/4=
-github.com/spiffe/spire v0.12.0/go.mod h1:DRlFbPnrxPP1BO/+G6tFAiBStuArejV8sWDg5E+6nlY=
+github.com/spiffe/spire v0.12.1 h1:E+fGKRXd2Ojp7/9FESk18dYP5ZDdu5miDQA4jfAM7/g=
+github.com/spiffe/spire v0.12.1/go.mod h1:DRlFbPnrxPP1BO/+G6tFAiBStuArejV8sWDg5E+6nlY=
 github.com/spiffe/spire/proto/spire v0.10.1/go.mod h1:QmfLOnjxfc4o9KAe1f8bwYX3WcMLWSiKljTEHdGNFYU=
 github.com/spiffe/spire/proto/spire v0.12.0 h1:5juqJwMoKsbBbnTlSlKGAwJXZ3OhE261kwbTv28PowI=
 github.com/spiffe/spire/proto/spire v0.12.0/go.mod h1:oq/86U6YwjQMTUfRyBWc3+BBDcUusYlVXW6QAXziUME=
