@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 
 	"github.com/kumahq/kuma/pkg/core/resources/registry"

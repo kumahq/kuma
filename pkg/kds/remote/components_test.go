@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
