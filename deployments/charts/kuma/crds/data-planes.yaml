@@ -8,7 +8,7 @@ spec:
   names:
     kind: Dataplane
     plural: dataplanes
-  scope: Namespaced
+  scope: ""
   versions:
     - name: v1alpha1
       served: true
