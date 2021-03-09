@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/mads/server"
 	"time"
 
 	"github.com/spf13/cobra"
@@ -22,8 +23,6 @@ import (
 	"github.com/kumahq/kuma/pkg/insights"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
 	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
-	mads_v1_server "github.com/kumahq/kuma/pkg/mads/v1/server"
-	mads_v1alpha1_server "github.com/kumahq/kuma/pkg/mads/v1alpha1/server"
 	metrics "github.com/kumahq/kuma/pkg/metrics/components"
 	sds_server "github.com/kumahq/kuma/pkg/sds/server"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -81,11 +80,7 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode))
 			switch cfg.Mode {
 			case config_core.Standalone:
-				if err := mads_v1alpha1_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up Monitoring Assignment v1alpha1 server")
-					return err
-				}
-				if err := mads_v1_server.SetupServer(rt); err != nil {
+				if err := server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Monitoring Assignment v1 server")
 					return err
 				}
@@ -122,8 +117,8 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					return err
 				}
 			case config_core.Remote:
-				if err := mads_v1alpha1_server.SetupServer(rt); err != nil {
-					runLog.Error(err, "unable to set up Monitoring Assignment server")
+				if err := server.SetupServer(rt); err != nil {
+					runLog.Error(err, "unable to set up Monitoring Assignment v1 server")
 					return err
 				}
 				if err := kds_remote.Setup(rt); err != nil {

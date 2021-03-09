@@ -3,6 +3,7 @@ package generator
 import (
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 	"github.com/kumahq/kuma/pkg/mads"
+	"github.com/kumahq/kuma/pkg/mads/generator"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -17,7 +18,7 @@ type MonitoringAssignmentsGenerator struct {
 }
 
 // Generate implements mads.ResourceGenerator
-func (g MonitoringAssignmentsGenerator) Generate(args mads.Args) ([]*core_xds.Resource, error) {
+func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_xds.Resource, error) {
 	meshIndex := mads.IndexMeshes(args.Meshes)
 
 	resources := make([]*core_xds.Resource, 0, len(args.Dataplanes))

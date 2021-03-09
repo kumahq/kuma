@@ -5,18 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
+	"net/http"
+
 	"github.com/emicklei/go-restful"
-	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/core"
-	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
-	"io"
-	"net/http"
 )
 
 
@@ -24,11 +23,14 @@ var (
 	httpServerLog = core.Log.WithName("mads-server").WithName("http")
 )
 
-// TODO: should this be merged with the grpc server ?
 type httpServer struct {
-	server  Server
-	config  mads_config.MonitoringAssignmentServerConfig
+	services []HttpService
+	config  *mads_config.MonitoringAssignmentServerConfig
 	metrics core_metrics.Metrics
+}
+
+type HttpService interface {
+	RegisterRoutes(ws *restful.WebService)
 }
 
 var (
@@ -55,34 +57,6 @@ func init() {
 }
 
 
-func (s *httpServer) handleDiscovery(req *restful.Request, res *restful.Response) {
-	discoveryReq := &v3.DiscoveryRequest{}
-	if err := req.ReadEntity(discoveryReq); err != nil {
-		rest_errors.HandleError(res, err, "Could not decode DiscoveryRequest from body")
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), s.config.HttpTimeout)
-	defer cancel()
-
-	discoveryRes, err := s.server.FetchMonitoringAssignments(ctx, discoveryReq)
-	if err != nil {
-		rest_errors.HandleError(res, err, "Could not fetch MonitoringAssignments")
-		return
-	}
-
-	if discoveryRes.VersionInfo == discoveryReq.VersionInfo {
-		// No update necessary, send 304
-		res.WriteHeader(304)
-		return
-	}
-
-	if err = res.WriteEntity(discoveryRes); err != nil {
-		rest_errors.HandleError(res, err, "Could encode DiscoveryResponse")
-		return
-	}
-}
-
 func (s *httpServer) Start(stop <-chan struct{}) error {
 	container := restful.NewContainer()
 
@@ -100,11 +74,9 @@ func (s *httpServer) Start(stop <-chan struct{}) error {
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 
-	ws.Route(ws.GET("/v3/discovery:monitoringassignment").
-		Doc("Exposes the observability/v1 API").
-		Returns(200, "OK", v3.DiscoveryResponse{}).
-		Returns(304, "Not Modified", nil).
-		To(s.handleDiscovery))
+	for _, service := range s.services {
+		service.RegisterRoutes(ws)
+	}
 
 	container.Add(ws)
 
@@ -115,7 +87,7 @@ func (s *httpServer) Start(stop <-chan struct{}) error {
 	}
 	container.Filter(cors.Filter)
 
-	httpServer := &http.Server{
+	server := &http.Server{
 		Addr:    fmt.Sprintf("%s:%d", "0.0.0.0", s.config.HttpPort),
 		Handler: container.ServeMux,
 	}
@@ -123,7 +95,7 @@ func (s *httpServer) Start(stop <-chan struct{}) error {
 	errChan := make(chan error)
 	go func() {
 		defer close(errChan)
-		err := httpServer.ListenAndServe()
+		err := server.ListenAndServe()
 		if err != nil {
 			switch err {
 			case http.ErrServerClosed:
@@ -139,7 +111,7 @@ func (s *httpServer) Start(stop <-chan struct{}) error {
 	select {
 	case <-stop:
 		httpServerLog.Info("stopping gracefully")
-		return httpServer.Shutdown(context.Background())
+		return server.Shutdown(context.Background())
 	case err := <-errChan:
 		return err
 	}

@@ -2,20 +2,16 @@ package server
 
 import (
 	"fmt"
-	"net"
-	"time"
-
-	"google.golang.org/grpc/keepalive"
-
-	observability_proto_v1alpha1 "github.com/kumahq/kuma/api/observability/v1alpha1"
-
-	"google.golang.org/grpc"
-
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
+	"net"
+	"time"
 )
+
 
 const (
 	grpcMaxConcurrentStreams = 1000000
@@ -27,9 +23,13 @@ var (
 )
 
 type grpcServer struct {
-	server  Server
-	config  mads_config.MonitoringAssignmentServerConfig
-	metrics core_metrics.Metrics
+	services []GrpcService
+	config   *mads_config.MonitoringAssignmentServerConfig
+	metrics  core_metrics.Metrics
+}
+
+type GrpcService interface {
+	RegisterWithGrpcServer(server *grpc.Server)
 }
 
 var (
@@ -50,12 +50,14 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	grpcOptions = append(grpcOptions, grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams))
-	grpcServer := grpc.NewServer(grpcOptions...)
+	server := grpc.NewServer(grpcOptions...)
 
 	// register services
-	observability_proto_v1alpha1.RegisterMonitoringAssignmentDiscoveryServiceServer(grpcServer, s.server)
+	for _, service := range s.services {
+		service.RegisterWithGrpcServer(server)
+	}
 
-	s.metrics.RegisterGRPC(grpcServer)
+	s.metrics.RegisterGRPC(server)
 
 	lis, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.GrpcPort))
 	if err != nil {
@@ -65,7 +67,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	errChan := make(chan error)
 	go func() {
 		defer close(errChan)
-		if err = grpcServer.Serve(lis); err != nil {
+		if err = server.Serve(lis); err != nil {
 			grpcServerLog.Error(err, "terminated with an error")
 			errChan <- err
 		} else {
@@ -77,7 +79,7 @@ func (s *grpcServer) Start(stop <-chan struct{}) error {
 	select {
 	case <-stop:
 		grpcServerLog.Info("stopping gracefully")
-		grpcServer.GracefulStop()
+		server.GracefulStop()
 		return nil
 	case err := <-errChan:
 		return err

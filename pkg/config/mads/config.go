@@ -12,12 +12,12 @@ import (
 
 func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig {
 	return &MonitoringAssignmentServerConfig{
-		GrpcPort:                  5676,
+		GrpcPort:                  5676, // TODO: refactor so server can handle both api versions
 		GrpcEnabled:               true,
 		HttpPort:                  5677,
 		HttpEnabled:               true,
 		HttpTimeout:               30 * time.Second,
-		ApiVersions:               []mads.ApiVersion{mads.MADS_V1, mads.MADS_V1_ALPHA1},
+		ApiVersions:               []mads.ApiVersion{mads.API_V1},
 		AssignmentRefreshInterval: 1 * time.Second,
 	}
 }
@@ -62,7 +62,7 @@ func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
 	}
 
 	for _, apiVersion := range c.ApiVersions {
-		if apiVersion != mads.MADS_V1 && apiVersion != mads.MADS_V1_ALPHA1 {
+		if apiVersion != mads.API_V1 && apiVersion != mads.API_V1_ALPHA1 {
 			errs = multierr.Append(errs, errors.Errorf(".ApiVersions contains invalid version %s", apiVersion))
 		}
 	}

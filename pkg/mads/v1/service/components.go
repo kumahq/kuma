@@ -1,13 +1,13 @@
-package server
+package service
 
 import (
 	"context"
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"time"
 
 	"github.com/go-logr/logr"
 
 	"github.com/kumahq/kuma/pkg/core"
-	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 	mads_reconcile "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
@@ -19,8 +19,8 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
 
-func NewSnapshotGenerator(rt core_runtime.Runtime) mads_reconcile.SnapshotGenerator {
-	return mads_reconcile.NewSnapshotGenerator(rt.ReadOnlyResourceManager(), mads_generator.MonitoringAssignmentsGenerator{})
+func NewSnapshotGenerator(rm core_manager.ReadOnlyResourceManager) mads_reconcile.SnapshotGenerator {
+	return mads_reconcile.NewSnapshotGenerator(rm, mads_generator.MonitoringAssignmentsGenerator{})
 }
 
 func NewVersioner() util_xds_v3.SnapshotVersioner {
@@ -32,9 +32,9 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
 	return mads_reconcile.NewReconciler(hasher, cache, generator, versioner)
 }
 
-func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration) envoy_xds.Callbacks {
+func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration, log logr.Logger) envoy_xds.Callbacks {
 	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
-		log := madsServerLog.WithValues("streamID", streamID, "node", node)
+		log := log.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				return time.NewTicker(refresh)
