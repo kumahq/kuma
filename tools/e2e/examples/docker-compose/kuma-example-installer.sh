@@ -45,7 +45,7 @@ create_dataplane() {
   # Create token for "${DATAPLANE_NAME}"
   #
 
-  kumactl generate dataplane-token --dataplane=${DATAPLANE_NAME} > /${DATAPLANE_NAME}/token
+  kumactl generate dataplane-token --name=${DATAPLANE_NAME} > /${DATAPLANE_NAME}/token
 }
 
 #

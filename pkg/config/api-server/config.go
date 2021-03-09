@@ -4,7 +4,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
-	"github.com/kumahq/kuma/pkg/config/api-server/catalog"
 )
 
 var _ config.Config = &ApiServerConfig{}
@@ -13,8 +12,6 @@ var _ config.Config = &ApiServerConfig{}
 type ApiServerConfig struct {
 	// If true, then API Server will operate in read only mode (serving GET requests)
 	ReadOnly bool `yaml:"readOnly" envconfig:"kuma_api_server_read_only"`
-	// API Catalog
-	Catalog *catalog.CatalogConfig `yaml:"catalog"`
 	// Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
 	CorsAllowedDomains []string `yaml:"corsAllowedDomains" envconfig:"kuma_api_server_cors_allowed_domains"`
 	// HTTP configuration of the API Server
@@ -96,7 +93,6 @@ func (a *ApiServerConfig) Validate() error {
 func DefaultApiServerConfig() *ApiServerConfig {
 	return &ApiServerConfig{
 		ReadOnly:           false,
-		Catalog:            &catalog.CatalogConfig{},
 		CorsAllowedDomains: []string{".*"},
 		HTTP: ApiServerHTTPConfig{
 			Enabled:   true,

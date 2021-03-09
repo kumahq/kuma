@@ -179,6 +179,12 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 
 	ip := app.ip
 
+	if opts.dpVersion != "" {
+		if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
+			return err
+		}
+	}
+
 	err = c.CreateDP(app, opts.name, ip, dpyaml, token)
 	if err != nil {
 		return err

@@ -76,7 +76,8 @@ upgrade/gui:
 	git clone --depth 1 -b $(KUMA_GUI_VERSION) https://github.com/kumahq/kuma-gui.git $(KUMA_GUI_WORK_FOLDER); \
 	pushd $(KUMA_GUI_WORK_FOLDER) && yarn install && yarn build && popd; \
 	rm -rf $(KUMA_GUI_FOLDER) && mv $(KUMA_GUI_WORK_FOLDER)/dist/ $(KUMA_GUI_FOLDER); \
-	rm -rf $(KUMA_GUI_WORK_FOLDER)
+	rm -rf $(KUMA_GUI_WORK_FOLDER); \
+	$(MAKE) generate/gui
 
 .PHONY: generate/envoy-imports
 generate/envoy-imports:

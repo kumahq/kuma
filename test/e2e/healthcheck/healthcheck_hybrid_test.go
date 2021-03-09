@@ -101,15 +101,19 @@ metadata:
 		Expect(remoteK8s.DeleteNamespace(TestNamespace)).To(Succeed())
 		err := remoteK8s.DeleteKuma(optsRemoteK8s...)
 		Expect(err).ToNot(HaveOccurred())
+		err = remoteK8s.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
 
 		err = remoteUniversal.DeleteKuma(optsRemoteUniversal...)
+		Expect(err).ToNot(HaveOccurred())
+		err = remoteUniversal.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.DeleteKuma()
 		Expect(err).ToNot(HaveOccurred())
-
-		err = remoteUniversal.DismissCluster()
+		err = global.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
+
 	})
 
 	It("should not load balance requests to unhealthy instance", func() {

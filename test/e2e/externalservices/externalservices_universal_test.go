@@ -66,12 +66,12 @@ networking:
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
-			[]string{Kuma1},
+			[]string{Kuma3},
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Global
-		cluster = clusters.GetCluster(Kuma1)
+		cluster = clusters.GetCluster(Kuma3)
 		deployOptsFuncs = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().

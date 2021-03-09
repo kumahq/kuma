@@ -106,7 +106,6 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 	if err := addIndexWsEndpoints(ws); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
-	container.Add(catalogWs(*serverConfig.Catalog))
 	configWs, err := configWs(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
