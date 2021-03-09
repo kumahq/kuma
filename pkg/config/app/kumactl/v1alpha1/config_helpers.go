@@ -88,9 +88,9 @@ func (cfg *Configuration) RemoveControlPlane(name string) bool {
 	return true
 }
 
-func (cfg *Context_AdminApiCredentials) HasClientCert() bool {
+func (cfg *ControlPlaneCoordinates_ApiServer) HasCerts() bool {
 	if cfg == nil {
 		return false
 	}
-	return cfg.ClientCert != "" && cfg.ClientKey != ""
+	return cfg.ClientCertFile != "" && cfg.ClientKeyFile != "" && cfg.CaCertFile != ""
 }

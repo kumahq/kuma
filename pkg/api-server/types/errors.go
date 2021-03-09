@@ -15,5 +15,3 @@ func IsMaxPageSizeExceeded(err error) bool {
 }
 
 var InvalidPageSize = errors.New("Invalid page size")
-
-var PaginationNotSupported = errors.New("Pagination and filtering at the same time is not supported")

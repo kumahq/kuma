@@ -3,6 +3,9 @@ package mux
 import (
 	"fmt"
 	"net"
+	"time"
+
+	"google.golang.org/grpc/keepalive"
 
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
@@ -10,13 +13,16 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config/multicluster"
+	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
 
-const grpcMaxConcurrentStreams = 1000000
+const (
+	grpcMaxConcurrentStreams = 1000000
+	grpcKeepAliveTime        = 15 * time.Second
+)
 
 var (
 	muxServerLog = core.Log.WithName("mux-server")
@@ -32,8 +38,8 @@ func (f OnSessionStartedFunc) OnSessionStarted(session Session) error {
 }
 
 type server struct {
-	config    multicluster.KdsServerConfig
-	callbacks Callbacks
+	config    multizone.KdsServerConfig
+	callbacks []Callbacks
 	metrics   core_metrics.Metrics
 }
 
@@ -41,7 +47,7 @@ var (
 	_ component.Component = &server{}
 )
 
-func NewServer(callbacks Callbacks, config multicluster.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
+func NewServer(callbacks []Callbacks, config multizone.KdsServerConfig, metrics core_metrics.Metrics) component.Component {
 	return &server{
 		callbacks: callbacks,
 		config:    config,
@@ -52,6 +58,14 @@ func NewServer(callbacks Callbacks, config multicluster.KdsServerConfig, metrics
 func (s *server) Start(stop <-chan struct{}) error {
 	grpcOptions := []grpc.ServerOption{
 		grpc.MaxConcurrentStreams(grpcMaxConcurrentStreams),
+		grpc.KeepaliveParams(keepalive.ServerParameters{
+			Time:    grpcKeepAliveTime,
+			Timeout: grpcKeepAliveTime,
+		}),
+		grpc.KeepaliveEnforcementPolicy(keepalive.EnforcementPolicy{
+			MinTime:             grpcKeepAliveTime,
+			PermitWithoutStream: true,
+		}),
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	useTLS := s.config.TlsCertFile != ""
@@ -105,12 +119,15 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 	}
 	clientID := md["client-id"][0]
 	log := muxServerLog.WithValues("client-id", clientID)
-	log.Info("initializing KDS stream", "client-id", clientID)
+	log.Info("initializing Kuma Discovery Service (KDS) stream for global-remote sync of resources")
 	stop := make(chan struct{})
 	session := NewSession(clientID, stream, stop)
 	defer close(stop)
-	if err := s.callbacks.OnSessionStarted(session); err != nil {
-		return err
+	for _, callbacks := range s.callbacks {
+		if err := callbacks.OnSessionStarted(session); err != nil {
+			log.Info("closing KDS stream", "reason", err.Error())
+			return err
+		}
 	}
 	<-stream.Context().Done()
 	log.Info("KDS stream is closed")

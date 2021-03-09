@@ -8,6 +8,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/policy"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 
@@ -33,11 +34,11 @@ func (m *TrafficLogsMatcher) Match(ctx context.Context, dataplane *mesh_core.Dat
 	if err := m.ResourceManager.List(ctx, logs, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve traffic logs")
 	}
-	mesh := mesh_core.MeshResource{}
-	if err := m.ResourceManager.Get(ctx, &mesh, store.GetByKey(dataplane.GetMeta().GetMesh(), dataplane.GetMeta().GetMesh())); err != nil {
+	mesh := mesh_core.NewMeshResource()
+	if err := m.ResourceManager.Get(ctx, mesh, store.GetByKey(dataplane.GetMeta().GetMesh(), model.NoMesh)); err != nil {
 		return nil, err
 	}
-	return BuildTrafficLogMap(dataplane, &mesh, logs.Items), nil
+	return BuildTrafficLogMap(dataplane, mesh, logs.Items), nil
 }
 
 func BuildTrafficLogMap(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource, logs []*mesh_core.TrafficLogResource) core_xds.LogMap {
@@ -54,7 +55,7 @@ func BuildTrafficLogMap(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.
 		log := policy.(*mesh_core.TrafficLogResource)
 		backend, found := backends[log.Spec.GetConf().GetBackend()]
 		if !found {
-			logger.Info("Logging backend is not found. Ignoring.", "name", log.Spec.GetConf().GetBackend(), "trafficLog", log.GetMeta())
+			logger.Info("Logging backend is not found. Ignoring.", "backendName", log.Spec.GetConf().GetBackend(), "trafficLogName", log.GetMeta().GetName(), "trafficLogMesh", log.GetMeta().GetMesh())
 			continue
 		}
 		logMap[service] = backend

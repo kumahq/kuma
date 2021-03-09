@@ -7,6 +7,7 @@ metadata:
     {{- include "kuma.labels" . | nindent 4 }}
     app: kuma-control-plane
 spec:
+  replicas: {{ .Values.controlPlane.replicas }}
   strategy:
     rollingUpdate:
       maxSurge: 1
@@ -34,46 +35,16 @@ spec:
           image: {{ include "kuma.formatImage" (dict "image" .Values.controlPlane.image "root" $) | quote }}
           imagePullPolicy: {{ .Values.controlPlane.image.pullPolicy }}
           env:
-            - name: KUMA_ENVIRONMENT
-              value: "kubernetes"
-            - name: KUMA_STORE_TYPE
-              value: "kubernetes"
-            - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
-              value: {{ .Release.Namespace | quote }}
-            - name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              value: {{ include "kuma.name" . }}-control-plane.{{ .Release.Namespace }}
-            - name: KUMA_GENERAL_TLS_CERT_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/tls.crt
-            - name: KUMA_GENERAL_TLS_KEY_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/tls.key
-            {{- if eq .Values.controlPlane.mode "remote" }}
-            - name: KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
-              value: {{ .Values.controlPlane.kdsGlobalAddress }}
-            {{- end }}
-            - name: KUMA_API_SERVER_READ_ONLY
-              value: "true"
-            - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT
-              value: "5443"
-            - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
-              value: /var/run/secrets/kuma.io/tls-cert
-            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
-              value: {{ .Values.cni.enabled | quote }}
-            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
-              value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
-            - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-              value: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.initImage "root" $) | quote }}
-            - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
-              value: /var/run/secrets/kuma.io/tls-cert/ca.crt
-            - name: KUMA_DEFAULTS_SKIP_MESH_CREATION
-              value: {{ .Values.controlPlane.defaults.skipMeshCreation | quote }}
-            - name: KUMA_MODE
-              value: {{ .Values.controlPlane.mode | quote }}
-            {{- if .Values.controlPlane.zone }}
-            - name: KUMA_MULTICLUSTER_REMOTE_ZONE
-              value: {{ .Values.controlPlane.zone | quote }}
+          {{-  $defaultEnv := include "kuma.defaultEnv" . | fromYaml | pluck "env" | first }}
+          {{- $defaultEnvDict := dict }}
+          {{- range $index, $item := $defaultEnv }}
+          {{- $name := $item.name | upper }}
+          {{- $defaultEnvDict := set $defaultEnvDict $name $item.value }}
           {{- end }}
-          {{- range $key, $value := .Values.controlPlane.envVars }}
-            - name: {{ $key | upper }}
+          {{- $envVarsCopy := deepCopy .Values.controlPlane.envVars }}
+          {{- $mergedEnv := merge $envVarsCopy $defaultEnvDict }}
+          {{- range $key, $value := $mergedEnv }}
+            - name: {{ $key }}
               value: {{ $value | quote }}
           {{- end }}
           {{- range $element := .Values.controlPlane.secrets }}
@@ -89,12 +60,10 @@ spec:
             - --config-file=/etc/kuma.io/kuma-control-plane/config.yaml
           ports:
             - containerPort: 5681
+            - containerPort: 5682
             - containerPort: 5443
             {{- if ne .Values.controlPlane.mode "global" }}
-            - containerPort: 5677
             - containerPort: 5678
-            - containerPort: 5679
-            - containerPort: 5682
             - containerPort: 5653
               protocol: UDP
           {{- end }}
@@ -119,16 +88,62 @@ spec:
               memory: 256Mi
           {{- end }}
           volumeMounts:
-            - name: {{ include "kuma.name" . }}-tls-cert
+            - name: general-tls-cert
               mountPath: /var/run/secrets/kuma.io/tls-cert
               readOnly: true
             - name: {{ include "kuma.name" . }}-control-plane-config
               mountPath: /etc/kuma.io/kuma-control-plane
               readOnly: true
+          {{- if .Values.controlPlane.tls.apiServer.secretName }}
+            - name: api-server-tls-cert
+              mountPath: /var/run/secrets/kuma.io/api-server-tls-cert
+              readOnly: true
+          {{- end }}
+          {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
+            - name: api-server-client-certs
+              mountPath: /var/run/secrets/kuma.io/api-server-client-certs
+              readOnly: true
+          {{- end }}
+          {{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+            - name: kds-server-tls-cert
+              mountPath: /var/run/secrets/kuma.io/kds-server-tls-cert
+              readOnly: true
+          {{- end }}
+          {{- if .Values.controlPlane.tls.kdsRemoteClient.secretName }}
+            - name: kds-client-tls-cert
+              mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
+              readOnly: true
+          {{- end }}
       volumes:
-        - name: {{ include "kuma.name" . }}-tls-cert
+        {{- if .Values.controlPlane.tls.general.secretName }}
+        - name: general-tls-cert
+          secret:
+            secretName: {{ .Values.controlPlane.tls.general.secretName }}
+        {{- else }}
+        - name: general-tls-cert
           secret:
             secretName: {{ include "kuma.name" . }}-tls-cert
+        {{- end }}
+        {{- if .Values.controlPlane.tls.apiServer.secretName }}
+        - name: api-server-tls-cert
+          secret:
+            secretName: {{ .Values.controlPlane.tls.apiServer.secretName }}
+        {{- end }}
+        {{- if .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
+        - name: api-server-client-certs
+          secret:
+            secretName: {{ .Values.controlPlane.tls.apiServer.clientCertsSecretName }}
+        {{- end }}
+        {{- if .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+        - name: kds-server-tls-cert
+          secret:
+            secretName: {{ .Values.controlPlane.tls.kdsGlobalServer.secretName }}
+        {{- end }}
+        {{- if .Values.controlPlane.tls.kdsRemoteClient.secretName }}
+        - name: kds-client-tls-cert
+          secret:
+            secretName: {{ .Values.controlPlane.tls.kdsRemoteClient.secretName }}
+        {{- end }}
         - name: {{ include "kuma.name" . }}-control-plane-config
           configMap:
             name: {{ include "kuma.name" . }}-control-plane-config

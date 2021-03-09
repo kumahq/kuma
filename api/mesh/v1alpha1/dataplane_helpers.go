@@ -13,14 +13,40 @@ const (
 	// Mandatory tag that has a reserved meaning in Kuma.
 	ServiceTag     = "kuma.io/service"
 	ServiceUnknown = "unknown"
-	// Mandatory tag that has a reserved meaning in Kuma.
-	ZoneTag = "kuma.io/zone"
+
+	// Locality related tags
+	RegionTag  = "kuma.io/region"
+	ZoneTag    = "kuma.io/zone"
+	SubZoneTag = "kuma.io/sub-zone"
+
 	// Optional tag that has a reserved meaning in Kuma.
 	// If absent, Kuma will treat application's protocol as opaque TCP.
 	ProtocolTag = "kuma.io/protocol"
 	// InstanceTag is set only for Dataplanes that implements headless services
 	InstanceTag = "kuma.io/instance"
+
+	// External service tag
+	ExternalServiceTag = "kuma.io/external-service-name"
+
+	RegularDpType DpType = "regular"
+	IngressDpType DpType = "ingress"
+	GatewayDpType DpType = "gateway"
+
+	// Used for Service-less dataplanes
+	TCPPortReserved = 49151 // IANA Reserved
 )
+
+type DpType string
+
+func (d *Dataplane) DpType() DpType {
+	if d.IsIngress() {
+		return IngressDpType
+	}
+	if d.GetNetworking().GetGateway() != nil {
+		return GatewayDpType
+	}
+	return RegularDpType
+}
 
 type InboundInterface struct {
 	DataplaneIP   string
@@ -31,6 +57,10 @@ type InboundInterface struct {
 
 func (i InboundInterface) String() string {
 	return fmt.Sprintf("%s:%d:%d", i.DataplaneIP, i.DataplanePort, i.WorkloadPort)
+}
+
+func (i *InboundInterface) IsServiceLess() bool {
+	return i.DataplanePort == TCPPortReserved
 }
 
 type OutboundInterface struct {
@@ -107,6 +137,16 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		iface.WorkloadPort = inbound.Port
 	}
 	return iface
+}
+
+func (n *Dataplane_Networking) GetHealthyInbounds() (inbounds []*Dataplane_Networking_Inbound) {
+	for _, inbound := range n.GetInbound() {
+		if inbound.Health != nil && !inbound.Health.Ready {
+			continue
+		}
+		inbounds = append(inbounds, inbound)
+	}
+	return
 }
 
 // Matches is simply an alias for MatchTags to make source code more aesthetic.
@@ -328,7 +368,17 @@ func (d *Dataplane) GetIdentifyingService() string {
 }
 
 func (d *Dataplane) IsIngress() bool {
+	if d.GetNetworking() == nil {
+		return false
+	}
 	return d.Networking.Ingress != nil
+}
+
+func (d *Dataplane) HasPublicAddress() bool {
+	if d.Networking.Ingress == nil {
+		return false
+	}
+	return d.Networking.Ingress.PublicAddress != "" && d.Networking.Ingress.PublicPort != 0
 }
 
 func (d *Dataplane) HasAvailableServices() bool {

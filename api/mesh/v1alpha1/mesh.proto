@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "v1alpha1";
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/v1alpha1/metrics.proto";
 import "google/protobuf/wrappers.proto";
@@ -43,6 +43,9 @@ message Mesh {
 
   // Networking settings of the mesh
   Networking networking = 5;
+
+  // Routing settings of the mesh
+  Routing routing = 6;
 }
 
 // CertificateAuthorityBackend defines Certificate Authority backend
@@ -164,4 +167,10 @@ message FileLoggingBackendConfig {
 message TcpLoggingBackendConfig {
   // Address to TCP service that will receive logs
   string address = 1;
+}
+
+// Routing defines configuration for the routing in the mesh
+message Routing {
+  // Enable the Locality Aware Load Balancing
+  bool localityAwareLoadBalancing = 1;
 }

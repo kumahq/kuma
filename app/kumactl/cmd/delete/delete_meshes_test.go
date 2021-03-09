@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"context"
 	"path/filepath"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -25,15 +25,15 @@ var _ = Describe("kumactl delete mesh", func() {
 	sampleMeshes := []*mesh.MeshResource{
 		{
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh1",
 				Name: "mesh1",
 			},
+			Spec: &mesh_proto.Mesh{},
 		},
 		{
 			Meta: &test_model.ResourceMeta{
-				Mesh: "mesh2",
 				Name: "mesh2",
 			},
+			Spec: &mesh_proto.Mesh{},
 		},
 	}
 
@@ -46,16 +46,12 @@ var _ = Describe("kumactl delete mesh", func() {
 
 		BeforeEach(func() {
 			// setup
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: time.Now,
-					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-				},
+			rootCtx = kumactl_cmd.DefaultRootContext()
+			rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
+				return store, nil
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, ds := range sampleMeshes {
 				key := core_model.MetaToResourceKey(ds.Meta)
@@ -127,13 +123,13 @@ var _ = Describe("kumactl delete mesh", func() {
 
 			By("verifying that resource under test was actually deleted")
 			// when
-			err = store.Get(context.Background(), &mesh.MeshResource{}, core_store.GetBy(core_model.ResourceKey{Mesh: "mesh2", Name: "mesh2"}))
+			err = store.Get(context.Background(), mesh.NewMeshResource(), core_store.GetBy(core_model.ResourceKey{Name: "mesh2"}))
 			// then
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 
 			By("verifying that another mesh wasn't affected")
 			// when
-			err = store.Get(context.Background(), &mesh.MeshResource{}, core_store.GetBy(core_model.ResourceKey{Mesh: "mesh1", Name: "mesh1"}))
+			err = store.Get(context.Background(), mesh.NewMeshResource(), core_store.GetBy(core_model.ResourceKey{Name: "mesh1"}))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		})

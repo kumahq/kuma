@@ -6,12 +6,13 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+
 	core_ca "github.com/kumahq/kuma/pkg/core/ca"
 	core_managers "github.com/kumahq/kuma/pkg/core/managers/apis/mesh"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 
 	kube_core "k8s.io/api/core/v1"
@@ -28,7 +29,7 @@ type MeshReconciler struct {
 	Log    logr.Logger
 
 	Scheme          *kube_runtime.Scheme
-	Converter       k8s_resources.Converter
+	Converter       k8s_common.Converter
 	CaManagers      core_ca.Managers
 	SystemNamespace string
 	ResourceManager manager.ResourceManager
@@ -42,14 +43,19 @@ func (r *MeshReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, err
 	mesh := &mesh_k8s.Mesh{}
 	if err := r.Get(ctx, req.NamespacedName, mesh); err != nil {
 		if kube_apierrs.IsNotFound(err) {
-			err := r.ResourceManager.Delete(ctx, &mesh_core.MeshResource{}, store.DeleteByKey(req.Name, req.Name))
+			// Force delete associated resources. It will return an error ErrorResourceNotFound because Mesh was already deleted but we still need to cleanup resources
+			// Remove this part after https://github.com/kumahq/kuma/issues/1137 is implemented.
+			err := r.ResourceManager.Delete(ctx, mesh_core.NewMeshResource(), store.DeleteByKey(req.Name, req.Name))
+			if err == nil || store.IsResourceNotFound(err) {
+				return kube_ctrl.Result{}, nil
+			}
 			return kube_ctrl.Result{}, err
 		}
 		log.Error(err, "unable to fetch Mesh")
 		return kube_ctrl.Result{}, err
 	}
 
-	meshResource := &mesh_core.MeshResource{}
+	meshResource := mesh_core.NewMeshResource()
 	if err := r.Converter.ToCoreResource(mesh, meshResource); err != nil {
 		log.Error(err, "unable to convert Mesh k8s object into core model")
 		return kube_ctrl.Result{}, err

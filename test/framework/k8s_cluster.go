@@ -24,7 +24,6 @@ import (
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/onsi/gomega"
 	"go.uber.org/multierr"
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -120,7 +119,7 @@ func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 
 func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 	retry.DoWithRetry(c.t,
-		"Wait the Kuma Namespace to terminate.",
+		fmt.Sprintf("Wait for %s Namespace to terminate.", namespace),
 		DefaultRetries,
 		DefaultTimeout,
 		func() (string, error) {
@@ -248,6 +247,7 @@ func (c *K8sCluster) deployKumaViaKubectl(mode string, opts *deployOptions) erro
 
 func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (string, error) {
 	argsMap := map[string]string{
+		"--namespace":               KumaNamespace,
 		"--control-plane-registry":  KumaImageRegistry,
 		"--dataplane-registry":      KumaImageRegistry,
 		"--dataplane-init-registry": KumaImageRegistry,
@@ -270,6 +270,11 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		argsMap["--cni-conf-name"] = "10-kindnet.conflist"
 	}
 
+	apiVersion := os.Getenv(envAPIVersion)
+	if apiVersion != "" {
+		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + apiVersion
+	}
+
 	for opt, value := range opts.ctlOpts {
 		argsMap[opt] = value
 	}
@@ -279,28 +284,35 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		args = append(args, k, v)
 	}
 
+	for k, v := range opts.env {
+		args = append(args, "--env-var", fmt.Sprintf("%s=%s", k, v))
+	}
+
 	return c.controlplane.InstallCP(args...)
 }
 
-// deployKumaViaHelm uses Helm to install kuma
-// using the kuma helm chart
-func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
-	// run from test/e2e
-	helmChartPath, err := filepath.Abs(HelmChartPath)
-	if err != nil {
-		return err
+func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) map[string]string {
+	values := map[string]string{
+		"controlPlane.mode":                      mode,
+		"global.image.tag":                       kuma_version.Build.Version,
+		"global.image.registry":                  KumaImageRegistry,
+		"controlPlane.image.repository":          KumaCPImageRepo,
+		"dataPlane.image.repository":             KumaDPImageRepo,
+		"dataPlane.initImage.repository":         KumaInitImageRepo,
+		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(opts.skipDefaultMesh),
 	}
 
-	values := map[string]string{
-		"controlPlane.mode":              mode,
-		"global.image.tag":               kuma_version.Build.Version,
-		"global.image.registry":          KumaImageRegistry,
-		"controlPlane.image.repository":  KumaCPImageRepo,
-		"dataPlane.image.repository":     KumaDPImageRepo,
-		"dataPlane.initImage.repository": KumaInitImageRepo,
+	if opts.cpReplicas != 0 {
+		values["controlPlane.replicas"] = strconv.Itoa(opts.cpReplicas)
 	}
+
 	for opt, value := range opts.helmOpts {
 		values[opt] = value
+	}
+
+	apiVersion := os.Getenv(envAPIVersion)
+	if apiVersion != "" {
+		values["controlPlane.envVars.KUMA_BOOTSTRAP_SERVER_API_VERSION"] = apiVersion
 	}
 
 	if opts.cni {
@@ -315,13 +327,44 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 	case core.Global:
 		values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
 	case core.Remote:
-		values["controlPlane.zone"] = c.GetKumactlOptions().CPName
+		values["controlPlane.zone"] = kumactlOpts.CPName
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
 	}
+
+	for _, value := range opts.noHelmOpts {
+		delete(values, value)
+	}
+
+	prefixedValues := map[string]string{}
+	for k, v := range values {
+		prefixedValues[HelmSubChartPrefix+k] = v
+	}
+
+	return prefixedValues
+}
+
+type helmFn func(testing.TestingT, *helm.Options, string, string) error
+
+func (c *K8sCluster) processViaHelm(mode string, opts *deployOptions, fn helmFn) error {
+	// run from test/e2e
+	helmChart, err := filepath.Abs(HelmChartPath)
+	if err != nil {
+		return err
+	}
+
+	if opts.helmChartPath != nil {
+		helmChart = *opts.helmChartPath
+	}
+
+	values := genValues(mode, opts, c.GetKumactlOptions())
 
 	helmOpts := &helm.Options{
 		SetValues:      values,
 		KubectlOptions: c.GetKubectlOptions(KumaNamespace),
+	}
+
+	if opts.helmChartVersion != "" {
+		helmOpts.Version = opts.helmChartVersion
 	}
 
 	releaseName := opts.helmReleaseName
@@ -332,19 +375,36 @@ func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
 		)
 	}
 
-	// first create the namespace
-	if err := k8s.CreateNamespaceE(c.t, c.GetKubectlOptions(), KumaNamespace); err != nil {
-		return err
+	// create the namespace if it does not exist
+	if _, err = k8s.GetNamespaceE(c.t, c.GetKubectlOptions(), KumaNamespace); err != nil {
+		if err = k8s.CreateNamespaceE(c.t, c.GetKubectlOptions(), KumaNamespace); err != nil {
+			return err
+		}
 	}
 
-	return helm.InstallE(c.t, helmOpts, helmChartPath, releaseName)
+	return fn(c.t, helmOpts, helmChart, releaseName)
+}
+
+// deployKumaViaHelm uses Helm to install kuma
+// using the kuma helm chart
+func (c *K8sCluster) deployKumaViaHelm(mode string, opts *deployOptions) error {
+	return c.processViaHelm(mode, opts, helm.InstallE)
+}
+
+// upgradeKumaViaHelm uses Helm to upgrade kuma
+// using the kuma helm chart
+func (c *K8sCluster) upgradeKumaViaHelm(mode string, opts *deployOptions) error {
+	return c.processViaHelm(mode, opts, helm.UpgradeE)
 }
 
 func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
-	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig,
-		c, c.loPort, c.hiPort, c.verbose)
-
 	opts := newDeployOpt(fs...)
+	replicas := 1
+	if opts.cpReplicas != 0 {
+		replicas = opts.cpReplicas
+	}
+	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.loPort, c.hiPort, c.verbose, replicas)
+
 	switch mode {
 	case core.Remote:
 		if opts.globalAddress == "" {
@@ -366,32 +426,86 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 		return err
 	}
 
-	err = c.WaitApp(KumaServiceName, KumaNamespace)
+	err = c.WaitApp(KumaServiceName, KumaNamespace, replicas)
 	if err != nil {
 		return err
 	}
 
 	if opts.cni {
-		err = c.WaitApp(cniApp, cniNamespace)
+		err = c.WaitApp(CNIApp, CNINamespace, 1)
 		if err != nil {
 			return err
 		}
 	}
 
-	// wait for the mesh
-	_, err = retry.DoWithRetryE(c.t,
-		"get default mesh",
-		DefaultRetries,
-		DefaultTimeout,
-		func() (s string, err error) {
-			return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
-		})
-	if err != nil {
-		return err
+	if !opts.skipDefaultMesh {
+		// wait for the mesh
+		_, err = retry.DoWithRetryE(c.t,
+			"get default mesh",
+			DefaultRetries,
+			DefaultTimeout,
+			func() (s string, err error) {
+				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+			})
+		if err != nil {
+			return err
+		}
 	}
 
 	err = c.controlplane.FinalizeAdd()
 	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
+	if c.controlplane == nil {
+		return errors.New("To upgrade Kuma has to be installed first")
+	}
+
+	opts := newDeployOpt(fs...)
+	if opts.cpReplicas != 0 {
+		c.controlplane.replicas = opts.cpReplicas
+	}
+
+	switch mode {
+	case core.Remote:
+		if opts.globalAddress == "" {
+			return errors.Errorf("GlobalAddress expected for remote")
+		}
+	}
+
+	if err := c.upgradeKumaViaHelm(mode, opts); err != nil {
+		return err
+	}
+
+	if err := c.WaitApp(KumaServiceName, KumaNamespace, c.controlplane.replicas); err != nil {
+		return err
+	}
+
+	if opts.cni {
+		if err := c.WaitApp(CNIApp, CNINamespace, 1); err != nil {
+			return err
+		}
+	}
+
+	if !opts.skipDefaultMesh {
+		// wait for the mesh
+		_, err := retry.DoWithRetryE(c.t,
+			"get default mesh",
+			DefaultRetries,
+			DefaultTimeout,
+			func() (s string, err error) {
+				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
+			})
+		if err != nil {
+			return err
+		}
+	}
+
+	if err := c.controlplane.FinalizeAdd(); err != nil {
 		return err
 	}
 
@@ -400,73 +514,6 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 
 func (c *K8sCluster) GetKuma() ControlPlane {
 	return c.controlplane
-}
-
-func (c *K8sCluster) RestartKuma() error {
-	c.CleanupPortForwards()
-
-	kumacpPods := c.controlplane.GetKumaCPPods()
-	if len(kumacpPods) != 1 {
-		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
-	}
-	oldPod := kumacpPods[0]
-
-	// creates the clientset
-	clientset, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
-	if err != nil {
-		return errors.Wrapf(err, "error in getting access to K8S")
-	}
-
-	// delete the pod
-	err = clientset.CoreV1().Pods(oldPod.Namespace).Delete(context.TODO(), oldPod.Name, metav1.DeleteOptions{})
-	if err != nil {
-		return err
-	}
-
-	// wait for pod to terminate
-	retry.DoWithRetry(c.t,
-		"Wait the Kuma CP pod to terminate.",
-		DefaultRetries,
-		DefaultTimeout,
-		func() (string, error) {
-			_, err := k8s.GetPodE(c.t,
-				c.GetKubectlOptions(oldPod.Namespace),
-				oldPod.Name)
-			if err != nil {
-				return "Pod " + oldPod.Name + " deleted", nil
-			}
-			return "Pod available " + oldPod.Name, fmt.Errorf("Pod %s still active", oldPod.Name)
-		})
-
-	k8s.WaitUntilNumPodsCreated(c.t,
-		c.GetKubectlOptions(KumaNamespace),
-		metav1.ListOptions{
-			LabelSelector: "app=" + KumaServiceName,
-		},
-		1,
-		DefaultRetries,
-		DefaultTimeout)
-
-	kumacpPods = c.controlplane.GetKumaCPPods()
-	if len(kumacpPods) != 1 {
-		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
-	}
-
-	newPod := kumacpPods[0]
-	gomega.Expect(oldPod.Name).ToNot(gomega.Equal(newPod.Name))
-
-	k8s.WaitUntilPodAvailable(c.t,
-		c.GetKubectlOptions(KumaNamespace),
-		newPod.Name,
-		DefaultRetries,
-		DefaultTimeout)
-
-	err = c.controlplane.FinalizeAdd()
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (c *K8sCluster) VerifyKuma() error {
@@ -583,7 +630,11 @@ func (c *K8sCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *K8sCluster) DeployApp(namespace, appname, token string) error {
+func (c *K8sCluster) DeployApp(fs ...DeployOptionsFunc) error {
+	opts := newDeployOpt(fs...)
+	namespace := opts.namespace
+	appname := opts.appname
+
 	retry.DoWithRetry(c.GetTesting(), "apply "+appname+" svc", DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			err := k8s.KubectlApplyE(c.GetTesting(),
@@ -632,8 +683,13 @@ func (c *K8sCluster) DeleteApp(namespace, appname string) error {
 	return nil
 }
 
-func (c *K8sCluster) InjectDNS() error {
-	return c.controlplane.InjectDNS()
+func (c *K8sCluster) InjectDNS(namespace ...string) error {
+	args := []string{}
+	if len(namespace) > 0 {
+		args = append(args, "--namespace", namespace[0])
+	}
+
+	return c.controlplane.InjectDNS(args...)
 }
 
 func (c *K8sCluster) GetTesting() testing.TestingT {
@@ -654,13 +710,13 @@ func (c *K8sCluster) Deploy(deployment Deployment) error {
 	return deployment.Deploy(c)
 }
 
-func (c *K8sCluster) WaitApp(name, namespace string) error {
+func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 	k8s.WaitUntilNumPodsCreated(c.t,
 		c.GetKubectlOptions(namespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + name,
 		},
-		1,
+		replicas,
 		DefaultRetries,
 		DefaultTimeout)
 
@@ -670,14 +726,16 @@ func (c *K8sCluster) WaitApp(name, namespace string) error {
 			LabelSelector: "app=" + name,
 		},
 	)
-	if len(pods) < 1 {
-		return errors.Errorf("%s pods: %d", name, len(pods))
+	if len(pods) < replicas {
+		return errors.Errorf("%s pods: %d. expected %d", name, len(pods), replicas)
 	}
 
-	k8s.WaitUntilPodAvailable(c.t,
-		c.GetKubectlOptions(namespace),
-		pods[0].Name,
-		DefaultRetries,
-		DefaultTimeout)
+	for i := 0; i < replicas; i++ {
+		k8s.WaitUntilPodAvailable(c.t,
+			c.GetKubectlOptions(namespace),
+			pods[i].Name,
+			DefaultRetries,
+			DefaultTimeout)
+	}
 	return nil
 }

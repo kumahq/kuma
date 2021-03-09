@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"encoding/json"
 	"io/ioutil"
+	"net"
 	"net/http"
 
 	"github.com/go-logr/logr"
@@ -34,8 +35,21 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	hostname, _, err := net.SplitHostPort(req.Host)
+	if err != nil {
+		log.Error(err, "Could not parse a request")
+		resp.WriteHeader(http.StatusBadRequest)
+		_, err := resp.Write([]byte("Invalid Host header"))
+		if err != nil {
+			log.Error(err, "Error while writing the response")
+			return
+		}
+		return
+	}
+	reqParams.Host = hostname
 	logger := log.WithValues("params", reqParams)
-	config, err := b.Generator.Generate(req.Context(), reqParams)
+
+	config, version, err := b.Generator.Generate(req.Context(), reqParams)
 	if err != nil {
 		handleError(resp, err, logger)
 		return
@@ -48,8 +62,9 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	resp.WriteHeader(http.StatusOK)
 	resp.Header().Set("content-type", "text/x-yaml")
+	resp.Header().Set(types.BootstrapVersionHeader, string(version))
+	resp.WriteHeader(http.StatusOK)
 	_, err = resp.Write(bytes)
 	if err != nil {
 		logger.Error(err, "Error while writing the response")
@@ -60,6 +75,21 @@ func (b *BootstrapHandler) Handle(resp http.ResponseWriter, req *http.Request) {
 func handleError(resp http.ResponseWriter, err error, logger logr.Logger) {
 	if err == DpTokenRequired {
 		resp.WriteHeader(http.StatusUnprocessableEntity)
+		_, err = resp.Write([]byte(err.Error()))
+		if err != nil {
+			logger.Error(err, "Error while writing the response")
+		}
+		return
+	}
+	if err == InvalidBootstrapVersion {
+		resp.WriteHeader(http.StatusBadRequest)
+		if _, err := resp.Write([]byte(err.Error())); err != nil {
+			logger.Error(err, "Error while writing the response")
+		}
+		return
+	}
+	if ISSANMismatchErr(err) {
+		resp.WriteHeader(http.StatusBadRequest)
 		_, err = resp.Write([]byte(err.Error()))
 		if err != nil {
 			logger.Error(err, "Error while writing the response")

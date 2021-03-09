@@ -31,7 +31,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 
 	faultInjectionResources := []*mesh.FaultInjectionResource{
 		{
-			Spec: v1alpha1.FaultInjection{
+			Spec: &v1alpha1.FaultInjection{
 				Sources: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
@@ -68,7 +68,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 			},
 		},
 		{
-			Spec: v1alpha1.FaultInjection{
+			Spec: &v1alpha1.FaultInjection{
 				Sources: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
@@ -124,7 +124,7 @@ var _ = Describe("kumactl get fault-injections", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, ds := range faultInjectionResources {
 				err := store.Create(context.Background(), ds, core_store.CreateBy(core_model.MetaToResourceKey(ds.GetMeta())))

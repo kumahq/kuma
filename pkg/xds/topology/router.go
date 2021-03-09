@@ -60,30 +60,49 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
 		policy, exists := policyMap[serviceName]
+
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		if exists {
-			routeMap[outbound] = policy.(*mesh_core.TrafficRouteResource)
-		} else {
+			route := policy.(*mesh_core.TrafficRouteResource)
+			split := []*mesh_proto.TrafficRoute_Split{}
+			for _, destination := range route.Spec.GetConf().GetSplit() {
+				split = append(split, &mesh_proto.TrafficRoute_Split{
+					Weight:      destination.Weight,
+					Destination: handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), destination.Destination),
+				})
+			}
+
 			routeMap[outbound] = &mesh_core.TrafficRouteResource{
-				Meta: &pseudoMeta{
-					Name: "(implicit default route)",
-				},
-				Spec: mesh_proto.TrafficRoute{
-					Sources: []*mesh_proto.Selector{{
-						Match: mesh_proto.MatchAnyService(),
-					}},
-					Destinations: []*mesh_proto.Selector{{
-						Match: mesh_proto.MatchService(serviceName),
-					}},
-					Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-						Weight:      100,
-						Destination: mesh_proto.MatchTags(oface.GetTagsIncludingLegacy()),
-					}},
+				Meta: route.GetMeta(),
+				Spec: &mesh_proto.TrafficRoute{
+					Sources:      route.Spec.GetSources(),
+					Destinations: route.Spec.GetDestinations(),
+					Conf: &mesh_proto.TrafficRoute_Conf{
+						Split: split,
+					},
 				},
 			}
 		}
 	}
 	return routeMap
+}
+
+func handleWildcardTagsFor(outboundTags, routeTags map[string]string) map[string]string {
+	resultingTags := map[string]string{}
+
+	for k, v := range routeTags {
+		if v != mesh_proto.MatchAllTag {
+			resultingTags[k] = v
+		}
+	}
+
+	for k, v := range outboundTags {
+		if _, found := resultingTags[k]; !found {
+			resultingTags[k] = v
+		}
+	}
+
+	return resultingTags
 }
 
 // BuildDestinationMap creates a map of selectors to match other dataplanes reachable from a given one
@@ -95,7 +114,7 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		route, ok := routes[outbound]
 		if ok {
-			for _, destination := range route.Spec.Conf {
+			for _, destination := range route.Spec.GetConf().GetSplit() {
 				service, ok := destination.Destination[mesh_proto.ServiceTag]
 				if !ok {
 					// ignore destinations without a `service` tag

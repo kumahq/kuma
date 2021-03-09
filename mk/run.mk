@@ -45,7 +45,7 @@ run/example/envoy/universal: run/example/envoy
 
 .PHONY: run/example/envoy
 run/example/envoy: build/kuma-dp build/kumactl ## Dev: Run Envoy configured against local Control Plane
-	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --dataplane=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
+	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \
@@ -67,14 +67,22 @@ start/postgres: ## Boostrap: start Postgres for Control Plane with initial schem
 	docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml up -d
 	$(TOOLS_DIR)/postgres/wait-for-postgres.sh 15432
 
+.PHONY: stop/postgres
+stop/postgres: ## Boostrap: stop Postgres
+	docker-compose -f $(TOOLS_DIR)/postgres/docker-compose.yaml down
+
 .PHONY: start/postgres/ssl
 start/postgres/ssl: ## Boostrap: start Postgres for Control Plane with initial schema and SSL enabled
 	docker-compose -f $(TOOLS_DIR)/postgres/ssl/docker-compose.yaml up -d
 	$(TOOLS_DIR)/postgres/wait-for-postgres.sh 15432
 
+.PHONY: stop/postgres/ssl
+stop/postgres/ssl: ## Boostrap: stop Postgres with SSL enabled
+	docker-compose -f $(TOOLS_DIR)/postgres/ssl/docker-compose.yaml stop
+
 .PHONY: run/kuma-dp
 run/kuma-dp: build/kumactl ## Dev: Run `kuma-dp` locally
-	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --dataplane=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
+	${BUILD_ARTIFACTS_DIR}/kumactl/kumactl generate dataplane-token --name=$(EXAMPLE_DATAPLANE_NAME) --mesh=$(EXAMPLE_DATAPLANE_MESH) > /tmp/kuma-dp-$(EXAMPLE_DATAPLANE_NAME)-$(EXAMPLE_DATAPLANE_MESH)-token
 	KUMA_DATAPLANE_MESH=$(EXAMPLE_DATAPLANE_MESH) \
 	KUMA_DATAPLANE_NAME=$(EXAMPLE_DATAPLANE_NAME) \
 	KUMA_DATAPLANE_ADMIN_PORT=$(ENVOY_ADMIN_PORT) \

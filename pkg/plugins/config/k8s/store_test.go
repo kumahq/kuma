@@ -6,6 +6,8 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -76,7 +78,7 @@ var _ = Describe("KubernetesStore", func() {
 		})
 		Expect(err).ToNot(HaveOccurred())
 
-		s, err = k8s.NewStore(k8sClient, ns)
+		s, err = k8s.NewStore(k8sClient, ns, k8sClientScheme, k8s_resources.NewSimpleConverter())
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -84,7 +86,7 @@ var _ = Describe("KubernetesStore", func() {
 		It("should create a new config", func() {
 			// given
 			config := &system_model.ConfigResource{
-				Spec: system_proto.Config{
+				Spec: &system_proto.Config{
 					Config: "test",
 				},
 			}
@@ -138,7 +140,7 @@ var _ = Describe("KubernetesStore", func() {
     `, ns)).(*kube_core.ConfigMap)
 
 			// given
-			config := &system_model.ConfigResource{}
+			config := system_model.NewConfigResource()
 
 			// when
 			err := s.Get(context.Background(), config, core_store.GetByKey("kuma-internal-config", ""))
@@ -159,6 +161,36 @@ var _ = Describe("KubernetesStore", func() {
 			// then
 			Expect(actual.Data).To(Equal(expected.Data))
 		})
+
+		It("should return error in case of resource conflict", func() {
+			// setup
+			initial := backend.ParseYAML(fmt.Sprintf(`
+            apiVersion: v1
+            kind: ConfigMap
+            metadata:
+              name: "kuma-internal-config"
+              namespace : %s
+            data:
+              config: "test" 
+    `, ns))
+			backend.Create(initial)
+
+			// given
+			config := system_model.NewConfigResource()
+
+			err := s.Get(context.Background(), config, core_store.GetByKey("kuma-internal-config", ""))
+			Expect(err).ToNot(HaveOccurred())
+
+			config.Meta.(*k8s.KubernetesMetaAdapter).ResourceVersion = config.Meta.(*k8s.KubernetesMetaAdapter).ResourceVersion + "1"
+			config.Spec.Config = "next test"
+
+			// when
+			err = s.Update(context.Background(), config)
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal(`Resource conflict: type="Config" name="kuma-internal-config" mesh=""`))
+		})
 	})
 
 	Describe("Get()", func() {
@@ -167,7 +199,7 @@ var _ = Describe("KubernetesStore", func() {
 			backend.AssertNotExists(&kube_core.ConfigMap{}, ns, "kuma-internal-config")
 
 			// when
-			err := s.Get(context.Background(), &system_model.ConfigResource{}, core_store.GetByKey("kuma-internal-config", ""))
+			err := s.Get(context.Background(), system_model.NewConfigResource(), core_store.GetByKey("kuma-internal-config", ""))
 
 			// then
 			Expect(err).To(HaveOccurred())

@@ -2,13 +2,16 @@ package api_server
 
 import (
 	"context"
+	"reflect"
 	"strings"
 
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+
+	"github.com/kumahq/kuma/pkg/core/validators"
+
 	"github.com/emicklei/go-restful"
-	"github.com/golang/protobuf/proto"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/api-server/types"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -17,7 +20,6 @@ import (
 )
 
 type dataplaneOverviewEndpoints struct {
-	publicURL  string
 	resManager manager.ResourceManager
 }
 
@@ -57,22 +59,22 @@ func (r *dataplaneOverviewEndpoints) inspectDataplane(request *restful.Request, 
 }
 
 func (r *dataplaneOverviewEndpoints) fetchOverview(ctx context.Context, name string, meshName string) (*mesh.DataplaneOverviewResource, error) {
-	dataplane := mesh.DataplaneResource{}
-	if err := r.resManager.Get(ctx, &dataplane, store.GetByKey(name, meshName)); err != nil {
+	dataplane := mesh.NewDataplaneResource()
+	if err := r.resManager.Get(ctx, dataplane, store.GetByKey(name, meshName)); err != nil {
 		return nil, err
 	}
 
-	insight := mesh.DataplaneInsightResource{}
-	err := r.resManager.Get(ctx, &insight, store.GetByKey(name, meshName))
+	insight := mesh.NewDataplaneInsightResource()
+	err := r.resManager.Get(ctx, insight, store.GetByKey(name, meshName))
 	if err != nil && !store.IsResourceNotFound(err) { // It's fine to have dataplane without insight
 		return nil, err
 	}
 
 	return &mesh.DataplaneOverviewResource{
 		Meta: dataplane.Meta,
-		Spec: mesh_proto.DataplaneOverview{
-			Dataplane:        proto.Clone(&dataplane.Spec).(*mesh_proto.Dataplane),
-			DataplaneInsight: proto.Clone(&insight.Spec).(*mesh_proto.DataplaneInsight),
+		Spec: &mesh_proto.DataplaneOverview{
+			Dataplane:        dataplane.Spec,
+			DataplaneInsight: insight.Spec,
 		},
 	}, nil
 }
@@ -85,44 +87,30 @@ func (r *dataplaneOverviewEndpoints) inspectDataplanes(request *restful.Request,
 		return
 	}
 
-	// todo(jakubdyszkiewicz) for now pagination + filtering is not supported
-	if (request.QueryParameter("size") != "" || request.QueryParameter("offset") != "") &&
-		(request.QueryParameter("tag") != "" || request.QueryParameter("gateway") != "" || request.QueryParameter("ingress") != "") {
-		rest_errors.HandleError(response, types.PaginationNotSupported, "Could not retrieve dataplane overviews")
-		return
-	}
-
-	overviews, err := r.fetchOverviews(request.Request.Context(), page, meshName)
+	filter, err := genFilter(request)
 	if err != nil {
 		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
 		return
 	}
 
-	tags := parseTags(request.QueryParameters("tag"))
-	if request.QueryParameter("gateway") == "true" {
-		overviews.RetainGatewayDataplanes()
+	overviews, err := r.fetchOverviews(request.Request.Context(), page, meshName, filter)
+	if err != nil {
+		rest_errors.HandleError(response, err, "Could not retrieve dataplane overviews")
+		return
 	}
-	if request.QueryParameter("ingress") == "true" {
-		overviews.RetainIngressDataplanes()
-	}
-	overviews.RetainMatchingTags(tags)
+
 	// pagination is not supported yet so we need to override pagination total items after retaining dataplanes
 	overviews.GetPagination().SetTotal(uint32(len(overviews.Items)))
 	restList := rest.From.ResourceList(&overviews)
-	next, err := nextLink(request, r.publicURL, &overviews)
-	if err != nil {
-		rest_errors.HandleError(response, err, "Could not list dataplane overviews")
-		return
-	}
-	restList.Next = next
+	restList.Next = nextLink(request, overviews.GetPagination().NextOffset)
 	if err := response.WriteAsJson(restList); err != nil {
 		rest_errors.HandleError(response, err, "Could not list dataplane overviews")
 	}
 }
 
-func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string) (mesh.DataplaneOverviewResourceList, error) {
+func (r *dataplaneOverviewEndpoints) fetchOverviews(ctx context.Context, p page, meshName string, filter store.ListFilterFunc) (mesh.DataplaneOverviewResourceList, error) {
 	dataplanes := mesh.DataplaneResourceList{}
-	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset)); err != nil {
+	if err := r.resManager.List(ctx, &dataplanes, store.ListByMesh(meshName), store.ListByPage(p.size, p.offset), ListByFilterFunc(filter)); err != nil {
 		return mesh.DataplaneOverviewResourceList{}, err
 	}
 
@@ -147,4 +135,79 @@ func parseTags(queryParamValues []string) map[string]string {
 		tags[tagKv[0]] = tagKv[1]
 	}
 	return tags
+}
+
+func modeFromParameter(request *restful.Request, param string) (string, error) {
+	mode := strings.ToLower(request.QueryParameter(param))
+	if mode == "" || mode == "true" || mode == "false" {
+		return mode, nil
+	}
+
+	verr := validators.ValidationError{}
+	verr.AddViolationAt(
+		validators.RootedAt(request.SelectedRoutePath()).Field(param),
+		"shoud use `true` or `false` instead of "+mode)
+
+	return "", &verr
+}
+
+type DpFilter func(a interface{}) bool
+
+func modeToFilter(mode string) DpFilter {
+	isnil := func(a interface{}) bool {
+		return a == nil || reflect.ValueOf(a).IsNil()
+	}
+	switch mode {
+	case "true":
+		return func(a interface{}) bool {
+			return !isnil(a)
+		}
+	case "false":
+		return func(a interface{}) bool {
+			return isnil(a)
+		}
+	default:
+		return func(a interface{}) bool {
+			return true
+		}
+	}
+}
+
+func ListByFilterFunc(filterFunc store.ListFilterFunc) store.ListOptionsFunc {
+	return func(opts *store.ListOptions) {
+		opts.FilterFunc = filterFunc
+	}
+}
+
+func genFilter(request *restful.Request) (store.ListFilterFunc, error) {
+	gatewayMode, err := modeFromParameter(request, "gateway")
+	if err != nil {
+		return nil, err
+	}
+
+	ingressMode, err := modeFromParameter(request, "ingress")
+	if err != nil {
+		return nil, err
+	}
+
+	tags := parseTags(request.QueryParameters("tag"))
+
+	return func(rs core_model.Resource) bool {
+		gatewayFilter := modeToFilter(gatewayMode)
+		ingressFilter := modeToFilter(ingressMode)
+		dataplane := rs.(*mesh.DataplaneResource)
+		if !gatewayFilter(dataplane.Spec.GetNetworking().GetGateway()) {
+			return false
+		}
+
+		if !ingressFilter(dataplane.Spec.GetNetworking().GetIngress()) {
+			return false
+		}
+
+		if !dataplane.Spec.MatchTags(tags) {
+			return false
+		}
+
+		return true
+	}, nil
 }

@@ -34,7 +34,7 @@ func NewBuiltinCaManager(secretManager manager.ResourceManager) core_ca.Manager 
 
 var _ core_ca.Manager = &builtinCaManager{}
 
-func (b *builtinCaManager) Ensure(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error {
+func (b *builtinCaManager) Ensure(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
 	_, err := b.getCa(ctx, mesh, backend.Name)
 	if core_store.IsResourceNotFound(err) {
 		if err := b.create(ctx, mesh, backend); err != nil {
@@ -46,7 +46,7 @@ func (b *builtinCaManager) Ensure(ctx context.Context, mesh string, backend mesh
 	return nil
 }
 
-func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error {
+func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
 	verr := core_validators.ValidationError{}
 	cfg := &config.BuiltinCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
@@ -56,14 +56,14 @@ func (b *builtinCaManager) ValidateBackend(ctx context.Context, mesh string, bac
 	return nil
 }
 
-func (b *builtinCaManager) UsedSecrets(mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]string, error) {
+func (b *builtinCaManager) UsedSecrets(mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]string, error) {
 	return []string{
 		certSecretResKey(mesh, backend.Name).Name,
 		keySecretResKey(mesh, backend.Name).Name,
 	}, nil
 }
 
-func (b *builtinCaManager) create(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) error {
+func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) error {
 	cfg := &config.BuiltinCertificateAuthorityConfig{}
 	if err := util_proto.ToTyped(backend.Conf, cfg); err != nil {
 		return errors.Wrap(err, "could not convert backend config to BuiltinCertificateAuthorityConfig")
@@ -83,7 +83,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend mesh
 	}
 
 	certSecret := &core_system.SecretResource{
-		Spec: system_proto.Secret{
+		Spec: &system_proto.Secret{
 			Data: &wrappers.BytesValue{
 				Value: keyPair.CertPEM,
 			},
@@ -94,7 +94,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend mesh
 	}
 
 	keySecret := &core_system.SecretResource{
-		Spec: system_proto.Secret{
+		Spec: &system_proto.Secret{
 			Data: &wrappers.BytesValue{
 				Value: keyPair.KeyPEM,
 			},
@@ -120,7 +120,7 @@ func keySecretResKey(mesh string, backendName string) core_model.ResourceKey {
 	}
 }
 
-func (b *builtinCaManager) GetRootCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend) ([]core_ca.Cert, error) {
+func (b *builtinCaManager) GetRootCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]core_ca.Cert, error) {
 	ca, err := b.getCa(ctx, mesh, backend.Name)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
@@ -128,7 +128,7 @@ func (b *builtinCaManager) GetRootCert(ctx context.Context, mesh string, backend
 	return []core_ca.Cert{ca.CertPEM}, nil
 }
 
-func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend mesh_proto.CertificateAuthorityBackend, services []string) (core_ca.KeyPair, error) {
+func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend, services []string) (core_ca.KeyPair, error) {
 	ca, err := b.getCa(ctx, mesh, backend.Name)
 	if err != nil {
 		return core_ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
@@ -150,12 +150,12 @@ func (b *builtinCaManager) GenerateDataplaneCert(ctx context.Context, mesh strin
 }
 
 func (b *builtinCaManager) getCa(ctx context.Context, mesh string, backendName string) (core_ca.KeyPair, error) {
-	certSecret := &core_system.SecretResource{}
+	certSecret := core_system.NewSecretResource()
 	if err := b.secretManager.Get(ctx, certSecret, core_store.GetBy(certSecretResKey(mesh, backendName))); err != nil {
 		return core_ca.KeyPair{}, err
 	}
 
-	keySecret := &core_system.SecretResource{}
+	keySecret := core_system.NewSecretResource()
 	if err := b.secretManager.Get(ctx, keySecret, core_store.GetBy(keySecretResKey(mesh, backendName))); err != nil {
 		return core_ca.KeyPair{}, err
 	}

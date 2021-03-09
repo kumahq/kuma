@@ -3,8 +3,6 @@ package permissions_test
 import (
 	"context"
 
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -13,9 +11,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core/permissions"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Match", func() {
@@ -32,7 +32,7 @@ var _ = Describe("Match", func() {
 			manager := core_manager.NewResourceManager(memory.NewStore())
 			matcher := permissions.TrafficPermissionsMatcher{ResourceManager: manager}
 
-			err := manager.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("default", "default"))
+			err := manager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, p := range given.policies {
@@ -50,10 +50,9 @@ var _ = Describe("Match", func() {
 		Entry("2 inbounds dataplane with additional service, 2 policies", testCase{
 			mesh: &core_mesh.MeshResource{
 				Meta: &model.ResourceMeta{
-					Mesh: "default",
 					Name: "default",
 				},
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Metrics: &mesh_proto.Metrics{
 						EnabledBackend: "prometheus-1",
 						Backends: []*mesh_proto.MetricsBackend{
@@ -77,7 +76,7 @@ var _ = Describe("Match", func() {
 					Mesh: "default",
 					Name: "dp1",
 				},
-				Spec: mesh_proto.Dataplane{
+				Spec: &mesh_proto.Dataplane{
 					Networking: &mesh_proto.Dataplane_Networking{
 						Address: "192.168.0.1",
 						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -111,7 +110,7 @@ var _ = Describe("Match", func() {
 						Mesh: "default",
 						Name: "more-specific-kong-to-web",
 					},
-					Spec: mesh_proto.TrafficPermission{
+					Spec: &mesh_proto.TrafficPermission{
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
@@ -134,7 +133,7 @@ var _ = Describe("Match", func() {
 						Mesh: "default",
 						Name: "less-specific-kong-to-web",
 					},
-					Spec: mesh_proto.TrafficPermission{
+					Spec: &mesh_proto.TrafficPermission{
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{
@@ -156,7 +155,7 @@ var _ = Describe("Match", func() {
 						Mesh: "default",
 						Name: "metrics",
 					},
-					Spec: mesh_proto.TrafficPermission{
+					Spec: &mesh_proto.TrafficPermission{
 						Sources: []*mesh_proto.Selector{
 							{
 								Match: map[string]string{

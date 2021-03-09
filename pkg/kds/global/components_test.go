@@ -5,6 +5,12 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds/reconcile"
@@ -35,17 +41,22 @@ var _ = Describe("Global Sync", func() {
 	var closeFunc func()
 
 	BeforeEach(func() {
+		const numOfRemotes = 2
+		const zoneName = "zone-%d"
+
+		// Start `numOfRemotes` Kuma CP Remote
 		serverStreams := []*grpc.MockServerStream{}
 		wg := &sync.WaitGroup{}
 		remoteStores = []store.ResourceStore{}
-		for i := 0; i < 2; i++ {
+		for i := 0; i < numOfRemotes; i++ {
 			wg.Add(1)
 			remoteStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(remoteStore, wg, fmt.Sprintf("cluster-%d", i), kds.SupportedTypes, reconcile.Any)
+			serverStream := kds_setup.StartServer(remoteStore, wg, fmt.Sprintf(zoneName, i), kds.SupportedTypes, reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
 			remoteStores = append(remoteStores, remoteStore)
 		}
 
+		// Start 1 Kuma CP Global
 		globalStore = memory.NewStore()
 		globalSyncer = sync_store.NewResourceSyncer(core.Log, globalStore)
 		stopCh := make(chan struct{})
@@ -53,14 +64,14 @@ var _ = Describe("Global Sync", func() {
 		for _, ss := range serverStreams {
 			clientStreams = append(clientStreams, ss.ClientStream(stopCh))
 		}
-		zone := &system.ZoneResource{
-			Spec: system_proto.Zone{
-				Ingress: &system_proto.Zone_Ingress{
-					Address: "192.168.0.2:10001",
-				},
-			},
+		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, nil))
+
+		// Create Zone resources for each Kuma CP Remote
+		for i := 0; i < numOfRemotes; i++ {
+			zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: &wrappers.BoolValue{Value: true}}}
+			err := globalStore.Create(context.Background(), zone, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
 		}
-		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, zone))
 
 		closeFunc = func() {
 			close(stopCh)
@@ -68,8 +79,8 @@ var _ = Describe("Global Sync", func() {
 		}
 	})
 
-	dataplaneFunc := func(zone, service string) mesh_proto.Dataplane {
-		return mesh_proto.Dataplane{
+	dataplaneFunc := func(zone, service string) *mesh_proto.Dataplane {
+		return &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -127,10 +138,10 @@ var _ = Describe("Global Sync", func() {
 			return len(actual.Items)
 		}, "3s", "100ms").Should(Equal(20))
 
-		err := remoteStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-0", "mesh-1"))
+		err := remoteStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-0", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remoteStores[0].Delete(context.Background(), &mesh.DataplaneResource{}, store.DeleteByKey("dp-1-1", "mesh-1"))
+		err = remoteStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {
@@ -158,6 +169,36 @@ var _ = Describe("Global Sync", func() {
 			Expect(err).ToNot(HaveOccurred())
 			return len(actual.Items)
 		}, "3s", "100ms").Should(Equal(2))
+	})
+
+	It("should have up to date list of provided types", func() {
+		excludeTypes := map[model.ResourceType]bool{
+			mesh.DataplaneInsightType:  true,
+			mesh.DataplaneOverviewType: true,
+			mesh.ServiceInsightType:    true,
+			mesh.ServiceOverviewType:   true,
+			sample.TrafficRouteType:    true,
+		}
+
+		// take all mesh-scoped types and exclude types that won't be synced
+		actualProvidedTypes := []model.ResourceType{}
+		for _, typ := range registry.Global().ListTypes() {
+			obj, err := registry.Global().NewObject(typ)
+			Expect(err).ToNot(HaveOccurred())
+			if obj.Scope() == model.ScopeMesh && !excludeTypes[typ] {
+				actualProvidedTypes = append(actualProvidedTypes, typ)
+			}
+		}
+
+		// plus 2 global-scope types
+		extraTypes := []model.ResourceType{
+			mesh.MeshType,
+			system.ConfigType,
+		}
+
+		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)
+		Expect(actualProvidedTypes).To(HaveLen(len(global.ProvidedTypes)))
+		Expect(actualProvidedTypes).To(ConsistOf(global.ProvidedTypes))
 	})
 
 })

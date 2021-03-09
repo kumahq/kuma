@@ -23,7 +23,7 @@ var _ = Describe("GetTrafficTrace", func() {
 			Name: "dp1",
 			Mesh: "default",
 		},
-		Spec: mesh_proto.Dataplane{
+		Spec: &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -48,7 +48,7 @@ var _ = Describe("GetTrafficTrace", func() {
 				Name: "tt1",
 				Mesh: "default",
 			},
-			Spec: mesh_proto.TrafficTrace{
+			Spec: &mesh_proto.TrafficTrace{
 				Selectors: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
@@ -64,7 +64,7 @@ var _ = Describe("GetTrafficTrace", func() {
 				Name: "tt2",
 				Mesh: "default",
 			},
-			Spec: mesh_proto.TrafficTrace{
+			Spec: &mesh_proto.TrafficTrace{
 				Selectors: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{

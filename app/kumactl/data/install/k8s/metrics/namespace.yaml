@@ -6,3 +6,4 @@ metadata:
   name: {{ .Namespace }}
   annotations:
     kuma.io/sidecar-injection: enabled
+    kuma.io/mesh: {{ .Mesh }}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"net"
 	"os"
 	"os/exec"
 	"strconv"
@@ -29,19 +30,51 @@ const (
 
 	IngressDataplane = `
 type: Dataplane
-mesh: default
+mesh: %s
 name: dp-ingress
 networking:
   address: {{ address }}
-  ingress: {}
+  ingress:
+    publicAddress: %s
+    publicPort: %d
   inbound:
-  - port: %d	
+  - port: %d
     tags:
       kuma.io/service: ingress
 `
 	EchoServerDataplane = `
 type: Dataplane
-mesh: default
+mesh: %s
+name: {{ name }}
+networking:
+  address:  {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/protocol: %s
+`
+
+	EchoServerDataplaneWithServiceProbe = `
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address:  {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    serviceProbe:
+      tcp: {}
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/protocol: %s
+`
+
+	EchoServerDataplaneTransparentProxy = `
+type: Dataplane
+mesh: %s
 name: {{ name }}
 networking:
   address:  {{ address }}
@@ -51,11 +84,15 @@ networking:
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: http
+  transparentProxying:
+    redirectPortInbound: %s
+    redirectPortOutbound: %s
 `
+
 	AppModeDemoClient   = "demo-client"
 	DemoClientDataplane = `
 type: Dataplane
-mesh: default
+mesh: %s
 name: {{ name }}
 networking:
   address: {{ address }}
@@ -74,6 +111,46 @@ networking:
   - port: 5000
     tags:
       kuma.io/service: external-service
+`
+
+	DemoClientDataplaneWithServiceProbe = `
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address: {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    serviceProbe:
+      tcp: {}
+    tags:
+      kuma.io/service: demo-client
+  outbound:
+  - port: 4000
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+  - port: 4001
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+  - port: 5000
+    tags:
+      kuma.io/service: external-service
+`
+
+	DemoClientDataplaneTransparentProxy = `
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address: {{ address }}
+  inbound:
+  - port: %s
+    tags:
+      kuma.io/service: demo-client
+  transparentProxying:
+    redirectPortInbound: %s
+    redirectPortOutbound: %s
 `
 )
 
@@ -106,7 +183,7 @@ type UniversalApp struct {
 	verbose      bool
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, env []string, args []string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMode, verbose bool, caps []string) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:            t,
 		ports:        map[string]string{},
@@ -117,11 +194,14 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 	app.allocatePublicPortsFor("22")
 
 	if mode == AppModeCP {
-		app.allocatePublicPortsFor("5678", "5679", "5680", "5681", "5682", "5684", "5685")
+		app.allocatePublicPortsFor("5678", "5680", "5681", "5682", "5685")
 	}
 
 	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
+	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName)
+	for _, cap := range caps {
+		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
+	}
 	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
 	container, err := docker.RunAndGetIDE(t, KumaUniversalImage, &opts)
@@ -141,12 +221,6 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 		})
 
 	fmt.Printf("Node IP %s\n", app.ip)
-
-	if mode == AppModeCP {
-		env = append([]string{"KUMA_GENERAL_ADVERTISED_HOSTNAME=" + app.ip}, env...)
-	}
-
-	app.CreateMainApp(env, args)
 
 	return app, nil
 }
@@ -209,8 +283,61 @@ func (s *UniversalApp) CreateMainApp(env []string, args []string) {
 	s.mainApp = NewSshApp(s.verbose, s.ports[sshPort], env, args)
 }
 
+func (s *UniversalApp) OverrideDpVersion(version string) error {
+	// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"wget",
+		fmt.Sprintf("https://kong.bintray.com/kuma/kuma-%s-ubuntu-amd64.tar.gz", version),
+		"-O",
+		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"mkdir",
+		"-p",
+		"/tmp/kuma/",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"tar",
+		"xvzf",
+		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
+		"-C",
+		"/tmp/kuma/",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"cp",
+		fmt.Sprintf("/tmp/kuma/kuma-%s/bin/kuma-dp", version),
+		"/usr/bin/kuma-dp",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"cp",
+		fmt.Sprintf("/tmp/kuma/kuma-%s/bin/envoy", version),
+		"/usr/local/bin/envoy",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
-	// and echo it to the Application Node
+	// create the token file on the app container
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
 		panic(err)
@@ -220,24 +347,47 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 	if err != nil {
 		panic(err)
 	}
-	// run the DP
-	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"kuma-dp", "run",
+
+	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
+	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"runuser", "-u", "kuma-dp", "--",
+		"/usr/bin/kuma-dp", "run",
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
 		"--dataplane-file=/kuma/dpyaml-" + appname,
-		"--dataplane-var", "name=dp-" + appname,
+		"--dataplane-var", "name=" + appname,
 		"--dataplane-var", "address=" + ip,
-		"--binary-path", "/usr/local/bin/envoy"})
+		"--binary-path", "/usr/local/bin/envoy",
+	})
+}
+
+func (s *UniversalApp) setupTransparent(cpIp string) {
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"/usr/bin/kumactl", "install", "transparent-proxy",
+		"--kuma-dp-user", "kuma-dp",
+		"--kuma-cp-ip", cpIp,
+	}).Run()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func (s *UniversalApp) getIP() (string, error) {
-	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "hosts", s.container[:12]})
+	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "ahosts", s.container[:12]})
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
 		return "invalid", errors.Wrapf(err, "getent failed with %s", string(bytes))
 	}
-	split := strings.Split(string(bytes), " ")
-	return split[0], nil
+	lines := strings.Split(string(bytes), "\n")
+	// search ipv4
+	for _, line := range lines {
+		split := strings.Split(line, " ")
+		testInput := net.ParseIP(split[0])
+		if testInput.To4() != nil {
+			return split[0], nil
+		}
+	}
+	return "", errors.Errorf("No IPv4 address found")
 }
 
 type SshApp struct {

@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
@@ -16,8 +14,11 @@ import (
 	. "github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
@@ -28,7 +29,7 @@ var _ = Describe("Match", func() {
 				Mesh: "default",
 				Name: "dp1",
 			},
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Inbound: inbounds,
 				},
@@ -42,7 +43,7 @@ var _ = Describe("Match", func() {
 				Name:         name,
 				CreationTime: creationTime,
 			},
-			Spec: mesh_proto.FaultInjection{
+			Spec: &mesh_proto.FaultInjection{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
@@ -73,8 +74,8 @@ var _ = Describe("Match", func() {
 			manager := core_manager.NewResourceManager(memory.NewStore())
 			matcher := FaultInjectionMatcher{ResourceManager: manager}
 
-			mesh := &mesh.MeshResource{}
-			err := manager.Create(context.Background(), mesh, store.CreateByKey("default", "default"))
+			mesh := mesh.NewMeshResource()
+			err := manager.Create(context.Background(), mesh, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, p := range given.policies {
@@ -84,7 +85,10 @@ var _ = Describe("Match", func() {
 
 			bestMatched, err := matcher.Match(context.Background(), given.dataplane, mesh)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bestMatched).To(Equal(given.expected))
+			Expect(len(bestMatched)).To(Equal(len(given.expected)))
+			for key := range bestMatched {
+				Expect(bestMatched[key]).To(MatchProto(given.expected[key]))
+			}
 		},
 		Entry("1 inbound dataplane, 2 policies", testCase{
 			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
@@ -120,7 +124,7 @@ var _ = Describe("Match", func() {
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8080,
-				}: &policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
+				}: policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
 							"service":          "*",
@@ -164,7 +168,7 @@ var _ = Describe("Match", func() {
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8081,
-				}: &policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+				}: policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
 							"service":          "web-api",

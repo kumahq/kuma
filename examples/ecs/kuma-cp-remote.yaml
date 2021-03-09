@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Kuma Control Plane on ECS
+Description: Kuma Remote Control Plane on ECS
 Parameters:
   VPCStackName:
     Type: String
@@ -8,12 +8,8 @@ Parameters:
       to locate and reference resources created by that stack.
   Image:
     Type: String
-    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:080-preview-2"
+    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:1.0.8"
     Description: The name of the kuma-cp docker image
-  IngressImage:
-    Type: String
-    Default: "kong-docker-kuma-docker.bintray.io/kuma-dp:080-preview-2"
-    Description: The name of the kuma-dp docker image
   Zone:
     Type: String
     Default: "zone-1"
@@ -25,9 +21,63 @@ Parameters:
     Type: String
     Default: '10.0.0.0/8'
     Description: The CIDR used to restrict the kuma-cp ports access
-  IngressPort:
+  # The certificates are generated for SAN `controlplane.kuma.io` using:
+  # kumactl generate tls-certificate --type=server --cp-hostname zone-1-controlplane.kuma.io
+  # change these accordingly if another DNS name is needed.
+  ServerCert:
     Type: String
-    Default: 10001
+    Default: |
+      -----BEGIN CERTIFICATE-----
+      MIIDPjCCAiagAwIBAgIQHM9nGoC2Tp6bQoGZshRz9DANBgkqhkiG9w0BAQsFADAP
+      MQ0wCwYDVQQDEwRrdW1hMB4XDTIxMDExOTEwMjkwN1oXDTMxMDExNzEwMjkwN1ow
+      DzENMAsGA1UEAxMEa3VtYTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+      AMb2WpVH7TATUBRkwWZJqSllSY4pHWB/mL2R9UuBBu3BX2UkZzZPjwTArnWQQMWl
+      UZn0IGslCdPOtlIUQpsBmf7WYJkNVX23TtFslnI0fs3mm/OJvz5mLHA0sF2sT4Di
+      k4Sqq64YiHkwKr26j6HdtAe9bkjGoEK5zbigLTKqcgeiqFNKlIaD0GTh3mq2mdW8
+      1E+4tCLY4UaoSC680a+keAe54+tqaB9fpZOL4k9lSxdIqilymLWi5Wi3LrW3Pudw
+      r6dOsUJE/7CntY6jeANf0a+oDqT9GASqpbLSfz1lEcli94yAksIxDwp3OPw72pS/
+      lsYwryj11dkJkuYNo8pHnZcCAwEAAaOBlTCBkjAOBgNVHQ8BAf8EBAMCAqQwHQYD
+      VR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wHQYD
+      VR0OBBYEFFvGOnL81kdW4GvbTvcMag5sfwgTMDEGA1UdEQQqMCiCG3pvbmUtMS1j
+      b250cm9scGxhbmUua3VtYS5pb4IJbG9jYWxob3N0MA0GCSqGSIb3DQEBCwUAA4IB
+      AQAJB7nvQigzWcGBmeANSJ+ouPmfCQ3tG45490GbNNKQB2QqsMp3gmnLRKA9AZGn
+      ifxECQz6Q69xqke23XAtIPiEiFkQb1fKmBNslH4oLYZt09vjBJKXbO1at24rnZO0
+      IhUECHMRy/UbGskT3GIiIVMoK8F0F//P9WmnYnn67FZhsg34sHqyQX3FLq+SgFkU
+      BEypOHlXPOhbuxEKiDYQJxWb90gAVcYFalmsodC/E/bddlTkX0kM5qqpP/f879QK
+      qTQ3wKGQfxpNWA0XdUlUA14G1p/LSnqGlHwWIn2B4iovk3yLwQZZ5z/hY2c34zC0
+      ANRIfT9kE9xr3oxVIRGTmjlg
+      -----END CERTIFICATE-----
+
+  ServerKey:
+    Type: String
+    Default: |
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEpQIBAAKCAQEAxvZalUftMBNQFGTBZkmpKWVJjikdYH+YvZH1S4EG7cFfZSRn
+      Nk+PBMCudZBAxaVRmfQgayUJ0862UhRCmwGZ/tZgmQ1VfbdO0WyWcjR+zeab84m/
+      PmYscDSwXaxPgOKThKqrrhiIeTAqvbqPod20B71uSMagQrnNuKAtMqpyB6KoU0qU
+      hoPQZOHearaZ1bzUT7i0ItjhRqhILrzRr6R4B7nj62poH1+lk4viT2VLF0iqKXKY
+      taLlaLcutbc+53Cvp06xQkT/sKe1jqN4A1/Rr6gOpP0YBKqlstJ/PWURyWL3jICS
+      wjEPCnc4/DvalL+WxjCvKPXV2QmS5g2jykedlwIDAQABAoIBAQC7C+dk6FXIGJ/0
+      TDS1oRJzZFGeYHDJw6sorQtajFajNmQkhfCyUmE2Kp7Yz2DVbvIkNio0EIIIqhEl
+      YP6tEvhfZ9MwkCSLJ8XlhJx7iXacw+xhLGKqmwu0ARS9O70SgfAFjR4Rceb7Z5kG
+      /VkC55bUn/YKXRFVKbCJnaxgMXU6TrxI7NPALitY2rhjRZk+/8bkpU/r/38J0Zvd
+      BwupdzHu9GIlywO57C0Gbb0+E6gjiKyVPdpp4PSXH3nQRGFopFTmoA+c1j2j89+g
+      CGZfqgBHVGeOlMKUdVENh//vEhh6Ukkkmnm7adoWoHG7FsAH8QolyKDYjX+69iwp
+      ta/6IiYhAoGBANu8elxayjGCMoziSwqQHfs6lW+1Gkzsuz9EPBqZVEPrvs/TKp+q
+      uHothk7TIqw0Ve/UDqdXbTJDRB/9im42TY/AWeZ4f1L5ywttqmG0KhmFzz2U/Po/
+      NV4rSOpcnGLzLTgP2hLw9NhAQMyecvO46iHn46Citq0PnyLq83ZkMBjtAoGBAOfM
+      NZDzjsJfoF8vtdD4CI+R53+5UZJvOvFrupmq2it5ed5z1oE3xhqeM/bbo7TP1OTs
+      Sog2qA1+N6L43j6uBaJTIfkWkO29YyxQkq4zWlm0p874+vFOsOf8LFYkEgeNpszn
+      a3Rw+Ry+gGGl9ssszXyeRMkdIZdGinfTeN8zqFQTAoGBAMFvuZPlxMsyn4eQipkA
+      57PLDdRp7H49hFUcn4CW7CxisvZHIeWvJ3k+7FYl3gcUh3Z6CnBcMV+nAajbzOpa
+      2YqrvTh7aTLFfW5RG0WpkcooFplSuCUgUb3Vgvn1jyI4it0ob0RvZEuevKyk6/MM
+      HOi+N4+ozgGpl+DoTm0xo3m9AoGAWK4+3BriRijxoRkOtUj/dXX7nFjZBW36nfx6
+      ImpEF5fc8SdeLIebCfn2pX34TqeoqoBgL2bBuo/MV1RhKpfHXgfyGmrwvZPUSlL1
+      GyJYcbN08/E7iHBzq/1FNRuNrkgaRZBQAvdpxv52/WTSW37jisa+SDcV79s0BI3q
+      U3Je9vMCgYEAtLm0jfrW/0VyPWLFBrFUa42Dou5R+QPgwLnU1wFMiWQpgbjLkJF4
+      ewF3I/ZB/wCFQQq+Fcfi9+iG7oAENZgrlJWE4Chfea5QVGXLCzXcakLPd4opfduE
+      PuZj6CCAthHK0iAtegk1qorZ1DzAF8K3BE9mcA37yzwfFMFrNieRt2Q=
+      -----END RSA PRIVATE KEY-----
 
 Resources:
 
@@ -189,11 +239,7 @@ Resources:
           PortMappings:
             - ContainerPort: 5676
               Protocol: tcp
-            - ContainerPort: 5677
-              Protocol: tcp
             - ContainerPort: 5678
-              Protocol: tcp
-            - ContainerPort: 5679
               Protocol: tcp
             - ContainerPort: 5680
               Protocol: tcp
@@ -207,117 +253,27 @@ Resources:
           Environment:
             - Name: KUMA_MODE
               Value: remote
-            - Name: KUMA_MULTICLUSTER_REMOTE_ZONE
+            - Name: KUMA_MULTIZONE_REMOTE_ZONE
               Value: !Ref Zone
-            - Name: KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
+            - Name: KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
               Value: !Ref KumaCPGlobal
-            - Name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              Value: !Join [ "-", [ !Ref Zone, "controlplane.kuma.io" ] ]
+            - Name: KUMA_GENERAL_TLS_CERT_FILE
+              Value: /var/cert.pem
+            - Name: KUMA_GENERAL_TLS_CERT
+              Value: !Ref ServerCert
+            - Name: KUMA_GENERAL_TLS_KEY_FILE
+              Value: /var/key.pem
+            - Name: KUMA_GENERAL_TLS_KEY
+              Value: !Ref ServerKey
             - Name: KUMA_DNS_SERVER_PORT
               Value: 53
-            # TODO: remove this one once the token workflow is fixed
-            - Name: KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED
-              Value: "false"
-            - Name: KUMA_DATAPLANE_TOKEN_SERVER_ENABLED
-              Value: "false"
-          Command:
-            - "run"
+          EntryPoint: [
+              "sh", "-c",
+              "echo \"${KUMA_GENERAL_TLS_CERT}\" > ${KUMA_GENERAL_TLS_CERT_FILE}; echo \"${KUMA_GENERAL_TLS_KEY}\" > ${KUMA_GENERAL_TLS_KEY_FILE}; /usr/bin/kuma-cp run"
+          ]
           LogConfiguration:
             LogDriver: awslogs
             Options:
               awslogs-group: !Ref AWS::StackName
               awslogs-region: !Ref AWS::Region
               awslogs-stream-prefix: kuma-cp
-
-
-  ############################
-  # Ingress DP configuration #
-  ############################
-
-  IngressDPSecurityGroup:
-    Type: AWS::EC2::SecurityGroup
-    Properties:
-      GroupDescription: Access to Kuma Ingress DP
-      VpcId:
-        Fn::ImportValue:
-          !Join [ ':', [ !Ref 'VPCStackName', 'VPCId' ] ]
-
-  IngressDPTcp:
-    Type: AWS::EC2::SecurityGroupIngress
-    Properties:
-      Description: For Ingress DP
-      GroupId: !Ref IngressDPSecurityGroup
-      IpProtocol: tcp
-      CidrIp: 0.0.0.0/0
-      FromPort: !Ref IngressPort
-      ToPort: !Ref IngressPort
-
-  ServiceIngressDP:
-    Type: AWS::ECS::Service
-    Properties:
-      LaunchType: FARGATE
-      Cluster:
-        Fn::ImportValue:
-          !Join [ ':', [ !Ref 'VPCStackName', 'ClusterName' ] ]
-      DesiredCount: 1
-      TaskDefinition: !Ref 'TaskDefinitionIngressDP'
-      NetworkConfiguration:
-        AwsvpcConfiguration:
-          AssignPublicIp: ENABLED
-          Subnets:
-            - Fn::ImportValue:
-                !Join [ ':', [ !Ref 'VPCStackName', 'PublicSubnet' ] ]
-          SecurityGroups: [ !Ref 'IngressDPSecurityGroup' ]
-
-  TaskDefinitionIngressDP:
-    Type: AWS::ECS::TaskDefinition
-    Properties:
-      Family: kuma-dp-ingress
-      NetworkMode: awsvpc
-      RequiresCompatibilities:
-        - FARGATE
-      TaskRoleArn: !Ref KumaECSTaskIamRole
-      ExecutionRoleArn: !Ref 'KumaECSTaskExecutionRole'
-      Cpu: 256
-      Memory: 512
-      ContainerDefinitions:
-        - Name: kuma-dp
-          Image: !Ref IngressImage
-          PortMappings:
-            - ContainerPort: !Ref IngressPort
-              Protocol: tcp
-          Essential: true
-          User: '5678'
-          Environment:
-            - Name: KUMA_DATAPLANE_RUNTIME_RESOURCE
-              Value: |
-                ---
-                type: Dataplane
-                name: dp-ingress
-                mesh: default
-                networking:
-                  address: "{{ address }}"
-                  ingress: { }
-                  inbound:
-                    - port: {{ port }}
-                      tags:
-                        kuma.io/service: ingress
-                        kuma.io/protocol: tcp
-          EntryPoint: [ "sh", "-c" ]
-          Command:
-            - !Join
-              - " "
-              - - "kuma-dp"
-                - "run"
-                - "--cp-address"
-                - !Join [ "", [ "http://", !Join [ "-", [ !Ref Zone, "controlplane" ] ], ".kuma.io:5681" ] ]
-                - "--dataplane-var"
-                - "address=`hostname -i`"
-                - "--dataplane-var"
-                - !Join [ "=", [ "port", !Ref IngressPort ] ]
-          LogConfiguration:
-            LogDriver: awslogs
-            Options:
-              awslogs-group: !Ref AWS::StackName
-              awslogs-region: !Ref AWS::Region
-              awslogs-stream-prefix: kuma-dp

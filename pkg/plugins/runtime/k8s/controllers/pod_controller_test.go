@@ -5,25 +5,30 @@ import (
 	"encoding/json"
 
 	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+
+	"github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 
 	. "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 
 	"github.com/kumahq/kuma/pkg/core"
 
+	kube_core "k8s.io/api/core/v1"
+	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_types "k8s.io/apimachinery/pkg/types"
+	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
+	kube_record "k8s.io/client-go/tools/record"
+	utilpointer "k8s.io/utils/pointer"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
-	kube_handler "sigs.k8s.io/controller-runtime/pkg/handler"
 	kube_reconcile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-	kube_reconile "sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	kube_core "k8s.io/api/core/v1"
-	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
-	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
-	kube_record "k8s.io/client-go/tools/record"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
@@ -82,6 +87,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Pod{
@@ -98,6 +108,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Pod{
@@ -114,6 +129,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Service{
@@ -142,9 +162,6 @@ var _ = Describe("PodReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
 					Name:      "example",
-					Annotations: map[string]string{
-						"80.service.kuma.io/protocol": "http",
-					},
 				},
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.1",
@@ -155,6 +172,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
+							AppProtocol: utilpointer.StringPtr("http"),
 						},
 						{
 							Protocol: "TCP",
@@ -172,11 +190,13 @@ var _ = Describe("PodReconciler", func() {
 			})
 
 		reconciler = &PodReconciler{
-			Client:          kubeClient,
-			EventRecorder:   kube_record.NewFakeRecorder(10),
-			Scheme:          k8sClientScheme,
-			Log:             core.Log.WithName("test"),
-			SystemNamespace: "kuma-system",
+			Client:            kubeClient,
+			EventRecorder:     kube_record.NewFakeRecorder(10),
+			Scheme:            k8sClientScheme,
+			Log:               core.Log.WithName("test"),
+			SystemNamespace:   "kuma-system",
+			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore())),
+			ResourceConverter: k8s.NewSimpleConverter(),
 		}
 	})
 
@@ -343,12 +363,14 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - port: 8080
+            - health: {} 
+              port: 8080
               tags:
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
-            - port: 6060
+            - health: {} 
+              port: 6060
               tags:
                 app: sample
                 kuma.io/service: example_demo_svc_6061
@@ -415,192 +437,18 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - port: 8080
+            - health: {} 
+              port: 8080
               tags:
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
-            - port: 6060
+            - health: {} 
+              port: 6060
               tags:
                 app: sample
                 kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
 `))
 	})
-})
-
-var _ = Describe("DataplaneToSameMeshDataplanesMapper", func() {
-
-	isController := true
-	blockOwnerDeletion := true
-
-	var kubeClient kube_client.Client
-
-	BeforeEach(func() {
-		kubeClient = kube_client_fake.NewFakeClientWithScheme(
-			k8sClientScheme,
-			&mesh_k8s.Dataplane{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "demo",
-					Name:      "existing-app-without-other-dataplanes-in-that-mesh",
-				},
-				Mesh: "poc",
-			},
-			&mesh_k8s.Dataplane{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "client-app",
-					Name:      "existing-app-with-other-dataplanes-in-that-mesh",
-				},
-				Mesh: "default",
-			},
-			&mesh_k8s.Dataplane{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "service1-app",
-					Name:      "other-app-in-that-mesh",
-					OwnerReferences: []kube_meta.OwnerReference{
-						{
-							APIVersion:         "",
-							Kind:               "Pod",
-							Name:               "other-app-in-that-mesh",
-							UID:                kube_types.UID("abcdefgh"),
-							Controller:         &isController,
-							BlockOwnerDeletion: &blockOwnerDeletion,
-						},
-					},
-				},
-				Mesh: "default",
-			},
-			&mesh_k8s.Dataplane{
-				ObjectMeta: kube_meta.ObjectMeta{
-					Namespace: "service2-app",
-					Name:      "yet-another-app-in-that-mesh",
-					// should be ignored because it has no owner reference to a Pod
-				},
-				Mesh: "default",
-			},
-		)
-	})
-
-	type testCase struct {
-		obj      kube_handler.MapObject
-		expected []kube_reconile.Request
-	}
-
-	DescribeTable("should map a Dataplane to its peers",
-		func(given testCase) {
-			// setup
-			mapper := &DataplaneToSameMeshDataplanesMapper{
-				Client: kubeClient,
-				Log:    core.Log.WithName("dataplane-to-dataplanes-mapper"),
-			}
-
-			// when
-			requests := mapper.Map(given.obj)
-
-			// then
-			Expect(requests).To(Equal(given.expected))
-		},
-		Entry("nil object", testCase{
-			obj:      kube_handler.MapObject{},
-			expected: nil,
-		}),
-		Entry("non-Dataplane object", testCase{
-			obj: kube_handler.MapObject{
-				Meta:   &kube_meta.ObjectMeta{},
-				Object: &kube_core.Pod{},
-			},
-			expected: nil,
-		}),
-		Entry("deleted Dataplane object with no owner", testCase{
-			obj: kube_handler.MapObject{
-				Meta: &kube_meta.ObjectMeta{},
-				Object: &mesh_k8s.Dataplane{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Name:      "deleted-app",
-						Namespace: "demo",
-					},
-				},
-			},
-			expected: nil,
-		}),
-		Entry("deleted Dataplane object with owner other than Pod", testCase{
-			obj: kube_handler.MapObject{
-				Meta: &kube_meta.ObjectMeta{},
-				Object: &mesh_k8s.Dataplane{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Name:      "deleted-app",
-						Namespace: "demo",
-						OwnerReferences: []kube_meta.OwnerReference{
-							{
-								APIVersion:         "apps/v1",
-								Kind:               "Deployment",
-								Name:               "example-deployment",
-								UID:                kube_types.UID("abcdefgh"),
-								Controller:         &isController,
-								BlockOwnerDeletion: &blockOwnerDeletion,
-							},
-						},
-					},
-				},
-			},
-			expected: nil,
-		}),
-		Entry("deleted Dataplane object with owner Pod", testCase{
-			obj: kube_handler.MapObject{
-				Meta: &kube_meta.ObjectMeta{},
-				Object: &mesh_k8s.Dataplane{
-					ObjectMeta: kube_meta.ObjectMeta{
-						Name:      "deleted-app",
-						Namespace: "demo",
-						OwnerReferences: []kube_meta.OwnerReference{
-							{
-								APIVersion:         "v1",
-								Kind:               "Pod",
-								Name:               "deleted-app",
-								UID:                kube_types.UID("abcdefgh"),
-								Controller:         &isController,
-								BlockOwnerDeletion: &blockOwnerDeletion,
-							},
-						},
-					},
-				},
-			},
-			expected: []kube_reconile.Request{
-				{
-					NamespacedName: kube_types.NamespacedName{Namespace: "demo", Name: "deleted-app"},
-				},
-			},
-		}),
-		Entry("existing Dataplane object with no other dataplanes in that mesh", testCase{
-			obj: kube_handler.MapObject{
-				Meta: &kube_meta.ObjectMeta{},
-				Object: &mesh_k8s.Dataplane{
-					Mesh: "poc",
-					ObjectMeta: kube_meta.ObjectMeta{
-						Name:      "existing-app-without-other-dataplanes-in-that-mesh",
-						Namespace: "demo",
-					},
-				},
-			},
-			expected: nil, // should not return Dataplane itself unles it was deleted
-		}),
-		Entry("existing Dataplane object with other dataplanes in that mesh", testCase{
-			obj: kube_handler.MapObject{
-				Meta: &kube_meta.ObjectMeta{},
-				Object: &mesh_k8s.Dataplane{
-					Mesh: "default",
-					ObjectMeta: kube_meta.ObjectMeta{
-						Name:      "existing-app-with-other-dataplanes-in-that-mesh",
-						Namespace: "client-app",
-					},
-				},
-			},
-			expected: []kube_reconile.Request{
-				{
-					NamespacedName: kube_types.NamespacedName{Namespace: "service1-app", Name: "other-app-in-that-mesh"},
-				},
-			},
-		}),
-	)
-
 })

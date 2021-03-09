@@ -33,7 +33,7 @@ func (tp *TrafficPermission) SetSpec(spec map[string]interface{}) {
 }
 
 func (tp *TrafficPermission) Scope() model.Scope {
-	return model.ScopeNamespace
+	return model.ScopeCluster
 }
 
 func (l *TrafficPermissionList) GetItems() []model.KubernetesObject {

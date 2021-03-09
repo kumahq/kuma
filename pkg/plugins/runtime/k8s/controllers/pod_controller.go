@@ -2,9 +2,10 @@ package controllers
 
 import (
 	"context"
-	"encoding/json"
 
-	"github.com/kumahq/kuma/pkg/dns"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
@@ -26,7 +27,7 @@ import (
 	kube_record "k8s.io/client-go/tools/record"
 
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
-	metadata "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
 	util_k8s "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
@@ -47,10 +48,12 @@ const (
 type PodReconciler struct {
 	kube_client.Client
 	kube_record.EventRecorder
-	Scheme          *kube_runtime.Scheme
-	Log             logr.Logger
-	PodConverter    PodConverter
-	SystemNamespace string
+	Scheme            *kube_runtime.Scheme
+	Log               logr.Logger
+	PodConverter      PodConverter
+	Persistence       *vips.Persistence
+	ResourceConverter k8s_common.Converter
+	SystemNamespace   string
 }
 
 func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -69,6 +72,11 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 
 	// skip a Pod if it doesn't have an IP address yet
 	if pod.Status.PodIP == "" {
+		return kube_ctrl.Result{}, nil
+	}
+
+	// skip a Pod if is complete/terminated (most probably a completed job)
+	if r.isPodComplete(pod) {
 		return kube_ctrl.Result{}, nil
 	}
 
@@ -114,12 +122,9 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 
 	r.Log.WithValues("req", req).V(1).Info("other dataplanes", "others", others)
 
-	vipconfig := &kube_core.ConfigMap{}
-	vips := dns.VIPList{}
-	if err := r.Get(ctx, kube_types.NamespacedName{Namespace: "kuma-system", Name: "kuma-dns-vips"}, vipconfig); err == nil {
-		if err = json.Unmarshal([]byte(vipconfig.Data["config"]), &vips); err != nil {
-			return kube_ctrl.Result{}, errors.Wrap(err, "could not unmarshal")
-		}
+	vips, err := r.Persistence.GetByMesh(MeshFor(pod))
+	if err != nil {
+		return kube_ctrl.Result{}, err
 	}
 
 	if err := r.createOrUpdateDataplane(pod, services, externalServices, others, vips); err != nil {
@@ -184,7 +189,12 @@ func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dat
 	otherDataplanes := make([]*mesh_k8s.Dataplane, 0)
 	for i := range allDataplanes.Items {
 		dataplane := allDataplanes.Items[i]
-		if dataplane.Mesh == mesh {
+		dp := core_mesh.NewDataplaneResource()
+		if err := r.ResourceConverter.ToCoreResource(&dataplane, dp); err != nil {
+			converterLog.Error(err, "failed to parse Dataplane", "dataplane", dataplane.Spec)
+			continue // one invalid Dataplane definition should not break the entire mesh
+		}
+		if dataplane.Mesh == mesh || dp.Spec.IsIngress() {
 			otherDataplanes = append(otherDataplanes, &dataplane)
 		}
 	}
@@ -197,7 +207,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	vips dns.VIPList,
+	vips vips.List,
 ) error {
 	ctx := context.Background()
 
@@ -277,14 +287,24 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, &kube_handler.EnqueueRequestsFromMapFunc{
 			ToRequests: &ServiceToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("service-to-pods-mapper")},
 		}).
-		// on Dataplane update reconcile other Dataplanes in the same Mesh (ineffective, but that's the cost of not having Service abstraction)
-		Watches(&kube_source.Kind{Type: &mesh_k8s.Dataplane{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &DataplaneToSameMeshDataplanesMapper{Client: mgr.GetClient(), Log: r.Log.WithName("dataplane-to-dataplanes-mapper")},
-		}).
 		Watches(&kube_source.Kind{Type: &kube_core.ConfigMap{}}, &kube_handler.EnqueueRequestsFromMapFunc{
-			ToRequests: &ConfigMapToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("configmap-to-pods-mapper")},
+			ToRequests: &ConfigMapToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("configmap-to-pods-mapper"), SystemNamespace: r.SystemNamespace},
 		}).
 		Complete(r)
+}
+
+func (r *PodReconciler) isPodComplete(pod *kube_core.Pod) bool {
+	for _, cs := range pod.Status.ContainerStatuses {
+		// the sidecar amy or may not be terminated yet
+		if cs.Name == util_k8s.KumaSidecarContainerName {
+			continue
+		}
+		if cs.State.Terminated == nil {
+			// at least one container not terminated, therefore pod is still active
+			return false
+		}
+	}
+	return true
 }
 
 type ServiceToPodsMapper struct {
@@ -311,62 +331,22 @@ func (m *ServiceToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Re
 
 type ConfigMapToPodsMapper struct {
 	kube_client.Client
-	Log logr.Logger
+	Log             logr.Logger
+	SystemNamespace string
 }
 
 func (m *ConfigMapToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	if obj.Meta.GetName() != dns.ConfigKey || obj.Meta.GetNamespace() != "kuma-system" {
+	if obj.Meta.GetNamespace() != m.SystemNamespace {
 		return nil
 	}
-	pods := &kube_core.PodList{}
-	if err := m.Client.List(context.Background(), pods); err != nil {
-		m.Log.WithValues("service", obj.Meta).Error(err, "failed to fetch Pods")
-		return nil
-	}
-
-	var req []kube_reconile.Request
-	for _, pod := range pods.Items {
-		req = append(req, kube_reconile.Request{
-			NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
-		})
-	}
-	return req
-}
-
-type DataplaneToSameMeshDataplanesMapper struct {
-	kube_client.Client
-	Log logr.Logger
-}
-
-func (m *DataplaneToSameMeshDataplanesMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
-	cause, ok := obj.Object.(*mesh_k8s.Dataplane)
+	mesh, ok := vips.MeshFromConfigKey(obj.Meta.GetName())
 	if !ok {
-		m.Log.WithValues("dataplane", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
-		return nil
-	}
-
-	ctx := context.Background()
-
-	// Fetch the Dataplane instance
-	if err := m.Client.Get(ctx, kube_types.NamespacedName{Namespace: cause.Namespace, Name: cause.Name}, &mesh_k8s.Dataplane{}); err != nil {
-		if kube_apierrs.IsNotFound(err) {
-			// a Dataplane object might be deleted by a user.
-			// in that case we need to trigger reconciliation of a parent Pod.
-			ownerRef := kube_meta.GetControllerOf(cause)
-			if ownerRef == nil || ownerRef.Kind != "Pod" {
-				return nil
-			}
-			return []kube_reconile.Request{
-				{NamespacedName: kube_types.NamespacedName{Namespace: cause.Namespace, Name: ownerRef.Name}},
-			}
-		}
-		m.Log.WithValues("dataplane", cause).Error(err, "failed to fetch Dataplane")
 		return nil
 	}
 
 	// List Dataplanes in the same Mesh as the original
 	dataplanes := &mesh_k8s.DataplaneList{}
-	if err := m.Client.List(ctx, dataplanes); err != nil {
+	if err := m.Client.List(context.Background(), dataplanes); err != nil {
 		m.Log.WithValues("dataplane", obj.Meta).Error(err, "failed to fetch Dataplanes")
 		return nil
 	}
@@ -374,11 +354,11 @@ func (m *DataplaneToSameMeshDataplanesMapper) Map(obj kube_handler.MapObject) []
 	var req []kube_reconile.Request
 	for _, dataplane := range dataplanes.Items {
 		// skip Dataplanes from other Meshes
-		if dataplane.Mesh != cause.Mesh {
+		if dataplane.Mesh != mesh {
 			continue
 		}
 		// skip itself
-		if dataplane.Namespace == cause.Namespace && dataplane.Name == cause.Name {
+		if dataplane.Namespace == obj.Meta.GetNamespace() && dataplane.Name == obj.Meta.GetName() {
 			continue
 		}
 		ownerRef := kube_meta.GetControllerOf(&dataplane)

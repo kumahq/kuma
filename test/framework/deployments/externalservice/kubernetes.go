@@ -76,3 +76,9 @@ func (k *k8SDeployment) Delete(cluster framework.Cluster) error {
 func (k *k8SDeployment) GetExternalAppAddress() string {
 	return k.ip
 }
+
+func (k *k8SDeployment) GetCert() string {
+	// We do not implement Runtime Ceritficate injection on K8s
+	// The functionality is test on Universal which is good for now
+	panic("not implemented")
+}

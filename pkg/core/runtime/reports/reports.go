@@ -10,6 +10,9 @@ import (
 	"sync"
 	"time"
 
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+
 	"github.com/pkg/errors"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
@@ -58,6 +61,15 @@ func fetchMeshes(rt core_runtime.Runtime) (*mesh.MeshResourceList, error) {
 	return &meshes, nil
 }
 
+func fetchZones(rt core_runtime.Runtime) (*system.ZoneResourceList, error) {
+	zones := system.ZoneResourceList{}
+	if err := rt.ReadOnlyResourceManager().List(context.Background(), &zones); err != nil {
+		return nil, errors.Wrap(err, "Could not fetch zones")
+	}
+
+	return &zones, nil
+}
+
 func (b *reportsBuffer) marshall() (string, error) {
 	var builder strings.Builder
 
@@ -98,6 +110,17 @@ func (b *reportsBuffer) updateEntitiesReport(rt core_runtime.Runtime) error {
 		return err
 	}
 	b.mutable["meshes_total"] = strconv.Itoa(len(meshes.Items))
+
+	switch rt.Config().Mode {
+	case config_core.Standalone:
+		b.mutable["zones_total"] = strconv.Itoa(1)
+	case config_core.Global:
+		zones, err := fetchZones(rt)
+		if err != nil {
+			return err
+		}
+		b.mutable["zones_total"] = strconv.Itoa(len(zones.Items))
+	}
 	return nil
 }
 

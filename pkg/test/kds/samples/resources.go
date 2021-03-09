@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	Mesh1 = mesh_proto.Mesh{
+	Mesh1 = &mesh_proto.Mesh{
 		Mtls: &mesh_proto.Mesh_Mtls{
 			EnabledBackend: "ca-1",
 			Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -20,7 +20,7 @@ var (
 			},
 		},
 	}
-	Mesh2 = mesh_proto.Mesh{
+	Mesh2 = &mesh_proto.Mesh{
 		Mtls: &mesh_proto.Mesh_Mtls{
 			EnabledBackend: "ca-2",
 			Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -31,7 +31,7 @@ var (
 			},
 		},
 	}
-	FaultInjection = mesh_proto.FaultInjection{
+	FaultInjection = &mesh_proto.FaultInjection{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
 				"service": "*",
@@ -59,7 +59,7 @@ var (
 			},
 		},
 	}
-	Dataplane = mesh_proto.Dataplane{
+	Dataplane = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Address: "192.168.0.1",
 			Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -71,6 +71,7 @@ var (
 			}},
 			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 				{
+					Port: 1213,
 					Tags: map[string]string{
 						mesh_proto.ServiceTag:  "web",
 						mesh_proto.ProtocolTag: "http",
@@ -79,12 +80,12 @@ var (
 			},
 		},
 	}
-	DataplaneInsight = mesh_proto.DataplaneInsight{
+	DataplaneInsight = &mesh_proto.DataplaneInsight{
 		MTLS: &mesh_proto.DataplaneInsight_MTLS{
 			CertificateRegenerations: 3,
 		},
 	}
-	Ingress = mesh_proto.Dataplane{
+	Ingress = &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{
 			Ingress: &mesh_proto.Dataplane_Networking_Ingress{
 				AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{{
@@ -96,7 +97,7 @@ var (
 			Address: "192.168.0.1",
 		},
 	}
-	ExternalService = mesh_proto.ExternalService{
+	ExternalService = &mesh_proto.ExternalService{
 		Networking: &mesh_proto.ExternalService_Networking{
 			Address: "192.168.0.1",
 		},
@@ -105,7 +106,7 @@ var (
 			mesh_proto.ServiceTag: "backend",
 		},
 	}
-	CircuitBreaker = mesh_proto.CircuitBreaker{
+	CircuitBreaker = &mesh_proto.CircuitBreaker{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
 				"service": "*",
@@ -120,7 +121,7 @@ var (
 			Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{},
 		},
 	}
-	HealthCheck = mesh_proto.HealthCheck{
+	HealthCheck = &mesh_proto.HealthCheck{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
 				"service": "*",
@@ -136,7 +137,7 @@ var (
 			Timeout:  &duration.Duration{Seconds: 7},
 		},
 	}
-	TrafficLog = mesh_proto.TrafficLog{
+	TrafficLog = &mesh_proto.TrafficLog{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
 				"service": "*",
@@ -151,7 +152,19 @@ var (
 			Backend: "logging-backend",
 		},
 	}
-	TrafficPermission = mesh_proto.TrafficPermission{
+	TrafficPermission = &mesh_proto.TrafficPermission{
+		Sources: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "*",
+			},
+		}},
+		Destinations: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "*",
+			},
+		}},
+	}
+	TrafficRoute = &mesh_proto.TrafficRoute{
 		Sources: []*mesh_proto.Selector{{
 			Match: map[string]string{
 				"service": "*",
@@ -162,26 +175,16 @@ var (
 				"service": "*",
 			},
 		}},
+		Conf: &mesh_proto.TrafficRoute_Conf{
+			Split: []*mesh_proto.TrafficRoute_Split{{
+				Weight: 10,
+				Destination: map[string]string{
+					"version": "v2",
+				},
+			}},
+		},
 	}
-	TrafficRoute = mesh_proto.TrafficRoute{
-		Sources: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				"service": "*",
-			},
-		}},
-		Destinations: []*mesh_proto.Selector{{
-			Match: map[string]string{
-				"service": "*",
-			},
-		}},
-		Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-			Weight: 10,
-			Destination: map[string]string{
-				"version": "v2",
-			},
-		}},
-	}
-	TrafficTrace = mesh_proto.TrafficTrace{
+	TrafficTrace = &mesh_proto.TrafficTrace{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{"serivce": "*"},
 		}},
@@ -189,7 +192,7 @@ var (
 			Backend: "tracing-backend",
 		},
 	}
-	ProxyTemplate = mesh_proto.ProxyTemplate{
+	ProxyTemplate = &mesh_proto.ProxyTemplate{
 		Selectors: []*mesh_proto.Selector{{
 			Match: map[string]string{"serivce": "*"},
 		}},
@@ -197,10 +200,41 @@ var (
 			Imports: []string{"default-kuma-profile"},
 		},
 	}
-	Secret = system_proto.Secret{
+	Retry = &mesh_proto.Retry{
+		Sources: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"service": "*",
+			},
+		}},
+		Destinations: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"service": "*",
+			},
+		}},
+		Conf: &mesh_proto.Retry_Conf{
+			Http: &mesh_proto.Retry_Conf_Http{
+				NumRetries: &wrappers.UInt32Value{
+					Value: 5,
+				},
+				PerTryTimeout: &duration.Duration{
+					Seconds: 200000000,
+				},
+				BackOff: &mesh_proto.Retry_Conf_BackOff{
+					BaseInterval: &duration.Duration{
+						Nanos: 200000000,
+					},
+					MaxInterval: &duration.Duration{
+						Seconds: 1,
+					},
+				},
+				RetriableStatusCodes: []uint32{500, 502},
+			},
+		},
+	}
+	Secret = &system_proto.Secret{
 		Data: &wrappers.BytesValue{Value: []byte("secret key")},
 	}
-	Config = system_proto.Config{
+	Config = &system_proto.Config{
 		Config: "sample config",
 	}
 )

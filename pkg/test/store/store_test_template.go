@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
@@ -22,7 +23,7 @@ func ExecuteStoreTests(
 	var s store.ClosableResourceStore
 
 	BeforeEach(func() {
-		s = store.NewStrictResourceStore(createStore())
+		s = store.NewStrictResourceStore(store.NewPaginationStore(createStore()))
 	})
 
 	AfterEach(func() {
@@ -42,7 +43,7 @@ func ExecuteStoreTests(
 
 	createResource := func(name string) *sample_model.TrafficRouteResource {
 		res := sample_model.TrafficRouteResource{
-			Spec: sample_proto.TrafficRoute{
+			Spec: &sample_proto.TrafficRoute{
 				Path: "demo",
 			},
 		}
@@ -60,8 +61,8 @@ func ExecuteStoreTests(
 			created := createResource(name)
 
 			// when retrieve created object
-			resource := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			resource := sample_model.NewTrafficRouteResource()
+			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -72,7 +73,7 @@ func ExecuteStoreTests(
 			Expect(resource.Meta.GetVersion()).ToNot(BeEmpty())
 			Expect(resource.Meta.GetCreationTime().Unix()).ToNot(Equal(0))
 			Expect(resource.Meta.GetCreationTime()).To(Equal(resource.Meta.GetModificationTime()))
-			Expect(resource.Spec).To(Equal(created.Spec))
+			Expect(resource.Spec).To(MatchProto(created.Spec))
 		})
 
 		It("should not create a duplicate record", func() {
@@ -133,8 +134,8 @@ func ExecuteStoreTests(
 			}
 
 			// when retrieve the resource
-			res := sample_model.TrafficRouteResource{}
-			err = s.Get(context.Background(), &res, store.GetByKey(name, mesh))
+			res := sample_model.NewTrafficRouteResource()
+			err = s.Get(context.Background(), res, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -159,10 +160,10 @@ func ExecuteStoreTests(
 		It("should throw an error if resource is not found", func() {
 			// given
 			name := "non-existent-name.demo"
-			resource := sample_model.TrafficRouteResource{}
+			resource := sample_model.NewTrafficRouteResource()
 
 			// when
-			err := s.Delete(context.TODO(), &resource, store.DeleteByKey(name, mesh))
+			err := s.Delete(context.TODO(), resource, store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).To(HaveOccurred())
@@ -183,8 +184,8 @@ func ExecuteStoreTests(
 			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 
 			// and when getting the given resource
-			getResource := sample_model.TrafficRouteResource{}
-			err = s.Get(context.Background(), &getResource, store.GetByKey(name, mesh))
+			getResource := sample_model.NewTrafficRouteResource()
+			err = s.Get(context.Background(), getResource, store.GetByKey(name, mesh))
 
 			// then resource still exists
 			Expect(err).ToNot(HaveOccurred())
@@ -196,15 +197,15 @@ func ExecuteStoreTests(
 			createResource(name)
 
 			// when
-			resource := sample_model.TrafficRouteResource{}
-			err := s.Delete(context.TODO(), &resource, store.DeleteByKey(name, mesh))
+			resource := sample_model.NewTrafficRouteResource()
+			err := s.Delete(context.TODO(), resource, store.DeleteByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
 			// when query for deleted resource
-			resource = sample_model.TrafficRouteResource{}
-			err = s.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			resource = sample_model.NewTrafficRouteResource()
+			err = s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then resource cannot be found
 			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
@@ -215,10 +216,10 @@ func ExecuteStoreTests(
 		It("should return an error if resource is not found", func() {
 			// given
 			name := "non-existing-resource.demo"
-			resource := sample_model.TrafficRouteResource{}
+			resource := sample_model.NewTrafficRouteResource()
 
 			// when
-			err := s.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).To(MatchError(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
@@ -231,8 +232,8 @@ func ExecuteStoreTests(
 			createResource(name)
 
 			// when
-			resource := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			resource := sample_model.NewTrafficRouteResource()
+			err := s.Get(context.Background(), resource, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
@@ -244,8 +245,8 @@ func ExecuteStoreTests(
 			createdResource := createResource(name)
 
 			// when
-			res := sample_model.TrafficRouteResource{}
-			err := s.Get(context.Background(), &res, store.GetByKey(name, mesh))
+			res := sample_model.NewTrafficRouteResource()
+			err := s.Get(context.Background(), res, store.GetByKey(name, mesh))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -253,7 +254,7 @@ func ExecuteStoreTests(
 			// and
 			Expect(res.Meta.GetName()).To(Equal(name))
 			Expect(res.Meta.GetVersion()).ToNot(BeEmpty())
-			Expect(res.Spec).To(Equal(createdResource.Spec))
+			Expect(res.Spec).To(MatchProto(createdResource.Spec))
 		})
 
 		It("should get resource by version", func() {
@@ -262,13 +263,13 @@ func ExecuteStoreTests(
 			res := createResource(name)
 
 			// when trying to retrieve resource with proper version
-			err := s.Get(context.Background(), &sample_model.TrafficRouteResource{}, store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
+			err := s.Get(context.Background(), sample_model.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion(res.GetMeta().GetVersion()))
 
 			// then resource is found
 			Expect(err).ToNot(HaveOccurred())
 
 			// when trying to retrieve resource with different version
-			err = s.Get(context.Background(), &sample_model.TrafficRouteResource{}, store.GetByKey(name, mesh), store.GetByVersion("9999999"))
+			err = s.Get(context.Background(), sample_model.NewTrafficRouteResource(), store.GetByKey(name, mesh), store.GetByVersion("9999999"))
 
 			// then resource precondition failed error occurred
 			Expect(store.IsResourcePreconditionFailed(err)).To(BeTrue())

@@ -33,7 +33,7 @@ func (o *HealthCheck) SetSpec(spec map[string]interface{}) {
 }
 
 func (o *HealthCheck) Scope() model.Scope {
-	return model.ScopeNamespace
+	return model.ScopeCluster
 }
 
 func (l *HealthCheckList) GetItems() []model.KubernetesObject {

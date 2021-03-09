@@ -37,21 +37,21 @@ var _ = Describe("kumactl get healthchecks", func() {
 					Mesh: "default",
 					Name: "web-to-backend",
 				},
-				Spec: mesh_proto.HealthCheck{},
+				Spec: &mesh_proto.HealthCheck{},
 			},
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "default",
 					Name: "backend-to-db",
 				},
-				Spec: mesh_proto.HealthCheck{},
+				Spec: &mesh_proto.HealthCheck{},
 			},
 			{
 				Meta: &test_model.ResourceMeta{
 					Mesh: "demo",
 					Name: "gateway-to-service",
 				},
-				Spec: mesh_proto.HealthCheck{},
+				Spec: &mesh_proto.HealthCheck{},
 			},
 		}
 	})
@@ -74,7 +74,7 @@ var _ = Describe("kumactl get healthchecks", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, pt := range sampleHealthChecks {
 				key := core_model.ResourceKey{

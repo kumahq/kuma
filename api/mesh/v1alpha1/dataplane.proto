@@ -2,10 +2,11 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "v1alpha1";
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/v1alpha1/metrics.proto";
-
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
 
 // Dataplane defines configuration of a side-car proxy.
@@ -30,13 +31,19 @@ message Dataplane {
         string mesh = 3;
       }
       repeated AvailableService availableServices = 1;
+
+      // PublicAddress defines IP or DNS name on which Ingress is accessible to
+      // other Kuma clusters.
+      string publicAddress = 2;
+      // PublicPort defines port on which Ingress is accessible to other Kuma
+      // clusters.
+      uint32 publicPort = 3;
     }
 
     // Ingress if not nil, dataplane will be work in the Ingress mode
     Ingress ingress = 6;
 
     // Public IP on which the dataplane is accessible in the network.
-    // Host names and DNS are not allowed.
     string address = 5;
 
     // Inbound describes a service implemented by the dataplane.
@@ -61,6 +68,39 @@ message Dataplane {
       // e.g. kuma.io/service=web, version=1.0.
       // `kuma.io/service` tag is mandatory.
       map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
+
+      // Health describes the status of an inbound
+      message Health { bool ready = 1; }
+
+      // Health is an optional field filled automatically by Kuma Control Plane
+      // on Kubernetes if Pod has ReadinessProbe configured. If 'health' is
+      // equal to nil we consider dataplane as healthy. Unhealthy dataplanes
+      // will be excluded from Endpoints Discovery Service (EDS)
+      Health health = 7;
+
+      // ServiceProbe defines parameters for probing service's port
+      message ServiceProbe {
+        // Interval between consecutive health checks.
+        google.protobuf.Duration interval = 1;
+
+        // Maximum time to wait for a health check response.
+        google.protobuf.Duration timeout = 2;
+
+        // Number of consecutive unhealthy checks before considering a host
+        // unhealthy.
+        google.protobuf.UInt32Value unhealthy_threshold = 3;
+
+        // Number of consecutive healthy checks before considering a host
+        // healthy.
+        google.protobuf.UInt32Value healthy_threshold = 4;
+
+        message Tcp {}
+        // Tcp checker tries to establish tcp connection with destination
+        Tcp tcp = 5;
+      }
+
+      // ServiceProbe defines parameters for probing service's port
+      ServiceProbe serviceProbe = 8;
     }
 
     // Outbound describes a service consumed by the dataplane.

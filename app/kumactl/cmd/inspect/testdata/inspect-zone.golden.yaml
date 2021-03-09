@@ -4,8 +4,7 @@ items:
     name: zone-1
     type: ZoneOverview
     zone:
-      ingress:
-        address: 192.168.1.1:1000
+      enabled: true
     zoneInsight:
       subscriptions:
         - connectTime: "2018-07-17T16:05:36.995Z"
@@ -49,6 +48,12 @@ items:
             total:
               responsesRejected: "11"
               responsesSent: "22"
+          version:
+            kumaCp:
+              buildDate: "2019-08-07T11:26:06Z"
+              gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+              gitTag: v1.0.0
+              version: 1.0.0
         - connectTime: "2019-07-17T16:05:36.995Z"
           globalInstanceId: node-002
           id: "2"
@@ -56,13 +61,18 @@ items:
             total:
               responsesRejected: "2"
               responsesSent: "20"
+          version:
+            kumaCp:
+              buildDate: "2019-08-07T11:26:06Z"
+              gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+              gitTag: v1.0.0
+              version: 1.0.0
   - creationTime: "2018-07-17T16:05:36.995Z"
     modificationTime: "2019-07-17T18:08:41Z"
     name: zone-2
     type: ZoneOverview
     zone:
-      ingress:
-        address: 192.168.1.2:1000
+      enabled: true
     zoneInsight:
       subscriptions:
         - globalInstanceId: node-001
@@ -71,5 +81,22 @@ items:
           id: "2"
         - globalInstanceId: node-003
           id: "3"
+  - creationTime: "2018-07-17T16:05:36.995Z"
+    modificationTime: "2019-07-17T18:08:41Z"
+    name: zone-3
+    type: ZoneOverview
+    zone:
+      enabled: false
+    zoneInsight:
+      subscriptions:
+        - connectTime: "2019-07-17T16:05:36.995Z"
+          globalInstanceId: node-001
+          id: "1"
+          version:
+            kumaCp:
+              buildDate: "2019-08-07T11:26:06Z"
+              gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+              gitTag: v1.0.0
+              version: 1.0.0
 next: null
-total: 2
+total: 3

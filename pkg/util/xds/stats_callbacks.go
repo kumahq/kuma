@@ -4,19 +4,20 @@ import (
 	"context"
 	"sync"
 
-	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
 type StatsCallbacks struct {
+	NoopCallbacks
 	ResponsesSentMetric    *prometheus.CounterVec
 	RequestsReceivedMetric *prometheus.CounterVec
 	StreamsActive          int
 	sync.RWMutex
 }
 
-func NewStatsCallbacks(metrics prometheus.Registerer, dsType string) (envoy_xds.Callbacks, error) {
+var _ Callbacks = &StatsCallbacks{}
+
+func NewStatsCallbacks(metrics prometheus.Registerer, dsType string) (Callbacks, error) {
 	stats := &StatsCallbacks{}
 
 	stats.ResponsesSentMetric = prometheus.NewCounterVec(prometheus.CounterOpts{
@@ -39,6 +40,8 @@ func NewStatsCallbacks(metrics prometheus.Registerer, dsType string) (envoy_xds.
 		Name: dsType + "_streams_active",
 		Help: "Number of active connections between a server and a client",
 	}, func() float64 {
+		stats.RLock()
+		defer stats.RUnlock()
 		return float64(stats.StreamsActive)
 	})
 	if err := metrics.Register(streamsActive); err != nil {
@@ -61,26 +64,17 @@ func (s *StatsCallbacks) OnStreamClosed(stream int64) {
 	s.StreamsActive--
 }
 
-func (s *StatsCallbacks) OnStreamRequest(stream int64, request *envoy_api.DiscoveryRequest) error {
-	if request.ResponseNonce != "" {
-		if request.ErrorDetail != nil {
-			s.RequestsReceivedMetric.WithLabelValues(request.TypeUrl, "NACK").Inc()
+func (s *StatsCallbacks) OnStreamRequest(stream int64, request DiscoveryRequest) error {
+	if request.GetResponseNonce() != "" {
+		if request.HasErrors() {
+			s.RequestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "NACK").Inc()
 		} else {
-			s.RequestsReceivedMetric.WithLabelValues(request.TypeUrl, "ACK").Inc()
+			s.RequestsReceivedMetric.WithLabelValues(request.GetTypeUrl(), "ACK").Inc()
 		}
 	}
 	return nil
 }
 
-func (s *StatsCallbacks) OnStreamResponse(stream int64, request *envoy_api.DiscoveryRequest, response *envoy_api.DiscoveryResponse) {
-	s.ResponsesSentMetric.WithLabelValues(response.TypeUrl).Inc()
+func (s *StatsCallbacks) OnStreamResponse(_ int64, _ DiscoveryRequest, response DiscoveryResponse) {
+	s.ResponsesSentMetric.WithLabelValues(response.GetTypeUrl()).Inc()
 }
-
-func (s *StatsCallbacks) OnFetchRequest(ctx context.Context, request *envoy_api.DiscoveryRequest) error {
-	return nil
-}
-
-func (s *StatsCallbacks) OnFetchResponse(request *envoy_api.DiscoveryRequest, response *envoy_api.DiscoveryResponse) {
-}
-
-var _ envoy_xds.Callbacks = &StatsCallbacks{}

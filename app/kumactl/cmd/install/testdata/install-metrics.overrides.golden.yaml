@@ -6,6 +6,7 @@ metadata:
   name: kuma
   annotations:
     kuma.io/sidecar-injection: enabled
+    kuma.io/mesh: mesh-1
 ---
 apiVersion: policy/v1beta1
 kind: PodSecurityPolicy
@@ -229,6 +230,7 @@ data:
       editable: true
       options:
         path: /etc/grafana/provisioning/dashboards
+
   kuma-dataplane.json: |
     {
       "__inputs": [
@@ -2514,6 +2516,7 @@ data:
       "version": 1,
       "description": "Statistics of a single Dataplane in Kuma Service Mesh"
     }
+    
 
   kuma-mesh.json: |
     {
@@ -3264,6 +3267,7 @@ data:
       "version": 1,
       "description": "Statistics of the single Mesh in Kuma Service Mesh"
     }
+    
 
   kuma-service-to-service.json: |
     {
@@ -4109,50 +4113,9 @@ data:
       "version": 1,
       "description": "Statistics of the traffic between services in Kuma Service Mesh"
     }
+
   kuma-cp.json: |
     {
-      "__inputs": [
-        {
-          "name": "DS_PROMETHEUS",
-          "label": "Prometheus",
-          "description": "",
-          "type": "datasource",
-          "pluginId": "prometheus",
-          "pluginName": "Prometheus"
-        }
-      ],
-      "__requires": [
-        {
-          "type": "panel",
-          "id": "gauge",
-          "name": "Gauge",
-          "version": ""
-        },
-        {
-          "type": "grafana",
-          "id": "grafana",
-          "name": "Grafana",
-          "version": "7.1.1"
-        },
-        {
-          "type": "panel",
-          "id": "graph",
-          "name": "Graph",
-          "version": ""
-        },
-        {
-          "type": "datasource",
-          "id": "prometheus",
-          "name": "Prometheus",
-          "version": "1.0.0"
-        },
-        {
-          "type": "panel",
-          "id": "table",
-          "name": "Table",
-          "version": ""
-        }
-      ],
       "annotations": {
         "list": [
           {
@@ -4169,8 +4132,7 @@ data:
       "editable": true,
       "gnetId": null,
       "graphTooltip": 0,
-      "id": null,
-      "iteration": 1602670472791,
+      "iteration": 1611213414839,
       "links": [],
       "panels": [
         {
@@ -4244,7 +4206,7 @@ data:
             "showThresholdLabels": false,
             "showThresholdMarkers": false
           },
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "targets": [
             {
               "expr": "sum(cp_info{instance=~\"$instance\"} OR on() vector(0))",
@@ -4293,7 +4255,7 @@ data:
           "options": {
             "showHeader": true
           },
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "targets": [
             {
               "expr": "cp_info{instance=~\"$instance\"}",
@@ -4379,7 +4341,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4488,7 +4450,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4629,7 +4591,7 @@ data:
           "linewidth": 2,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4725,12 +4687,13 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
           "seriesOverrides": [
             {
+              "$$hashKey": "object:1365",
               "alias": "Errors",
               "color": "#F2495C"
             }
@@ -4831,7 +4794,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -4930,7 +4893,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": true,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -5042,7 +5005,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": true,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -5123,6 +5086,416 @@ data:
             "x": 0,
             "y": 25
           },
+          "id": 73,
+          "panels": [],
+          "title": "Health Discovery Service (HDS): CP-DP communication",
+          "type": "row"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 0,
+            "y": 26
+          },
+          "hiddenSeries": false,
+          "id": 75,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "percentage": false,
+          "pluginVersion": "7.1.4",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hds_responses_sent{instance=~\"$instance\"}[1m]))",
+              "interval": "",
+              "legendFormat": "endpoint health responses",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(hds_requests_received{instance=~\"$instance\"}[1m]))",
+              "interval": "",
+              "legendFormat": "health check requests",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "HDS message exchange",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:310",
+              "format": "ops",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:311",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 0,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 6,
+            "y": 26
+          },
+          "hiddenSeries": false,
+          "id": 77,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 2,
+          "nullPointMode": "null",
+          "percentage": false,
+          "pluginVersion": "7.1.4",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "hds_streams_active{instance=~\"$instance\"}",
+              "interval": "",
+              "legendFormat": "{{ instance }}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "HDS active connections",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:797",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:798",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "description": "Number of Envoy HDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected dataplanes * KUMA_DP_SERVER_HDS_REFRESH_INTERVAL",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 12,
+            "y": 26
+          },
+          "hiddenSeries": false,
+          "id": 79,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "percentage": false,
+          "pluginVersion": "7.1.4",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [
+            {
+              "$$hashKey": "object:1727",
+              "alias": "Errors",
+              "color": "#F2495C"
+            }
+          ],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(hds_generation_count{instance=~\"$instance\"}[1m])) - sum(rate(hds_generation_errors{instance=~\"$instance\"}[1m]))",
+              "interval": "",
+              "legendFormat": "Success",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(xds_generation_errors{instance=~\"$instance\"}[1m]))",
+              "interval": "",
+              "legendFormat": "Errors",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "HDS config generations",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:1493",
+              "format": "ops",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:1494",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "description": "How much it took to generate Envoy configuration for a single dataplane",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 6,
+            "x": 18,
+            "y": 26
+          },
+          "hiddenSeries": false,
+          "id": 81,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "percentage": false,
+          "pluginVersion": "7.1.4",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "xds_generation{quantile=\"0.99\",instance=~\"$instance\"}",
+              "interval": "",
+              "legendFormat": "{{ instance }}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Latency of HDS config generation (99th percentile)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:1825",
+              "format": "ms",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:1826",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "collapsed": false,
+          "datasource": "Prometheus",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 34
+          },
           "id": 5,
           "panels": [],
           "title": "API Server - Management of the Control Plane",
@@ -5143,10 +5516,10 @@ data:
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 9,
+            "h": 8,
             "w": 16,
             "x": 0,
-            "y": 26
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 2,
@@ -5166,7 +5539,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -5242,10 +5615,10 @@ data:
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 9,
+            "h": 8,
             "w": 8,
             "x": 16,
-            "y": 26
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 9,
@@ -5262,7 +5635,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -5345,11 +5718,11 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 35
+            "y": 43
           },
           "id": 54,
           "panels": [],
-          "title": "Bootstrap Server - Initial configuration for Dataplane",
+          "title": "Dataplane Server: CP-DP communication",
           "type": "row"
         },
         {
@@ -5358,6 +5731,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "description": "XDS and SDS requests are not taken into account because they are long-running requests",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -5367,10 +5741,10 @@ data:
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 9,
+            "h": 7,
             "w": 16,
             "x": 0,
-            "y": 36
+            "y": 44
           },
           "hiddenSeries": false,
           "id": 55,
@@ -5390,7 +5764,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -5400,7 +5774,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(bootstrap_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[1m])))",
+              "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(dp_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[1m])))",
               "interval": "",
               "legendFormat": "{{handler}}",
               "refId": "A"
@@ -5410,7 +5784,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Latency of Bootstrap Server Requests (99th percentile)",
+          "title": "Latency of Dataplane Server Requests (99th percentile)",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -5456,7 +5830,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "",
+          "description": "XDS and SDS requests are not taken into account because they are long-running requests",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -5466,10 +5840,10 @@ data:
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 9,
+            "h": 7,
             "w": 8,
             "x": 16,
-            "y": 36
+            "y": 44
           },
           "hiddenSeries": false,
           "id": 56,
@@ -5486,7 +5860,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -5512,7 +5886,7 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "sum by (code) (rate(bootstrap_server_http_response_size_bytes_count{instance=~\"$instance\"}[1m]))",
+              "expr": "sum by (code) (rate(dp_server_http_response_size_bytes_count{instance=~\"$instance\"}[1m]))",
               "interval": "",
               "legendFormat": "{{code}}",
               "refId": "A"
@@ -5569,7 +5943,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 45
+            "y": 51
           },
           "id": 22,
           "panels": [],
@@ -5595,7 +5969,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 46
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 52,
@@ -5612,7 +5986,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -5735,7 +6109,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 46
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 50,
@@ -5752,7 +6126,7 @@ data:
           "linewidth": 2,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -5830,7 +6204,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 46
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 42,
@@ -5848,7 +6222,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -5937,7 +6311,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 46
+            "y": 52
           },
           "hiddenSeries": false,
           "id": 19,
@@ -5954,7 +6328,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6020,7 +6394,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 54
+            "y": 60
           },
           "id": 26,
           "panels": [],
@@ -6046,7 +6420,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 55
+            "y": 61
           },
           "hiddenSeries": false,
           "id": 61,
@@ -6065,7 +6439,7 @@ data:
           "linewidth": 2,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6143,7 +6517,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 55
+            "y": 61
           },
           "hiddenSeries": false,
           "id": 66,
@@ -6162,7 +6536,7 @@ data:
           "linewidth": 2,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6240,7 +6614,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 63
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 57,
@@ -6257,7 +6631,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6382,7 +6756,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 63
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 58,
@@ -6399,7 +6773,7 @@ data:
           "linewidth": 2,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6464,7 +6838,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTICLUSTER_GLOBAL_KDS_REFRESH_INTERVAL",
+          "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -6477,7 +6851,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 63
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 59,
@@ -6495,7 +6869,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6584,7 +6958,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 63
+            "y": 69
           },
           "hiddenSeries": false,
           "id": 60,
@@ -6601,7 +6975,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6679,7 +7053,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 71
+            "y": 77
           },
           "hiddenSeries": false,
           "id": 62,
@@ -6696,7 +7070,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6821,7 +7195,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 71
+            "y": 77
           },
           "hiddenSeries": false,
           "id": 63,
@@ -6838,7 +7212,7 @@ data:
           "linewidth": 2,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -6903,7 +7277,7 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTICLUSTER_REMOTE_KDS_REFRESH_INTERVAL",
+          "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL",
           "fieldConfig": {
             "defaults": {
               "custom": {}
@@ -6916,7 +7290,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 71
+            "y": 77
           },
           "hiddenSeries": false,
           "id": 64,
@@ -6934,7 +7308,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7023,7 +7397,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 71
+            "y": 77
           },
           "hiddenSeries": false,
           "id": 65,
@@ -7040,7 +7414,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7106,212 +7480,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 79
-          },
-          "id": 7,
-          "panels": [],
-          "title": "Admin Server - Administrative management of the Control Plane",
-          "type": "row"
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 9,
-            "w": 16,
-            "x": 0,
-            "y": 80
-          },
-          "hiddenSeries": false,
-          "id": 8,
-          "legend": {
-            "alignAsTable": true,
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "rightSide": true,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "percentage": false,
-          "pluginVersion": "7.1.1",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "histogram_quantile(0.99, sum by (handler, le) (rate(admin_server_http_request_duration_seconds_bucket{instance=~\"$instance\"}[5m])))",
-              "interval": "",
-              "legendFormat": "{{handler}}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Latency of Admin Server Requests (99th percentile)",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:1757",
-              "decimals": null,
-              "format": "s",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            },
-            {
-              "$$hashKey": "object:1758",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "description": "",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 9,
-            "w": 8,
-            "x": 16,
-            "y": 80
-          },
-          "hiddenSeries": false,
-          "id": 3,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "percentage": false,
-          "pluginVersion": "7.1.1",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum by (code) (rate(admin_server_http_request_duration_seconds_count[1m]))",
-              "interval": "",
-              "legendFormat": "{{code}}",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Response Codes",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "decimals": null,
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "collapsed": false,
-          "datasource": "Prometheus",
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 89
+            "y": 85
           },
           "id": 46,
           "panels": [],
@@ -7336,7 +7505,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 90
+            "y": 86
           },
           "hiddenSeries": false,
           "id": 48,
@@ -7353,7 +7522,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7430,7 +7599,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 90
+            "y": 86
           },
           "hiddenSeries": false,
           "id": 49,
@@ -7447,7 +7616,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7521,7 +7690,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 98
+            "y": 94
           },
           "id": 11,
           "panels": [],
@@ -7547,7 +7716,7 @@ data:
             "h": 9,
             "w": 7,
             "x": 0,
-            "y": 99
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 12,
@@ -7564,7 +7733,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7643,7 +7812,7 @@ data:
             "h": 9,
             "w": 5,
             "x": 7,
-            "y": 99
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 14,
@@ -7664,7 +7833,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": true,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7755,7 +7924,7 @@ data:
             "h": 9,
             "w": 12,
             "x": 12,
-            "y": 99
+            "y": 95
           },
           "hiddenSeries": false,
           "id": 13,
@@ -7776,7 +7945,7 @@ data:
           "linewidth": 2,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7841,7 +8010,7 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 108
+            "y": 104
           },
           "id": 35,
           "panels": [],
@@ -7866,7 +8035,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 0,
-            "y": 109
+            "y": 105
           },
           "hiddenSeries": false,
           "id": 30,
@@ -7883,7 +8052,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -7960,7 +8129,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 6,
-            "y": 109
+            "y": 105
           },
           "hiddenSeries": false,
           "id": 31,
@@ -7977,7 +8146,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8054,7 +8223,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 12,
-            "y": 109
+            "y": 105
           },
           "hiddenSeries": false,
           "id": 33,
@@ -8071,7 +8240,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8148,7 +8317,7 @@ data:
             "h": 8,
             "w": 6,
             "x": 18,
-            "y": 109
+            "y": 105
           },
           "hiddenSeries": false,
           "id": 32,
@@ -8165,7 +8334,7 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "percentage": false,
-          "pluginVersion": "7.1.1",
+          "pluginVersion": "7.1.4",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -8225,7 +8394,7 @@ data:
           }
         }
       ],
-      "refresh": false,
+      "refresh": "5s",
       "schemaVersion": 26,
       "style": "dark",
       "tags": [],
@@ -8233,7 +8402,11 @@ data:
         "list": [
           {
             "allValue": null,
-            "current": {},
+            "current": {
+              "selected": false,
+              "text": "All",
+              "value": "$__all"
+            },
             "datasource": "Prometheus",
             "definition": "label_values(cp_info, zone)",
             "hide": 0,
@@ -8255,7 +8428,11 @@ data:
           },
           {
             "allValue": null,
-            "current": {},
+            "current": {
+              "selected": false,
+              "text": "All",
+              "value": "$__all"
+            },
             "datasource": "Prometheus",
             "definition": "label_values(cp_info{zone=~\"$zone\"}, instance)",
             "hide": 0,
@@ -9048,7 +9225,7 @@ spec:
       serviceAccountName: prometheus-node-exporter
       containers:
         - name: prometheus-node-exporter
-          image: "prom/node-exporter:v1.0.1"
+          image: "prom/node-exporter:v1.1.1"
           imagePullPolicy: "IfNotPresent"
           args:
             - --path.procfs=/host/proc
@@ -9106,7 +9283,7 @@ spec:
         runAsUser: 472
       containers:
         - name: grafana
-          image: "grafana/grafana:7.1.1"
+          image: "grafana/grafana:7.4.3"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -9202,7 +9379,7 @@ spec:
               mountPath: "/data"
               subPath: ""
         - name: prometheus-alertmanager-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.4.0"
+          image: "jimmidyson/configmap-reload:v0.5.0"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
@@ -9283,7 +9460,7 @@ spec:
       serviceAccountName: prometheus-pushgateway
       containers:
         - name: prometheus-pushgateway
-          image: "prom/pushgateway:v1.2.0"
+          image: "prom/pushgateway:v1.4.0"
           imagePullPolicy: "IfNotPresent"
           args:
           ports:
@@ -9318,7 +9495,7 @@ spec:
       serviceAccountName: prometheus-server
       containers:
         - name: prometheus-server-configmap-reload
-          image: "jimmidyson/configmap-reload:v0.4.0"
+          image: "jimmidyson/configmap-reload:v0.5.0"
           imagePullPolicy: "IfNotPresent"
           args:
             - --volume-dir=/etc/config
@@ -9330,7 +9507,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v2.18.2"
+          image: "prom/prometheus:v2.25.0"
           imagePullPolicy: "IfNotPresent"
           args:
             - --storage.tsdb.retention.time=15d

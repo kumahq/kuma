@@ -41,7 +41,7 @@ func (l *ExternalServiceList) GetItems() []model.KubernetesObject {
 }
 
 func (l *ExternalService) Scope() model.Scope {
-	return model.ScopeNamespace
+	return model.ScopeCluster
 }
 
 func init() {

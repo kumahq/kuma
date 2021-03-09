@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+
+	"github.com/kumahq/kuma/pkg/core/datasource"
+
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/metrics"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	"github.com/patrickmn/go-cache"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -18,7 +22,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/xds/cache/once"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	envoy_endpoints "github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
 	"github.com/kumahq/kuma/pkg/xds/topology"
 )
 
@@ -32,6 +37,7 @@ var (
 type Cache struct {
 	cache   *cache.Cache
 	rm      manager.ReadOnlyResourceManager
+	dsl     datasource.Loader
 	ipFunc  lookup.LookupIPFunc
 	zone    string
 	onceMap *once.Map
@@ -40,6 +46,7 @@ type Cache struct {
 
 func NewCache(
 	rm manager.ReadOnlyResourceManager,
+	dsl datasource.Loader,
 	zone string, expirationTime time.Duration,
 	ipFunc lookup.LookupIPFunc,
 	metrics metrics.Metrics,
@@ -54,6 +61,7 @@ func NewCache(
 	return &Cache{
 		cache:   cache.New(expirationTime, time.Duration(int64(float64(expirationTime)*0.9))),
 		rm:      rm,
+		dsl:     dsl,
 		zone:    zone,
 		ipFunc:  ipFunc,
 		onceMap: once.NewMap(),
@@ -61,12 +69,12 @@ func NewCache(
 	}, nil
 }
 
-func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
-	key := fmt.Sprintf("%s:%s", meshName, service)
+func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string, apiVersion envoy_common.APIVersion) (proto.Message, error) {
+	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, service, meshHash)
 	value, found := c.cache.Get(key)
 	if found {
 		c.metrics.WithLabelValues("get", "hit").Inc()
-		return value.(*envoy_api_v2.ClusterLoadAssignment), nil
+		return value.(proto.Message), nil
 	}
 	o := c.onceMap.Get(key)
 	c.metrics.WithLabelValues("get", "hit-wait").Inc()
@@ -77,16 +85,19 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_ap
 		if err != nil {
 			return nil, err
 		}
-		mesh := &core_mesh.MeshResource{}
-		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, meshName)); err != nil {
+		mesh := core_mesh.NewMeshResource()
+		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, model.NoMesh)); err != nil {
 			return nil, err
 		}
 		externalServices := &core_mesh.ExternalServiceResourceList{}
 		if err := c.rm.List(ctx, externalServices, core_store.ListByMesh(meshName)); err != nil {
 			return nil, err
 		}
-		endpointMap := topology.BuildEndpointMap(dataplanes.Items, c.zone, mesh, externalServices.Items)
-		cla := endpoints.CreateClusterLoadAssignment(service, endpointMap[service])
+		endpointMap := topology.BuildEndpointMap(mesh, c.zone, dataplanes.Items, externalServices.Items, c.dsl)
+		cla, err := envoy_endpoints.CreateClusterLoadAssignment(service, endpointMap[service], apiVersion)
+		if err != nil {
+			return nil, err
+		}
 		c.cache.SetDefault(key, cla)
 		c.onceMap.Delete(key)
 		return cla, nil
@@ -94,5 +105,5 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, service string) (*envoy_ap
 	if o.Err != nil {
 		return nil, o.Err
 	}
-	return o.Value.(*envoy_api_v2.ClusterLoadAssignment), nil
+	return o.Value.(proto.Message), nil
 }

@@ -8,7 +8,7 @@ spec:
   names:
     kind: TrafficTrace
     plural: traffictraces
-  scope: Namespaced
+  scope: Cluster
   versions:
     - name: v1alpha1
       served: true

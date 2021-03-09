@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kuma.plugins.ca;
 
-option go_package = "config";
+option go_package = "github.com/kumahq/kuma/plugins/ca/config";
 
 import "google/protobuf/wrappers.proto";
 

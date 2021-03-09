@@ -34,7 +34,7 @@ To release a new version of Kuma follow these steps:
 - [ ] Download the new Kuma version and double-check that it works with the demo app. Check that is works both in `universal` and `kubernetes` modes.
 - [ ] Merge PR to website repository.
 - [ ] Create a new [Github release](https://github.com/kumahq/kuma/releases) and create a link to both the changelog and to the assets download.
-- [ ] Update the `kumactl` formula in [`brew`](https://github.com/Homebrew/homebrew-core/blob/master/Formula/kumactl.rb)
+- [ ] Make sure the `kumactl` formula is updated at [Homebrew](https://github.com/Homebrew/homebrew-core/blob/master/Formula/kumactl.rb)
 - [ ] Make sure the Helm Charts are updated at [Helm Hub](https://hub.helm.sh/charts/kuma/kuma)
 - [ ] Update the README.md badge if a new release branch has been created and declared stable
 - [ ] Create a blog post that describes the most important features of the release, linking to the `CHANGELOG.md`, and including the download links.

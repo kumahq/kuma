@@ -20,7 +20,7 @@ import (
 var _ = Describe("Authentication flow", func() {
 	var privateKey = []byte("testPrivateKey")
 
-	issuer := builtin_issuer.NewDataplaneTokenIssuer(func() ([]byte, error) {
+	issuer := builtin_issuer.NewDataplaneTokenIssuer(func(string) ([]byte, error) {
 		return privateKey, nil
 	})
 	var authenticator auth.Authenticator
@@ -31,7 +31,7 @@ var _ = Describe("Authentication flow", func() {
 			Mesh: "dp-1",
 			Name: "default",
 		},
-		Spec: mesh_proto.Dataplane{
+		Spec: &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -57,7 +57,11 @@ var _ = Describe("Authentication flow", func() {
 	}
 
 	ingressDp := core_mesh.DataplaneResource{
-		Spec: mesh_proto.Dataplane{
+		Meta: &test_model.ResourceMeta{
+			Mesh: "ingress-1",
+			Name: "default",
+		},
+		Spec: &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -100,14 +104,6 @@ var _ = Describe("Authentication flow", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 		},
-		Entry("should auth with token bound to nothing", testCase{
-			id: builtin_issuer.DataplaneIdentity{
-				Name: "",
-				Mesh: "",
-				Tags: nil,
-			},
-			dpRes: &dpRes,
-		}),
 		Entry("should auth with token bound to mesh", testCase{
 			id: builtin_issuer.DataplaneIdentity{
 				Mesh: "default",
@@ -237,14 +233,16 @@ var _ = Describe("Authentication flow", func() {
 
 	It("should throw an error when signing key is not found", func() {
 		// given
-		issuer := builtin_issuer.NewDataplaneTokenIssuer(func() ([]byte, error) {
+		issuer := builtin_issuer.NewDataplaneTokenIssuer(func(string) ([]byte, error) {
 			return nil, nil
 		})
 
 		// when
-		_, err := issuer.Generate(builtin_issuer.DataplaneIdentity{})
+		_, err := issuer.Generate(builtin_issuer.DataplaneIdentity{
+			Mesh: "demo",
+		})
 
 		// then
-		Expect(err).To(MatchError("there is no Signing Key in the Control Plane. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens."))
+		Expect(err).To(MatchError(`there is no Signing Key in the Control Plane for Mesh "demo". Make sure the Mesh exist. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens.`))
 	})
 })

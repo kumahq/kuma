@@ -16,7 +16,13 @@ var _ model.Resource = &ZoneInsightResource{}
 
 type ZoneInsightResource struct {
 	Meta model.ResourceMeta
-	Spec system_proto.ZoneInsight
+	Spec *system_proto.ZoneInsight
+}
+
+func NewZoneInsightResource() *ZoneInsightResource {
+	return &ZoneInsightResource{
+		Spec: &system_proto.ZoneInsight{},
+	}
 }
 
 func (t *ZoneInsightResource) GetType() model.ResourceType {
@@ -32,7 +38,7 @@ func (t *ZoneInsightResource) SetMeta(m model.ResourceMeta) {
 }
 
 func (t *ZoneInsightResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 
 func (t *ZoneInsightResource) SetSpec(spec model.ResourceSpec) error {
@@ -40,7 +46,7 @@ func (t *ZoneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *value
+		t.Spec = value
 		return nil
 	}
 }
@@ -73,7 +79,7 @@ func (l *ZoneInsightResourceList) GetItemType() model.ResourceType {
 }
 
 func (l *ZoneInsightResourceList) NewItem() model.Resource {
-	return &ZoneInsightResource{}
+	return NewZoneInsightResource()
 }
 
 func (l *ZoneInsightResourceList) AddItem(r model.Resource) error {
@@ -90,6 +96,6 @@ func (l *ZoneInsightResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&ZoneInsightResource{})
+	registry.RegisterType(NewZoneInsightResource())
 	registry.RegistryListType(&ZoneInsightResourceList{})
 }

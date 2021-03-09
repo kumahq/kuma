@@ -47,6 +47,12 @@ var _ = Describe("InferServiceProtocol()", func() {
 			},
 			expected: mesh_core.ProtocolHTTP2,
 		}),
+		Entry("one-item list: `kuma.io/protocol: kafka`", testCase{
+			endpoints: []core_xds.Endpoint{
+				{Tags: map[string]string{"kuma.io/service": "kafka-broker", "kuma.io/protocol": "kafka"}},
+			},
+			expected: mesh_core.ProtocolKafka,
+		}),
 		Entry("one-item list: `kuma.io/protocol: tcp`", testCase{
 			endpoints: []core_xds.Endpoint{
 				{Tags: map[string]string{"kuma.io/service": "backend", "kuma.io/protocol": "tcp"}},

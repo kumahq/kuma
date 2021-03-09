@@ -45,8 +45,8 @@ var _ = Describe("KDS Sink", func() {
 			})).
 			Exec(kds_verifier.DiscoveryResponse(
 				&mesh.MeshResourceList{Items: []*mesh.MeshResource{
-					{Meta: &test_model.ResourceMeta{Name: "mesh1", Mesh: "mesh1"}, Spec: samples.Mesh1},
-					{Meta: &test_model.ResourceMeta{Name: "mesh2", Mesh: "mesh2"}, Spec: samples.Mesh2},
+					{Meta: &test_model.ResourceMeta{Name: "mesh1"}, Spec: samples.Mesh1},
+					{Meta: &test_model.ResourceMeta{Name: "mesh2"}, Spec: samples.Mesh2},
 				}}, "1", "1")).
 			Exec(kds_verifier.WaitRequest(defaultTimeout, func(rs *envoy_api_v2.DiscoveryRequest) {
 				Expect(rs.VersionInfo).To(Equal("1"))

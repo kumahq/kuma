@@ -1,0 +1,63 @@
+resources:
+- name: inbound:passthrough
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: inbound_passthrough
+    connectTimeout: 10s
+    lbPolicy: CLUSTER_PROVIDED
+    name: inbound:passthrough
+    type: ORIGINAL_DST
+    upstreamBindConfig:
+      sourceAddress:
+        address: 127.0.0.6
+        portValue: 0
+- name: outbound:passthrough
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: outbound_passthrough
+    connectTimeout: 10s
+    lbPolicy: CLUSTER_PROVIDED
+    name: outbound:passthrough
+    type: ORIGINAL_DST
+- name: inbound:passthrough
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15006
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          cluster: inbound:passthrough
+          statPrefix: inbound_passthrough
+    name: inbound:passthrough
+    trafficDirection: INBOUND
+    useOriginalDst: true
+- name: outbound:passthrough
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 0.0.0.0
+        portValue: 15001
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.tcp_proxy
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
+          accessLog:
+          - name: envoy.access_loggers.file
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
+              format: |+
+                [%START_TIME%] %RESPONSE_FLAGS% default (unknown)->%UPSTREAM_HOST%(external) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+
+              path: /var/log
+          cluster: outbound:passthrough
+          statPrefix: outbound_passthrough
+    name: outbound:passthrough
+    trafficDirection: OUTBOUND
+    useOriginalDst: true

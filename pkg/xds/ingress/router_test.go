@@ -12,7 +12,7 @@ import (
 var _ = Describe("Ingress BuildDestinationMap", func() {
 	It("should generate destination map by ingress", func() {
 		ingress := &mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Ingress: &mesh_proto.Dataplane_Networking_Ingress{
 						AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{

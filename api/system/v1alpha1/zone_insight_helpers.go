@@ -69,3 +69,14 @@ func (m *ZoneInsight) UpdateSubscription(s *KDSSubscription) {
 		m.Subscriptions = append(m.Subscriptions, s)
 	}
 }
+
+func NewVersion() *Version {
+	return &Version{
+		KumaCp: &KumaCpVersion{
+			Version:   "",
+			GitTag:    "",
+			GitCommit: "",
+			BuildDate: "",
+		},
+	}
+}

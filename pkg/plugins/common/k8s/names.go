@@ -17,6 +17,12 @@ const (
 
 	// k8sSynced identifies that resource was synced
 	K8sSynced = "k8s.kuma.io/synced"
+
+	// Kubernetes secret type to differentiate Kuma System secrets. Secret is bound to a mesh
+	MeshSecretType = "system.kuma.io/secret"
+
+	// Kubernetes secret type to differentiate Kuma System secrets. Secret is bound to a control plane
+	GlobalSecretType = "system.kuma.io/global-secret"
 )
 
 func ResourceNameExtensions(namespace, name string) core_model.ResourceNameExtensions {

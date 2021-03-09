@@ -5,9 +5,11 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/dns"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -21,13 +23,13 @@ func (p *PodConverter) OutboundInterfacesFor(
 	pod *kube_core.Pod,
 	others []*mesh_k8s.Dataplane,
 	externalServices []*mesh_k8s.ExternalService,
-	vips dns.VIPList,
+	vips vips.List,
 ) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	dataplanes := []*core_mesh.DataplaneResource{}
 	for _, other := range others {
-		dp := &core_mesh.DataplaneResource{}
-		if err := k8s.DefaultConverter().ToCoreResource(other, dp); err != nil {
+		dp := core_mesh.NewDataplaneResource()
+		if err := p.ResourceConverter.ToCoreResource(other, dp); err != nil {
 			converterLog.Error(err, "failed to parse Dataplane", "dataplane", other.Spec)
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
@@ -35,8 +37,8 @@ func (p *PodConverter) OutboundInterfacesFor(
 	}
 	externalServicesRes := []*core_mesh.ExternalServiceResource{}
 	for _, es := range externalServices {
-		res := &core_mesh.ExternalServiceResource{}
-		if err := k8s.DefaultConverter().ToCoreResource(es, res); err != nil {
+		res := core_mesh.NewExternalServiceResource()
+		if err := p.ResourceConverter.ToCoreResource(es, res); err != nil {
 			converterLog.Error(err, "failed to parse ExternalService", "externalService", es.Spec)
 			continue // one invalid ExternalService definition should not break the entire mesh
 		}
@@ -50,6 +52,12 @@ func (p *PodConverter) OutboundInterfacesFor(
 			converterLog.Error(err, "could not get K8S Service for service tag")
 			continue // one invalid Dataplane definition should not break the entire mesh
 		}
+
+		// Do not generate outbounds for service-less
+		if isServiceLess(port) {
+			continue
+		}
+
 		if isHeadlessService(service) {
 			// Generate outbound listeners for every endpoint of services.
 			for _, endpoint := range endpoints[serviceTag] {
@@ -77,7 +85,11 @@ func (p *PodConverter) OutboundInterfacesFor(
 		}
 	}
 
-	outbounds = append(outbounds, dns.VIPOutbounds(pod.Name, dataplanes, vips, externalServicesRes)...)
+	resourceKey := model.ResourceKey{
+		Mesh: MeshFor(pod),
+		Name: pod.Name,
+	}
+	outbounds = append(outbounds, dns.VIPOutbounds(resourceKey, dataplanes, vips, externalServicesRes)...)
 	return outbounds, nil
 }
 
@@ -85,10 +97,17 @@ func isHeadlessService(svc *kube_core.Service) bool {
 	return svc.Spec.ClusterIP == "None"
 }
 
+func isServiceLess(port uint32) bool {
+	return port == mesh_proto.TCPPortReserved
+}
+
 func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32, error) {
-	name, ns, port, err := ParseService(serviceTag)
+	name, ns, port, err := parseService(serviceTag)
 	if err != nil {
-		return nil, 0, errors.Errorf("failed to parse `service` host %q as FQDN", serviceTag)
+		return nil, 0, errors.Wrapf(err, "failed to parse `service` host %q as FQDN", serviceTag)
+	}
+	if isServiceLess(port) {
+		return nil, port, nil
 	}
 
 	svc := &kube_core.Service{}
@@ -99,17 +118,24 @@ func (p *PodConverter) k8sService(serviceTag string) (*kube_core.Service, uint32
 	return svc, port, nil
 }
 
-func ParseService(host string) (name string, namespace string, port uint32, err error) {
+func parseService(host string) (name string, namespace string, port uint32, err error) {
 	// split host into <name>_<namespace>_svc_<port>
 	segments := strings.Split(host, "_")
-	if len(segments) != 4 {
+	switch len(segments) {
+	case 4:
+		p, err := strconv.Atoi(segments[3])
+		if err != nil {
+			return "", "", 0, err
+		}
+		port = uint32(p)
+	case 3:
+		// service less service names have no port, so we just put the reserved
+		// one here to note that this service is actually
+		port = mesh_proto.TCPPortReserved
+	default:
 		return "", "", 0, errors.Errorf("service tag in unexpected format")
 	}
-	p, err := strconv.Atoi(segments[3])
-	if err != nil {
-		return "", "", 0, err
-	}
-	port = uint32(p)
+
 	name, namespace = segments[0], segments[1]
 	return
 }

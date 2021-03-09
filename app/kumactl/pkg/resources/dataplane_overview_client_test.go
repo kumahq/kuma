@@ -44,7 +44,7 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 			}
 
 			// when
-			list, err := client.List(context.Background(), meshName, tags, false)
+			list, err := client.List(context.Background(), meshName, tags, false, false)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -78,7 +78,7 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 			}
 
 			// when
-			list, err := client.List(context.Background(), meshName, map[string]string{}, true)
+			list, err := client.List(context.Background(), meshName, map[string]string{}, true, false)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -102,7 +102,7 @@ var _ = Describe("httpDataplaneOverviewClient", func() {
 			}
 
 			// when
-			_, err := client.List(context.Background(), "mesh-1", map[string]string{}, false)
+			_, err := client.List(context.Background(), "mesh-1", map[string]string{}, false, false)
 
 			// then
 			Expect(err).To(MatchError("(400): some error from server"))

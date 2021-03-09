@@ -10,6 +10,7 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -23,13 +24,13 @@ type TracingProxyGenerator struct {
 var _ ResourceGenerator = TracingProxyGenerator{}
 
 func (t TracingProxyGenerator) Generate(_ xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
-	if proxy.TracingBackend == nil {
+	if proxy.Policies.TracingBackend == nil {
 		return nil, nil
 	}
 	resources := core_xds.NewResourceSet()
-	switch proxy.TracingBackend.Type {
+	switch proxy.Policies.TracingBackend.Type {
 	case mesh_proto.TracingZipkinType:
-		res, err := t.zipkinCluster(proxy.TracingBackend)
+		res, err := t.zipkinCluster(proxy.Policies.TracingBackend, proxy.APIVersion)
 		if err != nil {
 			return nil, errors.Wrap(err, "could not generate zipkin cluster")
 		}
@@ -38,7 +39,7 @@ func (t TracingProxyGenerator) Generate(_ xds_context.Context, proxy *core_xds.P
 	return resources, nil
 }
 
-func (t TracingProxyGenerator) zipkinCluster(backend *mesh_proto.TracingBackend) (*core_xds.Resource, error) {
+func (t TracingProxyGenerator) zipkinCluster(backend *mesh_proto.TracingBackend, apiVersion envoy.APIVersion) (*core_xds.Resource, error) {
 	cfg := mesh_proto.ZipkinTracingBackendConfig{}
 	if err := proto.ToTyped(backend.Conf, &cfg); err != nil {
 		return nil, errors.Wrap(err, "could not convert backend")
@@ -53,7 +54,7 @@ func (t TracingProxyGenerator) zipkinCluster(backend *mesh_proto.TracingBackend)
 	}
 
 	clusterName := names.GetTracingClusterName(backend.Name)
-	cluster, err := clusters.NewClusterBuilder().
+	cluster, err := clusters.NewClusterBuilder(apiVersion).
 		Configure(clusters.DNSCluster(clusterName, url.Hostname(), uint32(port))).
 		Build()
 	if err != nil {

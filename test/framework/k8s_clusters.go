@@ -92,18 +92,18 @@ func (cs *K8sClusters) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	return nil
 }
 
-func (cs *K8sClusters) GetKuma() ControlPlane {
-	panic("Not supported at this level.")
-}
-
-func (cs *K8sClusters) RestartKuma() error {
+func (cs *K8sClusters) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
 	for name, c := range cs.clusters {
-		if err := c.RestartKuma(); err != nil {
-			return errors.Wrapf(err, "Restart Kuma on %s failed: %v", name, err)
+		if err := c.UpgradeKuma(mode, fs...); err != nil {
+			return errors.Wrapf(err, "Upgrade Kuma on %s failed: %v", name, err)
 		}
 	}
 
 	return nil
+}
+
+func (cs *K8sClusters) GetKuma() ControlPlane {
+	panic("Not supported at this level.")
 }
 
 func (cs *K8sClusters) VerifyKuma() error {
@@ -162,10 +162,10 @@ func (c *K8sClusters) GetKumactlOptions() *KumactlOptions {
 	return nil
 }
 
-func (cs *K8sClusters) DeployApp(namespace, appname, token string) error {
+func (cs *K8sClusters) DeployApp(fs ...DeployOptionsFunc) error {
 	for name, c := range cs.clusters {
-		if err := c.DeployApp(namespace, appname, token); err != nil {
-			return errors.Wrapf(err, "Labeling Namespace %s on %s failed: %v", namespace, name, err)
+		if err := c.DeployApp(fs...); err != nil {
+			return errors.Wrapf(err, "unable to deploy on %s", name)
 		}
 	}
 
@@ -182,9 +182,9 @@ func (cs *K8sClusters) DeleteApp(namespace, appname string) error {
 	return nil
 }
 
-func (cs *K8sClusters) InjectDNS() error {
+func (cs *K8sClusters) InjectDNS(namespace ...string) error {
 	for name, c := range cs.clusters {
-		if err := c.InjectDNS(); err != nil {
+		if err := c.InjectDNS(namespace...); err != nil {
 			return errors.Wrapf(err, "Injecting DNS on %s failed: %v", name, err)
 		}
 	}

@@ -1,3 +1,3 @@
-diagnosticsPort: 5680
 dataplaneConfigurationRefreshInterval: 1s
-dataplaneStatusFlushInterval: 1s
+dataplaneStatusFlushInterval: 10s
+nackBackoff: 5s

@@ -3,20 +3,19 @@ package defaults_test
 import (
 	"context"
 
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
+
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	"github.com/kumahq/kuma/pkg/config/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_component "github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/defaults"
 	resources_memory "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/ginkgo/extensions/table"
-	. "github.com/onsi/gomega"
 )
 
 var _ = Describe("Defaults Component", func() {
@@ -41,14 +40,14 @@ var _ = Describe("Defaults Component", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), &mesh_core.MeshResource{}, core_store.GetByKey("default", "default"))
+			err = manager.Get(context.Background(), mesh_core.NewMeshResource(), core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		It("should not override already created mesh", func() {
 			// given
 			mesh := &mesh_core.MeshResource{
-				Spec: v1alpha1.Mesh{
+				Spec: &v1alpha1.Mesh{
 					Mtls: &v1alpha1.Mesh_Mtls{
 						EnabledBackend: "builtin",
 						Backends: []*v1alpha1.CertificateAuthorityBackend{
@@ -60,16 +59,16 @@ var _ = Describe("Defaults Component", func() {
 					},
 				},
 			}
-			err := manager.Create(context.Background(), mesh, core_store.CreateByKey("default", "default"))
+			err := manager.Create(context.Background(), mesh, core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
 			err = component.Start(nil)
 
 			// then
-			mesh = &mesh_core.MeshResource{}
+			mesh = mesh_core.NewMeshResource()
 			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), mesh, core_store.GetByKey("default", "default"))
+			err = manager.Get(context.Background(), mesh, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(mesh.Spec.Mtls.EnabledBackend).To(Equal("builtin"))
 		})
@@ -95,67 +94,9 @@ var _ = Describe("Defaults Component", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			err = manager.Get(context.Background(), &mesh_core.MeshResource{}, core_store.GetByKey("default", "default"))
+			err = manager.Get(context.Background(), mesh_core.NewMeshResource(), core_store.GetByKey("default", "default"))
 			Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
 		})
 	})
-
-	type testCase struct {
-		cpMode       core.CpMode
-		environment  core.EnvironmentType
-		shouldCreate bool
-	}
-	DescribeTable("create signing key",
-		func(given testCase) {
-			// given
-			store := resources_memory.NewStore()
-			manager := core_manager.NewResourceManager(store)
-			component := defaults.NewDefaultsComponent(&kuma_cp.Defaults{}, given.cpMode, given.environment, manager, store)
-			err := manager.Create(context.Background(), &mesh_core.MeshResource{}, core_store.CreateByKey("default", "default"))
-			Expect(err).ToNot(HaveOccurred())
-
-			// when
-			err = component.Start(nil)
-
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			_, err = issuer.GetSigningKey(manager)
-			if given.shouldCreate {
-				Expect(err).To(BeNil())
-			} else {
-				Expect(err).To(Equal(issuer.SigningKeyNotFound))
-			}
-		},
-		Entry("should succeed when mode is global and env is universal", testCase{
-			cpMode:       core.Global,
-			environment:  core.UniversalEnvironment,
-			shouldCreate: true,
-		}),
-		Entry("should succeed when mode is global and env is kubernetes", testCase{
-			cpMode:       core.Global,
-			environment:  core.KubernetesEnvironment,
-			shouldCreate: true,
-		}),
-		Entry("should succeed when mode is standalone and env is universal", testCase{
-			cpMode:       core.Standalone,
-			environment:  core.UniversalEnvironment,
-			shouldCreate: true,
-		}),
-		Entry("should fail when mode is remote and env is universal", testCase{
-			cpMode:       core.Remote,
-			environment:  core.UniversalEnvironment,
-			shouldCreate: false,
-		}),
-		Entry("should fail when mode is remote and env is kubernetes", testCase{
-			cpMode:       core.Remote,
-			environment:  core.KubernetesEnvironment,
-			shouldCreate: false,
-		}),
-		Entry("should fail when mode is standalone and env is kubernetes", testCase{
-			cpMode:       core.Standalone,
-			environment:  core.KubernetesEnvironment,
-			shouldCreate: false,
-		}),
-	)
 
 })

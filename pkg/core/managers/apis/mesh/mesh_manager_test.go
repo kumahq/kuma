@@ -4,7 +4,9 @@ import (
 	"context"
 
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/plugins/ca/provided"
+	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -30,12 +32,13 @@ import (
 var _ = Describe("Mesh Manager", func() {
 
 	var resManager manager.ResourceManager
+	var secretManager manager.ResourceManager
 	var resStore store.ResourceStore
 	var builtinCaManager core_ca.Manager
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		secretManager := secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil)
+		secretManager = secrets_manager.NewSecretManager(secrets_store.NewSecretStore(resStore), cipher.None(), nil)
 		builtinCaManager = ca_builtin.NewBuiltinCaManager(secretManager)
 		providedCaManager := provided.NewProvidedCaManager(datasource.NewDataSourceLoader(secretManager))
 		caManagers := core_ca.Managers{
@@ -44,7 +47,7 @@ var _ = Describe("Mesh Manager", func() {
 		}
 
 		manager := manager.NewResourceManager(resStore)
-		validator := MeshValidator{CaManagers: caManagers}
+		validator := MeshValidator{CaManagers: caManagers, Store: resStore}
 		resManager = NewMeshManager(resStore, manager, caManagers, test_resources.Global(), validator)
 	})
 
@@ -53,13 +56,12 @@ var _ = Describe("Mesh Manager", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
-				Mesh: meshName,
 				Name: meshName,
 			}
 
 			// when
 			mesh := core_mesh.MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "builtin-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -81,7 +83,38 @@ var _ = Describe("Mesh Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and enabled CA is created
-			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, *mesh.Spec.Mtls.Backends[0])
+			_, err = builtinCaManager.GetRootCert(context.Background(), meshName, mesh.Spec.Mtls.Backends[0])
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		It("should create default resources", func() {
+			// given
+			meshName := "mesh-1"
+			resKey := model.ResourceKey{
+				Name: meshName,
+			}
+
+			// when
+			mesh := core_mesh.NewMeshResource()
+			err := resManager.Create(context.Background(), mesh, store.CreateBy(resKey))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// and default TrafficPermission for the mesh exists
+			err = resStore.Get(context.Background(), core_mesh.NewTrafficPermissionResource(), store.GetByKey("allow-all-mesh-1", meshName))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and default TrafficRoute for the mesh exists
+			err = resStore.Get(context.Background(), core_mesh.NewTrafficRouteResource(), store.GetByKey("route-all-mesh-1", meshName))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and Dataplane Token Signing Key for the mesh exists
+			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName)))
+			Expect(err).ToNot(HaveOccurred())
+
+			// and Envoy Admin Client Signing Key for the mesh exists
+			err = secretManager.Get(context.Background(), system.NewSecretResource(), store.GetBy(issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, meshName)))
 			Expect(err).ToNot(HaveOccurred())
 		})
 
@@ -95,36 +128,36 @@ var _ = Describe("Mesh Manager", func() {
 			DescribeTable("should apply defaults on a target MeshResource",
 				func(given testCase) {
 					// given
-					key := model.ResourceKey{Mesh: "demo", Name: "demo"}
-					mesh := core_mesh.MeshResource{}
+					key := model.ResourceKey{Name: "demo"}
+					mesh := core_mesh.NewMeshResource()
 
 					// when
-					err := util_proto.FromYAML([]byte(given.input), &mesh.Spec)
+					err := util_proto.FromYAML([]byte(given.input), mesh.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					err = resManager.Create(context.Background(), &mesh, store.CreateBy(key))
+					err = resManager.Create(context.Background(), mesh, store.CreateBy(key))
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err := util_proto.ToYAML(&mesh.Spec)
+					actual, err := util_proto.ToYAML(mesh.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
 
 					By("fetching a fresh Mesh object")
 
-					new := core_mesh.MeshResource{}
+					new := core_mesh.NewMeshResource()
 
 					// when
-					err = resManager.Get(context.Background(), &new, store.GetBy(key))
+					err = resManager.Get(context.Background(), new, store.GetBy(key))
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err = util_proto.ToYAML(&new.Spec)
+					actual, err = util_proto.ToYAML(new.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
@@ -155,13 +188,12 @@ var _ = Describe("Mesh Manager", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
-				Mesh: meshName,
 				Name: meshName,
 			}
 
 			// when
 			mesh := core_mesh.MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "ca-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -184,18 +216,74 @@ var _ = Describe("Mesh Manager", func() {
 		})
 	})
 
+	Describe("Delete()", func() {
+		It("should delete secrets within one mesh", func() {
+			// given two meshes
+			err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("demo-1", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+			err = resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("demo-2", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when demo-1 is deleted
+			err = resManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("demo-1", model.NoMesh))
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+
+			// and all secrets are deleted
+			secrets := &system.SecretResourceList{}
+			err = secretManager.List(context.Background(), secrets, store.ListByMesh("demo-1"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secrets.Items).To(BeEmpty())
+
+			// and all secrets from other mesh are preserved
+			secrets = &system.SecretResourceList{}
+			err = secretManager.List(context.Background(), secrets, store.ListByMesh("demo-2"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(secrets.Items).To(HaveLen(2)) // two default signing keys
+		})
+
+		It("should not delete Mesh if there are Dataplanes attached", func() {
+			// given mesh and dataplane
+			err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+			Expect(err).ToNot(HaveOccurred())
+
+			err = resStore.Create(context.Background(), &core_mesh.DataplaneResource{
+				Spec: &mesh_proto.Dataplane{
+					Networking: &mesh_proto.Dataplane_Networking{
+						Address: "127.0.0.1",
+						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+							Port:        8080,
+							ServicePort: 80,
+							Tags: map[string]string{
+								"service": "mobile",
+								"version": "v1",
+							}},
+						},
+					},
+				},
+			}, store.CreateByKey("dp-1", "mesh-1"))
+			Expect(err).ToNot(HaveOccurred())
+
+			// when mesh-1 is delete
+			err = resManager.Delete(context.Background(), core_mesh.NewMeshResource(), store.DeleteByKey("mesh-1", model.NoMesh))
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(Equal("mesh: unable to delete mesh, there are still some dataplanes attached"))
+		})
+	})
+
 	Describe("Update()", func() {
 		It("should not allow to change CA when mTLS is enabled", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
-				Mesh: meshName,
 				Name: meshName,
 			}
 
 			// when
 			mesh := core_mesh.MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "builtin-1",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -236,13 +324,12 @@ var _ = Describe("Mesh Manager", func() {
 			// given
 			meshName := "mesh-1"
 			resKey := model.ResourceKey{
-				Mesh: meshName,
 				Name: meshName,
 			}
 
 			// when
 			mesh := core_mesh.MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -282,50 +369,50 @@ var _ = Describe("Mesh Manager", func() {
 			DescribeTable("should apply defaults on a target MeshResource",
 				func(given testCase) {
 					// given
-					key := model.ResourceKey{Mesh: "demo", Name: "demo"}
-					mesh := core_mesh.MeshResource{}
+					key := model.ResourceKey{Name: "demo"}
+					mesh := core_mesh.NewMeshResource()
 
 					// when
-					err := util_proto.FromYAML([]byte(given.initial), &mesh.Spec)
+					err := util_proto.FromYAML([]byte(given.initial), mesh.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
 					By("creating a new Mesh")
 					// when
-					err = resManager.Create(context.Background(), &mesh, store.CreateBy(key))
+					err = resManager.Create(context.Background(), mesh, store.CreateBy(key))
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
 					By("changing Prometheus settings")
 					// when
-					mesh.Spec = mesh_proto.Mesh{}
-					err = util_proto.FromYAML([]byte(given.updated), &mesh.Spec)
+					mesh.Spec = &mesh_proto.Mesh{}
+					err = util_proto.FromYAML([]byte(given.updated), mesh.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
 					By("updating the Mesh with new Prometheus settings")
 					// when
-					err = resManager.Update(context.Background(), &mesh)
+					err = resManager.Update(context.Background(), mesh)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err := util_proto.ToYAML(&mesh.Spec)
+					actual, err := util_proto.ToYAML(mesh.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))
 
 					By("fetching a fresh Mesh object")
 
-					new := core_mesh.MeshResource{}
+					new := core_mesh.NewMeshResource()
 
 					// when
-					err = resManager.Get(context.Background(), &new, store.GetBy(key))
+					err = resManager.Get(context.Background(), new, store.GetBy(key))
 					// then
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err = util_proto.ToYAML(&new.Spec)
+					actual, err = util_proto.ToYAML(new.Spec)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					Expect(actual).To(MatchYAML(given.expected))

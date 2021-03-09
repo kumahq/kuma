@@ -1,14 +1,10 @@
 total: 2
 items:
   - creationTime: "0001-01-01T00:00:00Z"
-    ingress:
-      address: 192.168.0.2:10000
     modificationTime: "0001-01-01T00:00:00Z"
     name: zone-1
     type: Zone
   - creationTime: "0001-01-01T00:00:00Z"
-    ingress:
-      address: 192.168.1.2:10000
     modificationTime: "0001-01-01T00:00:00Z"
     name: zone-2
     type: Zone

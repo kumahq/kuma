@@ -9,14 +9,16 @@ import (
 func NewInstallCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "install",
-		Short: "Install Kuma on Kubernetes",
-		Long:  `Install Kuma on Kubernetes.`,
+		Short: "Install various Kuma components.",
+		Long:  `Install various Kuma components.`,
 	}
 	// sub-commands
-	cmd.AddCommand(newInstallControlPlaneCmd(pctx))
-	cmd.AddCommand(newInstallMetrics())
+	cmd.AddCommand(newInstallControlPlaneCmd(&pctx.InstallCpContext))
+	cmd.AddCommand(newInstallCrdsCmd(&pctx.InstallCRDContext))
+	cmd.AddCommand(newInstallMetrics(pctx))
 	cmd.AddCommand(newInstallTracing())
 	cmd.AddCommand(newInstallDNS())
 	cmd.AddCommand(newInstallLogging())
+	cmd.AddCommand(newInstallTransparentProxy())
 	return cmd
 }

@@ -40,10 +40,11 @@ func (m *dataplaneManager) Create(ctx context.Context, resource core_model.Resou
 
 	m.setInboundsClusterTag(dp)
 	m.setGatewayClusterTag(dp)
+	m.setHealth(dp)
 
 	opts := core_store.NewCreateOptions(fs...)
-	owner := &core_mesh.MeshResource{}
-	if err := m.store.Get(ctx, owner, core_store.GetByKey(opts.Mesh, opts.Mesh)); err != nil {
+	owner := core_mesh.NewMeshResource()
+	if err := m.store.Get(ctx, owner, core_store.GetByKey(opts.Mesh, core_model.NoMesh)); err != nil {
 		return core_manager.MeshNotFound(opts.Mesh)
 	}
 
@@ -91,4 +92,12 @@ func (m *dataplaneManager) setGatewayClusterTag(dp *core_mesh.DataplaneResource)
 		dp.Spec.Networking.Gateway.Tags = make(map[string]string)
 	}
 	dp.Spec.Networking.Gateway.Tags[mesh_proto.ZoneTag] = m.zone
+}
+
+func (m *dataplaneManager) setHealth(dp *core_mesh.DataplaneResource) {
+	for _, inbound := range dp.Spec.Networking.Inbound {
+		if inbound.ServiceProbe != nil && inbound.Health == nil {
+			inbound.Health = &mesh_proto.Dataplane_Networking_Inbound_Health{Ready: false}
+		}
+	}
 }

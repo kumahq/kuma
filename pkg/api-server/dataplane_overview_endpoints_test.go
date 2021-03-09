@@ -15,6 +15,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -27,7 +28,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	var stop chan struct{}
 	t1, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995+00:00")
 	BeforeEach(func() {
-		resourceStore = memory.NewStore()
+		resourceStore = store.NewPaginationStore(memory.NewStore())
 		metrics, err := metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 		apiServer = createTestApiServer(resourceStore, config.DefaultApiServerConfig(), true, metrics)
@@ -49,11 +50,11 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 	})
 
 	BeforeEach(func() {
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("mesh1", "mesh1"), store.CreatedAt(t1))
+		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey("mesh1", model.NoMesh), store.CreatedAt(t1))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	createDpWithInsights := func(name string, dp v1alpha1.Dataplane) {
+	createDpWithInsights := func(name string, dp *v1alpha1.Dataplane) {
 		dpResource := mesh_core.DataplaneResource{
 			Spec: dp,
 		}
@@ -62,7 +63,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 		sampleTime, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
 		insightResource := mesh_core.DataplaneInsightResource{
-			Spec: v1alpha1.DataplaneInsight{
+			Spec: &v1alpha1.DataplaneInsight{
 				Subscriptions: []*v1alpha1.DiscoverySubscription{
 					{
 						Id:                     "stream-id-1",
@@ -79,7 +80,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 
 	BeforeEach(func() {
 		// given
-		createDpWithInsights("dp-1", v1alpha1.Dataplane{
+		createDpWithInsights("dp-1", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Gateway: &v1alpha1.Dataplane_Networking_Gateway{
@@ -90,7 +91,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			},
 		})
 
-		createDpWithInsights("dp-2", v1alpha1.Dataplane{
+		createDpWithInsights("dp-2", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Inbound: []*v1alpha1.Dataplane_Networking_Inbound{
@@ -105,7 +106,7 @@ var _ = Describe("Dataplane Overview Endpoints", func() {
 			},
 		})
 
-		createDpWithInsights("dp-3", v1alpha1.Dataplane{
+		createDpWithInsights("dp-3", &v1alpha1.Dataplane{
 			Networking: &v1alpha1.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Ingress: &v1alpha1.Dataplane_Networking_Ingress{},

@@ -11,9 +11,11 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -32,15 +34,18 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 					ProxyTemplate: given.template,
 				}
 				ctx := xds_context.Context{
+					ConnectionInfo: xds_context.ConnectionInfo{
+						Authority: "kuma-system:5677",
+					},
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation: "kuma-system:5677",
-						SdsTlsCert:  []byte("12345"),
+						SdsTlsCert: []byte("12345"),
 					},
 					Mesh: xds_context.MeshContext{
 						Resource: &mesh_core.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
+							Spec: &mesh_proto.Mesh{},
 						},
 					},
 				}
@@ -62,7 +67,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							Mesh:    "demo",
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -78,6 +83,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV3,
 				},
 				template: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
@@ -101,7 +107,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 		type testCase struct {
 			dataplane         string
 			proxyTemplateFile string
-			envoyConfigFile   string
+			expected          string
 		}
 
 		DescribeTable("Generate Envoy xDS resources",
@@ -117,16 +123,18 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 
 				// given
 				ctx := xds_context.Context{
+					ConnectionInfo: xds_context.ConnectionInfo{
+						Authority: "kuma-system:5677",
+					},
 					ControlPlane: &xds_context.ControlPlaneContext{
-						SdsLocation: "kuma-system:5677",
-						SdsTlsCert:  []byte("12345"),
+						SdsTlsCert: []byte("12345"),
 					},
 					Mesh: xds_context.MeshContext{
 						Resource: &mesh_core.MeshResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "demo",
 							},
-							Spec: mesh_proto.Mesh{
+							Spec: &mesh_proto.Mesh{
 								Mtls: &mesh_proto.Mesh_Mtls{
 									EnabledBackend: "builtin",
 									Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -141,8 +149,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 					},
 				}
 
-				dataplane := mesh_proto.Dataplane{}
-				Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
+				dataplane := &mesh_proto.Dataplane{}
+				Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 				proxy := &model.Proxy{
 					Id: model.ProxyId{Name: "demo.backend-01"},
 					Dataplane: &mesh_core.DataplaneResource{
@@ -153,7 +161,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 						},
 						Spec: dataplane,
 					},
-					Metadata: &model.DataplaneMetadata{},
+					APIVersion: envoy_common.APIV3,
+					Metadata:   &model.DataplaneMetadata{},
 				}
 
 				// when
@@ -171,9 +180,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", "template-proxy", given.envoyConfigFile))
-				Expect(err).ToNot(HaveOccurred())
-				Expect(actual).To(MatchYAML(expected))
+				// and output matches golden files
+				Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "template-proxy", given.expected)))
 			},
 			Entry("should support a combination of pre-defined profiles and raw xDS resources", testCase{
 				dataplane: `
@@ -187,7 +195,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
                       servicePort: 8080
 `,
 				proxyTemplateFile: "1-proxy-template.input.yaml",
-				envoyConfigFile:   "1-envoy-config.golden.yaml",
+				expected:          "1-envoy-config.golden.yaml",
 			}),
 		)
 

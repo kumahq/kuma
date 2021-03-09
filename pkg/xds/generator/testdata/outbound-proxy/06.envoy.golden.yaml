@@ -1,69 +1,72 @@
 resources:
-  - name: es2
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Cluster
-      connectTimeout: 5s
-      http2ProtocolOptions: {}
-      lbSubsetConfig:
-        fallbackPolicy: ANY_ENDPOINT
-        subsetSelectors:
-          - fallbackPolicy: NO_FALLBACK
-            keys:
-              - kuma.io/protocol
-      loadAssignment:
-        clusterName: es2
-        endpoints:
-          - lbEndpoints:
-              - endpoint:
-                  address:
-                    socketAddress:
-                      address: 10.0.0.2
-                      portValue: 10002
-                loadBalancingWeight: 1
-                metadata:
-                  filterMetadata:
-                    envoy.lb:
-                      kuma.io/protocol: http2
-                    envoy.transport_socket_match:
-                      kuma.io/protocol: http2
-      name: es2
-      type: STRICT_DNS
-  - name: outbound:127.0.0.1:18082
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 127.0.0.1
-          portValue: 18082
-      deprecatedV1:
-        bindToPort: false
-      filterChains:
-        - filters:
-            - name: envoy.http_connection_manager
-              typedConfig:
-                '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
-                httpFilters:
-                  - name: envoy.router
-                routeConfig:
-                  name: outbound:es2
-                  validateClusters: false
-                  requestHeadersToAdd:
-                    - header:
-                        key: x-kuma-tags
-                        value: '&kuma.io/service=web&'
-                  virtualHosts:
-                    - domains:
-                        - '*'
-                      name: es2
-                      routes:
-                        - match:
-                            prefix: /
-                          route:
-                            cluster: es2
-                            metadataMatch:
-                              filterMetadata:
-                                envoy.lb:
-                                  kuma.io/protocol: http2
-                statPrefix: es2
-      name: outbound:127.0.0.1:18082
-      trafficDirection: OUTBOUND
+- name: es2
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    commonHttpProtocolOptions:
+      idleTimeout: 0s
+    connectTimeout: 10s
+    http2ProtocolOptions: {}
+    lbSubsetConfig:
+      fallbackPolicy: ANY_ENDPOINT
+      subsetSelectors:
+      - fallbackPolicy: NO_FALLBACK
+        keys:
+        - kuma.io/protocol
+    loadAssignment:
+      clusterName: es2
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              socketAddress:
+                address: 10.0.0.2
+                portValue: 10002
+          loadBalancingWeight: 1
+          metadata:
+            filterMetadata:
+              envoy.lb:
+                kuma.io/protocol: http2
+              envoy.transport_socket_match:
+                kuma.io/protocol: http2
+    name: es2
+    type: STRICT_DNS
+- name: outbound:127.0.0.1:18082
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 18082
+    bindToPort: false
+    filterChains:
+    - filters:
+      - name: envoy.filters.network.http_connection_manager
+        typedConfig:
+          '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          httpFilters:
+          - name: envoy.filters.http.router
+          routeConfig:
+            name: outbound:es2
+            requestHeadersToAdd:
+            - header:
+                key: x-kuma-tags
+                value: '&kuma.io/service=web&'
+            validateClusters: false
+            virtualHosts:
+            - domains:
+              - '*'
+              name: es2
+              routes:
+              - match:
+                  prefix: /
+                route:
+                  autoHostRewrite: true
+                  cluster: es2
+                  metadataMatch:
+                    filterMetadata:
+                      envoy.lb:
+                        kuma.io/protocol: http2
+                  timeout: 0s
+          statPrefix: es2
+    name: outbound:127.0.0.1:18082
+    trafficDirection: OUTBOUND

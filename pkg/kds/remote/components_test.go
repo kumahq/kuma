@@ -8,6 +8,14 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
+
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
+
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -15,7 +23,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
-	"github.com/kumahq/kuma/pkg/kds/global"
 	"github.com/kumahq/kuma/pkg/kds/remote"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -30,15 +37,15 @@ var _ = Describe("Remote Sync", func() {
 
 	consumedTypes := []model.ResourceType{mesh.DataplaneType, mesh.MeshType, mesh.TrafficPermissionType}
 	newPolicySink := func(zone string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream) component.Component {
-		return kds_client.NewKDSSink(core.Log, consumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(nil, resourceSyncer, false, zone))
+		return kds_client.NewKDSSink(core.Log, consumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(nil, resourceSyncer, false, zone, nil))
 	}
 	start := func(comp component.Component, stop chan struct{}) {
 		go func() {
 			_ = comp.Start(stop)
 		}()
 	}
-	ingressFunc := func(zone string) mesh_proto.Dataplane {
-		return mesh_proto.Dataplane{
+	ingressFunc := func(zone string) *mesh_proto.Dataplane {
+		return &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Ingress: &mesh_proto.Dataplane_Networking_Ingress{
@@ -69,7 +76,7 @@ var _ = Describe("Remote Sync", func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, global.ProvidedFilter)
+		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, kds_context.GlobalProvidedFilter(manager.NewResourceManager(globalStore)))
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)
@@ -84,7 +91,7 @@ var _ = Describe("Remote Sync", func() {
 	})
 
 	It("should sync policies from global store to the local", func() {
-		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", "mesh-1"))
+		err := globalStore.Create(context.Background(), &mesh.MeshResource{Spec: samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {
@@ -123,5 +130,35 @@ var _ = Describe("Remote Sync", func() {
 		err = remoteStore.List(context.Background(), &actual)
 		Expect(err).ToNot(HaveOccurred())
 		closeFunc()
+	})
+
+	It("should have up to date list of consumed types", func() {
+		excludeTypes := map[model.ResourceType]bool{
+			mesh.DataplaneInsightType:  true,
+			mesh.DataplaneOverviewType: true,
+			mesh.ServiceInsightType:    true,
+			mesh.ServiceOverviewType:   true,
+			sample.TrafficRouteType:    true,
+		}
+
+		// take all mesh-scoped types and exclude types that won't be synced
+		actualConsumedTypes := []model.ResourceType{}
+		for _, typ := range registry.Global().ListTypes() {
+			obj, err := registry.Global().NewObject(typ)
+			Expect(err).ToNot(HaveOccurred())
+			if obj.Scope() == model.ScopeMesh && !excludeTypes[typ] {
+				actualConsumedTypes = append(actualConsumedTypes, typ)
+			}
+		}
+
+		// plus 2 global-scope types
+		extraTypes := []model.ResourceType{
+			mesh.MeshType,
+			system.ConfigType,
+		}
+
+		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
+		Expect(actualConsumedTypes).To(HaveLen(len(remote.ConsumedTypes)))
+		Expect(actualConsumedTypes).To(ConsistOf(remote.ConsumedTypes))
 	})
 })

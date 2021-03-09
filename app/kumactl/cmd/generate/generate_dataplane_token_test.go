@@ -14,10 +14,7 @@ import (
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	"github.com/kumahq/kuma/pkg/catalog"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
-	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 )
 
 type staticDataplaneTokenGenerator struct {
@@ -44,19 +41,8 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		generator = &staticDataplaneTokenGenerator{}
 		ctx = &kumactl_cmd.RootContext{
 			Runtime: kumactl_cmd.RootRuntime{
-				NewDataplaneTokenClient: func(string, *config_kumactl.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error) {
+				NewDataplaneTokenClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error) {
 					return generator, nil
-				},
-				NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
-					return &test_catalog.StaticCatalogClient{
-						Resp: catalog.Catalog{
-							Apis: catalog.Apis{
-								DataplaneToken: catalog.DataplaneTokenApi{
-									LocalUrl: "http://localhost:1234",
-								},
-							},
-						},
-					}, nil
 				},
 			},
 		}
@@ -83,11 +69,11 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 			Expect(buf.String()).To(Equal(given.result))
 		},
 		Entry("for default mesh when it is not specified", testCase{
-			args:   []string{"generate", "dataplane-token", "--dataplane=example"},
+			args:   []string{"generate", "dataplane-token", "--name=example"},
 			result: "token-for-example-default--",
 		}),
 		Entry("for all arguments", testCase{
-			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--dataplane=example", "--type=dataplane", "--tag", "kuma.io/service=web"},
+			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--name=example", "--type=dataplane", "--tag", "kuma.io/service=web"},
 			result: "token-for-example-demo-kuma.io/service=web-dataplane",
 		}),
 	)
@@ -97,7 +83,7 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		generator.err = errors.New("could not connect to API")
 
 		// when
-		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--dataplane=example"})
+		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--name=example"})
 		err := rootCmd.Execute()
 
 		// then
@@ -107,28 +93,4 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		Expect(buf.String()).To(Equal("Error: failed to generate a dataplane token: could not connect to API\n"))
 	})
 
-	It("should throw an error when dataplane token server is disabled", func() {
-		// setup
-		ctx.Runtime.NewCatalogClient = func(s string) (catalog_client.CatalogClient, error) {
-			return &test_catalog.StaticCatalogClient{
-				Resp: catalog.Catalog{
-					Apis: catalog.Apis{
-						DataplaneToken: catalog.DataplaneTokenApi{
-							LocalUrl: "", // disabled dataplane token server
-						},
-					},
-				},
-			}, nil
-		}
-
-		// when
-		rootCmd.SetArgs([]string{"generate", "dataplane-token", "--dataplane=example"})
-		err := rootCmd.Execute()
-
-		// then
-		Expect(err).To(HaveOccurred())
-
-		// and
-		Expect(buf.String()).To(Equal("Error: failed to create dataplane token client: Enable the server to be able to generate tokens.\n"))
-	})
 })

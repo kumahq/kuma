@@ -1,0 +1,35 @@
+{
+  "type": "Retry",
+  "mesh": "default",
+  "name": "retry-1",
+  "creationTime": "0001-01-01T00:00:00Z",
+  "modificationTime": "0001-01-01T00:00:00Z",
+  "sources": [
+    {
+      "match": {
+        "service": "web"
+      }
+    }
+  ],
+  "destinations": [
+    {
+      "match": {
+        "service": "backend"
+      }
+    }
+  ],
+  "conf": {
+    "http": {
+      "numRetries": 56,
+      "perTryTimeout": "10s",
+      "backOff": {
+        "baseInterval": "0.008s",
+        "maxInterval": "1s"
+      },
+      "retriableStatusCodes": [
+        500,
+        501
+      ]
+    }
+  }
+}

@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kumahq/kuma/pkg/core"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -27,10 +28,9 @@ var _ = Describe("SyncResourceStore", func() {
 		meshName := fmt.Sprintf("mesh-%d", idx)
 		return &mesh.MeshResource{
 			Meta: &model2.ResourceMeta{
-				Mesh: meshName,
 				Name: meshName,
 			},
-			Spec: mesh_proto.Mesh{
+			Spec: &mesh_proto.Mesh{
 				Mtls: &mesh_proto.Mesh_Mtls{
 					EnabledBackend: ca,
 					Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -107,7 +107,7 @@ var _ = Describe("SyncResourceStore", func() {
 		Expect(err).ToNot(HaveOccurred())
 		Expect(len(actual.Items)).To(Equal(len(upstream.Items)))
 		for i, item := range actual.Items {
-			Expect(item.Spec).To(Equal(upstream.Items[i].Spec))
+			Expect(item.Spec).To(MatchProto(upstream.Items[i].Spec))
 		}
 	})
 })

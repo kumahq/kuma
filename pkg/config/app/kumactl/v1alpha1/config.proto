@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kumactl.config.v1alpha1;
 
-option go_package = "v1alpha1";
+option go_package = "github.com/kumahq/kuma/config/v1alpha1";
 
 import "validate/validate.proto";
 
@@ -36,6 +36,18 @@ message ControlPlaneCoordinates {
 
     // URL defines URL of the Control Plane API Server.
     string url = 1 [ (validate.rules).string.uri = true ];
+
+    // CaCert defines the certificate authority which will be used to verify
+    // connection to the control plane API server
+    string ca_cert_file = 2;
+
+    // ClientCert defines the certificate of the authorized client of the
+    // control plane API server
+    string client_cert_file = 3;
+
+    // ClientKey defines the key of the authorized client of the control plane
+    // API server
+    string client_key_file = 4;
   }
 
   ApiServer api_server = 1 [ (validate.rules).message.required = true ];
@@ -59,22 +71,4 @@ message Context {
 
   // Defaults defines default settings for a given context.
   Defaults defaults = 3;
-
-  Credentials credentials = 4;
-
-  // Credentials defines credentials for various APIs
-  message Credentials {
-    // AdminApiCredentials defines credentials for admin client
-    AdminApiCredentials adminApi = 1;
-  }
-
-  // AdminApiCredentials defines credential configuration of admin client
-  message AdminApiCredentials {
-
-    // ClientCert defines certificate of authorized client of admin server
-    string client_cert = 2;
-
-    // ClientKey defines key of authorized client of admin server
-    string client_key = 3;
-  }
 }

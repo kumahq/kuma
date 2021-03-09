@@ -1,17 +1,13 @@
 controlPlane:
-  apiServer:
-    url: http://localhost:5681
-    retry:
-      backoff: 3s
-      maxDuration: 5m0s
-  bootstrapServer:
-    retry:
-      backoff: 1s
-      maxDuration: 30s
+  url: https://localhost:5678
+  retry:
+    backoff: 3s
+    maxDuration: 5m0s
   caCert: ""
   caCertFile: ""
 dataplane:
   mesh: default
   drainTime: 30s
+  bootstrapVersion: ""
 dataplaneRuntime:
   binaryPath: envoy

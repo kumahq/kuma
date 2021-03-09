@@ -29,9 +29,6 @@ var _ = Describe("Monitoring Assignment Discovery Service", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
-				By("validating")
-				Expect(ma.Validate()).To(Succeed())
-
 				By("serializing back to YAML")
 				// when
 				actual, err := util_proto.ToYAML(ma)
@@ -66,12 +63,5 @@ var _ = Describe("Monitoring Assignment Discovery Service", func() {
 `,
 			}),
 		)
-
-		It("should require a non-empty name", func() {
-			// given
-			ma := &MonitoringAssignment{}
-			// expect
-			Expect(ma.Validate()).To(HaveOccurred())
-		})
 	})
 })

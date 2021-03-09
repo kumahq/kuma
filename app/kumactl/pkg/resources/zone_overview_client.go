@@ -8,6 +8,7 @@ import (
 
 	"github.com/pkg/errors"
 
+	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -21,7 +22,7 @@ type ZoneOverviewClient interface {
 }
 
 func NewZoneOverviewClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer) (ZoneOverviewClient, error) {
-	client, err := apiServerClient(coordinates.Url)
+	client, err := kumactl_client.ApiServerClient(coordinates)
 	if err != nil {
 		return nil, err
 	}

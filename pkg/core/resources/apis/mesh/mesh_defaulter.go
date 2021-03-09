@@ -32,7 +32,7 @@ func (mesh *MeshResource) Default() error {
 			if err != nil {
 				return errors.Wrap(err, "could not convert the backend")
 			}
-			mesh.Spec.Metrics.Backends[idx].Conf = &str
+			mesh.Spec.Metrics.Backends[idx].Conf = str
 		}
 	}
 	return nil

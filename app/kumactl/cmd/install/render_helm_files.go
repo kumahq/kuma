@@ -12,6 +12,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart/loader"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"helm.sh/helm/v3/pkg/engine"
+	"k8s.io/client-go/rest"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
@@ -37,18 +38,23 @@ metadata:
 `, namespace)
 }
 
-func renderHelmFiles(templates []data.File, args interface{}) ([]data.File, error) {
+func renderHelmFiles(
+	templates []data.File,
+	args interface{},
+	namespace string,
+	helmValuesPrefix string,
+	kubeClientConfig *rest.Config,
+) ([]data.File, error) {
 	chart, err := loadCharts(templates)
 	if err != nil {
 		return nil, errors.Errorf("Failed to load charts: %s", err)
 	}
 
-	overrideValues := generateOverrideValues(args)
+	overrideValues := generateOverrideValues(args, helmValuesPrefix)
 	if err := chartutil.ProcessDependencies(chart, overrideValues); err != nil {
 		return nil, errors.Errorf("Failed to process dependencies: %s", err)
 	}
 
-	namespace := overrideValues["namespace"].(string)
 	options := generateReleaseOptions(chart.Metadata.Name, namespace)
 
 	valuesToRender, err := chartutil.ToRenderValues(chart, overrideValues, options, nil)
@@ -56,7 +62,12 @@ func renderHelmFiles(templates []data.File, args interface{}) ([]data.File, erro
 		return nil, errors.Errorf("Failed to render values: %s", err)
 	}
 
-	files, err := engine.Render(chart, valuesToRender)
+	var files map[string]string
+	if kubeClientConfig == nil {
+		files, err = engine.Render(chart, valuesToRender)
+	} else {
+		files, err = engine.RenderWithClient(chart, valuesToRender, kubeClientConfig)
+	}
 	if err != nil {
 		return nil, errors.Errorf("Failed to render templates: %s", err)
 	}
@@ -74,29 +85,18 @@ func loadCharts(templates []data.File) (*chart.Chart, error) {
 		})
 	}
 
-	loadedChart, err := loader.LoadFiles(files)
-	if err != nil {
-		return nil, err
-	}
-
-	// Filter out the pre- templates
-	loadedTemplates := loadedChart.Templates
-	loadedChart.Templates = []*chart.File{}
-
-	for _, t := range loadedTemplates {
-		if !strings.HasPrefix(t.Name, "templates/pre-") &&
-			!strings.HasPrefix(t.Name, "templates/post-") {
-			loadedChart.Templates = append(loadedChart.Templates, &chart.File{
-				Name: t.Name,
-				Data: t.Data,
-			})
+	var fileteredFiles []*loader.BufferedFile
+	for _, f := range files {
+		if strings.Contains(f.Name, "templates/pre-") || strings.Contains(f.Name, "templates/post-") {
+			continue
 		}
+		fileteredFiles = append(fileteredFiles, f)
 	}
 
-	return loadedChart, nil
+	return loader.LoadFiles(fileteredFiles)
 }
 
-func generateOverrideValues(args interface{}) map[string]interface{} {
+func generateOverrideValues(args interface{}, helmValuesPrefix string) map[string]interface{} {
 	overrideValues := map[string]interface{}{}
 
 	v := reflect.ValueOf(args)
@@ -120,6 +120,12 @@ func generateOverrideValues(args interface{}) map[string]interface{} {
 			root = root[n].(map[string]interface{})
 		}
 		root[splitTag[tagCount-1]] = adjustType(value)
+	}
+
+	if helmValuesPrefix != "" {
+		prefixed := map[string]interface{}{}
+		prefixed[helmValuesPrefix] = overrideValues
+		return prefixed
 	}
 
 	return overrideValues

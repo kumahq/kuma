@@ -1,6 +1,8 @@
 package postgres
 
 import (
+	"time"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config"
@@ -27,6 +29,15 @@ type PostgresStoreConfig struct {
 	MaxOpenConnections int `yaml:"maxOpenConnections" envconfig:"kuma_store_postgres_max_open_connections"`
 	// TLS settings
 	TLS TLSPostgresStoreConfig `yaml:"tls"`
+	// MinReconnectInterval controls the duration to wait before trying to
+	// re-establish the database connection after connection loss. After each
+	// consecutive failure this interval is doubled, until MaxReconnectInterval
+	// is reached. Successfully completing the connection establishment procedure
+	// resets the interval back to MinReconnectInterval.
+	MinReconnectInterval time.Duration `yaml:"minReconnectInterval" envconfig:"kuma_store_postgres_min_reconnect_interval"`
+	// MaxReconnectInterval controls the maximum possible duration to wait before trying
+	// to re-establish the database connection after connection loss.
+	MaxReconnectInterval time.Duration `yaml:"maxReconnectInterval" envconfig:"kuma_store_postgres_max_reconnect_interval"`
 }
 
 // Modes available here https://godoc.org/github.com/lib/pq
@@ -101,19 +112,24 @@ func (p *PostgresStoreConfig) Validate() error {
 	if err := p.TLS.Validate(); err != nil {
 		return errors.Wrap(err, "TLS validation failed")
 	}
+	if p.MinReconnectInterval >= p.MaxReconnectInterval {
+		return errors.New("MinReconnectInterval should be less than MaxReconnectInterval")
+	}
 	return nil
 }
 
 func DefaultPostgresStoreConfig() *PostgresStoreConfig {
 	return &PostgresStoreConfig{
-		Host:               "127.0.0.1",
-		Port:               15432,
-		User:               "kuma",
-		Password:           "kuma",
-		DbName:             "kuma",
-		ConnectionTimeout:  5,
-		MaxOpenConnections: 0, // number of open connections is unlimited
-		TLS:                DefaultTLSPostgresStoreConfig(),
+		Host:                 "127.0.0.1",
+		Port:                 15432,
+		User:                 "kuma",
+		Password:             "kuma",
+		DbName:               "kuma",
+		ConnectionTimeout:    5,
+		MaxOpenConnections:   0, // number of open connections is unlimited
+		TLS:                  DefaultTLSPostgresStoreConfig(),
+		MinReconnectInterval: 10 * time.Second,
+		MaxReconnectInterval: 60 * time.Second,
 	}
 }
 

@@ -10,6 +10,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/logs"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/util/proto"
@@ -52,19 +53,19 @@ var _ = Describe("Matcher", func() {
 			}),
 		}
 		meshRes := core_mesh.MeshResource{
-			Spec: mesh_proto.Mesh{
+			Spec: &mesh_proto.Mesh{
 				Logging: &mesh_proto.Logging{
 					Backends:       []*mesh_proto.LoggingBackend{backendFile1, backendFile2, backendFile3},
 					DefaultBackend: "file1",
 				},
 			},
 		}
-		err := manager.Create(context.Background(), &meshRes, store.CreateByKey("sample", "sample"))
+		err := manager.Create(context.Background(), &meshRes, store.CreateByKey("sample", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
 		dpRes = core_mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "127.0.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -103,7 +104,7 @@ var _ = Describe("Matcher", func() {
 	It("should match rules", func() {
 		// given
 		logRes1 := core_mesh.TrafficLogResource{
-			Spec: mesh_proto.TrafficLog{
+			Spec: &mesh_proto.TrafficLog{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
@@ -128,7 +129,7 @@ var _ = Describe("Matcher", func() {
 
 		// and
 		logRes3 := core_mesh.TrafficLogResource{
-			Spec: mesh_proto.TrafficLog{
+			Spec: &mesh_proto.TrafficLog{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
@@ -164,7 +165,7 @@ var _ = Describe("Matcher", func() {
 	It("should not match services", func() {
 		// given
 		logRes := core_mesh.TrafficLogResource{
-			Spec: mesh_proto.TrafficLog{
+			Spec: &mesh_proto.TrafficLog{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{
@@ -198,7 +199,7 @@ var _ = Describe("Matcher", func() {
 	It("should skip unknown backends", func() {
 		// given
 		logRes := core_mesh.TrafficLogResource{
-			Spec: mesh_proto.TrafficLog{
+			Spec: &mesh_proto.TrafficLog{
 				Sources: []*mesh_proto.Selector{
 					{
 						Match: map[string]string{

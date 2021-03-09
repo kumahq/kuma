@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "google/protobuf/timestamp.proto";
+
+// MeshInsight defines the observed state of a Mesh.
+message MeshInsight {
+
+  // last_sync is a time of the last synchronization
+  google.protobuf.Timestamp last_sync = 1;
+
+  // DataplaneStat defines statistic specifically for Dataplane
+  message DataplaneStat {
+    uint32 total = 1;
+    uint32 online = 2;
+    uint32 offline = 3;
+    uint32 partially_degraded = 4;
+  }
+  DataplaneStat dataplanes = 2;
+
+  // PolicyStat defines statistic for all policies in general
+  message PolicyStat { uint32 total = 1; }
+  map<string, PolicyStat> policies = 3;
+
+  // DpVersions defines statistics grouped by dataplane versions
+  message DpVersions {
+
+    // Dataplane stats grouped by KumaDP version
+    map<string, DataplaneStat> kumaDp = 1;
+
+    // Dataplan stats grouped by Envoy version
+    map<string, DataplaneStat> envoy = 2;
+  }
+  DpVersions dpVersions = 4;
+}

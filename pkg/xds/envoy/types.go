@@ -5,6 +5,9 @@ import (
 	"sort"
 	"strings"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
+	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	"github.com/pkg/errors"
 )
 
@@ -13,6 +16,8 @@ type ClusterSubset struct {
 	Weight            uint32
 	Tags              Tags
 	IsExternalService bool
+	Lb                *mesh_proto.TrafficRoute_LoadBalancer
+	Timeout           *mesh_proto.Timeout_Conf
 }
 
 type Tags map[string]string
@@ -86,6 +91,8 @@ func DistinctTags(tags []Tags) []Tags {
 type Cluster struct {
 	subsets            []ClusterSubset
 	hasExternalService bool
+	lb                 *mesh_proto.TrafficRoute_LoadBalancer
+	timeout            *mesh_proto.Timeout_Conf
 }
 
 func (c *Cluster) Add(subset ClusterSubset) {
@@ -93,6 +100,8 @@ func (c *Cluster) Add(subset ClusterSubset) {
 	if subset.IsExternalService {
 		c.hasExternalService = true
 	}
+	c.lb = subset.Lb
+	c.timeout = subset.Timeout
 }
 
 func (c *Cluster) Tags() []Tags {
@@ -109,6 +118,10 @@ func (c *Cluster) HasExternalService() bool {
 
 func (c *Cluster) Subsets() []ClusterSubset {
 	return c.subsets
+}
+
+func (c *Cluster) Timeout() *mesh_proto.Timeout_Conf {
+	return c.timeout
 }
 
 type Clusters map[string]*Cluster
@@ -137,4 +150,29 @@ func (c Clusters) Get(name string) *Cluster {
 
 func (c Clusters) Tags(name string) []Tags {
 	return c[name].Tags()
+}
+
+func (c Clusters) Lb(name string) *mesh_proto.TrafficRoute_LoadBalancer {
+	return c[name].lb
+}
+
+type NamedResource interface {
+	envoy_types.Resource
+	GetName() string
+}
+
+type TrafficDirection string
+
+const (
+	TrafficDirectionOutbound    TrafficDirection = "OUTBOUND"
+	TrafficDirectionInbound     TrafficDirection = "INBOUND"
+	TrafficDirectionUnspecified TrafficDirection = "UNSPECIFIED"
+)
+
+type StaticEndpointPath struct {
+	Path             string
+	ClusterName      string
+	RewritePath      string
+	Header           string
+	HeaderExactMatch string
 }

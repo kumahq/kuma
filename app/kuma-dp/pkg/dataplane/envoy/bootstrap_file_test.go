@@ -8,9 +8,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 )
 
@@ -35,18 +32,16 @@ var _ = Describe("Bootstrap File", func() {
 
 		It("should create Envoy bootstrap file on disk", func() {
 			// given
-			config := &envoy_bootstrap.Bootstrap{
-				Node: &envoy_core.Node{
-					Id: "example",
-				},
-			}
+			config := `node:
+  id: example
+`
 			// and
 			runtime := kuma_dp.DataplaneRuntime{
 				ConfigDir: configDir,
 			}
 
 			// when
-			filename, err := GenerateBootstrapFile(runtime, config)
+			filename, err := GenerateBootstrapFile(runtime, []byte(config))
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and

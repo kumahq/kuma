@@ -9,7 +9,7 @@ var TrafficLogWsDefinition = ResourceWsDefinition{
 	Name: "Traffic Logging",
 	Path: "traffic-logs",
 	ResourceFactory: func() model.Resource {
-		return &mesh.TrafficLogResource{}
+		return mesh.NewTrafficLogResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.TrafficLogResourceList{}

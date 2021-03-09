@@ -5,19 +5,13 @@
       "type": "Zone",
       "name": "zone-1",
       "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z",
-      "ingress": {
-        "address": "192.168.0.2:10000"
-      }
+      "modificationTime": "0001-01-01T00:00:00Z"
     },
     {
       "type": "Zone",
       "name": "zone-2",
       "creationTime": "0001-01-01T00:00:00Z",
-      "modificationTime": "0001-01-01T00:00:00Z",
-      "ingress": {
-        "address": "192.168.1.2:10000"
-      }
+      "modificationTime": "0001-01-01T00:00:00Z"
     }
   ],
   "next": null

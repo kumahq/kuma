@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kuma.system.v1alpha1;
 
-option go_package = "v1alpha1";
+option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 
 import "google/protobuf/wrappers.proto";
 
@@ -16,5 +16,7 @@ message DataSource {
     string file = 2;
     // Data source is inline bytes.
     google.protobuf.BytesValue inline = 3;
+    // Data source is inline string
+    string inlineString = 4;
   }
 }

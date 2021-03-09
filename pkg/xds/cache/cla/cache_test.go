@@ -9,6 +9,12 @@ import (
 	"sync"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
+	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
+	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 
@@ -48,9 +54,13 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 	var claCache *cla.Cache
 	var metrics core_metrics.Metrics
 
-	expiration := 500 * time.Millisecond
+	expiration := 2 * time.Second
 
 	BeforeEach(func() {
+		dataSourceLoader := datasource.NewDataSourceLoader(
+			secret_manager.NewSecretManager(
+				secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil))
+
 		s = memory.NewStore()
 		countingManager = &countingResourcesManager{store: s}
 		var err error
@@ -58,19 +68,20 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		metrics, err = core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 
-		claCache, err = cla.NewCache(countingManager, "", expiration, func(s string) ([]net.IP, error) {
-			return []net.IP{net.ParseIP(s)}, nil
-		}, metrics)
+		claCache, err = cla.NewCache(countingManager, dataSourceLoader, "", expiration,
+			func(s string) ([]net.IP, error) {
+				return []net.IP{net.ParseIP(s)}, nil
+			}, metrics)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	BeforeEach(func() {
 		mesh := "mesh-0"
-		err := s.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey(mesh, mesh))
+		err := s.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(mesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		err = s.Create(context.Background(), &core_mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
+			Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 					Port: 1010, ServicePort: 2020, Tags: map[string]string{"kuma.io/service": "backend"},
@@ -80,7 +91,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = s.Create(context.Background(), &core_mesh.DataplaneResource{
-			Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
+			Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
 				Address: "192.168.0.2",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
 					Port: 1011, ServicePort: 2021, Tags: map[string]string{"kuma.io/service": "backend"},
@@ -92,7 +103,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 	It("should cache Get() queries", func() {
 		By("getting CLA for the first time")
-		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "backend")
+		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
 		Expect(countingManager.listQueries).To(Equal(2))
@@ -105,13 +116,13 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		Expect(js).To(MatchJSON(string(expected)))
 
 		By("getting cached CLA")
-		_, err = claCache.GetCLA(context.Background(), "mesh-0", "backend")
+		_, err = claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
 		Expect(countingManager.listQueries).To(Equal(2))
 
 		By("updating Dataplane in store and waiting until cache invalidation")
-		dp := &core_mesh.DataplaneResource{}
+		dp := core_mesh.NewDataplaneResource()
 		err = s.Get(context.Background(), dp, core_store.GetByKey("dp2", "mesh-0"))
 		Expect(err).ToNot(HaveOccurred())
 		dp.Spec.Networking.Address = "1.1.1.1"
@@ -120,7 +131,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 		<-time.After(2 * time.Second)
 
-		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "backend")
+		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(2))
 		Expect(countingManager.listQueries).To(Equal(4))
@@ -137,7 +148,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		for i := 0; i < 100; i++ {
 			wg.Add(1)
 			go func() {
-				cla, err := claCache.GetCLA(context.Background(), "mesh-0", "backend")
+				cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
 				Expect(err).ToNot(HaveOccurred())
 
 				marshalled, err := json.Marshal(cla) // to imitate Read access to 'cla'

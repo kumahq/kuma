@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "v1alpha1";
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
@@ -57,6 +57,9 @@ message DiscoverySubscription {
   // Status of the ADS subscription.
   DiscoverySubscriptionStatus status = 5
       [ (validate.rules).message.required = true ];
+
+  // Version of Envoy and Kuma dataplane
+  Version version = 6;
 }
 
 // DiscoverySubscriptionStatus defines status of an ADS subscription.
@@ -92,4 +95,40 @@ message DiscoveryServiceStats {
 
   // Number of xDS responses NACKed by the Dataplane.
   uint64 responses_rejected = 3;
+}
+
+// Version defines version of Kuma Dataplane and Envoy
+message Version {
+
+  // Version of Kuma Dataplane
+  KumaDpVersion kumaDp = 1;
+
+  // Version of Envoy
+  EnvoyVersion envoy = 2;
+}
+
+// KumaDpVersion describes details of Kuma Dataplane version
+message KumaDpVersion {
+
+  // Version number of Kuma Dataplane
+  string version = 1;
+
+  // Git tag of Kuma Dataplane version
+  string gitTag = 2;
+
+  // Git commit of Kuma Dataplane version
+  string gitCommit = 3;
+
+  // Build date of Kuma Dataplane version
+  string buildDate = 4;
+}
+
+// EnvoyVersion describes details of Envoy version
+message EnvoyVersion {
+
+  // Version number of Envoy
+  string version = 1;
+
+  // Full build tag of Envoy version
+  string build = 2;
 }

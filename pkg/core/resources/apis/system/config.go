@@ -16,7 +16,13 @@ var _ model.Resource = &ConfigResource{}
 
 type ConfigResource struct {
 	Meta model.ResourceMeta
-	Spec config_proto.Config
+	Spec *config_proto.Config
+}
+
+func NewConfigResource() *ConfigResource {
+	return &ConfigResource{
+		Spec: &config_proto.Config{},
+	}
 }
 
 func (t *ConfigResource) GetType() model.ResourceType {
@@ -29,14 +35,14 @@ func (t *ConfigResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *ConfigResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *ConfigResource) SetSpec(spec model.ResourceSpec) error {
 	value, ok := spec.(*config_proto.Config)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *value
+		t.Spec = value
 		return nil
 	}
 }
@@ -44,7 +50,7 @@ func (t *ConfigResource) Validate() error {
 	return nil
 }
 func (t *ConfigResource) Scope() model.ResourceScope {
-	return model.ScopeMesh
+	return model.ScopeGlobal
 }
 
 var _ model.ResourceList = &ConfigResourceList{}
@@ -65,7 +71,7 @@ func (l *ConfigResourceList) GetItemType() model.ResourceType {
 	return ConfigType
 }
 func (l *ConfigResourceList) NewItem() model.Resource {
-	return &ConfigResource{}
+	return NewConfigResource()
 }
 func (l *ConfigResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ConfigResource); ok {
@@ -80,6 +86,6 @@ func (l *ConfigResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&ConfigResource{})
+	registry.RegisterType(NewConfigResource())
 	registry.RegistryListType(&ConfigResourceList{})
 }

@@ -9,7 +9,7 @@ var ZoneWsDefinition = ResourceWsDefinition{
 	Name: "Zone",
 	Path: "zones",
 	ResourceFactory: func() model.Resource {
-		return &system.ZoneResource{}
+		return system.NewZoneResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &system.ZoneResourceList{}

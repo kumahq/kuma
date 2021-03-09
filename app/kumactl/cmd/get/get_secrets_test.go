@@ -10,21 +10,18 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
-	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	"github.com/kumahq/kuma/pkg/catalog"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
 
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
+
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -42,7 +39,7 @@ var _ = Describe("kumactl get secrets", func() {
 					Mesh: "default",
 					Name: "sec-1",
 				},
-				Spec: system_proto.Secret{
+				Spec: &system_proto.Secret{
 					Data: &wrappers.BytesValue{
 						Value: []byte("test"),
 					},
@@ -53,7 +50,7 @@ var _ = Describe("kumactl get secrets", func() {
 					Mesh: "default",
 					Name: "sec-2",
 				},
-				Spec: system_proto.Secret{
+				Spec: &system_proto.Secret{
 					Data: &wrappers.BytesValue{
 						Value: []byte("test2"),
 					},
@@ -74,24 +71,13 @@ var _ = Describe("kumactl get secrets", func() {
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
 					Now: func() time.Time { return rootTime },
-					NewAdminResourceStore: func(string, *config_proto.Context_AdminApiCredentials) (core_store.ResourceStore, error) {
+					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
-					},
-					NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
-						return &test_catalog.StaticCatalogClient{
-							Resp: catalog.Catalog{
-								Apis: catalog.Apis{
-									DataplaneToken: catalog.DataplaneTokenApi{
-										LocalUrl: "http://localhost:1234",
-									},
-								},
-							},
-						}, nil
 					},
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, pt := range sampleSecrets {
 				key := core_model.ResourceKey{

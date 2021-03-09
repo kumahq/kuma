@@ -15,10 +15,10 @@ var _ = Describe("ExternalService", func() {
 	DescribeTable("should pass validation",
 		func(dpYAML string) {
 			// given
-			externalService := &core_mesh.ExternalServiceResource{}
+			externalService := core_mesh.NewExternalServiceResource()
 
 			// when
-			err := util_proto.FromYAML([]byte(dpYAML), &externalService.Spec)
+			err := util_proto.FromYAML([]byte(dpYAML), externalService.Spec)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -68,10 +68,10 @@ var _ = Describe("ExternalService", func() {
 	DescribeTable("should validate all fields and return as much individual errors as possible",
 		func(given testCase) {
 			// setup
-			externalService := core_mesh.ExternalServiceResource{}
+			externalService := core_mesh.NewExternalServiceResource()
 
 			// when
-			err := util_proto.FromYAML([]byte(given.dataplane), &externalService.Spec)
+			err := util_proto.FromYAML([]byte(given.dataplane), externalService.Spec)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
@@ -208,7 +208,7 @@ var _ = Describe("ExternalService", func() {
                 - field: tags["kuma.io/protocol"]
                   message: tag value cannot be empty
                 - field: tags["kuma.io/protocol"]
-                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: grpc, http, http2, tcp'
+                  message: 'tag "kuma.io/protocol" has an invalid value "". Allowed values: grpc, http, http2, kafka, tcp'
 `,
 		}),
 		Entry("tags: `protocol` tag with unsupported value", testCase{
@@ -224,7 +224,7 @@ var _ = Describe("ExternalService", func() {
 			expected: `
                 violations:
                 - field: tags["kuma.io/protocol"]
-                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: grpc, http, http2, tcp'`,
+                  message: 'tag "kuma.io/protocol" has an invalid value "not-yet-supported-protocol". Allowed values: grpc, http, http2, kafka, tcp'`,
 		}),
 		Entry("tags: tag name with invalid characters", testCase{
 			dataplane: `

@@ -37,7 +37,7 @@ var _ = Describe("DataSource Loader", func() {
 		It("should load secret", func() {
 			// given
 			secretResource := system.SecretResource{
-				Spec: system_proto.Secret{
+				Spec: &system_proto.Secret{
 					Data: &wrappers.BytesValue{
 						Value: []byte("abc"),
 					},
@@ -112,6 +112,21 @@ var _ = Describe("DataSource Loader", func() {
 					Inline: &wrappers.BytesValue{
 						Value: []byte("abc"),
 					},
+				},
+			})
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(data).To(Equal([]byte("abc")))
+		})
+	})
+
+	Context("Inline string", func() {
+		It("should load from inline string", func() {
+			// when
+			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
+				Type: &system_proto.DataSource_InlineString{
+					InlineString: "abc",
 				},
 			})
 

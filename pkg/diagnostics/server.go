@@ -18,7 +18,7 @@ var (
 )
 
 type diagnosticsServer struct {
-	port           int
+	port           uint32
 	metrics        metrics.Metrics
 	debugEndpoints bool
 }

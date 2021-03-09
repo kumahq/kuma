@@ -3,9 +3,10 @@ package controllers
 import (
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
 	"github.com/pkg/errors"
@@ -24,8 +25,10 @@ var (
 )
 
 type PodConverter struct {
-	ServiceGetter kube_client.Reader
-	Zone          string
+	ServiceGetter     kube_client.Reader
+	NodeGetter        kube_client.Reader
+	ResourceConverter k8s_common.Converter
+	Zone              string
 }
 
 func (p *PodConverter) PodToDataplane(
@@ -34,7 +37,7 @@ func (p *PodConverter) PodToDataplane(
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	vips dns.VIPList,
+	vips vips.List,
 ) error {
 	dataplane.Mesh = MeshFor(pod)
 	dataplaneProto, err := p.DataplaneFor(pod, services, externalServices, others, vips)
@@ -51,11 +54,15 @@ func (p *PodConverter) PodToDataplane(
 
 func (p *PodConverter) PodToIngress(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service) error {
 	dataplane.Mesh = MeshFor(pod)
-	ingressProto, err := p.IngressFor(pod, services)
-	if err != nil {
+	dataplaneProto := &mesh_proto.Dataplane{}
+	if err := util_proto.FromMap(dataplane.Spec, dataplaneProto); err != nil {
 		return err
 	}
-	spec, err := util_proto.ToMap(ingressProto)
+	// Pass the current dataplane so we won't override available services in Ingress section
+	if err := p.IngressFor(dataplaneProto, pod, services); err != nil {
+		return err
+	}
+	spec, err := util_proto.ToMap(dataplaneProto)
 	if err != nil {
 		return err
 	}
@@ -76,7 +83,7 @@ func (p *PodConverter) DataplaneFor(
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
-	vips dns.VIPList,
+	vips vips.List,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
@@ -152,24 +159,6 @@ func (p *PodConverter) DataplaneFor(
 	return dataplane, nil
 }
 
-func (p *PodConverter) IngressFor(pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane, error) {
-	ifaces, err := InboundInterfacesFor(p.Zone, pod, services)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not generate inbound interfaces")
-	}
-	if len(ifaces) != 1 {
-		return nil, errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
-	}
-
-	return &mesh_proto.Dataplane{
-		Networking: &mesh_proto.Dataplane_Networking{
-			Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
-			Address: pod.Status.PodIP,
-			Inbound: ifaces,
-		},
-	}, nil
-}
-
 func GatewayFor(clusterName string, pod *kube_core.Pod, services []*kube_core.Service) (*mesh_proto.Dataplane_Networking_Gateway, error) {
 	interfaces, err := InboundInterfacesFor(clusterName, pod, services)
 	if err != nil {
@@ -199,6 +188,6 @@ func MetricsFor(pod *kube_core.Pod) (*mesh_proto.MetricsBackend, error) {
 	}
 	return &mesh_proto.MetricsBackend{
 		Type: mesh_proto.MetricsPrometheusType,
-		Conf: &str,
+		Conf: str,
 	}, nil
 }

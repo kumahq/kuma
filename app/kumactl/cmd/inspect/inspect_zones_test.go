@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	system_core "github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
@@ -59,15 +61,12 @@ var _ = Describe("kumactl inspect zones", func() {
 		sampleZoneOverview = []*system_core.ZoneOverviewResource{
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:             "default",
 					Name:             "zone-1",
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
-				Spec: system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{
-						Ingress: &system_proto.Zone_Ingress{Address: "192.168.1.1:1000"},
-					},
+				Spec: &system_proto.ZoneOverview{
+					Zone: &system_proto.Zone{Enabled: &wrappers.BoolValue{Value: true}},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -126,6 +125,14 @@ var _ = Describe("kumactl inspect zones", func() {
 										},
 									},
 								},
+								Version: &system_proto.Version{
+									KumaCp: &system_proto.KumaCpVersion{
+										Version:   "1.0.0",
+										GitTag:    "v1.0.0",
+										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+										BuildDate: "2019-08-07T11:26:06Z",
+									},
+								},
 							},
 							{
 								Id:               "2",
@@ -137,6 +144,14 @@ var _ = Describe("kumactl inspect zones", func() {
 										ResponsesRejected: 2,
 									},
 								},
+								Version: &system_proto.Version{
+									KumaCp: &system_proto.KumaCpVersion{
+										Version:   "1.0.0",
+										GitTag:    "v1.0.0",
+										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+										BuildDate: "2019-08-07T11:26:06Z",
+									},
+								},
 							},
 						},
 					},
@@ -144,15 +159,12 @@ var _ = Describe("kumactl inspect zones", func() {
 			},
 			{
 				Meta: &test_model.ResourceMeta{
-					Mesh:             "default",
 					Name:             "zone-2",
 					CreationTime:     t1,
 					ModificationTime: now,
 				},
-				Spec: system_proto.ZoneOverview{
-					Zone: &system_proto.Zone{
-						Ingress: &system_proto.Zone_Ingress{Address: "192.168.1.2:1000"},
-					},
+				Spec: &system_proto.ZoneOverview{
+					Zone: &system_proto.Zone{Enabled: &wrappers.BoolValue{Value: true}},
 					ZoneInsight: &system_proto.ZoneInsight{
 						Subscriptions: []*system_proto.KDSSubscription{
 							{
@@ -171,10 +183,37 @@ var _ = Describe("kumactl inspect zones", func() {
 					},
 				},
 			},
+			{
+				Meta: &test_model.ResourceMeta{
+					Name:             "zone-3",
+					CreationTime:     t1,
+					ModificationTime: now,
+				},
+				Spec: &system_proto.ZoneOverview{
+					Zone: &system_proto.Zone{Enabled: &wrappers.BoolValue{Value: false}},
+					ZoneInsight: &system_proto.ZoneInsight{
+						Subscriptions: []*system_proto.KDSSubscription{
+							{
+								Id:               "1",
+								GlobalInstanceId: "node-001",
+								ConnectTime:      util_proto.MustTimestampProto(t2),
+								Version: &system_proto.Version{
+									KumaCp: &system_proto.KumaCpVersion{
+										Version:   "1.0.0",
+										GitTag:    "v1.0.0",
+										GitCommit: "91ce236824a9d875601679aa80c63783fb0e8725",
+										BuildDate: "2019-08-07T11:26:06Z",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
 		}
 	})
 
-	Describe("InspectDataplanesCmd", func() {
+	Describe("InspectZonesCmd", func() {
 
 		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command

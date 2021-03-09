@@ -2,6 +2,7 @@ package dns
 
 import (
 	"net"
+	"strings"
 
 	"github.com/Nordix/simple-ipam/pkg/ipam"
 )
@@ -9,6 +10,11 @@ import (
 type IPAM interface {
 	AllocateIP() (string, error)
 	FreeIP(ip string) error
+	ReserveIP(ip string) error
+}
+
+func IsAddressAlreadyAllocated(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "Address already allocated")
 }
 
 type SimpleIPAM struct {
@@ -38,11 +44,15 @@ func (i *SimpleIPAM) FreeIP(ip string) error {
 
 	// ensure the IP is reserved before deleting it
 	err := i.Reserve(parsedIP)
-	if err != nil && err.Error() != "Address already allocated" {
+	if err != nil && !IsAddressAlreadyAllocated(err) {
 		return err
 	}
 
 	i.Free(parsedIP)
 
 	return nil
+}
+
+func (i *SimpleIPAM) ReserveIP(ip string) error {
+	return i.Reserve(net.ParseIP(ip))
 }

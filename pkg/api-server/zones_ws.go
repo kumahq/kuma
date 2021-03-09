@@ -7,15 +7,12 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 )
 
 type Zone struct {
-	Name    string `json:"name"`
-	Address string `json:"url"`
-	Active  bool   `json:"active"`
+	Name   string `json:"name"`
+	Active bool   `json:"active"`
 }
 
 type Zones []Zone
@@ -37,13 +34,13 @@ func zonesWs(resManager manager.ResourceManager) *restful.WebService {
 
 func fetchOverviews(resManager manager.ResourceManager, ctx context.Context) (system.ZoneOverviewResourceList, error) {
 	zones := system.ZoneResourceList{}
-	if err := resManager.List(ctx, &zones, store.ListByMesh(core_model.DefaultMesh)); err != nil {
+	if err := resManager.List(ctx, &zones); err != nil {
 		return system.ZoneOverviewResourceList{}, err
 	}
 
 	// we cannot paginate insights since there is no guarantee that the elements will be the same as dataplanes
 	insights := system.ZoneInsightResourceList{}
-	if err := resManager.List(ctx, &insights, store.ListByMesh(core_model.DefaultMesh)); err != nil {
+	if err := resManager.List(ctx, &insights); err != nil {
 		return system.ZoneOverviewResourceList{}, err
 	}
 
@@ -54,9 +51,8 @@ func toZones(rlist system.ZoneOverviewResourceList) Zones {
 	var zones Zones
 	for _, overview := range rlist.Items {
 		zones = append(zones, Zone{
-			Name:    overview.GetMeta().GetName(),
-			Address: overview.Spec.Zone.Ingress.Address,
-			Active:  overview.Spec.ZoneInsight.IsOnline(),
+			Name:   overview.GetMeta().GetName(),
+			Active: overview.Spec.GetZoneInsight().IsOnline() && overview.Spec.GetZone().IsEnabled(),
 		})
 	}
 	return zones

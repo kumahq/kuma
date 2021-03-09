@@ -13,8 +13,8 @@ PROTOC_GO := protoc \
 	--proto_path=./api \
 	--proto_path=. \
 	$(protoc_search_go_paths) \
-	--go_out=plugins=grpc,Msystem/v1alpha1/datasource.proto=github.com/kumahq/kuma/api/system/v1alpha1:. \
-	--validate_out=lang=go:.
+	--go_opt=paths=source_relative \
+	--go_out=plugins=grpc,Msystem/v1alpha1/datasource.proto=github.com/kumahq/kuma/api/system/v1alpha1:.
 
 .PHONY: clean/proto
 clean/proto: ## Dev: Remove auto-generated Protobuf files
@@ -52,13 +52,32 @@ generate/kumactl/install/k8s/metrics:
 generate/kumactl/install/k8s/tracing:
 	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/tracing/...
 
+# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
+.PHONY: generate/kumactl/install/k8s/logging
+generate/kumactl/install/k8s/logging:
+	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/logging/...
+
 .PHONY: generate/kuma-cp/migrations
 generate/kuma-cp/migrations:
 	GOFLAGS='${GOFLAGS}' go generate ./pkg/plugins/resources/postgres/migrations/...
 
+KUMA_GUI_GIT=https://github.com/kumahq/kuma-gui.git
+KUMA_GUI_VERSION=master
+KUMA_GUI_FOLDER=app/kuma-ui/data/resources
+KUMA_GUI_WORK_FOLDER=app/kuma-ui/data/work
+
 .PHONY: generate/gui
 generate/gui: ## Generate gGOFLAGSo files with GUI static files to embed it into binary
 	GOFLAGS='${GOFLAGS}' go generate ./app/kuma-ui/pkg/resources/...
+
+.PHONY: upgrade/gui
+upgrade/gui:
+	rm -rf $(KUMA_GUI_WORK_FOLDER); \
+	git clone --depth 1 -b $(KUMA_GUI_VERSION) https://github.com/kumahq/kuma-gui.git $(KUMA_GUI_WORK_FOLDER); \
+	pushd $(KUMA_GUI_WORK_FOLDER) && yarn install && yarn build && popd; \
+	rm -rf $(KUMA_GUI_FOLDER) && mv $(KUMA_GUI_WORK_FOLDER)/dist/ $(KUMA_GUI_FOLDER); \
+	rm -rf $(KUMA_GUI_WORK_FOLDER); \
+	$(MAKE) generate/gui
 
 .PHONY: generate/envoy-imports
 generate/envoy-imports:

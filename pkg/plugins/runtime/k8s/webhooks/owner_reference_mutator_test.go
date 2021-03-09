@@ -15,7 +15,6 @@ import (
 	kube_admission "sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -29,7 +28,6 @@ var _ = Describe("OwnerReferenceMutator", func() {
 			Client:       k8sClient,
 			CoreRegistry: core_registry.Global(),
 			K8sRegistry:  k8s_registry.Global(),
-			Converter:    k8s.DefaultConverter(),
 			Decoder:      decoder,
 			Scheme:       scheme,
 		}
@@ -118,6 +116,19 @@ var _ = Describe("OwnerReferenceMutator", func() {
               }
             }`,
 			expectedMessage: `meshes.kuma.io "not-existing-mesh" not found`,
+		}),
+		Entry("should return error message if mesh is not present", testCase{
+			inputObject: `
+            {
+              "apiVersion": "kuma.io/v1alpha1",
+              "kind": "TrafficRoute",
+              "metadata": {
+                "namespace": "example",
+                "name": "empty",
+                "creationTimestamp": null
+              }
+            }`,
+			expectedMessage: `mesh: cannot be empty`,
 		}),
 	)
 

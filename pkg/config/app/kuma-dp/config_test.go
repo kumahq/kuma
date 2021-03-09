@@ -27,7 +27,7 @@ var _ = Describe("Config", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(cfg.ControlPlane.ApiServer.URL).To(Equal("https://kuma-control-plane.internal:5682"))
+		Expect(cfg.ControlPlane.URL).To(Equal("https://kuma-control-plane.internal:5682"))
 		Expect(cfg.Dataplane.AdminPort).To(Equal(config_types.MustExactPort(2345)))
 		Expect(cfg.Dataplane.DrainTime).To(Equal(60 * time.Second))
 	})
@@ -51,9 +51,9 @@ var _ = Describe("Config", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KUMA_CONTROL_PLANE_API_SERVER_URL":                      "https://kuma-control-plane.internal:5682",
-				"KUMA_CONTROL_PLANE_API_SERVER_RETRY_BACKOFF":            "1s",
-				"KUMA_CONTROL_PLANE_API_SERVER_RETRY_MAX_DURATION":       "10s",
+				"KUMA_CONTROL_PLANE_URL":                                 "https://kuma-control-plane.internal:5682",
+				"KUMA_CONTROL_PLANE_RETRY_BACKOFF":                       "1s",
+				"KUMA_CONTROL_PLANE_RETRY_MAX_DURATION":                  "10s",
 				"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_RETRY_BACKOFF":      "2s",
 				"KUMA_CONTROL_PLANE_BOOTSTRAP_SERVER_RETRY_MAX_DURATION": "11s",
 				"KUMA_DATAPLANE_MESH":                                    "demo",
@@ -78,11 +78,9 @@ var _ = Describe("Config", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(cfg.ControlPlane.ApiServer.URL).To(Equal("https://kuma-control-plane.internal:5682"))
-			Expect(cfg.ControlPlane.ApiServer.Retry.Backoff).To(Equal(1 * time.Second))
-			Expect(cfg.ControlPlane.ApiServer.Retry.MaxDuration).To(Equal(10 * time.Second))
-			Expect(cfg.ControlPlane.BootstrapServer.Retry.Backoff).To(Equal(2 * time.Second))
-			Expect(cfg.ControlPlane.BootstrapServer.Retry.MaxDuration).To(Equal(11 * time.Second))
+			Expect(cfg.ControlPlane.URL).To(Equal("https://kuma-control-plane.internal:5682"))
+			Expect(cfg.ControlPlane.Retry.Backoff).To(Equal(1 * time.Second))
+			Expect(cfg.ControlPlane.Retry.MaxDuration).To(Equal(10 * time.Second))
 			Expect(cfg.Dataplane.Mesh).To(Equal("demo"))
 			Expect(cfg.Dataplane.Name).To(Equal("example"))
 			Expect(cfg.Dataplane.AdminPort).To(Equal(config_types.MustExactPort(2345)))
@@ -118,6 +116,6 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err.Error()).To(Equal(`Invalid configuration: .ControlPlane is not valid: .ApiServer is not valid: .URL must be a valid absolute URI; .Retry is not valid: .Backoff must be a positive duration; .BootstrapServer is not valid: .Retry is not valid: .Backoff must be a positive duration; .Dataplane is not valid: .Mesh must be non-empty; .Name must be non-empty; .DrainTime must be positive; .DataplaneRuntime is not valid: .BinaryPath must be non-empty`))
+		Expect(err.Error()).To(Equal(`Invalid configuration: .ControlPlane is not valid: .Retry is not valid: .Backoff must be a positive duration; .Dataplane is not valid: .Mesh must be non-empty; .Name must be non-empty; .DrainTime must be positive; .DataplaneRuntime is not valid: .BinaryPath must be non-empty`))
 	})
 })

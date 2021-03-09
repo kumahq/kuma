@@ -1,7 +1,6 @@
 package xds_test
 
 import (
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	kuma_xds "github.com/kumahq/kuma/pkg/config/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 )
 
 var _ = Describe("XdsServerConfig", func() {
@@ -26,7 +26,6 @@ var _ = Describe("XdsServerConfig", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		Expect(cfg.DiagnosticsPort).To(Equal(3456))
 		Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
 		Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
 	})
@@ -50,7 +49,6 @@ var _ = Describe("XdsServerConfig", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KUMA_XDS_SERVER_DIAGNOSTICS_PORT":                         "3456",
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL": "3s",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":          "5s",
 			}
@@ -68,7 +66,6 @@ var _ = Describe("XdsServerConfig", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(cfg.DiagnosticsPort).To(Equal(3456))
 			Expect(cfg.DataplaneConfigurationRefreshInterval).To(Equal(3 * time.Second))
 			Expect(cfg.DataplaneStatusFlushInterval).To(Equal(5 * time.Second))
 		})
@@ -80,15 +77,10 @@ var _ = Describe("XdsServerConfig", func() {
 
 		// when
 		actual, err := config.ToYAML(cfg)
-		// then
-		Expect(err).ToNot(HaveOccurred())
 
-		// when
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(actual).To(MatchYAML(expected))
+		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "default-config.golden.yaml")))
 	})
 
 	It("should have validators", func() {

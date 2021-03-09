@@ -2,14 +2,10 @@ package generator_test
 
 import (
 	"context"
-	"io/ioutil"
 	"path/filepath"
 	"time"
 
-	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
-
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints"
-
+	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -18,9 +14,14 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	"github.com/kumahq/kuma/pkg/test/runtime"
+	"github.com/kumahq/kuma/pkg/tls"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -28,17 +29,19 @@ type dummyCLACache struct {
 	outboundTargets model.EndpointMap
 }
 
-func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, service string) (*envoy_api_v2.ClusterLoadAssignment, error) {
+func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash, service string, version envoy_common.APIVersion) (proto.Message, error) {
 	return endpoints.CreateClusterLoadAssignment(service, d.outboundTargets[service]), nil
 }
+
+var _ model.CLACache = &dummyCLACache{}
 
 var _ = Describe("ProxyTemplateProfileSource", func() {
 
 	type testCase struct {
-		mesh            string
-		dataplane       string
-		profile         string
-		envoyConfigFile string
+		mesh      string
+		dataplane string
+		profile   string
+		expected  string
 	}
 
 	DescribeTable("Generate Envoy xDS resources",
@@ -49,25 +52,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			}
 
 			// given
-			ctx := xds_context.Context{
-				ControlPlane: &xds_context.ControlPlaneContext{
-					SdsLocation: "kuma-system:5677",
-					SdsTlsCert:  []byte("12345"),
-				},
-				Mesh: xds_context.MeshContext{
-					Resource: &mesh_core.MeshResource{
-						Meta: &test_model.ResourceMeta{
-							Name: "demo",
-						},
-					},
-				},
-			}
-
-			Expect(util_proto.FromYAML([]byte(given.mesh), &ctx.Mesh.Resource.Spec)).To(Succeed())
-
-			dataplane := mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
-
 			outboundTargets := model.EndpointMap{
 				"db": []model.Endpoint{
 					{
@@ -86,6 +70,33 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 				},
 			}
+			ctx := xds_context.Context{
+				ConnectionInfo: xds_context.ConnectionInfo{
+					Authority: "kuma-system:5677",
+				},
+				ControlPlane: &xds_context.ControlPlaneContext{
+					SdsTlsCert: []byte("12345"),
+					AdminProxyKeyPair: &tls.KeyPair{
+						CertPEM: []byte("LS0=="),
+						KeyPEM:  []byte("LS0=="),
+					},
+					CLACache: &dummyCLACache{outboundTargets: outboundTargets},
+				},
+				Mesh: xds_context.MeshContext{
+					Resource: &mesh_core.MeshResource{
+						Meta: &test_model.ResourceMeta{
+							Name: "demo",
+						},
+						Spec: &mesh_proto.Mesh{},
+					},
+				},
+				EnvoyAdminClient: &runtime.DummyEnvoyAdminClient{},
+			}
+
+			Expect(util_proto.FromYAML([]byte(given.mesh), ctx.Mesh.Resource.Spec)).To(Succeed())
+
+			dataplane := &mesh_proto.Dataplane{}
+			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			proxy := &model.Proxy{
 				Id: model.ProxyId{Name: "demo.backend-01"},
@@ -97,45 +108,58 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 					},
 					Spec: dataplane,
 				},
-				TrafficRoutes: model.RouteMap{
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 54321,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("db"),
-							}},
+				APIVersion: envoy_common.APIV3,
+				Routing: model.Routing{
+					TrafficRoutes: model.RouteMap{
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 54321,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{
+										{
+											Weight:      100,
+											Destination: mesh_proto.MatchService("db"),
+										},
+									},
+								},
+							},
+						},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 59200,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{
+										{
+											Weight:      100,
+											Destination: mesh_proto.MatchService("elastic"),
+										},
+									},
+								},
+							},
 						},
 					},
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 59200,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("elastic"),
-							}},
-						},
-					},
+					OutboundTargets: outboundTargets,
 				},
-				OutboundTargets: outboundTargets,
-				HealthChecks: model.HealthCheckMap{
-					"elastic": &mesh_core.HealthCheckResource{
-						Spec: mesh_proto.HealthCheck{
-							Sources: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
-							},
-							Destinations: []*mesh_proto.Selector{
-								{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
-							},
-							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
-								UnhealthyThreshold: 3,
-								HealthyThreshold:   2,
+				Policies: model.MatchedPolicies{
+					HealthChecks: model.HealthCheckMap{
+						"elastic": &mesh_core.HealthCheckResource{
+							Spec: &mesh_proto.HealthCheck{
+								Sources: []*mesh_proto.Selector{
+									{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
+								},
+								Destinations: []*mesh_proto.Selector{
+									{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
+								},
+								Conf: &mesh_proto.HealthCheck_Conf{
+									Interval:           ptypes.DurationProto(5 * time.Second),
+									Timeout:            ptypes.DurationProto(4 * time.Second),
+									UnhealthyThreshold: 3,
+									HealthyThreshold:   2,
+								},
 							},
 						},
 					},
@@ -143,7 +167,6 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				Metadata: &model.DataplaneMetadata{
 					AdminPort: 9902,
 				},
-				CLACache: &dummyCLACache{outboundTargets: outboundTargets},
 			}
 
 			// when
@@ -161,9 +184,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "profile-source", given.envoyConfigFile))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "profile-source", given.expected)))
 		},
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false", testCase{
 			mesh: `
@@ -187,8 +209,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - port: 59200
                 service: elastic
 `,
-			profile:         mesh_core.ProfileDefaultProxy,
-			envoyConfigFile: "1-envoy-config.golden.yaml",
+			profile:  mesh_core.ProfileDefaultProxy,
+			expected: "1-envoy-config.golden.yaml",
 		}),
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true", testCase{
 			mesh: `
@@ -215,8 +237,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006
 `,
-			profile:         mesh_core.ProfileDefaultProxy,
-			envoyConfigFile: "2-envoy-config.golden.yaml",
+			profile:  mesh_core.ProfileDefaultProxy,
+			expected: "2-envoy-config.golden.yaml",
 		}),
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=false; prometheus_metrics=true", testCase{
 			mesh: `
@@ -250,8 +272,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
               - port: 59200
                 service: elastic
 `,
-			profile:         mesh_core.ProfileDefaultProxy,
-			envoyConfigFile: "3-envoy-config.golden.yaml",
+			profile:  mesh_core.ProfileDefaultProxy,
+			expected: "3-envoy-config.golden.yaml",
 		}),
 		Entry("should support pre-defined `default-proxy` profile; transparent_proxying=true; prometheus_metrics=true", testCase{
 			mesh: `
@@ -288,8 +310,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
                 redirectPortOutbound: 15001
                 redirectPortInbound: 15006
 `,
-			profile:         mesh_core.ProfileDefaultProxy,
-			envoyConfigFile: "4-envoy-config.golden.yaml",
+			profile:  mesh_core.ProfileDefaultProxy,
+			expected: "4-envoy-config.golden.yaml",
 		}),
 	)
 })

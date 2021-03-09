@@ -9,7 +9,7 @@ var FaultInjectionWsDefinition = ResourceWsDefinition{
 	Name: "Fault Injection",
 	Path: "fault-injections",
 	ResourceFactory: func() model.Resource {
-		return &mesh.FaultInjectionResource{}
+		return mesh.NewFaultInjectionResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.FaultInjectionResourceList{}

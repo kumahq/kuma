@@ -7,11 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/events"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
@@ -80,12 +77,19 @@ func (v memoryVersion) String() string {
 var _ store.ResourceStore = &memoryStore{}
 
 type memoryStore struct {
-	records memoryStoreRecords
-	mu      sync.RWMutex
+	records     memoryStoreRecords
+	mu          sync.RWMutex
+	eventWriter events.Emitter
 }
 
 func NewStore() store.ResourceStore {
 	return &memoryStore{}
+}
+
+func (c *memoryStore) SetEventWriter(writer events.Emitter) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.eventWriter = writer
 }
 
 func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.CreateOptionsFunc) error {
@@ -93,12 +97,6 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 	defer c.mu.Unlock()
 
 	opts := store.NewCreateOptions(fs...)
-	switch r.GetType() {
-	case mesh.MeshType:
-		opts.Mesh = opts.Name
-	case system.ZoneType:
-		opts.Mesh = "default"
-	}
 	// Name must be provided via CreateOptions
 	if _, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh); record != nil {
 		return store.ErrorResourceAlreadyExists(r.GetType(), opts.Name, opts.Mesh)
@@ -134,6 +132,13 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 
 	// persist
 	c.records = append(c.records, record)
+	if c.eventWriter != nil {
+		c.eventWriter.Send(events.ResourceChangedEvent{
+			Operation: events.Create,
+			Type:      r.GetType(),
+			Key:       model.MetaToResourceKey(r.GetMeta()),
+		})
+	}
 	return nil
 }
 func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
@@ -168,6 +173,13 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 	c.records[idx] = record
 
 	r.SetMeta(meta)
+	if c.eventWriter != nil {
+		c.eventWriter.Send(events.ResourceChangedEvent{
+			Operation: events.Update,
+			Type:      r.GetType(),
+			Key:       model.MetaToResourceKey(r.GetMeta()),
+		})
+	}
 	return nil
 }
 func (c *memoryStore) Delete(ctx context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
@@ -206,6 +218,16 @@ func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.
 		}
 	}
 	c.records = append(c.records[:idx], c.records[idx+1:]...)
+	if c.eventWriter != nil {
+		c.eventWriter.Send(events.ResourceChangedEvent{
+			Operation: events.Delete,
+			Type:      r.GetType(),
+			Key: model.ResourceKey{
+				Mesh: opts.Mesh,
+				Name: opts.Name,
+			},
+		})
+	}
 	return nil
 }
 
@@ -214,12 +236,6 @@ func (c *memoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOp
 	defer c.mu.RUnlock()
 
 	opts := store.NewGetOptions(fs...)
-	switch r.GetType() {
-	case mesh.MeshType:
-		opts.Mesh = opts.Name
-	case system.ZoneType:
-		opts.Mesh = "default"
-	}
 	// Name must be provided via GetOptions
 	_, record := c.findRecord(string(r.GetType()), opts.Name, opts.Mesh)
 	if record == nil {
@@ -238,34 +254,12 @@ func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store
 
 	records := c.findRecords(string(rs.GetItemType()), opts.Mesh)
 
-	offset := 0
-	pageSize := len(records)
-	paginateResults := opts.PageSize != 0
-	if paginateResults {
-		pageSize = opts.PageSize
-		if opts.PageOffset != "" {
-			o, err := strconv.Atoi(opts.PageOffset)
-			if err != nil {
-				return store.ErrorInvalidOffset
-			}
-			offset = o
-		}
-	}
-
-	for i := offset; i < offset+pageSize && i < len(records); i++ {
+	for i := 0; i < len(records); i++ {
 		r := rs.NewItem()
 		if err := c.unmarshalRecord(records[i], r); err != nil {
 			return err
 		}
 		_ = rs.AddItem(r)
-	}
-
-	if paginateResults {
-		nextOffset := ""
-		if offset+pageSize < len(records) { // set new offset only if we did not reach the end of the collection
-			nextOffset = strconv.Itoa(offset + opts.PageSize)
-		}
-		rs.GetPagination().SetNextOffset(nextOffset)
 	}
 
 	rs.GetPagination().SetTotal(uint32(len(records)))

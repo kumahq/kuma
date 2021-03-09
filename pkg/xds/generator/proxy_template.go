@@ -34,7 +34,7 @@ func (g *ProxyTemplateGenerator) Generate(ctx xds_context.Context, proxy *model.
 	} else {
 		resources.AddSet(rs)
 	}
-	if err := modifications.Apply(resources, g.ProxyTemplate.GetConf().GetModifications()); err != nil {
+	if err := modifications.Apply(resources, g.ProxyTemplate.GetConf().GetModifications(), proxy.APIVersion); err != nil {
 		return nil, errors.Wrap(err, "could not apply modifications")
 	}
 	return resources, nil
@@ -68,6 +68,7 @@ var predefinedProfiles = make(map[string]ResourceGenerator)
 
 func NewDefaultProxyProfile() ResourceGenerator {
 	return CompositeResourceGenerator{
+		AdminProxyGenerator{},
 		PrometheusEndpointGenerator{},
 		TransparentProxyGenerator{},
 		InboundProxyGenerator{},
@@ -79,8 +80,12 @@ func NewDefaultProxyProfile() ResourceGenerator {
 }
 
 func init() {
-	predefinedProfiles[mesh_core.ProfileDefaultProxy] = NewDefaultProxyProfile()
-	predefinedProfiles[IngressProxy] = &IngressGenerator{}
+	RegisterProfile(mesh_core.ProfileDefaultProxy, NewDefaultProxyProfile())
+	RegisterProfile(IngressProxy, CompositeResourceGenerator{AdminProxyGenerator{}, IngressGenerator{}})
+}
+
+func RegisterProfile(profileName string, generator ResourceGenerator) {
+	predefinedProfiles[profileName] = generator
 }
 
 type ProxyTemplateProfileSource struct {

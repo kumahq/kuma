@@ -39,7 +39,7 @@ var _ = Describe("kumactl get external-services", func() {
 					Mesh: "default",
 					Name: "experiment",
 				},
-				Spec: mesh_proto.ExternalService{
+				Spec: &mesh_proto.ExternalService{
 					Networking: &mesh_proto.ExternalService_Networking{
 						Address: "127.0.0.1",
 					},
@@ -54,7 +54,7 @@ var _ = Describe("kumactl get external-services", func() {
 					Mesh: "default",
 					Name: "example",
 				},
-				Spec: mesh_proto.ExternalService{
+				Spec: &mesh_proto.ExternalService{
 					Networking: &mesh_proto.ExternalService_Networking{
 						Address: "127.0.0.2",
 					},
@@ -86,7 +86,7 @@ var _ = Describe("kumactl get external-services", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			for _, pt := range externalServices {
 				key := core_model.ResourceKey{

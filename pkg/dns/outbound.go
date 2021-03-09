@@ -3,7 +3,11 @@ package dns
 import (
 	"sort"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/dns/vips"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -12,26 +16,29 @@ import (
 const VIPListenPort = uint32(80)
 
 func VIPOutbounds(
-	name string,
+	resourceKey model.ResourceKey,
 	dataplanes []*core_mesh.DataplaneResource,
-	vips VIPList,
+	vips vips.List,
 	externalServices []*core_mesh.ExternalServiceResource,
 ) []*mesh_proto.Dataplane_Networking_Outbound {
 	serviceVIPMap := map[string]string{}
 	services := []string{}
 	for _, dataplane := range dataplanes {
-		if dataplane.Meta.GetName() == name {
+		if resourceKey == model.MetaToResourceKey(dataplane.Meta) {
 			continue
 		}
 
 		if dataplane.Spec.IsIngress() {
 			for _, service := range dataplane.Spec.Networking.Ingress.AvailableServices {
-				inService := service.Tags[mesh_proto.ServiceTag]
-				if _, found := serviceVIPMap[inService]; !found {
-					vip, err := ForwardLookup(vips, inService)
-					if err == nil {
-						serviceVIPMap[inService] = vip
-						services = append(services, inService)
+				if service.Mesh == resourceKey.Mesh {
+					// Only add outbounds for services in the same mesh
+					inService := service.Tags[mesh_proto.ServiceTag]
+					if _, found := serviceVIPMap[inService]; !found {
+						vip, err := ForwardLookup(vips, inService)
+						if err == nil {
+							serviceVIPMap[inService] = vip
+							services = append(services, inService)
+						}
 					}
 				}
 			}
@@ -76,7 +83,7 @@ func VIPOutbounds(
 	return outbounds
 }
 
-func ForwardLookup(vips VIPList, service string) (string, error) {
+func ForwardLookup(vips vips.List, service string) (string, error) {
 	ip, found := vips[service]
 	if !found {
 		return "", errors.Errorf("service [%s] not found", service)

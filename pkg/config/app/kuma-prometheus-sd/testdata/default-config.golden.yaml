@@ -1,8 +1,6 @@
-controlPlane:
-  apiServer:
-    url: http://localhost:5681
 monitoringAssignment:
   client:
     name: kuma_sd
+    url: grpc://localhost:5676
 prometheus:
   outputFile: kuma.file_sd.json

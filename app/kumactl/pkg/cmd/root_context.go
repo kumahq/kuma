@@ -1,20 +1,19 @@
 package cmd
 
 import (
-	"fmt"
-	"net"
-	"net/url"
 	"time"
 
 	"github.com/pkg/errors"
 
+	get_context "github.com/kumahq/kuma/app/kumactl/cmd/get/context"
+	inspect_context "github.com/kumahq/kuma/app/kumactl/cmd/inspect/context"
+	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
-	"github.com/kumahq/kuma/pkg/catalog"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
-	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	util_files "github.com/kumahq/kuma/pkg/util/files"
@@ -29,17 +28,30 @@ type RootRuntime struct {
 	Config                     config_proto.Configuration
 	Now                        func() time.Time
 	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
-	NewAdminResourceStore      func(string, *kumactl_config.Context_AdminApiCredentials) (core_store.ResourceStore, error)
 	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
 	NewZoneOverviewClient      func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ZoneOverviewClient, error)
-	NewDataplaneTokenClient    func(string, *kumactl_config.Context_AdminApiCredentials) (tokens.DataplaneTokenClient, error)
-	NewCatalogClient           func(string) (catalog_client.CatalogClient, error)
+	NewServiceOverviewClient   func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ServiceOverviewClient, error)
+	NewDataplaneTokenClient    func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error)
 	NewAPIServerClient         func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
 }
 
+// RootContext contains variables, functions and components that can be overridden when extending kumactl or running the test.
+// Example:
+//
+// rootCtx := kumactl_cmd.DefaultRootContext()
+// rootCtx.InstallCpContext.Args.ControlPlane_image_tag = "0.0.1"
+// rootCmd := cmd.NewRootCmd(rootCtx)
+// err := rootCmd.Execute()
 type RootContext struct {
-	Args    RootArgs
-	Runtime RootRuntime
+	TypeArgs              map[string]core_model.ResourceType
+	Args                  RootArgs
+	Runtime               RootRuntime
+	GetContext            get_context.GetContext
+	ListContext           get_context.ListContext
+	InspectContext        inspect_context.InspectContext
+	InstallCpContext      install_context.InstallCpContext
+	InstallMetricsContext install_context.InstallMetricsContext
+	InstallCRDContext     install_context.InstallCrdsContext
 }
 
 func DefaultRootContext() *RootContext {
@@ -47,14 +59,44 @@ func DefaultRootContext() *RootContext {
 		Runtime: RootRuntime{
 			Now:                        time.Now,
 			NewResourceStore:           kumactl_resources.NewResourceStore,
-			NewAdminResourceStore:      kumactl_resources.NewAdminResourceStore,
 			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
 			NewZoneOverviewClient:      kumactl_resources.NewZoneOverviewClient,
+			NewServiceOverviewClient:   kumactl_resources.NewServiceOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
-			NewCatalogClient:           catalog_client.NewCatalogClient,
 			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
 		},
+		TypeArgs: map[string]core_model.ResourceType{
+			"mesh":               core_mesh.MeshType,
+			"dataplane":          core_mesh.DataplaneType,
+			"externalservice":    core_mesh.ExternalServiceType,
+			"healthcheck":        core_mesh.HealthCheckType,
+			"proxytemplate":      core_mesh.ProxyTemplateType,
+			"traffic-log":        core_mesh.TrafficLogType,
+			"traffic-permission": core_mesh.TrafficPermissionType,
+			"traffic-route":      core_mesh.TrafficRouteType,
+			"traffic-trace":      core_mesh.TrafficTraceType,
+			"fault-injection":    core_mesh.FaultInjectionType,
+			"circuit-breaker":    core_mesh.CircuitBreakerType,
+			"retry":              core_mesh.RetryType,
+			"secret":             system.SecretType,
+			"global-secret":      system.GlobalSecretType,
+			"zone":               system.ZoneType,
+		},
+		InstallCpContext:      install_context.DefaultInstallCpContext(),
+		InstallCRDContext:     install_context.DefaultInstallCrdsContext(),
+		InstallMetricsContext: install_context.DefaultInstallMetricsContext(),
 	}
+}
+
+func (rc *RootContext) TypeForArg(arg string) (core_model.ResourceType, error) {
+	typ, ok := rc.TypeArgs[arg]
+	if !ok {
+		return "", errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, "+
+			"healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, "+
+			"traffic-trace, fault-injection, circuit-breaker, retry, secret, zone",
+			arg)
+	}
+	return typ, nil
 }
 
 func (rc *RootContext) LoadConfig() error {
@@ -115,23 +157,6 @@ func (rc *RootContext) CurrentResourceStore() (core_store.ResourceStore, error) 
 	return rs, nil
 }
 
-func (rc *RootContext) CurrentAdminResourceStore() (core_store.ResourceStore, error) {
-	ctx, err := rc.CurrentContext()
-	if err != nil {
-		return nil, err
-	}
-
-	adminServerUrl, err := rc.adminServerUrl()
-	if err != nil {
-		return nil, err
-	}
-	rs, err := rc.Runtime.NewAdminResourceStore(adminServerUrl, ctx.GetCredentials().GetAdminApi())
-	if err != nil {
-		return nil, err
-	}
-	return rs, nil
-}
-
 func (rc *RootContext) CurrentDataplaneOverviewClient() (kumactl_resources.DataplaneOverviewClient, error) {
 	controlPlane, err := rc.CurrentControlPlane()
 	if err != nil {
@@ -148,106 +173,20 @@ func (rc *RootContext) CurrentZoneOverviewClient() (kumactl_resources.ZoneOvervi
 	return rc.Runtime.NewZoneOverviewClient(controlPlane.Coordinates.ApiServer)
 }
 
-func (rc *RootContext) catalog() (catalog.Catalog, error) {
+func (rc *RootContext) CurrentServiceOverviewClient() (kumactl_resources.ServiceOverviewClient, error) {
 	controlPlane, err := rc.CurrentControlPlane()
 	if err != nil {
-		return catalog.Catalog{}, err
+		return nil, err
 	}
-	client, err := rc.Runtime.NewCatalogClient(controlPlane.Coordinates.ApiServer.Url)
-	if err != nil {
-		return catalog.Catalog{}, errors.Wrap(err, "could not create components client")
-	}
-	return client.Catalog()
+	return rc.Runtime.NewServiceOverviewClient(controlPlane.Coordinates.ApiServer)
 }
 
 func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClient, error) {
-	// todo(jakubdyszkiewicz) check enable/disable by checking cp config
-	components, err := rc.catalog()
-	if err != nil {
-		return nil, err
-	}
-	if !components.Apis.DataplaneToken.Enabled() {
-		return nil, errors.New("Enable the server to be able to generate tokens.")
-	}
-
-	ctx, err := rc.CurrentContext()
-	if err != nil {
-		return nil, err
-	}
-
-	adminServerUrl, err := rc.adminServerUrl()
-	if err != nil {
-		return nil, err
-	}
-	return rc.Runtime.NewDataplaneTokenClient(adminServerUrl, ctx.GetCredentials().GetAdminApi())
-}
-
-func (rc *RootContext) adminServerUrl() (string, error) {
-	components, err := rc.catalog()
-	if err != nil {
-		return "", err
-	}
-
-	ctx, err := rc.CurrentContext()
-	if err != nil {
-		return "", err
-	}
-
-	sameMachine, err := rc.cpOnTheSameMachine()
-	if err != nil {
-		return "", errors.Wrap(err, "could not determine if cp is on the same machine")
-	}
-	if sameMachine {
-		return components.Apis.Admin.LocalUrl, nil
-	} else {
-		if err := validateRemoteAdminServerSettings(ctx, components); err != nil {
-			return "", err
-		}
-		return components.Apis.DataplaneToken.PublicUrl, nil
-	}
-}
-
-func validateRemoteAdminServerSettings(ctx *kumactl_config.Context, components catalog.Catalog) error {
-	reason := ""
-	clientConfigured := ctx.GetCredentials().GetAdminApi().HasClientCert()
-	serverConfigured := components.Apis.Admin.PublicUrl != ""
-	if !clientConfigured && serverConfigured {
-		reason = "admin server in kuma-cp is configured with TLS and kumactl is not."
-	}
-	if clientConfigured && !serverConfigured {
-		reason = "kumactl is configured with TLS and admin server in kuma-cp is not."
-	}
-	if !clientConfigured && !serverConfigured {
-		reason = "both kumactl and admin server in kuma-cp are not configured with TLS."
-	}
-	if reason != "" { // todo(jakubdyszkiewicz) once docs are in place, put a link to it in 1)
-		msg := fmt.Sprintf(`kumactl is trying to access admin server in remote machine but: %s. This can be solved in several ways:
-1) Configure kuma-cp admin server with certificate and then use this certificate to configure kumactl.
-2) Use kumactl on the same machine as kuma-cp.
-3) Use SSH port forwarding so that kuma-cp could be accessed on a remote machine with kumactl on a loopback address.`, reason)
-		return errors.New(msg)
-	}
-	return nil
-}
-
-func (rc *RootContext) cpOnTheSameMachine() (bool, error) {
 	controlPlane, err := rc.CurrentControlPlane()
 	if err != nil {
-		return false, err
+		return nil, err
 	}
-	cpUrl, err := url.Parse(controlPlane.Coordinates.ApiServer.Url)
-	if err != nil {
-		return false, err
-	}
-	host, _, err := net.SplitHostPort(cpUrl.Host)
-	if err != nil {
-		return false, err
-	}
-	ip, err := net.ResolveIPAddr("", host)
-	if err != nil {
-		return false, err
-	}
-	return ip.IP.IsLoopback(), nil
+	return rc.Runtime.NewDataplaneTokenClient(controlPlane.Coordinates.ApiServer)
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {

@@ -71,16 +71,6 @@ func (cs *UniversalClusters) GetKuma() ControlPlane {
 	panic("Not supported at this level.")
 }
 
-func (cs *UniversalClusters) RestartKuma() error {
-	for name, c := range cs.clusters {
-		if err := c.RestartKuma(); err != nil {
-			return errors.Wrapf(err, "Restart Kuma on %s failed: %v", name, err)
-		}
-	}
-
-	return nil
-}
-
 func (cs *UniversalClusters) VerifyKuma() error {
 	for name, c := range cs.clusters {
 		if err := c.VerifyKuma(); err != nil {
@@ -137,10 +127,10 @@ func (c *UniversalClusters) GetKumactlOptions() *KumactlOptions {
 	return nil
 }
 
-func (cs *UniversalClusters) DeployApp(namespace, appname, token string) error {
+func (cs *UniversalClusters) DeployApp(fs ...DeployOptionsFunc) error {
 	for name, c := range cs.clusters {
-		if err := c.DeployApp(namespace, appname, token); err != nil {
-			return errors.Wrapf(err, "Labeling Namespace %s on %s failed: %v", namespace, name, err)
+		if err := c.DeployApp(fs...); err != nil {
+			return errors.Wrapf(err, "unable to deploy on %s", name)
 		}
 	}
 
@@ -157,9 +147,9 @@ func (cs *UniversalClusters) DeleteApp(namespace, appname string) error {
 	return nil
 }
 
-func (cs *UniversalClusters) InjectDNS() error {
+func (cs *UniversalClusters) InjectDNS(namespace ...string) error {
 	for name, c := range cs.clusters {
-		if err := c.InjectDNS(); err != nil {
+		if err := c.InjectDNS(namespace...); err != nil {
 			return errors.Wrapf(err, "Injecting DNS on %s failed: %v", name, err)
 		}
 	}

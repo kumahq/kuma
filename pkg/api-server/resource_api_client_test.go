@@ -3,6 +3,10 @@ package api_server_test
 import (
 	"bytes"
 	"context"
+	"net/http"
+	"path/filepath"
+
+	"github.com/kumahq/kuma/pkg/api-server/customization"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
@@ -14,8 +18,6 @@ import (
 	"github.com/kumahq/kuma/pkg/test"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 	sample_model "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
-
-	"net/http"
 
 	. "github.com/onsi/gomega"
 
@@ -91,7 +93,7 @@ func waitForServer(client *resourceApiClient) {
 
 func putSampleResourceIntoStore(resourceStore store.ResourceStore, name string, mesh string) {
 	resource := sample_model.TrafficRouteResource{
-		Spec: sample_proto.TrafficRoute{
+		Spec: &sample_proto.TrafficRoute{
 			Path: "/sample-path",
 		},
 	}
@@ -104,12 +106,23 @@ func createTestApiServer(store store.ResourceStore, config *config_api_server.Ap
 	// http.Server and we need it later for the client
 	port, err := test.GetFreePort()
 	Expect(err).NotTo(HaveOccurred())
-	config.Port = port
+	config.HTTP.Port = uint32(port)
+
+	port, err = test.GetFreePort()
+	Expect(err).NotTo(HaveOccurred())
+	config.HTTPS.Port = uint32(port)
+	if config.HTTPS.TlsKeyFile == "" {
+		config.HTTPS.TlsKeyFile = filepath.Join("..", "..", "test", "certs", "server-key.pem")
+		config.HTTPS.TlsCertFile = filepath.Join("..", "..", "test", "certs", "server-cert.pem")
+		config.Auth.ClientCertsDir = filepath.Join("..", "..", "test", "certs", "client")
+	}
+
 	defs := append(definitions.All, SampleTrafficRouteWsDefinition)
 	resources := manager.NewResourceManager(store)
+	wsManager := customization.NewAPIList()
 	cfg := kuma_cp.DefaultConfig()
 	cfg.ApiServer = config
-	apiServer, err := api_server.NewApiServer(resources, defs, &cfg, enableGUI, metrics)
+	apiServer, err := api_server.NewApiServer(resources, wsManager, defs, &cfg, enableGUI, metrics)
 	Expect(err).ToNot(HaveOccurred())
 	return apiServer
 }

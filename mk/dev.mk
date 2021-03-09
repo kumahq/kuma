@@ -1,13 +1,14 @@
-PROTOC_VERSION := 3.6.1
-PROTOC_PGV_VERSION := v0.3.0-java.0.20200311152155-ab56c3dd1cf9
-GOLANG_PROTOBUF_VERSION := v1.3.2
-GOLANGCI_LINT_VERSION := v1.31.0
-GINKGO_VERSION := v1.12.0
+PROTOC_VERSION := 3.14.0
+PROTOC_PGV_VERSION := v0.4.1
+GOLANG_PROTOBUF_VERSION := v1.4.3
+GOLANGCI_LINT_VERSION := v1.35.2
+GINKGO_VERSION := v1.14.2
+HELM_DOCS_VERSION := 1.4.0
 
 CI_KUBEBUILDER_VERSION ?= 2.3.1
-CI_MINIKUBE_VERSION ?= v1.13.1
-CI_KUBECTL_VERSION ?= v1.18.9
-CI_TOOLS_IMAGE ?= circleci/golang:1.15.2
+CI_MINIKUBE_VERSION ?= v1.16.0
+CI_KUBECTL_VERSION ?= v1.18.14
+CI_TOOLS_IMAGE ?= circleci/golang:1.15.6
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -24,6 +25,7 @@ KUBECTL_PATH := $(CI_TOOLS_DIR)/kubectl
 KUBE_APISERVER_PATH := $(CI_TOOLS_DIR)/kube-apiserver
 ETCD_PATH := $(CI_TOOLS_DIR)/etcd
 GOLANGCI_LINT_DIR := $(CI_TOOLS_DIR)
+HELM_DOCS_PATH := $(CI_TOOLS_DIR)/helm-docs
 
 TOOLS_DIR ?= $(shell pwd)/tools
 
@@ -31,6 +33,7 @@ PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)
 
 UNAME_S := $(shell uname -s)
+UNAME_ARCH := $(shell uname -m)
 ifeq ($(UNAME_S), Linux)
 	PROTOC_OS=linux
 else
@@ -50,7 +53,8 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/kubectl dev/install/kind dev/install/minikube \
 	dev/install/golangci-lint \
 	dev/install/goimports \
-	dev/install/helm3
+	dev/install/helm3 \
+	dev/install/helm-docs
 
 .PHONY: dev/install/protoc
 dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
@@ -181,6 +185,21 @@ dev/install/goimports: ## Bootstrap: Install goimports
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
 	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+.PHONY: dev/install/helm-docs
+dev/install/helm-docs: ## Bootstrap: Install helm-docs
+	@if [ -e $(HELM_DOCS_PATH) ]; then echo "Helm Docs $$( $(HELM_DOCS_PATH) --version ) is already installed at $(HELM_DOCS_PATH)" ; fi
+	@if [ ! -e $(HELM_DOCS_PATH) ]; then \
+		echo "Installing helm-docs ...." \
+		&& set -x \
+		&& curl -Lo helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz https://github.com/norwoodj/helm-docs/releases/download/v$(HELM_DOCS_VERSION)/helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz \
+		&& tar -xf helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz helm-docs \
+		&& rm helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz \
+		&& chmod +x helm-docs \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& mv helm-docs $(HELM_DOCS_PATH) \
+		&& set +x \
+		&& echo "helm-docs $(HELM_DOCS_VERSION) has been installed at $(HELM_DOCS_PATH)" ; fi
 
 GEN_CHANGELOG_START_TAG ?= 0.7.2
 GEN_CHANGELOG_BRANCH ?= master

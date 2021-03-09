@@ -6,10 +6,12 @@ import (
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
+	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/kumahq/kuma/pkg/util/xds"
 )
 
@@ -51,7 +53,14 @@ var _ = Describe("SnapshotAutoVersioner", func() {
 				// when
 				actual := versioner.Version(given.new, given.old)
 				// then
-				Expect(actual).To(Equal(given.expected))
+				for _, typ := range given.expected.GetSupportedTypes() {
+					actualRes := actual.GetResources(typ)
+					expectedRes := given.expected.GetResources(typ)
+					Expect(len(actualRes)).To(Equal(len(expectedRes)))
+					for name := range expectedRes {
+						Expect(actualRes[name]).To(MatchProto(expectedRes[name]))
+					}
+				}
 			},
 			Entry("when 'old' = `nil` and 'new' has empty version", testCase{
 				old: nil,
@@ -445,3 +454,49 @@ var _ = Describe("SnapshotAutoVersioner", func() {
 		)
 	})
 })
+
+type SampleSnapshot struct {
+	envoy_cache.Snapshot
+}
+
+// NewSampleSnapshot creates a snapshot from response types and a version.
+func NewSampleSnapshot(version string,
+	endpoints []envoy_types.Resource,
+	clusters []envoy_types.Resource,
+	routes []envoy_types.Resource,
+	listeners []envoy_types.Resource,
+	runtimes []envoy_types.Resource) *SampleSnapshot {
+	return &SampleSnapshot{
+		envoy_cache.NewSnapshot(version, endpoints, clusters, routes, listeners, runtimes, nil),
+	}
+}
+
+// GetSupportedTypes returns a list of xDS types supported by this snapshot.
+func (s *SampleSnapshot) GetSupportedTypes() []string {
+	return []string{
+		envoy_resource.EndpointType,
+		envoy_resource.ClusterType,
+		envoy_resource.RouteType,
+		envoy_resource.ListenerType,
+		envoy_resource.SecretType,
+		envoy_resource.RuntimeType,
+	}
+}
+
+// WithVersion creates a new snapshot with a different version for a given resource type.
+func (s *SampleSnapshot) WithVersion(typ string, version string) Snapshot {
+	if s == nil {
+		return nil
+	}
+	if s.GetVersion(typ) == version {
+		return s
+	}
+	new := &SampleSnapshot{
+		Snapshot: envoy_cache.Snapshot{
+			Resources: s.Resources,
+		},
+	}
+
+	new.Resources[envoy_cache.GetResponseType(typ)].Version = version
+	return new
+}

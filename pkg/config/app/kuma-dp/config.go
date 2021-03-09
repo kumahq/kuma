@@ -14,18 +14,10 @@ import (
 func DefaultConfig() Config {
 	return Config{
 		ControlPlane: ControlPlane{
-			ApiServer: ApiServer{
-				URL: "http://localhost:5681",
-				Retry: ApiServerRetry{
-					Backoff:     3 * time.Second,
-					MaxDuration: 5 * time.Minute, // this value can be fairy long since what will happen when there there is a connection error is that the Dataplane will be restarted (by process manager like systemd/K8S etc.) and will try to connect again.
-				},
-			},
-			BootstrapServer: BootstrapServer{
-				Retry: BootstrapServerRetry{
-					Backoff:     1 * time.Second,
-					MaxDuration: 30 * time.Second, // CP should be able to create Dataplen definition in this time, if it hasn't there is probably an error with Pod -> Dataplane conversion.
-				},
+			URL: "https://localhost:5678",
+			Retry: CpRetry{
+				Backoff:     3 * time.Second,
+				MaxDuration: 5 * time.Minute, // this value can be fairy long since what will happen when there there is a connection error is that the Dataplane will be restarted (by process manager like systemd/K8S etc.) and will try to connect again.
 			},
 		},
 		Dataplane: Dataplane{
@@ -59,10 +51,10 @@ func (c *Config) Sanitize() {
 
 // ControlPlane defines coordinates of the Control Plane.
 type ControlPlane struct {
-	// ApiServer defines coordinates of the Control Plane API Server
-	ApiServer ApiServer `yaml:"apiServer,omitempty"`
-	// BootstrapServer defines settings of the Control Plane Bootstrap Server
-	BootstrapServer BootstrapServer `yaml:"bootstrapServer,omitempty"`
+	// URL defines the address of Control Plane DP server.
+	URL string `yaml:"url,omitempty" envconfig:"kuma_control_plane_url"`
+	// Retry settings for Control Plane communication
+	Retry CpRetry `yaml:"retry,omitempty"`
 	// CaCert defines Certificate Authority that will be used to verify connection to the Control Plane. It takes precedence over CaCertFile.
 	CaCert string `yaml:"caCert" envconfig:"kuma_control_plane_ca_cert"`
 	// CaCertFile defines a file for Certificate Authority that will be used to verifiy connection to the Control Plane.
@@ -73,20 +65,20 @@ type ApiServer struct {
 	// Address defines the address of Control Plane API server.
 	URL string `yaml:"url,omitempty" envconfig:"kuma_control_plane_api_server_url"`
 	// Retry settings for API Server
-	Retry ApiServerRetry `yaml:"retry,omitempty"`
+	Retry CpRetry `yaml:"retry,omitempty"`
 }
 
-type ApiServerRetry struct {
+type CpRetry struct {
 	// Duration to wait between retries
-	Backoff time.Duration `yaml:"backoff,omitempty" envconfig:"kuma_control_plane_api_server_retry_backoff"`
+	Backoff time.Duration `yaml:"backoff,omitempty" envconfig:"kuma_control_plane_retry_backoff"`
 	// Max duration for retries (this is not exact time for execution, the check is done between retries)
-	MaxDuration time.Duration `yaml:"maxDuration,omitempty" envconfig:"kuma_control_plane_api_server_retry_max_duration"`
+	MaxDuration time.Duration `yaml:"maxDuration,omitempty" envconfig:"kuma_control_plane_retry_max_duration"`
 }
 
-func (a *ApiServerRetry) Sanitize() {
+func (a *CpRetry) Sanitize() {
 }
 
-func (a *ApiServerRetry) Validate() error {
+func (a *CpRetry) Validate() error {
 	if a.Backoff <= 0 {
 		return errors.New(".Backoff must be a positive duration")
 	}
@@ -96,45 +88,7 @@ func (a *ApiServerRetry) Validate() error {
 	return nil
 }
 
-var _ config.Config = &ApiServerRetry{}
-
-type BootstrapServer struct {
-	Retry BootstrapServerRetry `yaml:"retry,omitempty"`
-}
-
-func (b *BootstrapServer) Sanitize() {
-}
-
-func (b *BootstrapServer) Validate() error {
-	if err := b.Retry.Validate(); err != nil {
-		return errors.Wrap(err, ".Retry is not valid")
-	}
-	return nil
-}
-
-var _ config.Config = &BootstrapServer{}
-
-type BootstrapServerRetry struct {
-	// Duration to wait between retries
-	Backoff time.Duration `yaml:"backoff,omitempty" envconfig:"kuma_control_plane_bootstrap_server_retry_backoff"`
-	// Max duration for retries (this is not exact time for execution, the check is done between retries)
-	MaxDuration time.Duration `yaml:"maxDuration,omitempty" envconfig:"kuma_control_plane_bootstrap_server_retry_max_duration"`
-}
-
-func (b *BootstrapServerRetry) Sanitize() {
-}
-
-func (b *BootstrapServerRetry) Validate() error {
-	if b.Backoff <= 0 {
-		return errors.New(".Backoff must be a positive duration")
-	}
-	if b.MaxDuration <= 0 {
-		return errors.New(".MaxDuration must be a positive duration")
-	}
-	return nil
-}
-
-var _ config.Config = &BootstrapServerRetry{}
+var _ config.Config = &CpRetry{}
 
 // Dataplane defines bootstrap configuration of the dataplane (Envoy).
 type Dataplane struct {
@@ -148,6 +102,9 @@ type Dataplane struct {
 	AdminPort config_types.PortRange `yaml:"adminPort,omitempty" envconfig:"kuma_dataplane_admin_port"`
 	// Drain time for listeners.
 	DrainTime time.Duration `yaml:"drainTime,omitempty" envconfig:"kuma_dataplane_drain_time"`
+	// BootstrapVersion defines bootstrap version (and API version) of xDS config.
+	// If empty, default version defined in Kuma CP will be used.
+	BootstrapVersion string `yaml:"bootstrapVersion" envconfig:"kuma_dataplane_bootstrap_version"`
 }
 
 // DataplaneRuntime defines the context in which dataplane (Envoy) runs.
@@ -193,15 +150,12 @@ func (c *Config) Validate() (errs error) {
 var _ config.Config = &ControlPlane{}
 
 func (c *ControlPlane) Sanitize() {
-	c.ApiServer.Sanitize()
+	c.Retry.Sanitize()
 }
 
 func (c *ControlPlane) Validate() (errs error) {
-	if err := c.ApiServer.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".ApiServer is not valid"))
-	}
-	if err := c.BootstrapServer.Validate(); err != nil {
-		errs = multierr.Append(errs, errors.Wrapf(err, ".BootstrapServer is not valid"))
+	if err := c.Retry.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".Retry is not valid"))
 	}
 	return
 }

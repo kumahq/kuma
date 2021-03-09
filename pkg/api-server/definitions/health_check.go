@@ -9,7 +9,7 @@ var HealthCheckWsDefinition = ResourceWsDefinition{
 	Name: "HealthCheck",
 	Path: "health-checks",
 	ResourceFactory: func() model.Resource {
-		return &mesh.HealthCheckResource{}
+		return mesh.NewHealthCheckResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.HealthCheckResourceList{}

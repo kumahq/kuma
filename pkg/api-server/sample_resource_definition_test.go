@@ -10,7 +10,7 @@ var SampleTrafficRouteWsDefinition = definitions.ResourceWsDefinition{
 	Name: "Sample Traffic Route",
 	Path: "sample-traffic-routes",
 	ResourceFactory: func() model.Resource {
-		return &sample_model.TrafficRouteResource{}
+		return sample_model.NewTrafficRouteResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &sample_model.TrafficRouteResourceList{}

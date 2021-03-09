@@ -15,11 +15,15 @@ func init() {
 	core_plugins.Register(core_plugins.Universal, &plugin{})
 }
 
-func (p *plugin) Bootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
+func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
 	leaderElector, err := plugin_leader.NewLeaderElector(b)
 	if err != nil {
 		return err
 	}
 	b.WithComponentManager(component.NewManager(leaderElector))
+	return nil
+}
+
+func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
 	return nil
 }

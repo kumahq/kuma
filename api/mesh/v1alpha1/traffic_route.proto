@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "v1alpha1";
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/v1alpha1/selector.proto";
 import "validate/validate.proto";
@@ -22,8 +22,8 @@ message TrafficRoute {
   repeated Selector destinations = 2
       [ (validate.rules).repeated .min_items = 1 ];
 
-  // WeightedDestination defines a destination with a weight assigned to it.
-  message WeightedDestination {
+  // Split defines a destination with a weight assigned to it.
+  message Split {
 
     // Weight assigned to that destination.
     uint32 weight = 1 [ (validate.rules).uint32.gte = 0 ];
@@ -38,9 +38,59 @@ message TrafficRoute {
       keys : {string : {min_len : 1}},
       values : {string : {min_len : 1}}
     } ];
-  }
+  };
 
-  // List of destinations with weights assigned to them.
-  repeated WeightedDestination conf = 3
-      [ (validate.rules).repeated .min_items = 1 ];
+  // LoadBalancer defines the load balancing policy and configuration
+  message LoadBalancer {
+
+    // RoundRobin is a simple policy in which each available upstream host is
+    // selected in round robin order
+    message RoundRobin {}
+
+    // LeastRequest uses different algorithms depending on whether hosts have
+    // the same or different weights
+    message LeastRequest {
+      // The number of random healthy hosts from which the host with the fewest
+      // active requests will be chosen. Defaults to 2 so that we perform
+      // two-choice selection if the field is not set.
+      uint32 choice_count = 1;
+    }
+
+    // RingHash implements consistent hashing to upstream hosts
+    message RingHash {
+      // The hash function used to hash hosts onto the ketama ring. The value
+      // defaults to 'XX_HASH'
+      string hash_function = 1;
+
+      // Minimum hash ring size
+      uint64 min_ring_size = 2;
+
+      // Maximum hash ring size.
+      uint64 max_ring_size = 3;
+    }
+
+    // Random selects a random available host
+    message Random {}
+
+    // Maglev implements consistent hashing to upstream hosts
+    message Maglev {}
+
+    oneof lb_type {
+      RoundRobin round_robin = 1;
+      LeastRequest least_request = 2;
+      RingHash ring_hash = 3;
+      Random random = 4;
+      Maglev maglev = 5;
+    }
+  };
+
+  // Conf defines the destination configuration
+  message Conf {
+    // List of destinations with weights assigned to them.
+    repeated Split split = 1 [ (validate.rules).repeated .min_items = 1 ];
+    LoadBalancer load_balancer = 2;
+  };
+
+  // Configuration for the route
+  Conf conf = 3 [ (validate.rules).message.required = true ];
 }

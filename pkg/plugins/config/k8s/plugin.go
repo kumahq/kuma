@@ -6,7 +6,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 
 	core_plugins "github.com/kumahq/kuma/pkg/core/plugins"
-	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 
 	kube_core "k8s.io/api/core/v1"
 )
@@ -20,12 +20,16 @@ func init() {
 }
 
 func (p *plugin) NewConfigStore(pc core_plugins.PluginContext, _ core_plugins.PluginConfig) (core_store.ResourceStore, error) {
-	mgr, ok := k8s_runtime.FromManagerContext(pc.Extensions())
+	mgr, ok := k8s_extensions.FromManagerContext(pc.Extensions())
 	if !ok {
 		return nil, errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
 	if err := kube_core.AddToScheme(mgr.GetScheme()); err != nil {
 		return nil, errors.Wrapf(err, "could not add %q to scheme", kube_core.SchemeGroupVersion)
 	}
-	return NewStore(mgr.GetClient(), pc.Config().Store.Kubernetes.SystemNamespace)
+	converter, ok := k8s_extensions.FromResourceConverterContext(pc.Extensions())
+	if !ok {
+		return nil, errors.Errorf("k8s resource converter hasn't been configured")
+	}
+	return NewStore(mgr.GetClient(), pc.Config().Store.Kubernetes.SystemNamespace, mgr.GetScheme(), converter)
 }

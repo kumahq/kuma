@@ -1,13 +1,12 @@
 contexts:
 - controlPlane: example
   name: example
-  credentials:
-    adminApi:
-      clientCert: /tmp/client.pem
-      clientKey: /tmp/client.key.pem
 controlPlanes:
-- coordinates:
-    apiServer:
-      url: http://placeholder-address
-  name: example
+  - coordinates:
+      apiServer:
+        caCertFile: /tmp/ca-cert.pem
+        clientCertFile: /tmp/client.cert.pem
+        clientKeyFile: /tmp/client.key.pem
+        url: http://placeholder-address
+    name: example
 currentContext: example

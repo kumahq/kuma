@@ -31,24 +31,42 @@ store:
     maxOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
     # TLS settings
     tls:
-      # Mode of TLS connection. Available values (disable, require, verify-ca, verify-full)
+      # Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
       mode: disable # ENV: KUMA_STORE_POSTGRES_TLS_MODE
-      # Path to TLS Certificate of the client. Used in require, verify-ca and verify-full modes
+      # Path to TLS Certificate of the client. Used in verifyCa and verifyFull modes
       certPath: # ENV: KUMA_STORE_POSTGRES_TLS_CERT_PATH
-      # Path to TLS Key of the client. Used in require, verify-ca and verify-full modes
+      # Path to TLS Key of the client. Used in verifyCa and verifyFull modes
       keyPath: # ENV: KUMA_STORE_POSTGRES_TLS_KEY_PATH
-      # Path to the root certificate. Used in verify-ca and verify-full modes.
+      # Path to the root certificate. Used in verifyCa and verifyFull modes.
       caPath: # ENV: KUMA_STORE_POSTGRES_TLS_ROOT_CERT_PATH
+    # MinReconnectInterval controls the duration to wait before trying to
+    # re-establish the database connection after connection loss. After each
+    # consecutive failure this interval is doubled, until MaxReconnectInterval
+    # is reached. Successfully completing the connection establishment procedure
+    # resets the interval back to MinReconnectInterval.
+    minReconnectInterval: "10s" # ENV: KUMA_STORE_POSTGRES_MIN_RECONNECT_INTERVAL
+    # MaxReconnectInterval controls the maximum possible duration to wait before trying
+    # to re-establish the database connection after connection loss.
+    maxReconnectInterval: "60s" # ENV: KUMA_STORE_POSTGRES_MAX_RECONNECT_INTERVAL
 
   # Cache for read only operations. This cache is local to the instance of the control plane.
   cache:
     # If true then cache is enabled
-    enabled: true
+    enabled: true # ENV: KUMA_STORE_CACHE_ENABLED
     # Expiration time for elements in cache.
-    expirationTime: 1s
+    expirationTime: 1s # ENV: KUMA_STORE_CACHE_EXPIRATION_TIME
+
+  # Upsert configuration
+  upsert:
+    # Base time for exponential backoff on upsert (get and update) operations when retry is enabled
+    conflictRetryBaseBackoff: 100ms # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_BASE_BACKOFF
+    # Max retries on upsert (get and update) operation when retry is enabled
+    conflictRetryMaxTimes: 5 # ENV: KUMA_STORE_UPSERT_CONFLICT_RETRY_MAX_TIMES
 
 # Configuration of Bootstrap Server, which provides bootstrap config to Dataplanes
 bootstrapServer:
+  # The version of Envoy API (available: "v2", "v3")
+  apiVersion: v3
   # Parameters of bootstrap configuration
   params:
     # Address of Envoy Admin
@@ -57,7 +75,7 @@ bootstrapServer:
     adminPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT
     # Path to access log file of Envoy Admin
     adminAccessLogPath: /dev/null # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH
-    # Host of XDS Server. By default it is autoconfigured from KUMA_GENERAL_ADVERTISED_HOSTNAME
+    # Host of XDS Server. By default it is the same host as the one used by kuma-dp to connect to the control plane
     xdsHost: "" # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_HOST
     # Port of XDS Server. By default it is autoconfigured from KUMA_XDS_SERVER_GRPC_PORT
     xdsPort: 0 # ENV: KUMA_BOOTSTRAP_SERVER_PARAMS_XDS_PORT
@@ -76,66 +94,55 @@ monitoringAssignmentServer:
   # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
 
-# Admin server configuration
-adminServer:
-  # Local configuration of server that is available only on localhost
-  local:
-    # Port on which the server will be exposed
-    port: 5679 # ENV: KUMA_ADMIN_SERVER_LOCAL_PORT
-  # Public configuration of server that is available on public interface
-  public:
-    # If true then Admin Server is exposed on public interface
-    enabled: false
-    # Port on which the server will be exposed. If not specified (0) then port from local configuration will be used
-    port: 0 # ENV: KUMA_ADMIN_SERVER_PUBLIC_PORT
-    # Public interface on which the server will be exposed
-    interface: # ENV: KUMA_ADMIN_SERVER_PUBLIC_INTERFACE
-    # Path to TLS certificate file
-    tlsCertFile: # ENV: KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE
-    # Path to TLS key file
-    tlsKeyFile: # ENV: KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE
-    # Directory of authorized client certificates
-    clientCertsDir: # ENV: KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR"
-  # Admin Server APIs configuration
-  apis:
-    # Dataplane Token API configuration
-    dataplaneToken:
-      # If true then Dataplane Token and token verification is enabled
-      enabled: true # ENV: KUMA_ADMIN_SERVER_APIS_DATAPLANE_TOKEN_ENABLED
-
 # Envoy XDS server configuration
 xdsServer:
-  # Port of Diagnostic Server for checking health and readiness of the Control Plane
-  diagnosticsPort: 5680 # ENV: KUMA_XDS_SERVER_DIAGNOSTICS_PORT
   # Interval for re-genarting configuration for Dataplanes connected to the Control Plane
   dataplaneConfigurationRefreshInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL
   # Interval for flushing status of Dataplanes connected to the Control Plane
-  dataplaneStatusFlushInterval: 1s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
+  dataplaneStatusFlushInterval: 10s # ENV: KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL
+  # Backoff that is executed when Control Plane is sending the response that was previously rejected by Dataplane
+  nackBackoff: 5s # ENV: KUMA_XDS_SERVER_NACK_BACKOFF
 
 # API Server configuration
 apiServer:
-  # Port of the API Server
-  port: 5681 # ENV: KUMA_API_SERVER_PORT
+  # HTTP configuration of the API Server
+  http:
+    # If true then API Server will be served on HTTP
+    enabled: true # ENV: KUMA_API_SERVER_HTTP_ENABLED
+    # Network interface on which HTTP API Server will be exposed
+    interface: 0.0.0.0 # ENV: KUMA_API_SERVER_HTTP_INTERFACE
+    # Port of the API Server
+    port: 5681 # ENV: KUMA_API_SERVER_HTTP_PORT
+  # HTTPS configuration of the API Server
+  https:
+    # If true then API Server will be served on HTTPS
+    enabled: true # ENV: KUMA_API_SERVER_HTTPS_ENABLED
+    # Network interface on which HTTPS API Server will be exposed
+    interface: 0.0.0.0 # ENV: KUMA_API_SERVER_HTTPS_INTERFACE
+    # Port of the HTTPS API Server
+    port: 5682 # ENV: KUMA_API_SERVER_HTTPS_PORT
+    # Path to TLS certificate file. Autoconfigured from KUMA_GENERAL_TLS_CERT_FILE if empty
+    tlsCertFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_CERT_FILE
+    # Path to TLS key file. Autoconfigured from KUMA_GENERAL_TLS_KEY_FILE if empty
+    tlsKeyFile: "" # ENV: KUMA_API_SERVER_HTTPS_TLS_KEY_FILE
+  # Authentication configuration for administrative endpoints like Dataplane Token or managing Secrets
+  auth:
+    # Directory of authorized client certificates (only validate in HTTPS)
+    clientCertsDir: "" # ENV: KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR
+    # Allow requests that are originating from localhost
+    allowFromLocalhost: true # ENV: KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST
   # If true, then API Server will operate in read only mode (serving GET requests)
   readOnly: false # ENV: KUMA_API_SERVER_READ_ONLY
   # Allowed domains for Cross-Origin Resource Sharing. The value can be either domain or regexp
   corsAllowedDomains:
     - ".*" # ENV: KUMA_API_SERVER_CORS_ALLOWED_DOMAINS
-  catalog:
-    bootstrap:
-      # Public URL to reach Bootstrap server. ex: https://bootstrap.kuma.io:1234, its autoconfigured if blank
-      url: # ENV: KUMA_API_SERVER_CATALOG_BOOTSTRAP_URL
-    monitoringAssignment:
-      # Public URL to reach mad server. ex: https://mads.kuma.io:1234, its autoconfigured if blank
-      url: # ENV: KUMA_API_SERVER_CATALOG_MONITORING_ASSIGNMENT_URL
-    sds:
-      # Public url to reach SDS server. ex: https://sds.kuma.io:1234, its autoconfigured to XDS server if blank
-      url: # ENV: KUMA_API_SERVER_CATALOG_SDS_URL
 
 # Environment-specific configuration
 runtime:
   # Kubernetes-specific configuration
   kubernetes:
+    # Service name of the Kuma Control Plane. It is used to point Kuma DP to proper URL.
+    controlPlaneServiceName: kuma-control-plane
     # Admission WebHook Server configuration
     admissionServer:
       # Address the Admission WebHook Server should be listening on
@@ -216,6 +223,8 @@ runtime:
             cpu: 1000m # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU
             # Memory, in bytes. (500Gi = 500GiB = 500 * 1024 * 1024 * 1024)
             memory: 512Mi # ENV: KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY
+        # Additional environment variables that can be placed on Kuma DP sidecar
+        envVars: # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS
       # InitContainer defines configuration of the Kuma init container
       initContainer:
         # Image name.
@@ -224,10 +233,11 @@ runtime:
       sidecarTraffic:
         # List of inbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-inbound-ports annotation is specified on Pod.
-        excludeInboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS
+        excludeInboundPorts: [ ] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_INBOUND_PORTS
         # List of outbound ports that will be excluded from interception.
         # This setting is applied on every pod unless traffic.kuma.io/exclude-oubound-ports annotation is specified on Pod.
-        excludeOutboundPorts: [] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
+        excludeOutboundPorts: [ ] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
+    marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
   # Universal-specific configuration
   universal:
     # DataplaneCleanupAge defines how long Dataplane should be offline to be cleaned up by GC
@@ -249,6 +259,11 @@ metrics:
     enabled: true # ENV: KUMA_METRICS_ZONE_ENABLED
     # How many latest subscriptions will be stored in ZoneInsights object, if equals 0 then unlimited
     subscriptionLimit: 10 # ENV: KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT
+  mesh:
+    # Min time that should pass between MeshInsight resync
+    minResyncTimeout: 1s # ENV: KUMA_METRICS_MESH_MIN_RESYNC_TIMEOUT
+    # Max time that MeshInsight could spend without resync
+    maxResyncTimeout: 20s # ENV: KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT
 
 # Reports configuration
 reports:
@@ -257,15 +272,13 @@ reports:
 
 # General configuration
 general:
-  # Hostname that other components should use in order to connect to the Control Plane.
-  # Control Plane will use this value in configuration generated for dataplanes, in responses to `kumactl`, etc.
-  advertisedHostname: localhost # ENV: KUMA_GENERAL_ADVERTISED_HOSTNAME
   # dnsCacheTTL represents duration for how long Kuma CP will cache result of resolving dataplane's domain name
   dnsCacheTTL: 10s # ENV: KUMA_GENERAL_DNS_CACHE_TTL
   # TlsCertFile defines a path to a file with PEM-encoded TLS cert that will be used across all the Kuma Servers.
   tlsCertFile: # ENV: KUMA_GENERAL_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key that will be used across all the Kuma Servers.
   tlsKeyFile: # ENV: KUMA_GENERAL_TLS_KEY_FILE
+  workDir: ""
 
 # Web GUI Server configuration
 guiServer:
@@ -281,33 +294,37 @@ dnsServer:
   # The CIDR range used to allocate
   CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
 
-# Multicluster mode
-multicluster:
+# Multizone mode
+multizone:
   global:
     # The Zone status poller timeout
-    pollTimeout: 500ms # ENV: KUMA_MULTICLUSTER_GLOBAL_POLL_TIMEOUT
+    pollTimeout: 500ms # ENV: KUMA_MULTIZONE_GLOBAL_POLL_TIMEOUT
     kds:
       # Port of a gRPC server that serves Kuma Discovery Service (KDS).
-      grpcPort: 5685 # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_GRPC_PORT
+      grpcPort: 5685 # ENV: KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT
       # Interval for refreshing state of the world
-      refreshInterval: 1s # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_REFRESH_INTERVAL
+      refreshInterval: 1s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL
+      # Interval for flushing Zone Insights (stats of multi-zone communication)
+      zoneInsightFlushInterval: 10s # ENV: KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL
       # TlsCertFile defines a path to a file with PEM-encoded TLS cert.
-      tlsCertFile: # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_CERT_FILE
+      tlsCertFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
       # TTlsKeyFile defines a path to a file with PEM-encoded TLS key.
-      tlsKeyFile: # ENV: KUMA_MULTICLUSTER_GLOBAL_KDS_TLS_KEY_FILE
+      tlsKeyFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
   remote:
     # Kuma Zone name used to mark the remote dataplane resources
-    zone: "" # ENV: KUMA_MULTICLUSTER_REMOTE_ZONE
+    zone: "" # ENV: KUMA_MULTIZONE_REMOTE_ZONE
     # GlobalAddress URL of Global Kuma CP
-    globalAddress: # ENV KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS
+    globalAddress: # ENV KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
     kds:
       # Interval for refreshing state of the world
-      refreshInterval: 1s # ENV: KUMA_MULTICLUSTER_REMOTE_KDS_REFRESH_INTERVAL
+      refreshInterval: 1s # ENV: KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
-      rootCaFile: # ENV: KUMA_MULTICLUSTER_REMOTE_KDS_ROOT_CA_FILE
+      rootCaFile: # ENV: KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE
 
 # Diagnostics configuration
 diagnostics:
+  # Port of Diagnostic Server for checking health and readiness of the Control Plane
+  serverPort: 5680 # ENV: KUMA_DIAGNOSTICS_SERVER_PORT
   # If true, enables https://golang.org/pkg/net/http/pprof/ debug endpoints
   debugEndpoints: false # ENV: KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS
 
@@ -319,3 +336,31 @@ dpServer:
   tlsCertFile: # ENV: KUMA_DP_SERVER_TLS_CERT_FILE
   # TlsKeyFile defines a path to a file with PEM-encoded TLS key. If empty, autoconfigured from general.tlsKeyFile
   tlsKeyFile: # ENV: KUMA_DP_SERVER_TLS_KEY_FILE
+  # Auth defines an authentication configuration for the DP Server
+  auth:
+    # Type of authentication. Available values: "serviceAccountToken", "dpToken", "none".
+    # If empty, autoconfigured based on the environment - "serviceAccountToken" on Kubernetes, "dpToken" on Universal.
+    type: "" # ENV: KUMA_DP_SERVER_AUTH_TYPE
+  # Hds defines a Health Discovery Service configuration
+  hds:
+    # Enabled if true then Envoy will actively check application's ports, but only on Universal.
+    # On Kubernetes this feature disabled for now regardless the flag value
+    enabled: true # ENV: KUMA_DP_SERVER_HDS_ENABLED
+    # Interval for Envoy to send statuses for HealthChecks
+    interval: 5s # ENV: KUMA_DP_SERVER_HDS_INTERVAL
+    # RefreshInterval is an interval for re-genarting configuration for Dataplanes connected to the Control Plane
+    refreshInterval: 10s # ENV: KUMA_DP_SERVER_HDS_REFRESH_INTERVAL
+    # Check defines a HealthCheck configuration
+    checkDefaults:
+      # Timeout is a time to wait for a health check response. If the timeout is reached the
+      # health check attempt will be considered a failure
+      timeout: 2s # ENV: KUMA_DP_SERVER_HDS_CHECK_TIMEOUT
+      # Interval between health checks
+      interval: 1s # ENV: KUMA_DP_SERVER_HDS_CHECK_INTERVAL
+      # NoTrafficInterval is a special health check interval that is used when a cluster has
+      #	never had traffic routed to it
+      noTrafficInterval: 1s # ENV: KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL
+      # HealthyThreshold is a number of healthy health checks required before a host is marked healthy
+      healthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD
+      # UnhealthyThreshold is a number of unhealthy health checks required before a host is marked unhealthy
+      unhealthyThreshold: 1 # ENV: KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD

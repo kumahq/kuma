@@ -8,6 +8,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
@@ -29,10 +30,10 @@ var _ = Describe("Dataplane", func() {
 		DescribeTable("should correctly determine whether a given (ip, port) endpoint would overshadow one of Dataplane interfaces",
 			func(given testCase) {
 				// given
-				dataplane := &DataplaneResource{}
+				dataplane := NewDataplaneResource()
 
 				// when
-				Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane.Spec)).To(Succeed())
+				Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
 				// then
 				Expect(dataplane.UsesInterface(net.ParseIP(given.address), given.port)).To(Equal(given.expected))
 			},
@@ -265,15 +266,16 @@ var _ = Describe("Dataplane", func() {
 		DescribeTable("should correctly determine effective Prometheus config for given Dataplane and Mesh",
 			func(given testCase) {
 				// given
-				var dataplane *DataplaneResource
+				dataplane := NewDataplaneResource()
 				if given.dataplaneName != "" {
 					dataplane = &DataplaneResource{
 						Meta: &test_model.ResourceMeta{
 							Name: given.dataplaneName,
 							Mesh: given.dataplaneMesh,
 						},
+						Spec: &mesh_proto.Dataplane{},
 					}
-					Expect(util_proto.FromYAML([]byte(given.dataplaneSpec), &dataplane.Spec)).To(Succeed())
+					Expect(util_proto.FromYAML([]byte(given.dataplaneSpec), dataplane.Spec)).To(Succeed())
 				}
 
 				// given
@@ -283,14 +285,15 @@ var _ = Describe("Dataplane", func() {
 						Meta: &test_model.ResourceMeta{
 							Name: given.meshName,
 						},
+						Spec: &mesh_proto.Mesh{},
 					}
-					Expect(util_proto.FromYAML([]byte(given.meshSpec), &mesh.Spec)).To(Succeed())
+					Expect(util_proto.FromYAML([]byte(given.meshSpec), mesh.Spec)).To(Succeed())
 				}
 
 				// then
 				endpoint, err := dataplane.GetPrometheusEndpoint(mesh)
 				Expect(err).ToNot(HaveOccurred())
-				Expect(endpoint).To(Equal(given.expected))
+				Expect(endpoint).To(MatchProto(given.expected))
 			},
 			Entry("dataplane == `nil` && mesh == `nil`", testCase{
 				expected: nil,
@@ -395,8 +398,8 @@ var _ = Describe("Dataplane", func() {
 				// given
 				var dataplane *DataplaneResource
 				if given.dataplane != "" {
-					dataplane = &DataplaneResource{}
-					Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane.Spec)).To(Succeed())
+					dataplane = NewDataplaneResource()
+					Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
 				}
 
 				// expect
@@ -467,6 +470,10 @@ var _ = Describe("ParseProtocol()", func() {
 		Entry("grpc", testCase{
 			tag:      "grpc",
 			expected: ProtocolGRPC,
+		}),
+		Entry("kafka", testCase{
+			tag:      "kafka",
+			expected: ProtocolKafka,
 		}),
 		Entry("mongo", testCase{
 			tag:      "mongo",

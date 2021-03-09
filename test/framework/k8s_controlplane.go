@@ -1,7 +1,6 @@
 package framework
 
 import (
-	"context"
 	"crypto/tls"
 	"fmt"
 	"net/http"
@@ -20,10 +19,9 @@ import (
 )
 
 type PortFwd struct {
-	lowFwdPort     uint32
-	hiFwdPort      uint32
-	localAPIPort   uint32
-	localAdminPort uint32
+	lowFwdPort   uint32
+	hiFwdPort    uint32
+	localAPIPort uint32
 }
 
 type K8sControlPlane struct {
@@ -35,12 +33,20 @@ type K8sControlPlane struct {
 	cluster    *K8sCluster
 	portFwd    PortFwd
 	verbose    bool
+	replicas   int
 }
 
-func NewK8sControlPlane(t testing.TestingT, mode core.CpMode, clusterName string,
-	kubeconfig string, cluster *K8sCluster,
-	loPort, hiPort uint32,
-	verbose bool) *K8sControlPlane {
+func NewK8sControlPlane(
+	t testing.TestingT,
+	mode core.CpMode,
+	clusterName string,
+	kubeconfig string,
+	cluster *K8sCluster,
+	loPort uint32,
+	hiPort uint32,
+	verbose bool,
+	replicas int,
+) *K8sControlPlane {
 	name := clusterName + "-" + mode
 	kumactl, _ := NewKumactlOptions(t, name, verbose)
 	return &K8sControlPlane{
@@ -53,7 +59,8 @@ func NewK8sControlPlane(t testing.TestingT, mode core.CpMode, clusterName string
 		portFwd: PortFwd{
 			localAPIPort: loPort,
 		},
-		verbose: verbose,
+		verbose:  verbose,
+		replicas: replicas,
 	}
 }
 
@@ -75,7 +82,7 @@ func (c *K8sControlPlane) GetKubectlOptions(namespace ...string) *k8s.KubectlOpt
 
 func (c *K8sControlPlane) PortForwardKumaCP() error {
 	kumacpPods := c.GetKumaCPPods()
-	if len(kumacpPods) != 1 {
+	if len(kumacpPods) < 1 {
 		return errors.Errorf("Kuma CP pods: %d", len(kumacpPods))
 	}
 
@@ -89,15 +96,6 @@ func (c *K8sControlPlane) PortForwardKumaCP() error {
 
 	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, apiPort, kumaCPAPIPort)
 	c.portFwd.localAPIPort = apiPort
-
-	// Admin
-	adminPort, err := util_net.PickTCPPort("", c.portFwd.lowFwdPort+2, c.portFwd.hiFwdPort)
-	if err != nil {
-		return errors.Errorf("No free port found in range:  %d - %d", c.portFwd.lowFwdPort, c.portFwd.hiFwdPort)
-	}
-
-	c.cluster.PortForwardPod(KumaNamespace, kumacpPodName, adminPort, kumaCPAdminPort)
-	c.portFwd.localAdminPort = adminPort
 
 	return nil
 }
@@ -187,21 +185,27 @@ func (c *K8sControlPlane) FinalizeAdd() error {
 }
 
 func (c *K8sControlPlane) InstallCP(args ...string) (string, error) {
-	return c.kumactl.KumactlInstallCP(c.mode, args...)
-}
-
-func (c *K8sControlPlane) InjectDNS() error {
 	// store the kumactl environment
 	oldEnv := c.kumactl.Env
 	c.kumactl.Env["KUBECONFIG"] = c.GetKubectlOptions().ConfigPath
+	defer func() {
+		c.kumactl.Env = oldEnv // restore kumactl environment
+	}()
+	return c.kumactl.KumactlInstallCP(c.mode, args...)
+}
 
-	yaml, err := c.kumactl.RunKumactlAndGetOutput("install", "dns")
+func (c *K8sControlPlane) InjectDNS(args ...string) error {
+	// store the kumactl environment
+	oldEnv := c.kumactl.Env
+	c.kumactl.Env["KUBECONFIG"] = c.GetKubectlOptions().ConfigPath
+	defer func() {
+		c.kumactl.Env = oldEnv // restore kumactl environment
+	}()
+
+	yaml, err := c.kumactl.KumactlInstallDNS(args...)
 	if err != nil {
 		return err
 	}
-
-	// restore kumactl environment
-	c.kumactl.Env = oldEnv
 
 	return k8s.KubectlApplyFromStringE(c.t,
 		c.GetKubectlOptions(),
@@ -215,42 +219,20 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 	return "grpcs://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(kdsPort), 10)
 }
 
-func (c *K8sControlPlane) GetIngressAddress() string {
-	ctx := context.Background()
-	cs, err := k8s.GetKubernetesClientFromOptionsE(c.t, c.GetKubectlOptions())
-	if err != nil {
-		return "invalid"
-	}
-	ingressSvc, err := cs.CoreV1().Services(KumaNamespace).Get(ctx, "kuma-ingress", metav1.GetOptions{})
-	if err != nil {
-		return "invalid"
-	}
-	port := ingressSvc.Spec.Ports[0].NodePort
-
-	nodes, err := cs.CoreV1().Nodes().List(ctx, metav1.ListOptions{})
-	if err != nil {
-		return "invalid"
-	}
-	// assume that we have single node cluster
-	for _, addr := range nodes.Items[0].Status.Addresses {
-		if addr.Type == v1.NodeInternalIP {
-			return addr.Address + ":" + strconv.Itoa(int(port))
-		}
-	}
-
-	return "invalid"
-}
-
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
 	return "http://localhost:" + strconv.FormatUint(uint64(c.portFwd.localAPIPort), 10) + "/status/zones"
 }
 
-func (c *K8sControlPlane) GenerateDpToken(service string) (string, error) {
+func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
+	dpType := ""
+	if service == "ingress" {
+		dpType = "ingress"
+	}
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
-		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAdminPort),
-		[]byte(fmt.Sprintf(`{"mesh": "default", "tags": {"kuma.io/service": ["%s"]}}`, service)),
+		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
+		[]byte(fmt.Sprintf(`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, dpType, service)),
 		map[string]string{"content-type": "application/json"},
 		200,
 		DefaultRetries,

@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "v1alpha1";
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/v1alpha1/dataplane.proto";
 import "mesh/v1alpha1/dataplane_insight.proto";

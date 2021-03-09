@@ -71,7 +71,7 @@ func (d *collector) cleanup() error {
 	}
 	for _, rk := range onDelete {
 		gcLog.Info(fmt.Sprintf("deleting dataplane which is offline for %v", d.cleanupAge), "name", rk.Name, "mesh", rk.Mesh)
-		if err := d.rm.Delete(ctx, &core_mesh.DataplaneResource{}, store.DeleteBy(rk)); err != nil {
+		if err := d.rm.Delete(ctx, core_mesh.NewDataplaneResource(), store.DeleteBy(rk)); err != nil {
 			gcLog.Error(err, "unable to delete dataplane", "name", rk.Name, "mesh", rk.Mesh)
 			continue
 		}

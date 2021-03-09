@@ -15,7 +15,8 @@ Available Commands:
   get         Show Kuma resources
   help        Help about any command
   inspect     Inspect Kuma resources
-  install     Install Kuma on Kubernetes
+  install     Install various Kuma components.
+  uninstall   Uninstall various Kuma components.
   version     Print version
 
 Flags:
@@ -35,9 +36,24 @@ Create or modify Kuma resources.
 Usage:
   kumactl apply [flags]
 
+Examples:
+
+Apply a resource from file
+$ kumactl apply -f resource.yaml
+
+Apply a resource from stdin
+$ echo "
+type: Mesh
+name: demo
+" | kumactl apply -f -
+
+Apply a resource from external URL
+$ kumactl apply -f https://example.com/resource.yaml
+
+
 Flags:
       --dry-run              Resolve variable and prints result out without actual applying
-  -f, --file string          Path to file to apply
+  -f, --file -               Path to file to apply. Pass - to read from stdin
   -h, --help                 help for apply
   -v, --var stringToString   Variable to replace in configuration (default [])
 
@@ -138,12 +154,14 @@ Usage:
   kumactl config control-planes add [flags]
 
 Flags:
-      --address string             URL of the Control Plane API Server (required)
-      --admin-client-cert string   Path to certificate of a client that is authorized to use Admin Server
-      --admin-client-key string    Path to certificate key of a client that is authorized to use Admin Server
-  -h, --help                       help for add
-      --name string                reference name for the Control Plane (required)
-      --overwrite                  overwrite existing Control Plane with the same reference name
+      --address string            URL of the Control Plane API Server (required). Example: http://localhost:5681 or https://localhost:5682)
+      --ca-cert-file string       path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)
+      --client-cert-file string   path to the certificate of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)
+      --client-key-file string    path to the certificate key of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)
+  -h, --help                      help for add
+      --name string               reference name for the Control Plane (required)
+      --overwrite                 overwrite existing Control Plane with the same reference name
+      --skip-verify               skip CA verification
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -190,17 +208,19 @@ Global Flags:
 ## kumactl install
 
 ```
-Install Kuma on Kubernetes.
+Install various Kuma components.
 
 Usage:
   kumactl install [command]
 
 Available Commands:
-  control-plane Install Kuma Control Plane on Kubernetes
-  dns           Install DNS to Kubernetes
-  logging       Install Logging backend in Kubernetes cluster (Loki)
-  metrics       Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
-  tracing       Install Tracing backend in Kubernetes cluster (Jaeger)
+  control-plane     Install Kuma Control Plane on Kubernetes
+  crds              Install Kuma Custom Resource Definitions on Kubernetes
+  dns               Install DNS to Kubernetes
+  logging           Install Logging backend in Kubernetes cluster (Loki)
+  metrics           Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
+  tracing           Install Tracing backend in Kubernetes cluster (Jaeger)
+  transparent-proxy Install Transparent Proxy pre-requisites on the host
 
 Flags:
   -h, --help   help for install
@@ -217,44 +237,49 @@ Use "kumactl install [command] --help" for more information about a command.
 
 ```
 Install Kuma Control Plane on Kubernetes in a 'kuma-system' namespace.
+This command requires that the KUBECONFIG environment is set
 
 Usage:
   kumactl install control-plane [flags]
 
 Flags:
-      --cni-bin-dir string                  set the CNI binary directory (default "/var/lib/cni/bin")
-      --cni-chained                         enable chained CNI installation
-      --cni-conf-name string                set the CNI configuration name (default "kuma-cni.conf")
-      --cni-enabled                         install Kuma with CNI instead of proxy init container
-      --cni-net-dir string                  set the CNI install directory (default "/etc/cni/multus/net.d")
-      --cni-registry string                 registry for the image of the Kuma CNI component (default "docker.io")
-      --cni-repository string               repository for the image of the Kuma CNI component (default "lobkovilya/install-cni")
-      --cni-version string                  version of the image of the Kuma CNI component (default "0.0.2")
-      --control-plane-registry string       registry for the image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io")
-      --control-plane-repository string     repository for the image of the Kuma Control Plane component (default "kuma-cp")
-      --control-plane-service-name string   Service name of the Kuma Control Plane (default "kuma-control-plane")
-      --control-plane-version string        version of the image of the Kuma Control Plane component (default "latest")
-      --dataplane-init-registry string      registry for the init image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
-      --dataplane-init-repository string    repository for the init image of the Kuma DataPlane component (default "kuma-init")
-      --dataplane-init-version string       version of the init image of the Kuma DataPlane component (default "latest")
-      --dataplane-registry string           registry for the image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
-      --dataplane-repository string         repository for the image of the Kuma DataPlane component (default "kuma-dp")
-      --dataplane-version string            version of the image of the Kuma DataPlane component (default "latest")
-      --env-var stringToString              environment variables that will be passed to the control plane (default [])
-  -h, --help                                help for control-plane
-      --image-pull-policy string            image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
-      --ingress-drain-time string           drain time for Envoy proxy (default "30s")
-      --ingress-enabled                     install Kuma with an Ingress deployment, using the Data Plane image
-      --ingress-use-node-port               use NodePort instead of LoadBalancer for the Ingress Service
-      --injector-failure-policy string      failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
-      --kds-global-address string           URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
-      --mode string                         kuma cp modes: one of standalone|remote|global (default "standalone")
-      --namespace string                    namespace to install Kuma Control Plane to (default "kuma-system")
-      --tls-ca-cert string                  CA certificate that was used to generate TLS certificate for Kuma Control Plane servers
-      --tls-cert string                     TLS certificate for Kuma Control Plane servers
-      --tls-key string                      TLS key for Kuma Control Plane servers
-      --use-node-port                       use NodePort instead of LoadBalancer
-      --zone string                         set the Kuma zone name
+      --cni-bin-dir string                          set the CNI binary directory (default "/var/lib/cni/bin")
+      --cni-chained                                 enable chained CNI installation
+      --cni-conf-name string                        set the CNI configuration name (default "kuma-cni.conf")
+      --cni-enabled                                 install Kuma with CNI instead of proxy init container
+      --cni-net-dir string                          set the CNI install directory (default "/etc/cni/multus/net.d")
+      --cni-registry string                         registry for the image of the Kuma CNI component (default "docker.io")
+      --cni-repository string                       repository for the image of the Kuma CNI component (default "lobkovilya/install-cni")
+      --cni-version string                          version of the image of the Kuma CNI component (default "0.0.2")
+      --control-plane-registry string               registry for the image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io")
+      --control-plane-repository string             repository for the image of the Kuma Control Plane component (default "kuma-cp")
+      --control-plane-service-name string           Service name of the Kuma Control Plane (default "kuma-control-plane")
+      --control-plane-version string                version of the image of the Kuma Control Plane component (default "latest")
+      --dataplane-init-registry string              registry for the init image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
+      --dataplane-init-repository string            repository for the init image of the Kuma DataPlane component (default "kuma-init")
+      --dataplane-init-version string               version of the init image of the Kuma DataPlane component (default "latest")
+      --dataplane-registry string                   registry for the image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
+      --dataplane-repository string                 repository for the image of the Kuma DataPlane component (default "kuma-dp")
+      --dataplane-version string                    version of the image of the Kuma DataPlane component (default "latest")
+      --env-var stringToString                      environment variables that will be passed to the control plane (default [])
+  -h, --help                                        help for control-plane
+      --image-pull-policy string                    image pull policy that applies to all components of the Kuma Control Plane (default "IfNotPresent")
+      --ingress-drain-time string                   drain time for Envoy proxy (default "30s")
+      --ingress-enabled                             install Kuma with an Ingress deployment, using the Data Plane image
+      --ingress-use-node-port                       use NodePort instead of LoadBalancer for the Ingress Service
+      --injector-failure-policy string              failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
+      --kds-global-address string                   URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
+      --mode string                                 kuma cp modes: one of standalone|remote|global (default "standalone")
+      --namespace string                            namespace to install Kuma Control Plane to (default "kuma-system")
+      --tls-api-server-client-certs-secret string   Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
+      --tls-api-server-secret string                Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS
+      --tls-general-ca-bundle string                Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
+      --tls-general-secret string                   Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication
+      --tls-kds-global-server-secret string         Secret that contains tls.crt, key.crt for protecting cross cluster communication
+      --tls-kds-remote-client-secret string         Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
+      --use-node-port                               use NodePort instead of LoadBalancer
+      --without-kubernetes-connection               install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades
+      --zone string                                 set the Kuma zone name
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -272,10 +297,12 @@ Usage:
 
 Flags:
   -h, --help                                help for metrics
-      --kuma-cp-address string              the address of Kuma CP (default "http://kuma-control-plane.kuma-system:5681")
+      --kuma-cp-address string              the address of Kuma CP (default "grpc://kuma-control-plane.kuma-system:5676")
       --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd")
       --kuma-prometheus-sd-version string   version of Kuma Prometheus SD (default "latest")
       --namespace string                    namespace to install metrics to (default "kuma-metrics")
+      --without-grafana                     disable Grafana resources generation
+      --without-prometheus                  disable Prometheus resources generation
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -330,27 +357,39 @@ Global Flags:
   -m, --mesh string          mesh to use (default "default")
 ```
 
-### kumactl generate dp-token
+### kumactl generate dataplane-token
 
 ```
-Generate resources, tokens, etc.
+Generate Dataplane Token that is used to prove Dataplane identity.
 
 Usage:
-  kumactl generate [command]
+  kumactl generate dataplane-token [flags]
 
-Available Commands:
-  dataplane-token Generate Dataplane Token
-  tls-certificate Generate a TLS certificate
+Examples:
+
+Generate token bound by name and mesh
+$ kumactl generate dataplane-token --mesh demo --name demo-01
+
+Generate token bound by mesh
+$ kumactl generate dataplane-token --mesh demo
+
+Generate Ingress token
+$ kumactl generate dataplane-token --type ingress
+
+Generate token bound by tag
+$ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
+
 
 Flags:
-  -h, --help   help for generate
+  -h, --help                 help for dataplane-token
+      --name string          name of the Dataplane
+      --tag stringToString   required tag values for dataplane (split values by comma to provide multiple values) (default [])
+      --type string          type of the Dataplane ("dataplane", "ingress")
 
 Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
-
-Use "kumactl generate [command] --help" for more information about a command.
 ```
 
 ## kumactl get
@@ -363,31 +402,37 @@ Usage:
 
 Available Commands:
   circuit-breaker     Show a single CircuitBreaker resource
-  circuit-breakers    Show CircuitBreakers
+  circuit-breakers    Show CircuitBreaker
   dataplane           Show a single Dataplane resource
-  dataplanes          Show Dataplanes
+  dataplanes          Show Dataplane
   external-service    Show a single ExternalService resource
-  external-services   Show ExternalServices
-  fault-injection     Show a single Fault-Injection resource
-  fault-injections    Show FaultInjections
+  external-services   Show ExternalService
+  fault-injection     Show a single FaultInjection resource
+  fault-injections    Show FaultInjection
+  global-secret       Show a single GlobalSecret resource
+  global-secrets      Show GlobalSecret
   healthcheck         Show a single HealthCheck resource
-  healthchecks        Show HealthChecks
+  healthchecks        Show HealthCheck
   mesh                Show a single Mesh resource
-  meshes              Show Meshes
-  proxytemplate       Show a single Proxytemplate resource
-  proxytemplates      Show ProxyTemplates
+  meshes              Show Mesh
+  proxytemplate       Show a single ProxyTemplate resource
+  proxytemplates      Show ProxyTemplate
+  retries             Show Retry
+  retry               Show a single Retry resource
   secret              Show a single Secret resource
-  secrets             Show Secrets
+  secrets             Show Secret
+  timeout             Show a single Timeout resource
+  timeouts            Show Timeout
   traffic-log         Show a single TrafficLog resource
-  traffic-logs        Show TrafficLogs
+  traffic-logs        Show TrafficLog
   traffic-permission  Show a single TrafficPermission resource
-  traffic-permissions Show TrafficPermissions
+  traffic-permissions Show TrafficPermission
   traffic-route       Show a single TrafficRoute resource
-  traffic-routes      Show TrafficRoutes
+  traffic-routes      Show TrafficRoute
   traffic-trace       Show a single TrafficTrace resource
-  traffic-traces      Show TrafficTraces
-  zone                Show a single Zone resource
-  zones               Show Zones
+  traffic-traces      Show TrafficTrace
+  zone                Show a single Retry resource
+  zones               Show Zone
 
 Flags:
   -h, --help            help for get
@@ -404,7 +449,7 @@ Use "kumactl get [command] --help" for more information about a command.
 ### kumactl get meshes
 
 ```
-Show Meshes.
+Show Mesh entities.
 
 Usage:
   kumactl get meshes [flags]
@@ -424,7 +469,7 @@ Global Flags:
 ### kumactl get dataplanes
 
 ```
-Show Dataplanes.
+Show Dataplane entities.
 
 Usage:
   kumactl get dataplanes [flags]
@@ -444,7 +489,7 @@ Global Flags:
 ### kumactl get healthchecks
 
 ```
-Show HealthChecks.
+Show HealthCheck entities.
 
 Usage:
   kumactl get healthchecks [flags]
@@ -461,10 +506,30 @@ Global Flags:
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
+### kumactl get retries
+
+```
+Show Retry entities.
+
+Usage:
+  kumactl get retries [flags]
+
+Flags:
+  -h, --help            help for retries
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
 ### kumactl get proxytemplates
 
 ```
-Show ProxyTemplates.
+Show ProxyTemplate entities.
 
 Usage:
   kumactl get proxytemplates [flags]
@@ -524,7 +589,7 @@ Global Flags:
 ### kumactl get traffic-routes
 
 ```
-Show TrafficRoutes.
+Show TrafficRoute entities.
 
 Usage:
   kumactl get traffic-routes [flags]
@@ -602,7 +667,7 @@ Global Flags:
 ### kumactl get secrets
 
 ```
-Show Secrets.
+Show Secret entities.
 
 Usage:
   kumactl get secrets [flags]
@@ -664,6 +729,8 @@ Usage:
 
 Available Commands:
   dataplanes  Inspect Dataplanes
+  meshes      Inspect Meshes
+  services    Inspect Services
   zones       Inspect Zones
 
 Flags:
@@ -689,6 +756,7 @@ Usage:
 Flags:
       --gateway              filter gateway dataplanes
   -h, --help                 help for dataplanes
+      --ingress              filter ingress dataplanes
       --tag stringToString   filter by tag in format of key=value. You can provide many tags (default [])
 
 Global Flags:

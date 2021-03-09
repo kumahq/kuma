@@ -3,10 +3,17 @@ package api_server
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
+	"crypto/x509"
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
+	"path/filepath"
+	"strings"
+
+	"github.com/kumahq/kuma/pkg/api-server/customization"
 
 	"github.com/emicklei/go-restful"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
@@ -15,15 +22,19 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/app/kuma-ui/pkg/resources"
+	"github.com/kumahq/kuma/pkg/api-server/authz"
 	"github.com/kumahq/kuma/pkg/api-server/definitions"
+	api_server "github.com/kumahq/kuma/pkg/config/api-server"
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/metrics"
+	"github.com/kumahq/kuma/pkg/tokens/builtin"
+	tokens_server "github.com/kumahq/kuma/pkg/tokens/builtin/server"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
 )
 
@@ -32,7 +43,8 @@ var (
 )
 
 type ApiServer struct {
-	server *http.Server
+	mux    *http.ServeMux
+	config api_server.ApiServerConfig
 }
 
 func (a *ApiServer) NeedLeaderElection() bool {
@@ -40,7 +52,7 @@ func (a *ApiServer) NeedLeaderElection() bool {
 }
 
 func (a *ApiServer) Address() string {
-	return a.server.Addr
+	return fmt.Sprintf("%s:%d", a.config.HTTP.Interface, a.config.HTTP.Port)
 }
 
 func init() {
@@ -61,13 +73,9 @@ func init() {
 	}
 }
 
-func NewApiServer(resManager manager.ResourceManager, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics) (*ApiServer, error) {
+func NewApiServer(resManager manager.ResourceManager, wsManager customization.APIInstaller, defs []definitions.ResourceWsDefinition, cfg *kuma_cp.Config, enableGUI bool, metrics metrics.Metrics) (*ApiServer, error) {
 	serverConfig := cfg.ApiServer
 	container := restful.NewContainer()
-	srv := &http.Server{
-		Addr:    fmt.Sprintf(":%d", serverConfig.Port),
-		Handler: container.ServeMux,
-	}
 
 	promMiddleware := middleware.New(middleware.Config{
 		Recorder: http_prometheus.NewRecorder(http_prometheus.Config{
@@ -98,12 +106,13 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	if err := addIndexWsEndpoints(ws); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
-	container.Add(catalogWs(*serverConfig.Catalog))
 	configWs, err := configWs(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
 	container.Add(configWs)
+
+	container.Add(versionsWs())
 
 	zonesWs := zonesWs(resManager)
 	container.Add(zonesWs)
@@ -111,7 +120,16 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	container.Filter(cors.Filter)
 
 	newApiServer := &ApiServer{
-		server: srv,
+		mux:    container.ServeMux,
+		config: *serverConfig,
+	}
+
+	dpWs, err := dataplaneTokenWs(resManager, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if dpWs != nil {
+		container.Add(dpWs)
 	}
 
 	// Handle the GUI
@@ -120,106 +138,184 @@ func NewApiServer(resManager manager.ResourceManager, defs []definitions.Resourc
 	} else {
 		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)
 	}
+
+	wsManager.Install(container)
+
 	return newApiServer, nil
 }
 
 func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWsDefinition, resManager manager.ResourceManager, cfg *kuma_cp.Config) {
 	config := cfg.ApiServer
-	endpoints := dataplaneOverviewEndpoints{
-		publicURL:  config.Catalog.ApiServer.Url,
+	dpOverviewEndpoints := dataplaneOverviewEndpoints{
 		resManager: resManager,
 	}
-	endpoints.addListEndpoint(ws, "/meshes/{mesh}")
-	endpoints.addFindEndpoint(ws, "/meshes/{mesh}")
-	endpoints.addListEndpoint(ws, "") // listing all resources in all meshes
+	dpOverviewEndpoints.addListEndpoint(ws, "/meshes/{mesh}")
+	dpOverviewEndpoints.addFindEndpoint(ws, "/meshes/{mesh}")
+	dpOverviewEndpoints.addListEndpoint(ws, "") // listing all resources in all meshes
 
 	zoneOverviewEndpoints := zoneOverviewEndpoints{
-		publicURL:  config.Catalog.ApiServer.Url,
 		resManager: resManager,
 	}
 	zoneOverviewEndpoints.addFindEndpoint(ws)
 	zoneOverviewEndpoints.addListEndpoint(ws)
 
+	serviceInsightEndpoints := serviceInsightEndpoints{
+		resourceEndpoints: resourceEndpoints{
+			mode:                 cfg.Mode,
+			resManager:           resManager,
+			ResourceWsDefinition: definitions.ServiceInsightWsDefinition,
+			adminAuth: authz.AdminAuth{
+				AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost,
+			},
+		},
+	}
+	serviceInsightEndpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definitions.ServiceInsightWsDefinition.Path)
+	serviceInsightEndpoints.addListEndpoint(ws, "/"+definitions.ServiceInsightWsDefinition.Path) // listing all resources in all meshes
+
 	for _, definition := range defs {
-		switch definition.ResourceFactory().GetType() {
-		case mesh.MeshType:
-			endpoints := resourceEndpoints{
-				mode:                 cfg.Mode,
-				publicURL:            config.Catalog.ApiServer.Url,
-				resManager:           resManager,
-				ResourceWsDefinition: definition,
-				meshFromRequest:      meshFromPathParam("name"),
-			}
-			if config.ReadOnly || definition.ReadOnly {
-				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes")
-				endpoints.addDeleteEndpointReadOnly(ws, "/meshes")
-			} else {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes")
-				endpoints.addDeleteEndpoint(ws, "/meshes")
-			}
-			endpoints.addFindEndpoint(ws, "/meshes")
-			endpoints.addListEndpoint(ws, "/meshes")
-		case system.ZoneType:
-			endpoints := resourceEndpoints{
-				publicURL:            config.Catalog.ApiServer.Url,
-				resManager:           resManager,
-				ResourceWsDefinition: definition,
-				meshFromRequest: func(request *restful.Request) string {
-					return "default"
-				},
-			}
-			if config.ReadOnly || definition.ReadOnly {
-				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/zones")
-				endpoints.addDeleteEndpointReadOnly(ws, "/zones")
-			} else {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/zones")
-				endpoints.addDeleteEndpoint(ws, "/zones")
-			}
-			endpoints.addFindEndpoint(ws, "/zones")
-			endpoints.addListEndpoint(ws, "/zones")
-		default:
-			endpoints := resourceEndpoints{
-				publicURL:            config.Catalog.ApiServer.Url,
-				resManager:           resManager,
-				ResourceWsDefinition: definition,
-				meshFromRequest:      meshFromPathParam("mesh"),
-			}
-			if config.ReadOnly || definition.ReadOnly {
-				endpoints.addCreateOrUpdateEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
-				endpoints.addDeleteEndpointReadOnly(ws, "/meshes/{mesh}/"+definition.Path)
-			} else {
-				endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-				endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
-			}
+		if config.ReadOnly {
+			definition.ReadOnly = true
+		}
+		endpoints := resourceEndpoints{
+			mode:                 cfg.Mode,
+			resManager:           resManager,
+			ResourceWsDefinition: definition,
+			adminAuth: authz.AdminAuth{
+				AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost,
+			},
+		}
+		switch definition.ResourceFactory().Scope() {
+		case model.ScopeMesh:
+			endpoints.addCreateOrUpdateEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
+			endpoints.addDeleteEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addFindEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/meshes/{mesh}/"+definition.Path)
 			endpoints.addListEndpoint(ws, "/"+definition.Path) // listing all resources in all meshes
+		case model.ScopeGlobal:
+			endpoints.addCreateOrUpdateEndpoint(ws, "/"+definition.Path)
+			endpoints.addDeleteEndpoint(ws, "/"+definition.Path)
+			endpoints.addFindEndpoint(ws, "/"+definition.Path)
+			endpoints.addListEndpoint(ws, "/"+definition.Path)
 		}
 	}
 }
 
+func dataplaneTokenWs(resManager manager.ResourceManager, cfg *kuma_cp.Config) (*restful.WebService, error) {
+	generator, err := builtin.NewDataplaneTokenIssuer(resManager)
+	if err != nil {
+		return nil, err
+	}
+	adminAuth := authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost}
+	return tokens_server.NewWebservice(generator).Filter(adminAuth.Validate), nil
+}
+
 func (a *ApiServer) Start(stop <-chan struct{}) error {
 	errChan := make(chan error)
+
+	var httpServer, httpsServer *http.Server
+	if a.config.HTTP.Enabled {
+		httpServer = a.startHttpServer(errChan)
+	}
+	if a.config.HTTPS.Enabled {
+		httpsServer = a.startHttpsServer(errChan)
+	}
+	select {
+	case <-stop:
+		log.Info("stopping down API Server")
+		if httpServer != nil {
+			return httpServer.Shutdown(context.Background())
+		}
+		if httpsServer != nil {
+			return httpsServer.Shutdown(context.Background())
+		}
+	case err := <-errChan:
+		return err
+	}
+	return nil
+}
+
+func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
+	server := &http.Server{
+		Addr:    fmt.Sprintf("%s:%d", a.config.HTTP.Interface, a.config.HTTP.Port),
+		Handler: a.mux,
+	}
+
 	go func() {
-		err := a.server.ListenAndServe()
+		err := server.ListenAndServe()
 		if err != nil {
 			switch err {
 			case http.ErrServerClosed:
-				log.Info("Shutting down server")
+				log.Info("shutting down server")
 			default:
-				log.Error(err, "Could not start an HTTP Server")
+				log.Error(err, "could not start an HTTP Server")
 				errChan <- err
 			}
 		}
 	}()
-	log.Info("starting", "interface", "0.0.0.0", "port", a.Address())
-	select {
-	case <-stop:
-		log.Info("Stopping down API Server")
-		return a.server.Shutdown(context.Background())
-	case err := <-errChan:
-		return err
+	log.Info("starting", "interface", a.config.HTTP.Interface, "port", a.config.HTTP.Port)
+	return server
+}
+
+func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
+	tlsConfig, err := configureMTLS(a.config.Auth.ClientCertsDir)
+	if err != nil {
+		errChan <- err
 	}
+
+	server := &http.Server{
+		Addr:      fmt.Sprintf("%s:%d", a.config.HTTPS.Interface, a.config.HTTPS.Port),
+		Handler:   a.mux,
+		TLSConfig: tlsConfig,
+	}
+
+	go func() {
+		err := server.ListenAndServeTLS(a.config.HTTPS.TlsCertFile, a.config.HTTPS.TlsKeyFile)
+		if err != nil {
+			switch err {
+			case http.ErrServerClosed:
+				log.Info("shutting down server")
+			default:
+				log.Error(err, "could not start an HTTPS Server")
+				errChan <- err
+			}
+		}
+	}()
+	log.Info("starting", "interface", a.config.HTTPS.Interface, "port", a.config.HTTPS.Port, "tls", true)
+	return server
+}
+
+func configureMTLS(certsDir string) (*tls.Config, error) {
+	tlsConfig := &tls.Config{}
+	if certsDir != "" {
+		log.Info("loading client certificates")
+		clientCertPool := x509.NewCertPool()
+		files, err := ioutil.ReadDir(certsDir)
+		if err != nil {
+			return nil, err
+		}
+		for _, file := range files {
+			if file.IsDir() {
+				continue
+			}
+			if !strings.HasSuffix(file.Name(), ".pem") && !strings.HasSuffix(file.Name(), ".crt") {
+				log.Info("skipping file, all the client certificates has to have .pem or .crt extension", "file", file.Name())
+				continue
+			}
+			log.Info("adding client certificate", "file", file.Name())
+			path := filepath.Join(certsDir, file.Name())
+			caCert, err := ioutil.ReadFile(path)
+			if err != nil {
+				return nil, errors.Wrapf(err, "could not read certificate %s", path)
+			}
+			clientCertPool.AppendCertsFromPEM(caCert)
+		}
+		tlsConfig.ClientCAs = clientCertPool
+	}
+	tlsConfig.ClientAuth = tls.VerifyClientCertIfGiven // client certs are required only for some endpoints
+	return tlsConfig, nil
 }
 
 func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *http.Request) {
@@ -253,7 +349,7 @@ func SetupServer(rt runtime.Runtime) error {
 			}
 		}
 	}
-	apiServer, err := NewApiServer(rt.ResourceManager(), definitions.All, &cfg, enableGUI, rt.Metrics())
+	apiServer, err := NewApiServer(rt.ResourceManager(), rt.APIInstaller(), definitions.DefaultCRUDLEndpoints, &cfg, enableGUI, rt.Metrics())
 	if err != nil {
 		return err
 	}

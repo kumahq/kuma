@@ -78,7 +78,7 @@ spec:
       serviceAccountName: prometheus-pushgateway
       containers:
         - name: prometheus-pushgateway
-          image: "prom/pushgateway:v1.2.0"
+          image: "prom/pushgateway:v1.4.0"
           imagePullPolicy: "IfNotPresent"
           args:
           ports:

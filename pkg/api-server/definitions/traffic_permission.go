@@ -9,7 +9,7 @@ var TrafficPermissionWsDefinition = ResourceWsDefinition{
 	Name: "Traffic Permission",
 	Path: "traffic-permissions",
 	ResourceFactory: func() model.Resource {
-		return &mesh.TrafficPermissionResource{}
+		return mesh.NewTrafficPermissionResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.TrafficPermissionResourceList{}

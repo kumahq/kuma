@@ -16,7 +16,13 @@ var _ model.Resource = &TrafficTraceResource{}
 
 type TrafficTraceResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.TrafficTrace
+	Spec *mesh_proto.TrafficTrace
+}
+
+func NewTrafficTraceResource() *TrafficTraceResource {
+	return &TrafficTraceResource{
+		Spec: &mesh_proto.TrafficTrace{},
+	}
 }
 
 func (t *TrafficTraceResource) GetType() model.ResourceType {
@@ -29,14 +35,14 @@ func (t *TrafficTraceResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *TrafficTraceResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
 	status, ok := spec.(*mesh_proto.TrafficTrace)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *status
+		t.Spec = status
 		return nil
 	}
 }
@@ -62,7 +68,7 @@ func (l *TrafficTraceResourceList) GetItemType() model.ResourceType {
 	return TrafficTraceType
 }
 func (l *TrafficTraceResourceList) NewItem() model.Resource {
-	return &TrafficTraceResource{}
+	return NewTrafficTraceResource()
 }
 func (l *TrafficTraceResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*TrafficTraceResource); ok {
@@ -77,7 +83,7 @@ func (l *TrafficTraceResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&TrafficTraceResource{})
+	registry.RegisterType(NewTrafficTraceResource())
 	registry.RegistryListType(&TrafficTraceResourceList{})
 }
 

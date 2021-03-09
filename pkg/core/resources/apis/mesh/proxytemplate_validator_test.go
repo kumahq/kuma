@@ -15,10 +15,10 @@ var _ = Describe("ProxyTemplate", func() {
 	Describe("Validate()", func() {
 		DescribeTable("should pass validation",
 			func(spec string) {
-				proxyTemplate := mesh.ProxyTemplateResource{}
+				proxyTemplate := mesh.NewProxyTemplateResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(spec), &proxyTemplate.Spec)
+				err := util_proto.FromYAML([]byte(spec), proxyTemplate.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -154,14 +154,14 @@ var _ = Describe("ProxyTemplate", func() {
                   - networkFilter:
                       operation: addFirst
                       value: |
-                        name: envoy.tcp_proxy
+                        name: envoy.filters.network.tcp_proxy
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                           cluster: backend
                   - networkFilter:
                       operation: addLast
                       value: |
-                        name: envoy.tcp_proxy
+                        name: envoy.filters.network.tcp_proxy
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                           cluster: backend
@@ -170,7 +170,7 @@ var _ = Describe("ProxyTemplate", func() {
                       match:
                         name: envoy.filters.network.direct_response
                       value: |
-                        name: envoy.tcp_proxy
+                        name: envoy.filters.network.tcp_proxy
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                           cluster: backend
@@ -180,17 +180,17 @@ var _ = Describe("ProxyTemplate", func() {
                         name: envoy.filters.network.direct_response
                         listenerName: inbound:127.0.0.0:8080
                       value: |
-                        name: envoy.tcp_proxy
+                        name: envoy.filters.network.tcp_proxy
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                           cluster: backend
                   - networkFilter:
                       operation: patch
                       match:
-                        name: envoy.tcp_proxy
+                        name: envoy.filters.network.tcp_proxy
                         listenerName: inbound:127.0.0.0:8080
                       value: |
-                        name: envoy.tcp_proxy
+                        name: envoy.filters.network.tcp_proxy
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                           cluster: backend
@@ -207,37 +207,37 @@ var _ = Describe("ProxyTemplate", func() {
                   - httpFilter:
                       operation: addFirst
                       value: |
-                        name: envoy.router
+                        name: envoy.filters.http.router
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
                           dynamicStats: false
                   - httpFilter:
                       operation: addLast
                       value: |
-                        name: envoy.router
+                        name: envoy.filters.http.router
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
                           dynamicStats: false
                   - httpFilter:
                       operation: addAfter
                       match:
-                        name: envoy.router
+                        name: envoy.filters.http.router
                       value: |
                         name: envoy.filters.http.gzip
                   - httpFilter:
                       operation: addAfter
                       match:
-                        name: envoy.router
+                        name: envoy.filters.http.router
                         listenerName: inbound:127.0.0.0:8080
                       value: |
                         name: envoy.filters.http.gzip
                   - httpFilter:
                       operation: patch
                       match:
-                        name: envoy.tcp_proxy
+                        name: envoy.filters.network.tcp_proxy
                         listenerName: inbound:127.0.0.0:8080
                       value: |
-                        name: envoy.router
+                        name: envoy.filters.http.router
                         typedConfig:
                           '@type': type.googleapis.com/envoy.config.filter.http.router.v2.Router
                           dynamicStats: false
@@ -310,10 +310,10 @@ var _ = Describe("ProxyTemplate", func() {
 		DescribeTable("should validate fields",
 			func(given testCase) {
 				// given
-				proxyTemplate := mesh.ProxyTemplateResource{}
+				proxyTemplate := mesh.NewProxyTemplateResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.proxyTemplate), &proxyTemplate.Spec)
+				err := util_proto.FromYAML([]byte(given.proxyTemplate), proxyTemplate.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -443,7 +443,7 @@ var _ = Describe("ProxyTemplate", func() {
 				expected: `
                 violations:
                 - field: conf.resources[0].resource
-                  message: 'native Envoy resource is not valid: json: cannot unmarshal string into Go value of type map[string]*json.RawMessage'`,
+                  message: 'native Envoy resource is not valid: json: cannot unmarshal string into Go value of type map[string]json.RawMessage'`,
 			}),
 			Entry("invalid cluster modifications", testCase{
 				proxyTemplate: `

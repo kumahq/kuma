@@ -12,8 +12,10 @@ import (
 
 	"github.com/kumahq/kuma/pkg/config"
 	conf "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	inject "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -44,7 +46,7 @@ var _ = Describe("Injector", func() {
 			var cfg conf.Injector
 			Expect(config.Load(filepath.Join("testdata", given.cfgFile), &cfg)).To(Succeed())
 			cfg.CaCertFile = filepath.Join("..", "..", "..", "..", "..", "..", "test", "certs", "server-cert.pem")
-			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient)
+			injector, err := inject.New(cfg, "http://kuma-control-plane.kuma-system:5681", k8sClient, k8s.NewSimpleConverter())
 			Expect(err).ToNot(HaveOccurred())
 
 			// and create mesh
@@ -84,12 +86,7 @@ var _ = Describe("Injector", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("comparing actual against golden")
-			// when
-			expected, err := ioutil.ReadFile(goldenFile)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(matchers.MatchGoldenYAML(goldenFile))
 		},
 		Entry("01. Pod without init containers and annotations", testCase{
 			num: "01",
@@ -337,7 +334,7 @@ var _ = Describe("Injector", func() {
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("15. Override virtual probes port", testCase{
+		Entry("15. virtual probes: config - 9000, pod - 19000", testCase{
 			num: "15",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -354,7 +351,7 @@ var _ = Describe("Injector", func() {
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
 		}),
-		Entry("16. Override virtual probes enabled state", testCase{
+		Entry("16. virtual probes: config - enabled, pod - disabled", testCase{
 			num: "16",
 			mesh: `
               apiVersion: kuma.io/v1alpha1
@@ -438,6 +435,73 @@ var _ = Describe("Injector", func() {
                 annotations:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
+		}),
+		Entry("21. virtual probes: config - disabled, pod - empty", testCase{
+			num: "21",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.vp-disabled.config.yaml",
+		}),
+		Entry("22. virtual probes: config - disabled, pod - enabled", testCase{
+			num: "22",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.vp-disabled.config.yaml",
+		}),
+		Entry("23. Adjust Pod's probes, named port", testCase{
+			num: "23",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default
+              spec: {}`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.config.yaml",
+		}),
+		Entry("24. sidecar env var config overrides", testCase{
+			num: "24",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.env-vars.config.yaml",
 		}),
 	)
 })

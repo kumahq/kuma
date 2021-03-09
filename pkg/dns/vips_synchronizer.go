@@ -4,41 +4,37 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 )
 
 var (
 	vipsSynchronizerLog = core.Log.WithName("dns-vips-synchronizer")
 )
 
-type (
-	// VIPsSynchronizer takes allocated VIPs by VIPsAllocator and updates DNSResolver.
-	VIPsSynchronizer interface {
-		Start(<-chan struct{}) error
-		NeedLeaderElection() bool
-	}
-
-	vipsSynchronizer struct {
-		resolver    DNSResolver
-		persistence *DNSPersistence
-		leadInfo    component.LeaderInfo
-		newTicker   func() *time.Ticker
-	}
-)
+type vipsSynchronizer struct {
+	resolver    resolver.DNSResolver
+	persistence *vips.Persistence
+	leadInfo    component.LeaderInfo
+	newTicker   func() *time.Ticker
+}
 
 const (
 	tickInterval = 500 * time.Millisecond
 )
 
-func NewVIPsSynchronizer(resolver DNSResolver, persistence *DNSPersistence, leadInfo component.LeaderInfo) (VIPsSynchronizer, error) {
+func NewVIPsSynchronizer(resolver resolver.DNSResolver, rm manager.ReadOnlyResourceManager, configManager config_manager.ConfigManager, leadInfo component.LeaderInfo) component.Component {
 	return &vipsSynchronizer{
 		resolver:    resolver,
-		persistence: persistence,
+		persistence: vips.NewPersistence(rm, configManager),
 		leadInfo:    leadInfo,
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(tickInterval)
 		},
-	}, nil
+	}
 }
 
 func (d *vipsSynchronizer) NeedLeaderElection() bool {
@@ -67,7 +63,7 @@ func (d *vipsSynchronizer) synchronize() error {
 	if d.leadInfo.IsLeader() {
 		return nil // when CP is leader we skip this because VIP allocator updates DNSResolver
 	}
-	vipList, err := d.persistence.Get()
+	vipList, _, err := d.persistence.Get()
 	if err != nil {
 		return err
 	}

@@ -2,7 +2,7 @@
 
 set -e
 
-function run() {
+run() {
     command=$@
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
     echo '$' $command
@@ -12,7 +12,7 @@ function run() {
     echo
 }
 
-function workflow() {
+workflow() {
 
     run kumactl config view
 
@@ -32,6 +32,11 @@ function workflow() {
     run kumactl get healthchecks -otable
     run kumactl get healthchecks -oyaml
     run kumactl get healthchecks -ojson
+
+    run kumactl get retries
+    run kumactl get retries -otable
+    run kumactl get retries -oyaml
+    run kumactl get retries -ojson
 
     run kumactl get proxytemplates
     run kumactl get proxytemplates -otable

@@ -1,0 +1,15 @@
+metadata:
+  namespace: kuma-system
+  name: kuma-ingress
+  labels:
+    app: kuma-ingress
+  annotations:
+    kuma.io/ingress: enabled
+    kuma.io/ingress-public-address: custom-address.com
+    kuma.io/ingress-public-port: 1234
+spec:
+  containers:
+    - ports:
+        - containerPort: 10001
+status:
+  podIP: 192.168.0.1

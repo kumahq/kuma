@@ -13,6 +13,7 @@ import (
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	mesh_res "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -31,12 +32,9 @@ var _ = Describe("Resource Endpoints", func() {
 
 	const mesh = "default"
 
-	const publicApiServerUrl = "http://kuma.internal:1234" // for pagination test
-
 	BeforeEach(func() {
-		resourceStore = memory.NewStore()
+		resourceStore = store.NewPaginationStore(memory.NewStore())
 		serverConfig := config.DefaultApiServerConfig()
-		serverConfig.Catalog.ApiServer.Url = publicApiServerUrl
 		m, err := core_metrics.NewMetrics("Standalone")
 		metrics = m
 		Expect(err).ToNot(HaveOccurred())
@@ -60,7 +58,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 	BeforeEach(func() {
 		// create default mesh
-		err := resourceStore.Create(context.Background(), &mesh_res.MeshResource{}, store.CreateByKey(mesh, mesh))
+		err := resourceStore.Create(context.Background(), mesh_res.NewMeshResource(), store.CreateByKey(mesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -218,8 +216,8 @@ var _ = Describe("Resource Endpoints", func() {
 						"path": "/sample-path"
 					}
 				],
-				"next": "%s/sample-traffic-routes?offset=2&size=2"
-			}`, publicApiServerUrl)
+				"next": "http://%s/sample-traffic-routes?offset=2&size=2"
+			}`, client.address)
 			body, err := ioutil.ReadAll(response.Body)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(body).To(MatchJSON(json))
@@ -376,8 +374,8 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 
 			// then
-			resource := sample_model.TrafficRouteResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			resource := sample_model.NewTrafficRouteResource()
+			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(resource.Spec.Path).To(Equal("/update-sample-path"))
 		})
@@ -565,7 +563,7 @@ var _ = Describe("Resource Endpoints", func() {
 
 		It("should return 400 when mesh does not exist", func() {
 			// setup
-			err := resourceStore.Delete(context.Background(), &mesh_res.MeshResource{}, store.DeleteByKey("default", "default"))
+			err := resourceStore.Delete(context.Background(), mesh_res.NewMeshResource(), store.DeleteByKey(model.DefaultMesh, model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			// given
@@ -616,8 +614,8 @@ var _ = Describe("Resource Endpoints", func() {
 			Expect(response.StatusCode).To(Equal(200))
 
 			// and
-			resource := sample_model.TrafficRouteResource{}
-			err := resourceStore.Get(context.Background(), &resource, store.GetByKey(name, mesh))
+			resource := sample_model.NewTrafficRouteResource()
+			err := resourceStore.Get(context.Background(), resource, store.GetByKey(name, mesh))
 			Expect(err).To(Equal(store.ErrorResourceNotFound(resource.GetType(), name, mesh)))
 		})
 

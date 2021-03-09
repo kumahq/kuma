@@ -4,16 +4,20 @@ import (
 	"context"
 	"fmt"
 	"io/ioutil"
+	"sort"
 	"strings"
 
 	"github.com/pkg/errors"
+	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
+
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 
@@ -24,18 +28,18 @@ import (
 )
 
 const (
-	KumaSidecarContainerName = "kuma-sidecar"
-	KumaInitContainerName    = "kuma-init"
-)
-
-const (
 	// serviceAccountTokenMountPath is a well-known location where Kubernetes mounts a ServiceAccount token.
 	serviceAccountTokenMountPath = "/var/run/secrets/kubernetes.io/serviceaccount"
 )
 
 var log = core.Log.WithName("injector")
 
-func New(cfg runtime_k8s.Injector, controlPlaneUrl string, client kube_client.Client) (*KumaInjector, error) {
+func New(
+	cfg runtime_k8s.Injector,
+	controlPlaneUrl string,
+	client kube_client.Client,
+	converter k8s_common.Converter,
+) (*KumaInjector, error) {
 	var caCert string
 	if cfg.CaCertFile != "" {
 		bytes, err := ioutil.ReadFile(cfg.CaCertFile)
@@ -48,7 +52,7 @@ func New(cfg runtime_k8s.Injector, controlPlaneUrl string, client kube_client.Cl
 		cfg:             cfg,
 		controlPlaneUrl: controlPlaneUrl,
 		client:          client,
-		converter:       k8s_resources.DefaultConverter(),
+		converter:       converter,
 		caCert:          caCert,
 	}, nil
 }
@@ -57,7 +61,7 @@ type KumaInjector struct {
 	cfg             runtime_k8s.Injector
 	controlPlaneUrl string
 	client          kube_client.Client
-	converter       k8s_resources.Converter
+	converter       k8s_common.Converter
 	caCert          string
 }
 
@@ -72,12 +76,16 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 		log.V(1).Info("skip injecting Kuma", "name", pod.Name, "namespace", pod.Namespace)
 		return nil
 	}
-	log.Info("injecting Kuma", "name", pod.Name, "namespace", pod.Namespace)
+	log.Info("injecting Kuma", "name", pod.GenerateName, "namespace", pod.Namespace)
 	// sidecar container
 	if pod.Spec.Containers == nil {
 		pod.Spec.Containers = []kube_core.Container{}
 	}
-	pod.Spec.Containers = append(pod.Spec.Containers, i.NewSidecarContainer(pod, ns))
+	container, err := i.NewSidecarContainer(pod, ns)
+	if err != nil {
+		return err
+	}
+	pod.Spec.Containers = append(pod.Spec.Containers, container)
 
 	mesh, err := i.meshFor(pod, ns)
 	if err != nil {
@@ -88,7 +96,12 @@ func (i *KumaInjector) InjectKuma(pod *kube_core.Pod) error {
 	if pod.Annotations == nil {
 		pod.Annotations = map[string]string{}
 	}
-	for key, value := range i.NewAnnotations(pod, mesh) {
+
+	annotations, err := i.NewAnnotations(pod, mesh)
+	if err != nil {
+		return errors.Wrap(err, "could not generate annotations for pod")
+	}
+	for key, value := range annotations {
 		pod.Annotations[key] = value
 	}
 
@@ -166,7 +179,7 @@ func (i *KumaInjector) meshFor(pod *kube_core.Pod, ns *kube_core.Namespace) (*me
 	if err := i.client.Get(context.Background(), kube_types.NamespacedName{Name: meshName}, mesh); err != nil {
 		return nil, err
 	}
-	meshResource := &mesh_core.MeshResource{}
+	meshResource := mesh_core.NewMeshResource()
 	if err := i.converter.ToCoreResource(mesh, meshResource); err != nil {
 		return nil, err
 	}
@@ -185,86 +198,31 @@ func (i *KumaInjector) namespaceFor(pod *kube_core.Pod) (*kube_core.Namespace, e
 	return ns, nil
 }
 
-func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Namespace) kube_core.Container {
+func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Namespace) (kube_core.Container, error) {
 	mesh := meshName(pod, ns)
+	env, err := i.sidecarEnvVars(mesh, pod.GetAnnotations())
+	if err != nil {
+		return kube_core.Container{}, err
+	}
 	return kube_core.Container{
-		Name:            KumaSidecarContainerName,
+		Name:            util.KumaSidecarContainerName,
 		Image:           i.cfg.SidecarContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Args: []string{
 			"run",
 			"--log-level=info",
 		},
-		Env: []kube_core.EnvVar{
-			{
-				Name: "POD_NAME",
-				ValueFrom: &kube_core.EnvVarSource{
-					FieldRef: &kube_core.ObjectFieldSelector{
-						APIVersion: "v1",
-						FieldPath:  "metadata.name",
-					},
-				},
-			},
-			{
-				Name: "POD_NAMESPACE",
-				ValueFrom: &kube_core.EnvVarSource{
-					FieldRef: &kube_core.ObjectFieldSelector{
-						APIVersion: "v1",
-						FieldPath:  "metadata.namespace",
-					},
-				},
-			},
-			{
-				Name: "INSTANCE_IP",
-				ValueFrom: &kube_core.EnvVarSource{
-					FieldRef: &kube_core.ObjectFieldSelector{
-						APIVersion: "v1",
-						FieldPath:  "status.podIP",
-					},
-				},
-			},
-			{
-				Name:  "KUMA_CONTROL_PLANE_API_SERVER_URL",
-				Value: i.controlPlaneUrl,
-			},
-			{
-				Name:  "KUMA_DATAPLANE_MESH",
-				Value: mesh,
-			},
-			{
-				Name: "KUMA_DATAPLANE_NAME",
-				// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
-				// that is why we have to use a runtime reference to POD_NAME instead
-				Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
-			},
-			{
-				Name:  "KUMA_DATAPLANE_ADMIN_PORT",
-				Value: fmt.Sprintf("%d", i.cfg.SidecarContainer.AdminPort),
-			},
-			{
-				Name:  "KUMA_DATAPLANE_DRAIN_TIME",
-				Value: i.cfg.SidecarContainer.DrainTime.String(),
-			},
-			{
-				Name:  "KUMA_DATAPLANE_RUNTIME_TOKEN_PATH",
-				Value: "/var/run/secrets/kubernetes.io/serviceaccount/token",
-			},
-			{
-				Name:  "KUMA_CONTROL_PLANE_CA_CERT",
-				Value: i.caCert,
-			},
-		},
+		Env: env,
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  &i.cfg.SidecarContainer.UID,
 			RunAsGroup: &i.cfg.SidecarContainer.GID,
 		},
 		LivenessProbe: &kube_core.Probe{
 			Handler: kube_core.Handler{
-				Exec: &kube_core.ExecAction{
-					Command: []string{
-						"wget",
-						"-qO-",
-						fmt.Sprintf("http://127.0.0.1:%d/ready", i.cfg.SidecarContainer.AdminPort),
+				HTTPGet: &kube_core.HTTPGetAction{
+					Path: "/ready",
+					Port: kube_intstr.IntOrString{
+						IntVal: int32(i.cfg.SidecarContainer.AdminPort),
 					},
 				},
 			},
@@ -276,11 +234,10 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 		},
 		ReadinessProbe: &kube_core.Probe{
 			Handler: kube_core.Handler{
-				Exec: &kube_core.ExecAction{
-					Command: []string{
-						"wget",
-						"-qO-",
-						fmt.Sprintf("http://127.0.0.1:%d/ready", i.cfg.SidecarContainer.AdminPort),
+				HTTPGet: &kube_core.HTTPGetAction{
+					Path: "/ready",
+					Port: kube_intstr.IntOrString{
+						IntVal: int32(i.cfg.SidecarContainer.AdminPort),
 					},
 				},
 			},
@@ -305,7 +262,101 @@ func (i *KumaInjector) NewSidecarContainer(pod *kube_core.Pod, ns *kube_core.Nam
 		// That's why it is a responsibility of every mutating web hook to copy
 		// ServiceAccount volume mount into containers it creates.
 		VolumeMounts: i.NewVolumeMounts(pod),
+	}, nil
+}
+
+func (i *KumaInjector) sidecarEnvVars(mesh string, podAnnotations map[string]string) ([]kube_core.EnvVar, error) {
+	envVars := map[string]kube_core.EnvVar{
+		"KUMA_CONTROL_PLANE_URL": {
+			Name:  "KUMA_CONTROL_PLANE_URL",
+			Value: i.controlPlaneUrl,
+		},
+		"KUMA_DATAPLANE_MESH": {
+			Name:  "KUMA_DATAPLANE_MESH",
+			Value: mesh,
+		},
+		"KUMA_DATAPLANE_NAME": {
+			Name: "KUMA_DATAPLANE_NAME",
+			// notice that Pod name might not be available at this time (in case of Deployment, ReplicaSet, etc)
+			// that is why we have to use a runtime reference to POD_NAME instead
+			Value: "$(POD_NAME).$(POD_NAMESPACE)", // variable references get expanded by Kubernetes
+		},
+		"KUMA_DATAPLANE_ADMIN_PORT": {
+			Name:  "KUMA_DATAPLANE_ADMIN_PORT",
+			Value: fmt.Sprintf("%d", i.cfg.SidecarContainer.AdminPort),
+		},
+		"KUMA_DATAPLANE_DRAIN_TIME": {
+			Name:  "KUMA_DATAPLANE_DRAIN_TIME",
+			Value: i.cfg.SidecarContainer.DrainTime.String(),
+		},
+		"KUMA_DATAPLANE_RUNTIME_TOKEN_PATH": {
+			Name:  "KUMA_DATAPLANE_RUNTIME_TOKEN_PATH",
+			Value: "/var/run/secrets/kubernetes.io/serviceaccount/token",
+		},
+		"KUMA_CONTROL_PLANE_CA_CERT": {
+			Name:  "KUMA_CONTROL_PLANE_CA_CERT",
+			Value: i.caCert,
+		},
 	}
+
+	// override defaults with cfg env vars
+	for envName, envVal := range i.cfg.SidecarContainer.EnvVars {
+		envVars[envName] = kube_core.EnvVar{
+			Name:  envName,
+			Value: envVal,
+		}
+	}
+
+	// override defaults and cfg env vars with annotations
+	annotationEnvVars, err := metadata.Annotations(podAnnotations).GetMap(metadata.KumaSidecarEnvVarsAnnotation)
+	if err != nil {
+		return nil, err
+	}
+	for envName, envVal := range annotationEnvVars {
+		envVars[envName] = kube_core.EnvVar{
+			Name:  envName,
+			Value: envVal,
+		}
+	}
+
+	var result []kube_core.EnvVar
+	for _, v := range envVars {
+		result = append(result, v)
+	}
+	sort.Stable(EnvVarsByName(result))
+
+	// those values needs to be added before other vars, otherwise expressions like "$(POD_NAME).$(POD_NAMESPACE)" won't be evaluated
+	result = append([]kube_core.EnvVar{
+		{
+			Name: "POD_NAME",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.name",
+				},
+			},
+		},
+		{
+			Name: "POD_NAMESPACE",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "metadata.namespace",
+				},
+			},
+		},
+		{
+			Name: "INSTANCE_IP",
+			ValueFrom: &kube_core.EnvVarSource{
+				FieldRef: &kube_core.ObjectFieldSelector{
+					APIVersion: "v1",
+					FieldPath:  "status.podIP",
+				},
+			},
+		},
+	}, result...)
+
+	return result, nil
 }
 
 func (i *KumaInjector) NewVolumeMounts(pod *kube_core.Pod) []kube_core.VolumeMount {
@@ -331,39 +382,34 @@ func (i *KumaInjector) FindServiceAccountToken(pod *kube_core.Pod) *kube_core.Vo
 }
 
 func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container, error) {
-	inboundPortsToIntercept := "*"
+	redirectInbound := "true"
 	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation)
 	if err != nil {
 		return kube_core.Container{}, err
 	}
 	if exist && enabled {
-		inboundPortsToIntercept = ""
+		redirectInbound = "false"
 	}
 	excludeInboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
 	excludeOutboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPorts)
 	return kube_core.Container{
-		Name:            KumaInitContainerName,
+		Name:            util.KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
+		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
 		Args: []string{
-			"-p",
+			"--redirect-outbound-port",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
-			"-z",
+			"--redirect-inbound=" + redirectInbound,
+			"--redirect-inbound-port",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
-			"-u",
+			"--kuma-dp-uid",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
-			"-g",
-			fmt.Sprintf("%d", i.cfg.SidecarContainer.GID),
-			"-d",
+			"--exclude-inbound-ports",
 			excludeInboundPorts,
-			"-o",
+			"--exclude-outbound-ports",
 			excludeOutboundPorts,
-			"-m",
-			"REDIRECT",
-			"-i",
-			"*",
-			"-b",
-			inboundPortsToIntercept,
+			"--modify-resolv-conf=false",
 		},
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  new(int64), // way to get pointer to int64(0)
@@ -387,7 +433,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	}, nil
 }
 
-func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) map[string]string {
+func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) (map[string]string, error) {
 	annotations := map[string]string{
 		metadata.KumaMeshAnnotation:                            mesh.GetMeta().GetName(), // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:                 fmt.Sprintf("%t", true),
@@ -398,12 +444,14 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
-	if _, exist, _ := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaVirtualProbesAnnotation); !exist {
-		annotations[metadata.KumaVirtualProbesAnnotation] = metadata.AnnotationEnabled
+
+	if err := setVirtualProbesEnabledAnnotation(annotations, pod, i.cfg); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
 	}
-	if _, exist, _ := metadata.Annotations(pod.Annotations).GetUint32(metadata.KumaVirtualProbesPortAnnotation); !exist {
-		annotations[metadata.KumaVirtualProbesPortAnnotation] = fmt.Sprintf("%d", i.cfg.VirtualProbesPort)
+	if err := setVirtualProbesPortAnnotation(annotations, pod, i.cfg); err != nil {
+		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesPortAnnotation))
 	}
+
 	if val, exist := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts); exist {
 		annotations[metadata.KumaTrafficExcludeInboundPorts] = val
 	} else if len(i.cfg.SidecarTraffic.ExcludeInboundPorts) > 0 {
@@ -414,7 +462,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 	} else if len(i.cfg.SidecarTraffic.ExcludeOutboundPorts) > 0 {
 		annotations[metadata.KumaTrafficExcludeOutboundPorts] = portsToAnnotationValue(i.cfg.SidecarTraffic.ExcludeOutboundPorts)
 	}
-	return annotations
+	return annotations, nil
 }
 
 func portsToAnnotationValue(ports []uint32) string {
@@ -423,4 +471,12 @@ func portsToAnnotationValue(ports []uint32) string {
 		stringPorts[i] = fmt.Sprintf("%d", port)
 	}
 	return strings.Join(stringPorts, ",")
+}
+
+type EnvVarsByName []kube_core.EnvVar
+
+func (a EnvVarsByName) Len() int      { return len(a) }
+func (a EnvVarsByName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a EnvVarsByName) Less(i, j int) bool {
+	return a[i].Name < a[j].Name
 }

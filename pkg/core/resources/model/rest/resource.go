@@ -135,3 +135,16 @@ func (rec *ResourceListReceiver) UnmarshalJSON(data []byte) error {
 	rec.ResourceList.Next = list.Next
 	return nil
 }
+
+type ByMeta []*Resource
+
+func (a ByMeta) Len() int { return len(a) }
+
+func (a ByMeta) Less(i, j int) bool {
+	if a[i].Meta.Mesh == a[j].Meta.Mesh {
+		return a[i].Meta.Name < a[j].Meta.Name
+	}
+	return a[i].Meta.Mesh < a[j].Meta.Mesh
+}
+
+func (a ByMeta) Swap(i, j int) { a[i], a[j] = a[j], a[i] }

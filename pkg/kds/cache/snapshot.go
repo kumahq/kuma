@@ -21,11 +21,18 @@ type SnapshotBuilder interface {
 }
 
 type builder struct {
-	resources map[string][]envoy_types.Resource
+	resources map[string][]envoy_types.ResourceWithTtl
 }
 
 func (b *builder) With(typ string, resources []envoy_types.Resource) SnapshotBuilder {
-	b.resources[typ] = resources
+	ttlResources := make([]envoy_types.ResourceWithTtl, len(resources))
+	for i, res := range resources {
+		ttlResources[i] = envoy_types.ResourceWithTtl{
+			Resource: res,
+			Ttl:      nil,
+		}
+	}
+	b.resources[typ] = ttlResources
 	return b
 }
 
@@ -41,7 +48,7 @@ func (b *builder) Build(version string) util_xds.Snapshot {
 }
 
 func NewSnapshotBuilder() SnapshotBuilder {
-	return &builder{resources: map[string][]envoy_types.Resource{}}
+	return &builder{resources: map[string][]envoy_types.ResourceWithTtl{}}
 }
 
 // Snapshot is an internally consistent snapshot of xDS resources.
@@ -66,6 +73,23 @@ func (s *Snapshot) Consistent() error {
 }
 
 func (s *Snapshot) GetResources(typ string) map[string]envoy_types.Resource {
+	if s == nil {
+		return nil
+	}
+
+	resources := s.GetResourcesAndTtl(typ)
+	if resources == nil {
+		return nil
+	}
+
+	withoutTtl := make(map[string]envoy_types.Resource, len(resources))
+	for name, res := range resources {
+		withoutTtl[name] = res.Resource
+	}
+	return withoutTtl
+}
+
+func (s *Snapshot) GetResourcesAndTtl(typ string) map[string]envoy_types.ResourceWithTtl {
 	if s == nil {
 		return nil
 	}
@@ -107,10 +131,10 @@ func (s *Snapshot) WithVersion(typ string, version string) util_xds.Snapshot {
 
 // IndexResourcesByName creates a map from the resource name to the resource. Name should be unique
 // across meshes that's why Name is <name>.<mesh>
-func IndexResourcesByName(items []envoy_types.Resource) map[string]envoy_types.Resource {
-	indexed := make(map[string]envoy_types.Resource, len(items))
+func IndexResourcesByName(items []envoy_types.ResourceWithTtl) map[string]envoy_types.ResourceWithTtl {
+	indexed := make(map[string]envoy_types.ResourceWithTtl, len(items))
 	for _, item := range items {
-		key := fmt.Sprintf("%s.%s", item.(*mesh_proto.KumaResource).GetMeta().GetName(), item.(*mesh_proto.KumaResource).GetMeta().GetMesh())
+		key := fmt.Sprintf("%s.%s", item.Resource.(*mesh_proto.KumaResource).GetMeta().GetName(), item.Resource.(*mesh_proto.KumaResource).GetMeta().GetMesh())
 		indexed[key] = item
 	}
 	return indexed

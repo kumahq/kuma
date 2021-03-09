@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sethvargo/go-retry"
+
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -51,10 +53,16 @@ func (r *resourcesManager) Create(ctx context.Context, resource model.Resource, 
 	opts := store.NewCreateOptions(fs...)
 
 	var owner model.Resource
-	if resource.GetType() != core_mesh.MeshType {
-		owner = &core_mesh.MeshResource{}
-		if err := r.Store.Get(ctx, owner, store.GetByKey(opts.Mesh, opts.Mesh)); err != nil {
+	if resource.Scope() == model.ScopeMesh {
+		owner = core_mesh.NewMeshResource()
+		if err := r.Store.Get(ctx, owner, store.GetByKey(opts.Mesh, model.NoMesh)); err != nil {
 			return MeshNotFound(opts.Mesh)
+		}
+	}
+	if resource.GetType() == core_mesh.MeshInsightType {
+		owner = core_mesh.NewMeshResource()
+		if err := r.Store.Get(ctx, owner, store.GetByKey(opts.Name, model.NoMesh)); err != nil {
+			return MeshNotFound(opts.Name)
 		}
 	}
 
@@ -89,22 +97,66 @@ func (r *resourcesManager) Update(ctx context.Context, resource model.Resource, 
 	return r.Store.Update(ctx, resource, append(fs, store.ModifiedAt(time.Now()))...)
 }
 
-func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource)) error {
-	create := false
-	err := manager.Get(context.Background(), resource, store.GetBy(key))
-	if err != nil {
-		if store.IsResourceNotFound(err) {
-			create = true
+type ConflictRetry struct {
+	BaseBackoff time.Duration
+	MaxTimes    uint
+}
+
+type UpsertOpts struct {
+	ConflictRetry ConflictRetry
+}
+
+type UpsertFunc func(opts *UpsertOpts)
+
+func WithConflictRetry(baseBackoff time.Duration, maxTimes uint) UpsertFunc {
+	return func(opts *UpsertOpts) {
+		opts.ConflictRetry.BaseBackoff = baseBackoff
+		opts.ConflictRetry.MaxTimes = maxTimes
+	}
+}
+
+func NewUpsertOpts(fs ...UpsertFunc) UpsertOpts {
+	opts := UpsertOpts{}
+	for _, f := range fs {
+		f(&opts)
+	}
+	return opts
+}
+
+func Upsert(manager ResourceManager, key model.ResourceKey, resource model.Resource, fn func(resource model.Resource), fs ...UpsertFunc) error {
+	upsert := func() error {
+		create := false
+		err := manager.Get(context.Background(), resource, store.GetBy(key))
+		if err != nil {
+			if store.IsResourceNotFound(err) {
+				create = true
+			} else {
+				return err
+			}
+		}
+		fn(resource)
+		if create {
+			return manager.Create(context.Background(), resource, store.CreateBy(key))
 		} else {
-			return err
+			return manager.Update(context.Background(), resource)
 		}
 	}
-	fn(resource)
-	if create {
-		return manager.Create(context.Background(), resource, store.CreateBy(key))
-	} else {
-		return manager.Update(context.Background(), resource)
+
+	opts := NewUpsertOpts(fs...)
+	if opts.ConflictRetry.BaseBackoff <= 0 || opts.ConflictRetry.MaxTimes == 0 {
+		return upsert()
 	}
+	backoff, _ := retry.NewExponential(opts.ConflictRetry.BaseBackoff) // we can ignore error because RetryBaseBackoff > 0
+	backoff = retry.WithMaxRetries(uint64(opts.ConflictRetry.MaxTimes), backoff)
+	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
+		resource.SetMeta(nil)
+		resource.GetSpec().Reset()
+		err := upsert()
+		if store.IsResourceConflict(err) {
+			return retry.RetryableError(err)
+		}
+		return err
+	})
 }
 
 type MeshNotFoundError struct {

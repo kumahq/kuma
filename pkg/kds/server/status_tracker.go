@@ -4,9 +4,12 @@ import (
 	"context"
 	"sync"
 
+	pstruct "github.com/golang/protobuf/ptypes/struct"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/kds/util"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 
 	"github.com/go-logr/logr"
 
@@ -44,6 +47,7 @@ func NewStatusTracker(runtimeInfo core_runtime.RuntimeInfo,
 var _ StatusTracker = &statusTracker{}
 
 type statusTracker struct {
+	util_xds_v2.NoopCallbacks
 	runtimeInfo      core_runtime.RuntimeInfo
 	createStatusSink ZoneInsightSinkFactoryFunc
 	mu               sync.RWMutex // protects access to the fields below
@@ -70,6 +74,7 @@ func (c *statusTracker) OnStreamOpen(ctx context.Context, streamID int64, typ st
 		GlobalInstanceId: c.runtimeInfo.GetInstanceId(),
 		ConnectTime:      util_proto.MustTimestampProto(core.Now()),
 		Status:           system_proto.NewSubscriptionStatus(),
+		Version:          system_proto.NewVersion(),
 	}
 	// initialize state per ADS stream
 	state := &streamState{
@@ -115,9 +120,12 @@ func (c *statusTracker) OnStreamRequest(streamID int64, req *envoy.DiscoveryRequ
 	state.mu.Lock() // write access to the per Dataplane info
 	defer state.mu.Unlock()
 
-	// infer Dataplane id
+	// infer zone
 	if state.zone == "" {
 		state.zone = req.Node.Id
+		if err := readVersion(req.Node.GetMetadata(), state.subscription.Version); err != nil {
+			c.log.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Node.GetMetadata())
+		}
 		go c.createStatusSink(state, c.log).Start(state.stop)
 	}
 
@@ -157,15 +165,6 @@ func (c *statusTracker) OnStreamResponse(streamID int64, req *envoy.DiscoveryReq
 	c.log.V(1).Info("OnStreamResponse", "streamid", streamID, "request", req, "response", resp, "subscription", subscription)
 }
 
-// OnFetchRequest is called for each Fetch request. Returning an error will end processing of the
-// request and respond with an error.
-func (c *statusTracker) OnFetchRequest(context.Context, *envoy.DiscoveryRequest) error {
-	return nil
-}
-
-// OnFetchResponse is called immediately prior to sending a response.
-func (c *statusTracker) OnFetchResponse(*envoy.DiscoveryRequest, *envoy.DiscoveryResponse) {}
-
 func (c *statusTracker) GetStatusAccessor(streamID int64) (StatusAccessor, bool) {
 	state, ok := c.streams[streamID]
 	return state, ok
@@ -181,4 +180,18 @@ func (s *streamState) GetStatus() (string, *system_proto.KDSSubscription) {
 
 func (s *streamState) Close() {
 	close(s.stop)
+}
+
+func readVersion(metadata *pstruct.Struct, version *system_proto.Version) error {
+	if metadata == nil {
+		return nil
+	}
+	rawVersion := metadata.Fields["version"].GetStructValue()
+	if rawVersion != nil {
+		err := util_proto.ToTyped(rawVersion, version)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

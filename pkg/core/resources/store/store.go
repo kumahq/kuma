@@ -46,7 +46,7 @@ func (s *strictResourceStore) Create(ctx context.Context, r model.Resource, fs .
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Create() requires options.Name to be a non-empty value")
 	}
-	if opts.Mesh == "" {
+	if r.Scope() == model.ScopeMesh && opts.Mesh == "" {
 		return fmt.Errorf("ResourceStore.Create() requires options.Mesh to be a non-empty value")
 	}
 	return s.delegate.Create(ctx, r, fs...)
@@ -68,7 +68,7 @@ func (s *strictResourceStore) Delete(ctx context.Context, r model.Resource, fs .
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Delete() requires options.Name to be a non-empty value")
 	}
-	if opts.Mesh == "" {
+	if r.Scope() == model.ScopeMesh && opts.Mesh == "" {
 		return fmt.Errorf("ResourceStore.Delete() requires options.Mesh to be a non-empty value")
 	}
 	if r.GetMeta() != nil {
@@ -92,7 +92,7 @@ func (s *strictResourceStore) Get(ctx context.Context, r model.Resource, fs ...G
 	if opts.Name == "" {
 		return fmt.Errorf("ResourceStore.Get() requires options.Name to be a non-empty value")
 	}
-	if opts.Mesh == "" {
+	if r.Scope() == model.ScopeMesh && opts.Mesh == "" {
 		return fmt.Errorf("ResourceStore.Get() requires options.Mesh to be a non-empty value")
 	}
 	return s.delegate.Get(ctx, r, fs...)
@@ -122,6 +122,10 @@ func ErrorResourceAlreadyExists(rt model.ResourceType, name, mesh string) error 
 
 func ErrorResourceConflict(rt model.ResourceType, name, mesh string) error {
 	return fmt.Errorf("Resource conflict: type=%q name=%q mesh=%q", rt, name, mesh)
+}
+
+func IsResourceConflict(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "Resource conflict")
 }
 
 func ErrorResourcePreconditionFailed(rt model.ResourceType, name, mesh string) error {

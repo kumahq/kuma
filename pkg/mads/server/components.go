@@ -12,6 +12,7 @@ import (
 	mads_reconcile "github.com/kumahq/kuma/pkg/mads/reconcile"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
@@ -32,7 +33,7 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds.SnapshotCache,
 }
 
 func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration) envoy_xds.Callbacks {
-	return util_xds.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
+	return util_xds_v2.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
 		log := madsServerLog.WithValues("streamID", streamID, "node", node)
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {

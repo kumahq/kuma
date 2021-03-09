@@ -3,11 +3,12 @@ package webhooks_test
 import (
 	"context"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,14 +28,10 @@ import (
 
 var _ = Describe("Validation", func() {
 
-	var converter *k8s_resources.SimpleConverter
+	var converter k8s_common.Converter
 
 	BeforeEach(func() {
-		converter = &k8s_resources.SimpleConverter{
-			KubeFactory: &k8s_resources.SimpleKubeFactory{
-				KubeTypes: k8s_registry.Global(),
-			},
-		}
+		converter = k8s_resources.NewSimpleConverter()
 	})
 
 	type testCase struct {
@@ -82,7 +79,6 @@ var _ = Describe("Validation", func() {
               "kind":"TrafficRoute",
               "mesh":"demo",
               "metadata":{
-                "namespace":"example",
                 "name":"empty",
                 "creationTimestamp":null
               },
@@ -101,7 +97,8 @@ var _ = Describe("Validation", func() {
                     }
                   }
                 ],
-                "conf":[
+                "conf":{
+                 "split":[
                   {
                     "weight":100,
                     "destination":{
@@ -109,6 +106,7 @@ var _ = Describe("Validation", func() {
                     }
                   }
                 ]
+                }
               }
             }`,
 			resp: kube_admission.Response{
@@ -154,7 +152,6 @@ var _ = Describe("Validation", func() {
               "kind":"TrafficRoute",
               "mesh":"demo",
               "metadata":{
-                "namespace":"example",
                 "name":"empty",
                 "creationTimestamp":null,
                 "annotations": {
@@ -176,7 +173,8 @@ var _ = Describe("Validation", func() {
                     }
                   }
                 ],
-                "conf":[
+                "conf":{
+                 "split":[
                   {
                     "weight":100,
                     "destination":{
@@ -184,6 +182,7 @@ var _ = Describe("Validation", func() {
                     }
                   }
                 ]
+                }
               }
             }`,
 			resp: kube_admission.Response{
@@ -282,7 +281,6 @@ var _ = Describe("Validation", func() {
 			  "kind": "TrafficRoute",
 			  "mesh": "demo",
 			  "metadata": {
-				"namespace": "example",
 				"name": "empty",
 				"creationTimestamp": null
 			  },
@@ -296,7 +294,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "spec.sources: must have at least one element; spec.destinations: must have at least one element; spec.conf: must have at least one element",
+						Message: "spec.sources: must have at least one element; spec.destinations: must have at least one element; spec.conf: must have split; spec.conf.split: must have at least one element",
 						Reason:  "Invalid",
 						Details: &kube_meta.StatusDetails{
 							Name: "empty",
@@ -314,8 +312,13 @@ var _ = Describe("Validation", func() {
 								},
 								{
 									Type:    "FieldValueInvalid",
-									Message: "must have at least one element",
+									Message: "must have split",
 									Field:   "spec.conf",
+								},
+								{
+									Type:    "FieldValueInvalid",
+									Message: "must have at least one element",
+									Field:   "spec.conf.split",
 								},
 							},
 						},
@@ -333,7 +336,6 @@ var _ = Describe("Validation", func() {
 			  "kind": "TrafficRoute",
 			  "mesh": "demo",
 			  "metadata": {
-				"namespace": "example",
 				"name": "empty",
 				"creationTimestamp": null
 			  }
@@ -345,7 +347,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a TrafficRoute on remote CP. In multicluster setup, it should be only applied on global CP and synced to remote CP.",
+						Message: "You are trying to apply a TrafficRoute on remote CP. In multizone setup, it should be only applied on global CP and synced to remote CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -382,7 +384,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a Dataplane on global CP. In multicluster setup, it should be only applied on remote CP and synced to global CP.",
+						Message: "You are trying to apply a Dataplane on global CP. In multizone setup, it should be only applied on remote CP and synced to global CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -487,6 +489,71 @@ var _ = Describe("Validation", func() {
 						Message: "Zone resource can only be applied on CP with mode: [global]",
 						Reason:  "Forbidden",
 						Code:    403,
+					},
+				},
+			},
+		}),
+		Entry("should fail validation on missing mesh object", testCase{
+			mode:        core.Remote,
+			objTemplate: &mesh_proto.TrafficRoute{},
+			obj: `
+            {
+              "apiVersion":"kuma.io/v1alpha1",
+              "kind":"TrafficRoute",
+              "metadata":{
+                "name":"empty",
+                "creationTimestamp":null,
+                "annotations": {
+                  "k8s.kuma.io/synced": "true"
+                }
+              },
+              "spec":{
+                "sources":[
+                  {
+                    "match":{
+                      "kuma.io/service":"web"
+                    }
+                  }
+                ],
+                "destinations":[
+                  {
+                    "match":{
+                      "kuma.io/service":"backend"
+                    }
+                  }
+                ],
+                "conf":{
+                 "split":[
+                  {
+                    "weight":100,
+                    "destination":{
+                      "kuma.io/service":"backend"
+                    }
+                  }
+                ]
+                }
+              }
+            }`,
+			resp: kube_admission.Response{
+				AdmissionResponse: admissionv1beta1.AdmissionResponse{
+					UID:     "12345",
+					Allowed: false,
+					Result: &kube_meta.Status{
+						Status:  "Failure",
+						Message: "mesh: cannot be empty",
+						Reason:  "Invalid",
+						Code:    422,
+						Details: &kube_meta.StatusDetails{
+							Name: "empty",
+							Kind: "TrafficRoute",
+							Causes: []kube_meta.StatusCause{
+								{
+									Type:    "FieldValueInvalid",
+									Message: "cannot be empty",
+									Field:   "mesh",
+								},
+							},
+						},
 					},
 				},
 			},

@@ -3,40 +3,26 @@ package install
 import (
 	"strings"
 
+	"github.com/kumahq/kuma/app/kumactl/cmd/install/context"
+	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/metrics"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
-type metricsTemplateArgs struct {
-	Namespace                 string
-	KumaPrometheusSdImage     string
-	KumaPrometheusSdVersion   string
-	KumaCpAddress             string
-	DashboardDataplane        string
-	DashboardMesh             string
-	DashboardServiceToService string
-	DashboardCP               string
-}
-
-var DefaultMetricsTemplateArgs = metricsTemplateArgs{
-	Namespace:               "kuma-metrics",
-	KumaPrometheusSdImage:   "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd",
-	KumaPrometheusSdVersion: kuma_version.Build.Version,
-	KumaCpAddress:           "http://kuma-control-plane.kuma-system:5681",
-}
-
-func newInstallMetrics() *cobra.Command {
-	args := DefaultMetricsTemplateArgs
+func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
+	args := pctx.InstallMetricsContext.TemplateArgs
 	cmd := &cobra.Command{
 		Use:   "metrics",
 		Short: "Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)",
 		Long:  `Install Metrics backend in Kubernetes cluster (Prometheus + Grafana) in a kuma-metrics namespace`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			args.Mesh = pctx.Args.Mesh
+
 			templateFiles, err := data.ReadFiles(metrics.Templates)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
@@ -49,27 +35,41 @@ func newInstallMetrics() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			args.DashboardDataplane = dashboard.String()
+			args.Dashboards = append(args.Dashboards, context.Dashboard{
+				FileName: "kuma-dataplane.json",
+				Content:  dashboard.String(),
+			})
 
 			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-mesh.json")
 			if err != nil {
 				return err
 			}
-			args.DashboardMesh = dashboard.String()
+			args.Dashboards = append(args.Dashboards, context.Dashboard{
+				FileName: "kuma-mesh.json",
+				Content:  dashboard.String(),
+			})
 
-			dashboard, err = data.ReadFile(metrics.Templates, ("/grafana/kuma-service-to-service.json"))
+			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-service-to-service.json")
 			if err != nil {
 				return err
 			}
-			args.DashboardServiceToService = dashboard.String()
+			args.Dashboards = append(args.Dashboards, context.Dashboard{
+				FileName: "kuma-service-to-service.json",
+				Content:  dashboard.String(),
+			})
 
-			dashboard, err = data.ReadFile(metrics.Templates, ("/grafana/kuma-cp.json"))
+			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-cp.json")
 			if err != nil {
 				return err
 			}
-			args.DashboardCP = dashboard.String()
+			args.Dashboards = append(args.Dashboards, context.Dashboard{
+				FileName: "kuma-cp.json",
+				Content:  dashboard.String(),
+			})
 
-			renderedFiles, err := renderFiles(yamlTemplateFiles, args, simpleTemplateRenderer)
+			filter := getExcludePrefixesFilter(args.WithoutPrometheus, args.WithoutGrafana)
+
+			renderedFiles, err := renderFilesWithFilter(yamlTemplateFiles, args, simpleTemplateRenderer, filter)
 			if err != nil {
 				return errors.Wrap(err, "Failed to render template files")
 			}
@@ -91,5 +91,23 @@ func newInstallMetrics() *cobra.Command {
 	cmd.Flags().StringVar(&args.KumaPrometheusSdImage, "kuma-prometheus-sd-image", args.KumaPrometheusSdImage, "image name of Kuma Prometheus SD")
 	cmd.Flags().StringVar(&args.KumaPrometheusSdVersion, "kuma-prometheus-sd-version", args.KumaPrometheusSdVersion, "version of Kuma Prometheus SD")
 	cmd.Flags().StringVar(&args.KumaCpAddress, "kuma-cp-address", args.KumaCpAddress, "the address of Kuma CP")
+	cmd.Flags().BoolVar(&args.WithoutPrometheus, "without-prometheus", args.WithoutPrometheus, "disable Prometheus resources generation")
+	cmd.Flags().BoolVar(&args.WithoutGrafana, "without-grafana", args.WithoutGrafana, "disable Grafana resources generation")
 	return cmd
+}
+
+func getExcludePrefixesFilter(withoutPrometheus, withoutGrafana bool) ExcludePrefixesFilter {
+	prefixes := []string{}
+
+	if withoutPrometheus {
+		prefixes = append(prefixes, "/prometheus")
+	}
+
+	if withoutGrafana {
+		prefixes = append(prefixes, "/grafana")
+	}
+
+	return ExcludePrefixesFilter{
+		Prefixes: prefixes,
+	}
 }

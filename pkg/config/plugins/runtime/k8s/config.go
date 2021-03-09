@@ -15,6 +15,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 		AdmissionServer: AdmissionServerConfig{
 			Port: 5443,
 		},
+		ControlPlaneServiceName: "kuma-control-plane",
 		Injector: Injector{
 			CNIEnabled:           false,
 			VirtualProbesEnabled: true,
@@ -67,6 +68,7 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 				},
 			},
 		},
+		MarshalingCacheExpirationTime: 5 * time.Minute,
 	}
 }
 
@@ -76,6 +78,12 @@ type KubernetesRuntimeConfig struct {
 	AdmissionServer AdmissionServerConfig `yaml:"admissionServer"`
 	// Injector-specific configuration
 	Injector Injector `yaml:"injector,omitempty"`
+	// MarshalingCacheExpirationTime defines a duration for how long
+	// marshaled objects will be stored in the cache. If equal to 0s then
+	// cache is turned off
+	MarshalingCacheExpirationTime time.Duration `yaml:"marshalingCacheExpirationTime" envconfig:"kuma_runtime_kubernetes_marshaling_cache_expiration_time"`
+	// ControlPlaneServiceName defines service name of the Kuma control plane. It is used to point Kuma DP to proper URL.
+	ControlPlaneServiceName string `yaml:"controlPlaneServiceName,omitempty" envconfig:"kuma_runtime_kubernetes_control_plane_service_name"`
 }
 
 // Configuration of the Admission WebHook Server implemented by the Control Plane.
@@ -103,7 +111,7 @@ type Injector struct {
 	// i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
 	VirtualProbesEnabled bool `yaml:"virtualProbesEnabled" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
 	// VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
-	VirtualProbesPort uint32 `yaml:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_enabled"`
+	VirtualProbesPort uint32 `yaml:"virtualProbesPort" envconfig:"kuma_runtime_kubernetes_virtual_probes_port"`
 	// SidecarTraffic is a configuration for a traffic that is intercepted by sidecar
 	SidecarTraffic SidecarTraffic `yaml:"sidecarTraffic"`
 	// Exceptions defines list of exceptions for Kuma injection
@@ -149,6 +157,8 @@ type SidecarContainer struct {
 	LivenessProbe SidecarLivenessProbe `yaml:"livenessProbe,omitempty"`
 	// Compute resource requirements.
 	Resources SidecarResources `yaml:"resources,omitempty"`
+	// EnvVars are additional environment variables that can be placed on Kuma DP sidecar
+	EnvVars map[string]string `yaml:"envVars" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_env_vars"`
 }
 
 // SidecarReadinessProbe defines periodic probe of container service readiness.
@@ -218,6 +228,9 @@ func (c *KubernetesRuntimeConfig) Validate() (errs error) {
 	}
 	if err := c.Injector.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Injector is not valid"))
+	}
+	if c.MarshalingCacheExpirationTime < 0 {
+		errs = multierr.Append(errs, errors.Errorf(".MarshalingCacheExpirationTime must be positive or equal to 0"))
 	}
 	return
 }

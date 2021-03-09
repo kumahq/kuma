@@ -13,7 +13,7 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/config/multicluster"
+	"github.com/kumahq/kuma/pkg/config/multizone"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/metrics"
 )
@@ -22,17 +22,19 @@ type client struct {
 	callbacks Callbacks
 	globalURL string
 	clientID  string
-	config    multicluster.KdsClientConfig
+	config    multizone.KdsClientConfig
 	metrics   metrics.Metrics
+	ctx       context.Context
 }
 
-func NewClient(globalURL string, clientID string, callbacks Callbacks, config multicluster.KdsClientConfig, metrics metrics.Metrics) component.Component {
+func NewClient(globalURL string, clientID string, callbacks Callbacks, config multizone.KdsClientConfig, metrics metrics.Metrics, ctx context.Context) component.Component {
 	return &client{
 		callbacks: callbacks,
 		globalURL: globalURL,
 		clientID:  clientID,
 		config:    config,
 		metrics:   metrics,
+		ctx:       ctx,
 	}
 }
 
@@ -65,7 +67,7 @@ func (c *client) Start(stop <-chan struct{}) (errs error) {
 	}()
 	muxClient := mesh_proto.NewMultiplexServiceClient(conn)
 
-	withClientIDCtx := metadata.AppendToOutgoingContext(context.Background(), "client-id", c.clientID)
+	withClientIDCtx := metadata.AppendToOutgoingContext(c.ctx, "client-id", c.clientID)
 	stream, err := muxClient.StreamMessage(withClientIDCtx)
 	if err != nil {
 		return err

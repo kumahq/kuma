@@ -26,10 +26,10 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		}
 		manager := dataplaneinsight.NewDataplaneInsightManager(s, cfg)
 
-		err := s.Create(context.Background(), &mesh_core.DataplaneResource{}, store.CreateByKey("di1", "default"))
+		err := s.Create(context.Background(), mesh_core.NewDataplaneResource(), store.CreateByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		input := mesh_core.DataplaneInsightResource{}
+		input := mesh_core.NewDataplaneInsightResource()
 		for i := 0; i < 10; i++ {
 			input.Spec.Subscriptions = append(input.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 				Id: fmt.Sprintf("%d", i),
@@ -37,11 +37,11 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		}
 
 		// when
-		err = manager.Create(context.Background(), &input, store.CreateByKey("di1", "default"))
+		err = manager.Create(context.Background(), input, store.CreateByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		actual := mesh_core.DataplaneInsightResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey("di1", "default"))
+		actual := mesh_core.NewDataplaneInsightResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then
@@ -59,10 +59,10 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		}
 		manager := dataplaneinsight.NewDataplaneInsightManager(s, cfg)
 
-		err := s.Create(context.Background(), &mesh_core.DataplaneResource{}, store.CreateByKey("di1", "default"))
+		err := s.Create(context.Background(), mesh_core.NewDataplaneResource(), store.CreateByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		input := mesh_core.DataplaneInsightResource{}
+		input := mesh_core.NewDataplaneInsightResource()
 		for i := 0; i < 10; i++ {
 			input.Spec.Subscriptions = append(input.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 				Id: fmt.Sprintf("%d", i),
@@ -70,11 +70,11 @@ var _ = Describe("DataplaneInsight Manager", func() {
 		}
 
 		// when
-		err = manager.Create(context.Background(), &input, store.CreateByKey("di1", "default"))
+		err = manager.Create(context.Background(), input, store.CreateByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
-		actual := mesh_core.DataplaneInsightResource{}
-		err = s.Get(context.Background(), &actual, store.GetByKey("di1", "default"))
+		actual := mesh_core.NewDataplaneInsightResource()
+		err = s.Get(context.Background(), actual, store.GetByKey("di1", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

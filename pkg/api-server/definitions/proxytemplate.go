@@ -9,7 +9,7 @@ var ProxyTemplateWsDefinition = ResourceWsDefinition{
 	Name: "ProxyTemplate",
 	Path: "proxytemplates",
 	ResourceFactory: func() model.Resource {
-		return &mesh.ProxyTemplateResource{}
+		return mesh.NewProxyTemplateResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.ProxyTemplateResourceList{}

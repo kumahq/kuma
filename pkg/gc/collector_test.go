@@ -12,6 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/gc"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
@@ -25,7 +26,7 @@ var _ = Describe("Dataplane Collector", func() {
 	createDpAndDpInsight := func(name, mesh string) {
 		dp := &core_mesh.DataplaneResource{
 			Meta: &model.ResourceMeta{Name: name, Mesh: mesh},
-			Spec: mesh_proto.Dataplane{
+			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
 					Address: "192.168.0.1",
 					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
@@ -39,7 +40,7 @@ var _ = Describe("Dataplane Collector", func() {
 		}
 		dpInsight := &core_mesh.DataplaneInsightResource{
 			Meta: &model.ResourceMeta{Name: name, Mesh: mesh},
-			Spec: mesh_proto.DataplaneInsight{
+			Spec: &mesh_proto.DataplaneInsight{
 				Subscriptions: []*mesh_proto.DiscoverySubscription{
 					{
 						DisconnectTime: proto.MustTimestampProto(core.Now()),
@@ -55,7 +56,7 @@ var _ = Describe("Dataplane Collector", func() {
 
 	BeforeEach(func() {
 		rm = manager.NewResourceManager(memory.NewStore())
-		err := rm.Create(context.Background(), &core_mesh.MeshResource{}, store.CreateByKey("default", "default"))
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 

@@ -102,5 +102,10 @@ var _ = Describe("getCommonProtocol()", func() {
 			another:  mesh_core.ProtocolTCP,
 			expected: mesh_core.ProtocolTCP,
 		}),
+		Entry("`kafka` and `tcp`", testCase{
+			one:      mesh_core.ProtocolKafka,
+			another:  mesh_core.ProtocolTCP,
+			expected: mesh_core.ProtocolTCP,
+		}),
 	)
 })

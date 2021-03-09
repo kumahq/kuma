@@ -17,7 +17,13 @@ var _ model.Resource = &DataplaneInsightResource{}
 
 type DataplaneInsightResource struct {
 	Meta model.ResourceMeta
-	Spec mesh_proto.DataplaneInsight
+	Spec *mesh_proto.DataplaneInsight
+}
+
+func NewDataplaneInsightResource() *DataplaneInsightResource {
+	return &DataplaneInsightResource{
+		Spec: &mesh_proto.DataplaneInsight{},
+	}
 }
 
 func (t *DataplaneInsightResource) GetType() model.ResourceType {
@@ -30,14 +36,14 @@ func (t *DataplaneInsightResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
 func (t *DataplaneInsightResource) GetSpec() model.ResourceSpec {
-	return &t.Spec
+	return t.Spec
 }
 func (t *DataplaneInsightResource) SetSpec(spec model.ResourceSpec) error {
 	status, ok := spec.(*mesh_proto.DataplaneInsight)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = *status
+		t.Spec = status
 		return nil
 	}
 }
@@ -66,7 +72,7 @@ func (l *DataplaneInsightResourceList) GetItemType() model.ResourceType {
 	return DataplaneInsightType
 }
 func (l *DataplaneInsightResourceList) NewItem() model.Resource {
-	return &DataplaneInsightResource{}
+	return NewDataplaneInsightResource()
 }
 func (l *DataplaneInsightResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*DataplaneInsightResource); ok {
@@ -82,6 +88,6 @@ func (l *DataplaneInsightResourceList) GetPagination() *model.Pagination {
 }
 
 func init() {
-	registry.RegisterType(&DataplaneInsightResource{})
+	registry.RegisterType(NewDataplaneInsightResource())
 	registry.RegistryListType(&DataplaneInsightResourceList{})
 }

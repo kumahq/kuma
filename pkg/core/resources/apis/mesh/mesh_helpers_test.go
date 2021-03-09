@@ -31,12 +31,12 @@ var _ = Describe("MeshResource", func() {
 				expected: false,
 			}),
 			Entry("mesh.metrics == nil", testCase{
-				mesh:     &MeshResource{},
+				mesh:     NewMeshResource(),
 				expected: false,
 			}),
 			Entry("mesh.metrics.prometheus == nil", testCase{
 				mesh: &MeshResource{
-					Spec: mesh_proto.Mesh{
+					Spec: &mesh_proto.Mesh{
 						Metrics: &mesh_proto.Metrics{},
 					},
 				},
@@ -44,7 +44,7 @@ var _ = Describe("MeshResource", func() {
 			}),
 			Entry("mesh.metrics.prometheus != nil", testCase{
 				mesh: &MeshResource{
-					Spec: mesh_proto.Mesh{
+					Spec: &mesh_proto.Mesh{
 						Metrics: &mesh_proto.Metrics{
 							EnabledBackend: "prometheus-1",
 							Backends: []*mesh_proto.MetricsBackend{
@@ -83,7 +83,7 @@ var _ = Describe("MeshResource", func() {
 			},
 			Entry("two backends and name that exists", testCase{
 				mesh: &MeshResource{
-					Spec: mesh_proto.Mesh{
+					Spec: &mesh_proto.Mesh{
 						Tracing: &mesh_proto.Tracing{
 							DefaultBackend: "zipkin-us",
 							Backends: []*mesh_proto.TracingBackend{
@@ -110,7 +110,7 @@ var _ = Describe("MeshResource", func() {
 			}),
 			Entry("nil when backend does not exist", testCase{
 				mesh: &MeshResource{
-					Spec: mesh_proto.Mesh{
+					Spec: &mesh_proto.Mesh{
 						Tracing: &mesh_proto.Tracing{
 							DefaultBackend: "zipkin-us",
 							Backends: []*mesh_proto.TracingBackend{
@@ -130,7 +130,7 @@ var _ = Describe("MeshResource", func() {
 			}),
 			Entry("default backend when name is not specified", testCase{
 				mesh: &MeshResource{
-					Spec: mesh_proto.Mesh{
+					Spec: &mesh_proto.Mesh{
 						Tracing: &mesh_proto.Tracing{
 							DefaultBackend: "zipkin-eu",
 							Backends: []*mesh_proto.TracingBackend{
@@ -157,7 +157,7 @@ var _ = Describe("MeshResource", func() {
 			}),
 			Entry("nil when name and default backend are not specified", testCase{
 				mesh: &MeshResource{
-					Spec: mesh_proto.Mesh{
+					Spec: &mesh_proto.Mesh{
 						Tracing: &mesh_proto.Tracing{
 							Backends: []*mesh_proto.TracingBackend{
 								{
@@ -180,7 +180,7 @@ var _ = Describe("MeshResource", func() {
 	Describe("should return logging backends", func() {
 		It("should return logging backends if not empty", func() {
 			mesh := &MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Logging: &mesh_proto.Logging{
 						Backends: []*mesh_proto.LoggingBackend{
 							{
@@ -200,7 +200,7 @@ var _ = Describe("MeshResource", func() {
 		})
 		It("should return default logging backend if logging backends is empty", func() {
 			mesh := &MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Logging: &mesh_proto.Logging{
 						DefaultBackend: "default-backend",
 						Backends:       []*mesh_proto.LoggingBackend{},
@@ -215,7 +215,7 @@ var _ = Describe("MeshResource", func() {
 	Describe("should return tracing backends", func() {
 		It("should return tracing backends if not empty", func() {
 			mesh := &MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Tracing: &mesh_proto.Tracing{
 						Backends: []*mesh_proto.TracingBackend{
 							{
@@ -242,7 +242,7 @@ var _ = Describe("MeshResource", func() {
 		})
 		It("should return default tracing backend if tracing backends is empty", func() {
 			mesh := &MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Tracing: &mesh_proto.Tracing{
 						Backends: []*mesh_proto.TracingBackend{},
 					},

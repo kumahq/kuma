@@ -45,7 +45,11 @@ helm-lint:
 imports: ## Dev: Runs goimports in order to organize imports
 	goimports -w -local github.com/kumahq/kuma -d `find . -type f -name '*.go' -not -name '*.pb.go' -not -path './vendored/*'`
 
+.PHONY: helm-docs
+helm-docs: ## Dev: Runs helm-docs generator
+	$(HELM_DOCS_PATH) -s="file" --chart-search-root=./deployments/charts
+
 .PHONY: check
-check: generate fmt vet docs helm-lint golangci-lint imports tidy ## Dev: Run code checks (go fmt, go vet, ...)
+check: generate fmt vet docs helm-lint golangci-lint imports tidy helm-docs ## Dev: Run code checks (go fmt, go vet, ...)
 	$(MAKE) generate manifests -C pkg/plugins/resources/k8s/native
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators and code checks) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty

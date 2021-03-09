@@ -2,9 +2,11 @@ syntax = "proto3";
 
 package kuma.mesh.v1alpha1;
 
-option go_package = "v1alpha1";
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "validate/validate.proto";
+
+import "system/v1alpha1/datasource.proto";
 
 // ExternalService defines configuration of the externaly accessible service
 message ExternalService {
@@ -18,6 +20,15 @@ message ExternalService {
     message TLS {
       // denotes that the external service uses TLS
       bool enabled = 1;
+
+      // Data source for the certificate of CA
+      kuma.system.v1alpha1.DataSource ca_cert = 2;
+
+      // Data source for the authentication
+      kuma.system.v1alpha1.DataSource client_cert = 3;
+
+      // Data source for the authentication
+      kuma.system.v1alpha1.DataSource client_key = 4;
     }
 
     TLS tls = 2;
@@ -27,5 +38,5 @@ message ExternalService {
 
   // Tags associated with the external service,
   // e.g. kuma.io/service=web, kuma.io/protocol, version=1.0.
-  map<string, string> tags = 3 [ (validate.rules).map.min_pairs = 1 ];
+  map<string, string> tags = 2 [ (validate.rules).map.min_pairs = 1 ];
 }

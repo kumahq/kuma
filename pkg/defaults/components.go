@@ -57,18 +57,12 @@ func (d *defaultsComponent) Start(_ <-chan struct{}) error {
 		// This code can execute before the control plane is ready therefore hooks can fail.
 		return errors.Wrap(err, "could not create the default Mesh")
 	}
-
-	if !d.shouldCreateSigningKey() {
-		log.V(1).Info("skip creating default Signing Key since CP with this mode is not required to have a key", "env", d.environment, "mode", d.cpMode)
-	} else if err := d.createSigningKeyIfNotExist(); err != nil {
-		return errors.Wrap(err, "could not create the default Signing Key")
-	}
 	return nil
 }
 
 func doWithRetry(fn func() error) error {
-	backoff, _ := retry.NewConstant(1 * time.Second)
-	backoff = retry.WithMaxDuration(1*time.Minute, backoff) // if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
+	backoff, _ := retry.NewConstant(5 * time.Second)
+	backoff = retry.WithMaxDuration(10*time.Minute, backoff) // if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
 	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
 		return retry.RetryableError(fn()) // retry all errors
 	})

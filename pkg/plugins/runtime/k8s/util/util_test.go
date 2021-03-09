@@ -165,7 +165,7 @@ var _ = Describe("Util", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err := FindPort(&pod, &svcPort)
+					actual, _, err := FindPort(&pod, &svcPort)
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					// and
@@ -346,7 +346,7 @@ var _ = Describe("Util", func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					// when
-					actual, err := FindPort(&pod, &svcPort)
+					actual, _, err := FindPort(&pod, &svcPort)
 					// then
 					Expect(err).To(HaveOccurred())
 					// and

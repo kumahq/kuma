@@ -48,28 +48,32 @@ var _ = Describe("Config WS", func() {
 		body, err := ioutil.ReadAll(resp.Body)
 		Expect(err).ToNot(HaveOccurred())
 
-		// when
 		json := fmt.Sprintf(`
         {
           "apiServer": {
-            "catalog": {
-              "bootstrap": {
-                "url": ""
-              },
-              "monitoringAssignment": {
-                "url": ""
-              },
-              "sds": {
-                "url": ""
-              }
-            },
             "corsAllowedDomains": [
               ".*"
             ],
-            "port": %s,
+            "http": {
+              "enabled": true,
+              "interface": "0.0.0.0",
+              "port": %s
+            },
+            "https": {
+              "enabled": true,
+              "interface": "0.0.0.0",
+              "port": %d,
+              "tlsCertFile": "../../test/certs/server-cert.pem",
+              "tlsKeyFile": "../../test/certs/server-key.pem"
+            },
+            "auth": {
+              "clientCertsDir": "../../test/certs/client",
+              "allowFromLocalhost": true
+            },
             "readOnly": false
           },
           "bootstrapServer": {
+            "apiVersion": "v3",
             "params": {
               "adminAccessLogPath": "/dev/null",
               "adminAddress": "127.0.0.1",
@@ -77,24 +81,6 @@ var _ = Describe("Config WS", func() {
               "xdsConnectTimeout": "1s",
               "xdsHost": "",
               "xdsPort": 0
-            }
-          },
-          "adminServer": {
-            "local": {
-              "port": 5679
-            },
-            "public": {
-              "clientCertsDir": "",
-              "enabled": false,
-              "interface": "",
-              "port": 0,
-              "tlsCertFile": "",
-              "tlsKeyFile": ""
-            },
-            "apis": {
-              "dataplaneToken": {
-                "enabled": true
-              }
             }
           },
           "defaults": {
@@ -107,10 +93,10 @@ var _ = Describe("Config WS", func() {
           },
           "environment": "universal",
           "general": {
-            "advertisedHostname": "localhost",
             "dnsCacheTTL": "10s",
             "tlsCertFile": "",
-            "tlsKeyFile": ""
+            "tlsKeyFile": "",
+            "workDir": ""
           },
           "guiServer": {
             "apiServerUrl": ""
@@ -120,18 +106,23 @@ var _ = Describe("Config WS", func() {
               "enabled": true,
               "subscriptionLimit": 10
             },
+            "mesh": {
+              "maxResyncTimeout": "20s",
+              "minResyncTimeout": "1s"
+            },
             "zone": {
               "enabled": true,
               "subscriptionLimit": 10
             }
           },
           "mode": "standalone",
-          "multicluster": {
+          "multizone": {
             "global": {
               "pollTimeout": "500ms",
               "kds": {
                 "grpcPort": 5685,
                 "refreshInterval": "1s",
+                "zoneInsightFlushInterval": "10s",
                 "tlsCertFile": "",
                 "tlsKeyFile": ""
               }
@@ -152,6 +143,7 @@ var _ = Describe("Config WS", func() {
           },
           "runtime": {
             "kubernetes": {
+              "controlPlaneServiceName": "kuma-control-plane",
               "admissionServer": {
                 "address": "",
                 "certDir": "",
@@ -163,6 +155,7 @@ var _ = Describe("Config WS", func() {
                   "image": "kuma/kuma-init:latest"
                 },
                 "sidecarContainer": {
+                  "envVars": {},
                   "adminPort": 9901,
                   "drainTime": "30s",
                   "gid": 5678,
@@ -207,7 +200,8 @@ var _ = Describe("Config WS", func() {
                   }
                 },
                 "caCertFile": ""
-              }
+              },
+              "marshalingCacheExpirationTime": "5m0s"
             },
             "universal": {
               "dataplaneCleanupAge": "72h0m0s"
@@ -219,7 +213,22 @@ var _ = Describe("Config WS", func() {
           "dpServer": {
             "port": 5678,
             "tlsCertFile": "",
-            "tlsKeyFile": ""
+            "tlsKeyFile": "",
+            "auth": {
+              "type": ""
+            },
+            "hds": {
+              "checkDefaults": {
+                "healthyThreshold": 1,
+                "interval": "1s",
+                "noTrafficInterval": "1s",
+                "timeout": "2s",
+                "unhealthyThreshold": 1
+              },
+              "enabled": true,
+              "interval": "5s",
+              "refreshInterval": "10s"
+            }
           },
           "store": {
             "kubernetes": {
@@ -232,6 +241,8 @@ var _ = Describe("Config WS", func() {
               "maxOpenConnections": 0,
               "password": "*****",
               "port": 15432,
+              "maxReconnectInterval": "1m0s",
+              "minReconnectInterval": "10s",
               "tls": {
                 "certPath": "",
                 "keyPath": "",
@@ -244,18 +255,24 @@ var _ = Describe("Config WS", func() {
               "enabled": true,
               "expirationTime": "1s"
             },
+            "upsert": {
+              "conflictRetryBaseBackoff": "100ms",
+              "conflictRetryMaxTimes": 5
+            },
             "type": "memory"
           },
           "xdsServer": {
             "dataplaneConfigurationRefreshInterval": "1s",
-            "dataplaneStatusFlushInterval": "1s",
-            "diagnosticsPort": 5680
+            "dataplaneStatusFlushInterval": "10s",
+            "nackBackoff": "5s"
           },
           "diagnostics": {
+            "serverPort": 5680,
             "debugEndpoints": false
           }
         }
-		`, port)
+		`, port, cfg.HTTPS.Port)
+		// when
 		Expect(body).To(MatchJSON(json))
 	})
 })

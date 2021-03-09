@@ -4,16 +4,12 @@ import (
 	"bytes"
 	"context"
 	"path/filepath"
-	"time"
-
-	"github.com/kumahq/kuma/pkg/catalog"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
-	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 
 	"github.com/spf13/cobra"
 
@@ -35,29 +31,11 @@ var _ = Describe("kumactl delete ", func() {
 
 		BeforeEach(func() {
 			// setup
-			rootCtx = &kumactl_cmd.RootContext{
-				Runtime: kumactl_cmd.RootRuntime{
-					Now: time.Now,
-					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-					NewAdminResourceStore: func(string, *config_proto.Context_AdminApiCredentials) (core_store.ResourceStore, error) {
-						return store, nil
-					},
-					NewCatalogClient: func(s string) (catalog_client.CatalogClient, error) {
-						return &test_catalog.StaticCatalogClient{
-							Resp: catalog.Catalog{
-								Apis: catalog.Apis{
-									DataplaneToken: catalog.DataplaneTokenApi{
-										LocalUrl: "http://localhost:1234",
-									},
-								},
-							},
-						}, nil
-					},
-				},
+			rootCtx = kumactl_cmd.DefaultRootContext()
+			rootCtx.Runtime.NewResourceStore = func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
+				return store, nil
 			}
-			store = memory_resources.NewStore()
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			rootCmd = cmd.NewRootCmd(rootCtx)
 			outbuf = &bytes.Buffer{}
@@ -97,9 +75,15 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret, zone"))
+			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, " +
+				"dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, " +
+				"traffic-route, traffic-trace, fault-injection, circuit-breaker, retry, secret, " +
+				"zone"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp(`unknown TYPE: some-type. Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, traffic-trace, fault-injection, circuit-breaker, secret, zone`))
+			Expect(outbuf.String()).To(MatchRegexp("unknown TYPE: some-type. " +
+				"Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, " +
+				"traffic-permission, traffic-route, traffic-trace, fault-injection, " +
+				"circuit-breaker, retry, secret, zone"))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
@@ -163,55 +147,61 @@ var _ = Describe("kumactl delete ", func() {
 				Entry("dataplanes", testCase{
 					typ:             "dataplane",
 					name:            "web",
-					resource:        func() core_model.Resource { return &mesh_core.DataplaneResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewDataplaneResource() },
 					expectedMessage: "deleted Dataplane \"web\"\n",
 				}),
 				Entry("healthchecks", testCase{
 					typ:             "healthcheck",
 					name:            "web-to-backend",
-					resource:        func() core_model.Resource { return &mesh_core.HealthCheckResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewHealthCheckResource() },
 					expectedMessage: "deleted HealthCheck \"web-to-backend\"\n",
+				}),
+				Entry("retries", testCase{
+					typ:             "retry",
+					name:            "web-to-backend",
+					resource:        func() core_model.Resource { return mesh_core.NewRetryResource() },
+					expectedMessage: "deleted Retry \"web-to-backend\"\n",
 				}),
 				Entry("traffic-permissions", testCase{
 					typ:             "traffic-permission",
 					name:            "everyone-to-everyone",
-					resource:        func() core_model.Resource { return &mesh_core.TrafficPermissionResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewTrafficPermissionResource() },
 					expectedMessage: "deleted TrafficPermission \"everyone-to-everyone\"\n",
 				}),
 				Entry("traffic-logs", testCase{
 					typ:             "traffic-log",
 					name:            "all-requests",
-					resource:        func() core_model.Resource { return &mesh_core.TrafficLogResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewTrafficLogResource() },
 					expectedMessage: "deleted TrafficLog \"all-requests\"\n",
 				}),
 				Entry("traffic-routes", testCase{
 					typ:             "traffic-route",
 					name:            "web-to-backend",
-					resource:        func() core_model.Resource { return &mesh_core.TrafficRouteResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewTrafficRouteResource() },
 					expectedMessage: "deleted TrafficRoute \"web-to-backend\"\n",
 				}),
 				Entry("traffic-traces", testCase{
 					typ:             "traffic-trace",
 					name:            "web",
-					resource:        func() core_model.Resource { return &mesh_core.TrafficTraceResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewTrafficTraceResource() },
 					expectedMessage: "deleted TrafficTrace \"web\"\n",
 				}),
 				Entry("fault-injections", testCase{
 					typ:             "fault-injection",
 					name:            "web",
-					resource:        func() core_model.Resource { return &mesh_core.FaultInjectionResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewFaultInjectionResource() },
 					expectedMessage: "deleted FaultInjection \"web\"\n",
 				}),
 				Entry("circuit-breaker", testCase{
 					typ:             "circuit-breaker",
 					name:            "web",
-					resource:        func() core_model.Resource { return &mesh_core.CircuitBreakerResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewCircuitBreakerResource() },
 					expectedMessage: "deleted CircuitBreaker \"web\"\n",
 				}),
 				Entry("secret", testCase{
 					typ:             "secret",
 					name:            "web",
-					resource:        func() core_model.Resource { return &system.SecretResource{} },
+					resource:        func() core_model.Resource { return system.NewSecretResource() },
 					expectedMessage: "deleted Secret \"web\"\n",
 				}),
 			)
@@ -236,55 +226,61 @@ var _ = Describe("kumactl delete ", func() {
 				Entry("dataplanes", testCase{
 					typ:             "dataplane",
 					name:            "web",
-					resource:        func() core_model.Resource { return &mesh_core.DataplaneResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewDataplaneResource() },
 					expectedMessage: "Error: there is no Dataplane with name \"web\"\n",
 				}),
 				Entry("healthchecks", testCase{
 					typ:             "healthcheck",
 					name:            "web-to-backend",
-					resource:        func() core_model.Resource { return &mesh_core.HealthCheckResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewHealthCheckResource() },
 					expectedMessage: "Error: there is no HealthCheck with name \"web-to-backend\"\n",
+				}),
+				Entry("retries", testCase{
+					typ:             "retry",
+					name:            "web-to-backend",
+					resource:        func() core_model.Resource { return mesh_core.NewRetryResource() },
+					expectedMessage: "Error: there is no Retry with name \"web-to-backend\"\n",
 				}),
 				Entry("traffic-permissions", testCase{
 					typ:             "traffic-permission",
 					name:            "everyone-to-everyone",
-					resource:        func() core_model.Resource { return &mesh_core.TrafficPermissionResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewTrafficPermissionResource() },
 					expectedMessage: "Error: there is no TrafficPermission with name \"everyone-to-everyone\"\n",
 				}),
 				Entry("traffic-logs", testCase{
 					typ:             "traffic-log",
 					name:            "all-requests",
-					resource:        func() core_model.Resource { return &mesh_core.TrafficLogResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewTrafficLogResource() },
 					expectedMessage: "Error: there is no TrafficLog with name \"all-requests\"\n",
 				}),
 				Entry("traffic-routes", testCase{
 					typ:             "traffic-route",
 					name:            "web-to-backend",
-					resource:        func() core_model.Resource { return &mesh_core.TrafficRouteResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewTrafficRouteResource() },
 					expectedMessage: "Error: there is no TrafficRoute with name \"web-to-backend\"\n",
 				}),
 				Entry("traffic-traces", testCase{
 					typ:             "traffic-trace",
 					name:            "web",
-					resource:        func() core_model.Resource { return &mesh_core.TrafficRouteResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewTrafficRouteResource() },
 					expectedMessage: "Error: there is no TrafficTrace with name \"web\"\n",
 				}),
 				Entry("fault-injections", testCase{
 					typ:             "fault-injection",
 					name:            "web",
-					resource:        func() core_model.Resource { return &mesh_core.FaultInjectionResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewFaultInjectionResource() },
 					expectedMessage: "Error: there is no FaultInjection with name \"web\"\n",
 				}),
 				Entry("fault-injections", testCase{
 					typ:             "circuit-breaker",
 					name:            "web",
-					resource:        func() core_model.Resource { return &mesh_core.CircuitBreakerResource{} },
+					resource:        func() core_model.Resource { return mesh_core.NewCircuitBreakerResource() },
 					expectedMessage: "Error: there is no CircuitBreaker with name \"web\"\n",
 				}),
 				Entry("secret", testCase{
 					typ:             "secret",
 					name:            "web",
-					resource:        func() core_model.Resource { return &system.SecretResource{} },
+					resource:        func() core_model.Resource { return system.NewSecretResource() },
 					expectedMessage: "Error: there is no Secret with name \"web\"\n",
 				}),
 			)

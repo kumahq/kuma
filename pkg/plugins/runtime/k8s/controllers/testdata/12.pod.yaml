@@ -1,0 +1,30 @@
+metadata:
+  namespace: demo
+  name: example
+  labels:
+    app: example
+    version: "0.1"
+spec:
+  containers:
+    - name: container-1
+      ports:
+        - containerPort: 8080
+    - name: container-2
+      ports:
+        - containerPort: 7070
+    - name: kuma-sidecar
+      ports:
+        - containerPort: 7070
+
+status:
+  podIP: 192.168.0.1
+  containerStatuses:
+    - name: container-1
+      ready: true
+      started: true
+    - name: container-2
+      ready: true
+      started: true
+    - name: kuma-sidecar
+      ready: false
+      started: false

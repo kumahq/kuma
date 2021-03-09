@@ -6,6 +6,8 @@ import (
 	"github.com/miekg/dns"
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
+
 	"github.com/kumahq/kuma/pkg/core"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 )
@@ -19,15 +21,18 @@ type DNSServer interface {
 	NeedLeaderElection() bool
 }
 
+type NameModifier = func(qName string) (string, error)
+
 type SimpleDNSServer struct {
 	address  string
-	resolver DNSResolver
+	resolver resolver.DNSResolver
 
 	latencyMetric    prometheus.Summary
 	resolutionMetric *prometheus.CounterVec
+	nameModifier     NameModifier
 }
 
-func NewDNSServer(port uint32, resolver DNSResolver, metrics core_metrics.Metrics) (DNSServer, error) {
+func NewDNSServer(port uint32, resolver resolver.DNSResolver, metrics core_metrics.Metrics, modifier NameModifier) (DNSServer, error) {
 	handler := &SimpleDNSServer{
 		address:  fmt.Sprintf("0.0.0.0:%d", port),
 		resolver: resolver,
@@ -40,6 +45,7 @@ func NewDNSServer(port uint32, resolver DNSResolver, metrics core_metrics.Metric
 			Name: "dns_server_resolution",
 			Help: "Counter for DNS Server resolutions",
 		}, []string{"result"}),
+		nameModifier: modifier,
 	}
 	if err := metrics.Register(handler.latencyMetric); err != nil {
 		return nil, err
@@ -55,8 +61,8 @@ func (h *SimpleDNSServer) parseQuery(m *dns.Msg) {
 	for _, q := range m.Question {
 		switch q.Qtype {
 		case dns.TypeA:
-			serverLog.V(1).Info("query for " + q.Name)
-			ip, err := h.resolver.ForwardLookupFQDN(q.Name)
+			serverLog.V(1).Info("received a query for " + q.Name)
+			ip, err := h.lookup(q.Name)
 			if err != nil {
 				serverLog.V(1).Info("unable to resolve", "Name", q.Name, "error", err.Error())
 				h.resolutionMetric.WithLabelValues("unresolved").Inc()
@@ -129,4 +135,25 @@ func (h *SimpleDNSServer) registerDNSHandler() {
 		}()
 		h.handleDNSRequest(writer, msg)
 	})
+}
+
+func (h *SimpleDNSServer) lookup(qName string) (string, error) {
+	ip, err := h.resolver.ForwardLookupFQDN(qName)
+	if err != nil {
+		if h.nameModifier == nil {
+			return "", err
+		}
+
+		modifiedName, err := h.nameModifier(qName)
+		if err != nil {
+			return "", err
+		}
+
+		ip, err = h.resolver.ForwardLookupFQDN(modifiedName)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return ip, nil
 }

@@ -29,26 +29,33 @@ var _ = Describe("Resolve Dataplane address", func() {
 
 	Context("ResolveAddress", func() {
 		It("should resolve if networking.address is domain name", func() {
-			dp := &mesh.DataplaneResource{Spec: mesh_proto.Dataplane{
+			// given
+			dp := &mesh.DataplaneResource{Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"}},
 			}
-			err := ResolveAddress(lif, dp)
+
+			// when
+			resolvedDp, err := ResolveAddress(lif, dp)
+
+			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dp.Spec.Networking.Address).To(Equal("192.168.0.1"))
+			Expect(resolvedDp.Spec.Networking.Address).To(Equal("192.168.0.1"))
+			// and original DP is not modified
+			Expect(dp.Spec.Networking.Address).To(Equal("example.com"))
 		})
 	})
 
 	Context("ResolveAddresses", func() {
 		It("should resolve addresses for all dataplanes", func() {
 			given := []*mesh.DataplaneResource{
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"}}},
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example-0.com"}}},
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example-1.com"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example-0.com"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example-1.com"}}},
 			}
 			expected := []*mesh.DataplaneResource{
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.0.1"}}},
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.0"}}},
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.1"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.0.1"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.0"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.1"}}},
 			}
 
 			actual := ResolveAddresses(core.Log, lif, given)
@@ -57,13 +64,13 @@ var _ = Describe("Resolve Dataplane address", func() {
 		})
 		It("should skip dataplane if unable to resolve domain name", func() {
 			given := []*mesh.DataplaneResource{
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"}}},
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "unresolvable.com"}}},
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example-1.com"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example.com"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "unresolvable.com"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "example-1.com"}}},
 			}
 			expected := []*mesh.DataplaneResource{
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.0.1"}}},
-				{Spec: mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.1"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.0.1"}}},
+				{Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{Address: "192.168.1.1"}}},
 			}
 			actual := ResolveAddresses(core.Log, lif, given)
 			Expect(actual).To(HaveLen(2))

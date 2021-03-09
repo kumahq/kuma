@@ -9,7 +9,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
-	"github.com/kumahq/kuma/pkg/envoy/accesslog"
+	accesslog "github.com/kumahq/kuma/pkg/envoy/accesslog/v2"
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
 

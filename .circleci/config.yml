@@ -3,11 +3,11 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 reusable:
 
   constants:
-  - &go_version "1.15.2"
+  - &go_version "1.15.6"
 
   docker_images:
-  - &golang_image "golang:1.15.2"
-  - &circleci_golang_image "circleci/golang:1.15.2"
+  - &golang_image "golang:1.15.6"
+  - &circleci_golang_image "circleci/golang:1.15.6"
 
   vm_images:
   - &ubuntu_vm_image "ubuntu-1604:202007-01"
@@ -22,11 +22,21 @@ reusable:
         tags:
           only: /.*/
 
+    # release the charts only on tagged releases
+    helm_release_workflow_filters: &helm_release_workflow_filters
+      filters:
+        branches:
+          ignore: /.*/
+        tags:
+          only: /^(\d+)\.(\d+)\.(\d+)$/
+
     # filters for the kuma-commit workflow
     master_workflow_filters: &master_workflow_filters
       filters:
         branches:
           only: master, /^release-.*/
+        tags:
+          ignore: /.*/ # we don't want to run master workflow on commits with tag because use_local_kuma_images has to be false for all the jobs to pass
 
     # filters for the kuma-commit workflow
     commit_workflow_filters: &commit_workflow_filters
@@ -95,7 +105,7 @@ jobs:
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
-      CLANG_FORMAT_PATH: clang-format-12
+      CLANG_FORMAT_PATH: clang-format-13
       # if GOPATH is not set, `golang-ci` fails with an obscure message
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /root/.go-kuma-go
@@ -190,18 +200,10 @@ jobs:
     executor: golang
     steps:
     - checkout
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - go.mod-{{ .Branch }}-
-        # otherwise, fallback to the most recently generated cache on any branch
-        - go.mod-
     - run:
         name: "Download Go modules"
         command: |
-          go mod download
+          make vet
     # since execution of go commands might change contents of "go.sum", we have to save cache immediately
     - save_cache:
         key: go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
@@ -210,18 +212,16 @@ jobs:
 
   check:
     executor: golang
+    # we need a large resource class to satisfy the needs of golangci-lint run under `make check`
+    resource_class: large
     environment:
-      CLANG_FORMAT_PATH: clang-format-12
+      CLANG_FORMAT_PATH: clang-format-13
     steps:
     - checkout
     - restore_cache:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - go.mod-{{ .Branch }}-
-        # otherwise, fallback to the most recently generated cache on any branch
-        - go.mod-
     - run:
         name: "Install pre-requirements"
         # `unzip` is necessary to install `protoc`
@@ -243,7 +243,7 @@ jobs:
 
          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
-         apt update && apt install -y clang-format-12
+         apt update && apt install -y clang-format-13
     - run:
         name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
         command: make check
@@ -256,10 +256,6 @@ jobs:
         keys:
         # prefer the exact match
         - api-go.mod-{{ .Branch }}-{{ checksum "api/go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - api-go.mod-{{ .Branch }}-
-        # otherwise, fallback to the most recently generated cache on any branch
-        - api-go.mod-
     - run:
         name: "Download Go modules"
         command: |
@@ -289,10 +285,6 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - go.mod-{{ .Branch }}-
-        # otherwise, fallback to the most recently generated cache on any branch
-        - go.mod-
     - run:
         name: "Install pre-requirements"
         # `unzip` is necessary to install `protoc`
@@ -328,10 +320,6 @@ jobs:
         keys:
         # prefer the exact match
         - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - vm-executor-go.mod-{{ .Branch }}-
-        # otherwise, fallback to the most recently generated cache on any branch
-        - vm-executor-go.mod-
     - run:
         name: "Download Go modules"
         command: |
@@ -356,6 +344,56 @@ jobs:
         path: build/coverage
         destination: /coverage
 
+  e2e:
+    executor: vm
+    parameters:
+      api:
+        description: XDS API version
+        type: string
+        default: v3
+    parallelism: 2
+    environment:
+      GOPATH: /home/circleci/.go-kuma-go
+    steps:
+      - checkout
+      - run:
+          name: "Install Go"
+          command: |
+            apt update && apt install -y curl git make
+            # see https://golang.org/doc/install#tarball
+            curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
+      - restore_cache:
+          keys:
+            # prefer the exact match
+            - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+      - run:
+          name: "Download Go modules"
+          command: |
+            export PATH=$HOME/go/bin:$PATH
+            go mod download
+      # since execution of go commands might change contents of "go.sum", we have to save cache immediately
+      - save_cache:
+          key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+          paths:
+            - "/home/circleci/.go-kuma-go"
+      - run:
+          name: "Install all development tools"
+          command: |
+            export PATH=$HOME/go/bin:$PATH
+            make dev/tools
+      - run:
+          name: "Setup Helm"
+          command: |
+            export PATH=$HOME/go/bin:$PATH
+            helm repo add kuma https://kumahq.github.io/charts
+      - run:
+          name: "Run E2E tests"
+          command: |
+            export PATH=$HOME/go/bin:$PATH
+            export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+            export API_VERSION=<< parameters.api >>
+            make test/e2e
+
   build:
     executor: golang
     steps:
@@ -364,10 +402,6 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - go.mod-{{ .Branch }}-
-        # otherwise, fallback to the most recently generated cache on any branch
-        - go.mod-
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
@@ -526,10 +560,6 @@ jobs:
         keys:
         # prefer the exact match
         - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
-        # otherwise, fallback to the most recently generated cache on that branch
-        - go.mod-{{ .Branch }}-
-        # otherwise, fallback to the most recently generated cache on any branch
-        - go.mod-
     - run:
         name: "Install Docker client"
         command: |
@@ -537,14 +567,6 @@ jobs:
           curl -L -o /tmp/docker-$VER.tgz https://download.docker.com/linux/static/stable/x86_64/docker-$VER.tgz
           tar -xz -C /tmp -f /tmp/docker-$VER.tgz
           mv /tmp/docker/docker /usr/bin
-#    - run:
-#        name: "Install Helm Chart Releaser"
-#        command: |
-#          VER="1.0.0-beta.1"
-#          curl -L -o /tmp/cr-$VER.tgz https://github.com/helm/chart-releaser/releases/download/v$VER/chart-releaser_$VER_linux_amd64.tar.gz
-#          mkdir -p /tmp/cr
-#          tar -xz -C /tmp/cr -f /tmp/cr-$VER.tgz
-#          mv /tmp/cr/cr /usr/bin
     - run:
         name: Build Packages
         command: ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
@@ -557,12 +579,28 @@ jobs:
     - run:
         name: Push Docker
         command: ./tools/releases/docker.sh --push --version $CIRCLE_TAG
-#    - run:
-#        name: Package Helm Charts
-#        command: ./tools/releases/helm.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
-#    - run:
-#        name: Release Helm Charts
-#        command: ./tools/releases/helm.sh --release --version $CIRCLE_TAG --sha $CIRCLE_SHA1
+
+  helm-release:
+    executor: golang
+    steps:
+    - checkout
+    - run:
+        name: "Install Helm Chart Releaser"
+        command: |
+          VER="1.1.1"
+          curl -L -o /tmp/cr-$VER.tgz https://github.com/helm/chart-releaser/releases/download/v$VER/chart-releaser_${VER}_linux_amd64.tar.gz
+          mkdir -p /tmp/cr
+          tar -xz -C /tmp/cr -f /tmp/cr-$VER.tgz
+          mv /tmp/cr/cr /usr/bin
+    - run:
+        name: "Package Helm Charts"
+        command: |
+          ./tools/releases/helm.sh --package
+    - run:
+        name: "Release Helm Charts"
+        command: |
+          ./tools/releases/helm.sh --release
+
 
 #
 # Below, the tag filter needs to be in all jobs
@@ -616,15 +654,21 @@ workflows:
         requires:
           - images
         # custom parameters
-        kubernetes_version: v1.18.9
+        kubernetes_version: v1.18.16
         use_local_kuma_images: true
-    - integration:
+    - example_minikube:
+        <<: *commit_workflow_filters
+        name: minikube_v1_20
+        requires:
+          - images
+        # custom parameters
+        kubernetes_version: v1.20.4
+        use_local_kuma_images: true
+    - e2e:
         <<: *commit_workflow_filters
         name: test/e2e
         requires:
           - images
-        # custom parameters
-        target: test/e2e
 
   kuma-master:
     jobs:
@@ -695,7 +739,7 @@ workflows:
           requires:
             - images
           # custom parameters
-          kubernetes_version: v1.17.12
+          kubernetes_version: v1.17.17
           use_local_kuma_images: true
       - example_minikube:
           <<: *master_workflow_filters
@@ -703,15 +747,36 @@ workflows:
           requires:
             - images
           # custom parameters
-          kubernetes_version: v1.18.9
+          kubernetes_version: v1.18.16
           use_local_kuma_images: true
-      - integration:
+      - example_minikube:
+          <<: *master_workflow_filters
+          name: minikube_v1_19
+          requires:
+            - images
+          # custom parameters
+          kubernetes_version: v1.19.8
+          use_local_kuma_images: true
+      - example_minikube:
+          <<: *master_workflow_filters
+          name: minikube_v1_20
+          requires:
+            - images
+          # custom parameters
+          kubernetes_version: v1.20.4
+          use_local_kuma_images: true
+      - e2e:
           <<: *master_workflow_filters
           name: test/e2e
           requires:
             - images
+      - e2e:
+          <<: *commit_workflow_filters
+          name: test/e2e V2
+          requires:
+            - images
           # custom parameters
-          target: test/e2e
+          api: v2
 
   kuma-release:
     jobs:
@@ -739,6 +804,10 @@ workflows:
         - check
         - test
         - integration
+    - helm-release:
+        <<: *helm_release_workflow_filters
+        requires:
+        - release
     - example_docker-compose:
         <<: *release_workflow_filters
         name: docker-compose
@@ -780,7 +849,7 @@ workflows:
         requires:
         - release
         # custom parameters
-        kubernetes_version: v1.17.12
+        kubernetes_version: v1.17.17
         # docker images for a release build must be downloaded from a public Docker registry
         use_local_kuma_images: false
     - example_minikube:
@@ -789,6 +858,22 @@ workflows:
         requires:
           - release
         # custom parameters
-        kubernetes_version: v1.18.9
+        kubernetes_version: v1.18.16
         # docker images for a release build must be downloaded from a public Docker registry
+        use_local_kuma_images: false
+    - example_minikube:
+        <<: *release_workflow_filters
+        name: minikube_v1_19
+        requires:
+          - release
+        # custom parameters
+        kubernetes_version: v1.19.8
+        use_local_kuma_images: false
+    - example_minikube:
+        <<: *release_workflow_filters
+        name: minikube_v1_20
+        requires:
+          - release
+        # custom parameters
+        kubernetes_version: v1.20.4
         use_local_kuma_images: false

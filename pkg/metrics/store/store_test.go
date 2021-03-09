@@ -4,6 +4,7 @@ import (
 	"context"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	metrics_store "github.com/kumahq/kuma/pkg/metrics/store"
@@ -28,13 +29,13 @@ var _ = Describe("Metered Store", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// setup test data
-		err = memoryStore.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey("default", "default"))
+		err = memoryStore.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should public metrics of GET", func() {
 		// when
-		err := store.Get(context.Background(), &core_mesh.MeshResource{}, core_store.GetByKey("default", "default"))
+		err := store.Get(context.Background(), core_mesh.NewMeshResource(), core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -43,7 +44,7 @@ var _ = Describe("Metered Store", func() {
 
 	It("should public metrics of LIST", func() {
 		// when
-		err := store.List(context.Background(), &core_mesh.MeshResourceList{}, core_store.ListByMesh("default"))
+		err := store.List(context.Background(), &core_mesh.MeshResourceList{}, core_store.ListByMesh(model.DefaultMesh))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -52,7 +53,7 @@ var _ = Describe("Metered Store", func() {
 
 	It("should public metrics of DELETE", func() {
 		// when
-		err := store.Delete(context.Background(), &core_mesh.MeshResource{}, core_store.DeleteByKey("default", "default"))
+		err := store.Delete(context.Background(), core_mesh.NewMeshResource(), core_store.DeleteByKey(model.DefaultMesh, model.NoMesh))
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
@@ -61,8 +62,8 @@ var _ = Describe("Metered Store", func() {
 
 	It("should public metrics of UPDATE", func() {
 		// when
-		mesh := &core_mesh.MeshResource{}
-		err := store.Get(context.Background(), mesh, core_store.GetByKey("default", "default"))
+		mesh := core_mesh.NewMeshResource()
+		err := store.Get(context.Background(), mesh, core_store.GetByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when

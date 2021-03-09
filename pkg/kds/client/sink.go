@@ -32,7 +32,7 @@ func NewKDSSink(log logr.Logger, rt []model.ResourceType, kdsStream KDSStream, c
 
 func (s *kdsSink) Start(stop <-chan struct{}) (errs error) {
 	for _, typ := range s.resourceTypes {
-		s.log.Info("sending DiscoveryRequest", "type", typ)
+		s.log.V(1).Info("sending DiscoveryRequest", "type", typ)
 		if err := s.kdsStream.DiscoveryRequest(typ); err != nil {
 			return errors.Wrap(err, "discovering failed")
 		}
@@ -47,10 +47,12 @@ func (s *kdsSink) Start(stop <-chan struct{}) (errs error) {
 
 		clusterID, rs, err := s.kdsStream.Receive()
 		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			return errors.Wrap(err, "failed to receive a discovery response")
 		}
-		s.log.Info("DiscoveryResponse received", "type", rs.GetItemType())
-		s.log.V(1).Info("DiscoveryResponse content", "response", rs)
+		s.log.V(1).Info("DiscoveryResponse received", "response", rs)
 
 		if s.callbacks == nil {
 			s.log.Info("no callback set, sending ACK", "type", string(rs.GetItemType()))
@@ -71,7 +73,7 @@ func (s *kdsSink) Start(stop <-chan struct{}) (errs error) {
 				return errors.Wrap(err, "failed to NACK a discovery response")
 			}
 		} else {
-			s.log.Info("sending ACK", "type", string(rs.GetItemType()))
+			s.log.V(1).Info("sending ACK", "type", string(rs.GetItemType()))
 			if err := s.kdsStream.ACK(string(rs.GetItemType())); err != nil {
 				if err == io.EOF {
 					break

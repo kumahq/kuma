@@ -3,16 +3,19 @@ package global
 import (
 	"context"
 	"fmt"
-	"net"
-	"strconv"
 	"strings"
 
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+	"github.com/golang/protobuf/ptypes/wrappers"
+
+	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 
 	"github.com/pkg/errors"
 
 	store_config "github.com/kumahq/kuma/pkg/config/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 
@@ -20,7 +23,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/kds/client"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
@@ -29,7 +31,7 @@ import (
 
 var (
 	kdsGlobalLog  = core.Log.WithName("kds-global")
-	providedTypes = []model.ResourceType{
+	ProvidedTypes = []model.ResourceType{
 		mesh.MeshType,
 		mesh.DataplaneType,
 		mesh.ExternalServiceType,
@@ -41,23 +43,26 @@ var (
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
 		mesh.ProxyTemplateType,
+		mesh.RetryType,
+		mesh.TimeoutType,
 		system.SecretType,
 		system.ConfigType,
 	}
-	consumedTypes = []model.ResourceType{
+	ConsumedTypes = []model.ResourceType{
 		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
 	}
 )
 
 func Setup(rt runtime.Runtime) (err error) {
-	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes,
-		"global", rt.Config().Multicluster.Global.KDS.RefreshInterval,
-		ProvidedFilter, true)
+	kdsServer, err := kds_server.New(kdsGlobalLog, rt, ProvidedTypes,
+		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
+		rt.KDSContext().GlobalProvidedFilter, true)
 	if err != nil {
 		return err
 	}
 	resourceSyncer := sync_store.NewResourceSyncer(kdsGlobalLog, rt.ResourceStore())
+	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
 		log := kdsGlobalLog.WithValues("peer-id", session.PeerID())
 		log.Info("new session created")
@@ -67,12 +72,11 @@ func Setup(rt runtime.Runtime) (err error) {
 			}
 		}()
 		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID())
-		zone := &system.ZoneResource{}
-		if err := rt.ReadOnlyResourceManager().Get(context.Background(), zone, store.GetByKey(session.PeerID(), "default")); err != nil {
-			// send error back to Remote CP, it will re-try later when ZoneResource will appear
-			return errors.Wrap(err, "ZoneResource doesn't exist")
+		if err := createZoneIfAbsent(session.PeerID(), rt.ResourceManager()); err != nil {
+			log.Error(err, "Global CP could not create a zone")
+			return errors.New("Global CP could not create a zone") // send back message without details. Remote CP will retry
 		}
-		sink := client.NewKDSSink(log, consumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, zone))
+		sink := client.NewKDSSink(log, ConsumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
 		go func() {
 			if err := sink.Start(session.Done()); err != nil {
 				log.Error(err, "KDSSink finished with an error")
@@ -80,79 +84,52 @@ func Setup(rt runtime.Runtime) (err error) {
 		}()
 		return nil
 	})
-	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().Multicluster.Global.KDS, rt.Metrics()))
+	callbacks := append(rt.KDSContext().GlobalServerCallbacks, onSessionStarted)
+	return rt.Add(mux.NewServer(callbacks, *rt.Config().Multizone.Global.KDS, rt.Metrics()))
 }
 
-// ProvidedFilter filter Resources provided by Remote, specifically excludes Dataplanes and Ingresses from 'clusterID' cluster
-func ProvidedFilter(clusterID string, r model.Resource) bool {
-	if r.GetType() == system.ConfigType && r.GetMeta().GetName() != config_manager.ClusterIdConfigKey {
-		return false
+func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
+	if err := resManager.Get(context.Background(), system.NewZoneResource(), store.GetByKey(name, model.NoMesh)); err != nil {
+		if !store.IsResourceNotFound(err) {
+			return err
+		}
+		kdsGlobalLog.Info("creating Zone", "name", name)
+		zone := &system.ZoneResource{
+			Spec: &system_proto.Zone{
+				Enabled: &wrappers.BoolValue{Value: true},
+			},
+		}
+		if err := resManager.Create(context.Background(), zone, store.CreateByKey(name, model.NoMesh)); err != nil {
+			return err
+		}
 	}
-	if r.GetType() != mesh.DataplaneType {
-		return true
-	}
-	if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
-		return false
-	}
-	return clusterID != util.ZoneTag(r)
+	return nil
 }
 
-func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, zone *system.ZoneResource) *client.Callbacks {
+func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory) *client.Callbacks {
 	return &client.Callbacks{
 		OnResourcesReceived: func(clusterName string, rs model.ResourceList) error {
 			util.AddPrefixToNames(rs.GetItems(), clusterName)
-			// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
-			// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
 			if k8sStore {
-				util.AddSuffixToNames(rs.GetItems(), "default")
-			}
-			if rs.GetItemType() == mesh.DataplaneType {
-				rs = dedupIngresses(rs)
-				adjustIngressNetworking(zone, rs)
+				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
+				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
+				kubeObject, err := kubeFactory.NewObject(rs.NewItem())
+				if err != nil {
+					return errors.Wrap(err, "could not convert object")
+				}
+				if kubeObject.Scope() == k8s_model.ScopeNamespace {
+					util.AddSuffixToNames(rs.GetItems(), "default")
+				}
 			}
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 				return strings.HasPrefix(r.GetMeta().GetName(), fmt.Sprintf("%s.", clusterName))
-			}))
+			}), sync_store.Zone(clusterName))
 		},
 	}
 }
 
-func adjustIngressNetworking(zone *system.ZoneResource, rs model.ResourceList) {
-	host, portStr, err := net.SplitHostPort(zone.Spec.GetIngress().GetAddress())
-	if err != nil {
-		kdsGlobalLog.Error(err, "failed parsing ingress", "host", host, "port", portStr)
-		return
-	}
-	port, _ := strconv.ParseUint(portStr, 10, 32)
-	for _, r := range rs.GetItems() {
-		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
-			continue
-		}
-		r.(*mesh.DataplaneResource).Spec.Networking.Address = host
-		r.(*mesh.DataplaneResource).Spec.Networking.Inbound[0].Port = uint32(port)
-	}
-}
-
-// dedupIngresses returns ResourceList that consist of Dataplanes from 'rs' and has single Ingress.
-// We assume to have single Ingress Resource per Zone.
-func dedupIngresses(rs model.ResourceList) model.ResourceList {
-	rv, _ := registry.Global().NewList(rs.GetItemType())
-	ingressPicked := false
-	for _, r := range rs.GetItems() {
-		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
-			_ = rv.AddItem(r)
-			continue
-		}
-		if !ingressPicked {
-			_ = rv.AddItem(r)
-			ingressPicked = true
-		}
-	}
-	return rv
-}
-
 func ConsumesType(typ model.ResourceType) bool {
-	for _, consumedTyp := range consumedTypes {
+	for _, consumedTyp := range ConsumedTypes {
 		if consumedTyp == typ {
 			return true
 		}

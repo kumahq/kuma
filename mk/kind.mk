@@ -3,6 +3,8 @@ KIND_KUBECONFIG_DIR ?= $(HOME)/.kube
 KIND_KUBECONFIG ?= $(KIND_KUBECONFIG_DIR)/kind-kuma-config
 KIND_CLUSTER_NAME ?= kuma
 
+METRICS_SERVER_VERSION := 0.4.1
+
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-registry=$(DOCKER_REGISTRY) --dataplane-registry=$(DOCKER_REGISTRY) --dataplane-init-registry=$(DOCKER_REGISTRY)
 else
@@ -21,8 +23,8 @@ define KIND_EXAMPLE_DATAPLANE_NAME
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
 endef
 
-CI_KIND_VERSION ?= v0.9.0
-CI_KUBERNETES_VERSION ?= v1.18.8@sha256:f4bcc97a0ad6e7abaf3f643d890add7efe6ee4ab90baeb374b4f41a4c95567eb
+CI_KIND_VERSION ?= v0.10.0
+CI_KUBERNETES_VERSION ?= v1.20.2@sha256:8f7ea6e7642c0da54f04a7ee10431549c0257315b3a634f6ef2fecaaedb19bab
 
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 
@@ -77,11 +79,15 @@ kind/load/kuma-init:
 kind/load/kuma-prometheus-sd:
 	@kind load docker-image $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
+.PHONY: kind/load/kumactl
+kind/load/kumactl:
+	@kind load docker-image $(KUMACTL_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
+
 .PHONY: kind/load/images
-kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd
+kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl
 
 .PHONY: kind/load
-kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd kind/load/images
+kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl kind/load/images
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load
@@ -115,6 +121,13 @@ kind/deploy/kuma/local: kind/deploy/kuma
 kind/deploy/metrics: build/kumactl
 	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install metrics $(KUMACTL_INSTALL_METRICS_IMAGES) | kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n kuma-metrics pods -l app=prometheus
+
+.PHONY: kind/deploy/metrics-server
+kind/deploy/metrics-server:
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v$(METRICS_SERVER_VERSION)/components.yaml
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl patch -n kube-system deployment/metrics-server \
+		--patch='{"spec":{"template":{"spec":{"containers":[{"name":"metrics-server","args":["--cert-dir=/tmp", "--secure-port=4443", "--kubelet-insecure-tls", "--kubelet-preferred-address-types=InternalIP"]}]}}}}'
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n kube-system deployment/metrics-server
 
 .PHONY: kind/deploy/example-app
 kind/deploy/example-app:

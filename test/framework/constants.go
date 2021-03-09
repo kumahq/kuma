@@ -20,24 +20,6 @@ const (
 	KumaUniversalImage = "kuma-universal"
 
 	kdsPort = 30685
-
-	ZoneTemplateK8s = `
-apiVersion: kuma.io/v1alpha1
-kind: Zone
-mesh: default
-metadata:
-  name: %s
-spec:
-  ingress:
-    address: %s
-`
-	ZoneTemplateUniversal = `
-type: Zone
-mesh: default
-name: %s
-ingress:
-  address: %s
-`
 )
 
 const (
@@ -46,22 +28,27 @@ const (
 
 	envKUMACTLBIN  = "KUMACTLBIN"
 	envK8SCLUSTERS = "K8SCLUSTERS"
+	envAPIVersion  = "API_VERSION"
 
 	maxClusters = 3
 
 	confPath = "/kuma/kuma-cp.conf"
 
 	kumaCPAPIPort        = 5681
-	kumaCPAdminPort      = 5679
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 
-	cniApp       = "kuma-cni"
-	cniNamespace = "kube-system"
+	redirectPortInbound  = "15006"
+	redirectPortOutbound = "15001"
 )
 
-var HelmChartPath = "../../deployments/charts/kuma"
+var HelmChartPath = "../../../deployments/charts/kuma"
+var HelmSubChartPrefix = ""
+
 var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
+
+var CNIApp = "kuma-cni"
+var CNINamespace = "kube-system"
 
 var KumaImageRegistry = "kuma"
 var KumaCPImageRepo = "kuma-cp"

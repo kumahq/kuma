@@ -1,11 +1,11 @@
 package k8s_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"time"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,6 +25,8 @@ var _ = Describe("Config", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
+		Expect(cfg.ControlPlaneServiceName).To(Equal("custom-control-plane"))
+
 		Expect(cfg.AdmissionServer.Address).To(Equal("127.0.0.2"))
 		Expect(cfg.AdmissionServer.Port).To(Equal(uint32(8442)))
 		Expect(cfg.AdmissionServer.CertDir).To(Equal("/var/secret/kuma-cp"))
@@ -55,6 +57,8 @@ var _ = Describe("Config", func() {
 		// and
 		Expect(cfg.Injector.InitContainer.Image).To(Equal("kuma-init:latest"))
 		Expect(cfg.Injector.CNIEnabled).To(Equal(true))
+		// and
+		Expect(cfg.MarshalingCacheExpirationTime).To(Equal(1 * time.Second))
 	})
 
 	It("should have consistent defaults", func() {
@@ -63,15 +67,10 @@ var _ = Describe("Config", func() {
 
 		// when
 		actual, err := config.ToYAML(cfg)
-		// then
-		Expect(err).ToNot(HaveOccurred())
 
-		// when
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(actual).To(MatchYAML(expected))
+		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "default-config.golden.yaml")))
 	})
 
 	It("should have validators", func() {
@@ -82,6 +81,6 @@ var _ = Describe("Config", func() {
 		err := config.Load(filepath.Join("testdata", "invalid-config.input.yaml"), &cfg)
 
 		// then
-		Expect(err.Error()).To(Equal(`Invalid configuration: .AdmissionServer is not valid: .Port must be in the range [0, 65535]; .CertDir should not be empty; .Injector is not valid: .SidecarContainer is not valid: .Image must be non-empty; .RedirectPortInbound must be in the range [0, 65535]; .RedirectPortOutbound must be in the range [0, 65535]; .AdminPort must be in the range [0, 65535]; .DrainTime must be positive; .ReadinessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .SuccessThreshold must be >= 1; .FailureThreshold must be >= 1; .LivenessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .FailureThreshold must be >= 1; .Resources is not valid: .Requests is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Limits is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .InitContainer is not valid: .Image must be non-empty`))
+		Expect(err.Error()).To(Equal(`Invalid configuration: .AdmissionServer is not valid: .Port must be in the range [0, 65535]; .CertDir should not be empty; .Injector is not valid: .SidecarContainer is not valid: .Image must be non-empty; .RedirectPortInbound must be in the range [0, 65535]; .RedirectPortOutbound must be in the range [0, 65535]; .AdminPort must be in the range [0, 65535]; .DrainTime must be positive; .ReadinessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .SuccessThreshold must be >= 1; .FailureThreshold must be >= 1; .LivenessProbe is not valid: .InitialDelaySeconds must be >= 1; .TimeoutSeconds must be >= 1; .PeriodSeconds must be >= 1; .FailureThreshold must be >= 1; .Resources is not valid: .Requests is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Limits is not valid: .CPU is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .Memory is not valid: quantities must match the regular expression '^([+-]?[0-9.]+)([eEinumkKMGTP]*[-+]?[0-9]*)$'; .InitContainer is not valid: .Image must be non-empty; .MarshalingCacheExpirationTime must be positive or equal to 0`))
 	})
 })

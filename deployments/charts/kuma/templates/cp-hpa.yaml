@@ -1,0 +1,23 @@
+{{- if .Values.controlPlane.autoscaling.enabled }}
+{{- $supportsV2Beta2 := .Capabilities.APIVersions.Has "autoscaling/v2beta2" }}
+apiVersion: {{ $supportsV2Beta2 | ternary "autoscaling/v2beta2" "autoscaling/v1" }}
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "kuma.name" . }}-control-plane
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "kuma.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "kuma.name" . }}-control-plane
+  minReplicas: {{ .Values.controlPlane.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.controlPlane.autoscaling.maxReplicas }}
+  {{- if not $supportsV2Beta2 }}
+  targetCPUUtilizationPercentage: {{ .Values.controlPlane.autoscaling.targetCPUUtilizationPercentage }}
+  {{- else }}
+  metrics:
+  {{- toYaml .Values.controlPlane.autoscaling.metrics | nindent 4 }}
+  {{- end }}
+{{- end }}

@@ -28,14 +28,14 @@ var _ = Describe("Resource Manager", func() {
 
 	createSampleMesh := func(name string) error {
 		meshRes := mesh.MeshResource{
-			Spec: mesh_proto.Mesh{},
+			Spec: &mesh_proto.Mesh{},
 		}
-		return resManager.Create(context.Background(), &meshRes, store.CreateByKey(name, name))
+		return resManager.Create(context.Background(), &meshRes, store.CreateByKey(name, model.NoMesh))
 	}
 
 	createSampleResource := func(mesh string) (*sample.TrafficRouteResource, error) {
 		trRes := sample.TrafficRouteResource{
-			Spec: v1alpha1.TrafficRoute{
+			Spec: &v1alpha1.TrafficRoute{
 				Path: "/some",
 			},
 		}
@@ -82,7 +82,7 @@ var _ = Describe("Resource Manager", func() {
 				Name: "tl-1",
 			}
 			trafficLog := &mesh.TrafficLogResource{
-				Spec: mesh_proto.TrafficLog{
+				Spec: &mesh_proto.TrafficLog{
 					Sources: []*mesh_proto.Selector{
 						{
 							Match: map[string]string{
@@ -109,16 +109,16 @@ var _ = Describe("Resource Manager", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and resource from mesh-1 is deleted
-			res1 := sample.TrafficRouteResource{}
-			err = resManager.Get(context.Background(), &res1, store.GetByKey("tr-1", "mesh-1"))
+			res1 := sample.NewTrafficRouteResource()
+			err = resManager.Get(context.Background(), res1, store.GetByKey("tr-1", "mesh-1"))
 			Expect(store.IsResourceNotFound(err)).To(BeTrue())
 
 			// and only TrafficRoutes are deleted
-			Expect(resManager.Get(context.Background(), &mesh.TrafficLogResource{}, store.GetBy(tlKey))).To(Succeed())
+			Expect(resManager.Get(context.Background(), mesh.NewTrafficLogResource(), store.GetBy(tlKey))).To(Succeed())
 
 			// and resource from mesh-2 is retained
-			res2 := sample.TrafficRouteResource{}
-			err = resManager.Get(context.Background(), &res2, store.GetByKey("tr-1", "mesh-2"))
+			res2 := sample.NewTrafficRouteResource()
+			err = resManager.Get(context.Background(), res2, store.GetByKey("tr-1", "mesh-2"))
 			Expect(err).ToNot(HaveOccurred())
 
 		})

@@ -6,14 +6,79 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
-## Upgrade to `1.0.0-rc1`
+## Upgrade to `1.0.0`
 
-This release introduces a new dataplane lifecyle, which is mostly relevant to Universal deployments.
+This release introduces a number of breaking changes. If Kuma is being deployed in production we strongly suggest to backup the current configuration, tear down the whole cluster and zones, and install in a clean setup. However, we enumerate the details of these changes below.
+
+### Suggested Upgrade Path on Kubernetes
+ * Drop k8s 1.13 support
+
+    Take this into account if you run Kuma on an old Kubernetes version.
+
+ * `kumactl` merged `install ingress` into `install control-plane`
+
+    This change impacts any deployment pipelines that are based on `kumactl` and are used for multi-zone deployments.
+
+ * Change policies on K8S to scope global
+
+    All the CRDs are now in the global scope, therefore all policies need to be backed up. The relevant CRDs need to be deleted, which will clear all the policies. After the upgrade, you can apply the policies again. We do recommend to keep all the Kuma Control Planes down while doing these operations.
+
+ * Autoconfigure single cert for all services
+
+    Deployment flags for providing TLS certificates in Helm and `kumactl` have changed, refer to the relevant [documentation](https://github.com/kumahq/kuma/blob/release-1.0/deployments/charts/kuma/README.md#values) to verify the new naming.
+
+ * Create default resources for Mesh
+
+    The following default resources will be created upon the first start of Kuma Control Plane
+        - default signing key
+        - default [Allow All traffic permission](https://kuma.io/docs/1.0.0/policies/traffic-permissions/#traffic-permissions) policy `allow-all-<mesh name>`
+        - Default [Allow All traffic route](https://kuma.io/docs/1.0.0/policies/traffic-route/#default-trafficroute) policy `allow-all-<mesh name>`
+    
+    Please verify if this conflicts with your deployment and expected policies.
+
+ * New Multizone deployment flow
+
+    Deploying Multizone clusters is now simplified, please refer to the deployment [documentation](https://kuma.io/docs/1.0.0/documentation/deployments/#multi-zone-mode) of the updated procedure.
+   
+ * Improved control plane communication security
+   
+    Kuma Control Plane exposed ports are reduced, please revise the [documentation](https://kuma.io/docs/1.0.0/documentation/networking/#kuma-cp-ports) for detailed list.
+    Consider reinstalling the metrics due to the port changes in Kuma Prometheus SD.
+ 
+ * Traffic route format
+ 
+    The format of the [TrafficRoute](https://kuma.io/docs/1.0.0/policies/traffic-route) has changed. Please check the documentation and adapt your resources. 
 
 ### Suggested Upgrade Path on Universal
+ * Get rid of advertised hostname
+    `KUMA_GENERAL_ADVERTISED_HOSTNAME` was removed and not needed now.
+ 
+ * Autoconfigure single cert for all services
+    Deployment flags for providing TLS certificates in Helm and `kumactl` have changed, refer to the [documentation](https://github.com/kumahq/kuma/blob/release-1.0/pkg/config/app/kuma-cp/kuma-cp.defaults.yaml) to verify the new naming.
 
-Refer to the official documentation for details on how to use the new Dataplane creating lifecycle, including the new token generation and DP resource templating.
+ * Create default resources for Mesh
+    
+    The following default resources will be created upon the first start of Kuma Control Plane
+        - default signing key
+        - default [Allow All traffic permission](https://kuma.io/docs/1.0.0/policies/traffic-permissions/#traffic-permissions) policy `allow-all-<mesh name>`
+        - Default [Allow All traffic route](https://kuma.io/docs/1.0.0/policies/traffic-route/#default-trafficroute) policy `allow-all-<mesh name>`
+    
+    Please verify if this conflicts with your deployment and expected policies.
 
+* New Multizone deployment flow
+
+    Deploying Multizone clusters is now simplified, please refer to the deployment [documentation](https://kuma.io/docs/1.0.0/documentation/deployments/#multi-zone-mode) of the updated procedure.
+   
+ * Improved control plane communication security
+   
+    `kuma-dp` invocation has changed and now [allows](https://kuma.io/docs/1.0.1/documentation/dps-and-data-model/#dataplane-entity) for a more flexible usage leveraging automated, template based Dataplane resource creation, customizable data-plane token boundaries and additional CA ceritficate validation for the Kuma Control plane boostrap server.
+    Kuma Control Plane exposed ports are reduced, please revise the [documentation](https://kuma.io/docs/1.0.0/documentation/networking/#kuma-cp-ports) for detailed list.
+ 
+  * Traffic route format
+  
+     The format of the [TrafficRoute](https://kuma.io/docs/1.0.0/policies/traffic-route) has changed. Please check the documentation and adapt your resources. 
+
+ 
 ## Upgrade to `0.7.0`
 Support for `kuma.io/sidecar-injection` annotation. On Kubernetes change the namespace resources that host Kuma mesh services with the aforementioned annotation and delete the label. 
 

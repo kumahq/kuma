@@ -23,6 +23,9 @@
           }
         ]
       },
+      "routing": {
+        "localityAwareLoadBalancing": true
+      },
       "tracing": {
         "backends": [
           {
@@ -78,15 +81,9 @@
       "modificationTime": "0001-01-01T00:00:00Z"
     },
     {
-      "metrics": {
-        "backends": []
-      },
-      "tracing": {
-        "backends": []
-      },
-      "logging": {
-        "backends": []
-      },
+      "metrics": {},
+      "tracing": {},
+      "logging": {},
       "name": "mesh2",
       "type": "Mesh",
       "creationTime": "0001-01-01T00:00:00Z",

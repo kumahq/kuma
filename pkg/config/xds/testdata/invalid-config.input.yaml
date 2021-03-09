@@ -1,3 +1,2 @@
-diagnosticsPort: 3456
 dataplaneConfigurationRefreshInterval: 0
 dataplaneStatusFlushInterval: 0

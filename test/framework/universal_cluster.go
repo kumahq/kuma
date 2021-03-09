@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -60,22 +61,36 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	}
 
 	cmd := []string{"kuma-cp", "run"}
-	env := []string{"KUMA_MODE=" + mode}
+	env := []string{"KUMA_MODE=" + mode, "KUMA_DNS_SERVER_PORT=53"}
+	caps := []string{}
+	for k, v := range opts.env {
+		env = append(env, fmt.Sprintf("%s=%s", k, v))
+	}
 	if opts.globalAddress != "" {
-		env = append(env, "KUMA_MULTICLUSTER_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
+		env = append(env, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
+	}
+	if opts.hdsDisabled {
+		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
+	}
+
+	apiVersion := os.Getenv(envAPIVersion)
+	if apiVersion != "" {
+		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+apiVersion)
 	}
 
 	switch mode {
 	case core.Remote:
-		env = append(env, "KUMA_MULTICLUSTER_REMOTE_ZONE="+c.name)
+		env = append(env, "KUMA_MULTIZONE_REMOTE_ZONE="+c.name)
 	case core.Global:
 		cmd = append(cmd, "--config-file", confPath)
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, true, env, cmd)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, true, caps)
 	if err != nil {
 		return err
 	}
+
+	app.CreateMainApp(env, cmd)
 
 	err = app.mainApp.Start()
 	if err != nil {
@@ -101,10 +116,6 @@ func (c *UniversalCluster) VerifyKuma() error {
 	return c.controlplane.kumactl.RunKumactl("get", "dataplanes")
 }
 
-func (c *UniversalCluster) RestartKuma() error {
-	return c.apps[AppModeCP].ReStart()
-}
-
 func (c *UniversalCluster) DeleteKuma(opts ...DeployOptionsFunc) error {
 	err := c.apps[AppModeCP].Stop()
 	delete(c.apps, AppModeCP)
@@ -112,7 +123,7 @@ func (c *UniversalCluster) DeleteKuma(opts ...DeployOptionsFunc) error {
 	return err
 }
 
-func (c *UniversalCluster) InjectDNS() error {
+func (c *UniversalCluster) InjectDNS(namespace ...string) error {
 	return nil
 }
 
@@ -134,47 +145,60 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 }
 
 func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string) error {
-	cpAddress := "http://" + c.apps[AppModeCP].ip + ":5681"
+	cpIp := c.apps[AppModeCP].ip
+	cpAddress := "https://" + cpIp + ":5678"
 	app.CreateDP(token, cpAddress, appname, ip, dpyaml)
 	return app.dpApp.Start()
 }
 
-func (c *UniversalCluster) DeployApp(namespace, appname, token string) error {
-	var args []string
-	switch appname {
-	case AppModeEchoServer:
-		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo\n\"'"}
-	case AppModeDemoClient:
-		args = []string{"ncat", "-lvk", "-p", "3000"}
-	default:
-		return errors.Errorf("not supported app type %s", appname)
+func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
+	opts := newDeployOpt(fs...)
+	appname := opts.appname
+	token := opts.token
+	transparent := opts.transparent
+	dpyaml := opts.appYaml
+	args := opts.appArgs
+
+	if opts.mesh == "" {
+		opts.mesh = "default"
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppMode(appname), c.verbose, []string{}, args)
+	caps := []string{}
+	if transparent {
+		caps = append(caps, "NET_ADMIN", "NET_RAW")
+	}
+
+	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), c.verbose, caps)
 	if err != nil {
 		return err
 	}
 
-	err = app.mainApp.Start()
-	if err != nil {
-		return err
+	if transparent {
+		app.setupTransparent(c.apps[AppModeCP].ip)
 	}
+
 	ip := app.ip
 
-	dpyaml := ""
-	switch appname {
-	case AppModeEchoServer:
-		dpyaml = fmt.Sprintf(EchoServerDataplane, "8080", "80", "8080")
-	case AppModeDemoClient:
-		dpyaml = fmt.Sprintf(DemoClientDataplane, "13000", "3000", "80", "8080")
+	if opts.dpVersion != "" {
+		if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
+			return err
+		}
 	}
 
-	err = c.CreateDP(app, appname, ip, dpyaml, token)
+	err = c.CreateDP(app, opts.name, ip, dpyaml, token)
 	if err != nil {
 		return err
 	}
 
-	c.apps[appname] = app
+	if !opts.proxyOnly {
+		app.CreateMainApp([]string{}, args)
+		err = app.mainApp.Start()
+		if err != nil {
+			return err
+		}
+	}
+
+	c.apps[opts.name] = app
 
 	return nil
 }
@@ -193,7 +217,8 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 		return "", "", errors.Errorf("App %s not found", appname)
 	}
 	sshApp := NewSshApp(false, app.ports[sshPort], []string{}, cmd)
-	return sshApp.Out(), sshApp.Err(), sshApp.Run()
+	err := sshApp.Run()
+	return sshApp.Out(), sshApp.Err(), err
 }
 
 func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, cmd ...string) (string, string, error) {

@@ -119,7 +119,7 @@ data:
             port_value: 7070
         filter_chains:
         - filters:
-          - name: envoy.http_connection_manager
+          - name: envoy.filters.network.http_connection_manager
             config:
               stat_prefix: ingress_http
               codec_type: auto
@@ -137,7 +137,7 @@ data:
                       body:
                         filename: /tmp/response.json
               http_filters:
-              - name: envoy.router
+              - name: envoy.filters.http.router
                 config: {}
 ---
 apiVersion: apps/v1
@@ -168,7 +168,7 @@ spec:
     spec:
       containers:
       - name: kuma-example-backend
-        image: envoyproxy/envoy-alpine:v1.15.0
+        image: envoyproxy/envoy-alpine:v1.16.1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 7070
@@ -216,7 +216,7 @@ spec:
     spec:
       containers:
       - name: kuma-example-backend
-        image: envoyproxy/envoy-alpine:v1.15.0
+        image: envoyproxy/envoy-alpine:v1.16.1
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 7070

@@ -1,13 +1,8 @@
 controlPlane:
-  apiServer:
-    url: invalid-url
-    retry:
-      backoff: 0s
-      maxDuration: 0s
-  boostrapServer:
-    retry:
-      backoff: 0s
-      maxDuration: 0s
+  url: invalid-url
+  retry:
+    backoff: 0s
+    maxDuration: 0s
 dataplane:
   mesh:
   name:

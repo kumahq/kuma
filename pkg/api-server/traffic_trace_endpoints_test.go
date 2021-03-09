@@ -15,6 +15,7 @@ import (
 	config "github.com/kumahq/kuma/pkg/config/api-server"
 	"github.com/kumahq/kuma/pkg/core"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -56,7 +57,7 @@ var _ = Describe("TrafficTrace Endpoints", func() {
 
 	BeforeEach(func() {
 		// when
-		err := resourceStore.Create(context.Background(), &mesh_core.MeshResource{}, store.CreateByKey("default", "default"))
+		err := resourceStore.Create(context.Background(), mesh_core.NewMeshResource(), store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		// then
 		Expect(err).ToNot(HaveOccurred())
 	})

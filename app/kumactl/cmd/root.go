@@ -3,6 +3,8 @@ package cmd
 import (
 	"os"
 
+	"github.com/kumahq/kuma/app/kumactl/cmd/uninstall"
+
 	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd/apply"
@@ -80,6 +82,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(get.NewGetCmd(root))
 	cmd.AddCommand(inspect.NewInspectCmd(root))
 	cmd.AddCommand(install.NewInstallCmd(root))
+	cmd.AddCommand(uninstall.NewUninstallCmd(root))
 	cmd.AddCommand(version.NewVersionCmd())
 	kumactl_cmd.WrapRunnables(cmd, kumactl_errors.FormatErrorWrapper)
 	return cmd

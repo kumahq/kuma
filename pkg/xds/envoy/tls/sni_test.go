@@ -8,18 +8,6 @@ import (
 )
 
 var _ = Describe("SNI", func() {
-	It("should parse tags from SNI", func() {
-		actual := tls.TagsFromSNI("backend{app=backend-app,env=prod,region=eu,version=v1}")
-		expected := map[string]string{
-			"kuma.io/service": "backend",
-			"version":         "v1",
-			"env":             "prod",
-			"region":          "eu",
-			"app":             "backend-app",
-		}
-		Expect(actual).To(Equal(expected))
-	})
-
 	It("should convert SNI to tags", func() {
 		tags := map[string]string{
 			"kuma.io/service": "backend",

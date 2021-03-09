@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -11,17 +10,17 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
-
-	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
 var _ = Describe("OutboundProxyGenerator", func() {
 
 	meta := &test_model.ResourceMeta{
-		Mesh: "mesh1",
 		Name: "mesh1",
 	}
 	plainCtx := xds_context.Context{
@@ -29,18 +28,21 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		Mesh: xds_context.MeshContext{
 			Resource: &mesh_core.MeshResource{
 				Meta: meta,
+				Spec: &mesh_proto.Mesh{},
 			},
 		},
 	}
 
 	mtlsCtx := xds_context.Context{
+		ConnectionInfo: xds_context.ConnectionInfo{
+			Authority: "kuma-system:5677",
+		},
 		ControlPlane: &xds_context.ControlPlaneContext{
-			SdsLocation: "kuma-system:5677",
-			SdsTlsCert:  []byte("12345"),
+			SdsTlsCert: []byte("12345"),
 		},
 		Mesh: xds_context.MeshContext{
 			Resource: &mesh_core.MeshResource{
-				Spec: mesh_proto.Mesh{
+				Spec: &mesh_proto.Mesh{
 					Mtls: &mesh_proto.Mesh_Mtls{
 						EnabledBackend: "builtin",
 						Backends: []*mesh_proto.CertificateAuthorityBackend{
@@ -67,8 +69,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			// setup
 			gen := &generator.OutboundProxyGenerator{}
 
-			dataplane := mesh_proto.Dataplane{}
-			Expect(util_proto.FromYAML([]byte(given.dataplane), &dataplane)).To(Succeed())
+			dataplane := &mesh_proto.Dataplane{}
+			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			outboundTargets := model.EndpointMap{
 				"api-http": []model.Endpoint{ // notice that all endpoints have tag `kuma.io/protocol: http`
@@ -165,163 +167,186 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				TrafficRoutes: model.RouteMap{
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 40001,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("api-http"),
-							}},
+				APIVersion: envoy_common.APIV3,
+				Routing: model.Routing{
+					TrafficRoutes: model.RouteMap{
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 40001,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      100,
+										Destination: mesh_proto.MatchService("api-http"),
+									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
+									},
+								},
+							},
 						},
-					},
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 40002,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("api-tcp"),
-							}},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 40002,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      100,
+										Destination: mesh_proto.MatchService("api-tcp"),
+									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest_{
+											LeastRequest: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest{
+												ChoiceCount: 4,
+											},
+										},
+									},
+								},
+							},
 						},
-					},
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 40003,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("api-http2"),
-							}},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 40003,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      100,
+										Destination: mesh_proto.MatchService("api-http2"),
+									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RingHash_{
+											RingHash: &mesh_proto.TrafficRoute_LoadBalancer_RingHash{
+												HashFunction: "MURMUR_HASH_2",
+												MinRingSize:  64,
+												MaxRingSize:  1024,
+											},
+										},
+									},
+								},
+							},
 						},
-					},
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 40004,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("api-grpc"),
-							}},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 40004,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      100,
+										Destination: mesh_proto.MatchService("api-grpc"),
+									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_Random_{},
+									},
+								},
+							},
 						},
-					},
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 18080,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      100,
-								Destination: mesh_proto.MatchService("backend"),
-							}},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 18080,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      100,
+										Destination: mesh_proto.MatchService("backend"),
+									}},
+									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
+										LbType: &mesh_proto.TrafficRoute_LoadBalancer_Maglev_{},
+									},
+								},
+							},
 						},
-					},
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 54321,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      10,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "master"},
-							}, {
-								Weight:      90,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "replica"},
-							}, {
-								Weight:      0, // should be excluded from Envoy configuration
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "canary"},
-							}},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 54321,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      10,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "master"},
+									}, {
+										Weight:      90,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "replica"},
+									}, {
+										Weight:      0, // should be excluded from Envoy configuration
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "canary"},
+									}},
+								},
+							},
 						},
-					},
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 18081,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      1,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "es", "kuma.io/protocol": "http"},
-							}},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 18081,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      1,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "es", "kuma.io/protocol": "http"},
+									}},
+								},
+							},
 						},
-					},
-					mesh_proto.OutboundInterface{
-						DataplaneIP:   "127.0.0.1",
-						DataplanePort: 18082,
-					}: &mesh_core.TrafficRouteResource{
-						Spec: mesh_proto.TrafficRoute{
-							Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-								Weight:      1,
-								Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
-							}},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 18082,
+						}: &mesh_core.TrafficRouteResource{
+							Spec: &mesh_proto.TrafficRoute{
+								Conf: &mesh_proto.TrafficRoute_Conf{
+									Split: []*mesh_proto.TrafficRoute_Split{{
+										Weight:      1,
+										Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
+									}},
+								},
+							},
 						},
+						mesh_proto.OutboundInterface{
+							DataplaneIP:   "127.0.0.1",
+							DataplanePort: 4040,
+						}: nil,
 					},
+					OutboundTargets: outboundTargets,
 				},
-				OutboundSelectors: model.DestinationMap{
-					"api-http": model.TagSelectorSet{
-						{"kuma.io/service": "api-http"},
+				Policies: model.MatchedPolicies{
+					Logs: model.LogMap{
+						"api-http": &mesh_proto.LoggingBackend{
+							Name: "file",
+							Type: mesh_proto.LoggingFileType,
+							Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+								Path: "/var/log",
+							}),
+						},
+						"api-tcp": &mesh_proto.LoggingBackend{
+							Name: "elk",
+							Type: mesh_proto.LoggingTcpType,
+							Conf: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
+								Address: "logstash:1234",
+							}),
+						},
 					},
-					"api-tcp": model.TagSelectorSet{
-						{"kuma.io/service": "api-tcp"},
-					},
-					"api-http2": model.TagSelectorSet{
-						{"kuma.io/service": "api-http2"},
-					},
-					"api-grpc": model.TagSelectorSet{
-						{"kuma.io/service": "api-grpc"},
-					},
-					"backend": model.TagSelectorSet{
-						{"kuma.io/service": "backend"},
-					},
-					"db": model.TagSelectorSet{
-						{"kuma.io/service": "db", "role": "master"},
-						{"kuma.io/service": "db", "role": "replica"},
-						{"kuma.io/service": "db", "role": "canary"},
-					},
-					"es": model.TagSelectorSet{
-						{"kuma.io/service": "es", "kuma.io/protocol": "http"},
-					},
-					"es2": model.TagSelectorSet{
-						{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
-					},
-				},
-				OutboundTargets: outboundTargets,
-				Logs: model.LogMap{
-					"api-http": &mesh_proto.LoggingBackend{
-						Name: "file",
-						Type: mesh_proto.LoggingFileType,
-						Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
-							Path: "/var/log",
-						}),
-					},
-					"api-tcp": &mesh_proto.LoggingBackend{
-						Name: "elk",
-						Type: mesh_proto.LoggingTcpType,
-						Conf: util_proto.MustToStruct(&mesh_proto.TcpLoggingBackendConfig{
-							Address: "logstash:1234",
-						}),
-					},
-				},
-				Metadata: &model.DataplaneMetadata{},
-				CircuitBreakers: model.CircuitBreakerMap{
-					"api-http": &mesh_core.CircuitBreakerResource{
-						Spec: mesh_proto.CircuitBreaker{
-							Conf: &mesh_proto.CircuitBreaker_Conf{
-								Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-									TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
+					CircuitBreakers: model.CircuitBreakerMap{
+						"api-http": &mesh_core.CircuitBreakerResource{
+							Spec: &mesh_proto.CircuitBreaker{
+								Conf: &mesh_proto.CircuitBreaker_Conf{
+									Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
+										TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
+									},
 								},
 							},
 						},
 					},
 				},
-				CLACache: &dummyCLACache{outboundTargets: outboundTargets},
+
+				Metadata: &model.DataplaneMetadata{},
 			}
 
 			// when
+			given.ctx.ControlPlane.CLACache = &dummyCLACache{outboundTargets: outboundTargets}
 			rs, err := gen.Generate(given.ctx, proxy)
 
 			// then
@@ -336,9 +361,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "outbound-proxy", given.expected))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy", given.expected)))
 		},
 		Entry("01. transparent_proxying=false, mtls=false, outbound=0", testCase{
 			ctx:       plainCtx,
@@ -440,6 +464,22 @@ var _ = Describe("OutboundProxyGenerator", func() {
 `,
 			expected: "06.envoy.golden.yaml",
 		}),
+		Entry("07. no TrafficRoute", testCase{
+			ctx: mtlsCtx,
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              inbound:
+              - port: 8080
+                tags:
+                  kuma.io/service: web
+              outbound:
+              - port: 4040
+                tags:
+                  kuma.io/service: service-without-traffic-route
+`,
+			expected: "07.envoy.golden.yaml",
+		}),
 	)
 
 	It("Add sanitized alternative cluster name for stats", func() {
@@ -453,8 +493,8 @@ var _ = Describe("OutboundProxyGenerator", func() {
           - port: 54321
             service: db.kuma-system`
 
-		dataplane := mesh_proto.Dataplane{}
-		Expect(util_proto.FromYAML([]byte(dp), &dataplane)).To(Succeed())
+		dataplane := &mesh_proto.Dataplane{}
+		Expect(util_proto.FromYAML([]byte(dp), dataplane)).To(Succeed())
 
 		outboundTargets := model.EndpointMap{
 			"backend.kuma-system": []model.Endpoint{
@@ -481,44 +521,42 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 				Spec: dataplane,
 			},
-			TrafficRoutes: model.RouteMap{
-				mesh_proto.OutboundInterface{
-					DataplaneIP:   "127.0.0.1",
-					DataplanePort: 18080,
-				}: &mesh_core.TrafficRouteResource{
-					Spec: mesh_proto.TrafficRoute{
-						Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-							Weight:      100,
-							Destination: mesh_proto.MatchService("backend.kuma-system"),
-						}},
+			APIVersion: envoy_common.APIV3,
+			Routing: model.Routing{
+				TrafficRoutes: model.RouteMap{
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 18080,
+					}: &mesh_core.TrafficRouteResource{
+						Spec: &mesh_proto.TrafficRoute{
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchService("backend.kuma-system"),
+								}},
+							},
+						},
+					},
+					mesh_proto.OutboundInterface{
+						DataplaneIP:   "127.0.0.1",
+						DataplanePort: 54321,
+					}: &mesh_core.TrafficRouteResource{
+						Spec: &mesh_proto.TrafficRoute{
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},
+								}},
+							}},
 					},
 				},
-				mesh_proto.OutboundInterface{
-					DataplaneIP:   "127.0.0.1",
-					DataplanePort: 54321,
-				}: &mesh_core.TrafficRouteResource{
-					Spec: mesh_proto.TrafficRoute{
-						Conf: []*mesh_proto.TrafficRoute_WeightedDestination{{
-							Weight:      100,
-							Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},
-						},
-						}},
-				},
+				OutboundTargets: outboundTargets,
 			},
-			OutboundSelectors: model.DestinationMap{
-				"backend.kuma-system": model.TagSelectorSet{
-					{"kuma.io/service": "backend.kuma-system"},
-				},
-				"db.kuma-system": model.TagSelectorSet{
-					{"kuma.io/service": "db", "version": "3.2.0"},
-				},
-			},
-			OutboundTargets: outboundTargets,
-			Metadata:        &model.DataplaneMetadata{},
-			CLACache:        &dummyCLACache{outboundTargets: outboundTargets},
+			Metadata: &model.DataplaneMetadata{},
 		}
 
 		// when
+		plainCtx.ControlPlane.CLACache = &dummyCLACache{outboundTargets: outboundTargets}
 		rs, err := gen.Generate(plainCtx, proxy)
 
 		// then
@@ -533,8 +571,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 		// then
 		Expect(err).ToNot(HaveOccurred())
 
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "outbound-proxy", "cluster-dots.envoy.golden.yaml"))
-		Expect(err).ToNot(HaveOccurred())
-		Expect(actual).To(MatchYAML(expected))
+		// and output matches golden files
+		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "outbound-proxy", "cluster-dots.envoy.golden.yaml")))
 	})
 })

@@ -9,41 +9,33 @@ import (
 	"github.com/pkg/errors"
 )
 
-func ConfigureTls(httpClient *http.Client, serverCert string, clientCert string, clientKey string) error {
-	certBytes, err := ioutil.ReadFile(serverCert)
-	if err != nil {
-		return errors.Wrap(err, "could not read server cert")
-	}
-	certPool := x509.NewCertPool()
-	if ok := certPool.AppendCertsFromPEM(certBytes); !ok {
-		return errors.New("could not add certificate")
+func ConfigureMTLS(httpClient *http.Client, caCert string, clientCert string, clientKey string) error {
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{},
 	}
 
-	cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
-	if err != nil {
-		return errors.Wrap(err, "could not create key pair from client cert and client key")
+	if caCert == "" {
+		transport.TLSClientConfig.InsecureSkipVerify = true
+	} else {
+		certBytes, err := ioutil.ReadFile(caCert)
+		if err != nil {
+			return errors.Wrap(err, "could not read CA cert")
+		}
+		certPool := x509.NewCertPool()
+		if ok := certPool.AppendCertsFromPEM(certBytes); !ok {
+			return errors.New("could not add certificate")
+		}
+		transport.TLSClientConfig.RootCAs = certPool
 	}
 
-	httpClient.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{
-			RootCAs:      certPool,
-			Certificates: []tls.Certificate{cert},
-		},
-	}
-	return nil
-}
-
-func ConfigureTlsWithoutServerVerification(httpClient *http.Client, clientCert string, clientKey string) error {
-	cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
-	if err != nil {
-		return errors.Wrap(err, "could not create key pair from client cert and client key")
+	if clientKey != "" && clientCert != "" {
+		cert, err := tls.LoadX509KeyPair(clientCert, clientKey)
+		if err != nil {
+			return errors.Wrap(err, "could not create key pair from client cert and client key")
+		}
+		transport.TLSClientConfig.Certificates = []tls.Certificate{cert}
 	}
 
-	httpClient.Transport = &http.Transport{
-		TLSClientConfig: &tls.Config{
-			InsecureSkipVerify: true,
-			Certificates:       []tls.Certificate{cert},
-		},
-	}
+	httpClient.Transport = transport
 	return nil
 }

@@ -49,12 +49,12 @@ var _ = Describe("Index Endpoints", func() {
 
 		// wait for the server
 		Eventually(func() error {
-			_, err := http.Get("http://localhost" + apiServer.Address())
+			_, err := http.Get("http://" + apiServer.Address())
 			return err
 		}, "3s").ShouldNot(HaveOccurred())
 
 		// when
-		resp, err := http.Get("http://localhost" + apiServer.Address())
+		resp, err := http.Get("http://" + apiServer.Address())
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

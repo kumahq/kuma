@@ -62,4 +62,22 @@ var _ = Describe("KumaProbe", func() {
 				"to 9000. It is reserved for the dataplane that will serve pods without mTLS."))
 		})
 	})
+
+	Context("Prepend /", func() {
+		It("should convert to path with prepended /", func() {
+			podProbeYaml := `
+                httpGet:
+                  path: c1/hc
+                  port: 8080
+`
+			probe := kube_core.Probe{}
+			err := yaml.Unmarshal([]byte(podProbeYaml), &probe)
+			Expect(err).ToNot(HaveOccurred())
+
+			virtual, err := probes.KumaProbe(probe).ToVirtual(9000)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(virtual.Path()).To(Equal("/8080/c1/hc"))
+			Expect(virtual.Port()).To(Equal(uint32(9000)))
+		})
+	})
 })

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/kumahq/kuma/pkg/api-server/authz"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/emicklei/go-restful"
@@ -20,8 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-type meshFromRequestFn = func(*restful.Request) string
-
 const (
 	k8sReadOnlyMessage = "On Kubernetes you cannot change the state of Kuma resources with 'kumactl apply' or via the HTTP API." +
 		" As a best practice, you should always be using 'kubectl apply' instead." +
@@ -32,22 +31,23 @@ const (
 		" You can still use 'kumactl' or the HTTP API to modify the rest of the resource on the global control plane.\n"
 )
 
-func meshFromPathParam(param string) meshFromRequestFn {
-	return func(request *restful.Request) string {
-		return request.PathParameter(param)
-	}
+type resourceEndpoints struct {
+	mode       config_core.CpMode
+	resManager manager.ResourceManager
+	definitions.ResourceWsDefinition
+	adminAuth authz.AdminAuth
 }
 
-type resourceEndpoints struct {
-	mode            config_core.CpMode
-	publicURL       string
-	resManager      manager.ResourceManager
-	meshFromRequest meshFromRequestFn
-	definitions.ResourceWsDefinition
+func (r *resourceEndpoints) auth() restful.FilterFunction {
+	if r.ResourceWsDefinition.Admin {
+		return r.adminAuth.Validate
+	}
+	return authz.NoAuth
 }
 
 func (r *resourceEndpoints) addFindEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix+"/{name}").To(r.findResource).
+		Filter(r.auth()).
 		Doc(fmt.Sprintf("Get a %s", r.Name)).
 		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
 		Returns(200, "OK", nil).
@@ -72,6 +72,7 @@ func (r *resourceEndpoints) findResource(request *restful.Request, response *res
 
 func (r *resourceEndpoints) addListEndpoint(ws *restful.WebService, pathPrefix string) {
 	ws.Route(ws.GET(pathPrefix).To(r.listResources).
+		Filter(r.auth()).
 		Doc(fmt.Sprintf("List of %s", r.Name)).
 		Param(ws.PathParameter("size", "size of page").DataType("int")).
 		Param(ws.PathParameter("offset", "offset of page to list").DataType("string")).
@@ -92,12 +93,7 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 		rest_errors.HandleError(response, err, "Could not retrieve resources")
 	} else {
 		restList := rest.From.ResourceList(list)
-		next, err := nextLink(request, r.publicURL, list)
-		if err != nil {
-			rest_errors.HandleError(response, err, "Could not retrieve resources")
-			return
-		}
-		restList.Next = next
+		restList.Next = nextLink(request, list.GetPagination().NextOffset)
 		if err := response.WriteAsJson(restList); err != nil {
 			rest_errors.HandleError(response, err, "Could not list resources")
 		}
@@ -105,11 +101,18 @@ func (r *resourceEndpoints) listResources(request *restful.Request, response *re
 }
 
 func (r *resourceEndpoints) addCreateOrUpdateEndpoint(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
-		Doc(fmt.Sprintf("Updates a %s", r.Name)).
-		Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
-		Returns(200, "OK", nil).
-		Returns(201, "Created", nil))
+	if r.ReadOnly {
+		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResourceReadOnly).
+			Doc("Not allowed in read-only mode.").
+			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
+	} else {
+		ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResource).
+			Filter(r.auth()).
+			Doc(fmt.Sprintf("Updates a %s", r.Name)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of the %s", r.Name)).DataType("string")).
+			Returns(200, "OK", nil).
+			Returns(201, "Created", nil))
+	}
 }
 
 func (r *resourceEndpoints) createOrUpdateResource(request *restful.Request, response *restful.Response) {
@@ -161,12 +164,6 @@ func (r *resourceEndpoints) updateResource(ctx context.Context, res model.Resour
 	}
 }
 
-func (r *resourceEndpoints) addCreateOrUpdateEndpointReadOnly(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.PUT(pathPrefix+"/{name}").To(r.createOrUpdateResourceReadOnly).
-		Doc("Not allowed in read-only mode.").
-		Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
-}
-
 func (r *resourceEndpoints) createOrUpdateResourceReadOnly(request *restful.Request, response *restful.Response) {
 	err := response.WriteErrorString(http.StatusMethodNotAllowed, r.readOnlyMessage())
 	if err != nil {
@@ -175,10 +172,17 @@ func (r *resourceEndpoints) createOrUpdateResourceReadOnly(request *restful.Requ
 }
 
 func (r *resourceEndpoints) addDeleteEndpoint(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
-		Doc(fmt.Sprintf("Deletes a %s", r.Name)).
-		Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
-		Returns(200, "OK", nil))
+	if r.ReadOnly {
+		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResourceReadOnly).
+			Doc("Not allowed in read-only mode.").
+			Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
+	} else {
+		ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResource).
+			Filter(r.auth()).
+			Doc(fmt.Sprintf("Deletes a %s", r.Name)).
+			Param(ws.PathParameter("name", fmt.Sprintf("Name of a %s", r.Name)).DataType("string")).
+			Returns(200, "OK", nil))
+	}
 }
 
 func (r *resourceEndpoints) deleteResource(request *restful.Request, response *restful.Response) {
@@ -189,12 +193,6 @@ func (r *resourceEndpoints) deleteResource(request *restful.Request, response *r
 	if err := r.resManager.Delete(request.Request.Context(), resource, store.DeleteByKey(name, meshName)); err != nil {
 		rest_errors.HandleError(response, err, "Could not delete a resource")
 	}
-}
-
-func (r *resourceEndpoints) addDeleteEndpointReadOnly(ws *restful.WebService, pathPrefix string) {
-	ws.Route(ws.DELETE(pathPrefix+"/{name}").To(r.deleteResourceReadOnly).
-		Doc("Not allowed in read-only mode.").
-		Returns(http.StatusMethodNotAllowed, "Not allowed in read-only mode.", restful.ServiceError{}))
 }
 
 func (r *resourceEndpoints) deleteResourceReadOnly(request *restful.Request, response *restful.Response) {
@@ -208,6 +206,7 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	var err validators.ValidationError
 	name := request.PathParameter("name")
 	meshName := r.meshFromRequest(request)
+
 	if name != resource.Meta.Name {
 		err.AddViolation("name", "name from the URL has to be the same as in body")
 	}
@@ -219,6 +218,13 @@ func (r *resourceEndpoints) validateResourceRequest(request *restful.Request, re
 	}
 	err.AddError("", mesh.ValidateMeta(name, meshName, r.ResourceFactory().Scope()))
 	return err.OrNil()
+}
+
+func (r *resourceEndpoints) meshFromRequest(request *restful.Request) string {
+	if r.ResourceFactory().Scope() == model.ScopeMesh {
+		return request.PathParameter("mesh")
+	}
+	return ""
 }
 
 func (r *resourceEndpoints) readOnlyMessage() string {

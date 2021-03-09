@@ -18,12 +18,12 @@ type Loader interface {
 }
 
 type loader struct {
-	secretManager manager.ResourceManager
+	secretManager manager.ReadOnlyResourceManager
 }
 
 var _ Loader = &loader{}
 
-func NewDataSourceLoader(secretManager manager.ResourceManager) Loader {
+func NewDataSourceLoader(secretManager manager.ReadOnlyResourceManager) Loader {
 	return &loader{
 		secretManager: secretManager,
 	}
@@ -37,6 +37,8 @@ func (l *loader) Load(ctx context.Context, mesh string, source *system_proto.Dat
 		data, err = l.loadSecret(ctx, mesh, source.GetSecret())
 	case *system_proto.DataSource_Inline:
 		data, err = source.GetInline().GetValue(), nil
+	case *system_proto.DataSource_InlineString:
+		data, err = []byte(source.GetInlineString()), nil
 	case *system_proto.DataSource_File:
 		data, err = ioutil.ReadFile(source.GetFile())
 	default:
@@ -49,7 +51,7 @@ func (l *loader) Load(ctx context.Context, mesh string, source *system_proto.Dat
 }
 
 func (l *loader) loadSecret(ctx context.Context, mesh string, secret string) ([]byte, error) {
-	resource := &system.SecretResource{}
+	resource := system.NewSecretResource()
 	if err := l.secretManager.Get(ctx, resource, core_store.GetByKey(secret, mesh)); err != nil {
 		return nil, err
 	}

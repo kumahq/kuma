@@ -1,16 +1,17 @@
 conf:
-  - weight: 90
-    destination:
+  split:
+  - destination:
       service: redis
       version: "1.0"
-creationTime: 0001-01-01T00:00:00Z
+    weight: 90
+creationTime: "0001-01-01T00:00:00Z"
 destinations:
-  - match:
-      service: redis
+- match:
+    service: redis
 mesh: default
-modificationTime: 0001-01-01T00:00:00Z
+modificationTime: "0001-01-01T00:00:00Z"
 name: traffic-route-1
 sources:
-  - match:
-      service: backend
+- match:
+    service: backend
 type: TrafficRoute

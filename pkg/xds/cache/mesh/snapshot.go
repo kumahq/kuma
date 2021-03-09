@@ -5,14 +5,16 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/xds/topology"
 )
+
+var meshCacheLog = core.Log.WithName("mesh-cache")
 
 // meshSnapshot represents all resources that belong to Mesh and allows to calculate hash.
 // Calculating and comparing hashes is much faster than call 'equal' for xDS resources. So
@@ -21,15 +23,17 @@ import (
 type meshSnapshot struct {
 	mesh      *core_mesh.MeshResource
 	resources map[core_model.ResourceType]core_model.ResourceList
+	ipFunc    lookup.LookupIPFunc
 }
 
 func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyResourceManager, types []core_model.ResourceType, ipFunc lookup.LookupIPFunc) (*meshSnapshot, error) {
 	snapshot := &meshSnapshot{
 		resources: map[core_model.ResourceType]core_model.ResourceList{},
+		ipFunc:    ipFunc,
 	}
 
-	mesh := &core_mesh.MeshResource{}
-	if err := rm.Get(ctx, mesh, core_store.GetByKey(meshName, meshName)); err != nil {
+	mesh := core_mesh.NewMeshResource()
+	if err := rm.Get(ctx, mesh, core_store.GetByKey(meshName, core_model.NoMesh)); err != nil {
 		return nil, err
 	}
 	snapshot.mesh = mesh
@@ -41,7 +45,6 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 			if err := rm.List(ctx, dataplanes); err != nil {
 				return nil, err
 			}
-			dataplanes.Items = topology.ResolveAddresses(meshCacheLog, ipFunc, dataplanes.Items)
 			meshedDpsAndIngresses := &core_mesh.DataplaneResourceList{}
 			for _, d := range dataplanes.Items {
 				if d.GetMeta().GetMesh() == meshName || d.Spec.IsIngress() {
@@ -70,21 +73,21 @@ func (m *meshSnapshot) hash() string {
 	for _, rl := range m.resources {
 		resources = append(resources, rl.GetItems()...)
 	}
-	return hashResources(resources...)
+	return m.hashResources(resources...)
 }
 
-func hashResources(rs ...core_model.Resource) string {
+func (m *meshSnapshot) hashResources(rs ...core_model.Resource) string {
 	hashes := []string{}
 	for _, r := range rs {
-		hashes = append(hashes, hashResource(r))
+		hashes = append(hashes, m.hashResource(r))
 	}
 	sort.Strings(hashes)
 	return strings.Join(hashes, ",")
 }
 
-func hashResource(r core_model.Resource) string {
+func (m *meshSnapshot) hashResource(r core_model.Resource) string {
 	switch v := r.(type) {
-	// In case of hashing Dataplane we are also adding '.Spec.Networking.Address' into hash.
+	// In case of hashing Dataplane we are also adding '.Spec.Networking.Address' and `.Spec.Networking.Ingress.PublicAddress` into hash.
 	// The address could be a domain name and right now we resolve it right after fetching
 	// of Dataplane resource. Since DNS Records might be updated and address could be changed
 	// after resolving. That's why it is important to include address into hash.
@@ -94,7 +97,9 @@ func hashResource(r core_model.Resource) string {
 				v.GetMeta().GetMesh(),
 				v.GetMeta().GetName(),
 				v.GetMeta().GetVersion(),
-				v.Spec.Networking.Address}, ":")
+				m.hashResolvedIPs(v.Spec.GetNetworking().GetAddress()),
+				m.hashResolvedIPs(v.Spec.GetNetworking().GetIngress().GetPublicAddress()),
+			}, ":")
 	default:
 		return strings.Join(
 			[]string{string(v.GetType()),
@@ -102,4 +107,24 @@ func hashResource(r core_model.Resource) string {
 				v.GetMeta().GetName(),
 				v.GetMeta().GetVersion()}, ":")
 	}
+}
+
+// We need to hash all the resolved IPs, not only the first one, because hostname can be resolved to two IPs (ex. LoadBalancer on AWS)
+// If we were to pick only the first one, DNS returns addresses in different order, so we could constantly get different hashes.
+func (m *meshSnapshot) hashResolvedIPs(address string) string {
+	if address == "" {
+		return ""
+	}
+	ips, err := m.ipFunc(address)
+	if err != nil {
+		meshCacheLog.V(1).Info("could not resolve hostname", "err", err)
+		// we can ignore an error and assume that address is not yet resolvable for some reason, once it will be resolvable the hash will change
+		return ""
+	}
+	var addresses []string
+	for _, ip := range ips {
+		addresses = append(addresses, ip.String())
+	}
+	sort.Strings(addresses)
+	return strings.Join(addresses, ":")
 }

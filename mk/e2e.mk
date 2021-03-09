@@ -82,10 +82,16 @@ define curl_example_client
 	sh -c ' \
 		set -e ; \
 		for i in `seq 1 5`; do \
-			if [[ $$(curl -s http://localhost:3000 | jq -r ".headers[\"host\"]" ) = "mockbin.org" ]]; then \
+			if [[ "$$(curl -s http://localhost:3000 | grep -c nginx)" -gt 0 ]]; then \
 				echo "request #$$i successful" ; \
 			else \
 				echo "request #$$i failed" ; \
+				exit 1 ; \
+			fi ; \
+			if [[ "$$(curl -s http://httpbin.org | grep -c httpbin)" -gt 0 ]]; then \
+				echo "external request #$$i successful" ; \
+			else \
+				echo "external request #$$i failed" ; \
 				exit 1 ; \
 			fi ; \
 			sleep 1 ; \
@@ -125,8 +131,8 @@ endef
 define verify_example_inbound
 	@echo "Checking number of Inbound requests via Envoy ..."
 	test $$( $(1) \
-		wget -qO- http://localhost:9901/stats/prometheus | \
-		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}' | \
+		curl -s http://localhost:9901/stats/prometheus | \
+		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_80"}' | \
 		awk '{print $$2}' | tr -d [:space:] \
 	) -ge 5
 	@echo "Check passed!"
@@ -135,7 +141,7 @@ endef
 define verify_example_outbound
 	@echo "Checking number of Outbound requests via Envoy ..."
 	test $$( $(1) \
-		wget -qO- http://localhost:9901/stats/prometheus | \
+		curl -s http://localhost:9901/stats/prometheus | \
 		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="outbound_passthrough"}' | \
 		awk '{print $$2}' | tr -d [:space:] \
 	) -ge 1
@@ -159,7 +165,7 @@ define envoy_active_routing_listeners_count
 	| select(.name | startswith(\"$(1)\")) \
 	| select(.active_state.listener.address.socket_address.port_value == $(2)) \
 	| select(.active_state.listener.filter_chains[] | .filters[] \
-		 | select((.name = \"envoy.tcp_proxy\") \
+		 | select((.name = \"envoy.filters.network.tcp_proxy\") \
 			and (.typed_config.cluster == \"$(3)\")) \
 	  ) " \
 	| jq -s ". | length"
@@ -313,7 +319,7 @@ load/example/minikube: ## Minikube: Load Docker images into Minikube
 
 deploy/kuma/minikube: ## Minikube: Deploy Kuma with no demo app
 	eval $$(minikube docker-env) && $(call pull_docker_images)
-	eval $$(minikube docker-env) && docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | kubectl apply -f -
+	eval $$(minikube docker-env) && docker run --rm $(KUMACTL_DOCKER_IMAGE) kumactl install control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) --without-kubernetes-connection | kubectl apply -f -
 	kubectl wait --timeout=60s --for=condition=Available -n kuma-system deployment/kuma-control-plane
 	kubectl wait --timeout=60s --for=condition=Ready -n kuma-system pods -l app=kuma-control-plane
 
@@ -346,10 +352,10 @@ stats/example/minikube: ## Minikube: Observe Envoy metrics from demo setup
 	$(call kubectl_exec,kuma-demo,demo-app,kuma-sidecar) wget -qO- http://localhost:9901/stats/prometheus | grep upstream_rq_total
 
 verify/example/minikube/inbound:
-	$(call verify_example_inbound,$(call kubectl_exec,kuma-demo,demo-app,kuma-sidecar))
+	$(call verify_example_inbound,$(call kubectl_exec,kuma-demo,demo-app,demo-app))
 
 verify/example/minikube/outbound:
-	$(call verify_example_outbound,$(call kubectl_exec,kuma-demo,demo-app,kuma-sidecar))
+	$(call verify_example_outbound,$(call kubectl_exec,kuma-demo,demo-client,demo-client))
 
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
 

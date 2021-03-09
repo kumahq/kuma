@@ -3,12 +3,12 @@ package xds
 import (
 	"strconv"
 
+	_struct "github.com/golang/protobuf/ptypes/struct"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	"github.com/kumahq/kuma/pkg/core"
-
-	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 )
 
 var metadataLog = core.Log.WithName("xds-server").WithName("metadata-tracker")
@@ -19,6 +19,7 @@ const (
 	fieldDataplaneTokenPath         = "dataplaneTokenPath"
 	fieldDataplaneAdminPort         = "dataplane.admin.port"
 	fieldDataplaneDataplaneResource = "dataplane.resource"
+	fieldDynamicMetadata            = "dynamicMetadata"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -39,6 +40,7 @@ type DataplaneMetadata struct {
 	DataplaneTokenPath string
 	DataplaneResource  *core_mesh.DataplaneResource
 	AdminPort          uint32
+	DynamicMetadata    map[string]string
 }
 
 func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
@@ -62,22 +64,29 @@ func (m *DataplaneMetadata) GetAdminPort() uint32 {
 	return m.AdminPort
 }
 
-func DataplaneMetadataFromNode(node *envoy_core.Node) *DataplaneMetadata {
+func (m *DataplaneMetadata) GetDynamicMetadata(key string) string {
+	if m == nil || m.DynamicMetadata == nil {
+		return ""
+	}
+	return m.DynamicMetadata[key]
+}
+
+func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMetadata {
 	metadata := DataplaneMetadata{}
-	if node.Metadata == nil {
+	if xdsMetadata == nil {
 		return &metadata
 	}
-	if field := node.Metadata.Fields[fieldDataplaneTokenPath]; field != nil {
+	if field := xdsMetadata.Fields[fieldDataplaneTokenPath]; field != nil {
 		metadata.DataplaneTokenPath = field.GetStringValue()
 	}
-	if value := node.Metadata.Fields[fieldDataplaneAdminPort]; value != nil {
+	if value := xdsMetadata.Fields[fieldDataplaneAdminPort]; value != nil {
 		if port, err := strconv.Atoi(value.GetStringValue()); err == nil {
 			metadata.AdminPort = uint32(port)
 		} else {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneAdminPort, "value", value)
 		}
 	}
-	if value := node.Metadata.Fields[fieldDataplaneDataplaneResource]; value != nil {
+	if value := xdsMetadata.Fields[fieldDataplaneDataplaneResource]; value != nil {
 		res, err := rest.UnmarshallToCore([]byte(value.GetStringValue()))
 		if err != nil {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
@@ -87,6 +96,13 @@ func DataplaneMetadataFromNode(node *envoy_core.Node) *DataplaneMetadata {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
 		}
 		metadata.DataplaneResource = dp
+	}
+	if value := xdsMetadata.Fields[fieldDynamicMetadata]; value != nil {
+		dynamicMetadata := map[string]string{}
+		for field, val := range value.GetStructValue().GetFields() {
+			dynamicMetadata[field] = val.GetStringValue()
+		}
+		metadata.DynamicMetadata = dynamicMetadata
 	}
 	return &metadata
 }

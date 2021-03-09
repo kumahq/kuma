@@ -15,10 +15,10 @@ var _ = Describe("FaultInjection", func() {
 		DescribeTable("should pass validation",
 			func(faultInjectionYAML string) {
 				// setup
-				faultInjection := FaultInjectionResource{}
+				faultInjection := NewFaultInjectionResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(faultInjectionYAML), &faultInjection.Spec)
+				err := util_proto.FromYAML([]byte(faultInjectionYAML), faultInjection.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -48,6 +48,18 @@ var _ = Describe("FaultInjection", func() {
                   responseBandwidth:
                     percentage: 40
                     limit: 50kbps`),
+			Entry("http2", `
+                sources:
+                - match:
+                    service: frontend
+                destinations:
+                - match:
+                    service: backend
+                    kuma.io/protocol: http2
+                conf:
+                  delay:
+                    percentage: 50
+                    value: 10ms`),
 			Entry("match any", `
                 sources:
                 - match:
@@ -56,7 +68,7 @@ var _ = Describe("FaultInjection", func() {
                 destinations:
                 - match:
                     service: backend
-                    kuma.io/protocol: http
+                    kuma.io/protocol: grpc
                     region: "*"
                 conf:
                   delay:
@@ -77,10 +89,10 @@ var _ = Describe("FaultInjection", func() {
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
-				faultInjection := FaultInjectionResource{}
+				faultInjection := NewFaultInjectionResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.faultInjection), &faultInjection.Spec)
+				err := util_proto.FromYAML([]byte(given.faultInjection), faultInjection.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -215,12 +227,11 @@ var _ = Describe("FaultInjection", func() {
                  message: has to be in [0.0 - 100.0] range
                - field: conf.responseBandwidth.limit
                  message: has to be in kbps/mbps/gbps units`}),
-			Entry("kuma.io/protocol: wrong format", testCase{
+			Entry("kuma.io/protocol: not specified", testCase{
 				faultInjection: `
                 sources:
                 - match:
                     service: frontend
-                    kuma.io/protocol: tcp
                 destinations:
                 - match:
                     service: backend
@@ -231,10 +242,26 @@ var _ = Describe("FaultInjection", func() {
                     percentage: 100`,
 				expected: `
                violations:
-               - field: sources[0].match["kuma.io/protocol"]
-                 message: must be one of the [http]
                - field: destinations[0].match
                  message: protocol must be specified`}),
+			Entry("kuma.io/protocol: wrong protocol", testCase{
+				faultInjection: `
+                sources:
+                - match:
+                    service: frontend
+                destinations:
+                - match:
+                    service: backend
+                    region: eu
+                    kuma.io/protocol: tcp
+                conf:
+                  responseBandwidth:
+                    limit: 50mbps
+                    percentage: 100`,
+				expected: `
+               violations:
+               - field: destinations[0].match["kuma.io/protocol"]
+                 message: must be one of the [http, http2, grpc]`}),
 			Entry("tag value: invalid character set", testCase{
 				faultInjection: `
                 sources:

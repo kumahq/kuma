@@ -16,27 +16,19 @@ services:
     - --log-level=info
     environment:
     # DNS name of the Kuma xDS server
-    - KUMA_GENERAL_ADVERTISED_HOSTNAME=kuma-control-plane
-    - KUMA_ADMIN_SERVER_PUBLIC_ENABLED=true
-    - KUMA_ADMIN_SERVER_PUBLIC_INTERFACE=0.0.0.0
-    - KUMA_ADMIN_SERVER_PUBLIC_PORT=5684 # otherwise there would be conflict with local port
-    - KUMA_ADMIN_SERVER_PUBLIC_TLS_CERT_FILE=/certs/server/cert.pem
-    - KUMA_ADMIN_SERVER_PUBLIC_TLS_KEY_FILE=/certs/server/key.pem
-    - KUMA_ADMIN_SERVER_PUBLIC_CLIENT_CERTS_DIR=/certs/client
+    - KUMA_GENERAL_TLS_CERT_FILE=/certs/server/cert.pem
+    - KUMA_GENERAL_TLS_KEY_FILE=/certs/server/key.pem
+    - KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR=/certs/client
     expose:
     - "5678"
-    - "5679"
     - "5680"
     - "5681"
     - "5682"
-    - "5684"
     ports:
     - "5678:5678"
-    - "5679:5679"
     - "5680:5680"
     - "5681:5681"
     - "5682:5682"
-    - "5684:5684"
     networks:
       kuma-example:
         aliases:
@@ -58,6 +50,7 @@ services:
     - token-example-web:/kuma-example-web:rw
     - token-example-backend-v1:/kuma-example-backend-v1:rw
     - token-example-backend-v2:/kuma-example-backend-v2:rw
+    - ./certs/server/cert.pem:/certs/server/cert.pem
     - ./certs/client:/certs/client
     user: root # needed to write the tokens, named volumes are mounted with root permissions
     command:
@@ -102,7 +95,7 @@ services:
     # However, `ports` settings are incompatible with `network_mode: service:...`
     # and had to be moved here.
     ports:
-    - "8000:8000"
+    - "8000:80"
     networks:
       kuma-example:
         aliases:
@@ -119,16 +112,7 @@ services:
   # source and destination for network requests.
   #
   kuma-example-app:
-    image: kong:1.1.2-alpine
-    volumes:
-    - ./kong.yaml:/etc/kong/kong.yaml
-    environment:
-    - KONG_PROXY_LISTEN=127.0.0.1:8000
-    - KONG_ADMIN_LISTEN=off
-    - KONG_DATABASE=off
-    - KONG_DECLARATIVE_CONFIG=/etc/kong/kong.yaml
-    # the following setting instructs Docker Compose to add `kuma-example-app` container
-    # to the network namespace of `kuma-example-app-namespace` container
+    image: nginx:stable
     network_mode: service:kuma-example-app-namespace
     depends_on:
     - kuma-example-app-namespace
@@ -144,7 +128,7 @@ services:
     - run
     - --log-level=info
     environment:
-    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
+    - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-app
     - KUMA_DATAPLANE_ADMIN_PORT=9901
@@ -201,7 +185,7 @@ services:
     - --show-error
     - --include
     - --fail
-    - http://kuma-example-app:8000/request
+    - http://kuma-example-app:8000/
     # the following setting instructs Docker Compose to add `kuma-example-client` container
     # to the network namespace of `kuma-example-client-namespace` container
     network_mode: service:kuma-example-client-namespace
@@ -219,7 +203,7 @@ services:
     - run
     - --log-level=info
     environment:
-    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
+    - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-client
     - KUMA_DATAPLANE_ADMIN_PORT=9901
@@ -299,7 +283,7 @@ services:
     volumes:
     - token-example-web:/var/kuma.io/kuma-dp/kuma-example-web
     environment:
-    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
+    - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-web
     - KUMA_DATAPLANE_ADMIN_PORT=9901
@@ -339,7 +323,7 @@ services:
   # Notice that we're using Envoy as a simple HTTP server with predefined responses.
   #
   kuma-example-backend-v1:
-    image: envoyproxy/envoy-alpine:v1.15.0
+    image: envoyproxy/envoy-alpine:v1.16.1
     command:
     - sh
     - -c
@@ -365,7 +349,7 @@ services:
     volumes:
     - token-example-backend-v1:/var/kuma.io/kuma-dp/kuma-example-backend-v1
     environment:
-    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
+    - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-backend-v1
     - KUMA_DATAPLANE_ADMIN_PORT=9901
@@ -405,7 +389,7 @@ services:
   # Notice that we're using Envoy as a simple HTTP server with predefined responses.
   #
   kuma-example-backend-v2:
-    image: envoyproxy/envoy-alpine:v1.15.0
+    image: envoyproxy/envoy-alpine:v1.16.1
     command:
     - sh
     - -c
@@ -431,7 +415,7 @@ services:
     volumes:
     - token-example-backend-v2:/var/kuma.io/kuma-dp/kuma-example-backend-v2
     environment:
-    - KUMA_CONTROL_PLANE_API_SERVER_URL=http://kuma-control-plane:5681
+    - KUMA_CONTROL_PLANE_URL=https://kuma-control-plane:5678
     - KUMA_DATAPLANE_MESH=default
     - KUMA_DATAPLANE_NAME=kuma-example-backend-v2
     - KUMA_DATAPLANE_ADMIN_PORT=9901

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
 
 	"github.com/go-logr/logr"
 
@@ -26,18 +27,26 @@ type ZoneInsightStore interface {
 func NewZoneInsightSink(
 	accessor StatusAccessor,
 	newTicker func() *time.Ticker,
+	flushBackoff time.Duration,
 	store ZoneInsightStore,
 	log logr.Logger) ZoneInsightSink {
-	return &zoneInsightSink{newTicker, accessor, store, log}
+	return &zoneInsightSink{
+		newTicker:    newTicker,
+		flushBackoff: flushBackoff,
+		accessor:     accessor,
+		store:        store,
+		log:          log,
+	}
 }
 
 var _ ZoneInsightSink = &zoneInsightSink{}
 
 type zoneInsightSink struct {
-	newTicker func() *time.Ticker
-	accessor  StatusAccessor
-	store     ZoneInsightStore
-	log       logr.Logger
+	newTicker    func() *time.Ticker
+	flushBackoff time.Duration
+	accessor     StatusAccessor
+	store        ZoneInsightStore
+	log          logr.Logger
 }
 
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {
@@ -53,9 +62,13 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 		}
 		copy := proto.Clone(currentState).(*system_proto.KDSSubscription)
 		if err := s.store.Upsert(zone, copy); err != nil {
-			s.log.Error(err, "failed to flush zone status", "zone", zone)
+			if store.IsResourceConflict(err) {
+				s.log.V(1).Info("failed to flush ZoneInsight because it was updated in other place. Will retry in the next tick", "zone", zone)
+			} else {
+				s.log.Error(err, "failed to flush zone status", "zone", zone)
+			}
 		} else {
-			s.log.V(1).Info("saved zone status", "zone", zone, "subscription", currentState)
+			s.log.V(1).Info("ZoneInsight saved", "zone", zone, "subscription", currentState)
 			lastStoredState = currentState
 		}
 	}
@@ -64,6 +77,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 		select {
 		case <-ticker.C:
 			flush()
+			time.Sleep(s.flushBackoff)
 		case <-stop:
 			flush()
 			return
@@ -71,7 +85,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 	}
 }
 
-func NewDataplaneInsightStore(resManager manager.ResourceManager) ZoneInsightStore {
+func NewZonesInsightStore(resManager manager.ResourceManager) ZoneInsightStore {
 	return &zoneInsightStore{resManager}
 }
 
@@ -83,10 +97,9 @@ type zoneInsightStore struct {
 
 func (s *zoneInsightStore) Upsert(zone string, subscription *system_proto.KDSSubscription) error {
 	key := core_model.ResourceKey{
-		Mesh: core_model.DefaultMesh,
 		Name: zone,
 	}
-	zoneInsight := &system.ZoneInsightResource{}
+	zoneInsight := system.NewZoneInsightResource()
 	return manager.Upsert(s.resManager, key, zoneInsight, func(resource core_model.Resource) {
 		zoneInsight.Spec.UpdateSubscription(subscription)
 	})

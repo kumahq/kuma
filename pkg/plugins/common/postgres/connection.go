@@ -10,12 +10,10 @@ import (
 )
 
 func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
-	mode, err := postgresMode(cfg.TLS.Mode)
+	connStr, err := connectionString(cfg)
 	if err != nil {
 		return nil, err
 	}
-	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s connect_timeout=%d sslmode=%s sslcert=%s sslkey=%s sslrootcert=%s",
-		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DbName, cfg.ConnectionTimeout, mode, cfg.TLS.CertPath, cfg.TLS.KeyPath, cfg.TLS.CAPath)
 	db, err := sql.Open("postgres", connStr)
 	if err != nil {
 		return nil, errors.Wrap(err, "cannot create connection to DB")
@@ -29,6 +27,15 @@ func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
 	}
 
 	return db, nil
+}
+
+func connectionString(cfg config.PostgresStoreConfig) (string, error) {
+	mode, err := postgresMode(cfg.TLS.Mode)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s connect_timeout=%d sslmode=%s sslcert=%s sslkey=%s sslrootcert=%s",
+		cfg.Host, cfg.Port, cfg.User, cfg.Password, cfg.DbName, cfg.ConnectionTimeout, mode, cfg.TLS.CertPath, cfg.TLS.KeyPath, cfg.TLS.CAPath), nil
 }
 
 func postgresMode(mode config.TLSMode) (string, error) {

@@ -8,12 +8,68 @@ Parameters:
       to locate and reference resources created by that stack.
   Image:
     Type: String
-    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:080-preview-2"
+    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:1.0.8"
     Description: The name of the kuma-cp docker image
   AllowedCidr:
     Type: String
     Default: '10.0.0.0/8'
     Description: The CIDR used to restrict the kuma-cp ports access
+  # The certificates are generated for SAN `controlplane.kuma.io` using:
+  # kumactl generate tls-certificate --type=server --cp-hostname controlplane.kuma.io
+  # change these accordingly if another DNS name is needed.
+  ServerCert:
+    Type: String
+    Default: |
+      -----BEGIN CERTIFICATE-----
+      MIIDNzCCAh+gAwIBAgIQPSEELckEHMBlRrMU8MhTPTANBgkqhkiG9w0BAQsFADAP
+      MQ0wCwYDVQQDEwRrdW1hMB4XDTIxMDExODE5MDAyMVoXDTMxMDExNjE5MDAyMVow
+      DzENMAsGA1UEAxMEa3VtYTCCASIwDQYJKoZIhvcNAQEBBQADggEPADCCAQoCggEB
+      ALGPc64GzaNvCsA/oZKwbCN8cVOB8uXw4lMrAAr/j2Hf+yaJ91Ct4bM1AcwATWmO
+      QKTYELvzGPT27JQsteYGVyuwNBUZXTBGDweJXB9j/BaoqOg4MDLd09YyY8MX5p9x
+      RJzKm4Nfic1QN96t+rL9QGk+YsUmUczBKV7yOFSmYIf2BQVkbohbLfnpTUDycWkr
+      5kpLIM2xottD08zK3Dcvi29/Yz70YHaeVujcQzScLRTYjNLJ1FQyK5mDdYC+ZctJ
+      LfXehzvicDqcJvxO5p8pabUOhiBY5oJ+UXFzUXdZW/RflMwICFFKOoCQyOrRJwHR
+      OitoNHZfBNFXrYYDUaHlFjkCAwEAAaOBjjCBizAOBgNVHQ8BAf8EBAMCAqQwHQYD
+      VR0lBBYwFAYIKwYBBQUHAwEGCCsGAQUFBwMBMA8GA1UdEwEB/wQFMAMBAf8wHQYD
+      VR0OBBYEFEeZI5I5CL0SOHOZBllX/AsezgonMCoGA1UdEQQjMCGCFGNvbnRyb2xw
+      bGFuZS5rdW1hLmlvgglsb2NhbGhvc3QwDQYJKoZIhvcNAQELBQADggEBAJP8wPc9
+      9yQPaC51dVyxoZ2n2yzHg3UYRmjDxq6sDhg55s1HBZ8zTn2mxmmVoBm2Onh+Wv/a
+      /dAscZ1YCYjKJUtrq8PJwTP1WWDjGdz7MgAWov//Akn8XGIBatOVCZAO9bQUcEN9
+      6ReKWENUmkI8ORb7kCcNbZ4ZLdTYrkegsAJyR1Hd2LE6/rB8a9YKncrEkVpSKbrJ
+      GGly7+HRGNeU0boIzSaP304AL4KQMZgXV9eCtRxy87pXLphIeq/B0TvLYlJnalSm
+      0HzuP94QwbpF/FtcvEoMdqGMPT+UMdkSdZUDHseiaLZy1hB12Lx1bOX5G3sJKMWx
+      0nu1XOPCFXvvDF4=
+      -----END CERTIFICATE-----
+  ServerKey:
+    Type: String
+    Default: |
+      -----BEGIN RSA PRIVATE KEY-----
+      MIIEogIBAAKCAQEAsY9zrgbNo28KwD+hkrBsI3xxU4Hy5fDiUysACv+PYd/7Jon3
+      UK3hszUBzABNaY5ApNgQu/MY9PbslCy15gZXK7A0FRldMEYPB4lcH2P8Fqio6Dgw
+      Mt3T1jJjwxfmn3FEnMqbg1+JzVA33q36sv1AaT5ixSZRzMEpXvI4VKZgh/YFBWRu
+      iFst+elNQPJxaSvmSksgzbGi20PTzMrcNy+Lb39jPvRgdp5W6NxDNJwtFNiM0snU
+      VDIrmYN1gL5ly0kt9d6HO+JwOpwm/E7mnylptQ6GIFjmgn5RcXNRd1lb9F+UzAgI
+      UUo6gJDI6tEnAdE6K2g0dl8E0VethgNRoeUWOQIDAQABAoIBAA+eg9mKJaq7yOFS
+      d58Uv957QujKpJhPkUkpni5Zfr5oWopwVn4VXaZLAmZ0nFqttcgKbaZq4wYhdnwu
+      Vq3uXtqr/Fjiy0zEzOunzJ/CRtmjaoBK+QpwcwMDmbz+rD3YU+XK+NUcoV2bMd73
+      xPbbyj+3yi53iXiOgVolyoi/vfwXpZEpjKbEgDwVzGuWTx/Uxa/P1uqocSb1uzRq
+      cuPisB3yoWQsciB2AQQubuku3SENg/QqPoSYnx9WNN1Ei4EocCBW+wjnhDMxyZFY
+      PySBFjXtG9DTxZ+Ky8puphmtk1mz6CjoiVPDHRBOKuWfHKK1CJKDiwmoj+XZmc7n
+      89Qj0cUCgYEAx/EWKnF3xzgbYjryBhWfxpqWn/oYEzUppMqfSBbou9chlp7fUt94
+      EbAmllnrF4qL/4SpXWzHBxcUC60E10Usgovjsqfsir/WPLG7PaQK4rVBV+hPglr9
+      JpsfmPKYIim0kcVTC15fgS862ETlaPWfN+bgNz+vnAhu2UJ0p/J8fRcCgYEA41fu
+      RMkr08q6fYBaFmqCglSPkc/alG1ElX2iTnA52CMlY4Z3nu9g0hGczcast++xh9uB
+      o36dShQpJ4ILUW8+2XkHVhIX3L6U23QxgFxQRkycCOBadNZEfnzfwNo0xMUPuwIO
+      z42ExpOUO4adRAc8kKcyLCRGRp5NVbqev+JQOS8CgYAO4ozi5gWjyDKJspe4Cj4V
+      3AZgrI7ER03tXcRT6piy+0Yd34ACvG5E6tdElDcjToYzpJ2zPdjnVzl/0QauPBEf
+      OujdsRC0F6oMZLLq2N6SmCngMIRS0RFNoXjNuynGSVKPE6CmFQWJKYn49dAaa0bK
+      M573nf8l357Y/9CNfEj2SwKBgGcFN6HQD54/5dZtTWWPCmkI7K5EpGZSRZwAfIZS
+      8MNy2cSJ8LcC/rry5D2TZD1NzwMjg1GVVK13CVcv5PUYFkDySVLFjC6p5ka0FqJ2
+      MqJIoQSctiDv38X5zGNV/keUjRZPTmrbVGmwAqIe1DE5nkZmnaPHJFln7t+EW9/U
+      LEpdAoGAQCc9EP7kZYJOWm5jpahZ+xPTIXlAQVRd3B82JZa0eMvAZtQXh7JmKvbh
+      HRKYDChRCk2Orm/SneUQtckMrwUAeNaTgdHw4MXiyCPHuw+dGLnVBPDK4TYumI6M
+      CJG9UCNkpR2Olj7+vLSJezuV55UIVAMeitEsHl1q6CO50jwY6X8=
+      -----END RSA PRIVATE KEY-----
 
 Resources:
 
@@ -175,11 +231,7 @@ Resources:
           PortMappings:
             - ContainerPort: 5676
               Protocol: tcp
-            - ContainerPort: 5677
-              Protocol: tcp
             - ContainerPort: 5678
-              Protocol: tcp
-            - ContainerPort: 5679
               Protocol: tcp
             - ContainerPort: 5680
               Protocol: tcp
@@ -193,12 +245,20 @@ Resources:
           Environment:
             - Name: KUMA_MODE
               Value: standalone
-            - Name: KUMA_GENERAL_ADVERTISED_HOSTNAME
-              Value: controlplane.kuma.io
+            - Name: KUMA_GENERAL_TLS_CERT_FILE
+              Value: /var/cert.pem
+            - Name: KUMA_GENERAL_TLS_CERT
+              Value: !Ref ServerCert
+            - Name: KUMA_GENERAL_TLS_KEY_FILE
+              Value: /var/key.pem
+            - Name: KUMA_GENERAL_TLS_KEY
+              Value: !Ref ServerKey
             - Name: KUMA_DNS_SERVER_PORT
               Value: 53
-          Command:
-            - "run"
+          EntryPoint: [
+              "sh", "-c",
+              "echo \"${KUMA_GENERAL_TLS_CERT}\" > ${KUMA_GENERAL_TLS_CERT_FILE}; echo \"${KUMA_GENERAL_TLS_KEY}\" > ${KUMA_GENERAL_TLS_KEY_FILE}; /usr/bin/kuma-cp run"
+          ]
           LogConfiguration:
             LogDriver: awslogs
             Options:

@@ -19,10 +19,10 @@ var _ = Describe("HealthCheck", func() {
 		DescribeTable("should validate all fields and return as much individual errors as possible",
 			func(given testCase) {
 				// setup
-				healthCheck := HealthCheckResource{}
+				healthCheck := NewHealthCheckResource()
 
 				// when
-				err := util_proto.FromYAML([]byte(given.healthCheck), &healthCheck.Spec)
+				err := util_proto.FromYAML([]byte(given.healthCheck), healthCheck.Spec)
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
@@ -111,6 +111,19 @@ var _ = Describe("HealthCheck", func() {
                   timeout: 0s
                   unhealthyThreshold: 0
                   healthyThreshold: 0
+                  initialJitter: 0s
+                  intervalJitter: 0s
+                  healthyPanicThreshold: 101
+                  noTrafficInterval: 0s
+                  http:
+                    path: ""
+                    requestHeadersToAdd:
+                    - header:
+                        value: foo
+                    - append: false
+                    expectedStatuses:
+                    - 99
+                    - 600
 `,
 				expected: `
                 violations:
@@ -122,6 +135,46 @@ var _ = Describe("HealthCheck", func() {
                   message: must have a positive value
                 - field: conf.healthyThreshold
                   message: must have a positive value
+                - field: conf.initialJitter
+                  message: must have a positive value
+                - field: conf.intervalJitter
+                  message: must have a positive value
+                - field: conf.noTrafficInterval
+                  message: must have a positive value
+                - field: conf.healthyPanicThreshold
+                  message: must be in range [0.0 - 100.0]
+                - field: conf.http.path
+                  message: has to be defined and cannot be empty
+                - field: conf.http.expectedStatuses[0]
+                  message: must be in range [100, 600)
+                - field: conf.http.expectedStatuses[1]
+                  message: must be in range [100, 600)
+                - field: conf.http.requestHeadersToAdd[0].header.key
+                  message: cannot be empty
+                - field: conf.http.requestHeadersToAdd[1].header
+                  message: has to be defined
+`,
+			}),
+			Entry("invalid active checks http configuration", testCase{
+				healthCheck: `
+                sources:
+                - match:
+                    kuma.io/service: web
+                    region: eu
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  interval: 3s
+                  timeout: 10s
+                  unhealthyThreshold: 3
+                  healthyThreshold: 1
+                  http: {}
+`,
+				expected: `
+                violations:
+                - field: conf.http.path
+                  message: has to be defined and cannot be empty
 `,
 			}),
 		)

@@ -9,7 +9,7 @@ var CircuitBreakerWsDefinition = ResourceWsDefinition{
 	Name: "Circuit Breaker",
 	Path: "circuit-breakers",
 	ResourceFactory: func() model.Resource {
-		return &mesh.CircuitBreakerResource{}
+		return mesh.NewCircuitBreakerResource()
 	},
 	ResourceListFactory: func() model.ResourceList {
 		return &mesh.CircuitBreakerResourceList{}

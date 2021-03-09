@@ -4,13 +4,9 @@ import (
 	"net/url"
 	"strconv"
 
-	"github.com/pkg/errors"
-
 	"github.com/kumahq/kuma/pkg/api-server/types"
 
 	"github.com/emicklei/go-restful"
-
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
 const maxPageSize = 1000
@@ -40,18 +36,23 @@ func pagination(request *restful.Request) (page, error) {
 	}, nil
 }
 
-func nextLink(request *restful.Request, publicURL string, list model.ResourceList) (*string, error) {
-	if list.GetPagination().NextOffset == "" {
-		return nil, nil
+func nextLink(request *restful.Request, nextOffset string) *string {
+	if nextOffset == "" {
+		return nil
 	}
+
 	query := request.Request.URL.Query()
-	query.Set("offset", list.GetPagination().NextOffset)
-	nextURL, err := url.Parse(publicURL)
-	if err != nil {
-		return nil, errors.Wrap(err, "could not parse public url")
+	query.Set("offset", nextOffset)
+
+	nextURL := &url.URL{}
+	if request.Request.TLS == nil {
+		nextURL.Scheme = "http"
+	} else {
+		nextURL.Scheme = "https"
 	}
+	nextURL.Host = request.Request.Host
 	nextURL.Path = request.Request.URL.Path
 	nextURL.RawQuery = query.Encode()
 	urlString := nextURL.String()
-	return &urlString, nil
+	return &urlString
 }

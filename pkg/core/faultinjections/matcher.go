@@ -42,7 +42,7 @@ func BuildFaultInjectionMap(dataplane *mesh_core.DataplaneResource, mesh *mesh_c
 
 	result := core_xds.FaultInjectionMap{}
 	for inbound, connectionPolicy := range policyMap {
-		result[inbound] = &connectionPolicy.(*mesh_core.FaultInjectionResource).Spec
+		result[inbound] = connectionPolicy.(*mesh_core.FaultInjectionResource).Spec
 	}
 	return result, nil
 }

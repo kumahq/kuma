@@ -13,10 +13,12 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 
 	. "github.com/onsi/ginkgo"
@@ -48,7 +50,7 @@ var _ = Describe("Auth Callbacks", func() {
 			Name: "web-01",
 			Mesh: "default",
 		},
-		Spec: mesh_proto.Dataplane{
+		Spec: &mesh_proto.Dataplane{
 			Networking: &mesh_proto.Dataplane_Networking{
 				Address: "127.0.0.1",
 				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -69,9 +71,9 @@ var _ = Describe("Auth Callbacks", func() {
 		memStore := memory.NewStore()
 		resManager = core_manager.NewResourceManager(memStore)
 		testAuth = &testAuthenticator{}
-		callbacks = auth.NewCallbacks(resManager, testAuth)
+		callbacks = util_xds_v2.AdaptCallbacks(auth.NewCallbacks(resManager, testAuth, auth.DPNotFoundRetry{}))
 
-		err := resManager.Create(context.Background(), &core_mesh.MeshResource{}, core_store.CreateByKey("default", "default"))
+		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(model.DefaultMesh, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 		err = resManager.Create(context.Background(), dpRes, core_store.CreateByKey("web-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
@@ -111,7 +113,7 @@ var _ = Describe("Auth Callbacks", func() {
 		// given mesh without web-01 dataplane
 		ctx := metadata.NewIncomingContext(context.Background(), metadata.New(map[string]string{"authorization": "pass"}))
 		streamID := int64(1)
-		err := resManager.Delete(context.Background(), &core_mesh.DataplaneResource{}, core_store.DeleteByKey("web-01", "default"))
+		err := resManager.Delete(context.Background(), core_mesh.NewDataplaneResource(), core_store.DeleteByKey("web-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
@@ -193,7 +195,7 @@ var _ = Describe("Auth Callbacks", func() {
 		})
 
 		// then
-		Expect(err).To(MatchError("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
+		Expect(err).To(MatchError("retryable: dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
 	})
 
 	It("should throw an error on authentication fail", func() {

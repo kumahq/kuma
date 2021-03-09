@@ -13,76 +13,27 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 
-	envoy_bootstrap "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
-	"github.com/golang/protobuf/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
-	"github.com/kumahq/kuma/pkg/catalog"
-	catalog_client "github.com/kumahq/kuma/pkg/catalog/client"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/test"
-	test_catalog "github.com/kumahq/kuma/pkg/test/catalog"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("run", func() {
 
 	var backupSetupSignalHandler func() <-chan struct{}
-	var backupBootstrapGenerator envoy.BootstrapConfigFactoryFunc
-	var backupCatalogClientFactory CatalogClientFactory
-
-	catalogDataplaneTokenServerEnabledFn := func(address string) (client catalog_client.CatalogClient, e error) {
-		return &test_catalog.StaticCatalogClient{
-			Resp: catalog.Catalog{
-				Apis: catalog.Apis{
-					Bootstrap: catalog.BootstrapApi{
-						Url: "http://localhost:5681",
-					},
-					DataplaneToken: catalog.DataplaneTokenApi{
-						LocalUrl: "http://localhost:5683",
-					},
-				},
-			},
-		}, nil
-	}
 
 	BeforeEach(func() {
 		backupSetupSignalHandler = core.SetupSignalHandler
-		backupBootstrapGenerator = bootstrapGenerator
-		backupCatalogClientFactory = catalogClientFactory
-		bootstrapGenerator = func(_ string, cfg kumadp.Config, _ *rest.Resource) (proto.Message, error) {
-			bootstrap := envoy_bootstrap.Bootstrap{}
-			respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
-			Expect(err).ToNot(HaveOccurred())
-			err = util_proto.FromYAML(respBytes, &bootstrap)
-			Expect(err).ToNot(HaveOccurred())
-			return &bootstrap, nil
-		}
-		catalogClientFactory = func(address string) (client catalog_client.CatalogClient, e error) {
-			return &test_catalog.StaticCatalogClient{
-				Resp: catalog.Catalog{
-					Apis: catalog.Apis{
-						Bootstrap: catalog.BootstrapApi{
-							Url: "http://localhost:5681",
-						},
-						DataplaneToken: catalog.DataplaneTokenApi{
-							LocalUrl: "", // dataplane token is disabled
-						},
-					},
-				},
-			}, nil
-		}
 	})
 	AfterEach(func() {
 		core.SetupSignalHandler = backupSetupSignalHandler
-		bootstrapGenerator = backupBootstrapGenerator
-		catalogClientFactory = backupCatalogClientFactory
 	})
 
 	var stopCh chan struct{}
@@ -153,7 +104,13 @@ var _ = Describe("run", func() {
 			}
 
 			// given
-			cmd := newRootCmd()
+			rootCtx := DefaultRootContext()
+			rootCtx.BootstrapGenerator = func(_ string, cfg kumadp.Config, _ envoy.BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+				respBytes, err := ioutil.ReadFile(filepath.Join("testdata", "bootstrap-config.golden.yaml"))
+				Expect(err).ToNot(HaveOccurred())
+				return respBytes, "", nil
+			}
+			cmd := NewRootCmd(rootCtx)
 			cmd.SetArgs(append([]string{"run"}, given.args...))
 			cmd.SetOut(&bytes.Buffer{})
 			cmd.SetErr(&bytes.Buffer{})
@@ -187,13 +144,14 @@ var _ = Describe("run", func() {
 			Expect(err).ToNot(HaveOccurred())
 			// and
 			actualArgs := strings.Split(string(cmdline), "\n")
-			Expect(actualArgs[0]).To(Equal("-c"))
-			actualConfigFile := actualArgs[1]
+			Expect(actualArgs[0]).To(Equal("--version"))
+			Expect(actualArgs[1]).To(Equal("-c"))
+			actualConfigFile := actualArgs[2]
 			Expect(actualConfigFile).To(BeARegularFile())
 
 			// then
 			if given.expectedFile != "" {
-				Expect(actualArgs[1]).To(Equal(given.expectedFile))
+				Expect(actualArgs[2]).To(Equal(given.expectedFile))
 			}
 
 			// when
@@ -275,7 +233,6 @@ var _ = Describe("run", func() {
 			}
 		}),
 		Entry("can be launched with args and dataplane token", func() testCase {
-			catalogClientFactory = catalogDataplaneTokenServerEnabledFn
 			return testCase{
 				envVars: map[string]string{},
 				args: []string{
@@ -345,7 +302,7 @@ var _ = Describe("run", func() {
 		defer l.Close()
 
 		// given
-		cmd := newRootCmd()
+		cmd := NewRootCmd(DefaultRootContext())
 		cmd.SetArgs([]string{
 			"run",
 			"--cp-address", "http://localhost:1234",

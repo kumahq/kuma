@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	"github.com/kumahq/kuma/pkg/dns"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -22,13 +27,12 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
-	k8s_resources "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	k8s_extensions "github.com/kumahq/kuma/pkg/plugins/extensions/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	k8s_controllers "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/controllers"
 	k8s_webhooks "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
-	k8s_runtime "github.com/kumahq/kuma/pkg/runtime/k8s"
 )
 
 var (
@@ -44,34 +48,55 @@ func init() {
 }
 
 func (p *plugin) Customize(rt core_runtime.Runtime) error {
-	mgr, ok := k8s_runtime.FromManagerContext(rt.Extensions())
+	mgr, ok := k8s_extensions.FromManagerContext(rt.Extensions())
 	if !ok {
 		return errors.Errorf("k8s controller runtime Manager hasn't been configured")
 	}
 
-	if err := addControllers(mgr, rt); err != nil {
+	converter, ok := k8s_extensions.FromResourceConverterContext(rt.Extensions())
+	if !ok {
+		return errors.Errorf("k8s resource converter hasn't been configured")
+	}
+
+	if err := addControllers(mgr, rt, converter); err != nil {
 		return err
 	}
 
-	if err := addValidators(mgr, rt); err != nil {
+	// Mutators and Validators convert resources from Request (not from the Store)
+	// these resources doesn't have ResourceVersion, we can't cache them
+	simpleConverter := k8s.NewSimpleConverter()
+	if err := addValidators(mgr, rt, simpleConverter); err != nil {
 		return err
 	}
 
-	if err := addMutators(mgr, rt); err != nil {
+	if err := addMutators(mgr, rt, simpleConverter); err != nil {
 		return err
 	}
 
-	return addDefaulters(mgr)
+	if err := addDefaulters(mgr, simpleConverter); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if err := addNamespaceReconciler(mgr, rt); err != nil {
 		return err
 	}
-	if err := addMeshReconciler(mgr, rt); err != nil {
+	if err := addServiceReconciler(mgr, rt); err != nil {
 		return err
 	}
-	if err := addPodReconciler(mgr, rt); err != nil {
+	if err := addMeshReconciler(mgr, rt, converter); err != nil {
+		return err
+	}
+	if err := addPodReconciler(mgr, rt, converter); err != nil {
+		return err
+	}
+	if err := addPodStatusReconciler(mgr, rt, converter); err != nil {
+		return err
+	}
+	if err := addDNS(mgr, rt, converter); err != nil {
 		return err
 	}
 	return nil
@@ -86,7 +111,15 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+func addServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	reconciler := &k8s_controllers.ServiceReconciler{
+		Client: mgr.GetClient(),
+		Log:    core.Log.WithName("controllers").WithName("Service"),
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode == config_core.Remote {
 		return nil
 	}
@@ -95,44 +128,103 @@ func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		Reader:          mgr.GetAPIReader(),
 		Log:             core.Log.WithName("controllers").WithName("Mesh"),
 		Scheme:          mgr.GetScheme(),
-		Converter:       k8s_resources.DefaultConverter(),
+		Converter:       converter,
 		CaManagers:      rt.CaManagers(),
 		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
 		ResourceManager: rt.ResourceManager(),
 	}
-	return reconciler.SetupWithManager(mgr)
+	if err := reconciler.SetupWithManager(mgr); err != nil {
+		return errors.Wrap(err, "could not setup mesh reconciller")
+	}
+	defaultsReconciller := &k8s_controllers.MeshDefaultsReconciler{
+		ResourceManager: rt.ResourceManager(),
+	}
+	if err := defaultsReconciller.SetupWithManager(mgr); err != nil {
+		return errors.Wrap(err, "could not setup mesh defaults reconciller")
+	}
+	return nil
 }
 
-func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	reconciler := &controllers.PodReconciler{
 		Client:        mgr.GetClient(),
 		EventRecorder: mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-generator"),
 		Scheme:        mgr.GetScheme(),
 		Log:           core.Log.WithName("controllers").WithName("Pod"),
 		PodConverter: controllers.PodConverter{
-			ServiceGetter: mgr.GetClient(),
-			Zone:          rt.Config().Multicluster.Remote.Zone,
+			ServiceGetter:     mgr.GetClient(),
+			NodeGetter:        mgr.GetClient(),
+			Zone:              rt.Config().Multizone.Remote.Zone,
+			ResourceConverter: converter,
 		},
-		SystemNamespace: rt.Config().Store.Kubernetes.SystemNamespace,
+		ResourceConverter: converter,
+		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
+		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
 	}
 	return reconciler.SetupWithManager(mgr)
 }
 
-func addDefaulters(mgr kube_ctrl.Manager) error {
+func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+	reconciler := &controllers.PodStatusReconciler{
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-jobs-syncer"),
+		Scheme:            mgr.GetScheme(),
+		Log:               core.Log.WithName("controllers").WithName("Pod"),
+		ResourceConverter: converter,
+		EnvoyAdminClient:  rt.EnvoyAdminClient(),
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+	if rt.Config().Mode == config_core.Global {
+		return nil
+	}
+	vipsAllocator, err := dns.NewVIPsAllocator(
+		rt.ResourceManager(),
+		rt.ConfigManager(),
+		rt.Config().DNSServer.CIDR,
+		rt.DNSResolver(),
+	)
+	if err != nil {
+		return err
+	}
+	reconciler := &k8s_controllers.ConfigMapReconciler{
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/vips-generator"),
+		Scheme:            mgr.GetScheme(),
+		Log:               core.Log.WithName("controllers").WithName("ConfigMap"),
+		ResourceManager:   rt.ResourceManager(),
+		VIPsAllocator:     vipsAllocator,
+		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+		ResourceConverter: converter,
+	}
+	if err := reconciler.SetupWithManager(mgr); err != nil {
+		return err
+	}
+	return nil
+}
+
+func addDefaulters(mgr kube_ctrl.Manager, converter k8s_common.Converter) error {
 	if err := mesh_k8s.AddToScheme(mgr.GetScheme()); err != nil {
 		return errors.Wrapf(err, "could not add %q to scheme", mesh_k8s.GroupVersion)
 	}
 
 	addDefaulter(mgr, mesh_k8s.GroupVersion.WithKind("Mesh"),
 		func() core_model.Resource {
-			return &mesh_core.MeshResource{}
-		})
+			return mesh_core.NewMeshResource()
+		}, converter)
 
 	return nil
 }
 
-func addDefaulter(mgr kube_ctrl.Manager, gvk kube_schema.GroupVersionKind, factory func() core_model.Resource) {
-	wh := k8s_webhooks.DefaultingWebhookFor(factory, k8s_resources.DefaultConverter())
+func addDefaulter(
+	mgr kube_ctrl.Manager,
+	gvk kube_schema.GroupVersionKind,
+	factory func() core_model.Resource,
+	converter k8s_common.Converter,
+) {
+	wh := k8s_webhooks.DefaultingWebhookFor(factory, converter)
 	path := generateDefaulterPath(gvk)
 	log.Info("Registering a defaulting webhook", "GVK", gvk, "path", path)
 	mgr.GetWebhookServer().Register(path, wh)
@@ -142,15 +234,22 @@ func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
 	return fmt.Sprintf("/default-%s-%s-%s", strings.ReplaceAll(gvk.Group, ".", "-"), gvk.Version, strings.ToLower(gvk.Kind))
 }
 
-func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	composite := k8s_webhooks.CompositeValidator{}
 
-	handler := k8s_webhooks.NewValidatingWebhook(k8s_resources.DefaultConverter(), core_registry.Global(), k8s_registry.Global(), rt.Config().Mode)
+	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode)
 	composite.AddValidator(handler)
 
-	coreMeshValidator := managers_mesh.MeshValidator{CaManagers: rt.CaManagers()}
-	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, k8s_resources.DefaultConverter(), rt.ResourceManager())
+	coreMeshValidator := managers_mesh.MeshValidator{
+		CaManagers: rt.CaManagers(),
+		Store:      rt.ResourceStore(),
+	}
+	k8sMeshValidator := k8s_webhooks.NewMeshValidatorWebhook(coreMeshValidator, converter, rt.ResourceManager())
 	composite.AddValidator(k8sMeshValidator)
+
+	coreZoneValidator := zone.Validator{Store: rt.ResourceStore()}
+	k8sZoneValidator := k8s_webhooks.NewZoneValidatorWebhook(coreZoneValidator)
+	composite.AddValidator(k8sZoneValidator)
 
 	path := "/validate-kuma-io-v1alpha1"
 	mgr.GetWebhookServer().Register(path, composite.WebHook())
@@ -159,8 +258,12 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	mgr.GetWebhookServer().Register("/validate-v1-service", &kube_webhook.Admission{Handler: &k8s_webhooks.ServiceValidator{}})
 	log.Info("Registering a validation webhook for v1/Service", "path", "/validate-v1-service")
 
+	client, ok := k8s_extensions.FromSecretClientContext(rt.Extensions())
+	if !ok {
+		return errors.Errorf("secret client hasn't been configured")
+	}
 	secretValidator := &k8s_webhooks.SecretValidator{
-		Client:    mgr.GetClient(),
+		Client:    client,
 		Validator: manager.NewSecretValidator(rt.CaManagers(), rt.ResourceStore()),
 	}
 	mgr.GetWebhookServer().Register("/validate-v1-secret", &kube_webhook.Admission{Handler: secretValidator})
@@ -169,12 +272,14 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 	return nil
 }
 
-func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode != config_core.Global {
+		address := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
-			rt.Config().ApiServer.Catalog.ApiServer.Url,
+			address,
 			mgr.GetClient(),
+			converter,
 		)
 		if err != nil {
 			return err
@@ -186,7 +291,6 @@ func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
 		Client:       mgr.GetClient(),
 		CoreRegistry: core_registry.Global(),
 		K8sRegistry:  k8s_registry.Global(),
-		Converter:    k8s_resources.DefaultConverter(),
 		Scheme:       mgr.GetScheme(),
 	}
 	mgr.GetWebhookServer().Register("/owner-reference-kuma-io-v1alpha1", &kube_webhook.Admission{Handler: ownerRefMutator})

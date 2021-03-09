@@ -11,6 +11,7 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -47,7 +48,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -59,6 +60,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -66,7 +68,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 					Resource: `
 `,
 				}},
-				err: "raw.resources[0]{name=\"raw-name\"}.resource: Any JSON doesn't have '@type'",
+				err: "raw.resources[0]{name=\"raw-name\"}.resource: message type url \"\" is invalid",
 			}),
 			Entry("should fail when `resource` field is neither a YAML nor a JSON", testCase{
 				proxy: &model.Proxy{
@@ -75,7 +77,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -87,6 +89,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:     "raw-name",
@@ -102,7 +105,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -114,6 +117,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -122,7 +126,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                     '@type': type.googleapis.com/unknown.Resource
 `,
 				}},
-				err: "raw.resources[0]{name=\"raw-name\"}.resource: unknown message type \"unknown.Resource\"",
+				err: "raw.resources[0]{name=\"raw-name\"}.resource: could not resolve Any message type: type.googleapis.com/unknown.Resource",
 			}),
 			Entry("should fail when `resource` field is a YAML without '@type' field", testCase{
 				proxy: &model.Proxy{
@@ -131,7 +135,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -143,6 +147,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -171,7 +176,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -183,6 +188,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -246,7 +252,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -258,6 +264,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV3,
 				},
 				raw:      nil,
 				expected: `{}`,
@@ -269,7 +276,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -281,6 +288,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -293,7 +301,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
               portValue: 15001
           filterChains:
           - filters:
-            - name: envoy.tcp_proxy
+            - name: envoy.filters.network.tcp_proxy
               typedConfig:
                 '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                 cluster: pass_through
@@ -313,7 +321,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
                     portValue: 15001
                 filterChains:
                 - filters:
-                  - name: envoy.tcp_proxy
+                  - name: envoy.filters.network.tcp_proxy
                     typedConfig:
                       '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                       cluster: pass_through
@@ -329,7 +337,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -341,6 +349,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",
@@ -387,7 +396,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 						Meta: &test_model.ResourceMeta{
 							Version: "v1",
 						},
-						Spec: mesh_proto.Dataplane{
+						Spec: &mesh_proto.Dataplane{
 							Networking: &mesh_proto.Dataplane_Networking{
 								Address: "192.168.0.1",
 								Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
@@ -399,6 +408,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 							},
 						},
 					},
+					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
 					Name:    "raw-name",

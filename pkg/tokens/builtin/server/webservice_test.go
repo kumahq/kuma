@@ -30,7 +30,7 @@ func (s *staticTokenIssuer) Generate(identity issuer.DataplaneIdentity) (issuer.
 	return s.resp, nil
 }
 
-func (s *staticTokenIssuer) Validate(token issuer.Token) (issuer.DataplaneIdentity, error) {
+func (s *staticTokenIssuer) Validate(token issuer.Token, meshName string) (issuer.DataplaneIdentity, error) {
 	return issuer.DataplaneIdentity{}, errors.New("not implemented")
 }
 

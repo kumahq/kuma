@@ -33,7 +33,7 @@ func (fi *FaultInjection) SetSpec(spec map[string]interface{}) {
 }
 
 func (fi *FaultInjection) Scope() model.Scope {
-	return model.ScopeNamespace
+	return model.ScopeCluster
 }
 
 func (l *FaultInjectionList) GetItems() []model.KubernetesObject {
