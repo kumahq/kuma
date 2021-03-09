@@ -8,7 +8,7 @@ spec:
   names:
     kind: DataplaneInsight
     plural: dataplaneinsights
-  scope: ""
+  scope: Namespaced
   versions:
     - name: v1alpha1
       served: true

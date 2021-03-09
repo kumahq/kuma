@@ -17,8 +17,9 @@ spec:
         openAPIV3Schema:
           description: MeshInsight is the Schema for the meshes insights API
           properties:
-            mesh:
-              type: string
             spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+            status:
               type: object
           type: object

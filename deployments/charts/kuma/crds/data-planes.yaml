@@ -8,7 +8,7 @@ spec:
   names:
     kind: Dataplane
     plural: dataplanes
-  scope: ""
+  scope: Namespaced
   versions:
     - name: v1alpha1
       served: true
@@ -18,5 +18,6 @@ spec:
           description: Dataplane is the Schema for the dataplanes API
           properties:
             spec:
+              x-kubernetes-preserve-unknown-fields: true
               type: object
           type: object

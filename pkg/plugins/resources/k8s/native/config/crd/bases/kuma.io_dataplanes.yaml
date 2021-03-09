@@ -20,5 +20,6 @@ spec:
           description: Dataplane is the Schema for the dataplanes API
           properties:
             spec:
+              x-kubernetes-preserve-unknown-fields: true
               type: object
           type: object

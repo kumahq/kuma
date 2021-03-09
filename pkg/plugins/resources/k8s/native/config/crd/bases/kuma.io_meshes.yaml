@@ -20,6 +20,7 @@ spec:
           description: Mesh is the Schema for the meshes API
           properties:
             spec:
+              x-kubernetes-preserve-unknown-fields: true
               type: object
             status:
               type: object

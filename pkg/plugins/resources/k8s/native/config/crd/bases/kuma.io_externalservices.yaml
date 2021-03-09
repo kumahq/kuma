@@ -21,5 +21,6 @@ spec:
             mesh:
               type: string
             spec:
+              x-kubernetes-preserve-unknown-fields: true
               type: object
           type: object
