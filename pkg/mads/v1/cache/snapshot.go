@@ -2,7 +2,6 @@ package cache
 
 import (
 	"github.com/kumahq/kuma/pkg/mads/v1"
-	"github.com/kumahq/kuma/pkg/mads/v1alpha1"
 	"github.com/pkg/errors"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -33,7 +32,7 @@ var _ util_xds_v3.Snapshot = &Snapshot{}
 
 // GetSupportedTypes returns a list of xDS types supported by this snapshot.
 func (s *Snapshot) GetSupportedTypes() []string {
-	return []string{v1alpha1.MonitoringAssignmentType}
+	return []string{v1.MonitoringAssignmentType}
 }
 
 // Consistent check verifies that the dependent resources are exactly listed in the

@@ -19,7 +19,7 @@ import (
 	envoy_xds "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 )
 
-func NewSnapshotGenerator(rm core_manager.ReadOnlyResourceManager) mads_reconcile.SnapshotGenerator {
+func NewSnapshotGenerator(rm core_manager.ReadOnlyResourceManager) util_xds_v3.SnapshotGenerator {
 	return mads_reconcile.NewSnapshotGenerator(rm, mads_generator.MonitoringAssignmentsGenerator{})
 }
 
@@ -28,7 +28,7 @@ func NewVersioner() util_xds_v3.SnapshotVersioner {
 }
 
 func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
-	generator mads_reconcile.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) mads_reconcile.Reconciler {
+	generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) mads_reconcile.Reconciler {
 	return mads_reconcile.NewReconciler(hasher, cache, generator, versioner)
 }
 
@@ -50,10 +50,13 @@ func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration,
 	})
 }
 
-func NewXdsContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) {
-	hasher := hasher{}
+func NewHasher() envoy_cache.NodeHash {
+	return hasher{}
+}
+
+func NewSnapshotCache(hasher envoy_cache.NodeHash, generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner, log logr.Logger) util_xds_v3.SnapshotCache {
 	logger := util_xds.NewLogger(log)
-	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
+	return util_xds_v3.NewOnDemandSnapshotCache(false, hasher, generator, versioner, logger)
 }
 
 type hasher struct {

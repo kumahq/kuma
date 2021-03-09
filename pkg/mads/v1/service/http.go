@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/emicklei/go-restful"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
+	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	rest_error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
@@ -43,28 +44,22 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.HttpTimeout)
 	defer cancel()
 
-	// TODO: need to figure out how to bootstrap without the Fetch request thinking it's already in sync
-	//if !s.snapshotCache.HasSnapshot(s.hasher.ID(discoveryReq.Node)) {
-	//	if err := s.reconciler.Reconcile(ctx, discoveryReq.Node); err != nil {
-	//		rest_errors.HandleError(res, err, "Could generate snapshot")
-	//		return
-	//	}
-	//}
-
 	discoveryRes, err := s.server.FetchMonitoringAssignments(ctx, &discoveryReq)
 	if err != nil {
-		switch err.Error() {
-		case "skip fetch: version up to date": // hack hack hack
+		//switch err.Error() {
+		//case "skip fetch: version up to date": // hack hack hack
+		//	// No update necessary, send 304
+		//	res.WriteHeader(304)
+		//default:
+		//	rest_errors.HandleError(res, err, "Could not fetch MonitoringAssignments")
+		//}
+		switch err.(type) {
+		case types.SkipFetchError:
 			// No update necessary, send 304
 			res.WriteHeader(304)
 		default:
 			rest_errors.HandleError(res, err, "Could not fetch MonitoringAssignments")
 		}
-		return
-	}
-
-	if discoveryRes.VersionInfo == discoveryReq.VersionInfo {
-		res.WriteHeader(304)
 		return
 	}
 

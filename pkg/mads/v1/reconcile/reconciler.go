@@ -8,7 +8,7 @@ import (
 )
 
 func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
-	generator SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) Reconciler {
+	generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner) Reconciler {
 	return &reconciler{
 		hasher:    hasher,
 		cache:     cache,
@@ -20,7 +20,7 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
 type reconciler struct {
 	hasher    envoy_cache.NodeHash
 	cache     util_xds_v3.SnapshotCache
-	generator SnapshotGenerator
+	generator util_xds_v3.SnapshotGenerator
 	versioner util_xds_v3.SnapshotVersioner
 }
 
@@ -33,7 +33,6 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 		return err
 	}
 	id := r.hasher.ID(node)
-	old, _ := r.cache.GetSnapshot(id)
-	newSnapshot = r.versioner.Version(newSnapshot, old)
+	//newSnapshot = r.versioner.Version(newSnapshot, old)
 	return r.cache.SetSnapshot(id, newSnapshot)
 }

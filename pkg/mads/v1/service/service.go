@@ -15,10 +15,10 @@ type service struct {
 }
 
 func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger) *service {
-	// Should not add any components to the runtime!
-	hasher, cache := NewXdsContext(log)
-	generator := NewSnapshotGenerator(rm)
+	hasher := NewHasher()
 	versioner := NewVersioner()
+	generator := NewSnapshotGenerator(rm)
+	cache := NewSnapshotCache(hasher, generator, versioner, log)
 	reconciler := NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := NewSyncTracker(reconciler, config.AssignmentRefreshInterval, log)
 	callbacks := util_xds_v3.CallbacksChain{

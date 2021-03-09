@@ -14,7 +14,7 @@ import (
 	util_xds_v3 "github.com/kumahq/kuma/pkg/util/xds/v3"
 )
 
-func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator) SnapshotGenerator {
+func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, resourceGenerator generator.ResourceGenerator) util_xds_v3.SnapshotGenerator {
 	return &snapshotGenerator{
 		resourceManager:   resourceManager,
 		resourceGenerator: resourceGenerator,
@@ -24,6 +24,7 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 type snapshotGenerator struct {
 	resourceManager   core_manager.ReadOnlyResourceManager
 	resourceGenerator generator.ResourceGenerator
+	versioner 		  util_xds_v3.SnapshotVersioner
 }
 
 func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.Node) (util_xds_v3.Snapshot, error) {
