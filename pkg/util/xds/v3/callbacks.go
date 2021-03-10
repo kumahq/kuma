@@ -24,11 +24,10 @@ func AdaptCallbacks(callbacks xds.Callbacks) envoy_xds.Callbacks {
 var _ envoy_xds.Callbacks = &adapterCallbacks{}
 
 func (a *adapterCallbacks) OnFetchRequest(ctx context.Context, request *envoy_sd.DiscoveryRequest) error {
-	panic("implement me")
+	return nil
 }
 
 func (a *adapterCallbacks) OnFetchResponse(request *envoy_sd.DiscoveryRequest, response *envoy_sd.DiscoveryResponse) {
-	panic("implement me")
 }
 
 func (a *adapterCallbacks) OnStreamOpen(ctx context.Context, streamID int64, typeURL string) error {
