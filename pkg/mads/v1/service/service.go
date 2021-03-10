@@ -15,15 +15,17 @@ type service struct {
 }
 
 func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger) *service {
-	hasher := NewHasher()
-	versioner := NewVersioner()
+	hasher, cache := NewXdsContext(log)
 	generator := NewSnapshotGenerator(rm)
-	cache := NewSnapshotCache(hasher, generator, versioner, log)
+	versioner := NewVersioner()
 	reconciler := NewReconciler(hasher, cache, generator, versioner)
 	syncTracker := NewSyncTracker(reconciler, config.AssignmentRefreshInterval, log)
 	callbacks := util_xds_v3.CallbacksChain{
-		util_xds_v3.AdaptCallbacks(util_xds.LoggingCallbacks{Log: log}),
+		util_xds_v3.AdaptMultiCallbacks(util_xds.LoggingCallbacks{Log: log}),
+		// For streaming synchronization
 		syncTracker,
+		// For on-demand reconciliation
+		util_xds_v3.AdaptRestCallbacks(NewReconcilerRestCallbacks(reconciler)),
 	}
 	srv := NewServer(cache, callbacks)
 

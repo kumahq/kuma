@@ -23,6 +23,8 @@ var (
 	httpServerLog = core.Log.WithName("mads-server").WithName("http")
 )
 
+// httpServer is a runtime component.Component that
+// serves all MADs resources over HTTP
 type httpServer struct {
 	services []HttpService
 	config  *mads_config.MonitoringAssignmentServerConfig

@@ -46,7 +46,7 @@ type Snapshot interface {
 	GetResources(typ string) map[string]types.Resource
 
 	// GetVersion returns the version for a resource type.
-	GetVersion(typ string) string // TODO: this should be delegated to the cache, not the snapshot
+	GetVersion(typ string) string
 
 	// WithVersion creates a new snapshot with a different version for a given resource type.
 	WithVersion(typ string, version string) Snapshot
@@ -74,8 +74,11 @@ type SnapshotCache interface {
 	// the version differs from the snapshot version.
 	SetSnapshot(node string, snapshot Snapshot) error
 
-	// GetSnapshots gets the snapshot for a node.
+	// GetSnapshot gets the snapshot for a node.
 	GetSnapshot(node string) (Snapshot, error)
+
+	// HasSnapshot checks whether there is a snapshot present for a node.
+	HasSnapshot(node string) bool
 
 	// ClearSnapshot removes all status and snapshot information associated with a node.
 	ClearSnapshot(node string)
@@ -103,15 +106,6 @@ type snapshotCache struct {
 
 	// ads flag to hold responses until all resources are named
 	ads bool
-
-	// generateIfNotFound flag to allow dynamic fetching if a snapshot is not found
-	generateIfNotFound bool
-
-	// snapshotGenerator fetches the latest snapshot
-	snapshotGenerator SnapshotGenerator
-
-	// snapshotVersioner versions new snapshots
-	snapshotVersioner SnapshotVersioner
 
 	// snapshots are cached resources indexed by node IDs
 	snapshots map[string]Snapshot
@@ -146,44 +140,12 @@ func NewSnapshotCache(ads bool, hash NodeHash, logger log.Logger) SnapshotCache 
 	}
 }
 
-// NewOnDemandSnapshotCache initializes a simple envoy_cache that will generate
-// new snapshots on demand if there is not one cached.
-//
-// ADS flag forces a delay in responding to streaming requests until all
-// resources are explicitly named in the request. This avoids the problem of a
-// partial request over a single stream for a subset of resources which would
-// require generating a fresh version for acknowledgement. ADS flag requires
-// snapshot consistency. For non-ADS case (and fetch), multiple partial
-// requests are sent across multiple streams and re-using the snapshot version
-// is OK.
-//
-// Logger is optional.
-func NewOnDemandSnapshotCache(ads bool, hash NodeHash, snapshotGenerator SnapshotGenerator, snapshotVersioner SnapshotVersioner, logger log.Logger) SnapshotCache {
-	return &snapshotCache{
-		log:                logger,
-		ads:                ads,
-		snapshots:          make(map[string]Snapshot),
-		status:             make(map[string]*statusInfo),
-		hash:               hash,
-		generateIfNotFound: true,
-		snapshotGenerator:  snapshotGenerator,
-		snapshotVersioner:  snapshotVersioner,
-	}
-}
-
 // SetSnapshotCache updates a snapshot for a node.
 func (cache *snapshotCache) SetSnapshot(node string, snapshot Snapshot) error {
 	cache.mu.Lock()
 	defer cache.mu.Unlock()
 
-	return cache.setSnapshot(node, snapshot)
-}
-
-func (cache *snapshotCache) setSnapshot(node string, snapshot Snapshot) error {
 	// update the existing entry
-	if cache.snapshotVersioner != nil {
-		snapshot = cache.snapshotVersioner.Version(snapshot, cache.snapshots[node])
-	}
 	cache.snapshots[node] = snapshot
 
 	// trigger existing watches for which version changed
@@ -203,6 +165,7 @@ func (cache *snapshotCache) setSnapshot(node string, snapshot Snapshot) error {
 		}
 		info.mu.Unlock()
 	}
+
 	return nil
 }
 
@@ -211,16 +174,19 @@ func (cache *snapshotCache) GetSnapshot(node string) (Snapshot, error) {
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
 
-	return cache.getSnapshot(node)
+	snap, ok := cache.snapshots[node]
+	if !ok {
+		return nil, fmt.Errorf("no snapshot found for node %s", node)
+	}
+	return snap, nil
 }
 
-func (cache *snapshotCache) getSnapshot(node string) (Snapshot, error) {
-	snap, ok := cache.snapshots[node]
-	if ok {
-		return snap, nil
-	}
+func (cache *snapshotCache) HasSnapshot(node string) bool {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
 
-	return nil, fmt.Errorf("no snapshot found for node %s", node)
+	_, ok := cache.snapshots[node]
+	return ok
 }
 
 // ClearSnapshot clears snapshot and info for a node.
@@ -369,36 +335,23 @@ func (cache *snapshotCache) Fetch(ctx context.Context, request *envoy_cache.Requ
 	cache.mu.RLock()
 	defer cache.mu.RUnlock()
 
-	snapshot, exists := cache.snapshots[nodeID]
-	if !exists {
-		if !cache.generateIfNotFound {
-			return nil, fmt.Errorf("missing snapshot for %q", nodeID)
-		}
-		var err error
-		snapshot, err = cache.snapshotGenerator.GenerateSnapshot(ctx, request.Node)
-		if err != nil {
-			return nil, err
+	if snapshot, exists := cache.snapshots[nodeID]; exists {
+		// Respond only if the request version is distinct from the current snapshot state.
+		// It might be beneficial to hold the request since Envoy will re-attempt the refresh.
+		version := snapshot.GetVersion(request.TypeUrl)
+		if request.VersionInfo == version {
+			if cache.log != nil {
+				cache.log.Warnf("skip fetch: version up to date")
+			}
+			return nil, &types.SkipFetchError{}
 		}
 
-		if err = cache.setSnapshot(nodeID, snapshot); err != nil {
-			return nil, err
-		}
-		snapshot, _ = cache.getSnapshot(nodeID)
+		resources := snapshot.GetResources(request.TypeUrl)
+		out := createResponse(request, resources, version)
+		return out, nil
 	}
 
-	// Respond only if the request version is distinct from the current snapshot state.
-	// It might be beneficial to hold the request since Envoy will re-attempt the refresh.
-	version := snapshot.GetVersion(request.TypeUrl)
-	if request.VersionInfo == version {
-		if cache.log != nil {
-			cache.log.Warnf("skip fetch: version up to date")
-		}
-		return nil, types.SkipFetchError{}
-	}
-
-	resources := snapshot.GetResources(request.TypeUrl)
-	out := createResponse(request, resources, version)
-	return out, nil
+	return nil, fmt.Errorf("missing snapshot for %q", nodeID)
 }
 
 // GetStatusInfo retrieves the status info for the node.

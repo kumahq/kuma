@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/emicklei/go-restful"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
-	"github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	rest_error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
@@ -25,7 +25,6 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 		rest_errors.HandleError(res, err, "Could not decode DiscoveryRequest from body")
 		return
 	}
-	s.log.Info("handling request", "req", &discoveryReq)
 
 	if discoveryReq.TypeUrl != mads_v1.MonitoringAssignmentType {
 		discoveryErr := rest_error_types.Error{
@@ -46,17 +45,16 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 
 	discoveryRes, err := s.server.FetchMonitoringAssignments(ctx, &discoveryReq)
 	if err != nil {
-		//switch err.Error() {
-		//case "skip fetch: version up to date": // hack hack hack
-		//	// No update necessary, send 304
-		//	res.WriteHeader(304)
-		//default:
-		//	rest_errors.HandleError(res, err, "Could not fetch MonitoringAssignments")
-		//}
-		switch err.(type) {
-		case types.SkipFetchError:
+		writeSkipUpdate := func() {
 			// No update necessary, send 304
+			s.log.V(1).Info("no update needed")
 			res.WriteHeader(304)
+		}
+		switch err.(type) {
+		case *cache_types.SkipFetchError:
+			writeSkipUpdate()
+		case cache_types.SkipFetchError:
+			writeSkipUpdate()
 		default:
 			rest_errors.HandleError(res, err, "Could not fetch MonitoringAssignments")
 		}

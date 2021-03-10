@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
+	"github.com/pkg/errors"
 	"time"
 
 	"github.com/go-logr/logr"
@@ -32,6 +33,34 @@ func NewReconciler(hasher envoy_cache.NodeHash, cache util_xds_v3.SnapshotCache,
 	return mads_reconcile.NewReconciler(hasher, cache, generator, versioner)
 }
 
+type restReconcilerCallbacks struct {
+	reconciler mads_reconcile.Reconciler
+}
+
+func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request util_xds.DiscoveryRequest) error {
+	nodei := request.Node()
+
+	node, ok := nodei.(*envoy_core.Node)
+	if !ok {
+		// TODO: should this panic instead?
+		return errors.Errorf("expecting a v3 DiscoveryRequest, got: %v", nodei)
+	}
+
+	// only reconcile if there is not a valid response present
+	if !r.reconciler.NeedsReconciliation(node, request.GetTypeUrl(), request.VersionInfo()) {
+		return nil
+	}
+
+	return r.reconciler.Reconcile(ctx, node)
+}
+
+func (r *restReconcilerCallbacks) OnFetchResponse(request util_xds.DiscoveryRequest, response util_xds.DiscoveryResponse) {
+}
+
+func NewReconcilerRestCallbacks(reconciler mads_reconcile.Reconciler) util_xds.RestCallbacks {
+	return &restReconcilerCallbacks{reconciler: reconciler}
+}
+
 func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration, log logr.Logger) envoy_xds.Callbacks {
 	return util_xds_v3.NewWatchdogCallbacks(func(ctx context.Context, node *envoy_core.Node, streamID int64) (util_watchdog.Watchdog, error) {
 		log := log.WithValues("streamID", streamID, "node", node)
@@ -50,13 +79,10 @@ func NewSyncTracker(reconciler mads_reconcile.Reconciler, refresh time.Duration,
 	})
 }
 
-func NewHasher() envoy_cache.NodeHash {
-	return hasher{}
-}
-
-func NewSnapshotCache(hasher envoy_cache.NodeHash, generator util_xds_v3.SnapshotGenerator, versioner util_xds_v3.SnapshotVersioner, log logr.Logger) util_xds_v3.SnapshotCache {
+func NewXdsContext(log logr.Logger) (envoy_cache.NodeHash, util_xds_v3.SnapshotCache) {
+	hasher := hasher{}
 	logger := util_xds.NewLogger(log)
-	return util_xds_v3.NewOnDemandSnapshotCache(false, hasher, generator, versioner, logger)
+	return hasher, util_xds_v3.NewSnapshotCache(false, hasher, logger)
 }
 
 type hasher struct {

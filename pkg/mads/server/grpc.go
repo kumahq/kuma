@@ -22,6 +22,8 @@ var (
 	grpcServerLog = core.Log.WithName("mads-server").WithName("grpc")
 )
 
+// grpcServer is a runtime component.Component that
+// serves all MADs resources over gRPC
 type grpcServer struct {
 	services []GrpcService
 	config   *mads_config.MonitoringAssignmentServerConfig

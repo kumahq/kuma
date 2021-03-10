@@ -33,6 +33,17 @@ func (r *reconciler) Reconcile(ctx context.Context, node *envoy_core.Node) error
 		return err
 	}
 	id := r.hasher.ID(node)
-	//newSnapshot = r.versioner.Version(newSnapshot, old)
+	old, _ := r.cache.GetSnapshot(id)
+	newSnapshot = r.versioner.Version(newSnapshot, old)
 	return r.cache.SetSnapshot(id, newSnapshot)
+}
+
+func (r *reconciler) NeedsReconciliation(node *envoy_core.Node, typeUrl, versionInfo string) bool {
+	id := r.hasher.ID(node)
+	if !r.cache.HasSnapshot(id) {
+		return true
+	}
+
+	snapshot, _ := r.cache.GetSnapshot(id)
+	return snapshot.GetVersion(typeUrl) != versionInfo
 }
