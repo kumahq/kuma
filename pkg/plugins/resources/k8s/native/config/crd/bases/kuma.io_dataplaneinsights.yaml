@@ -19,6 +19,9 @@ spec:
         openAPIV3Schema:
           description: DataplaneInsight is the Schema for the dataplane insights API
           properties:
+            mesh:
+              type: string
             status:
+              x-kubernetes-preserve-unknown-fields: true
               type: object
           type: object

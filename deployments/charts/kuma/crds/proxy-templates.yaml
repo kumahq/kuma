@@ -22,6 +22,4 @@ spec:
             spec:
               x-kubernetes-preserve-unknown-fields: true
               type: object
-            status:
-              type: object
           type: object
