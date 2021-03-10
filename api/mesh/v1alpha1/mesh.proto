@@ -129,8 +129,8 @@ message ZipkinTracingBackendConfig {
   // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
   string apiVersion = 3;
 
-  // Determines whether client and server spans will share the same span context.
-  // Default: true.
+  // Determines whether client and server spans will share the same span
+  // context. Default: true.
   // https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
   google.protobuf.BoolValue sharedSpanContext = 4;
 }
