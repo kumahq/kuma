@@ -94,6 +94,25 @@ commands:
         tag: "${CIRCLE_TAG}"
         repo: "<< parameters.repository >>"
 
+  eks-ecr-setup:
+    steps:
+    - run:
+        name: "Configure AWS Access Key ID"
+        command: aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
+    - run:
+        name: "Configure AWS Secret Access Key"
+        command: aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
+    - run:
+        name: "Configure AWS default region"
+        command: aws configure set default.region ${AWS_DEFAULT_REGION}
+    - run:
+        name: "Log into Amazon ECR"
+        command: |
+          # get-login-password returns a password that we pipe to the docker
+          #  login command
+          aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | \
+            docker login --username AWS --password-stdin ${ECR_REGISTRY}
+
 jobs:
   eks-create-cluster:
     executor: aws-eks/python3
@@ -269,9 +288,7 @@ jobs:
         name: "Load Docker images from TAR archives"
         command: make docker/load
 
-    - aws-ecr/ecr-login:
-        region: AWS_DEFAULT_REGION
-        account-url: ECR_REGISTRY
+    - eks-ecr-setup
 
     - push-image-to-ecr:
         repository: kuma-cp
