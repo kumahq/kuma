@@ -405,6 +405,11 @@ type ZipkinTracingBackendConfig struct {
 	// httpJson see
 	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/trace.proto#envoy-v3-api-enum-config-trace-v3-zipkinconfig-collectorendpointversion
 	ApiVersion string `protobuf:"bytes,3,opt,name=apiVersion,proto3" json:"apiVersion,omitempty"`
+
+	// Determines whether client and server spans will share the same span context.
+	// Default: true.
+	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
+	SharedSpanContext *wrappers.BoolValue `protobuf:"bytes,4,opt,name=SharedSpanContext,proto3" json:"sharedSpanContext,omitempty"`
 }
 
 func (x *ZipkinTracingBackendConfig) Reset() {
@@ -458,6 +463,13 @@ func (x *ZipkinTracingBackendConfig) GetApiVersion() string {
 		return x.ApiVersion
 	}
 	return ""
+}
+
+func (x *ZipkinTracingBackendConfig) GetSharedSpanContext() *wrappers.BoolValue {
+	if x != nil {
+		return x.SharedSpanContext
+	}
+	return nil
 }
 
 type Logging struct {

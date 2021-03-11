@@ -56,6 +56,7 @@ var _ = Describe("Mesh", func() {
                   url: http://zipkin.local:9411/v2/spans
                   traceId128bit: true
                   apiVersion: httpProto
+                  sharedSpanContext: true
               - name: zipkin-eu
                 type: zipkin
                 conf:
