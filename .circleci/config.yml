@@ -3,8 +3,8 @@ version: 2.1 # Adds support for executors, parameterized jobs, etc
 orbs:
   aws-cli: circleci/aws-cli@1.4.0
   aws-ecr: circleci/aws-ecr@6.15.3
-  aws-eks: circleci/aws-eks@0.2.3
-  kubernetes: circleci/kubernetes@0.4.0
+  aws-eks: circleci/aws-eks@1.0.3
+  kubernetes: circleci/kubernetes@0.11.2
 
 reusable:
 
