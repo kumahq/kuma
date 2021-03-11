@@ -41,7 +41,7 @@ func autoconfigureGeneral(cfg *kuma_cp.Config) error {
 	if cfg.General.WorkDir == "" {
 		home, err := os.UserHomeDir()
 		if err != nil {
-			return errors.Errorf( "failed to create a working directory inside $HOME: %v, " +
+			return errors.Errorf("failed to create a working directory inside $HOME: %v, "+
 				"please pick a working directory by setting KUMA_GENERAL_WORK_DIR manually", err)
 		}
 		cfg.General.WorkDir = path.Join(home, ".kuma")
