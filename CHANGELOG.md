@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## [1.1.1]
+> Released on  2021/03/11
+
+* fix: make sure we enumerate all types in kumactl [#1673](https://github.com//kumahq/kuma/pull/1673)
+* fix: annnotate service with ingress that has no annotations [#1671](https://github.com//kumahq/kuma/pull/1671)
+* fix: improve err message if $HOME is not defined [#1664](https://github.com//kumahq/kuma/pull/1664)
+* feat: zipkin config add shared span context option [#1660](https://github.com//kumahq/kuma/pull/1660)
+  👍contributed by @ericmustin
+* feat: get rid of 'changed' check [#1663](https://github.com//kumahq/kuma/pull/1663)
+
 ## [1.1.0]
 > Released on  2021/03/08
 
