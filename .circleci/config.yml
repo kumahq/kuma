@@ -1,5 +1,11 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
 
+orbs:
+  aws-cli: circleci/aws-cli@1.4.0
+  aws-ecr: circleci/aws-ecr@6.15.3
+  aws-eks: circleci/aws-eks@0.2.3
+  kubernetes: circleci/kubernetes@0.4.0
+
 reusable:
 
   constants:
@@ -76,7 +82,212 @@ executors:
       GO_VERSION: *go_version
       GO111MODULE: "on"
 
+commands:
+  push-image-to-ecr:
+    parameters:
+      repository:
+        description: "Name of the ECR repository to push"
+        type: string
+    steps:
+    - aws-ecr/push-image:
+        account-url: ECR_REGISTRY
+        tag: "${CIRCLE_TAG}"
+        repo: "<< parameters.repository >>"
+
 jobs:
+  eks-create-cluster:
+    executor: aws-eks/python3
+    parameters:
+      cluster_name:
+        description: "Name of the EKS cluster to create"
+        type: string
+      nodes:
+        description: "Amount of nodes to be created in a cluster"
+        type: integer
+        default: 1
+    steps:
+    - aws-eks/create-cluster:
+        cluster-name: "<< parameters.cluster_name >>"
+        nodes: << parameters.nodes >>
+
+  eks-ecr-clean-repository:
+    executor: aws-cli/default
+    parameters:
+      repository_name:
+        description: "Name of the ECR repository to clean"
+        type: string
+    steps:
+    - aws-cli/install
+
+    - run:
+        name: "Remove test image from registry"
+        command: |
+          aws ecr batch-delete-image \
+            --repository-name "<< parameters.repository_name >>" \
+            --image-ids imageTag="${CIRCLE_TAG}"
+
+  eks-ecr-clean-registry:
+    executor: aws-cli/default
+    steps:
+    - aws-cli/install
+
+    - run:
+        name: "Remove all test images from repository"
+        command: |
+          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
+            images="$(aws ecr list-images --repository-name ${image})"
+
+            aws ecr batch-delete-image \
+              --repository-name "${image}" \
+              --cli-input-json "${images}" || true
+          done
+
+  eks-e2e:
+    executor: golang
+    parameters:
+      cluster_1_name:
+        description: "Name of the 1st. EKS cluster"
+        type: string
+        default: kuma-cicd-e2e-test-1
+      cluster_2_name:
+        description: "Name of the 2st. EKS cluster"
+        type: string
+        default: kuma-cicd-e2e-test-2
+    steps:
+    - checkout
+
+    - run:
+        name: "Setup Environment"
+        command: |
+          echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
+          echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
+          echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
+
+          # we have to install `unzip` to be able to install aws-cli
+          apt update
+          apt install -y unzip
+
+    - aws-cli/install
+
+    - aws-eks/install-aws-iam-authenticator
+
+    - kubernetes/install
+
+    - aws-eks/update-kubeconfig-with-authenticator:
+        cluster-name: "<< parameters.cluster_1_name >>"
+        kubeconfig-file-path: ~/.kube/kind-kuma-1-config
+
+    - aws-eks/update-kubeconfig-with-authenticator:
+        cluster-name: "<< parameters.cluster_2_name >>"
+        kubeconfig-file-path: ~/.kube/kind-kuma-2-config
+
+    - restore_cache:
+        keys:
+        # prefer the exact match
+        - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+
+    - run:
+        name: "Download Go modules"
+        command: go mod download
+
+    # since execution of go commands might change contents of "go.sum",
+    #  we have to save cache immediately
+    - save_cache:
+        key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        paths:
+        - "/home/circleci/.go-kuma-go"
+
+    - run:
+        name: "Install all development tools"
+        command: make dev/tools
+
+    - run:
+        name: "Setup Helm"
+        command: helm repo add kuma https://kumahq.github.io/charts
+
+    # We need kumactl to be built to run tests, and to not build it again,
+    #  we can use the one already build by earlier jobs
+    - attach_workspace:
+        at: build
+
+    - run:
+        name: "Run E2E tests"
+        command: |
+          export KUMA_UNIVERSAL_IMAGE="${ECR_REGISTRY}/kuma-universal:${CIRCLE_TAG}";
+          export E2E_PKG_LIST="./test/e2e/helm";
+          export API_VERSION="v2";
+
+          make test/e2e/test \
+            KUMA_GLOBAL_IMAGE_REGISTRY="${ECR_REGISTRY}" \
+            KUMA_GLOBAL_IMAGE_TAG="${CIRCLE_TAG}" \
+            KUMA_CNI_CONF_NAME="10-aws.conflist" \
+            KUMA_USE_LOAD_BALANCER=true \
+            KUMA_IN_EKS=true \
+            KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}"
+
+    - run:
+        name: "Delete cluster 1"
+        when: always
+        command: |
+          eksctl delete cluster "<< parameters.cluster_1_name >>" || true
+
+    - run:
+        name: "Delete cluster 2"
+        when: always
+        command: |
+          eksctl delete cluster "<< parameters.cluster_2_name >>" || true
+
+  eks-delete-cluster:
+    executor: aws-eks/python3
+    parameters:
+      cluster_name:
+        description: "Name of the EKS cluster to delete"
+        type: string
+    steps:
+    - aws-cli/install
+
+    - run:
+        name: "Delete cluster 1"
+        command: |
+          eksctl delete cluster "<< parameters.cluster_name >>" || true
+
+  eks-ecr-push-images:
+    executor: remote-docker
+    steps:
+    - checkout
+
+    - setup_remote_docker:
+        version: 19.03.12
+
+    - aws-cli/install
+
+    # Mount files from the upstream jobs
+    - attach_workspace:
+        at: docker-images
+
+    - run:
+        name: "Load Docker images from TAR archives"
+        command: make docker/load
+
+    - aws-ecr/ecr-login:
+        region: AWS_DEFAULT_REGION
+        account-url: ECR_REGISTRY
+
+    - push-image-to-ecr:
+        repository: kuma-cp
+
+    - push-image-to-ecr:
+        repository: kuma-dp
+
+    - push-image-to-ecr:
+        repository: kuma-init
+
+    - push-image-to-ecr:
+        repository: kumactl
+
+    - push-image-to-ecr:
+        repository: kuma-universal
+
   dev_golang:
     docker:
     - image: *golang_image
@@ -669,6 +880,68 @@ workflows:
         name: test/e2e
         requires:
           - images
+    - eks-ecr-push-images:
+        <<: *commit_workflow_filters
+        requires:
+        - images
+    - eks-create-cluster:
+        <<: *commit_workflow_filters
+        name: eks-create-cluster-1
+        # custom parameters
+        cluster_name: kuma-cicd-e2e-test-1
+    - eks-create-cluster:
+        <<: *commit_workflow_filters
+        name: eks-create-cluster-2
+        # custom parameters
+        cluster_name: kuma-cicd-e2e-test-2
+    - eks-e2e:
+        <<: *commit_workflow_filters
+        requires:
+        - eks-ecr-push-images
+        - eks-create-cluster-1
+        - eks-create-cluster-2
+    - eks-ecr-clean-repository:
+        <<: *commit_workflow_filters
+        name: ecr-clean-kuma-cp
+        requires:
+        - eks-e2e
+        repository_name: kuma-cp
+    - eks-ecr-clean-repository:
+        <<: *commit_workflow_filters
+        name: ecr-clean-kuma-dp
+        requires:
+        - eks-e2e
+        repository_name: kuma-dp
+    - eks-ecr-clean-repository:
+        <<: *commit_workflow_filters
+        name: ecr-clean-kuma-init
+        requires:
+        - eks-e2e
+        repository_name: kuma-init
+    - eks-ecr-clean-repository:
+        <<: *commit_workflow_filters
+        name: ecr-clean-kumactl
+        requires:
+        - eks-e2e
+        repository_name: kumactl
+    - eks-ecr-clean-repository:
+        <<: *commit_workflow_filters
+        name: ecr-clean-kumactl
+        requires:
+        - eks-e2e
+        repository_name: kumactl
+
+  clean-eks:
+    triggers:
+    - schedule:
+        cron: "0 0 * * *"
+        <<: *commit_workflow_filters
+    jobs:
+    - eks-ecr-clean-registry
+    - eks-delete-cluster:
+        cluster_name: kuma-cicd-e2e-test-1
+    - eks-delete-cluster:
+        cluster_name: kuma-cicd-e2e-test-2
 
   kuma-master:
     jobs:
