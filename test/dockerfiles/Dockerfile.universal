@@ -42,4 +42,4 @@ RUN ssh-keygen -A \
   && useradd -U kuma-dp
 
 # do not detach (-D), log to stderr (-e)
-ENTRYPOINT ["/usr/sbin/sshd", "-D", "-e"]
+CMD ["/usr/sbin/sshd", "-D", "-e"]

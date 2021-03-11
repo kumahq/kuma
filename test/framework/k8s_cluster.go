@@ -252,6 +252,21 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		"--dataplane-registry":      KumaImageRegistry,
 		"--dataplane-init-registry": KumaImageRegistry,
 	}
+
+	globalImageRegistry := os.Getenv("KUMA_GLOBAL_IMAGE_REGISTRY")
+	if globalImageRegistry != "" {
+		argsMap["--control-plane-registry"] = globalImageRegistry
+		argsMap["--dataplane-registry"] = globalImageRegistry
+		argsMap["--dataplane-init-registry"] = globalImageRegistry
+	}
+
+	globalImageTag := os.Getenv("KUMA_GLOBAL_IMAGE_TAG")
+	if globalImageTag != "" {
+		argsMap["--control-plane-version"] = globalImageTag
+		argsMap["--dataplane-version"] = globalImageTag
+		argsMap["--dataplane-init-version"] = globalImageTag
+	}
+
 	switch mode {
 	case core.Remote:
 		argsMap["--kds-global-address"] = opts.globalAddress
@@ -268,6 +283,11 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		argsMap["--cni-net-dir"] = "/etc/cni/net.d"
 		argsMap["--cni-bin-dir"] = "/opt/cni/bin"
 		argsMap["--cni-conf-name"] = "10-kindnet.conflist"
+
+		cniConfName := os.Getenv("KUMA_CNI_CONF_NAME")
+		if cniConfName != "" {
+			argsMap["--cni-conf-name"] = cniConfName
+		}
 	}
 
 	apiVersion := os.Getenv(envAPIVersion)
@@ -302,6 +322,31 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(opts.skipDefaultMesh),
 	}
 
+	globalImageTag := os.Getenv("KUMA_GLOBAL_IMAGE_TAG")
+	if globalImageTag != "" {
+		values["global.image.tag"] = globalImageTag
+	}
+
+	globalImageRegistry := os.Getenv("KUMA_GLOBAL_IMAGE_REGISTRY")
+	if globalImageRegistry != "" {
+		values["global.image.registry"] = globalImageRegistry
+	}
+
+	cpImageRepository := os.Getenv("KUMA_CP_IMAGE_REPOSITORY")
+	if cpImageRepository != "" {
+		values["controlPlane.image.repository"] = cpImageRepository
+	}
+
+	dpImageRepository := os.Getenv("KUMA_DP_IMAGE_REPOSITORY")
+	if dpImageRepository != "" {
+		values["dataPlane.image.repository"] = dpImageRepository
+	}
+
+	dpInitImageRepository := os.Getenv("KUMA_DP_INIT_IMAGE_REPOSITORY")
+	if dpInitImageRepository != "" {
+		values["dataPlane.initImage.repository"] = dpInitImageRepository
+	}
+
 	if opts.cpReplicas != 0 {
 		values["controlPlane.replicas"] = strconv.Itoa(opts.cpReplicas)
 	}
@@ -320,12 +365,19 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 		values["cni.chained"] = "true"
 		values["cni.netDir"] = "/etc/cni/net.d"
 		values["cni.binDir"] = "/opt/cni/bin"
-		values["cni.confName"] = "10-kindnet.conflist"
+		values["cni.confName"] = "10-aws.conflist"
+
+		cniConfName := os.Getenv("KUMA_CNI_CONF_NAME")
+		if cniConfName != "" {
+			values["cni.confName"] = cniConfName
+		}
 	}
 
 	switch mode {
 	case core.Global:
-		values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
+		if useLoadBalancer := os.Getenv("KUMA_USE_LOAD_BALANCER"); useLoadBalancer == "" {
+			values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
+		}
 	case core.Remote:
 		values["controlPlane.zone"] = kumactlOpts.CPName
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
@@ -350,6 +402,11 @@ func (c *K8sCluster) processViaHelm(mode string, opts *deployOptions, fn helmFn)
 	helmChart, err := filepath.Abs(HelmChartPath)
 	if err != nil {
 		return err
+	}
+
+	helmChartPath := os.Getenv("HELM_CHART_PATH")
+	if helmChartPath != "" {
+		helmChart = helmChartPath
 	}
 
 	if opts.helmChartPath != nil {
