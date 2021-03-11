@@ -96,8 +96,6 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		return err
 	}
 
-	updateResolver := false
-
 	forEachMesh := func(mesh string, meshed vips.List) error {
 		serviceSet, err := BuildServiceSet(d.rm, mesh)
 		if err != nil {
@@ -113,7 +111,6 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		if !changed {
 			return nil
 		}
-		updateResolver = updateResolver || changed
 		global.Append(meshed)
 
 		return d.persistence.Set(mesh, meshed)
@@ -129,9 +126,7 @@ func (d *VIPsAllocator) createOrUpdateVIPConfigs(meshes ...string) (errs error) 
 		}
 	}
 
-	if updateResolver {
-		d.resolver.SetVIPs(global)
-	}
+	d.resolver.SetVIPs(global)
 
 	return errs
 }
