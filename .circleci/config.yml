@@ -263,7 +263,7 @@ jobs:
 
     # Mount files from the upstream jobs
     - attach_workspace:
-        at: docker-images
+        at: build
 
     - run:
         name: "Load Docker images from TAR archives"
