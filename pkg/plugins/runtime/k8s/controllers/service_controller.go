@@ -59,6 +59,9 @@ func (r *ServiceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, 
 	}
 
 	log.Info("annotating service which is part of the mesh", "annotation", fmt.Sprintf("%s=%s", metadata.IngressServiceUpstream, metadata.AnnotationTrue))
+	if svc.Annotations == nil {
+		svc.Annotations = map[string]string{}
+	}
 	svc.Annotations[metadata.IngressServiceUpstream] = metadata.AnnotationTrue
 
 	if err = r.Update(ctx, svc); err != nil {

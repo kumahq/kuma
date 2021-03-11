@@ -29,7 +29,6 @@ require (
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
 	github.com/lib/pq v1.9.0
 	github.com/miekg/dns v1.1.40
-	github.com/nxadm/tail v1.4.8 // indirect
 	github.com/onsi/ginkgo v1.15.1
 	github.com/onsi/gomega v1.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
