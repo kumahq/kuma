@@ -61,6 +61,7 @@ func zipkinConfig(cfgStr *structpb.Struct, backendName string) (*envoy_trace.Tra
 		CollectorEndpoint:        url.Path,
 		TraceId_128Bit:           cfg.TraceId128Bit,
 		CollectorEndpointVersion: apiVersion(&cfg, url),
+		SharedSpanContext:        cfg.SharedSpanContext,
 	}
 	zipkinConfigAny, err := proto.MarshalAnyDeterministic(&zipkinConfig)
 	if err != nil {
