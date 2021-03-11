@@ -6,6 +6,18 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `1.1.0`
+
+The major change in this release is the migration to XDSv3 for the `kuma-cp` to `envoy` data plane proxy communication. The
+previous XDSv2 is still available and will continue working. All the existing data plane proxies will still use XDSv2 until
+being restarted. The newly deployed `kuma-dp` instances will automatically get bootstrapped to XDSv3. In case that needs to be
+changed, `kuma-cp` needs to be started with `KUMA_BOOTSTRAP_SERVER_API_VERSION=v2`.
+
+With Kuma 1.1.0, the `kuma-cp` will installs default [retry](https://kuma.io/docs/1.1.0/policies/retry/) and [timeout](https://kuma.io/docs/1.1.0/policies/timeout/) policies for each new
+created Mesh object. The pre-existing meshes will not automatically get these default policies. If needed, they should be created accordingly.
+
+This version removes the deprecated `--dataplane` flag in `kumactl generate dataplane-token`, please consider migrating to use `--name` instead.
+
 ## Upgrade to `1.0.0`
 
 This release introduces a number of breaking changes. If Kuma is being deployed in production we strongly suggest to backup the current configuration, tear down the whole cluster and zones, and install in a clean setup. However, we enumerate the details of these changes below.

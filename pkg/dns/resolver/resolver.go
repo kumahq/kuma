@@ -14,7 +14,6 @@ type DNSResolver interface {
 	GetDomain() string
 	SetVIPs(list vips.List)
 	GetVIPs() vips.List
-	SetVIPsChangedHandler(handler vips.ChangeHandler)
 
 	ForwardLookup(service string) (string, error)
 	ForwardLookupFQDN(name string) (string, error)
@@ -25,7 +24,6 @@ type dnsResolver struct {
 	sync.RWMutex
 	domain  string
 	viplist vips.List
-	handler vips.ChangeHandler
 }
 
 var _ DNSResolver = &dnsResolver{}
@@ -44,21 +42,12 @@ func (s *dnsResolver) SetVIPs(list vips.List) {
 	s.Lock()
 	defer s.Unlock()
 	s.viplist = list
-	if s.handler != nil {
-		s.handler(s.viplist)
-	}
 }
 
 func (s *dnsResolver) GetVIPs() vips.List {
 	s.RLock()
 	defer s.RUnlock()
 	return s.viplist
-}
-
-func (s *dnsResolver) SetVIPsChangedHandler(handler vips.ChangeHandler) {
-	s.Lock()
-	defer s.Unlock()
-	s.handler = handler
 }
 
 func (s *dnsResolver) ForwardLookup(service string) (string, error) {
