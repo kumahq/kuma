@@ -23,13 +23,15 @@ spec:
       targetPort: 5443
     {{- if ne .Values.controlPlane.mode "global" }}
     - port: 5676
-      name: mads-server
+      name: mads-server-grpc
+    - port: 5677
+      name: mads-server-http
     - port: 5678
       name: dp-server
     - port: 5653
       name: dns-server
       protocol: UDP
-  {{- end }}
+    {{- end }}
   selector:
     app: kuma-control-plane
   {{- include "kuma.selectorLabels" . | nindent 4 }}
