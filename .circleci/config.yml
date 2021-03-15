@@ -221,7 +221,6 @@ jobs:
         command: |
           export KUMA_UNIVERSAL_IMAGE="${ECR_REGISTRY}/kuma-universal:${TAG}";
           export E2E_PKG_LIST="./test/e2e/helm";
-          export API_VERSION="v2";
 
           make test/e2e/test \
             KUMA_GLOBAL_IMAGE_REGISTRY="${ECR_REGISTRY}" \
