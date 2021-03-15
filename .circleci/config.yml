@@ -190,6 +190,8 @@ jobs:
 
     - aws-cli/install
 
+    - aws-eks/install-eksctl
+
     - aws-eks/install-aws-iam-authenticator
 
     - kubernetes/install
