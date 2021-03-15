@@ -125,6 +125,8 @@ jobs:
         type: integer
         default: 1
     steps:
+    - aws-eks/install-aws-iam-authenticator
+
     - aws-eks/create-cluster:
         cluster-name: "<< parameters.cluster_name >>"
         nodes: << parameters.nodes >>
@@ -901,11 +903,11 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - images
-    - aws-eks/create-cluster:
+    - eks-create-cluster:
         <<: *commit_workflow_filters
         name: eks-create-cluster-1
-        cluster-name: kuma-cicd-e2e-test-1
-        nodes: 1
+        # custom parameters
+        cluster_name: kuma-cicd-e2e-test-1
     - eks-create-cluster:
         <<: *commit_workflow_filters
         name: eks-create-cluster-2
