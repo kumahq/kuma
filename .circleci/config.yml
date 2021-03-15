@@ -82,71 +82,7 @@ executors:
       GO_VERSION: *go_version
       GO111MODULE: "on"
 
-commands:
-  push-image-to-ecr:
-    parameters:
-      repository:
-        description: "Name of the ECR repository to push"
-        type: string
-    steps:
-    - aws-ecr/push-image:
-        account-url: ECR_REGISTRY
-        tag: "${CIRCLE_TAG}"
-        repo: "<< parameters.repository >>"
-
-  eks-ecr-setup:
-    steps:
-    - run:
-        name: "Configure AWS Access Key ID"
-        command: aws configure set aws_access_key_id ${AWS_ACCESS_KEY_ID}
-    - run:
-        name: "Configure AWS Secret Access Key"
-        command: aws configure set aws_secret_access_key ${AWS_SECRET_ACCESS_KEY}
-    - run:
-        name: "Configure AWS default region"
-        command: aws configure set default.region ${AWS_DEFAULT_REGION}
-    - run:
-        name: "Log into Amazon ECR"
-        command: |
-          # get-login-password returns a password that we pipe to the docker
-          #  login command
-          aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | \
-            docker login --username AWS --password-stdin ${ECR_REGISTRY}
-
 jobs:
-  eks-create-cluster:
-    executor: aws-eks/python3
-    parameters:
-      cluster_name:
-        description: "Name of the EKS cluster to create"
-        type: string
-      nodes:
-        description: "Amount of nodes to be created in a cluster"
-        type: integer
-        default: 1
-    steps:
-    - aws-cli/setup
-
-    - aws-eks/create-cluster:
-        cluster-name: "<< parameters.cluster_name >>"
-        nodes: << parameters.nodes >>
-
-  eks-ecr-clean-repository:
-    executor: aws-cli/default
-    parameters:
-      repository_name:
-        description: "Name of the ECR repository to clean"
-        type: string
-    steps:
-    - aws-cli/install
-
-    - run:
-        name: "Remove test image from registry"
-        command: |
-          aws ecr batch-delete-image \
-            --repository-name "<< parameters.repository_name >>" \
-            --image-ids imageTag="${CIRCLE_TAG}"
-
   eks-ecr-clean-registry:
     executor: aws-cli/default
     steps:
@@ -160,11 +96,13 @@ jobs:
 
             aws ecr batch-delete-image \
               --repository-name "${image}" \
-              --cli-input-json "${images}" || true
+              --cli-input-json "${images}" &
           done
 
+          wait || true
+
   eks-e2e:
-    executor: golang
+    executor: remote-docker
     parameters:
       cluster_1_name:
         description: "Name of the 1st. EKS cluster"
@@ -186,13 +124,52 @@ jobs:
 
           # we have to install `unzip` to be able to install aws-cli
           apt update
-          apt install -y unzip
+          apt install -y \
+            unzip \
+            parallel
 
     - aws-cli/install
 
     - aws-eks/install-eksctl
 
     - aws-eks/install-aws-iam-authenticator
+
+    - setup_remote_docker:
+        version: 19.03.12
+
+    # Mount files from the upstream jobs
+    - attach_workspace:
+        at: build
+
+    - run:
+        name: "Load Docker images from TAR archives"
+        command: make docker/load
+
+    - aws-ecr/ecr-login:
+        account-url: ECR_REGISTRY
+
+    - run:
+        name: "Push images to ECR & Create clusters"
+        command: |
+          for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
+            docker push "${ECR_REGISTRY}"/${image}:"${CIRCLE_TAG}" &
+          done
+
+          eksctl create cluster \
+            --name "<< parameters.cluster_1_name >>" \
+            --nodes 1 \
+            &
+          eksctl create cluster \
+            --name "<< parameters.cluster_2_name >>" \
+            --nodes 1 \
+            &
+
+          FAIL="0"
+          for job in $(jobs -p); do
+            wait "${job}" || FAIL=$((FAIL + 1))
+          done
+
+          return "${FAIL}"
 
     - kubernetes/install
 
@@ -249,16 +226,19 @@ jobs:
             KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}"
 
     - run:
-        name: "Delete cluster 1"
+        name: "Cleanup"
         when: always
         command: |
-          eksctl delete cluster "<< parameters.cluster_1_name >>" || true
+          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
+            aws ecr batch-delete-image \
+                --repository-name "${image}" \
+                --image-ids imageTag="${CIRCLE_TAG}" &
+          done
 
-    - run:
-        name: "Delete cluster 2"
-        when: always
-        command: |
-          eksctl delete cluster "<< parameters.cluster_2_name >>" || true
+          eksctl delete cluster --wait --name "<< parameters.cluster_1_name >>" &
+          eksctl delete cluster --wait --name "<< parameters.cluster_2_name >>" &
+
+          wait || true
 
   eks-delete-clusters:
     executor: aws-eks/python3
@@ -273,41 +253,6 @@ jobs:
           done
 
           wait
-
-  eks-ecr-push-images:
-    executor: remote-docker
-    steps:
-    - checkout
-
-    - setup_remote_docker:
-        version: 19.03.12
-
-    - aws-cli/install
-
-    # Mount files from the upstream jobs
-    - attach_workspace:
-        at: build
-
-    - run:
-        name: "Load Docker images from TAR archives"
-        command: make docker/load
-
-    - eks-ecr-setup
-
-    - push-image-to-ecr:
-        repository: kuma-cp
-
-    - push-image-to-ecr:
-        repository: kuma-dp
-
-    - push-image-to-ecr:
-        repository: kuma-init
-
-    - push-image-to-ecr:
-        repository: kumactl
-
-    - push-image-to-ecr:
-        repository: kuma-universal
 
   dev_golang:
     docker:
@@ -901,58 +846,12 @@ workflows:
         name: test/e2e
         requires:
           - images
-    - eks-ecr-push-images:
-        <<: *commit_workflow_filters
-        requires:
-        - images
-    - eks-create-cluster:
-        <<: *commit_workflow_filters
-        name: eks-create-cluster-1
-        # custom parameters
-        cluster_name: kuma-cicd-e2e-test-1-${CIRCLE_SHA1:0:7}
-    - eks-create-cluster:
-        <<: *commit_workflow_filters
-        name: eks-create-cluster-2
-        # custom parameters
-        cluster_name: kuma-cicd-e2e-test-2-${CIRCLE_SHA1:0:7}
     - eks-e2e:
         <<: *commit_workflow_filters
         requires:
-        - eks-ecr-push-images
-        - eks-create-cluster-1
-        - eks-create-cluster-2
+        - images
         cluster_1_name: kuma-cicd-e2e-test-1-${CIRCLE_SHA1:0:7}
         cluster_2_name: kuma-cicd-e2e-test-2-${CIRCLE_SHA1:0:7}
-    - eks-ecr-clean-repository:
-        <<: *commit_workflow_filters
-        name: ecr-clean-kuma-cp
-        requires:
-        - eks-e2e
-        repository_name: kuma-cp
-    - eks-ecr-clean-repository:
-        <<: *commit_workflow_filters
-        name: ecr-clean-kuma-dp
-        requires:
-        - eks-e2e
-        repository_name: kuma-dp
-    - eks-ecr-clean-repository:
-        <<: *commit_workflow_filters
-        name: ecr-clean-kuma-init
-        requires:
-        - eks-e2e
-        repository_name: kuma-init
-    - eks-ecr-clean-repository:
-        <<: *commit_workflow_filters
-        name: ecr-clean-kumactl
-        requires:
-        - eks-e2e
-        repository_name: kumactl
-    - eks-ecr-clean-repository:
-        <<: *commit_workflow_filters
-        name: ecr-clean-kumactl
-        requires:
-        - eks-e2e
-        repository_name: kumactl
 
   clean-eks:
     triggers:
