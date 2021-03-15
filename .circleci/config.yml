@@ -158,7 +158,6 @@ jobs:
         command: |
           for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
             make docker/tag/${image} \
-              KUMACTL_INSTALL_USE_LOCAL_IMAGES=false \
               BINTRAY_REGISTRY="${ECR_REGISTRY}" \
               KUMA_VERSION="${TAG}" && \
             docker push "${ECR_REGISTRY}"/${image}:"${TAG}" &
