@@ -122,8 +122,8 @@ jobs:
           echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
           echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
           echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
-          echo "export CLUSTER_1=<< parameters.cluster_1_name >>${CIRCLE_SHA1:0:7}" >> $BASH_ENV
-          echo "export CLUSTER_2=<< parameters.cluster_2_name >>${CIRCLE_SHA1:0:7}" >> $BASH_ENV
+          echo "export CLUSTER_1=<< parameters.cluster_1_name >>-${CIRCLE_SHA1:0:7}" >> $BASH_ENV
+          echo "export CLUSTER_2=<< parameters.cluster_2_name >>-${CIRCLE_SHA1:0:7}" >> $BASH_ENV
 
           # we have to install `unzip` to be able to install aws-cli
           sudo apt update
@@ -157,6 +157,10 @@ jobs:
         name: "Push images to ECR & Create clusters"
         command: |
           for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
+            make docker/tag/${image} \
+              KUMACTL_INSTALL_USE_LOCAL_IMAGES=false \
+              BINTRAY_REGISTRY="${ECR_REGISTRY}" \
+              KUMA_VERSION="${TAG}" && \
             docker push "${ECR_REGISTRY}"/${image}:"${TAG}" &
           done
 
@@ -851,6 +855,7 @@ workflows:
           - images
     - eks-e2e:
         <<: *commit_workflow_filters
+        name: test/e2e/eks
         requires:
         - images
 
