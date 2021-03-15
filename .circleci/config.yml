@@ -266,8 +266,8 @@ jobs:
     - run:
         name: "Clean clusters"
         command: |
-          for cluster in $(eksctl get cluster -o json | jq -r 'select(.metadata.name | test("kuma-cicd-e2e-test"))'); do
-            eksctl delete cluster --name "${cluster}" &
+          for cluster in $(eksctl get cluster -o json | jq -r '.[].metadata.name | select(. | test("kuma-cicd-e2e-test"))'); do
+            eksctl delete cluster --wait --name "${cluster}" &
           done
 
           wait
