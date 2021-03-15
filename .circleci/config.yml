@@ -849,7 +849,6 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - images
-        - check
         cluster_1_name: kuma-cicd-e2e-test-1-${CIRCLE_SHA1:0:7}
         cluster_2_name: kuma-cicd-e2e-test-2-${CIRCLE_SHA1:0:7}
 
