@@ -907,18 +907,20 @@ workflows:
         <<: *commit_workflow_filters
         name: eks-create-cluster-1
         # custom parameters
-        cluster_name: kuma-cicd-e2e-test-1
+        cluster_name: kuma-cicd-e2e-test-1-${CIRCLE_BUILD_NUM}
     - eks-create-cluster:
         <<: *commit_workflow_filters
         name: eks-create-cluster-2
         # custom parameters
-        cluster_name: kuma-cicd-e2e-test-2
+        cluster_name: kuma-cicd-e2e-test-2-${CIRCLE_BUILD_NUM}
     - eks-e2e:
         <<: *commit_workflow_filters
         requires:
         - eks-ecr-push-images
         - eks-create-cluster-1
         - eks-create-cluster-2
+        cluster_1_name: kuma-cicd-e2e-test-1-${CIRCLE_BUILD_NUM}
+        cluster_2_name: kuma-cicd-e2e-test-2-${CIRCLE_BUILD_NUM}
     - eks-ecr-clean-repository:
         <<: *commit_workflow_filters
         name: ecr-clean-kuma-cp
