@@ -7231,6 +7231,7 @@ rules:
       - trafficroutes
       - timeouts
       - retries
+      - circuitbreakers
     verbs:
       - get
       - list
@@ -7242,7 +7243,6 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
-      - circuitbreakers
       - externalservices
       - faultinjections
       - healthchecks
