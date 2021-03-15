@@ -125,7 +125,7 @@ jobs:
         type: integer
         default: 1
     steps:
-    - aws-eks/install-aws-iam-authenticator
+    - aws-cli/setup
 
     - aws-eks/create-cluster:
         cluster-name: "<< parameters.cluster_name >>"
