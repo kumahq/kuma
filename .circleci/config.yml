@@ -258,19 +258,19 @@ jobs:
         command: |
           eksctl delete cluster "<< parameters.cluster_2_name >>" || true
 
-  eks-delete-cluster:
+  eks-delete-clusters:
     executor: aws-eks/python3
-    parameters:
-      cluster_name:
-        description: "Name of the EKS cluster to delete"
-        type: string
     steps:
     - aws-cli/install
 
     - run:
-        name: "Delete cluster 1"
+        name: "Clean clusters"
         command: |
-          eksctl delete cluster "<< parameters.cluster_name >>" || true
+          for cluster in $(eksctl get cluster -o json | jq -r 'select(.metadata.name | test("kuma-cicd-e2e-test"))'); do
+            eksctl delete cluster --name "${cluster}" &
+          done
+
+          wait
 
   eks-ecr-push-images:
     executor: remote-docker
@@ -959,14 +959,7 @@ workflows:
         <<: *commit_workflow_filters
     jobs:
     - eks-ecr-clean-registry
-    - run:
-        name: "Clean clusters"
-        command: |
-          for cluster in $(eksctl get cluster -o json | jq -r 'select(.metadata.name | test("kuma-cicd-e2e-test"))'); do
-            eksctl delete cluster --name "${cluster}" &
-          done
-
-          wait
+    - eks-delete-clusters
 
   kuma-master:
     jobs:
