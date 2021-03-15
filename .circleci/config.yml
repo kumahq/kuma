@@ -901,11 +901,11 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - images
-    - eks-create-cluster:
+    - aws-eks/create-cluster:
         <<: *commit_workflow_filters
         name: eks-create-cluster-1
-        # custom parameters
-        cluster_name: kuma-cicd-e2e-test-1
+        cluster-name: kuma-cicd-e2e-test-1
+        nodes: 1
     - eks-create-cluster:
         <<: *commit_workflow_filters
         name: eks-create-cluster-2
