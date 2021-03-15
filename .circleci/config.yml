@@ -121,6 +121,9 @@ jobs:
           echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
           echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
           echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
+          echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
+          echo "export CLUSTER_1=<< parameters.cluster_1_name >>${CIRCLE_SHA1:0:7}" >> $BASH_ENV
+          echo "export CLUSTER_2=<< parameters.cluster_2_name >>${CIRCLE_SHA1:0:7}" >> $BASH_ENV
 
           # we have to install `unzip` to be able to install aws-cli
           sudo apt update
@@ -132,6 +135,8 @@ jobs:
     - aws-eks/install-eksctl
 
     - aws-eks/install-aws-iam-authenticator
+
+    - kubernetes/install
 
     - setup_remote_docker:
         version: 19.03.12
@@ -152,15 +157,15 @@ jobs:
         name: "Push images to ECR & Create clusters"
         command: |
           for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
-            docker push "${ECR_REGISTRY}"/${image}:"${CIRCLE_TAG}" &
+            docker push "${ECR_REGISTRY}"/${image}:"${TAG}" &
           done
 
           eksctl create cluster \
-            --name "<< parameters.cluster_1_name >>" \
+            --name "${CLUSTER_1}" \
             --nodes 1 \
             &
           eksctl create cluster \
-            --name "<< parameters.cluster_2_name >>" \
+            --name "${CLUSTER_2}" \
             --nodes 1 \
             &
 
@@ -169,9 +174,7 @@ jobs:
             wait "${job}" || FAIL=$((FAIL + 1))
           done
 
-          return "${FAIL}"
-
-    - kubernetes/install
+          echo "${FAIL}"
 
     - aws-eks/update-kubeconfig-with-authenticator:
         cluster-name: "<< parameters.cluster_1_name >>"
@@ -213,13 +216,13 @@ jobs:
     - run:
         name: "Run E2E tests"
         command: |
-          export KUMA_UNIVERSAL_IMAGE="${ECR_REGISTRY}/kuma-universal:${CIRCLE_TAG}";
+          export KUMA_UNIVERSAL_IMAGE="${ECR_REGISTRY}/kuma-universal:${TAG}";
           export E2E_PKG_LIST="./test/e2e/helm";
           export API_VERSION="v2";
 
           make test/e2e/test \
             KUMA_GLOBAL_IMAGE_REGISTRY="${ECR_REGISTRY}" \
-            KUMA_GLOBAL_IMAGE_TAG="${CIRCLE_TAG}" \
+            KUMA_GLOBAL_IMAGE_TAG="${TAG}" \
             KUMA_CNI_CONF_NAME="10-aws.conflist" \
             KUMA_USE_LOAD_BALANCER=true \
             KUMA_IN_EKS=true \
@@ -232,11 +235,11 @@ jobs:
           for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
             aws ecr batch-delete-image \
                 --repository-name "${image}" \
-                --image-ids imageTag="${CIRCLE_TAG}" &
+                --image-ids imageTag="${TAG}" &
           done
 
-          eksctl delete cluster --wait --name "<< parameters.cluster_1_name >>" &
-          eksctl delete cluster --wait --name "<< parameters.cluster_2_name >>" &
+          eksctl delete cluster --wait --name "${CLUSTER_1}" &
+          eksctl delete cluster --wait --name "${CLUSTER_2}" &
 
           wait || true
 
@@ -850,8 +853,6 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - images
-        cluster_1_name: kuma-cicd-e2e-test-1-${CIRCLE_SHA1:0:7}
-        cluster_2_name: kuma-cicd-e2e-test-2-${CIRCLE_SHA1:0:7}
 
   clean-eks:
     triggers:
