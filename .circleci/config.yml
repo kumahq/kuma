@@ -907,20 +907,20 @@ workflows:
         <<: *commit_workflow_filters
         name: eks-create-cluster-1
         # custom parameters
-        cluster_name: kuma-cicd-e2e-test-1-${CIRCLE_BUILD_NUM}
+        cluster_name: kuma-cicd-e2e-test-1-${CIRCLE_SHA1:0:7}
     - eks-create-cluster:
         <<: *commit_workflow_filters
         name: eks-create-cluster-2
         # custom parameters
-        cluster_name: kuma-cicd-e2e-test-2-${CIRCLE_BUILD_NUM}
+        cluster_name: kuma-cicd-e2e-test-2-${CIRCLE_SHA1:0:7}
     - eks-e2e:
         <<: *commit_workflow_filters
         requires:
         - eks-ecr-push-images
         - eks-create-cluster-1
         - eks-create-cluster-2
-        cluster_1_name: kuma-cicd-e2e-test-1-${CIRCLE_BUILD_NUM}
-        cluster_2_name: kuma-cicd-e2e-test-2-${CIRCLE_BUILD_NUM}
+        cluster_1_name: kuma-cicd-e2e-test-1-${CIRCLE_SHA1:0:7}
+        cluster_2_name: kuma-cicd-e2e-test-2-${CIRCLE_SHA1:0:7}
     - eks-ecr-clean-repository:
         <<: *commit_workflow_filters
         name: ecr-clean-kuma-cp
@@ -959,10 +959,14 @@ workflows:
         <<: *commit_workflow_filters
     jobs:
     - eks-ecr-clean-registry
-    - eks-delete-cluster:
-        cluster_name: kuma-cicd-e2e-test-1
-    - eks-delete-cluster:
-        cluster_name: kuma-cicd-e2e-test-2
+    - run:
+        name: "Clean clusters"
+        command: |
+          for cluster in $(eksctl get cluster -o json | jq -r 'select(.metadata.name | test("kuma-cicd-e2e-test"))'); do
+            eksctl delete cluster --name "${cluster}" &
+          done
+
+          wait
 
   kuma-master:
     jobs:
