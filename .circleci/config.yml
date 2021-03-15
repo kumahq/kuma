@@ -123,10 +123,9 @@ jobs:
           echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
 
           # we have to install `unzip` to be able to install aws-cli
-          apt update
-          apt install -y \
-            unzip \
-            parallel
+          sudo apt update
+          sudo apt install -y \
+            unzip
 
     - aws-cli/install
 
@@ -850,6 +849,7 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - images
+        - check
         cluster_1_name: kuma-cicd-e2e-test-1-${CIRCLE_SHA1:0:7}
         cluster_2_name: kuma-cicd-e2e-test-2-${CIRCLE_SHA1:0:7}
 
