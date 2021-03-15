@@ -14,19 +14,20 @@ const (
 
 var (
 	SupportedTypes = []model.ResourceType{
-		mesh.MeshType,
+		mesh.CircuitBreakerType,
 		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
 		mesh.ExternalServiceType,
-		mesh.CircuitBreakerType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,
+		mesh.MeshType,
+		mesh.ProxyTemplateType,
+		mesh.RetryType,
+		mesh.TimeoutType,
 		mesh.TrafficLogType,
 		mesh.TrafficPermissionType,
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
-		mesh.ProxyTemplateType,
-		mesh.RetryType,
 		system.SecretType,
 		system.ConfigType,
 	}

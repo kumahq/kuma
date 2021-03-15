@@ -75,15 +75,9 @@ var _ = Describe("kumactl delete ", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			Expect(err.Error()).To(Equal("unknown TYPE: some-type. Allowed values: mesh, " +
-				"dataplane, healthcheck, proxytemplate, traffic-log, traffic-permission, " +
-				"traffic-route, traffic-trace, fault-injection, circuit-breaker, retry, secret, " +
-				"zone"))
+			Expect(err.Error()).To(ContainSubstring("unknown TYPE: some-type. Allowed values:"))
 			// and
-			Expect(outbuf.String()).To(MatchRegexp("unknown TYPE: some-type. " +
-				"Allowed values: mesh, dataplane, healthcheck, proxytemplate, traffic-log, " +
-				"traffic-permission, traffic-route, traffic-trace, fault-injection, " +
-				"circuit-breaker, retry, secret, zone"))
+			Expect(outbuf.String()).To(ContainSubstring("unknown TYPE: some-type. Allowed values:"))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
@@ -144,11 +138,29 @@ var _ = Describe("kumactl delete ", func() {
 					// then
 					Expect(err).ToNot(HaveOccurred())
 				},
+				Entry("circuit-breaker", testCase{
+					typ:             "circuit-breaker",
+					name:            "web",
+					resource:        func() core_model.Resource { return mesh_core.NewCircuitBreakerResource() },
+					expectedMessage: "deleted CircuitBreaker \"web\"\n",
+				}),
 				Entry("dataplanes", testCase{
 					typ:             "dataplane",
 					name:            "web",
 					resource:        func() core_model.Resource { return mesh_core.NewDataplaneResource() },
 					expectedMessage: "deleted Dataplane \"web\"\n",
+				}),
+				Entry("external-services", testCase{
+					typ:             "external-service",
+					name:            "httpbin",
+					resource:        func() core_model.Resource { return mesh_core.NewExternalServiceResource() },
+					expectedMessage: "deleted ExternalService \"httpbin\"\n",
+				}),
+				Entry("fault-injections", testCase{
+					typ:             "fault-injection",
+					name:            "web",
+					resource:        func() core_model.Resource { return mesh_core.NewFaultInjectionResource() },
+					expectedMessage: "deleted FaultInjection \"web\"\n",
 				}),
 				Entry("healthchecks", testCase{
 					typ:             "healthcheck",
@@ -156,23 +168,35 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return mesh_core.NewHealthCheckResource() },
 					expectedMessage: "deleted HealthCheck \"web-to-backend\"\n",
 				}),
+				Entry("proxytemplate", testCase{
+					typ:             "proxytemplate",
+					name:            "test-pt",
+					resource:        func() core_model.Resource { return mesh_core.NewProxyTemplateResource() },
+					expectedMessage: "deleted ProxyTemplate \"test-pt\"\n",
+				}),
 				Entry("retries", testCase{
 					typ:             "retry",
 					name:            "web-to-backend",
 					resource:        func() core_model.Resource { return mesh_core.NewRetryResource() },
 					expectedMessage: "deleted Retry \"web-to-backend\"\n",
 				}),
-				Entry("traffic-permissions", testCase{
-					typ:             "traffic-permission",
-					name:            "everyone-to-everyone",
-					resource:        func() core_model.Resource { return mesh_core.NewTrafficPermissionResource() },
-					expectedMessage: "deleted TrafficPermission \"everyone-to-everyone\"\n",
+				Entry("timeouts", testCase{
+					typ:             "timeout",
+					name:            "web",
+					resource:        func() core_model.Resource { return mesh_core.NewTimeoutResource() },
+					expectedMessage: "deleted Timeout \"web\"\n",
 				}),
 				Entry("traffic-logs", testCase{
 					typ:             "traffic-log",
 					name:            "all-requests",
 					resource:        func() core_model.Resource { return mesh_core.NewTrafficLogResource() },
 					expectedMessage: "deleted TrafficLog \"all-requests\"\n",
+				}),
+				Entry("traffic-permissions", testCase{
+					typ:             "traffic-permission",
+					name:            "everyone-to-everyone",
+					resource:        func() core_model.Resource { return mesh_core.NewTrafficPermissionResource() },
+					expectedMessage: "deleted TrafficPermission \"everyone-to-everyone\"\n",
 				}),
 				Entry("traffic-routes", testCase{
 					typ:             "traffic-route",
@@ -186,23 +210,63 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return mesh_core.NewTrafficTraceResource() },
 					expectedMessage: "deleted TrafficTrace \"web\"\n",
 				}),
-				Entry("fault-injections", testCase{
-					typ:             "fault-injection",
-					name:            "web",
-					resource:        func() core_model.Resource { return mesh_core.NewFaultInjectionResource() },
-					expectedMessage: "deleted FaultInjection \"web\"\n",
-				}),
-				Entry("circuit-breaker", testCase{
-					typ:             "circuit-breaker",
-					name:            "web",
-					resource:        func() core_model.Resource { return mesh_core.NewCircuitBreakerResource() },
-					expectedMessage: "deleted CircuitBreaker \"web\"\n",
-				}),
-				Entry("secret", testCase{
+				Entry("secrets", testCase{
 					typ:             "secret",
 					name:            "web",
 					resource:        func() core_model.Resource { return system.NewSecretResource() },
 					expectedMessage: "deleted Secret \"web\"\n",
+				}),
+			)
+
+			DescribeTable("should succeed if resource exists",
+				func(given testCase) {
+					key := core_model.ResourceKey{Name: given.name}
+
+					By("creating resources necessary for the test")
+					// setup
+
+					// when
+					err := store.Create(context.Background(), given.resource(), core_store.CreateBy(key))
+					// then
+					Expect(err).ToNot(HaveOccurred())
+
+					By("running delete command")
+					// given
+					rootCmd.SetArgs([]string{
+						"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
+						"delete", given.typ, given.name})
+
+					// when
+					err = rootCmd.Execute()
+					// then
+					Expect(err).ToNot(HaveOccurred())
+					// and
+					Expect(errbuf.String()).To(BeEmpty())
+					Expect(outbuf.String()).To(Equal(given.expectedMessage))
+
+					By("verifying that resource under test was actually deleted")
+					// when
+					err = store.Get(context.Background(), given.resource(), core_store.GetBy(key))
+					// then
+					Expect(core_store.IsResourceNotFound(err)).To(BeTrue())
+				},
+				Entry("meshes", testCase{
+					typ:             "mesh",
+					name:            "test-mesh",
+					resource:        func() core_model.Resource { return mesh_core.NewMeshResource() },
+					expectedMessage: "deleted Mesh \"test-mesh\"\n",
+				}),
+				Entry("global-secrets", testCase{
+					typ:             "global-secret",
+					name:            "test-secret",
+					resource:        func() core_model.Resource { return system.NewGlobalSecretResource() },
+					expectedMessage: "deleted GlobalSecret \"test-secret\"\n",
+				}),
+				Entry("zones", testCase{
+					typ:             "zone",
+					name:            "eu-north",
+					resource:        func() core_model.Resource { return system.NewZoneResource() },
+					expectedMessage: "deleted Zone \"eu-north\"\n",
 				}),
 			)
 
