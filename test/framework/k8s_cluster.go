@@ -120,8 +120,8 @@ func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 	retry.DoWithRetry(c.t,
 		fmt.Sprintf("Wait for %s Namespace to terminate.", namespace),
-		DefaultRetries,
-		DefaultTimeout,
+		2*DefaultRetries,
+		2*DefaultTimeout,
 		func() (string, error) {
 			_, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
