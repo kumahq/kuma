@@ -41,13 +41,14 @@ we will need to expose this API externally.
 
 ### Design Goals
 * Make it clear which fields should be provided
-* Make fields explicit, move slightly away from the generic Prometheus
+* Make fields explicit, move away from the generic Prometheus labels
   * This will make the SD implementation on the Prometheus-side much more clear
   * Currently, there is implicit implementation details shared between the MADS client and server
   * We cannot have this if we are going to expose this API upstream
 * Keep the xDS discovery mechanism, but upgrade it to the latest version v3
 * Fully support both xDS transport variants (HTTP + gRPC)
-* Keep the ability to provide groups of `Targets` with common labels
+* Keep the ability to provide groups of `Targets` with common labels, but map 1-1 to Dataplanes
+  * Currently, `MonitoringAssignments` map 1-1 to Dataplanes, which makes some fields duplicative 
 * Keep the flexibility to provide arbitrary labels
 
 ### proto
@@ -82,21 +83,16 @@ service MonitoringAssignmentDiscoveryService {
 
 // MADS resource type.
 //
-// Describes a group of targets on a single dataplane that need to be monitored.
+// Describes a group of targets on a single service that need to be monitored.
 message MonitoringAssignment {
-  // Dataplane name.
-  //
-  // E.g., `backend`
-  string name = 1 [ (validate.rules).string = {min_bytes : 1} ];
-
   // Mesh of the dataplane.
   //
   // E.g., `default`
   string mesh = 2 [ (validate.rules).string = {min_bytes : 1} ];
 
-  // Identifying service the dataplane is proxying.
+  // Identifying service being monitored.
   //
-  // E.g., `backend-v1`
+  // E.g., `backend`
   string service = 3 [ (validate.rules).string = {min_bytes : 1} ];
 
   // List of targets that need to be monitored.
@@ -104,17 +100,22 @@ message MonitoringAssignment {
 
   // Describes a single target that needs to be monitored.
   message Target {
+    // Dataplane name.
+    //
+    // E.g., `backend-01`
+    string name = 1 [ (validate.rules).string = {min_bytes : 1} ];
+
     // Scheme on which to scrape the target.
     //E.g., `http`
-    string scheme = 1 [ (validate.rules).string = {min_bytes : 1} ];
+    string scheme = 2 [ (validate.rules).string = {min_bytes : 1} ];
 
     // Address (preferably IP) for the service
     // E.g., `backend.svc` or `10.1.4.32:9090`
-    string address = 2 [ (validate.rules).string = {min_bytes : 1} ];
+    string address = 3 [ (validate.rules).string = {min_bytes : 1} ];
 
     // Optional path to append to the address for scraping
     //E.g., `/metrics`
-    string metrics_path = 3;
+    string metrics_path = 4;
 
     // Arbitrary labels associated with that particular target.
     //
@@ -122,12 +123,12 @@ message MonitoringAssignment {
     // `{
     //    "commit_hash" : "620506a88",
     //  }`.
-    map<string, string> labels = 4;
+    map<string, string> labels = 5;
   }
 
   // Arbitrary Labels associated with every target in the assignment.
   //
-  // E.g., `{"zone" : "us-east-1", "team": "infra", "commit_hash": "620506a88"}`.
+  // E.g., `{"team": "infra"}`.
   map<string, string> labels = 5;
 }
 ```
