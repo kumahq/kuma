@@ -146,6 +146,7 @@ jobs:
 
     - aws-ecr/ecr-login:
         account-url: ECR_REGISTRY
+        region: AWS_DEFAULT_REGION
 
     - run:
         name: "Push images to ECR & Create clusters"
