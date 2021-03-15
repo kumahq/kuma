@@ -180,11 +180,11 @@ jobs:
           echo "${FAIL}"
 
     - aws-eks/update-kubeconfig-with-authenticator:
-        cluster-name: "<< parameters.cluster_1_name >>"
+        cluster-name: "${CLUSTER_1}"
         kubeconfig-file-path: ~/.kube/kind-kuma-1-config
 
     - aws-eks/update-kubeconfig-with-authenticator:
-        cluster-name: "<< parameters.cluster_2_name >>"
+        cluster-name: "${CLUSTER_2}"
         kubeconfig-file-path: ~/.kube/kind-kuma-2-config
 
     - restore_cache:
