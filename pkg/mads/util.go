@@ -41,7 +41,7 @@ func DataplaneLabels(dataplane *mesh_core.DataplaneResource) map[string]string {
 		if len(values) > 0 {
 			value = values[0]
 		}
-		// while in general case a tag might have multiple values, we want to omptimize for a single-value scenario
+		// while in general case a tag might have multiple values, we want to optimize for a single-value scenario
 		labels[prom_util.SanitizeLabelName(key)] = value
 		// additionally, we also support a multi-value scenario by automatically pluralizing label name,
 		// e.g. `service => services`, `version => versions`, etc.
@@ -55,4 +55,9 @@ func DataplaneLabels(dataplane *mesh_core.DataplaneResource) map[string]string {
 		labels[prom_util.SanitizeLabelName(key)] = value
 	}
 	return labels
+}
+
+func DataplaneNamespacedName(dataplane *mesh_core.DataplaneResource) string {
+	// unique name, e.g. REST API uri
+	return fmt.Sprintf("/meshes/%s/dataplanes/%s", dataplane.Meta.GetMesh(), dataplane.Meta.GetName())
 }

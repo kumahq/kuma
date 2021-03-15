@@ -1,20 +1,20 @@
 package generator_test
 
 import (
-	generator2 "github.com/kumahq/kuma/pkg/mads/generator"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/mads/v1alpha1/generator"
+	. "github.com/kumahq/kuma/pkg/mads/v1/generator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/mads/generator"
 	"github.com/kumahq/kuma/pkg/util/proto"
 
-	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
+	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
@@ -32,9 +32,9 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 		DescribeTable("should generate proper MonitoringAssignment resources",
 			func(given testCase) {
 				// setup
-				generator := MonitoringAssignmentsGenerator{}
+				gen := MonitoringAssignmentsGenerator{}
 				// when
-				resources, err := generator.Generate(generator2.Args{
+				resources, err := gen.Generate(generator.Args{
 					Meshes:     given.meshes,
 					Dataplanes: given.dataplanes,
 				})
@@ -152,25 +152,21 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				expected: []*core_xds.Resource{
 					{
 						Name: "/meshes/demo/dataplanes/gateway-01",
-						Resource: &observability_proto.MonitoringAssignment{
-							Name: "/meshes/demo/dataplanes/gateway-01",
-							Targets: []*observability_proto.MonitoringAssignment_Target{{
+						Resource: &observability_v1.MonitoringAssignment{
+							Service: "gateway",
+							Mesh:    "demo",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "gateway-01",
+								Address:     ":1234",
+								Scheme:      "http",
+								MetricsPath: "/non-standard-path",
 								Labels: map[string]string{
-									"__address__": ":1234",
+									"region":           "eu",
+									"regions":          ",eu,",
+									"kuma_io_service":  "gateway",
+									"kuma_io_services": ",gateway,",
 								},
 							}},
-							Labels: map[string]string{
-								"__scheme__":       "http",
-								"__metrics_path__": "/non-standard-path",
-								"job":              "gateway",
-								"instance":         "gateway-01",
-								"mesh":             "demo",
-								"dataplane":        "gateway-01",
-								"region":           "eu",
-								"regions":          ",eu,",
-								"kuma_io_service":  "gateway",
-								"kuma_io_services": ",gateway,",
-							},
 						},
 					},
 				},
@@ -235,27 +231,23 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				expected: []*core_xds.Resource{
 					{
 						Name: "/meshes/demo/dataplanes/backend-01",
-						Resource: &observability_proto.MonitoringAssignment{
-							Name: "/meshes/demo/dataplanes/backend-01",
-							Targets: []*observability_proto.MonitoringAssignment_Target{{
+						Resource: &observability_v1.MonitoringAssignment{
+							Mesh:    "demo",
+							Service: "backend",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-01",
+								Address:     "192.168.0.1:1234",
+								Scheme:      "http",
+								MetricsPath: "/non-standard-path",
 								Labels: map[string]string{
-									"__address__": "192.168.0.1:1234",
+									"env":              "prod",
+									"envs":             ",prod,",
+									"kuma_io_service":  "backend",
+									"kuma_io_services": ",backend,backend-https,", // must have multiple values
+									"version":          "v1",
+									"versions":         ",v1,v2,", // must have multiple values
 								},
 							}},
-							Labels: map[string]string{
-								"__scheme__":       "http",
-								"__metrics_path__": "/non-standard-path",
-								"job":              "backend",
-								"instance":         "backend-01",
-								"mesh":             "demo",
-								"dataplane":        "backend-01",
-								"env":              "prod",
-								"envs":             ",prod,",
-								"kuma_io_service":  "backend",
-								"kuma_io_services": ",backend,backend-https,", // must have multiple values
-								"version":          "v1",
-								"versions":         ",v1,v2,", // must have multiple values
-							},
 						},
 					},
 				},
@@ -308,26 +300,22 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				expected: []*core_xds.Resource{
 					{
 						Name: "/meshes/demo/dataplanes/backend-01",
-						Resource: &observability_proto.MonitoringAssignment{
-							Name: "/meshes/demo/dataplanes/backend-01",
-							Targets: []*observability_proto.MonitoringAssignment_Target{{
+						Resource: &observability_v1.MonitoringAssignment{
+							Mesh: "demo",
+							Service: "backend",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-01",
+								Scheme:      "http",
+								Address:     "192.168.0.1:1234",
+								MetricsPath: "/non-standard-path",
 								Labels: map[string]string{
-									"__address__": "192.168.0.1:1234",
+									"kuma_io_service":  "backend",
+									"kuma_io_services": ",backend,",
+									"version":          "v1",
+									"versions":         "v1+v1.0.1", // must have user-defined value
+									"versionss":        ",v1+v1.0.1,",
 								},
 							}},
-							Labels: map[string]string{
-								"__scheme__":       "http",
-								"__metrics_path__": "/non-standard-path",
-								"job":              "backend",
-								"instance":         "backend-01",
-								"mesh":             "demo",
-								"dataplane":        "backend-01",
-								"kuma_io_service":  "backend",
-								"kuma_io_services": ",backend,",
-								"version":          "v1",
-								"versions":         "v1+v1.0.1", // must have user-defined value
-								"versionss":        ",v1+v1.0.1,",
-							},
 						},
 					},
 				},
@@ -380,27 +368,23 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				expected: []*core_xds.Resource{
 					{
 						Name: "/meshes/demo/dataplanes/backend-01",
-						Resource: &observability_proto.MonitoringAssignment{
-							Name: "/meshes/demo/dataplanes/backend-01",
-							Targets: []*observability_proto.MonitoringAssignment_Target{{
+						Resource: &observability_v1.MonitoringAssignment{
+							Mesh:    "demo",
+							Service: "backend",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-01",
+								Scheme:      "http",
+								Address:     "192.168.0.1:1234",
+								MetricsPath: "/non-standard-path",
 								Labels: map[string]string{
-									"__address__": "192.168.0.1:1234",
+									"kuma_io_service":  "backend",
+									"kuma_io_services": ",backend,",
+									"app_description":  "?!,.:;",   // tag name must be escaped
+									"app_descriptions": ",?!,.:;,", // tag name must be escaped
+									"com_company_tag":  "&*()-+",   // tag name must be escaped
+									"com_company_tags": ",&*()-+,", // tag name must be escaped
 								},
 							}},
-							Labels: map[string]string{
-								"__scheme__":       "http",
-								"__metrics_path__": "/non-standard-path",
-								"job":              "backend",
-								"instance":         "backend-01",
-								"mesh":             "demo",
-								"dataplane":        "backend-01",
-								"kuma_io_service":  "backend",
-								"kuma_io_services": ",backend,",
-								"app_description":  "?!,.:;",   // tag name must be escaped
-								"app_descriptions": ",?!,.:;,", // tag name must be escaped
-								"com_company_tag":  "&*()-+",   // tag name must be escaped
-								"com_company_tags": ",&*()-+,", // tag name must be escaped
-							},
 						},
 					},
 				},
@@ -500,48 +484,40 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				expected: []*core_xds.Resource{
 					{
 						Name: "/meshes/default/dataplanes/backend-01",
-						Resource: &observability_proto.MonitoringAssignment{
-							Name: "/meshes/default/dataplanes/backend-01",
-							Targets: []*observability_proto.MonitoringAssignment_Target{{
+						Resource: &observability_v1.MonitoringAssignment{
+							Service: "backend",
+							Mesh:    "default",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-01",
+								Address:     "192.168.0.1:1234",
+								Scheme:      "http",
+								MetricsPath: "/non-standard-path",
 								Labels: map[string]string{
-									"__address__": "192.168.0.1:1234",
+									"env":              "prod",
+									"envs":             ",prod,",
+									"kuma_io_service":  "backend",
+									"kuma_io_services": ",backend,",
 								},
 							}},
-							Labels: map[string]string{
-								"__scheme__":       "http",
-								"__metrics_path__": "/non-standard-path",
-								"job":              "backend",
-								"instance":         "backend-01",
-								"mesh":             "default",
-								"dataplane":        "backend-01",
-								"env":              "prod",
-								"envs":             ",prod,",
-								"kuma_io_service":  "backend",
-								"kuma_io_services": ",backend,",
-							},
 						},
 					},
 					{
 						Name: "/meshes/demo/dataplanes/web-02",
-						Resource: &observability_proto.MonitoringAssignment{
-							Name: "/meshes/demo/dataplanes/web-02",
-							Targets: []*observability_proto.MonitoringAssignment_Target{{
+						Resource: &observability_v1.MonitoringAssignment{
+							Mesh:    "demo",
+							Service: "web",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "web-02",
+								Address:     "192.168.0.2:8765",
+								Scheme:      "http",
+								MetricsPath: "/even-more-non-standard-path",
 								Labels: map[string]string{
-									"__address__": "192.168.0.2:8765",
+									"env":              "intg",
+									"envs":             ",intg,",
+									"kuma_io_service":  "web",
+									"kuma_io_services": ",web,",
 								},
 							}},
-							Labels: map[string]string{
-								"__scheme__":       "http",
-								"__metrics_path__": "/even-more-non-standard-path",
-								"job":              "web",
-								"instance":         "web-02",
-								"mesh":             "demo",
-								"dataplane":        "web-02",
-								"env":              "intg",
-								"envs":             ",intg,",
-								"kuma_io_service":  "web",
-								"kuma_io_services": ",web,",
-							},
 						},
 					},
 				},
@@ -596,25 +572,21 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				expected: []*core_xds.Resource{
 					{
 						Name: "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
-						Resource: &observability_proto.MonitoringAssignment{
-							Name: "/meshes/demo/dataplanes/backend-5c89f4d995-85znn.my-namespace",
-							Targets: []*observability_proto.MonitoringAssignment_Target{{
+						Resource: &observability_v1.MonitoringAssignment{
+							Mesh:    "demo",
+							Service: "backend",
+							Targets: []*observability_v1.MonitoringAssignment_Target{{
+								Name:        "backend-5c89f4d995-85znn.my-namespace",
+								Scheme:      "http",
+								Address:     "192.168.0.1:1234",
+								MetricsPath: "/non-standard-path",
 								Labels: map[string]string{
-									"__address__": "192.168.0.1:1234",
+									"k8s_kuma_io_name":      "backend-5c89f4d995-85znn",
+									"k8s_kuma_io_namespace": "my-namespace",
+									"kuma_io_service":       "backend",
+									"kuma_io_services":      ",backend,",
 								},
 							}},
-							Labels: map[string]string{
-								"__scheme__":            "http",
-								"__metrics_path__":      "/non-standard-path",
-								"job":                   "backend",
-								"instance":              "backend-5c89f4d995-85znn.my-namespace",
-								"k8s_kuma_io_name":      "backend-5c89f4d995-85znn",
-								"k8s_kuma_io_namespace": "my-namespace",
-								"mesh":                  "demo",
-								"dataplane":             "backend-5c89f4d995-85znn.my-namespace",
-								"kuma_io_service":       "backend",
-								"kuma_io_services":      ",backend,",
-							},
 						},
 					},
 				},

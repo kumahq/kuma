@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"fmt"
 	observability_v1alpha1 "github.com/kumahq/kuma/api/observability/v1alpha1"
 	"github.com/kumahq/kuma/pkg/mads"
 	"github.com/kumahq/kuma/pkg/mads/generator"
@@ -115,7 +114,7 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 		}
 
 		assignment := &observability_v1alpha1.MonitoringAssignment{
-			Name: g.assignmentName(dataplane),
+			Name: mads.DataplaneNamespacedName(dataplane),
 			Targets: []*observability_v1alpha1.MonitoringAssignment_Target{{
 				Labels: g.addressLabel(dataplane, prometheusEndpoint),
 			}},
@@ -129,11 +128,6 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 	}
 
 	return resources, nil
-}
-
-func (_ MonitoringAssignmentsGenerator) assignmentName(dataplane *mesh_core.DataplaneResource) string {
-	// unique name, e.g. REST API uri
-	return fmt.Sprintf("/meshes/%s/dataplanes/%s", dataplane.Meta.GetMesh(), dataplane.Meta.GetName())
 }
 
 func (_ MonitoringAssignmentsGenerator) addressLabel(dataplane *mesh_core.DataplaneResource, endpoint *mesh_proto.PrometheusMetricsBackendConfig) map[string]string {

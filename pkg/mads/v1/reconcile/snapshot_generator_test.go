@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
-	. "github.com/kumahq/kuma/pkg/mads/v1alpha1/reconcile"
+	. "github.com/kumahq/kuma/pkg/mads/v1/reconcile"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 
@@ -19,10 +19,10 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/util/proto"
 
-	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
+	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 
-	mads_cache "github.com/kumahq/kuma/pkg/mads/v1alpha1/cache"
-	mads_generator "github.com/kumahq/kuma/pkg/mads/v1alpha1/generator"
+	mads_cache "github.com/kumahq/kuma/pkg/mads/v1/cache"
+	mads_generator "github.com/kumahq/kuma/pkg/mads/v1/generator"
 
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
@@ -177,7 +177,6 @@ var _ = Describe("snapshotGenerator", func() {
 										Type: mesh_proto.MetricsPrometheusType,
 										Conf: proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
 											Port: 1234,
-											Path: "/non-standard-path",
 										}),
 									},
 								},
@@ -250,46 +249,38 @@ var _ = Describe("snapshotGenerator", func() {
 						},
 					},
 				},
+				// TODO: generate this resource map on the fly using the mads/v1/generator pkg
 				expected: mads_cache.NewSnapshot("", map[string]envoy_types.Resource{
-					"/meshes/demo/dataplanes/backend-02": &observability_proto.MonitoringAssignment{
-						Name: "/meshes/demo/dataplanes/backend-02",
-						Targets: []*observability_proto.MonitoringAssignment_Target{{
+					"/meshes/demo/dataplanes/backend-02": &observability_v1.MonitoringAssignment{
+						Mesh:    "demo",
+						Service: "backend",
+						Targets: []*observability_v1.MonitoringAssignment_Target{{
+							Name:    "backend-02",
+							Address: "192.168.0.2:1234",
+							Scheme:  "http",
 							Labels: map[string]string{
-								"__address__": "192.168.0.2:1234",
+								"env":              "intg",
+								"envs":             ",intg,",
+								"kuma_io_service":  "backend",
+								"kuma_io_services": ",backend,",
 							},
 						}},
-						Labels: map[string]string{
-							"__scheme__":       "http",
-							"__metrics_path__": "/non-standard-path",
-							"job":              "backend",
-							"instance":         "backend-02",
-							"mesh":             "demo",
-							"dataplane":        "backend-02",
-							"env":              "intg",
-							"envs":             ",intg,",
-							"kuma_io_service":  "backend",
-							"kuma_io_services": ",backend,",
-						},
 					},
-					"/meshes/demo/dataplanes/web-01": &observability_proto.MonitoringAssignment{
-						Name: "/meshes/demo/dataplanes/web-01",
-						Targets: []*observability_proto.MonitoringAssignment_Target{{
+					"/meshes/demo/dataplanes/web-01": &observability_v1.MonitoringAssignment{
+						Mesh:    "demo",
+						Service: "web",
+						Targets: []*observability_v1.MonitoringAssignment_Target{{
+							Name:        "web-01",
+							Address:     "192.168.0.3:8765",
+							Scheme:      "http",
+							MetricsPath: "/even-more-non-standard-path",
 							Labels: map[string]string{
-								"__address__": "192.168.0.3:8765",
+								"env":              "test",
+								"envs":             ",test,",
+								"kuma_io_service":  "web",
+								"kuma_io_services": ",web,",
 							},
 						}},
-						Labels: map[string]string{
-							"__scheme__":       "http",
-							"__metrics_path__": "/even-more-non-standard-path",
-							"job":              "web",
-							"instance":         "web-01",
-							"mesh":             "demo",
-							"dataplane":        "web-01",
-							"env":              "test",
-							"envs":             ",test,",
-							"kuma_io_service":  "web",
-							"kuma_io_services": ",web,",
-						},
 					},
 				}),
 			}),

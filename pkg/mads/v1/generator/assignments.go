@@ -41,20 +41,21 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 			continue
 		}
 
+		// TODO: could also group by service, and have one assignment per service
 		assignment := &observability_v1.MonitoringAssignment{
-			Name: dataplane.Meta.GetName(),
 			Mesh: dataplane.Meta.GetMesh(),
 			Service: dataplane.Spec.GetIdentifyingService(),
 			Targets: []*observability_v1.MonitoringAssignment_Target{{
 				Scheme:      "http",
+				Name: dataplane.GetMeta().GetName(),
 				Address:     mads.Address(dataplane, prometheusEndpoint),
 				MetricsPath: prometheusEndpoint.GetPath(),
+				Labels: mads.DataplaneLabels(dataplane),
 			}},
-			Labels: mads.DataplaneLabels(dataplane),
 		}
 
 		resources = append(resources, &core_xds.Resource{
-			Name:     assignment.Name,
+			Name:     mads.DataplaneNamespacedName(dataplane),
 			Resource: assignment,
 		})
 	}
