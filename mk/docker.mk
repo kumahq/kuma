@@ -55,9 +55,10 @@ docker/build/kuma-prometheus-sd: build/artifacts-linux-amd64/kuma-prometheus-sd/
 
 ## Dev: Build `kuma-universal` Docker image using existing artifact
 .PHONY: docker/build/kuma-universal
-docker/build/kuma-universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/artifacts-linux-amd64/kuma-dp/kuma-dp 	build/artifacts-linux-amd64/kumactl/kumactl
+docker/build/kuma-universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/kumactl/kumactl
 	DOCKER_BUILDKIT=1 \
-	docker build -t $(KUMA_UNIVERSAL_DOCKER_IMAGE) -f test/dockerfiles/Dockerfile.universal .
+	docker build -t kuma-universal -f test/dockerfiles/Dockerfile.universal .
+	docker tag kuma-universal $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
 .PHONY: image/kuma-cp
 image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
