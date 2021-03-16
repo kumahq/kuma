@@ -102,16 +102,18 @@ jobs:
           wait || true
 
   eks-e2e:
-    executor: remote-docker
+    executor: vm
+    environment:
+      GOPATH: /home/circleci/.go-kuma-go
     parameters:
-      cluster_1_name:
-        description: "Name of the 1st. EKS cluster"
+      prefix:
+        description: "Prefix for the cluster names"
         type: string
-        default: kuma-cicd-e2e-test-1
-      cluster_2_name:
-        description: "Name of the 2st. EKS cluster"
+        default: kuma-cicd-e2e-test
+      api_version:
+        description: "XDS API version"
         type: string
-        default: kuma-cicd-e2e-test-2
+        default: v3
     steps:
     - checkout
 
@@ -122,8 +124,8 @@ jobs:
           echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
           echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
           echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
-          echo "export CLUSTER_1=<< parameters.cluster_1_name >>-${CIRCLE_SHA1:0:7}" >> $BASH_ENV
-          echo "export CLUSTER_2=<< parameters.cluster_2_name >>-${CIRCLE_SHA1:0:7}" >> $BASH_ENV
+          echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
+          echo "export CLUSTER_2=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-2" >> $BASH_ENV
 
           # we have to install `unzip` to be able to install aws-cli
           sudo apt update
@@ -137,9 +139,6 @@ jobs:
     - aws-eks/install-aws-iam-authenticator
 
     - kubernetes/install
-
-    - setup_remote_docker:
-        version: 19.03.12
 
     # Mount files from the upstream jobs
     - attach_workspace:
@@ -221,6 +220,7 @@ jobs:
         command: |
           export KUMA_UNIVERSAL_IMAGE="${ECR_REGISTRY}/kuma-universal:${TAG}";
           export E2E_PKG_LIST="./test/e2e/helm";
+          export API_VERSION="<< parameters.api_version >>"
 
           make test/e2e/test \
             KUMA_GLOBAL_IMAGE_REGISTRY="${ECR_REGISTRY}" \
