@@ -858,6 +858,7 @@ workflows:
         name: test/e2e/eks
         requires:
         - images
+        - check
 
   clean-eks:
     triggers:
