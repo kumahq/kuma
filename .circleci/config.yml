@@ -250,6 +250,8 @@ jobs:
     steps:
     - aws-cli/install
 
+    - aws-eks/install-eksctl
+
     - run:
         name: "Clean clusters"
         command: |
