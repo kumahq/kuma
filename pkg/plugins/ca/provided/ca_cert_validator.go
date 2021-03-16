@@ -30,18 +30,18 @@ func validateCaCert(signingPair util_tls.KeyPair) (verr validators.ValidationErr
 		verr.AddViolation("cert", fmt.Sprintf("not a valid x509 certificate: %s", err))
 		return
 	}
-	if cert.Issuer.String() != cert.Subject.String() {
-		verr.AddViolation("cert", "certificate must be self-signed (intermediate CAs are not allowed)") // Envoy constraint
-	}
+	//if cert.Issuer.String() != cert.Subject.String() {
+	//	verr.AddViolation("cert", "certificate must be self-signed (intermediate CAs are not allowed)") // Envoy constraint
+	//}
 	if !cert.IsCA {
 		verr.AddViolation("cert", "basic constraint 'CA' must be set to 'true' (see X509-SVID: 4.1. Basic Constraints)")
 	}
 	if cert.KeyUsage&x509.KeyUsageCertSign == 0 {
 		verr.AddViolation("cert", "key usage extension 'keyCertSign' must be set (see X509-SVID: 4.3. Key Usage)")
 	}
-	if cert.KeyUsage&x509.KeyUsageDigitalSignature != 0 {
-		verr.AddViolation("cert", "key usage extension 'digitalSignature' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)")
-	}
+	//if cert.KeyUsage&x509.KeyUsageDigitalSignature != 0 {
+	//	verr.AddViolation("cert", "key usage extension 'digitalSignature' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)")
+	//}
 	if cert.KeyUsage&x509.KeyUsageKeyAgreement != 0 {
 		verr.AddViolation("cert", "key usage extension 'keyAgreement' must NOT be set (see X509-SVID: Appendix A. X.509 Field Reference)")
 	}
