@@ -192,7 +192,7 @@ jobs:
             wait "${job}" || FAIL=$((FAIL + 1))
           done
 
-          echo "${FAIL}"
+          exit ${FAIL}
 
     - aws-eks/update-kubeconfig-with-authenticator:
         cluster-name: "${CLUSTER_1}"
