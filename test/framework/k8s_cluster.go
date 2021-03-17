@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 
@@ -496,11 +497,26 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	}
 
 	if !opts.skipDefaultMesh {
+		retries := DefaultRetries
+		timeout := DefaultTimeout
+
+		if r := os.Getenv("KUMA_WAIT_FOR_MESH_RETRIES"); r != "" {
+			if r, err := strconv.Atoi(r); err != nil {
+				retries = r
+			}
+		}
+
+		if t := os.Getenv("KUMA_WAIT_FOR_MESH_TIMEOUT"); t != "" {
+			if t, err := time.ParseDuration(t); err != nil {
+				timeout = t
+			}
+		}
+
 		// wait for the mesh
 		_, err = retry.DoWithRetryE(c.t,
 			"get default mesh",
-			DefaultRetries,
-			DefaultTimeout,
+			retries,
+			timeout,
 			func() (s string, err error) {
 				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
 			})
