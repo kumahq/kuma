@@ -20,14 +20,15 @@ func (c *CircuitBreakerConfigurer) Configure(cluster *envoy_cluster.Cluster) err
 	if !c.CircuitBreaker.HasThresholds() {
 		return nil
 	}
+	thresholds := c.CircuitBreaker.Spec.Conf.GetThresholds()
 	cluster.CircuitBreakers = &envoy_cluster.CircuitBreakers{
 		Thresholds: []*envoy_cluster.CircuitBreakers_Thresholds{
 			{
 				Priority:           envoy_config_core_v3.RoutingPriority_DEFAULT,
-				MaxConnections:     c.CircuitBreaker.Spec.Conf.GetThresholds().GetMaxConnections(),
-				MaxPendingRequests: c.CircuitBreaker.Spec.Conf.GetThresholds().GetMaxPendingRequests(),
-				MaxRetries:         c.CircuitBreaker.Spec.Conf.GetThresholds().GetMaxRetries(),
-				MaxRequests:        c.CircuitBreaker.Spec.Conf.GetThresholds().GetMaxRequests(),
+				MaxConnections:     thresholds.GetMaxConnections(),
+				MaxPendingRequests: thresholds.GetMaxPendingRequests(),
+				MaxRetries:         thresholds.GetMaxRetries(),
+				MaxRequests:        thresholds.GetMaxRequests(),
 			},
 		},
 	}

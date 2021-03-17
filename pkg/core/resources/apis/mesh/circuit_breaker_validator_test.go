@@ -73,6 +73,17 @@ var _ = Describe("CircuitBreaker", func() {
                     detectors:
                       totalErrors: {}
                       standardDeviation: {}`),
+			Entry("only thresholds", `
+                sources:
+                - match:
+                    kuma.io/service: frontend
+                    region: us
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                    thresholds:
+                      maxConnections: 2`),
 		)
 
 		type testCase struct {
