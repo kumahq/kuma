@@ -2,9 +2,11 @@ package install
 
 import (
 	"fmt"
+	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
 	"io/ioutil"
 	"net"
 	os_user "os/user"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -25,7 +27,8 @@ type transparenProxyArgs struct {
 	ExcludeOutboundPorts string
 	UID                  string
 	User                 string
-	ModifyResolvConf     bool
+	SkipResolvConf       bool
+	StoreFirewalld       bool
 	KumaCpIP             net.IP
 }
 
@@ -40,7 +43,8 @@ func newInstallTransparentProxy() *cobra.Command {
 		ExcludeOutboundPorts: "",
 		UID:                  "",
 		User:                 "",
-		ModifyResolvConf:     true,
+		SkipResolvConf:       false,
+		StoreFirewalld:       false,
 		KumaCpIP:             net.IPv4(0, 0, 0, 0),
 	}
 	cmd := &cobra.Command{
@@ -107,7 +111,7 @@ runuser -u kuma-dp -- \
 				return errors.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
 			}
 
-			if args.ModifyResolvConf && args.KumaCpIP.String() == net.IPv4(0, 0, 0, 0).String() {
+			if !args.SkipResolvConf && args.KumaCpIP.String() == net.IPv4(0, 0, 0, 0).String() {
 				return errors.Errorf("please supply a valid `--kuma-cp-ip`")
 			}
 
@@ -117,7 +121,7 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			if args.ModifyResolvConf {
+			if !args.SkipResolvConf {
 				if err := modifyResolvConf(cmd, &args); err != nil {
 					return err
 				}
@@ -137,7 +141,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
 	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the UID of the user that will run kuma-dp")
-	cmd.Flags().BoolVar(&args.ModifyResolvConf, "modify-resolv-conf", args.ModifyResolvConf, "modify the host `/etc/resolv.conf` to allow `.mesh` resolution through kuma-cp")
+	cmd.Flags().BoolVar(&args.SkipResolvConf, "skip-resolv-conf", args.SkipResolvConf, "skip modifying the host `/etc/resolv.conf`")
+	cmd.Flags().BoolVar(&args.StoreFirewalld, "store-firewalld", args.StoreFirewalld, "store the iptables changes with firewalld")
 	cmd.Flags().IPVar(&args.KumaCpIP, "kuma-cp-ip", args.KumaCpIP, "the IP address of the Kuma CP which exposes the DNS service on port 53.")
 
 	return cmd
@@ -184,7 +189,50 @@ func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 	if args.DryRun {
 		_, _ = cmd.OutOrStdout().Write([]byte(output))
 	} else {
-		_, _ = cmd.OutOrStdout().Write([]byte("iptables set to diverge the traffic to Envoy."))
+		_, _ = cmd.OutOrStdout().Write([]byte("iptables set to diverge the traffic to Envoy.\n"))
+	}
+
+	if args.StoreFirewalld {
+		storeFirewalld(cmd, args, output)
+	}
+
+	return nil
+}
+
+func storeFirewalld(cmd *cobra.Command, args *transparenProxyArgs, output string) error {
+	translator := firewalld.NewFirewalldIptablesTranslator(args.DryRun)
+	parser := regexp.MustCompile(`\* (?P<table>\w*)`)
+	rules := map[string][]string{}
+
+	lines := strings.Split(output, "\n")
+	table := ""
+
+	for _, line := range lines {
+		if strings.Contains(line, "COMMIT") {
+			table = ""
+			continue
+		}
+
+		matches := parser.FindStringSubmatch(line)
+		if len(matches) > 1 {
+			table = matches[0]
+			continue
+		}
+
+		if table != "" {
+			rules[table] = append(rules[table], line)
+		}
+	}
+
+	translated, err := translator.StoreRules(rules)
+	if err != nil {
+		return err
+	}
+
+	if args.DryRun {
+		_, _ = cmd.OutOrStdout().Write([]byte("\n\n" + translated + "\n\n"))
+	} else {
+		_, _ = cmd.OutOrStdout().Write([]byte("iptables saved with firewalld."))
 	}
 
 	return nil
