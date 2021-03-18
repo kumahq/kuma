@@ -13,7 +13,7 @@ metadata:
   name: kuma-cni
   namespace: kube-system
   labels:
-  
+
     app: kuma-cni
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -33,7 +33,7 @@ metadata:
   name: kuma-cni-config
   namespace: kube-system
   labels:
-  
+
     app: kuma-cni
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -7167,7 +7167,7 @@ kind: ClusterRole
 metadata:
   name: kuma-cni
   labels:
-  
+
     app: kuma-cni
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -7231,7 +7231,6 @@ rules:
       - trafficroutes
       - timeouts
       - retries
-      - circuitbreakers
     verbs:
       - get
       - list
@@ -7243,6 +7242,7 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
+      - circuitbreakers
       - externalservices
       - faultinjections
       - healthchecks
@@ -7301,7 +7301,7 @@ kind: ClusterRoleBinding
 metadata:
   name: kuma-cni
   labels:
-  
+
     app: kuma-cni
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
@@ -7445,7 +7445,7 @@ spec:
         checksum/config: 505be7b4d07918f7988be434a631cc4e92f0338dbc9f06ece3c8df7c85f3a0df
     spec:
       nodeSelector:
-      
+
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       hostNetwork: true
@@ -7529,7 +7529,7 @@ spec:
     spec:
       serviceAccountName: kuma-control-plane
       nodeSelector:
-        
+
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
@@ -7613,7 +7613,7 @@ metadata:
   name: kuma-admission-mutating-webhook-configuration
   namespace: kuma-system
   labels:
-  
+
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -7662,8 +7662,8 @@ webhooks:
           - trafficpermissions
           - trafficroutes
           - traffictraces
-    
-      
+
+
     sideEffects: None
   - name: kuma-injector.kuma.io
     failurePolicy: Ignore
@@ -7690,7 +7690,7 @@ metadata:
   name: kuma-validating-webhook-configuration
   namespace: kuma-system
   labels:
-  
+
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -7725,8 +7725,8 @@ webhooks:
           - trafficroutes
           - traffictraces
           - zones
-    
-      
+
+
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
     failurePolicy: Ignore

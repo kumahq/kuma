@@ -7178,7 +7178,6 @@ rules:
       - trafficroutes
       - timeouts
       - retries
-      - circuitbreakers
     verbs:
       - get
       - list
@@ -7190,6 +7189,7 @@ rules:
   - apiGroups:
       - kuma.io
     resources:
+      - circuitbreakers
       - externalservices
       - faultinjections
       - healthchecks
@@ -7301,7 +7301,7 @@ spec:
     - port: 5685
       name: global-remote-sync
   selector:
-  
+
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 ---
@@ -7363,7 +7363,7 @@ spec:
     spec:
       serviceAccountName: kuma-control-plane
       nodeSelector:
-        
+
         kubernetes.io/arch: amd64
         kubernetes.io/os: linux
       containers:
@@ -7444,7 +7444,7 @@ metadata:
   name: kuma-admission-mutating-webhook-configuration
   namespace: kuma-system
   labels:
-  
+
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -7493,8 +7493,8 @@ webhooks:
           - trafficpermissions
           - trafficroutes
           - traffictraces
-    
-      
+
+
     sideEffects: None
   - name: kuma-injector.kuma.io
     failurePolicy: Ignore
@@ -7521,7 +7521,7 @@ metadata:
   name: kuma-validating-webhook-configuration
   namespace: kuma-system
   labels:
-  
+
     app.kubernetes.io/name: kuma
     app.kubernetes.io/instance: kuma
 webhooks:
@@ -7556,8 +7556,8 @@ webhooks:
           - trafficroutes
           - traffictraces
           - zones
-    
-      
+
+
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
     failurePolicy: Ignore
