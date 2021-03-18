@@ -2,6 +2,10 @@ package dns
 
 import (
 	"fmt"
+	"net"
+	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/miekg/dns"
 	"github.com/prometheus/client_golang/prometheus"
@@ -110,10 +114,15 @@ func (d *SimpleDNSServer) Start(stop <-chan struct{}) error {
 	errChan := make(chan error)
 	go func() {
 		defer close(errChan)
+
 		err := server.ListenAndServe()
 		if err != nil {
-			serverLog.Error(err, "failed to start the DNS listener.")
-			errChan <- err
+			errString := "failed to start the DNS listener."
+			if strings.Contains(err.Error(), "bind") {
+				errString = bindError(d.address)
+			}
+			serverLog.Error(err, errString)
+			errChan <- errors.Wrap(err, errString)
 		}
 	}()
 
@@ -156,4 +165,20 @@ func (h *SimpleDNSServer) lookup(qName string) (string, error) {
 	}
 
 	return ip, nil
+}
+
+func bindError(address string) string {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return fmt.Sprintf("invalid DNS bind address %s", address)
+	}
+	return fmt.Sprintf(
+		"unable to bind the DNS server to %s.\n\nPlease consider setting KUMA_DNS_SERVER_PORT=5653 (the default).\n"+
+			"Then redirect the incoming UDP traffinc on port 53 to it. The `iptables` command for this would be:\n\n"+
+			"iptables -t nat -A OUTPUT -p udp -d %s --dport 53 -j DNAT --to-destination %s:5653\n\n"+
+			"On hosts which use firewalld, the command would be:\n\n"+
+			"firewall-cmd --direct --add-rule ipv4 nat OUTPUT 1 -p udp -d %s --dport 53 -j DNAT --to-destination %s:5653\n\n",
+		address,
+		host, host,
+		host, host)
 }
