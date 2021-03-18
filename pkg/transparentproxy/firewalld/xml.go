@@ -2,6 +2,7 @@ package firewalld
 
 import (
 	"encoding/xml"
+	"reflect"
 )
 
 type Chain struct {
@@ -103,10 +104,20 @@ func (d *Direct) String() string {
 }
 
 func (d *Direct) AddChain(chain *Chain) {
+	for _, c := range d.Chains {
+		if reflect.DeepEqual(c, chain) {
+			return
+		}
+	}
 	d.Chains = append(d.Chains, chain)
 }
 
 func (d *Direct) AddRule(rule *Rule) {
+	for _, r := range d.Rules {
+		if reflect.DeepEqual(r, rule) {
+			return
+		}
+	}
 	d.Rules = append(d.Rules, rule)
 }
 

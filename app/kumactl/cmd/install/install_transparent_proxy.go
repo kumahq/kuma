@@ -2,13 +2,14 @@ package install
 
 import (
 	"fmt"
-	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
 	"io/ioutil"
 	"net"
 	os_user "os/user"
 	"regexp"
 	"runtime"
 	"strings"
+
+	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -193,7 +194,10 @@ func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 	}
 
 	if args.StoreFirewalld {
-		storeFirewalld(cmd, args, output)
+		err = storeFirewalld(cmd, args, output)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
