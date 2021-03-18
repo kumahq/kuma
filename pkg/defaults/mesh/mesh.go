@@ -54,16 +54,6 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default Timeout already exist", "mesh", meshName, "name", defaultTimeoutKey(meshName).Name)
 	}
 
-	err, created = ensureDefaultCircuitBreaker(resManager, meshName)
-	if err != nil {
-		return errors.Wrap(err, "could not create default CircuitBreaker")
-	}
-	if created {
-		log.Info("default CircuitBreaker created", "mesh", meshName, "name", defaultCircuitBreakerKey(meshName).Name)
-	} else {
-		log.Info("default CircuitBreaker already exist", "mesh", meshName, "name", defaultCircuitBreakerKey(meshName).Name)
-	}
-
 	err, created = ensureDefaultRetry(resManager, meshName)
 	if err != nil {
 		return errors.Wrap(err, "could not create default Retry")
