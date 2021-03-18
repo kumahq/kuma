@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/kumahq/kuma/api/system/v1alpha1"
-
-	"github.com/kumahq/kuma/pkg/core"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 const (
@@ -150,7 +149,7 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 
 	tags := externalService.Spec.GetTags()
 	if es.TLSEnabled {
-		tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
+		tags = envoy.Tags(tags).WithTags(mesh_proto.ExternalServiceTag, externalService.Meta.GetName())
 	}
 
 	return &core_xds.Endpoint{
