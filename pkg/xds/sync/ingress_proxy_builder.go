@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -49,12 +50,20 @@ func (p *IngressProxyBuilder) build(key core_model.ResourceKey, streamId int64) 
 		return nil, err
 	}
 
+	remoteIngresses := []*core_mesh.DataplaneResource{}
+	for _, dataplane := range allMeshDataplanes.Items {
+		if !dataplane.Spec.IsRemoteIngress(dp.Spec.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]) {
+			continue
+		}
+		remoteIngresses = append(remoteIngresses, dataplane)
+	}
 	proxy := &xds.Proxy{
-		Id:         xds.FromResourceKey(key),
-		APIVersion: p.apiVersion,
-		Dataplane:  dp,
-		Metadata:   p.MetadataTracker.Metadata(streamId),
-		Routing:    *routing,
+		Id:            xds.FromResourceKey(key),
+		APIVersion:    p.apiVersion,
+		Dataplane:     dp,
+		Metadata:      p.MetadataTracker.Metadata(streamId),
+		Routing:       *routing,
+		RemoteIngress: remoteIngresses,
 	}
 	return proxy, nil
 }

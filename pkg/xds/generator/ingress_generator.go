@@ -31,7 +31,17 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 
 	destinationsPerService := i.destinations(proxy.Routing.TrafficRouteList)
 
-	listener, err := i.generateLDS(proxy.Dataplane, destinationsPerService, proxy.APIVersion)
+	listener, err := i.generateLDSInbound(proxy.Dataplane, destinationsPerService, proxy.APIVersion)
+	if err != nil {
+		return nil, err
+	}
+	resources.Add(&model.Resource{
+		Name:     listener.GetName(),
+		Origin:   OriginIngress,
+		Resource: listener,
+	})
+
+	listener, err = i.generateLDSOutbound(proxy, destinationsPerService)
 	if err != nil {
 		return nil, err
 	}
@@ -64,7 +74,7 @@ func (i IngressGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) 
 // We take all possible destinations from TrafficRoutes and generate FilterChainsMatcher for each unique destination.
 // This approach has a limitation: additional tags on outbound in Universal mode won't work across different zones.
 // Traffic is NOT decrypted here, therefore we don't need certificates and mTLS settings
-func (i IngressGenerator) generateLDS(
+func (i IngressGenerator) generateLDSInbound(
 	ingress *core_mesh.DataplaneResource,
 	destinationsPerService map[string][]envoy_common.Tags,
 	apiVersion envoy_common.APIVersion,
@@ -109,6 +119,46 @@ func (i IngressGenerator) generateLDS(
 	return inboundListenerBuilder.Build()
 }
 
+func (i IngressGenerator) generateLDSOutbound(
+	proxy *model.Proxy,
+	destinationsPerService map[string][]envoy_common.Tags,
+) (envoy_common.NamedResource, error) {
+	ingress := proxy.Dataplane
+	apiVersion := proxy.APIVersion
+	outbound := ingress.Spec.Networking.Outbound[0]
+	outboundListenerName := envoy_names.GetOutboundListenerName(outbound.GetAddress(), outbound.GetPort())
+	outboundListenerBuilder := envoy_listeners.NewListenerBuilder(apiVersion).
+		Configure(envoy_listeners.OutboundListener(outboundListenerName, outbound.GetAddress(), outbound.GetPort())).
+		Configure(envoy_listeners.TLSInspector())
+
+	for _, remoteIngress := range proxy.RemoteIngress {
+		SNIs := []string{}
+		for _, availableService := range remoteIngress.Spec.GetNetworking().GetIngress().GetAvailableServices() {
+			service := availableService.Tags[mesh_proto.ServiceTag]
+			destinations := destinationsPerService[service]
+			destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
+
+			for _, destination := range destinations {
+				meshDestination := destination.
+					WithTags(mesh_proto.ServiceTag, service).
+					WithTags("mesh", availableService.GetMesh())
+				sni := tls.SNIFromTags(meshDestination)
+				SNIs = append(SNIs, sni)
+			}
+		}
+
+		outboundListenerBuilder = outboundListenerBuilder.
+			Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion).
+				Configure(envoy_listeners.FilterChainMatch("tls", SNIs...)).
+				Configure(envoy_listeners.TcpProxy("egress", envoy_common.ClusterSubset{
+					ClusterName: "egress",
+					Tags:        map[string]string{"zone": remoteIngress.Spec.GetNetworking().GetInbound()[0].Tags[mesh_proto.ZoneTag]},
+				}))))
+	}
+
+	return outboundListenerBuilder.Build()
+}
+
 func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList) map[string][]envoy_common.Tags {
 	destinations := map[string][]envoy_common.Tags{}
 	for _, tr := range trs.Items {
@@ -149,6 +199,20 @@ func (i IngressGenerator) generateCDS(
 			Resource: edsCluster,
 		})
 	}
+
+	egressCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
+		Configure(envoy_clusters.EdsCluster("egress")).
+		Configure(envoy_clusters.LbSubset([][]string{{"zone"}})).
+		Configure(envoy_clusters.DefaultTimeout()).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+	resources = append(resources, &model.Resource{
+		Name:     "egress",
+		Origin:   OriginIngress,
+		Resource: egressCluster,
+	})
 	return
 }
 func (_ IngressGenerator) lbSubsets(service string, destinationsPerService map[string][]envoy_common.Tags) [][]string {
@@ -180,5 +244,23 @@ func (_ IngressGenerator) generateEDS(
 			Resource: cla,
 		})
 	}
+	egressEndpoints := []model.Endpoint{}
+	for _, remoteIngress := range proxy.RemoteIngress {
+		egressEndpoints = append(egressEndpoints, model.Endpoint{
+			Target: remoteIngress.Spec.Networking.Ingress.PublicAddress,
+			Port:   remoteIngress.Spec.Networking.Ingress.PublicPort,
+			Tags:   map[string]string{"zone": remoteIngress.Spec.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]},
+			Weight: 1,
+		})
+	}
+	cla, err := envoy_endpoints.CreateClusterLoadAssignment("egress", egressEndpoints, apiVersion)
+	if err != nil {
+		return nil, err
+	}
+	resources = append(resources, &model.Resource{
+		Name:     "egress",
+		Origin:   OriginIngress,
+		Resource: cla,
+	})
 	return
 }

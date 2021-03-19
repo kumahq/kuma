@@ -95,9 +95,9 @@ func validateIngressNetworking(networking *mesh_proto.Dataplane_Networking) vali
 	if networking.Gateway != nil {
 		err.AddViolationAt(path, "gateway cannot be defined in the ingress mode")
 	}
-	if len(networking.GetOutbound()) != 0 {
-		err.AddViolationAt(path, "dataplane cannot have outbounds in the ingress mode")
-	}
+	//if len(networking.GetOutbound()) != 0 {
+	//	err.AddViolationAt(path, "dataplane cannot have outbounds in the ingress mode")
+	//}
 	if len(networking.GetInbound()) != 1 {
 		err.AddViolationAt(path, "dataplane must have one inbound interface")
 	}

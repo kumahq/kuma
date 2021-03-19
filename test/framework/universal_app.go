@@ -41,6 +41,9 @@ networking:
   - port: %d
     tags:
       kuma.io/service: ingress
+  outbound:
+  - address: %s
+    port: %d
 `
 	EchoServerDataplane = `
 type: Dataplane

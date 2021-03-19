@@ -3,6 +3,7 @@ package topology
 import (
 	"context"
 	"fmt"
+	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
@@ -82,6 +83,12 @@ func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_co
 }
 
 func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core.DataplaneResource, zone string, mesh *mesh_core.MeshResource) uint32 {
+	ecAddress, ecPort, err := findEgressCoordinates(dataplanes, zone)
+	if err != nil {
+		core.Log.V(1).Info(err.Error())
+		return 0
+	}
+
 	ingressInstances := map[string]bool{}
 	for _, dataplane := range dataplanes {
 		if !dataplane.Spec.IsIngress() {
@@ -109,8 +116,10 @@ func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core
 			}
 			serviceName := service.Tags[mesh_proto.ServiceTag]
 			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-				Target:   dataplane.Spec.Networking.Ingress.PublicAddress,
-				Port:     dataplane.Spec.Networking.Ingress.PublicPort,
+				//Target:   dataplane.Spec.Networking.Ingress.PublicAddress,
+				//Port:     dataplane.Spec.Networking.Ingress.PublicPort,
+				Target:   ecAddress,
+				Port:     ecPort,
 				Tags:     service.Tags,
 				Weight:   service.Instances,
 				Locality: localityFromTags(mesh, priorityRemote, service.Tags),
@@ -118,6 +127,26 @@ func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core
 		}
 	}
 	return uint32(len(ingressInstances))
+}
+
+func findEgressCoordinates(dataplanes []*mesh_core.DataplaneResource, zone string) (string, uint32, error) {
+	for _, dataplane := range dataplanes {
+		if !dataplane.Spec.IsIngress() {
+			continue
+		}
+		if !dataplane.Spec.IsRemoteIngress(zone) {
+			continue // we only need local Ingress
+		}
+		if len(dataplane.Spec.GetNetworking().GetOutbound()) != 1 {
+			core.Log.V(1).Info("ingress should have exactly 1 outbound (for egress)")
+			continue
+		}
+
+		return dataplane.Spec.GetNetworking().GetOutbound()[0].GetAddress(),
+			dataplane.Spec.GetNetworking().GetOutbound()[0].GetPort(),
+			nil
+	}
+	return "", 0, errors.Errorf("egress coordinates not found")
 }
 
 func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServices []*mesh_core.ExternalServiceResource, mesh *mesh_core.MeshResource, loader datasource.Loader) {
