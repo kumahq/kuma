@@ -719,7 +719,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 0af42464f643c66b4d6be028f7a7a03051936ce0c985e8f87c94f750c3493222
-        checksum/tls-secrets: 93f0b49a9c75f0be416185ed3b3755daa85d2ad82a4c4308ee0c819f8f76defc
+        checksum/tls-secrets: 89f55eb8f39d6bec38f9bc3e1f5479a6ea2a97760db37d8d662fda443cd0c1fa
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -845,7 +845,7 @@ spec:
           configMap:
             name: kuma-control-plane-config
 ---
-apiVersion: admissionregistration.k8s.io/v1
+apiVersion: admissionregistration.k8s.io/v1beta1
 kind: MutatingWebhookConfiguration
 metadata:
   name: kuma-admission-mutating-webhook-configuration
@@ -856,7 +856,6 @@ metadata:
     app.kubernetes.io/instance: kuma
 webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
-    admissionReviewVersions: [v1,v1beta1]
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
@@ -876,7 +875,6 @@ webhooks:
           - meshes
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
-    admissionReviewVersions: [v1,v1beta1]
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
@@ -906,7 +904,6 @@ webhooks:
       
     sideEffects: None
   - name: kuma-injector.kuma.io
-    admissionReviewVersions: [v1,v1beta1]
     failurePolicy: Crash
     clientConfig:
       caBundle: XYZ
@@ -925,7 +922,7 @@ webhooks:
           - pods
     sideEffects: None
 ---
-apiVersion: admissionregistration.k8s.io/v1
+apiVersion: admissionregistration.k8s.io/v1beta1
 kind: ValidatingWebhookConfiguration
 metadata:
   name: kuma-validating-webhook-configuration
@@ -936,7 +933,6 @@ metadata:
     app.kubernetes.io/instance: kuma
 webhooks:
   - name: validator.kuma-admission.kuma.io
-    admissionReviewVersions: [v1,v1beta1]
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
@@ -971,7 +967,6 @@ webhooks:
       
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
-    admissionReviewVersions: [v1,v1beta1]
     failurePolicy: Ignore
     clientConfig:
       caBundle: XYZ
@@ -991,7 +986,6 @@ webhooks:
           - services
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
-    admissionReviewVersions: [v1,v1beta1]
     namespaceSelector:
       matchLabels:
         kuma.io/system-namespace: "true"
