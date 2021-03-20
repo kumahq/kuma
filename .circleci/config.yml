@@ -638,6 +638,7 @@ workflows:
         name: docker-compose
         requires:
         - images
+        - check
         # custom parameters
         use_local_kuma_images: true
     - example_minikube:
@@ -645,6 +646,7 @@ workflows:
         name: minikube_v1_16
         requires:
           - images
+          - check
         # custom parameters
         kubernetes_version: v1.16.15
         use_local_kuma_images: true
@@ -653,6 +655,7 @@ workflows:
         name: minikube_v1_18
         requires:
           - images
+          - check
         # custom parameters
         kubernetes_version: v1.18.16
         use_local_kuma_images: true
@@ -661,6 +664,7 @@ workflows:
         name: minikube_v1_20
         requires:
           - images
+          - check
         # custom parameters
         kubernetes_version: v1.20.4
         use_local_kuma_images: true
@@ -669,6 +673,7 @@ workflows:
         name: test/e2e
         requires:
           - images
+          - check
 
   kuma-master:
     jobs:
@@ -707,6 +712,7 @@ workflows:
           name: docker-compose
           requires:
             - images
+            - check
           # custom parameters
           use_local_kuma_images: true
       - example_minikube:
@@ -714,6 +720,7 @@ workflows:
           name: minikube_v1_16
           requires:
             - images
+            - check
           # custom parameters
           kubernetes_version: v1.16.15
           use_local_kuma_images: true
@@ -722,6 +729,7 @@ workflows:
           name: minikube_v1_17
           requires:
             - images
+            - check
           # custom parameters
           kubernetes_version: v1.17.17
           use_local_kuma_images: true
@@ -730,6 +738,7 @@ workflows:
           name: minikube_v1_18
           requires:
             - images
+            - check
           # custom parameters
           kubernetes_version: v1.18.16
           use_local_kuma_images: true
@@ -738,6 +747,7 @@ workflows:
           name: minikube_v1_19
           requires:
             - images
+            - check
           # custom parameters
           kubernetes_version: v1.19.8
           use_local_kuma_images: true
@@ -746,6 +756,7 @@ workflows:
           name: minikube_v1_20
           requires:
             - images
+            - check
           # custom parameters
           kubernetes_version: v1.20.4
           use_local_kuma_images: true
@@ -754,11 +765,13 @@ workflows:
           name: test/e2e
           requires:
             - images
+            - check
       - e2e:
           <<: *commit_workflow_filters
           name: test/e2e V2
           requires:
             - images
+            - check
           # custom parameters
           api: v2
 
