@@ -31,7 +31,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 			// when
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV2).
 				Configure(clusters.EdsCluster(given.clusterName)).
-				Configure(clusters.HealthCheck(given.healthCheck)).
+				Configure(clusters.HealthCheck(mesh_core.ProtocolHTTP, given.healthCheck)).
 				Configure(clusters.Timeout(mesh_core.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
 				Build()
 
@@ -220,7 +220,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             - healthyThreshold: 2
               interval: 5s
               httpHealthCheck:
-                codecClientType: HTTP2
                 expectedStatuses:
                 - end: "201"
                   start: "200"
