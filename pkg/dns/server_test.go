@@ -2,6 +2,7 @@ package dns_test
 
 import (
 	"fmt"
+	"runtime"
 
 	"github.com/kumahq/kuma/pkg/dns/vips"
 
@@ -218,4 +219,31 @@ var _ = Describe("DNS server", func() {
 			Expect(test_metrics.FindMetric(metrics, "dns_server_resolution", "result", "resolved").Counter.GetValue()).To(Equal(1.0))
 		})
 	})
+
+	Describe("host operation", func() {
+		It("should fail to bind to a privileged port", func() {
+
+			if runtime.GOOS != "linux" {
+				// this test will pass only on Linux
+				return
+			}
+
+			// setup
+			port := uint32(53)
+			stop := make(chan struct{})
+			defer close(stop)
+
+			// given
+			dnsResolver := resolver.NewDNSResolver("mesh")
+			metrics, err := core_metrics.NewMetrics("Standalone")
+			Expect(err).ToNot(HaveOccurred())
+			server, err := NewDNSServer(port, dnsResolver, metrics, DnsNameToKumaCompliant)
+			Expect(err).ToNot(HaveOccurred())
+
+			err = server.Start(stop)
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("unable to bind the DNS server to 0.0.0.0:53"))
+		}, 1)
+	})
+
 })
