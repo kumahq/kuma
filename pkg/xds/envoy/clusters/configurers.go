@@ -95,13 +95,15 @@ func EdsCluster(name string) ClusterBuilderOpt {
 	})
 }
 
-func HealthCheck(healthCheck *mesh_core.HealthCheckResource) ClusterBuilderOpt {
+func HealthCheck(protocol mesh_core.Protocol, healthCheck *mesh_core.HealthCheckResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV2(&v2.HealthCheckConfigurer{
 			HealthCheck: healthCheck,
+			Protocol:    protocol,
 		})
 		config.AddV3(&v3.HealthCheckConfigurer{
 			HealthCheck: healthCheck,
+			Protocol:    protocol,
 		})
 	})
 }
