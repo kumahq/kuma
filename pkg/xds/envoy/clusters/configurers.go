@@ -17,6 +17,13 @@ func OutlierDetection(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterB
 	})
 }
 
+func CircuitBreaker(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV2(&v2.CircuitBreakerConfigurer{CircuitBreaker: circuitBreaker})
+		config.AddV3(&v3.CircuitBreakerConfigurer{CircuitBreaker: circuitBreaker})
+	})
+}
+
 func ClientSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, clientService string, tags []envoy.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV2(&v2.ClientSideMTLSConfigurer{
