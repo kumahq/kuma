@@ -48,7 +48,7 @@ var _ = Describe("Ingress Dataplane", func() {
 		Entry("should add key to all tags", testCase{
 			tags:         envoy.TagKeysSlice{{"key2"}, {"key"}},
 			transformers: []envoy.TagKeyTransformer{envoy.With("added1", "added2")},
-			expected:     envoy.TagKeysSlice{envoy.TagKeys{"added1", "added2", "key2"}, envoy.TagKeys{"added1", "added2", "key"}},
+			expected:     envoy.TagKeysSlice{envoy.TagKeys{"added1", "added2", "key"}, envoy.TagKeys{"added1", "added2", "key2"}},
 		}),
 		Entry("should remove key to all tags", testCase{
 			tags:         envoy.TagKeysSlice{{"key", "key2"}, {"key", "key3"}},

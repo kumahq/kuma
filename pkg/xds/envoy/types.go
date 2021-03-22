@@ -1,9 +1,7 @@
 package envoy
 
 import (
-	"encoding/binary"
 	"fmt"
-	"hash/fnv"
 	"sort"
 	"strings"
 
@@ -27,7 +25,7 @@ type TagsSlice []Tags
 type TagKeys []string
 type TagKeysSlice []TagKeys
 
-func (t TagsSlice) ToTagKeySlice() TagKeysSlice {
+func (t TagsSlice) ToTagKeysSlice() TagKeysSlice {
 	out := []TagKeys{}
 	for _, v := range t {
 		out = append(out, v.Keys())
@@ -35,13 +33,14 @@ func (t TagsSlice) ToTagKeySlice() TagKeysSlice {
 	return out
 }
 
-// Transform applies each transformer to each TagSlice and return a sorted unique TagKeysSlice.
+// Transform applies each transformer to each TagKeys and returns a sorted unique TagKeysSlice.
 func (t TagKeysSlice) Transform(transformers ...TagKeyTransformer) TagKeysSlice {
-	allSlices := map[uint64]TagKeys{}
-	for _, slice := range t {
-		res := slice.Transform(transformers...)
+	allSlices := map[string]TagKeys{}
+	for _, tagKeys := range t {
+		res := tagKeys.Transform(transformers...)
 		if len(res) > 0 {
-			allSlices[res.Hash()] = res
+			h := strings.Join(res, ", ")
+			allSlices[h] = res
 		}
 	}
 	out := TagKeysSlice{}
@@ -49,7 +48,12 @@ func (t TagKeysSlice) Transform(transformers ...TagKeyTransformer) TagKeysSlice 
 		out = append(out, n)
 	}
 	sort.Slice(out, func(i, j int) bool {
-		return out[i].Hash() < out[j].Hash()
+		for k := 0; k < len(out[i]) && k < len(out[j]); k++ {
+			if out[i][k] != out[j][k] {
+				return out[i][k] < out[j][k]
+			}
+		}
+		return len(out[i]) < len(out[j])
 	})
 	return out
 }
@@ -105,26 +109,6 @@ func With(tags ...string) TagKeyTransformer {
 		copy(res[len(slice):], tags)
 		return res
 	})
-}
-
-// Hash compute a hash of the list of keys
-func (t TagKeys) Hash() uint64 {
-	res := uint64(0)
-	h := fnv.New64()
-	for _, v := range t {
-		h.Reset()
-		// We can't panic here
-		err := binary.Write(h, binary.LittleEndian, res)
-		if err != nil {
-			panic(err)
-		}
-		err = binary.Write(h, binary.LittleEndian, []byte(v))
-		if err != nil {
-			panic(err)
-		}
-		res = h.Sum64()
-	}
-	return res
 }
 
 func (t Tags) WithoutTags(tags ...string) Tags {

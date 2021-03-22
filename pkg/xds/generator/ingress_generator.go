@@ -136,7 +136,7 @@ func (i IngressGenerator) generateCDS(
 ) (resources []*model.Resource, _ error) {
 	for _, service := range services {
 		tagSlice := envoy_common.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
-		tagKeySlice := tagSlice.ToTagKeySlice().Transform(envoy_common.Without(mesh_proto.ServiceTag), envoy_common.With("mesh"))
+		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(envoy_common.Without(mesh_proto.ServiceTag), envoy_common.With("mesh"))
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
 			Configure(envoy_clusters.EdsCluster(service)).
 			Configure(envoy_clusters.LbSubset(tagKeySlice)).

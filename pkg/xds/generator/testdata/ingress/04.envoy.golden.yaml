@@ -111,7 +111,6 @@ resources:
       - fallbackPolicy: NO_FALLBACK
         keys:
         - mesh
-        - version
       - fallbackPolicy: NO_FALLBACK
         keys:
         - mesh
@@ -119,6 +118,7 @@ resources:
       - fallbackPolicy: NO_FALLBACK
         keys:
         - mesh
+        - version
     name: backend
     type: EDS
 - name: inbound:10.0.0.1:10001
