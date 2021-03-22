@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": 11774,
   "graphTooltip": 0,
-  "iteration": 1616391158984,
+  "iteration": 1616409568935,
   "links": [],
   "panels": [
     {
@@ -720,7 +720,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:72",
-          "format": "short",
+          "format": "ops",
           "label": null,
           "logBase": 1,
           "max": null,

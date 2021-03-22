@@ -16,7 +16,7 @@
   "editable": true,
   "gnetId": 11776,
   "graphTooltip": 0,
-  "iteration": 1616389761253,
+  "iteration": 1616409035204,
   "links": [],
   "panels": [
     {
@@ -590,7 +590,7 @@
       "fill": 1,
       "fillGradient": 0,
       "gridPos": {
-        "h": 6,
+        "h": 7,
         "w": 24,
         "x": 0,
         "y": 18
@@ -650,6 +650,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:347",
           "format": "percentunit",
           "label": null,
           "logBase": 1,
@@ -658,6 +659,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:348",
           "format": "short",
           "label": null,
           "logBase": 1,
@@ -678,7 +680,7 @@
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 24
+        "y": 25
       },
       "id": 23,
       "panels": [],
@@ -704,7 +706,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 25
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 21,
@@ -775,7 +777,7 @@
       "yaxes": [
         {
           "$$hashKey": "object:72",
-          "format": "short",
+          "format": "ops",
           "label": null,
           "logBase": 1,
           "max": null,
@@ -803,7 +805,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "Prometheus",
-      "description": "Data is only available if HealthCheck policy is applied. Note that passive health checks are executed on healthy instances marked by active health checks.",
+      "description": "Data is only available if CircuitBreaker policy is applied",
       "fieldConfig": {
         "defaults": {
           "custom": {},
@@ -817,7 +819,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 25
+        "y": 26
       },
       "hiddenSeries": false,
       "id": 19,
@@ -875,6 +877,7 @@
       },
       "yaxes": [
         {
+          "$$hashKey": "object:402",
           "format": "percentunit",
           "label": null,
           "logBase": 1,
@@ -883,6 +886,7 @@
           "show": true
         },
         {
+          "$$hashKey": "object:403",
           "format": "short",
           "label": null,
           "logBase": 1,
