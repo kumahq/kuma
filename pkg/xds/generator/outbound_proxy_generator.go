@@ -169,8 +169,9 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 			Configure(envoy_clusters.Timeout(protocol, clusters.Get(clusterName).Timeout())).
 			Configure(envoy_clusters.LbSubset(envoy_common.TagKeySlice(tags).Transform(envoy_common.Without(kuma_mesh.ServiceTag)))).
+			Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
-			Configure(envoy_clusters.HealthCheck(healthCheck))
+			Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
 
 		if clusters.Get(clusterName).HasExternalService() {
 			edsClusterBuilder.
