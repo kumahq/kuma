@@ -248,20 +248,20 @@ jobs:
             KUMA_WAIT_FOR_MESH_RETRIES=60 \
             KUMA_WAIT_FOR_MESH_TIMEOUT="6s"
 
-    - run:
-        name: "Cleanup"
-        when: always
-        command: |
-          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
-            aws ecr batch-delete-image \
-                --repository-name "${image}" \
-                --image-ids imageTag="${TAG}" &
-          done
-
-          eksctl delete cluster --wait --name "${CLUSTER_1}" &
-          eksctl delete cluster --wait --name "${CLUSTER_2}" &
-
-          wait || true
+#    - run:
+#        name: "Cleanup"
+#        when: always
+#        command: |
+#          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
+#            aws ecr batch-delete-image \
+#                --repository-name "${image}" \
+#                --image-ids imageTag="${TAG}" &
+#          done
+#
+#          eksctl delete cluster --wait --name "${CLUSTER_1}" &
+#          eksctl delete cluster --wait --name "${CLUSTER_2}" &
+#
+#          wait || true
 
   eks-delete-clusters:
     executor: aws-eks/python3
