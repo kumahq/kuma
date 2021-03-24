@@ -17,6 +17,7 @@ import (
 
 type HealthCheckConfigurer struct {
 	HealthCheck *mesh_core.HealthCheckResource
+	Protocol    mesh_core.Protocol
 }
 
 var _ ClusterConfigurer = &HealthCheckConfigurer{}
@@ -75,6 +76,7 @@ func tcpHealthCheck(
 }
 
 func httpHealthCheck(
+	protocol mesh_core.Protocol,
 	httpConf *mesh_proto.HealthCheck_Conf_Http,
 ) *envoy_core.HealthCheck_HttpHealthCheck_ {
 	var expectedStatuses []*envoy_type.Int64Range
@@ -85,11 +87,16 @@ func httpHealthCheck(
 		)
 	}
 
+	codecClientType := envoy_type.CodecClientType_HTTP1
+	if protocol == mesh_core.ProtocolHTTP2 {
+		codecClientType = envoy_type.CodecClientType_HTTP2
+	}
+
 	httpHealthCheck := envoy_core.HealthCheck_HttpHealthCheck{
 		Path:                httpConf.Path,
 		RequestHeadersToAdd: mapHttpHeaders(httpConf.RequestHeadersToAdd),
 		ExpectedStatuses:    expectedStatuses,
-		CodecClientType:     envoy_type.CodecClientType_HTTP2,
+		CodecClientType:     codecClientType,
 	}
 
 	return &envoy_core.HealthCheck_HttpHealthCheck_{
@@ -161,7 +168,7 @@ func (e *HealthCheckConfigurer) Configure(cluster *envoy_cluster.Cluster) error 
 	}
 
 	if http := activeChecks.GetHttp(); http != nil {
-		healthCheck.HealthChecker = httpHealthCheck(http)
+		healthCheck.HealthChecker = httpHealthCheck(e.Protocol, http)
 	}
 
 	cluster.HealthChecks = append(cluster.HealthChecks, &healthCheck)

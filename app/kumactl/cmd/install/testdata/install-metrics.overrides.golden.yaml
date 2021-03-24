@@ -233,54 +233,6 @@ data:
 
   kuma-dataplane.json: |
     {
-      "__inputs": [
-        {
-          "name": "DS_PROMETHEUS",
-          "label": "Prometheus",
-          "description": "",
-          "type": "datasource",
-          "pluginId": "prometheus",
-          "pluginName": "Prometheus"
-        }
-      ],
-      "__requires": [
-        {
-          "type": "panel",
-          "id": "gauge",
-          "name": "Gauge",
-          "version": ""
-        },
-        {
-          "type": "grafana",
-          "id": "grafana",
-          "name": "Grafana",
-          "version": "6.6.2"
-        },
-        {
-          "type": "panel",
-          "id": "graph",
-          "name": "Graph",
-          "version": ""
-        },
-        {
-          "type": "datasource",
-          "id": "prometheus",
-          "name": "Prometheus",
-          "version": "1.0.0"
-        },
-        {
-          "type": "panel",
-          "id": "singlestat",
-          "name": "Singlestat",
-          "version": ""
-        },
-        {
-          "type": "panel",
-          "id": "table",
-          "name": "Table",
-          "version": ""
-        }
-      ],
       "annotations": {
         "list": [
           {
@@ -294,11 +246,11 @@ data:
           }
         ]
       },
+      "description": "Statistics of a single Dataplane in Kuma Service Mesh",
       "editable": true,
       "gnetId": 11775,
       "graphTooltip": 0,
-      "id": null,
-      "iteration": 1582371595736,
+      "iteration": 1616409708694,
       "links": [],
       "panels": [
         {
@@ -317,6 +269,51 @@ data:
         },
         {
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {},
+              "displayName": "",
+              "mappings": [
+                {
+                  "from": "",
+                  "id": 1,
+                  "operator": "",
+                  "text": "LIVE",
+                  "to": "",
+                  "type": 1,
+                  "value": "1"
+                },
+                {
+                  "from": "",
+                  "id": 2,
+                  "operator": "",
+                  "text": "OFF",
+                  "to": "",
+                  "type": 1,
+                  "value": "0"
+                }
+              ],
+              "max": 1,
+              "min": 0,
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "red",
+                    "value": null
+                  },
+                  {
+                    "color": "green",
+                    "value": 1
+                  }
+                ]
+              }
+            },
+            "overrides": []
+          },
           "gridPos": {
             "h": 7,
             "w": 5,
@@ -326,59 +323,19 @@ data:
           "id": 16,
           "interval": "",
           "options": {
-            "fieldOptions": {
+            "orientation": "auto",
+            "reduceOptions": {
               "calcs": [
                 "last"
               ],
-              "defaults": {
-                "color": {
-                  "mode": "thresholds"
-                },
-                "mappings": [
-                  {
-                    "from": "",
-                    "id": 1,
-                    "operator": "",
-                    "text": "LIVE",
-                    "to": "",
-                    "type": 1,
-                    "value": "1"
-                  },
-                  {
-                    "from": "",
-                    "id": 2,
-                    "operator": "",
-                    "text": "OFF",
-                    "to": "",
-                    "type": 1,
-                    "value": "0"
-                  }
-                ],
-                "max": 1,
-                "min": 0,
-                "thresholds": {
-                  "mode": "absolute",
-                  "steps": [
-                    {
-                      "color": "red",
-                      "value": null
-                    },
-                    {
-                      "color": "green",
-                      "value": 1
-                    }
-                  ]
-                },
-                "title": ""
-              },
-              "overrides": [],
+              "fields": "",
               "values": false
             },
-            "orientation": "auto",
             "showThresholdLabels": false,
-            "showThresholdMarkers": false
+            "showThresholdMarkers": false,
+            "text": {}
           },
-          "pluginVersion": "6.6.2",
+          "pluginVersion": "7.4.3",
           "targets": [
             {
               "expr": "sum(envoy_server_live{dataplane=\"$dataplane\",mesh=\"$mesh\"} OR on() vector(0))",
@@ -405,6 +362,12 @@ data:
           ],
           "datasource": "Prometheus",
           "decimals": 2,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "format": "s",
           "gauge": {
             "maxValue": 100,
@@ -436,7 +399,6 @@ data:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
-          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -489,6 +451,12 @@ data:
           ],
           "datasource": "Prometheus",
           "decimals": 2,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "format": "bytes",
           "gauge": {
             "maxValue": 100,
@@ -520,7 +488,6 @@ data:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
-          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -573,6 +540,12 @@ data:
           ],
           "datasource": "Prometheus",
           "decimals": 2,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "format": "bytes",
           "gauge": {
             "maxValue": 100,
@@ -604,7 +577,6 @@ data:
           "maxDataPoints": 100,
           "nullPointMode": "connected",
           "nullText": null,
-          "options": {},
           "postfix": "",
           "postfixFontSize": "50%",
           "prefix": "",
@@ -653,6 +625,13 @@ data:
           "dashes": false,
           "datasource": "Prometheus",
           "description": "Note that if Control Plane does not sent FIN segment, Dataplanes can still think that connection is up waiting for new update even that Control Plane is down.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -676,9 +655,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -754,6 +734,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -777,9 +764,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -841,6 +829,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -866,9 +861,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 4,
           "points": true,
           "renderer": "flot",
@@ -930,6 +926,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -955,9 +958,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 4,
           "points": true,
           "renderer": "flot",
@@ -1019,6 +1023,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1042,9 +1053,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -1106,6 +1118,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1129,9 +1148,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -1194,6 +1214,13 @@ data:
           "dashes": false,
           "datasource": "Prometheus",
           "description": "Data is only available if TrafficPermission policy is applied.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1219,9 +1246,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -1298,6 +1326,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1325,9 +1360,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -1440,6 +1476,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1465,9 +1508,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -1478,6 +1522,7 @@ data:
           "targets": [
             {
               "expr": "envoy_cluster_upstream_cx_active{dataplane=\"$dataplane\",mesh=\"$mesh\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}",
+              "interval": "",
               "legendFormat": "{{envoy_cluster_name}}",
               "refId": "A"
             }
@@ -1502,6 +1547,7 @@ data:
           },
           "yaxes": [
             {
+              "$$hashKey": "object:203",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -1510,6 +1556,7 @@ data:
               "show": true
             },
             {
+              "$$hashKey": "object:204",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -1529,6 +1576,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1553,9 +1607,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 4,
           "points": true,
           "renderer": "flot",
@@ -1617,6 +1672,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1642,9 +1704,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 4,
           "points": true,
           "renderer": "flot",
@@ -1706,6 +1769,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1731,9 +1801,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -1795,6 +1866,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1820,9 +1898,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -1882,6 +1961,12 @@ data:
           "columns": [],
           "datasource": "Prometheus",
           "description": "Data is only available if TrafficPermission policy is applied.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fontSize": "100%",
           "gridPos": {
             "h": 8,
@@ -1890,7 +1975,6 @@ data:
             "y": 42
           },
           "id": 24,
-          "options": {},
           "pageSize": null,
           "showHeader": true,
           "sort": {
@@ -1936,7 +2020,7 @@ data:
           "timeShift": null,
           "title": "Secured destinations by mTLS",
           "transform": "timeseries_aggregations",
-          "type": "table"
+          "type": "table-old"
         },
         {
           "aliasColors": {},
@@ -1944,6 +2028,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -1971,9 +2062,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2087,6 +2179,13 @@ data:
           "dashes": false,
           "datasource": "Prometheus",
           "description": "Data is only available if HealthCheck policy is applied.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -2112,9 +2211,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2149,6 +2249,7 @@ data:
           },
           "yaxes": [
             {
+              "$$hashKey": "object:353",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2157,6 +2258,7 @@ data:
               "show": true
             },
             {
+              "$$hashKey": "object:354",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2177,6 +2279,13 @@ data:
           "dashes": false,
           "datasource": "Prometheus",
           "description": "Data is only available if HealthCheck policy is applied.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -2202,9 +2311,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2239,6 +2349,7 @@ data:
           },
           "yaxes": [
             {
+              "$$hashKey": "object:384",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2247,6 +2358,7 @@ data:
               "show": true
             },
             {
+              "$$hashKey": "object:385",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2261,27 +2373,45 @@ data:
           }
         },
         {
+          "collapsed": false,
+          "datasource": null,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 67
+          },
+          "id": 45,
+          "panels": [],
+          "title": "Circuit Breakers",
+          "type": "row"
+        },
+        {
           "aliasColors": {},
           "bars": false,
           "dashLength": 10,
           "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Data is only available if HealthCheck policy is applied.",
+          "datasource": null,
+          "description": "Total times that the cluster’s connection circuit breaker overflowed",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 67
+            "y": 68
           },
           "hiddenSeries": false,
-          "id": 40,
+          "id": 43,
           "legend": {
             "avg": false,
             "current": false,
-            "hideEmpty": true,
-            "hideZero": true,
             "max": false,
             "min": false,
             "show": true,
@@ -2292,9 +2422,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2304,16 +2435,31 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "envoy_cluster_outlier_detection_ejections_active{dataplane=\"$dataplane\",mesh=\"$mesh\"}",
-              "legendFormat": "{{envoy_cluster_name}}",
+              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m]))",
+              "interval": "",
+              "legendFormat": "Connection overflow",
               "refId": "A"
+            },
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Pending request overflow",
+              "refId": "B"
+            },
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Retry overflow",
+              "refId": "C"
             }
           ],
           "thresholds": [],
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Passive Health Checks - failing service instances",
+          "title": "Thresholds Overflow",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -2329,14 +2475,16 @@ data:
           },
           "yaxes": [
             {
-              "format": "short",
+              "$$hashKey": "object:72",
+              "format": "ops",
               "label": null,
               "logBase": 1,
               "max": null,
-              "min": null,
+              "min": "0",
               "show": true
             },
             {
+              "$$hashKey": "object:73",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2356,22 +2504,27 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Data is only available if HealthCheck policy is applied.",
+          "description": "Data is only available if HealthCheck policy is applied. Note that passive health checks are executed on healthy instances marked by active health checks.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 67
+            "y": 68
           },
           "hiddenSeries": false,
-          "id": 41,
+          "id": 47,
           "legend": {
             "avg": false,
             "current": false,
-            "hideEmpty": true,
-            "hideZero": true,
             "max": false,
             "min": false,
             "show": true,
@@ -2382,9 +2535,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2394,8 +2548,9 @@ data:
           "steppedLine": false,
           "targets": [
             {
-              "expr": "irate(envoy_cluster_outlier_detection_ejections_enforced_total{dataplane=\"$dataplane\",mesh=\"$mesh\"}[1m])",
-              "legendFormat": "{{envoy_cluster_name}}",
+              "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{dataplane=\"$dataplane\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{dataplane=\"$dataplane\",mesh=\"$mesh\"})",
+              "interval": "",
+              "legendFormat": "Healthy destinations",
               "refId": "A"
             }
           ],
@@ -2403,7 +2558,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Passive Health Checks - number of enforced ejections",
+          "title": "Outlier detection",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -2419,14 +2574,16 @@ data:
           },
           "yaxes": [
             {
-              "format": "short",
+              "$$hashKey": "object:312",
+              "format": "percentunit",
               "label": null,
               "logBase": 1,
-              "max": null,
-              "min": null,
+              "max": "1",
+              "min": "0",
               "show": true
             },
             {
+              "$$hashKey": "object:313",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2441,23 +2598,32 @@ data:
           }
         }
       ],
-      "schemaVersion": 22,
+      "schemaVersion": 27,
       "style": "dark",
       "tags": [],
       "templating": {
         "list": [
           {
             "allValue": null,
-            "current": {},
+            "current": {
+              "selected": false,
+              "text": "default",
+              "value": "default"
+            },
             "datasource": "Prometheus",
             "definition": "label_values(envoy_server_live, mesh)",
+            "description": null,
+            "error": null,
             "hide": 0,
             "includeAll": false,
             "label": "Mesh",
             "multi": false,
             "name": "mesh",
             "options": [],
-            "query": "label_values(envoy_server_live, mesh)",
+            "query": {
+              "query": "label_values(envoy_server_live, mesh)",
+              "refId": "Prometheus-mesh-Variable-Query"
+            },
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -2470,16 +2636,25 @@ data:
           },
           {
             "allValue": null,
-            "current": {},
+            "current": {
+              "selected": true,
+              "text": "kuma-demo-app-6787b4f7f5-k7qcw.kuma-demo",
+              "value": "kuma-demo-app-6787b4f7f5-k7qcw.kuma-demo"
+            },
             "datasource": "Prometheus",
             "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, dataplane)",
+            "description": null,
+            "error": null,
             "hide": 0,
             "includeAll": false,
             "label": "Dataplane",
             "multi": false,
             "name": "dataplane",
             "options": [],
-            "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, dataplane)",
+            "query": {
+              "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, dataplane)",
+              "refId": "Prometheus-dataplane-Variable-Query"
+            },
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -2493,7 +2668,7 @@ data:
         ]
       },
       "time": {
-        "from": "now-1h",
+        "from": "now-3h",
         "to": "now"
       },
       "timepicker": {
@@ -2513,43 +2688,12 @@ data:
       "timezone": "",
       "title": "Kuma Dataplane",
       "uid": "-SZYLFyWz",
-      "version": 1,
-      "description": "Statistics of a single Dataplane in Kuma Service Mesh"
+      "version": 1
     }
     
 
   kuma-mesh.json: |
     {
-      "__inputs": [
-        {
-          "name": "DS_PROMETHEUS",
-          "label": "Prometheus",
-          "description": "",
-          "type": "datasource",
-          "pluginId": "prometheus",
-          "pluginName": "Prometheus"
-        }
-      ],
-      "__requires": [
-        {
-          "type": "grafana",
-          "id": "grafana",
-          "name": "Grafana",
-          "version": "6.6.2"
-        },
-        {
-          "type": "panel",
-          "id": "graph",
-          "name": "Graph",
-          "version": ""
-        },
-        {
-          "type": "datasource",
-          "id": "prometheus",
-          "name": "Prometheus",
-          "version": "1.0.0"
-        }
-      ],
       "annotations": {
         "list": [
           {
@@ -2563,11 +2707,11 @@ data:
           }
         ]
       },
+      "description": "Statistics of the single Mesh in Kuma Service Mesh",
       "editable": true,
       "gnetId": 11774,
       "graphTooltip": 0,
-      "id": null,
-      "iteration": 1582371495445,
+      "iteration": 1616409568935,
       "links": [],
       "panels": [
         {
@@ -2590,6 +2734,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -2615,9 +2766,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2694,6 +2846,13 @@ data:
           "dashes": false,
           "datasource": "Prometheus",
           "description": "Note that if Control Plane does not sent FIN segment, Dataplanes can still think that connection is up waiting for new update even that Control Plane is down.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -2719,9 +2878,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2811,6 +2971,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -2834,9 +3001,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -2903,6 +3071,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -2930,9 +3105,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3026,6 +3202,7 @@ data:
           }
         },
         {
+          "collapsed": false,
           "datasource": "Prometheus",
           "gridPos": {
             "h": 1,
@@ -3034,6 +3211,7 @@ data:
             "y": 17
           },
           "id": 16,
+          "panels": [],
           "title": "Health Checks",
           "type": "row"
         },
@@ -3044,11 +3222,18 @@ data:
           "dashes": false,
           "datasource": "Prometheus",
           "description": "Data is only available if HealthCheck policy is applied.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 8,
-            "w": 12,
+            "h": 7,
+            "w": 24,
             "x": 0,
             "y": 18
           },
@@ -3067,9 +3252,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3126,19 +3312,152 @@ data:
           }
         },
         {
+          "collapsed": false,
+          "datasource": null,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 25
+          },
+          "id": 19,
+          "panels": [],
+          "title": "Circuit Breakers",
+          "type": "row"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "description": "Total times that the cluster’s connection circuit breaker overflowed",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 26
+          },
+          "hiddenSeries": false,
+          "id": 21,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{mesh=\"$mesh\"}[1m]))",
+              "interval": "",
+              "legendFormat": "Connection overflow",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Pending request overflow",
+              "refId": "B"
+            },
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{mesh=\"$mesh\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Retry overflow",
+              "refId": "C"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Thresholds Overflow",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:72",
+              "format": "ops",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:73",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
           "aliasColors": {},
           "bars": false,
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
           "description": "Data is only available if HealthCheck policy is applied. Note that passive health checks are executed on healthy instances marked by active health checks.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 26
           },
           "hiddenSeries": false,
           "id": 17,
@@ -3155,9 +3474,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3168,7 +3488,8 @@ data:
           "targets": [
             {
               "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{mesh=\"$mesh\"})",
-              "legendFormat": "Success rate",
+              "interval": "",
+              "legendFormat": "Healthy destinations",
               "refId": "A"
             }
           ],
@@ -3176,7 +3497,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Passive Health Checks",
+          "title": "Outlier detection",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -3214,23 +3535,32 @@ data:
           }
         }
       ],
-      "schemaVersion": 22,
+      "schemaVersion": 27,
       "style": "dark",
       "tags": [],
       "templating": {
         "list": [
           {
             "allValue": null,
-            "current": {},
+            "current": {
+              "selected": false,
+              "text": "default",
+              "value": "default"
+            },
             "datasource": "Prometheus",
             "definition": "label_values(envoy_server_live, mesh)",
+            "description": null,
+            "error": null,
             "hide": 0,
             "includeAll": false,
             "label": "Mesh",
             "multi": false,
             "name": "mesh",
             "options": [],
-            "query": "label_values(envoy_server_live, mesh)",
+            "query": {
+              "query": "label_values(envoy_server_live, mesh)",
+              "refId": "Prometheus-mesh-Variable-Query"
+            },
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -3264,43 +3594,12 @@ data:
       "timezone": "",
       "title": "Kuma Mesh",
       "uid": "GW0DqjsWz",
-      "version": 1,
-      "description": "Statistics of the single Mesh in Kuma Service Mesh"
+      "version": 1
     }
     
 
   kuma-service-to-service.json: |
     {
-      "__inputs": [
-        {
-          "name": "DS_PROMETHEUS",
-          "label": "Prometheus",
-          "description": "",
-          "type": "datasource",
-          "pluginId": "prometheus",
-          "pluginName": "Prometheus"
-        }
-      ],
-      "__requires": [
-        {
-          "type": "grafana",
-          "id": "grafana",
-          "name": "Grafana",
-          "version": "6.6.2"
-        },
-        {
-          "type": "panel",
-          "id": "graph",
-          "name": "Graph",
-          "version": ""
-        },
-        {
-          "type": "datasource",
-          "id": "prometheus",
-          "name": "Prometheus",
-          "version": "1.0.0"
-        }
-      ],
       "annotations": {
         "list": [
           {
@@ -3314,11 +3613,11 @@ data:
           }
         ]
       },
+      "description": "Statistics of the traffic between services in Kuma Service Mesh",
       "editable": true,
       "gnetId": 11776,
       "graphTooltip": 0,
-      "id": null,
-      "iteration": 1582371629275,
+      "iteration": 1616409035204,
       "links": [],
       "panels": [
         {
@@ -3342,6 +3641,13 @@ data:
           "dashes": false,
           "datasource": "Prometheus",
           "description": "",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -3365,9 +3671,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3434,6 +3741,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -3461,9 +3775,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3562,6 +3877,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -3586,9 +3908,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3650,6 +3973,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -3674,9 +4004,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 4,
           "points": true,
           "renderer": "flot",
@@ -3738,6 +4069,13 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
@@ -3763,9 +4101,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 4,
           "points": true,
           "renderer": "flot",
@@ -3842,11 +4181,18 @@ data:
           "dashes": false,
           "datasource": "Prometheus",
           "description": "Data is only available if HealthCheck policy is applied.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
-            "h": 8,
-            "w": 12,
+            "h": 7,
+            "w": 24,
             "x": 0,
             "y": 18
           },
@@ -3867,9 +4213,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3904,6 +4251,7 @@ data:
           },
           "yaxes": [
             {
+              "$$hashKey": "object:347",
               "format": "percentunit",
               "label": null,
               "logBase": 1,
@@ -3912,6 +4260,133 @@ data:
               "show": true
             },
             {
+              "$$hashKey": "object:348",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "collapsed": false,
+          "datasource": null,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 25
+          },
+          "id": 23,
+          "panels": [],
+          "title": "Circuit Breakers",
+          "type": "row"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "description": "Total times that the cluster’s connection circuit breaker overflowed",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 26
+          },
+          "hiddenSeries": false,
+          "id": 21,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+              "interval": "",
+              "legendFormat": "Connection overflow",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Pending request overflow",
+              "refId": "B"
+            },
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Retry overflow",
+              "refId": "C"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Thresholds Overflow",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:72",
+              "format": "ops",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:73",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -3931,14 +4406,21 @@ data:
           "dashLength": 10,
           "dashes": false,
           "datasource": "Prometheus",
-          "description": "Data is only available if HealthCheck policy is applied. Note that passive health checks are executed on healthy instances marked by active health checks.",
+          "description": "Data is only available if CircuitBreaker policy is applied",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
           "fill": 1,
           "fillGradient": 0,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 18
+            "y": 26
           },
           "hiddenSeries": false,
           "id": 19,
@@ -3957,9 +4439,10 @@ data:
           "linewidth": 1,
           "nullPointMode": "null",
           "options": {
-            "dataLinks": []
+            "alertThreshold": true
           },
           "percentage": false,
+          "pluginVersion": "7.4.3",
           "pointradius": 2,
           "points": false,
           "renderer": "flot",
@@ -3970,6 +4453,7 @@ data:
           "targets": [
             {
               "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{kuma_io_service=\"$source_service\",envoy_cluster_name=\"$destination_cluster\",mesh=\"$mesh\"})",
+              "interval": "",
               "legendFormat": "Healthy destinations",
               "refId": "A"
             }
@@ -3978,7 +4462,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Passive Health Checks",
+          "title": "Outlier detection",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -3994,6 +4478,7 @@ data:
           },
           "yaxes": [
             {
+              "$$hashKey": "object:402",
               "format": "percentunit",
               "label": null,
               "logBase": 1,
@@ -4002,6 +4487,7 @@ data:
               "show": true
             },
             {
+              "$$hashKey": "object:403",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -4016,23 +4502,33 @@ data:
           }
         }
       ],
-      "schemaVersion": 22,
+      "refresh": "5s",
+      "schemaVersion": 27,
       "style": "dark",
       "tags": [],
       "templating": {
         "list": [
           {
             "allValue": null,
-            "current": {},
+            "current": {
+              "selected": false,
+              "text": "default",
+              "value": "default"
+            },
             "datasource": "Prometheus",
             "definition": "label_values(envoy_server_live, mesh)",
+            "description": null,
+            "error": null,
             "hide": 0,
             "includeAll": false,
             "label": "Mesh",
             "multi": false,
             "name": "mesh",
             "options": [],
-            "query": "label_values(envoy_server_live, mesh)",
+            "query": {
+              "query": "label_values(envoy_server_live, mesh)",
+              "refId": "Prometheus-mesh-Variable-Query"
+            },
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -4045,16 +4541,25 @@ data:
           },
           {
             "allValue": null,
-            "current": {},
+            "current": {
+              "selected": false,
+              "text": "frontend_kuma-demo_svc_8080",
+              "value": "frontend_kuma-demo_svc_8080"
+            },
             "datasource": "Prometheus",
             "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+            "description": null,
+            "error": null,
             "hide": 0,
             "includeAll": false,
             "label": "Source service",
             "multi": false,
             "name": "source_service",
             "options": [],
-            "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+            "query": {
+              "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+              "refId": "Prometheus-source_service-Variable-Query"
+            },
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -4067,16 +4572,25 @@ data:
           },
           {
             "allValue": null,
-            "current": {},
+            "current": {
+              "selected": false,
+              "text": "backend_kuma-demo_svc_3001",
+              "value": "backend_kuma-demo_svc_3001"
+            },
             "datasource": "Prometheus",
             "definition": "label_values(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}, envoy_cluster_name)",
+            "description": null,
+            "error": null,
             "hide": 0,
             "includeAll": false,
             "label": "Destination service",
             "multi": false,
             "name": "destination_cluster",
             "options": [],
-            "query": "label_values(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}, envoy_cluster_name)",
+            "query": {
+              "query": "label_values(envoy_cluster_upstream_cx_active{kuma_io_service=\"$source_service\",envoy_cluster_name!~\"(localhost.*)|ads_cluster|kuma_envoy_admin|access_log_sink\"}, envoy_cluster_name)",
+              "refId": "Prometheus-destination_cluster-Variable-Query"
+            },
             "refresh": 1,
             "regex": "",
             "skipUrlSync": false,
@@ -4110,9 +4624,9 @@ data:
       "timezone": "",
       "title": "Kuma Service to Service",
       "uid": "QdCgOqyWz",
-      "version": 1,
-      "description": "Statistics of the traffic between services in Kuma Service Mesh"
+      "version": 1
     }
+    
 
   kuma-cp.json: |
     {

@@ -7,11 +7,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/events"
-
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/events"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
@@ -133,11 +132,13 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 	// persist
 	c.records = append(c.records, record)
 	if c.eventWriter != nil {
-		c.eventWriter.Send(events.ResourceChangedEvent{
-			Operation: events.Create,
-			Type:      r.GetType(),
-			Key:       model.MetaToResourceKey(r.GetMeta()),
-		})
+		go func() {
+			c.eventWriter.Send(events.ResourceChangedEvent{
+				Operation: events.Create,
+				Type:      r.GetType(),
+				Key:       model.MetaToResourceKey(r.GetMeta()),
+			})
+		}()
 	}
 	return nil
 }
@@ -174,11 +175,13 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 
 	r.SetMeta(meta)
 	if c.eventWriter != nil {
-		c.eventWriter.Send(events.ResourceChangedEvent{
-			Operation: events.Update,
-			Type:      r.GetType(),
-			Key:       model.MetaToResourceKey(r.GetMeta()),
-		})
+		go func() {
+			c.eventWriter.Send(events.ResourceChangedEvent{
+				Operation: events.Update,
+				Type:      r.GetType(),
+				Key:       model.MetaToResourceKey(r.GetMeta()),
+			})
+		}()
 	}
 	return nil
 }
@@ -219,14 +222,16 @@ func (c *memoryStore) delete(ctx context.Context, r model.Resource, fs ...store.
 	}
 	c.records = append(c.records[:idx], c.records[idx+1:]...)
 	if c.eventWriter != nil {
-		c.eventWriter.Send(events.ResourceChangedEvent{
-			Operation: events.Delete,
-			Type:      r.GetType(),
-			Key: model.ResourceKey{
-				Mesh: opts.Mesh,
-				Name: opts.Name,
-			},
-		})
+		go func() {
+			c.eventWriter.Send(events.ResourceChangedEvent{
+				Operation: events.Delete,
+				Type:      r.GetType(),
+				Key: model.ResourceKey{
+					Mesh: opts.Mesh,
+					Name: opts.Name,
+				},
+			})
+		}()
 	}
 	return nil
 }
