@@ -17,6 +17,7 @@ type RootContext struct {
 	BootstrapGenerator       envoy.BootstrapConfigFactoryFunc
 	BootstrapDynamicMetadata map[string]string
 	Config                   *kumadp.Config
+	Debug                    bool
 }
 
 func DefaultRootContext() *RootContext {
