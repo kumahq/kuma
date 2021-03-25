@@ -13,7 +13,7 @@ type ServiceInsight struct {
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec ServiceInsightSpec `json:"status,omitempty"`
+	Spec ServiceInsightSpec `json:"spec,omitempty"`
 }
 
 // ServiceInsightList contains a list of ServiceInsight

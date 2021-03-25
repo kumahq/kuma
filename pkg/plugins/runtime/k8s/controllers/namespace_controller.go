@@ -3,7 +3,7 @@ package controllers
 import (
 	"context"
 
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -79,7 +79,7 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 }
 
 func (r *NamespaceReconciler) hasNetworkAttachmentDefinition() (bool, error) {
-	crd := v1beta1.CustomResourceDefinition{}
+	crd := apiextensionsv1.CustomResourceDefinition{}
 	err := r.Client.Get(context.Background(), kube_client.ObjectKey{Name: "network-attachment-definitions.k8s.cni.cncf.io"}, &crd)
 	if err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -130,8 +130,8 @@ func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	if err := k8scnicncfio.AddToScheme(mgr.GetScheme()); err != nil {
 		return errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.GroupVersion)
 	}
-	if err := v1beta1.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", v1beta1.SchemeGroupVersion)
+	if err := apiextensionsv1.AddToScheme(mgr.GetScheme()); err != nil {
+		return errors.Wrapf(err, "could not add %q to scheme", apiextensionsv1.SchemeGroupVersion)
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Namespace{}, builder.WithPredicates(namespaceEvents)).
