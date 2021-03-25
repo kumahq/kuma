@@ -6,13 +6,13 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	install_context "github.com/kumahq/kuma/app/kumactl/cmd/install/context"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
 
-	k8s_apixv1beta1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1beta1"
+	k8s_apixv1client "k8s.io/apiextensions-apiserver/pkg/client/clientset/clientset/typed/apiextensions/v1"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 )
@@ -49,7 +49,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 				return errors.Wrap(err, "Could not detect Kubernetes configuration")
 			}
 
-			k8sClient, err := k8s_apixv1beta1client.NewForConfig(kubeClientConfig)
+			k8sClient, err := k8s_apixv1client.NewForConfig(kubeClientConfig)
 			if err != nil {
 				return errors.Wrap(err, "Failed obtaining Kubernetes client")
 			}
@@ -86,7 +86,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 	return cmd
 }
 
-func getCrdNamesFromList(crds *v1beta1.CustomResourceDefinitionList) []string {
+func getCrdNamesFromList(crds *apiextensionsv1.CustomResourceDefinitionList) []string {
 	var names []string
 
 	for _, crd := range crds.Items {
@@ -100,7 +100,7 @@ func mapCrdNamesToFiles(files []data.File) (map[string]data.File, error) {
 	result := map[string]data.File{}
 
 	for _, file := range files {
-		var crd v1beta1.CustomResourceDefinition
+		var crd apiextensionsv1.CustomResourceDefinition
 
 		if err := yaml.Unmarshal(file.Data, &crd); err != nil {
 			return nil, errors.Wrap(err, "Failed parsing file as CRD")

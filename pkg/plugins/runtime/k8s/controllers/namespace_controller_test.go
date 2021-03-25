@@ -3,7 +3,7 @@ package controllers_test
 import (
 	"context"
 
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -56,7 +56,7 @@ var _ = Describe("NamespaceReconciler", func() {
 
 	It("should create NetworkAttachmentDefinition", func() {
 		// setup CustomResourceDefinition
-		crd := &v1beta1.CustomResourceDefinition{
+		crd := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: kube_meta.ObjectMeta{
 				Name: "network-attachment-definitions.k8s.cni.cncf.io",
 			},
@@ -90,7 +90,7 @@ var _ = Describe("NamespaceReconciler", func() {
 
 	It("should delete NetworkAttachmentDefinition when injection annotation is no longer on the namespace", func() {
 		// setup CustomResourceDefinition
-		crd := &v1beta1.CustomResourceDefinition{
+		crd := &apiextensionsv1.CustomResourceDefinition{
 			ObjectMeta: kube_meta.ObjectMeta{
 				Name: "network-attachment-definitions.k8s.cni.cncf.io",
 			},
