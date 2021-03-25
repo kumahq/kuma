@@ -14,6 +14,13 @@ func (c *CircuitBreakerResource) HasDetectors() bool {
 		c.Spec.Conf.GetDetectors().GetFailure() != nil
 }
 
+func (c *CircuitBreakerResource) HasThresholds() bool {
+	return c.Spec.Conf.GetThresholds().GetMaxConnections() != nil ||
+		c.Spec.Conf.GetThresholds().GetMaxPendingRequests() != nil ||
+		c.Spec.Conf.GetThresholds().GetMaxRetries() != nil ||
+		c.Spec.Conf.GetThresholds().GetMaxRequests() != nil
+}
+
 func (c *CircuitBreakerResource) Validate() error {
 	var err validators.ValidationError
 	err.Add(c.validateSources())
@@ -38,14 +45,22 @@ func (c *CircuitBreakerResource) validateDestinations() validators.ValidationErr
 
 func (c *CircuitBreakerResource) validateConf() (err validators.ValidationError) {
 	root := validators.RootedAt("conf")
-	if !c.HasDetectors() {
-		err.AddViolationAt(root, "must have at least one of the detectors configured")
+	if !c.HasDetectors() && !c.HasThresholds() {
+		err.AddViolationAt(root, "must have at least one of the detector or threshold configured")
+		return
+	}
+
+	if c.Spec.Conf.GetDetectors() != nil && !c.HasDetectors() {
+		err.AddViolationAt(root.Field("detectors"), "can't be empty")
 	}
 	err.Add(c.validatePercentage(root.Field("maxEjectionPercent"), c.Spec.GetConf().GetMaxEjectionPercent()))
-
 	path := root.Field("detectors")
 	if failure := c.Spec.Conf.GetDetectors().GetFailure(); failure != nil {
 		err.Add(c.validatePercentage(path.Field("failure").Field("threshold"), failure.GetThreshold()))
+	}
+
+	if c.Spec.Conf.GetThresholds() != nil && !c.HasThresholds() {
+		err.AddViolationAt(root.Field("thresholds"), "can't be empty")
 	}
 	return
 }
