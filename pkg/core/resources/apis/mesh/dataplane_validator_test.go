@@ -64,6 +64,25 @@ var _ = Describe("Dataplane", func() {
                   tags:
                     kuma.io/service: redis`,
 		),
+		Entry("dataplane with full inbounds and outbounds ipv6", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 0:0:0:0:0:FFFF:C0A8:0001
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: ::1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  address: ::1
+                  tags:
+                    kuma.io/service: redis`,
+		),
 		Entry("dataplane with legacy outbounds", `
             type: Dataplane
             name: dp-1
@@ -122,6 +141,27 @@ var _ = Describe("Dataplane", func() {
                   publicAddress: 10.0.0.1
                   publicPort: 1234
                   availableServices:
+                    - tags:
+                        kuma.io/service: backend
+                        version: "1"
+                        region: us
+                    - tags:
+                        kuma.io/service: web
+                        version: v2
+                        region: eu
+                inbound:
+                  - port: 10001`,
+		),
+		Entry("dataplane in ingress mode with public ipv6 address and port", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+                address: 192.168.0.1
+                ingress:
+                  publicAddress: ::ffff:0a00:0001
+                  publicPort: 1234
+                  availableS
                     - tags:
                         kuma.io/service: backend
                         version: "1"

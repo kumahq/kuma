@@ -78,7 +78,7 @@ hds_config:
             inlineBytes: {{ .CertBytes }}
 {{ end }}
       statPrefix: hds
-      targetUri: {{ .XdsHost }}:{{ .XdsPort }}
+      targetUri: "{{ .XdsUri }}"
   set_node_on_first_message_only: true
 {{ end }}
 
@@ -112,7 +112,7 @@ dynamic_resources:
               inlineBytes: {{ .CertBytes }}
 {{ end }}
         statPrefix: ads
-        targetUri: {{ .XdsHost }}:{{ .XdsPort }}
+        targetUri: "{{ .XdsUri }}"
 static_resources:
   clusters:
   - name: access_log_sink

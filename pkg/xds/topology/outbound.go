@@ -2,7 +2,8 @@ package topology
 
 import (
 	"context"
-	"fmt"
+	"net"
+	"strconv"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
@@ -98,7 +99,8 @@ func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core
 		if !dataplane.Spec.HasPublicAddress() {
 			continue // Dataplane is not reachable yet from other clusters. This may happen when Ingress Service is pending waiting on External IP on Kubernetes.
 		}
-		ingressCoordinates := fmt.Sprintf("%s;%d", dataplane.Spec.Networking.Ingress.PublicAddress, dataplane.Spec.Networking.Ingress.PublicPort)
+		ingressCoordinates := net.JoinHostPort(dataplane.Spec.Networking.Ingress.PublicAddress,
+			strconv.FormatUint(uint64(dataplane.Spec.Networking.Ingress.PublicPort), 10))
 		if ingressInstances[ingressCoordinates] {
 			continue // many Ingress instances can be placed in front of one load balancer (all instances can have the same public address and port). In this case we only need one Instance avoiding creating unnecessary duplicated endpoints
 		}

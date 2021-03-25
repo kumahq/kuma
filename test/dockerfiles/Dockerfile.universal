@@ -17,8 +17,6 @@ RUN cd /opt && wget https://storage.googleapis.com/golang/go${GOVERSION}.linux-a
 
 FROM ubuntu:20.04
 
-COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
-
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
@@ -40,6 +38,8 @@ RUN ssh-keygen -A \
   && passwd -d root \
   && chmod a+rwx /root \
   && useradd -U kuma-dp
+
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 
 # do not detach (-D), log to stderr (-e)
 ENTRYPOINT ["/usr/sbin/sshd", "-D", "-e"]

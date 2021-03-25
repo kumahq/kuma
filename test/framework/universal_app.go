@@ -213,7 +213,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 
 	retry.DoWithRetry(app.t, "get IP "+app.container, DefaultRetries, DefaultTimeout,
 		func() (string, error) {
-			app.ip, err = app.getIP()
+			app.ip, err = app.getIP(IsIPv6())
 			if err != nil {
 				return "Unable to get Container IP", err
 			}
@@ -372,7 +372,7 @@ func (s *UniversalApp) setupTransparent(cpIp string) {
 	}
 }
 
-func (s *UniversalApp) getIP() (string, error) {
+func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "ahosts", s.container[:12]})
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
@@ -383,7 +383,9 @@ func (s *UniversalApp) getIP() (string, error) {
 	for _, line := range lines {
 		split := strings.Split(line, " ")
 		testInput := net.ParseIP(split[0])
-		if testInput.To4() != nil {
+		if isipv6 {
+			return split[0], nil
+		} else if testInput.To4() != nil {
 			return split[0], nil
 		}
 	}

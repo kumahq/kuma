@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strings"
 
@@ -146,7 +147,7 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 
 func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string) error {
 	cpIp := c.apps[AppModeCP].ip
-	cpAddress := "https://" + cpIp + ":5678"
+	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
 	app.CreateDP(token, cpAddress, appname, ip, dpyaml)
 	return app.dpApp.Start()
 }

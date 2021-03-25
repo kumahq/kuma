@@ -29,6 +29,8 @@ type transparenProxyArgs struct {
 	KumaCpIP             net.IP
 }
 
+var defaultCpIP = net.IPv4(0, 0, 0, 0)
+
 func newInstallTransparentProxy() *cobra.Command {
 	args := transparenProxyArgs{
 		DryRun:               false,
@@ -41,7 +43,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		UID:                  "",
 		User:                 "",
 		ModifyResolvConf:     true,
-		KumaCpIP:             net.IPv4(0, 0, 0, 0),
+		KumaCpIP:             defaultCpIP,
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -107,7 +109,7 @@ runuser -u kuma-dp -- \
 				return errors.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
 			}
 
-			if args.ModifyResolvConf && args.KumaCpIP.String() == net.IPv4(0, 0, 0, 0).String() {
+			if args.ModifyResolvConf && args.KumaCpIP.String() == defaultCpIP.String() {
 				return errors.Errorf("please supply a valid `--kuma-cp-ip`")
 			}
 

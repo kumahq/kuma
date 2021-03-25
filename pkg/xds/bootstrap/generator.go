@@ -8,7 +8,9 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
 
@@ -187,14 +189,15 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		certBytes = base64.StdEncoding.EncodeToString(cert)
 	}
 	accessLogSocket := envoy_common.AccessLogSocketName(request.Name, request.Mesh)
+	xdsUri := net.JoinHostPort(b.xdsHost(request), strconv.FormatUint(uint64(b.config.Params.XdsPort), 10))
+
 	params := configParameters{
 		Id:                 proxyId.String(),
 		Service:            service,
 		AdminAddress:       b.config.Params.AdminAddress,
 		AdminPort:          adminPort,
 		AdminAccessLogPath: b.config.Params.AdminAccessLogPath,
-		XdsHost:            b.xdsHost(request),
-		XdsPort:            b.config.Params.XdsPort,
+		XdsUri:             xdsUri,
 		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout,
 		AccessLogPipe:      accessLogSocket,
 		DataplaneTokenPath: request.DataplaneTokenPath,

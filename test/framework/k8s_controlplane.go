@@ -3,6 +3,7 @@ package framework
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 
@@ -215,8 +216,8 @@ func (c *K8sControlPlane) InjectDNS(args ...string) error {
 // A naive implementation to find the URL where Remote CP exposes its API
 func (c *K8sControlPlane) GetKDSServerAddress() string {
 	pod := c.GetKumaCPPods()[0]
-
-	return "grpcs://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(kdsPort), 10)
+	return "grpcs://" + net.JoinHostPort(
+		pod.Status.HostIP, strconv.FormatUint(uint64(kdsPort), 10))
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {

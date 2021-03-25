@@ -63,6 +63,7 @@ var SupportedProtocols = ProtocolList{
 const PassThroughService = "pass_through"
 
 var IPv4Loopback = net.IPv4(127, 0, 0, 1)
+var IPv6Loopback = net.IPv6loopback
 
 func (d *DataplaneResource) UsesInterface(address net.IP, port uint32) bool {
 	return d.UsesInboundInterface(address, port) || d.UsesOutboundInterface(address, port)
