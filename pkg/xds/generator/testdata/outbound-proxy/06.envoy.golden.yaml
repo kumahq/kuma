@@ -5,6 +5,7 @@ resources:
     commonHttpProtocolOptions:
       idleTimeout: 0s
     connectTimeout: 10s
+    dnsLookupFamily: V4_ONLY
     http2ProtocolOptions: {}
     lbSubsetConfig:
       fallbackPolicy: ANY_ENDPOINT
