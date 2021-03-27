@@ -54,7 +54,7 @@ test/e2e/test:
 	    K8SCLUSTERS="$(K8SCLUSTERS)" \
 	    KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 	    API_VERSION="$(API_VERSION)" \
-		    $(GO_TEST) -v -timeout=45m $$t; \
+		    $(GO_TEST) -v -timeout=45m $$t || exit; \
     done
 
 # test/e2e/debug is used for quicker feedback of E2E tests (ex. debugging flaky tests)
