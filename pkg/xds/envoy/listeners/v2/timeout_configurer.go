@@ -37,6 +37,6 @@ func (c *TimeoutConfigurer) Configure(filterChain *envoy_listener.FilterChain) e
 			return nil
 		})
 	default:
-		return errors.Errorf("unsupported protocol %s", c.Protocol)
+		return errors.Errorf("unsupported listenerProtocol %s", c.Protocol)
 	}
 }

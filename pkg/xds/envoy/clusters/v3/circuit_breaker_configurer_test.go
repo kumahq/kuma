@@ -16,7 +16,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
 
-var _ = Describe("OutlierDetectionConfigurer", func() {
+var _ = Describe("CircuitBreakerConfigurer", func() {
 
 	type testCase struct {
 		clusterName    string
@@ -29,7 +29,7 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
 			// when
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 				Configure(clusters.EdsCluster(given.clusterName)).
-				Configure(clusters.OutlierDetection(given.circuitBreaker)).
+				Configure(clusters.CircuitBreaker(given.circuitBreaker)).
 				Configure(clusters.Timeout(mesh_core.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
 				Build()
 
@@ -40,220 +40,32 @@ var _ = Describe("OutlierDetectionConfigurer", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(actual).To(MatchYAML(given.expected))
 		},
-		Entry("CircuitBreaker with TotalError detector, default values", testCase{
+		Entry("CircuitBreaker with thresholds", testCase{
 			circuitBreaker: &mesh_core.CircuitBreakerResource{
 				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
-						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-							TotalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
+						Thresholds: &mesh_proto.CircuitBreaker_Conf_Thresholds{
+							MaxConnections:     &wrappers.UInt32Value{Value: 2},
+							MaxPendingRequests: &wrappers.UInt32Value{Value: 3},
+							MaxRequests:        &wrappers.UInt32Value{Value: 4},
+							MaxRetries:         &wrappers.UInt32Value{Value: 5},
 						},
 					},
 				},
 			},
 			expected: `
-            connectTimeout: 5s
-            edsClusterConfig:
-              edsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            outlierDetection:
-              enforcingConsecutive5xx: 100
-              enforcingConsecutiveGatewayFailure: 0
-              enforcingConsecutiveLocalOriginFailure: 0
-              enforcingFailurePercentage: 0
-              enforcingSuccessRate: 0
-            type: EDS`,
-		}),
-		Entry("CircuitBreaker with GatewayError detector, default values", testCase{
-			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: &mesh_proto.CircuitBreaker{
-					Conf: &mesh_proto.CircuitBreaker_Conf{
-						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-							GatewayErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
-						},
-					},
-				},
-			},
-			expected: `
-            connectTimeout: 5s
-            edsClusterConfig:
-              edsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            outlierDetection:
-              enforcingConsecutive5xx: 0
-              enforcingConsecutiveGatewayFailure: 100
-              enforcingConsecutiveLocalOriginFailure: 0
-              enforcingFailurePercentage: 0
-              enforcingSuccessRate: 0
-            type: EDS`,
-		}),
-		Entry("CircuitBreaker with LocalError detector, default values", testCase{
-			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: &mesh_proto.CircuitBreaker{
-					Conf: &mesh_proto.CircuitBreaker_Conf{
-						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-							LocalErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{},
-						},
-					},
-				},
-			},
-			expected: `
-            connectTimeout: 5s
-            edsClusterConfig:
-              edsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            outlierDetection:
-              enforcingConsecutive5xx: 0
-              enforcingConsecutiveGatewayFailure: 0
-              enforcingConsecutiveLocalOriginFailure: 100
-              enforcingFailurePercentage: 0
-              enforcingSuccessRate: 0
-            type: EDS`,
-		}),
-		Entry("CircuitBreaker with all error detectors, custom values", testCase{
-			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: &mesh_proto.CircuitBreaker{
-					Conf: &mesh_proto.CircuitBreaker_Conf{
-						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-							TotalErrors:   &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 21}},
-							GatewayErrors: &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 11}},
-							LocalErrors:   &mesh_proto.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 6}},
-						},
-					},
-				},
-			},
-			expected: `
-            connectTimeout: 5s
-            edsClusterConfig:
-              edsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            outlierDetection:
-              consecutive5xx: 21
-              consecutiveGatewayFailure: 11
-              consecutiveLocalOriginFailure: 6
-              enforcingConsecutive5xx: 100
-              enforcingConsecutiveGatewayFailure: 100
-              enforcingConsecutiveLocalOriginFailure: 100
-              enforcingFailurePercentage: 0
-              enforcingSuccessRate: 0
-            type: EDS`,
-		}),
-		Entry("CircuitBreaker with StandardDeviation detector, default values", testCase{
-			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: &mesh_proto.CircuitBreaker{
-					Conf: &mesh_proto.CircuitBreaker_Conf{
-						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-							StandardDeviation: &mesh_proto.CircuitBreaker_Conf_Detectors_StandardDeviation{},
-						},
-					},
-				},
-			},
-			expected: `
-            connectTimeout: 5s
-            edsClusterConfig:
-              edsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            outlierDetection:
-              enforcingConsecutive5xx: 0
-              enforcingConsecutiveGatewayFailure: 0
-              enforcingConsecutiveLocalOriginFailure: 0
-              enforcingFailurePercentage: 0
-              enforcingLocalOriginSuccessRate: 100
-              enforcingSuccessRate: 100
-            type: EDS`,
-		}),
-		Entry("CircuitBreaker with StandardDeviation detector, custom values", testCase{
-			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: &mesh_proto.CircuitBreaker{
-					Conf: &mesh_proto.CircuitBreaker_Conf{
-						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-							StandardDeviation: &mesh_proto.CircuitBreaker_Conf_Detectors_StandardDeviation{
-								RequestVolume: &wrappers.UInt32Value{Value: 7},
-								MinimumHosts:  &wrappers.UInt32Value{Value: 8},
-								Factor:        &wrappers.DoubleValue{Value: 1.9},
-							},
-						},
-					},
-				},
-			},
-			expected: `
-            connectTimeout: 5s
-            edsClusterConfig:
-              edsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            outlierDetection:
-              enforcingConsecutive5xx: 0
-              enforcingConsecutiveGatewayFailure: 0
-              enforcingConsecutiveLocalOriginFailure: 0
-              enforcingFailurePercentage: 0
-              enforcingLocalOriginSuccessRate: 100
-              enforcingSuccessRate: 100
-              successRateMinimumHosts: 8
-              successRateRequestVolume: 7
-              successRateStdevFactor: 1900
-            type: EDS`,
-		}),
-		Entry("CircuitBreaker with Failure detector, default values", testCase{
-			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: &mesh_proto.CircuitBreaker{
-					Conf: &mesh_proto.CircuitBreaker_Conf{
-						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-							Failure: &mesh_proto.CircuitBreaker_Conf_Detectors_Failure{},
-						},
-					},
-				},
-			},
-			expected: `
-            connectTimeout: 5s
-            edsClusterConfig:
-              edsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            outlierDetection:
-              enforcingConsecutive5xx: 0
-              enforcingConsecutiveGatewayFailure: 0
-              enforcingConsecutiveLocalOriginFailure: 0
-              enforcingFailurePercentageLocalOrigin: 100
-              enforcingFailurePercentage: 100
-              enforcingSuccessRate: 0
-            type: EDS`,
-		}),
-		Entry("CircuitBreaker with Failure detector, custom values", testCase{
-			circuitBreaker: &mesh_core.CircuitBreakerResource{
-				Spec: &mesh_proto.CircuitBreaker{
-					Conf: &mesh_proto.CircuitBreaker_Conf{
-						Detectors: &mesh_proto.CircuitBreaker_Conf_Detectors{
-							Failure: &mesh_proto.CircuitBreaker_Conf_Detectors_Failure{
-								RequestVolume: &wrappers.UInt32Value{Value: 7},
-								MinimumHosts:  &wrappers.UInt32Value{Value: 8},
-								Threshold:     &wrappers.UInt32Value{Value: 85},
-							},
-						},
-					},
-				},
-			},
-			expected: `
-            connectTimeout: 5s
-            edsClusterConfig:
-              edsConfig:
-                ads: {}
-                resourceApiVersion: V3
-            outlierDetection:
-              enforcingConsecutive5xx: 0
-              enforcingConsecutiveGatewayFailure: 0
-              enforcingConsecutiveLocalOriginFailure: 0
-              enforcingFailurePercentageLocalOrigin: 100
-              enforcingFailurePercentage: 100
-              enforcingSuccessRate: 0
-              failurePercentageMinimumHosts: 8
-              failurePercentageRequestVolume: 7
-              failurePercentageThreshold: 85
-            type: EDS`,
+        circuitBreakers:
+          thresholds:
+          - maxConnections: 2
+            maxPendingRequests: 3
+            maxRequests: 4
+            maxRetries: 5
+        connectTimeout: 5s
+        edsClusterConfig:
+          edsConfig:
+            ads: {}
+            resourceApiVersion: V3
+        type: EDS`,
 		}),
 	)
 })

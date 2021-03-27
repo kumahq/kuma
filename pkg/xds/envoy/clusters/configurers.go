@@ -17,6 +17,13 @@ func OutlierDetection(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterB
 	})
 }
 
+func CircuitBreaker(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV2(&v2.CircuitBreakerConfigurer{CircuitBreaker: circuitBreaker})
+		config.AddV3(&v3.CircuitBreakerConfigurer{CircuitBreaker: circuitBreaker})
+	})
+}
+
 func ClientSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadata, clientService string, tags []envoy.Tags) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV2(&v2.ClientSideMTLSConfigurer{
@@ -95,13 +102,15 @@ func EdsCluster(name string) ClusterBuilderOpt {
 	})
 }
 
-func HealthCheck(healthCheck *mesh_core.HealthCheckResource) ClusterBuilderOpt {
+func HealthCheck(protocol mesh_core.Protocol, healthCheck *mesh_core.HealthCheckResource) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV2(&v2.HealthCheckConfigurer{
 			HealthCheck: healthCheck,
+			Protocol:    protocol,
 		})
 		config.AddV3(&v3.HealthCheckConfigurer{
 			HealthCheck: healthCheck,
+			Protocol:    protocol,
 		})
 	})
 }
@@ -122,13 +131,13 @@ func HealthCheck(healthCheck *mesh_core.HealthCheckResource) ClusterBuilderOpt {
 //          kuma.io/service: backend
 //          version: v1
 //    Only one cluster "backend" is generated for such dataplane, but with lb subset by version.
-func LbSubset(keySets [][]string) ClusterBuilderOptFunc {
+func LbSubset(tagSets envoy.TagKeysSlice) ClusterBuilderOptFunc {
 	return func(config *ClusterBuilderConfig) {
 		config.AddV2(&v2.LbSubsetConfigurer{
-			KeySets: keySets,
+			TagKeySets: tagSets,
 		})
 		config.AddV3(&v3.LbSubsetConfigurer{
-			KeySets: keySets,
+			TagKeysSets: tagSets,
 		})
 	}
 }

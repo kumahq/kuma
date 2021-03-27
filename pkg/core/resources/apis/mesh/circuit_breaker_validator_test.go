@@ -54,7 +54,13 @@ var _ = Describe("CircuitBreaker", func() {
                     failure:
                       requestVolume: 10
                       minimumHosts: 5
-                      threshold: 85`),
+                      threshold: 85
+                  thresholds:
+                    maxConnections: 2
+                    maxPendingRequests: 2
+                    maxRetries: 2
+                    maxRequests: 2
+`),
 			Entry("one detector with default values", `
                 sources:
                 - match:
@@ -67,6 +73,17 @@ var _ = Describe("CircuitBreaker", func() {
                     detectors:
                       totalErrors: {}
                       standardDeviation: {}`),
+			Entry("only thresholds", `
+                sources:
+                - match:
+                    kuma.io/service: frontend
+                    region: us
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                    thresholds:
+                      maxConnections: 2`),
 		)
 
 		type testCase struct {
@@ -102,7 +119,7 @@ var _ = Describe("CircuitBreaker", func() {
                - field: destinations
                  message: must have at least one element
                - field: conf
-                 message: must have at least one of the detectors configured`}),
+                 message: must have at least one of the detector or threshold configured`}),
 			Entry("wrong format", testCase{
 				circuitBreaker: `
                 sources:
@@ -128,6 +145,57 @@ var _ = Describe("CircuitBreaker", func() {
                  message: has to be in [0.0 - 100.0] range
                - field: conf.detectors.failure.threshold
                  message: has to be in [0.0 - 100.0] range`}),
+			Entry("empty thresholds section", testCase{
+				circuitBreaker: `
+                sources:
+                - match:
+                    kuma.io/service: frontend
+                    region: us
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  detectors:
+                    totalErrors: {}
+                    standardDeviation: {}
+                  thresholds: {}`,
+				expected: `
+               violations:
+               - field: conf.thresholds
+                 message: can't be empty`}),
+			Entry("empty detectors section", testCase{
+				circuitBreaker: `
+                sources:
+                - match:
+                    kuma.io/service: frontend
+                    region: us
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  detectors: {}
+                  thresholds:
+                    maxConnections: 2`,
+				expected: `
+               violations:
+               - field: conf.detectors
+                 message: can't be empty`}),
+			Entry("empty detectors and thresholds section", testCase{
+				circuitBreaker: `
+                sources:
+                - match:
+                    kuma.io/service: frontend
+                    region: us
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  detectors: {}
+                  thresholds: {}`,
+				expected: `
+               violations:
+               - field: conf
+                 message: must have at least one of the detector or threshold configured`}),
 		)
 	})
 })

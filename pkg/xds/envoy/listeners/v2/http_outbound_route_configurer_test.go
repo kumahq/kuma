@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
@@ -15,21 +17,22 @@ import (
 var _ = Describe("HttpOutboundRouteConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		service         string
-		subsets         []envoy_common.ClusterSubset
-		dpTags          mesh_proto.MultiValueTagSet
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol core_xds.SocketAddressProtocol
+		statsName        string
+		service          string
+		subsets          []envoy_common.ClusterSubset
+		dpTags           mesh_proto.MultiValueTagSet
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV2).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpOutboundRoute(given.service, given.subsets, given.dpTags)))).

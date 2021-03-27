@@ -2,7 +2,6 @@ package generator
 
 import (
 	"context"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -147,7 +146,7 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 		return filterChainBuilder
 	}()
 	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort)).
+		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Build()
@@ -169,9 +168,10 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 
 		edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 			Configure(envoy_clusters.Timeout(protocol, clusters.Get(clusterName).Timeout())).
-			Configure(envoy_clusters.LbSubset(o.lbSubsets(tags))).
+			Configure(envoy_clusters.LbSubset(envoy_common.TagKeySlice(tags).Transform(envoy_common.Without(kuma_mesh.ServiceTag)))).
+			Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
-			Configure(envoy_clusters.HealthCheck(healthCheck))
+			Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
 
 		if clusters.Get(clusterName).HasExternalService() {
 			edsClusterBuilder.
@@ -201,20 +201,6 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 	}
 
 	return resources, nil
-}
-
-func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]string {
-	var result [][]string
-	uniqueKeys := map[string]bool{}
-	for _, tags := range tagSets {
-		keys := tags.WithoutTag(kuma_mesh.ServiceTag).Keys()
-		joined := strings.Join(keys, ",")
-		if !uniqueKeys[joined] {
-			uniqueKeys[joined] = true
-			result = append(result, keys)
-		}
-	}
-	return result
 }
 
 func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, clusters envoy_common.Clusters, apiVersion envoy_common.APIVersion) (*model.ResourceSet, error) {

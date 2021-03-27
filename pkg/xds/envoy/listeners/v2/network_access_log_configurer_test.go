@@ -18,13 +18,14 @@ import (
 var _ = Describe("NetworkAccessLogConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		clusters        []envoy_common.ClusterSubset
-		backend         *mesh_proto.LoggingBackend
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol core_xds.SocketAddressProtocol
+		statsName        string
+		clusters         []envoy_common.ClusterSubset
+		backend          *mesh_proto.LoggingBackend
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -60,7 +61,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV2).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(TcpProxy(given.statsName, given.clusters...)).
 					Configure(NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, destinationService, given.backend, proxy)))).

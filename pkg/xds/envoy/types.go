@@ -21,11 +21,104 @@ type ClusterSubset struct {
 }
 
 type Tags map[string]string
+type TagsSlice []Tags
+type TagKeys []string
+type TagKeysSlice []TagKeys
 
-func (t Tags) WithoutTag(tag string) Tags {
+func (t TagsSlice) ToTagKeysSlice() TagKeysSlice {
+	out := []TagKeys{}
+	for _, v := range t {
+		out = append(out, v.Keys())
+	}
+	return out
+}
+
+// Transform applies each transformer to each TagKeys and returns a sorted unique TagKeysSlice.
+func (t TagKeysSlice) Transform(transformers ...TagKeyTransformer) TagKeysSlice {
+	allSlices := map[string]TagKeys{}
+	for _, tagKeys := range t {
+		res := tagKeys.Transform(transformers...)
+		if len(res) > 0 {
+			h := strings.Join(res, ", ")
+			allSlices[h] = res
+		}
+	}
+	out := TagKeysSlice{}
+	for _, n := range allSlices {
+		out = append(out, n)
+	}
+	sort.Slice(out, func(i, j int) bool {
+		for k := 0; k < len(out[i]) && k < len(out[j]); k++ {
+			if out[i][k] != out[j][k] {
+				return out[i][k] < out[j][k]
+			}
+		}
+		return len(out[i]) < len(out[j])
+	})
+	return out
+}
+
+type TagKeyTransformer interface {
+	Apply(slice TagKeys) TagKeys
+}
+type TagKeyTransformerFunc func(slice TagKeys) TagKeys
+
+func (f TagKeyTransformerFunc) Apply(slice TagKeys) TagKeys {
+	return f(slice)
+}
+
+// Transform applies a list of transformers on the tag keys and return a new set of keys (always return sorted, unique sets).
+func (t TagKeys) Transform(transformers ...TagKeyTransformer) TagKeys {
+	tmp := t
+	for _, tr := range transformers {
+		tmp = tr.Apply(tmp)
+	}
+	// Make tags unique and sorted
+	tagSet := map[string]bool{}
+	out := TagKeys{}
+	for _, n := range tmp {
+		if !tagSet[n] {
+			tagSet[n] = true
+			out = append(out, n)
+		}
+	}
+	sort.Strings(out)
+	return out
+}
+
+func Without(tags ...string) TagKeyTransformer {
+	tagSet := map[string]bool{}
+	for _, t := range tags {
+		tagSet[t] = true
+	}
+	return TagKeyTransformerFunc(func(slice TagKeys) TagKeys {
+		out := []string{}
+		for _, t := range slice {
+			if !tagSet[t] {
+				out = append(out, t)
+			}
+		}
+		return out
+	})
+}
+
+func With(tags ...string) TagKeyTransformer {
+	return TagKeyTransformerFunc(func(slice TagKeys) TagKeys {
+		res := make([]string, len(tags)+len(slice))
+		copy(res, slice)
+		copy(res[len(slice):], tags)
+		return res
+	})
+}
+
+func (t Tags) WithoutTags(tags ...string) Tags {
+	tagSet := map[string]bool{}
+	for _, t := range tags {
+		tagSet[t] = true
+	}
 	result := Tags{}
 	for tagName, tagValue := range t {
-		if tag != tagName {
+		if !tagSet[tagName] {
 			result[tagName] = tagValue
 		}
 	}
@@ -45,7 +138,7 @@ func (t Tags) WithTags(keysAndValues ...string) Tags {
 	return result
 }
 
-func (t Tags) Keys() []string {
+func (t Tags) Keys() TagKeys {
 	var keys []string
 	for key := range t {
 		keys = append(keys, key)
@@ -86,6 +179,14 @@ func DistinctTags(tags []Tags) []Tags {
 		}
 	}
 	return result
+}
+
+func TagKeySlice(tags []Tags) TagKeysSlice {
+	r := make([]TagKeys, len(tags))
+	for i := range tags {
+		r[i] = tags[i].Keys()
+	}
+	return r
 }
 
 type Cluster struct {
