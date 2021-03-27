@@ -1,6 +1,7 @@
 package install
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"net"
@@ -208,10 +209,12 @@ func storeFirewalld(cmd *cobra.Command, args *transparenProxyArgs, output string
 	parser := regexp.MustCompile(`\* (?P<table>\w*)`)
 	rules := map[string][]string{}
 
-	lines := strings.Split(output, "\n")
+	scanner := bufio.NewScanner(strings.NewReader(output))
 	table := ""
 
-	for _, line := range lines {
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		line := scanner.Text()
 		if strings.Contains(line, "COMMIT") {
 			table = ""
 			continue
@@ -219,7 +222,7 @@ func storeFirewalld(cmd *cobra.Command, args *transparenProxyArgs, output string
 
 		matches := parser.FindStringSubmatch(line)
 		if len(matches) > 1 {
-			table = matches[0]
+			table = matches[parser.SubexpIndex("table")]
 			continue
 		}
 
