@@ -10,7 +10,7 @@ reusable:
   - &circleci_golang_image "circleci/golang:1.15.10"
 
   vm_images:
-  - &ubuntu_vm_image "ubuntu-1604:202007-01"
+  - &ubuntu_vm_image "ubuntu-1604:202101-01"
 
   snippets:
 
