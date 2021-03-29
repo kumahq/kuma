@@ -8,7 +8,7 @@ import (
 type IptablesTranslator interface {
 	// store iptables rules
 	// accepts a map of slices, the map key is the iptables table
-	// and the slices aare the list of the iptables rules in that table
+	// and the slices are the list of the iptables rules in that table
 	// returns the generated translated rules as a single string
 	StoreRules(rules map[string][]string) (string, error)
 }
