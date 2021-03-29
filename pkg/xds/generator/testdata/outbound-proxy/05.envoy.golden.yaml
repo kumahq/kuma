@@ -5,6 +5,7 @@ resources:
     commonHttpProtocolOptions:
       idleTimeout: 0s
     connectTimeout: 10s
+    dnsLookupFamily: V4_ONLY
     lbSubsetConfig:
       fallbackPolicy: ANY_ENDPOINT
       subsetSelectors:
