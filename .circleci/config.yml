@@ -688,13 +688,13 @@ workflows:
         use_local_kuma_images: true
     - e2e:
         <<: *commit_workflow_filters
-        name: test/e2e
+        name: test/e2e-ipv4
         requires:
           - images
           - check
     - e2e:
         <<: *commit_workflow_filters
-        name: test/e2e
+        name: test/e2e-ipv6
         requires:
           - images
           - check
