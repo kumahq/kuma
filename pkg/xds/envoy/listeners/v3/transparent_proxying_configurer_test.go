@@ -56,6 +56,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
             address:
               socketAddress:
                 address: 192.168.0.1
+                ipv4Compat: true
                 portValue: 8080
             bindToPort: false
 `,
@@ -71,6 +72,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
             address:
               socketAddress:
                 address: 192.168.0.1
+                ipv4Compat: true
                 portValue: 8080
 `,
 		}),

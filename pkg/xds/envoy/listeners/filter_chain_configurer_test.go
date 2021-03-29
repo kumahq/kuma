@@ -52,6 +52,7 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
             address:
               socketAddress:
                 address: 192.168.0.1
+                ipv4Compat: true
                 portValue: 8080
             filterChains:
             - {}
@@ -89,6 +90,7 @@ var _ = Describe("ListenerFilterChainConfigurer", func() {
             address:
               socketAddress:
                 address: 192.168.0.1
+                ipv4Compat: true
                 portValue: 8080
             filterChains:
             - {}

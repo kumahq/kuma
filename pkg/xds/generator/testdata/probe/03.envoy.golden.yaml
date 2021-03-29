@@ -4,6 +4,7 @@ resources:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
+        ipv4Compat: true
         portValue: 9000
     filterChains:
     - filters:

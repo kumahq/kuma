@@ -161,7 +161,7 @@ var _ = Describe("Dataplane", func() {
                 ingress:
                   publicAddress: ::ffff:0a00:0001
                   publicPort: 1234
-                  availableS
+                  availableServices:
                     - tags:
                         kuma.io/service: backend
                         version: "1"

@@ -48,6 +48,7 @@ var _ = Describe("InboundListenerConfigurer", func() {
             address:
               socketAddress:
                 address: 192.168.0.1
+                ipv4Compat: true
                 portValue: 8080
 `,
 		}),
@@ -63,6 +64,7 @@ var _ = Describe("InboundListenerConfigurer", func() {
               socketAddress:
                 protocol: UDP
                 address: 192.168.0.1
+                ipv4Compat: true
                 portValue: 8080
 `,
 		}),

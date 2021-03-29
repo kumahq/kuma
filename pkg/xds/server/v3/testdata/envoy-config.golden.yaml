@@ -9,7 +9,8 @@ resources:
     type: ORIGINAL_DST
     upstreamBindConfig:
       sourceAddress:
-        address: 127.0.0.6
+        address: ::6
+        ipv4Compat: true
         portValue: 0
 - name: localhost:8080
   resource:
@@ -57,6 +58,7 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.1
+        ipv4Compat: true
         portValue: 443
     bindToPort: false
     filterChains:
@@ -119,6 +121,7 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.1
+        ipv4Compat: true
         portValue: 80
     bindToPort: false
     filterChains:
@@ -189,6 +192,7 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.2
+        ipv4Compat: true
         portValue: 443
     bindToPort: false
     filterChains:
@@ -251,6 +255,7 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.2
+        ipv4Compat: true
         portValue: 80
     bindToPort: false
     filterChains:
@@ -312,7 +317,8 @@ resources:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
-        address: 0.0.0.0
+        address: '::'
+        ipv4Compat: true
         portValue: 15006
     filterChains:
     - filters:
@@ -329,7 +335,7 @@ resources:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
-        address: 0.0.0.0
+        address: '::'
         portValue: 15001
     filterChains:
     - filters:

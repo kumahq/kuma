@@ -25,6 +25,7 @@ resources:
     address:
       socketAddress:
         address: 10.0.0.1
+        ipv4Compat: true
         portValue: 10001
     filterChains:
     - filterChainMatch:
