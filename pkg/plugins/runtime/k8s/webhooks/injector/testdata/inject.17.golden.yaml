@@ -131,7 +131,7 @@ spec:
     - 1234,1235
     - --exclude-outbound-ports
     - "1236"
-    - --modify-resolv-conf=false
+    - --skip-resolv-conf
     command:
     - /usr/bin/kumactl
     - install
