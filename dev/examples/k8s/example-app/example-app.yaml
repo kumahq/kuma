@@ -8,7 +8,8 @@ spec:
   - port: 80
     name: http
   selector:
-    app: example-server
+    app: example-app
+    service: example-server
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -23,11 +24,12 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: example-server
+      app: example-app
   template:
     metadata:
       labels:
-        app: example-server
+        app: example-app
+        service: example-server
     spec:
       containers:
       - name: nginx
@@ -53,18 +55,23 @@ spec:
       maxUnavailable: 0
   selector:
     matchLabels:
-      app: example-client
+      app: example-app
   template:
     metadata:
       labels:
-        app: example-client
+        app: example-app
     spec:
       containers:
-        - name: alpine
-          image: "alpine:latest"
+        - name: kuma-universal
+          image: "kuma-universal"
           imagePullPolicy: IfNotPresent
           command: ["sh", "-c", "tail -f /dev/null"]
           resources:
             requests:
               cpu: 10m
               memory: 32Mi
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            capabilities:
+              add: ["NET_ADMIN"]

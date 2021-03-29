@@ -19,6 +19,7 @@ func (u *UpstreamBindConfigConfigurer) Configure(c *envoy_cluster.Cluster) error
 			PortSpecifier: &envoy_core.SocketAddress_PortValue{
 				PortValue: u.Port,
 			},
+			Ipv4Compat: true,
 		},
 	}
 	return nil

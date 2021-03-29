@@ -44,7 +44,7 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	}
 
 	outboundListener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.OutboundListener(outboundName, "0.0.0.0", redirectPortOutbound, model.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.OutboundListener(outboundName, "::", redirectPortOutbound, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxy(outboundName, envoy_common.ClusterSubset{ClusterName: outboundName})).
 			Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, "external", proxy.Policies.Logs[mesh_core.PassThroughService], proxy)))).
@@ -58,14 +58,14 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 
 	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 		Configure(envoy_clusters.PassThroughCluster(inboundName)).
-		Configure(envoy_clusters.UpstreamBindConfig("127.0.0.6", 0)).
+		Configure(envoy_clusters.UpstreamBindConfig("::6", 0)).
 		Build()
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate cluster: %s", inboundName)
 	}
 
 	inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.InboundListener(inboundName, "0.0.0.0", redirectPortInbound, model.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(inboundName, "::", redirectPortInbound, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxy(inboundName, envoy_common.ClusterSubset{ClusterName: inboundName})))).
 		Configure(envoy_listeners.OriginalDstForwarder()).

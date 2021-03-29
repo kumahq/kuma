@@ -40,6 +40,7 @@ const (
 
 	redirectPortInbound  = "15006"
 	redirectPortOutbound = "15001"
+	cidrIPv6             = "fd00:fd00::/64"
 )
 
 var HelmChartPath = "../../../deployments/charts/kuma"

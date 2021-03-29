@@ -25,6 +25,7 @@ func (c *InboundListenerConfigurer) Configure(l *envoy_listener.Listener) error 
 				PortSpecifier: &envoy_core.SocketAddress_PortValue{
 					PortValue: c.Port,
 				},
+				Ipv4Compat: true,
 			},
 		},
 	}

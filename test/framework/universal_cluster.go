@@ -79,6 +79,10 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+apiVersion)
 	}
 
+	if opts.isipv6 {
+		env = append(env, fmt.Sprintf("KUMA_DNS_SERVER_CIDR=\"%s\"", cidrIPv6))
+	}
+
 	switch mode {
 	case core.Remote:
 		env = append(env, "KUMA_MULTIZONE_REMOTE_ZONE="+c.name)

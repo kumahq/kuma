@@ -275,6 +275,10 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + apiVersion
 	}
 
+	if opts.isipv6 {
+		argsMap["--env-var"] = fmt.Sprintf("KUMA_DNS_SERVER_CIDR=\"%s\"", cidrIPv6)
+	}
+
 	for opt, value := range opts.ctlOpts {
 		argsMap[opt] = value
 	}
@@ -321,6 +325,10 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 		values["cni.netDir"] = "/etc/cni/net.d"
 		values["cni.binDir"] = "/opt/cni/bin"
 		values["cni.confName"] = "10-kindnet.conflist"
+	}
+
+	if opts.isipv6 {
+		values["controlPlane.envVars.KUMA_DNS_SERVER_CIDR"] = cidrIPv6
 	}
 
 	switch mode {
