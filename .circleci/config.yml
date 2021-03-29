@@ -351,6 +351,10 @@ jobs:
         description: XDS API version
         type: string
         default: v3
+      ipv6:
+        description: use IPv6
+        type: boolean
+        default: false
     parallelism: 2
     environment:
       GOPATH: /home/circleci/.go-kuma-go
@@ -386,13 +390,27 @@ jobs:
           command: |
             export PATH=$HOME/go/bin:$PATH
             helm repo add kuma https://kumahq.github.io/charts
-      - run:
-          name: "Run E2E tests"
-          command: |
-            export PATH=$HOME/go/bin:$PATH
-            export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
-            export API_VERSION=<< parameters.api >>
-            make test/e2e
+      - when:
+          condition: << parameters.ipv6 >>
+          steps:
+            - run:
+                name: "Run IPv6 E2E tests"
+                command: |
+                  export PATH=$HOME/go/bin:$PATH
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export API_VERSION=<< parameters.api >>
+                  export IPV6=true
+                  make test/e2e
+      - unless:
+          condition: << parameters.ipv6 >>
+          steps:
+            - run:
+                name: "Run IPv4 E2E tests"
+                command: |
+                  export PATH=$HOME/go/bin:$PATH
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export API_VERSION=<< parameters.api >>
+                  make test/e2e
 
   build:
     executor: golang
@@ -674,6 +692,14 @@ workflows:
         requires:
           - images
           - check
+    - e2e:
+        <<: *commit_workflow_filters
+        name: test/e2e
+        requires:
+          - images
+          - check
+        # custom parameters
+        ipv6: true
 
   kuma-master:
     jobs:
