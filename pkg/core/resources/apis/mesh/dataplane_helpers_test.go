@@ -442,6 +442,76 @@ var _ = Describe("Dataplane", func() {
 			}),
 		)
 	})
+
+	Describe("IsIPv6()", func() {
+
+		type testCase struct {
+			dataplane string
+			expected  bool
+		}
+
+		DescribeTable("should correctly determine IP for a given Dataplane",
+			func(given testCase) {
+				// given
+				var dataplane *DataplaneResource
+				if given.dataplane != "" {
+					dataplane = NewDataplaneResource()
+					Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane.Spec)).To(Succeed())
+				}
+
+				// expect
+				Expect(dataplane.IsIPv6()).To(Equal(given.expected))
+			},
+			Entry("`nil` dataplane", testCase{
+				dataplane: ``,
+				expected:  false,
+			}),
+			Entry("dataplane without inbound interfaces", testCase{
+				dataplane: `
+                networking: {}
+`,
+				expected: false,
+			}),
+			Entry("dataplane with IPv4 address in networking", testCase{
+				dataplane: `
+                networking:
+                  address: 192.168.0.1
+                  inbound:
+                  - port: 8080
+                    address: 192.168.0.2
+                    tags:
+                      kuma.io/service: backend
+`,
+				expected: false,
+			}),
+			Entry("dataplane with IPv6 address in networking", testCase{
+				dataplane: `
+                networking:
+                  address: fd00::123
+                  inbound:
+                  - port: 8080
+                    address: 192.168.0.2
+                    tags:
+                      kuma.io/service: backend
+`,
+				expected: true,
+			}),
+			Entry("dataplane with invalid inbound interface", testCase{
+				dataplane: `
+                networking:
+                  inbound:
+                  - interface: x.y.z.0
+                    tags:
+                      kuma.io/service: backend-https
+                  - interface: 192.168.0.1:80:8080
+                    tags:
+                      kuma.io/service: backend
+`,
+				expected: false,
+			}),
+		)
+	})
+
 })
 
 var _ = Describe("ParseProtocol()", func() {

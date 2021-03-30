@@ -211,16 +211,18 @@ func StaticCluster(name string, address string, port uint32) ClusterBuilderOpt {
 	})
 }
 
-func StrictDNSCluster(name string, endpoints []core_xds.Endpoint) ClusterBuilderOpt {
+func StrictDNSCluster(name string, endpoints []core_xds.Endpoint, hasIPv6 bool) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV2(&v2.StrictDNSClusterConfigurer{
 			Name:      name,
 			Endpoints: endpoints,
+			HasIPv6:   hasIPv6,
 		})
 		config.AddV2(&v2.AltStatNameConfigurer{})
 		config.AddV3(&v3.StrictDNSClusterConfigurer{
 			Name:      name,
 			Endpoints: endpoints,
+			HasIPv6:   hasIPv6,
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
 	})

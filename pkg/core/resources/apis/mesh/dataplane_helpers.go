@@ -142,3 +142,16 @@ func (d *DataplaneResource) GetIP() string {
 	}
 	return d.Spec.Networking.Address
 }
+
+func (d *DataplaneResource) IsIPv6() bool {
+	if d == nil {
+		return false
+	}
+
+	ip := net.ParseIP(d.Spec.Networking.Address)
+	if ip == nil {
+		return false
+	}
+
+	return ip.To4() == nil
+}
