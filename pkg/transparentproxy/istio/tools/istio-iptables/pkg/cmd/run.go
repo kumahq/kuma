@@ -104,6 +104,7 @@ func (iptConfigurator *IptablesConfigurator) logConfig() {
 	fmt.Println("------------")
 	fmt.Printf("ENVOY_PORT=%s\n", os.Getenv("ENVOY_PORT"))
 	fmt.Printf("INBOUND_CAPTURE_PORT=%s\n", os.Getenv("INBOUND_CAPTURE_PORT"))
+	fmt.Printf("INBOUND_CAPTURE_PORT_V6=%s\n", os.Getenv("INBOUND_CAPTURE_PORT_V6"))
 	fmt.Printf("ISTIO_INBOUND_INTERCEPTION_MODE=%s\n", os.Getenv("ISTIO_INBOUND_INTERCEPTION_MODE"))
 	fmt.Printf("ISTIO_INBOUND_TPROXY_MARK=%s\n", os.Getenv("ISTIO_INBOUND_TPROXY_MARK"))
 	fmt.Printf("ISTIO_INBOUND_TPROXY_ROUTE_TABLE=%s\n", os.Getenv("ISTIO_INBOUND_TPROXY_ROUTE_TABLE"))
@@ -207,7 +208,7 @@ func (iptConfigurator *IptablesConfigurator) handleInboundIpv6Rules(ipv6RangesEx
 	// Use this chain also for redirecting inbound traffic to the common Envoy port
 	// when not using TPROXY.
 	iptConfigurator.iptables.AppendRuleV6(constants.ISTIOINREDIRECT, constants.NAT, "-p", constants.TCP, "-j",
-		constants.REDIRECT, "--to-ports", iptConfigurator.cfg.InboundCapturePort)
+		constants.REDIRECT, "--to-ports", iptConfigurator.cfg.InboundCapturePortV6)
 
 	// Handling of inbound ports. Traffic will be redirected to Envoy, which will process and forward
 	// to the local service. If not set, no inbound port will be intercepted by istio iptablesOrFail.

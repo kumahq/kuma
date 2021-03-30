@@ -403,6 +403,8 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 			"--redirect-inbound=" + redirectInbound,
 			"--redirect-inbound-port",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
+			"--redirect-inbound-port-v6",
+			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6),
 			"--kuma-dp-uid",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
 			"--exclude-inbound-ports",
@@ -435,11 +437,12 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 
 func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshResource) (map[string]string, error) {
 	annotations := map[string]string{
-		metadata.KumaMeshAnnotation:                            mesh.GetMeta().GetName(), // either user-defined value or default
-		metadata.KumaSidecarInjectedAnnotation:                 fmt.Sprintf("%t", true),
-		metadata.KumaTransparentProxyingAnnotation:             metadata.AnnotationEnabled,
-		metadata.KumaTransparentProxyingInboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
-		metadata.KumaTransparentProxyingOutboundPortAnnotation: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
+		metadata.KumaMeshAnnotation:                             mesh.GetMeta().GetName(), // either user-defined value or default
+		metadata.KumaSidecarInjectedAnnotation:                  fmt.Sprintf("%t", true),
+		metadata.KumaTransparentProxyingAnnotation:              metadata.AnnotationEnabled,
+		metadata.KumaTransparentProxyingInboundPortAnnotation:   fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
+		metadata.KumaTransparentProxyingInboundPortAnnotationV6: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6),
+		metadata.KumaTransparentProxyingOutboundPortAnnotation:  fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
 	}
 	if i.cfg.CNIEnabled {
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI

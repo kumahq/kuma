@@ -30,6 +30,7 @@ func constructTestConfig() *config.Config {
 		RestoreFormat:           true,
 		ProxyPort:               "15001",
 		InboundCapturePort:      "15006",
+		InboundCapturePortV6:    "15010",
 		InboundTunnelPort:       "15008",
 		ProxyUID:                constants.DefaultProxyUID,
 		ProxyGID:                constants.DefaultProxyUID,

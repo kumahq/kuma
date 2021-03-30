@@ -28,6 +28,7 @@ func NewIstioTransparentProxy() *IstioTransparentProxy {
 func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (string, error) {
 	viper.Set(constants.EnvoyPort, cfg.RedirectPortOutBound)
 	viper.Set(constants.InboundCapturePort, cfg.RedirectPortInBound)
+	viper.Set(constants.InboundCapturePortV6, cfg.RedirectPortInBoundV6)
 	viper.Set(constants.ProxyUID, cfg.UID)
 	viper.Set(constants.ProxyGID, cfg.GID)
 	viper.Set(constants.InboundInterceptionMode, "REDIRECT")

@@ -25,6 +25,7 @@ import (
 type Config struct {
 	ProxyPort               string        `json:"PROXY_PORT"`
 	InboundCapturePort      string        `json:"INBOUND_CAPTURE_PORT"`
+	InboundCapturePortV6    string        `json:"INBOUND_CAPTURE_PORT_V6"`
 	InboundTunnelPort       string        `json:"INBOUND_TUNNEL_PORT"`
 	ProxyUID                string        `json:"PROXY_UID"`
 	ProxyGID                string        `json:"PROXY_GID"`
@@ -60,6 +61,7 @@ func (c *Config) Print() {
 	fmt.Println("----------")
 	fmt.Printf("PROXY_PORT=%s\n", c.ProxyPort)
 	fmt.Printf("PROXY_INBOUND_CAPTURE_PORT=%s\n", c.InboundCapturePort)
+	fmt.Printf("PROXY_INBOUND_CAPTURE_PORT_V6=%s\n", c.InboundCapturePortV6)
 	fmt.Printf("PROXY_TUNNEL_PORT=%s\n", c.InboundTunnelPort)
 	fmt.Printf("PROXY_UID=%s\n", c.ProxyUID)
 	fmt.Printf("PROXY_GID=%s\n", c.ProxyGID)

@@ -29,29 +29,35 @@ type TransparentProxyGenerator struct {
 
 func (tpg TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
+	redirectPortOutbound := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetRedirectPortOutbound()
+	if redirectPortOutbound == 0 {
+		return resources, nil
+	}
 
-	resourcesIPv4, err := tpg.generate(ctx, proxy, outboundNameIPv4, inboundNameIPv4, allIPv4, inPassThroughIPv4)
+	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
+	resourcesIPv4, err := tpg.generate(ctx, proxy, outboundNameIPv4, inboundNameIPv4, allIPv4, inPassThroughIPv4, redirectPortOutbound, redirectPortInbound)
 	if err != nil {
 		return nil, err
 	}
-
-	resourcesIPv6, err := tpg.generate(ctx, proxy, outboundNameIPv6, inboundNameIPv6, allIPv6, inPassThroughIPv6)
-	if err != nil {
-		return nil, err
-	}
-
 	resources.Add(resourcesIPv4.List()...)
-	resources.Add(resourcesIPv6.List()...)
+
+	redirectPortInboundV6 := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInboundV6()
+	if redirectPortInboundV6 != 0 {
+		resourcesIPv6, err := tpg.generate(ctx, proxy, outboundNameIPv6, inboundNameIPv6, allIPv6, inPassThroughIPv6, redirectPortOutbound, redirectPortInboundV6)
+		if err != nil {
+			return nil, err
+		}
+		resources.Add(resourcesIPv6.List()...)
+	}
 
 	return resources, nil
 }
 
-func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy, outboundName, inboundName, allIP, inPassThroughIP string) (*model.ResourceSet, error) {
-	redirectPortOutbound := proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying().GetRedirectPortOutbound()
+func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *model.Proxy,
+	outboundName, inboundName, allIP, inPassThroughIP string,
+	redirectPortOutbound, redirectPortInbound uint32) (*model.ResourceSet, error) {
 	resources := model.NewResourceSet()
-	if redirectPortOutbound == 0 {
-		return resources, nil
-	}
+
 	sourceService := proxy.Dataplane.Spec.GetIdentifyingService()
 	meshName := ctx.Mesh.Resource.GetMeta().GetName()
 
@@ -78,8 +84,6 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 	if err != nil {
 		return nil, errors.Wrapf(err, "could not generate listener: %s", outboundName)
 	}
-
-	redirectPortInbound := proxy.Dataplane.Spec.Networking.GetTransparentProxying().GetRedirectPortInbound()
 
 	inboundPassThroughCluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
 		Configure(envoy_clusters.PassThroughCluster(inboundName)).

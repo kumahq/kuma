@@ -86,6 +86,7 @@ networking:
       kuma.io/protocol: http
   transparentProxying:
     redirectPortInbound: %s
+    redirectPortInboundV6: %s
     redirectPortOutbound: %s
 `
 
@@ -150,6 +151,7 @@ networking:
       kuma.io/service: demo-client
   transparentProxying:
     redirectPortInbound: %s
+    redirectPortInboundV6: %s
     redirectPortOutbound: %s
 `
 )

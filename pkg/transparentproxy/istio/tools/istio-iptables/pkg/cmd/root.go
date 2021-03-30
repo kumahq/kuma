@@ -85,6 +85,7 @@ func constructConfig() *config.Config {
 		RestoreFormat:           viper.GetBool(constants.RestoreFormat),
 		ProxyPort:               viper.GetString(constants.EnvoyPort),
 		InboundCapturePort:      viper.GetString(constants.InboundCapturePort),
+		InboundCapturePortV6:    viper.GetString(constants.InboundCapturePortV6),
 		InboundTunnelPort:       viper.GetString(constants.InboundTunnelPort),
 		ProxyUID:                viper.GetString(constants.ProxyUID),
 		ProxyGID:                viper.GetString(constants.ProxyGID),
@@ -179,6 +180,7 @@ func init() {
 
 	var envoyPort = "15001"
 	var inboundPort = "15006"
+	var inboundPortV6 = "15010"
 	var inboundTunnelPort = "15008"
 
 	rootCmd.Flags().StringP(constants.EnvoyPort, "p", "", "Specify the envoy port to which redirect all TCP traffic (default $ENVOY_PORT = 15001)")
@@ -193,6 +195,13 @@ func init() {
 		handleError(err)
 	}
 	viper.SetDefault(constants.InboundCapturePort, inboundPort)
+
+	rootCmd.Flags().StringP(constants.InboundCapturePortV6, "y", "",
+		"Port to which all inbound IPv6 TCP traffic to the pod/VM should be redirected to (default $INBOUND_CAPTURE_PORT_V6 = 15010)")
+	if err := viper.BindPFlag(constants.InboundCapturePortV6, rootCmd.Flags().Lookup(constants.InboundCapturePortV6)); err != nil {
+		handleError(err)
+	}
+	viper.SetDefault(constants.InboundCapturePortV6, inboundPortV6)
 
 	rootCmd.Flags().StringP(constants.InboundTunnelPort, "e", "",
 		"Specify the istio tunnel port for inbound tcp traffic (default $INBOUND_TUNNEL_PORT = 15008)")

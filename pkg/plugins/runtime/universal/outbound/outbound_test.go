@@ -64,8 +64,9 @@ var _ = Describe("UpdateOutbound", func() {
 							},
 						},
 						TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-							RedirectPortInbound:  15006,
-							RedirectPortOutbound: 15001,
+							RedirectPortInbound:   15006,
+							RedirectPortInboundV6: 15010,
+							RedirectPortOutbound:  15001,
 						},
 					},
 				},

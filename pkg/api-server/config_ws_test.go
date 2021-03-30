@@ -174,6 +174,7 @@ var _ = Describe("Config WS", func() {
                     "timeoutSeconds": 3
                   },
                   "redirectPortInbound": 15006,
+                  "redirectPortInboundV6": 15010,
                   "redirectPortOutbound": 15001,
                   "resources": {
                     "limits": {
