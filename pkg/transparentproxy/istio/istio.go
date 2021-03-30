@@ -5,9 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	uninstall "istio.io/istio/tools/istio-clean-iptables/pkg/cmd"
-	install "istio.io/istio/tools/istio-iptables/pkg/cmd"
-	"istio.io/istio/tools/istio-iptables/pkg/constants"
+
+	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
+
+	uninstall "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-clean-iptables/pkg/cmd"
+	install "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/cmd"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
