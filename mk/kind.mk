@@ -43,7 +43,7 @@ ${KIND_KUBECONFIG_DIR}:
 
 .PHONY: kind/start
 kind/start: ${KIND_KUBECONFIG_DIR}
-	kind get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
+	@kind get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
 		(kind create cluster \
 			--name "$(KIND_CLUSTER_NAME)" \
 			--config "$(KIND_CONFIG)" \

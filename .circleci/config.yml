@@ -496,7 +496,7 @@ jobs:
       kubernetes_version:
         description: The version of Kubernetes to test on.
         type: string
-        default: "v1.15.0"
+        default: "v1.20.0"
       use_local_kuma_images:
         description: Use local Docker images from CircleCI workspace instead of downloading ones from bintray.io.
         type: boolean
