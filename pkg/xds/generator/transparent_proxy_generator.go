@@ -14,10 +14,10 @@ import (
 // OriginTransparent is a marker to indicate by which ProxyGenerator resources were generated.
 const (
 	OriginTransparent = "transparent"
-	outboundNameIPv4      = "outbound:passthrough:ipv4"
-	outboundNameIPv6      = "outbound:passthrough:ipv6"
-	inboundNameIPv4       = "inbound:passthrough:ipv4"
-	inboundNameIPv6       = "inbound:passthrough:ipv6"
+	outboundNameIPv4  = "outbound:passthrough:ipv4"
+	outboundNameIPv6  = "outbound:passthrough:ipv6"
+	inboundNameIPv4   = "inbound:passthrough:ipv4"
+	inboundNameIPv6   = "inbound:passthrough:ipv6"
 	allIPv4           = "0.0.0.0"
 	allIPv6           = "::"
 	inPassThroughIPv4 = "127.0.0.6"
