@@ -195,7 +195,6 @@ metadata:
 	})
 
 	It("should access allservices", func() {
-
 		// Remote 1
 		pods, err := k8s.ListPodsE(
 			remote_1.GetTesting(),
