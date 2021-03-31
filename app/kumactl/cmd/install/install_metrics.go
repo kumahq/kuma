@@ -67,6 +67,15 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				Content:  dashboard.String(),
 			})
 
+			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-service.json")
+			if err != nil {
+				return err
+			}
+			args.Dashboards = append(args.Dashboards, context.Dashboard{
+				FileName: "kuma-service.json",
+				Content:  dashboard.String(),
+			})
+
 			filter := getExcludePrefixesFilter(args.WithoutPrometheus, args.WithoutGrafana)
 
 			renderedFiles, err := renderFilesWithFilter(yamlTemplateFiles, args, simpleTemplateRenderer, filter)

@@ -149,11 +149,21 @@ data:
       editable: true
       options:
         path: /etc/grafana/provisioning/dashboards
-{{ range $dashboard := .Dashboards }}
+{{ $namespace := .Namespace }}
+{{ range $index, $dashboard := .Dashboards }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: provisioning-dashboards-{{ $index }}
+  namespace: {{ $namespace }}
+  labels:
+    app: grafana
+data:
 {{ $dashboard.FileName | indent 2 }}: |
 {{ $dashboard.Content | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
-{{ end }}
 ---
+{{ end }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -304,7 +314,13 @@ spec:
           configMap:
             name: provisioning-datasource
         - name: provisioning-dashboards
-          configMap:
-            name: provisioning-dashboards
+          projected:
+            sources:
+              - configMap:
+                  name: provisioning-dashboards
+{{ range $index, $dashboard := .Dashboards }}
+              - configMap:
+                  name: provisioning-dashboards-{{ $index }}
+{{ end }}
         - name: storage
           emptyDir: {}
