@@ -301,7 +301,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 					{
 						Name: "/meshes/demo/dataplanes/backend-01",
 						Resource: &observability_v1.MonitoringAssignment{
-							Mesh: "demo",
+							Mesh:    "demo",
 							Service: "backend",
 							Targets: []*observability_v1.MonitoringAssignment_Target{{
 								Name:        "backend-01",

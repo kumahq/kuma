@@ -13,4 +13,3 @@ type Reconciler interface {
 	// for a given node
 	NeedsReconciliation(node *envoy_core.Node, typeUrl, versionInfo string) bool
 }
-

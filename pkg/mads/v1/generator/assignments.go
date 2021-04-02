@@ -11,7 +11,6 @@ import (
 
 var log = core.Log.WithName("mads").WithName("v1").WithName("generator")
 
-
 // MonitoringAssignmentsGenerator knows how to generate MonitoringAssignment
 // resources for a given set of Dataplanes.
 type MonitoringAssignmentsGenerator struct {
@@ -43,14 +42,14 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 
 		// TODO: could also group by service, and have one assignment per service
 		assignment := &observability_v1.MonitoringAssignment{
-			Mesh: dataplane.Meta.GetMesh(),
+			Mesh:    dataplane.Meta.GetMesh(),
 			Service: dataplane.Spec.GetIdentifyingService(),
 			Targets: []*observability_v1.MonitoringAssignment_Target{{
 				Scheme:      "http",
-				Name: dataplane.GetMeta().GetName(),
+				Name:        dataplane.GetMeta().GetName(),
 				Address:     mads.Address(dataplane, prometheusEndpoint),
 				MetricsPath: prometheusEndpoint.GetPath(),
-				Labels: mads.DataplaneLabels(dataplane),
+				Labels:      mads.DataplaneLabels(dataplane),
 			}},
 		}
 

@@ -43,7 +43,7 @@ type muxServer struct {
 // muxHandler implements http.Handler for gRPC by intercepting
 // all gRPC traffic and passing through all other traffic
 type muxHandler struct {
-	grpcServer  *grpc.Server
+	grpcServer *grpc.Server
 	// passthrough handles all non-gRPC traffic
 	passthrough http.Handler
 }
@@ -120,9 +120,9 @@ func (s *muxServer) createHttpServicesHandler() http.Handler {
 
 func (s *muxServer) Start(stop <-chan struct{}) error {
 	server := &http.Server{
-		Addr:    fmt.Sprintf(":%d", s.config.Port),
+		Addr: fmt.Sprintf(":%d", s.config.Port),
 		Handler: &muxHandler{
-			grpcServer: s.createGRPCServer(),
+			grpcServer:  s.createGRPCServer(),
 			passthrough: s.createHttpServicesHandler(),
 		},
 	}

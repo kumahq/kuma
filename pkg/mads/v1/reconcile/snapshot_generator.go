@@ -24,7 +24,7 @@ func NewSnapshotGenerator(resourceManager core_manager.ReadOnlyResourceManager, 
 type snapshotGenerator struct {
 	resourceManager   core_manager.ReadOnlyResourceManager
 	resourceGenerator generator.ResourceGenerator
-	versioner 		  util_xds_v3.SnapshotVersioner
+	versioner         util_xds_v3.SnapshotVersioner
 }
 
 func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.Node) (util_xds_v3.Snapshot, error) {

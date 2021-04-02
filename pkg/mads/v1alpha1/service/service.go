@@ -11,7 +11,7 @@ import (
 type service struct {
 	server Server
 	config *mads.MonitoringAssignmentServerConfig
-	log logr.Logger
+	log    logr.Logger
 }
 
 func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.ReadOnlyResourceManager, log logr.Logger) *service {
@@ -29,6 +29,6 @@ func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.R
 	return &service{
 		server: srv,
 		config: config,
-		log: log,
+		log:    log,
 	}
 }
