@@ -10,7 +10,7 @@ import (
 
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 
-	mads_client "github.com/kumahq/kuma/pkg/mads/client"
+	mads_client "github.com/kumahq/kuma/pkg/mads/v1alpha1/client"
 )
 
 type stream struct {
