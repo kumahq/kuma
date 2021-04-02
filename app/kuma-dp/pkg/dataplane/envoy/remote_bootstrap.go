@@ -31,7 +31,7 @@ func NewRemoteBootstrapGenerator(client *http.Client) BootstrapConfigFactoryFunc
 
 var (
 	log           = core.Log.WithName("dataplane")
-	DpNotFoundErr = errors.New("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection.")
+	DpNotFoundErr = errors.New("Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp or pass it to kuma-dp run --dataplane-file=/file. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection.")
 )
 
 func InvalidRequestErr(msg string) error {
@@ -83,7 +83,7 @@ func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params Bootst
 
 		switch err {
 		case DpNotFoundErr:
-			log.Info("Dataplane entity is not yet found in the Control Plane. If you are running on Kubernetes, CP is most likely still in the process of converting Pod to Dataplane. Retrying.", "backoff", cfg.ControlPlane.Retry.Backoff)
+			log.Info("Dataplane entity is not yet found in the Control Plane. If you are running on Kubernetes, CP is most likely still in the process of converting Pod to Dataplane. If it takes too long, check kuma-cp logs. Retrying.", "backoff", cfg.ControlPlane.Retry.Backoff)
 		default:
 			log.Info("could not fetch bootstrap configuration. Retrying.", "backoff", cfg.ControlPlane.Retry.Backoff, "err", err.Error())
 		}
