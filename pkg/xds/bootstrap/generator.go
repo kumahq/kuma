@@ -91,6 +91,9 @@ var DpTokenRequired = errors.New("Dataplane Token is required. Generate token us
 
 var InvalidBootstrapVersion = errors.New(`Invalid BootstrapVersion. Available values are: "2", "3"`)
 
+var NotCA = errors.New("A data plane proxy is trying to verify the control plane using the certificate which is not a certificate authority (basic constraint 'CA' is set to 'false').\n" +
+	"Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE")
+
 func SANMismatchErr(host string, sans []string) error {
 	return errors.Errorf("A data plane proxy is trying to connect to the control plane using %q address, but the certificate in the control plane has the following SANs %q. "+
 		"Either change the --cp-address in kuma-dp to one of those or execute the following steps:\n"+
@@ -107,13 +110,18 @@ func ISSANMismatchErr(err error) bool {
 }
 
 func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) error {
-	if b.dpAuthEnabled && request.DataplaneTokenPath == "" {
+	if b.dpAuthEnabled && request.DataplaneTokenPath == "" && request.DataplaneToken == "" {
 		return DpTokenRequired
 	}
 	if b.config.Params.XdsHost == "" { // XdsHost takes precedence over Host in the request, so validate only when it is not set
 		if !b.hostsAndIps[request.Host] {
 			return SANMismatchErr(request.Host, b.hostsAndIps.slice())
 		}
+	}
+	if request.DataplaneToken != "" && request.DataplaneTokenPath != "" {
+		verr := validators.ValidationError{}
+		verr.AddViolation("dataplaneToken", "only one of dataplaneToken and dataplaneTokenField can be defined")
+		return verr.OrNil()
 	}
 	return nil
 }
@@ -178,14 +186,15 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		return nil, "", err
 	}
 
-	var certBytes = ""
-	if b.xdsCertFile != "" {
-		cert, err := ioutil.ReadFile(b.xdsCertFile)
-		if err != nil {
-			return nil, "", err
-		}
-		certBytes = base64.StdEncoding.EncodeToString(cert)
+	cert, origin, err := b.caCert(request)
+	if err != nil {
+		return nil, "", err
 	}
+
+	if err := b.validateCaCert(cert, origin, request); err != nil {
+		return nil, "", err
+	}
+
 	accessLogSocket := envoy_common.AccessLogSocketName(request.Name, request.Mesh)
 	params := configParameters{
 		Id:                 proxyId.String(),
@@ -198,8 +207,9 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout,
 		AccessLogPipe:      accessLogSocket,
 		DataplaneTokenPath: request.DataplaneTokenPath,
+		DataplaneToken:     request.DataplaneToken,
 		DataplaneResource:  request.DataplaneResource,
-		CertBytes:          certBytes,
+		CertBytes:          base64.StdEncoding.EncodeToString(cert),
 		KumaDpVersion:      request.Version.KumaDp.Version,
 		KumaDpGitTag:       request.Version.KumaDp.GitTag,
 		KumaDpGitCommit:    request.Version.KumaDp.GitCommit,
@@ -211,6 +221,46 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params, request.BootstrapVersion)
+}
+
+func (b *bootstrapGenerator) validateCaCert(cert []byte, origin string, request types.BootstrapRequest) error {
+	if request.DataplaneTokenPath != "" {
+		// when using GoogleGRPC it is valid to put non-CA certificate therefore we should only verify this for EnvoyGRPC
+		// EnvoyGRPC is used when DataplaneToken is passed via request as inline value, not as a file.
+		return nil
+	}
+
+	pemCert, _ := pem.Decode(cert)
+	if pemCert == nil {
+		return errors.New("could not parse certificate from " + origin)
+	}
+	x509Cert, err := x509.ParseCertificate(pemCert.Bytes)
+	if err != nil {
+		return errors.Wrap(err, "could not parse certificate from "+origin)
+	}
+	// checking just x509Cert.IsCA is not enough, because it's valid to generate CA without CA:TRUE basic constraint
+	if x509Cert.BasicConstraintsValid && !x509Cert.IsCA {
+		return NotCA
+	}
+	return nil
+}
+
+// caCert gets CA cert that was used to signed cert that DP server is protected with.
+// Technically result of this function does not have to be a valid CA.
+// When user provides custom cert + key and does not provide --ca-cert-file to kuma-dp run, this can return just a regular cert
+func (b *bootstrapGenerator) caCert(request types.BootstrapRequest) ([]byte, string, error) {
+	// CaCert from the request takes precedence. It is only visible if user provides --ca-cert-file to kuma-dp run
+	if request.CaCert != "" {
+		return []byte(request.CaCert), "request .CaCert", nil
+	}
+	if b.xdsCertFile != "" {
+		file, err := ioutil.ReadFile(b.xdsCertFile)
+		if err != nil {
+			return nil, "file " + b.xdsCertFile, err
+		}
+		return file, "", nil
+	}
+	return nil, "", nil
 }
 
 func (b *bootstrapGenerator) xdsHost(request types.BootstrapRequest) string {
@@ -314,7 +364,7 @@ func hostsAndIPsFromCertFile(dpServerCertFile string) (SANSet, error) {
 	}
 	pemCert, _ := pem.Decode(certBytes)
 	if pemCert == nil {
-		return nil, errors.Wrap(err, "could not parse certificate")
+		return nil, errors.New("could not parse certificate")
 	}
 	cert, err := x509.ParseCertificate(pemCert.Bytes)
 	if err != nil {

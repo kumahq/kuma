@@ -17,6 +17,7 @@ const (
 	// Supported Envoy node metadata fields.
 
 	fieldDataplaneTokenPath         = "dataplaneTokenPath"
+	fieldDataplaneToken             = "dataplane.token"
 	fieldDataplaneAdminPort         = "dataplane.admin.port"
 	fieldDataplaneDataplaneResource = "dataplane.resource"
 	fieldDynamicMetadata            = "dynamicMetadata"
@@ -38,6 +39,7 @@ const (
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
 	DataplaneTokenPath string
+	DataplaneToken     string
 	DataplaneResource  *core_mesh.DataplaneResource
 	AdminPort          uint32
 	DynamicMetadata    map[string]string
@@ -48,6 +50,13 @@ func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
 		return ""
 	}
 	return m.DataplaneTokenPath
+}
+
+func (m *DataplaneMetadata) GetDataplaneToken() string {
+	if m == nil {
+		return ""
+	}
+	return m.DataplaneToken
 }
 
 func (m *DataplaneMetadata) GetDataplaneResource() *core_mesh.DataplaneResource {
@@ -78,6 +87,9 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 	}
 	if field := xdsMetadata.Fields[fieldDataplaneTokenPath]; field != nil {
 		metadata.DataplaneTokenPath = field.GetStringValue()
+	}
+	if field := xdsMetadata.Fields[fieldDataplaneToken]; field != nil {
+		metadata.DataplaneToken = field.GetStringValue()
 	}
 	if value := xdsMetadata.Fields[fieldDataplaneAdminPort]; value != nil {
 		if port, err := strconv.Atoi(value.GetStringValue()); err == nil {
