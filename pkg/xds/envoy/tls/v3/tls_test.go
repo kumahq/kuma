@@ -99,13 +99,8 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                         apiConfigSource:
                           apiType: GRPC
                           grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-control-plane:5677
+                          - envoyGrpc:
+                              clusterName: ads_cluster
                           transportApiVersion: V3
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
@@ -114,13 +109,8 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                       apiConfigSource:
                         apiType: GRPC
                         grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_identity_cert
-                            targetUri: kuma-control-plane:5677
+                        - envoyGrpc:
+                            clusterName: ads_cluster
                         transportApiVersion: V3
                       resourceApiVersion: V3
                 requireClientCertificate: true
@@ -140,13 +130,8 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                         apiConfigSource:
                           apiType: GRPC
                           grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-control-plane:5677
+                          - envoyGrpc:
+                              clusterName: ads_cluster
                           transportApiVersion: V3
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
@@ -155,19 +140,53 @@ var _ = Describe("CreateDownstreamTlsContext()", func() {
                       apiConfigSource:
                         apiType: GRPC
                         grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_identity_cert
-                            targetUri: kuma-control-plane:5677
+                        - envoyGrpc:
+                            clusterName: ads_cluster
                         transportApiVersion: V3
                       resourceApiVersion: V3
                 requireClientCertificate: true
 `,
 			}),
 			Entry("dataplane with a token", testCase{
+				metadata: &core_xds.DataplaneMetadata{
+					DataplaneToken: "sampletoken",
+				},
+				expected: `
+                commonTlsContext:
+                  combinedValidationContext:
+                    defaultValidationContext:
+                      matchSubjectAltNames:
+                      - prefix: spiffe://default/
+                    validationContextSdsSecretConfig:
+                      name: mesh_ca
+                      sdsConfig:
+                        apiConfigSource:
+                          apiType: GRPC
+                          grpcServices:
+                          - envoyGrpc:
+                              clusterName: ads_cluster
+                            initialMetadata:
+                            - key: authorization
+                              value: sampletoken
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
+                  tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                        - envoyGrpc:
+                            clusterName: ads_cluster
+                          initialMetadata:
+                          - key: authorization
+                            value: sampletoken
+                        transportApiVersion: V3
+                      resourceApiVersion: V3
+                requireClientCertificate: true
+`,
+			}),
+			Entry("dataplane with a token path", testCase{
 
 				metadata: &core_xds.DataplaneMetadata{
 					DataplaneTokenPath: "/path/to/token",
@@ -317,13 +336,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                         apiConfigSource:
                           apiType: GRPC
                           grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-control-plane:5677
+                          - envoyGrpc:
+                              clusterName: ads_cluster
                           transportApiVersion: V3
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
@@ -332,13 +346,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                       apiConfigSource:
                         apiType: GRPC
                         grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_identity_cert
-                            targetUri: kuma-control-plane:5677
+                        - envoyGrpc:
+                            clusterName: ads_cluster
                         transportApiVersion: V3
                       resourceApiVersion: V3
 `,
@@ -358,13 +367,8 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                         apiConfigSource:
                           apiType: GRPC
                           grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-control-plane:5677
+                          - envoyGrpc:
+                              clusterName: ads_cluster
                           transportApiVersion: V3
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
@@ -373,18 +377,52 @@ var _ = Describe("CreateUpstreamTlsContext()", func() {
                       apiConfigSource:
                         apiType: GRPC
                         grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_identity_cert
-                            targetUri: kuma-control-plane:5677
+                        - envoyGrpc:
+                            clusterName: ads_cluster
                         transportApiVersion: V3
                       resourceApiVersion: V3
 `,
 			}),
-			Entry("dataplane with a token", testCase{
+			Entry("dataplane with token", testCase{
+				metadata: &core_xds.DataplaneMetadata{
+					DataplaneToken: "sampletoken",
+				},
+				upstreamService: "backend",
+				expected: `
+                commonTlsContext:
+                  combinedValidationContext:
+                    defaultValidationContext:
+                      matchSubjectAltNames:
+                      - exact: spiffe://default/backend
+                    validationContextSdsSecretConfig:
+                      name: mesh_ca
+                      sdsConfig:
+                        apiConfigSource:
+                          apiType: GRPC
+                          grpcServices:
+                          - envoyGrpc:
+                              clusterName: ads_cluster
+                            initialMetadata:
+                            - key: authorization
+                              value: sampletoken
+                          transportApiVersion: V3
+                        resourceApiVersion: V3
+                  tlsCertificateSdsSecretConfigs:
+                  - name: identity_cert
+                    sdsConfig:
+                      apiConfigSource:
+                        apiType: GRPC
+                        grpcServices:
+                        - envoyGrpc:
+                            clusterName: ads_cluster
+                          initialMetadata:
+                          - key: authorization
+                            value: sampletoken
+                        transportApiVersion: V3
+                      resourceApiVersion: V3
+`,
+			}),
+			Entry("dataplane with a token path", testCase{
 				upstreamService: "backend",
 				metadata: &core_xds.DataplaneMetadata{
 					DataplaneTokenPath: "/path/to/token",
