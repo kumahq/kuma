@@ -11,6 +11,7 @@ import (
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	mads_generator "github.com/kumahq/kuma/pkg/mads/generator"
 	"github.com/kumahq/kuma/pkg/util/proto"
 
 	observability_proto "github.com/kumahq/kuma/api/observability/v1alpha1"
@@ -33,7 +34,7 @@ var _ = Describe("MonitoringAssignmentsGenerator", func() {
 				// setup
 				generator := MonitoringAssignmentsGenerator{}
 				// when
-				resources, err := generator.Generate(Args{
+				resources, err := generator.Generate(mads_generator.Args{
 					Meshes:     given.meshes,
 					Dataplanes: given.dataplanes,
 				})
