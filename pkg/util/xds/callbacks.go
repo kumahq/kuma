@@ -2,6 +2,7 @@ package xds
 
 import (
 	"context"
+
 	_struct "github.com/golang/protobuf/ptypes/struct"
 )
 

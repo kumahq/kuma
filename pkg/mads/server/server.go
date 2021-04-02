@@ -3,7 +3,16 @@ package server
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/emicklei/go-restful"
+	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
+	"github.com/slok/go-http-metrics/middleware"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/keepalive"
+
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -13,13 +22,6 @@ import (
 	mads_v1alpha1 "github.com/kumahq/kuma/pkg/mads/v1alpha1/service"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	util_prometheus "github.com/kumahq/kuma/pkg/util/prometheus"
-	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
-	"github.com/slok/go-http-metrics/middleware"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/keepalive"
-	"net/http"
-	"strings"
-	"time"
 )
 
 const (

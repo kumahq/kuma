@@ -1,9 +1,10 @@
 package mads
 
 import (
+	"time"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/mads"
-	"time"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"

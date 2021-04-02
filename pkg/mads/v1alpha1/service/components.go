@@ -2,8 +2,9 @@ package service
 
 import (
 	"context"
-	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	"time"
+
+	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 
 	"github.com/go-logr/logr"
 

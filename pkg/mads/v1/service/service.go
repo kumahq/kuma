@@ -2,6 +2,7 @@ package service
 
 import (
 	"github.com/go-logr/logr"
+
 	"github.com/kumahq/kuma/pkg/config/mads"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"

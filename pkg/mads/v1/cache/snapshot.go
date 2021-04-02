@@ -1,8 +1,9 @@
 package cache
 
 import (
-	"github.com/kumahq/kuma/pkg/mads/v1"
 	"github.com/pkg/errors"
+
+	v1 "github.com/kumahq/kuma/pkg/mads/v1"
 
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"

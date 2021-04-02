@@ -4,8 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"fmt"
-	"github.com/kumahq/kuma/pkg/mads/v1alpha1"
 	"net/url"
+
+	"github.com/kumahq/kuma/pkg/mads/v1alpha1"
 
 	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"

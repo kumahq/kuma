@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+
 	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	"github.com/envoyproxy/go-control-plane/pkg/server/sotw/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
+
 	mads_v1alpha1 "github.com/kumahq/kuma/pkg/mads/v1alpha1"
 
 	observability_v1alpha1 "github.com/kumahq/kuma/api/observability/v1alpha1"
