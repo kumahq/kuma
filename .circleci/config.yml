@@ -59,6 +59,12 @@ reusable:
         tags:
           ignore: /.*/ # we don't want to run master workflow on commits with tag because use_local_kuma_images has to be false for all the jobs to pass
 
+    # filters for the eks-e2e workflow
+    master_only_workflow_filters: &master_only_workflow_filters
+      filters:
+        branches:
+          only: master, /^release-.*/
+
     # filters for the kuma-commit workflow
     commit_workflow_filters: &commit_workflow_filters
       filters:
@@ -899,7 +905,7 @@ workflows:
         # EKS resources if anything went wrong and because of any reason
         # they were not cleaned immediately after tests
         cron: "0 2 * * *"
-        <<: *commit_workflow_filters
+        <<: *master_only_workflow_filters
     jobs:
     - eks-ecr-clean-registry
     - eks-delete-clusters
@@ -909,7 +915,7 @@ workflows:
     - schedule:
         # run every Monday at 00:00
         cron: "0 0 * * 1"
-        <<: *master_workflow_filters
+        <<: *master_only_workflow_filters
     jobs:
     - go_cache: *master_workflow_filters
     - build:
@@ -925,7 +931,6 @@ workflows:
         name: test/e2e/eks
         requires:
         - images
-        - check
 
   kuma-master:
     jobs:
