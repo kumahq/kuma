@@ -16,6 +16,8 @@ func (s *service) RegisterRoutes(ws *restful.WebService) {
 		Doc("Exposes the observability/v1 API").
 		Returns(200, "OK", v3.DiscoveryResponse{}).
 		Returns(304, "Not Modified", nil).
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
 		To(s.handleDiscovery))
 }
 
@@ -40,7 +42,7 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 		return
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), s.config.HttpTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), s.config.FetchTimeout)
 	defer cancel()
 
 	discoveryRes, err := s.server.FetchMonitoringAssignments(ctx, &discoveryReq)

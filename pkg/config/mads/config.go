@@ -1,6 +1,7 @@
 package mads
 
 import (
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/mads"
 	"time"
 
@@ -10,34 +11,38 @@ import (
 	"github.com/kumahq/kuma/pkg/config"
 )
 
+var log = core.Log.WithName("mads-config")
+
 func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig {
 	return &MonitoringAssignmentServerConfig{
-		GrpcPort:                  5676, // TODO: refactor so server can handle both api versions
+		Port:                      5676,
 		GrpcEnabled:               true,
-		HttpPort:                  5677,
 		HttpEnabled:               true,
-		HttpTimeout:               30 * time.Second,
-		ApiVersions:               []mads.ApiVersion{mads.API_V1},
+		FetchTimeout:              30 * time.Second,
+		ApiVersions:               []mads.ApiVersion{mads.API_V1, mads.API_V1_ALPHA1},
 		AssignmentRefreshInterval: 1 * time.Second,
 	}
 }
 
 // Monitoring Assignment Discovery Service (MADS) server configuration.
 type MonitoringAssignmentServerConfig struct {
-	// Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
+	// GrpcPort is the port of the gRPC server that serves Monitoring Assignment Discovery Service (MADS).
+	//
+	// Deprecated: GrpcPort has been replaced with Port to multiplex both HTTP and gRPC
 	GrpcPort uint32 `yaml:"grpcPort" envconfig:"kuma_monitoring_assignment_server_grpc_port"`
-	// Whether to run a gRPC server
-	GrpcEnabled bool `yaml:"grpcEnabled" envconfig:"kuma_monitoring_assignment_server_grpc_enabled"`
-	// Port of a HTTP server that serves Monitoring Assignment Discovery Service (MADS)
-	HttpPort uint32 `yaml:"httpPort" envconfig:"kuma_monitoring_assignment_server_http_port"`
-	// Whether to run a HTTP discovery server. Only available for v1.
-	HttpEnabled bool `yaml:"httpEnabled" envconfig:"kuma_monitoring_assignment_server_http_enabled"`
-	// The timeout for a single HTTP discovery request.
-	HttpTimeout time.Duration `yaml:"httpTimeout" envconfig:"kuma_monitoring_assignment_server_http_timeout"`
+	// Port of the server that serves Monitoring Assignment Discovery Service (MADS)
+	// over both grpc and http.
+	Port uint32 `yaml:"port" envconfig:"kuma_monitoring_assignment_server_port"`
+	// The timeout for a single fetch-based discovery request.
+	FetchTimeout time.Duration `yaml:"fetchTimeout" envconfig:"kuma_monitoring_assignment_server_fetch_timeout"`
 	// Which observability apiVersions to serve
 	ApiVersions []string `yaml:"apiVersions" envconfig:"kuma_monitoring_assignment_server_api_versions"`
 	// Interval for re-generating monitoring assignments for clients connected to the Control Plane.
 	AssignmentRefreshInterval time.Duration `yaml:"assignmentRefreshInterval" envconfig:"kuma_monitoring_assignment_server_assignment_refresh_interval"`
+	// Whether to run a HTTP discovery server. Only available for MADS v1.
+	HttpEnabled bool `yaml:"httpEnabled" envconfig:"kuma_monitoring_assignment_server_http_enabled"`
+	// Whether to run a gRPC server. Required for v1alpha1.
+	GrpcEnabled bool `yaml:"grpcEnabled" envconfig:"kuma_monitoring_assignment_server_grpc_enabled"`
 }
 
 var _ config.Config = &MonitoringAssignmentServerConfig{}
@@ -46,15 +51,15 @@ func (c *MonitoringAssignmentServerConfig) Sanitize() {
 }
 
 func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
-	if 65535 < c.GrpcPort {
-		errs = multierr.Append(errs, errors.Errorf(".GrpcPort must be in the range [0, 65535]"))
-	}
-	if 65535 < c.HttpPort {
-		errs = multierr.Append(errs, errors.Errorf(".HttpPort must be in the range [0, 65535]"))
+	if c.GrpcPort != 0 {
+		log.V(1).Info("`grpcPort` is deprecated. Please use `port` instead")
+		if c.Port == 0 {
+			c.Port = c.GrpcPort
+		}
 	}
 
-	if c.GrpcPort == c.HttpPort {
-		errs = multierr.Append(errs, errors.Errorf(".HttpPort and .GrpcPort must be different"))
+	if 65535 < c.Port {
+		errs = multierr.Append(errs, errors.Errorf(".GrpcPort must be in the range [0, 65535]"))
 	}
 
 	if len(c.ApiVersions) == 0 {
