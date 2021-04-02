@@ -57,8 +57,6 @@ func (m *muxHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
 	m.passthrough.ServeHTTP(writer, req)
 }
 
-//func (m *muxHandler)
-
 type HttpService interface {
 	RegisterRoutes(ws *restful.WebService)
 }
@@ -106,12 +104,10 @@ func (s *muxServer) createHttpServicesHandler() http.Handler {
 	})
 	promFilterFunc := util_prometheus.MetricsHandler("", promMiddleware)
 
-	var webSvcs []*restful.WebService
 	for _, service := range s.httpServices {
 		ws := new(restful.WebService)
 		ws.Filter(promFilterFunc)
 		service.RegisterRoutes(ws)
-		webSvcs = append(webSvcs, ws)
 		container.Add(ws)
 	}
 

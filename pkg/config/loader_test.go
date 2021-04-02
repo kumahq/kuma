@@ -130,7 +130,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
-			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
+			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(3333)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
@@ -287,7 +287,7 @@ apiServer:
     - https://kuma
     - https://someapi
 monitoringAssignmentServer:
-  grpcPort: 3333
+  port: 3333
   assignmentRefreshInterval: 12s
 runtime:
   universal:
