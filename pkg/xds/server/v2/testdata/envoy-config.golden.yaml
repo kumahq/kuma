@@ -87,26 +87,20 @@ resources:
                   apiConfigSource:
                     apiType: GRPC
                     grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+                    - envoyGrpc:
+                        clusterName: ads_cluster
+                    transportApiVersion: V2
+                  resourceApiVersion: V2
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_identity_cert
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
+                  transportApiVersion: V2
+                resourceApiVersion: V2
           requireClientCertificate: true
     name: inbound:192.168.0.1:443
     trafficDirection: INBOUND
@@ -154,26 +148,20 @@ resources:
                   apiConfigSource:
                     apiType: GRPC
                     grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+                    - envoyGrpc:
+                        clusterName: ads_cluster
+                    transportApiVersion: V2
+                  resourceApiVersion: V2
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_identity_cert
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
+                  transportApiVersion: V2
+                resourceApiVersion: V2
           requireClientCertificate: true
     name: inbound:192.168.0.1:80
     trafficDirection: INBOUND
@@ -213,26 +201,20 @@ resources:
                   apiConfigSource:
                     apiType: GRPC
                     grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+                    - envoyGrpc:
+                        clusterName: ads_cluster
+                    transportApiVersion: V2
+                  resourceApiVersion: V2
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_identity_cert
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
+                  transportApiVersion: V2
+                resourceApiVersion: V2
           requireClientCertificate: true
     name: inbound:192.168.0.2:443
     trafficDirection: INBOUND
@@ -272,26 +254,20 @@ resources:
                   apiConfigSource:
                     apiType: GRPC
                     grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+                    - envoyGrpc:
+                        clusterName: ads_cluster
+                    transportApiVersion: V2
+                  resourceApiVersion: V2
             tlsCertificateSdsSecretConfigs:
             - name: identity_cert
               sdsConfig:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_identity_cert
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
+                  transportApiVersion: V2
+                resourceApiVersion: V2
           requireClientCertificate: true
     name: inbound:192.168.0.2:80
     trafficDirection: INBOUND

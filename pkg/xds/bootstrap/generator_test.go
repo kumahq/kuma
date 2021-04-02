@@ -137,11 +137,11 @@ var _ = Describe("bootstrapGenerator", func() {
 				return cfg
 			},
 			request: types.BootstrapRequest{
-				Mesh:               "mesh",
-				Name:               "name.namespace",
-				AdminPort:          1234,
-				DataplaneTokenPath: "/tmp/token",
-				Version:            defaultVersion,
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				AdminPort:      1234,
+				DataplaneToken: "token",
+				Version:        defaultVersion,
 			},
 			expectedConfigFile:       "generator.default-config.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV3,
@@ -368,50 +368,91 @@ var _ = Describe("bootstrapGenerator", func() {
 		Expect(err.Error()).To(Equal("Resource precondition failed: Port 9901 requested as both admin and outbound port."))
 	})
 
-	It("should fail bootstrap due to invalid hostname", func() {
-		// given
-		cfg := bootstrap_config.DefaultBootstrapServerConfig()
+	type errTestCase struct {
+		request  types.BootstrapRequest
+		expected string
+	}
+	DescribeTable("should fail bootstrap",
+		func(given errTestCase) {
+			// given
+			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true)
-		Expect(err).ToNot(HaveOccurred())
-		request := types.BootstrapRequest{
-			Mesh:      "mesh",
-			Name:      "name-3.namespace",
-			AdminPort: 9901,
-			Host:      "kuma.internal",
-		}
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true)
+			Expect(err).ToNot(HaveOccurred())
 
-		// when
-		_, _, err = generator.Generate(context.Background(), request)
-		// then
-		Expect(err).To(HaveOccurred())
-		// and
-		Expect(err.Error()).To(Equal(`A data plane proxy is trying to connect to the control plane using "kuma.internal" address, but the certificate in the control plane has the following SANs ["localhost"]. Either change the --cp-address in kuma-dp to one of those or execute the following steps:
+			// when
+			_, _, err = generator.Generate(context.Background(), given.request)
+			// then
+			Expect(err).To(HaveOccurred())
+			// and
+			Expect(err.Error()).To(Equal(given.expected))
+		},
+		Entry("due to invalid hostname", errTestCase{
+			request: types.BootstrapRequest{
+				Mesh:      "mesh",
+				Name:      "name-3.namespace",
+				AdminPort: 9901,
+				Host:      "kuma.internal",
+			},
+			expected: `A data plane proxy is trying to connect to the control plane using "kuma.internal" address, but the certificate in the control plane has the following SANs ["localhost"]. Either change the --cp-address in kuma-dp to one of those or execute the following steps:
 1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --cp-hostname=kuma.internal'
 2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.
-3) Restart the control plane to read the new certificate and start kuma-dp.`))
-	})
-
-	It("should fail bootstrap due to invalid bootstrap version", func() {
-		// given
-		cfg := bootstrap_config.DefaultBootstrapServerConfig()
-		cfg.Params.XdsHost = "localhost"
-		cfg.Params.XdsPort = 5678
-
-		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true)
-		Expect(err).ToNot(HaveOccurred())
-		request := types.BootstrapRequest{
-			Mesh:             "mesh",
-			Name:             "name.namespace",
-			AdminPort:        9901,
-			BootstrapVersion: "5",
-		}
-
-		// when
-		_, _, err = generator.Generate(context.Background(), request)
-		// then
-		Expect(err).To(HaveOccurred())
-		// and
-		Expect(err.Error()).To(Equal(`Invalid BootstrapVersion. Available values are: "2", "3"`))
-	})
+3) Restart the control plane to read the new certificate and start kuma-dp.`,
+		}),
+		Entry("due to invalid bootstrap version", errTestCase{
+			request: types.BootstrapRequest{
+				Host:             "localhost",
+				Mesh:             "mesh",
+				Name:             "name.namespace",
+				AdminPort:        9901,
+				BootstrapVersion: "5",
+			},
+			expected: `Invalid BootstrapVersion. Available values are: "2", "3"`,
+		}),
+		Entry("when both dataplane and dataplane token path are defined", errTestCase{
+			request: types.BootstrapRequest{
+				Host:               "localhost",
+				Mesh:               "mesh",
+				Name:               "name.namespace",
+				AdminPort:          9901,
+				DataplaneTokenPath: "/tmp",
+				DataplaneToken:     "token",
+			},
+			expected: `dataplaneToken: only one of dataplaneToken and dataplaneTokenField can be defined`,
+		}),
+		Entry("when CaCert is not a CA and EnvoyGRPC is used", errTestCase{
+			request: types.BootstrapRequest{
+				Host:           "localhost",
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				AdminPort:      9901,
+				DataplaneToken: "token",
+				CaCert: `
+-----BEGIN CERTIFICATE-----
+MIIDdzCCAl+gAwIBAgIJAPHcHHoejP+XMA0GCSqGSIb3DQEBCwUAMD4xCzAJBgNV
+BAYTAlBMMQ8wDQYDVQQIDAZXYXJzYXcxDzANBgNVBAcMBldhcnNhdzENMAsGA1UE
+CgwES29uZzAeFw0yMTAzMzAwOTEwMTFaFw0yMzA3MDMwOTEwMTFaMC8xCzAJBgNV
+BAYTAlBMMQ8wDQYDVQQIDAZXYXJzYXcxDzANBgNVBAcMBldhcnNhdzCCASIwDQYJ
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBAMOxLuQiRSsDKb+E/iliMN0ME1ENxx6v
+S362cmyL6pCS6HdsJnOiCeAiiezRdotf7pD87DkwLrAI2v6IOEueXmXu/pRkZZdj
+GFdYOJ0j28Qg79VfhLZPGZrATowUkmNfWFuX7gyjButP5+M6yMEm8piKkMgYtj8H
+13Jj5GBazYojBdVkdC7VCRjwiF3oudDC+I0f5RFwqrU89zfLf8fIYn0waioUZKT9
+W48oVmRw2SqYFf5O+T+EY3mcSWRNrzweZX7YdFvHFJLSglkmn7275cdwqle68iZn
+xbVn7MW5nlp5W0ONAFLB3JJ7TRee2o8P9CkiuqG+ppmMPQq5zWPGuxUCAwEAAaOB
+hjCBgzBYBgNVHSMEUTBPoUKkQDA+MQswCQYDVQQGEwJQTDEPMA0GA1UECAwGV2Fy
+c2F3MQ8wDQYDVQQHDAZXYXJzYXcxDTALBgNVBAoMBEtvbmeCCQDpKl9mxhgHFzAJ
+BgNVHRMEAjAAMAsGA1UdDwQEAwIE8DAPBgNVHREECDAGhwTAqAANMA0GCSqGSIb3
+DQEBCwUAA4IBAQCHU5JyuMwayeVBVSOnGw8A9ugrGfyHy4nN+vK+IjkyPaDynyob
+i1mXzK1JDn2koHqRRlSGQGy/eJdHRPxUj8+VzyIbCVqpiiOYxC2tQUQ5BhVGC08u
+oCZcflyypSej2QVYtj83ty8ty1EFSdO8v23oPhzVSjc+SkF5c+q326piXf+a5wWh
+uAxW1XJnTaqAFhGR9c0zRCrbz86yQTsdFAm1UVMMucnZjNpWL4pHLJC6FCiOO17q
+w/vjIriD0mGwwccxbojmEHq4rO4ZrjQNmwvOgxoL2dTm/L9Smr6RXmIgu/0Pnrlq
+7RLK1pnDttr4brFafbIvWIBvshe2hoCT6jBW
+-----END CERTIFICATE-----
+`,
+			},
+			expected: `A data plane proxy is trying to verify the control plane using the certificate which is not a certificate authority (basic constraint 'CA' is set to 'false').
+Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE`,
+		}),
+	)
 })
