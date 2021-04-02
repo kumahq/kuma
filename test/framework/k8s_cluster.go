@@ -577,7 +577,11 @@ func (c *K8sCluster) deleteKumaViaHelm(opts *deployOptions) (errs error) {
 
 	// HELM does not remove CRDs therefore we need to do it manually.
 	// It's important to remove CRDs to get rid of all "instances" of CRDs like default Mesh etc.
-	return c.deleteCRDs()
+	if err := c.deleteCRDs(); err != nil {
+		errs = multierr.Append(errs, err)
+	}
+
+	return errs
 }
 
 func (c *K8sCluster) deleteKumaViaKumactl(opts *deployOptions) error {
