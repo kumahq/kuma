@@ -51,7 +51,7 @@ func validateExtarnalServiceAddress(path validators.PathBuilder, address string)
 		err.AddViolationAt(path.Field("address"), "unable to parse address")
 	}
 	if !govalidator.IsIP(host) && !govalidator.IsDNSName(host) {
-		err.AddViolationAt(path.Field("address"), "address has to be valid IP address or domain name")
+		err.AddViolationAt(path.Field("address"), "address has to be a valid IP address or a domain name")
 	}
 
 	iport, e := strconv.Atoi(port)
