@@ -252,8 +252,8 @@ jobs:
             KUMA_USE_LOAD_BALANCER=true \
             KUMA_IN_EKS=true \
             KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}" \
-            KUMA_WAIT_FOR_MESH_RETRIES=60 \
-            KUMA_WAIT_FOR_MESH_TIMEOUT="6s"
+            KUMA_DEFAULT_RETRIES=60 \
+            KUMA_DEFAULT_TIMEOUT="6s"
 
     - run:
         name: "Cleanup"

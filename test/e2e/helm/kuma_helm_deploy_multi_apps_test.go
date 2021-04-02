@@ -3,6 +3,7 @@ package helm_test
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -41,12 +42,12 @@ metadata:
 	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
-		clusters, err := NewK8sClusters(
-			[]string{Kuma1},
-			Silent)
+		cluster, err := NewK8sClusterWithTimeout(
+			NewTestingT(),
+			Kuma1,
+			Silent,
+			2*time.Minute)
 		Expect(err).ToNot(HaveOccurred())
-
-		cluster = clusters.GetCluster(Kuma1)
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
