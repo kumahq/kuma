@@ -7,15 +7,18 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 
 	"github.com/kumahq/kuma/pkg/tls"
+	"github.com/kumahq/kuma/pkg/util/proto"
+	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
-	"github.com/kumahq/kuma/pkg/util/proto"
-	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls"
 )
+
+// SDS is served over the same server as XDS but it has to be a separate connection because it is not server over ADS
+const sdsCluster = "ads_cluster"
 
 // CreateDownstreamTlsContext creates DownstreamTlsContext for incoming connections
 // It verifies that incoming connection has TLS certificate signed by Mesh CA with URI SAN of prefix spiffe://{mesh_name}/
@@ -88,6 +91,52 @@ func createCommonTlsContext(ctx xds_context.Context, metadata *core_xds.Dataplan
 }
 
 func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) (*envoy_tls.SdsSecretConfig, error) {
+	sdsConfig := &envoy_tls.SdsSecretConfig{
+		Name: name,
+		SdsConfig: &envoy_core.ConfigSource{
+			ResourceApiVersion: envoy_core.ApiVersion_V3,
+		},
+	}
+	if metadata.GetDataplaneTokenPath() != "" {
+		specifier, err := googleGrpcSdsSpecifier(context, name, metadata)
+		if err != nil {
+			return nil, err
+		}
+		sdsConfig.SdsConfig.ConfigSourceSpecifier = specifier
+	} else {
+		sdsConfig.SdsConfig.ConfigSourceSpecifier = envoyGrpcSdsSpecifier(metadata)
+	}
+	return sdsConfig, nil
+}
+
+func envoyGrpcSdsSpecifier(metadata *core_xds.DataplaneMetadata) *envoy_core.ConfigSource_ApiConfigSource {
+	specifier := &envoy_core.ConfigSource_ApiConfigSource{
+		ApiConfigSource: &envoy_core.ApiConfigSource{
+			ApiType:             envoy_core.ApiConfigSource_GRPC,
+			TransportApiVersion: envoy_core.ApiVersion_V3,
+			GrpcServices: []*envoy_core.GrpcService{
+				{
+					TargetSpecifier: &envoy_core.GrpcService_EnvoyGrpc_{
+						EnvoyGrpc: &envoy_core.GrpcService_EnvoyGrpc{
+							ClusterName: sdsCluster,
+						},
+					},
+				},
+			},
+		},
+	}
+	if metadata.GetDataplaneToken() != "" {
+		specifier.ApiConfigSource.GrpcServices[0].InitialMetadata = []*envoy_core.HeaderValue{
+			{
+				Key:   "authorization",
+				Value: metadata.DataplaneToken,
+			},
+		}
+	}
+	return specifier
+}
+
+func googleGrpcSdsSpecifier(context xds_context.Context, name string, metadata *core_xds.DataplaneMetadata) (*envoy_core.ConfigSource_ApiConfigSource, error) {
 	withCallCredentials := func(grpc *envoy_core.GrpcService_GoogleGrpc) (*envoy_core.GrpcService_GoogleGrpc, error) {
 		if metadata.GetDataplaneTokenPath() == "" {
 			return grpc, nil
@@ -137,20 +186,14 @@ func sdsSecretConfig(context xds_context.Context, name string, metadata *core_xd
 	if err != nil {
 		return nil, err
 	}
-	return &envoy_tls.SdsSecretConfig{
-		Name: name,
-		SdsConfig: &envoy_core.ConfigSource{
-			ResourceApiVersion: envoy_core.ApiVersion_V3,
-			ConfigSourceSpecifier: &envoy_core.ConfigSource_ApiConfigSource{
-				ApiConfigSource: &envoy_core.ApiConfigSource{
-					ApiType:             envoy_core.ApiConfigSource_GRPC,
-					TransportApiVersion: envoy_core.ApiVersion_V3,
-					GrpcServices: []*envoy_core.GrpcService{
-						{
-							TargetSpecifier: &envoy_core.GrpcService_GoogleGrpc_{
-								GoogleGrpc: googleGrpc,
-							},
-						},
+	return &envoy_core.ConfigSource_ApiConfigSource{
+		ApiConfigSource: &envoy_core.ApiConfigSource{
+			ApiType:             envoy_core.ApiConfigSource_GRPC,
+			TransportApiVersion: envoy_core.ApiVersion_V3,
+			GrpcServices: []*envoy_core.GrpcService{
+				{
+					TargetSpecifier: &envoy_core.GrpcService_GoogleGrpc_{
+						GoogleGrpc: googleGrpc,
 					},
 				},
 			},

@@ -105,15 +105,27 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 		}
 		dataplaneResource = string(dpJSON)
 	}
+	token := ""
+	if cfg.DataplaneRuntime.TokenPath != "" {
+		tokenData, err := ioutil.ReadFile(cfg.DataplaneRuntime.TokenPath)
+		if err != nil {
+			return nil, "", err
+		}
+		token = string(tokenData)
+	}
+	if cfg.DataplaneRuntime.Token != "" {
+		token = cfg.DataplaneRuntime.Token
+	}
 	request := types.BootstrapRequest{
 		Mesh: cfg.Dataplane.Mesh,
 		Name: cfg.Dataplane.Name,
 		// if not set in config, the 0 will be sent which will result in providing default admin port
 		// that is set in the control plane bootstrap params
-		AdminPort:          cfg.Dataplane.AdminPort.Lowest(),
-		DataplaneTokenPath: cfg.DataplaneRuntime.TokenPath,
-		DataplaneResource:  dataplaneResource,
-		BootstrapVersion:   params.BootstrapVersion,
+		AdminPort:         cfg.Dataplane.AdminPort.Lowest(),
+		DataplaneToken:    token,
+		DataplaneResource: dataplaneResource,
+		BootstrapVersion:  params.BootstrapVersion,
+		CaCert:            cfg.ControlPlane.CaCert,
 		Version: types.Version{
 			KumaDp: types.KumaDpVersion{
 				Version:   kuma_version.Build.Version,
