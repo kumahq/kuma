@@ -104,7 +104,7 @@ This command requires that the KUBECONFIG environment is set`,
 	cmd.Flags().StringVar(&args.ControlPlane_mode, "mode", args.ControlPlane_mode, kuma_cmd.UsageOptions("kuma cp modes", "standalone", "remote", "global"))
 	cmd.Flags().StringVar(&args.ControlPlane_zone, "zone", args.ControlPlane_zone, "set the Kuma zone name")
 	cmd.Flags().BoolVar(&useNodePort, "use-node-port", false, "use NodePort instead of LoadBalancer")
-	cmd.Flags().BoolVar(&args.Ingress_enabled, "ingress-enabled", args.Cni_enabled, "install Kuma with an Ingress deployment, using the Data Plane image")
+	cmd.Flags().BoolVar(&args.Ingress_enabled, "ingress-enabled", args.Ingress_enabled, "install Kuma with an Ingress deployment, using the Data Plane image")
 	cmd.Flags().StringVar(&args.Ingress_drainTime, "ingress-drain-time", args.Ingress_drainTime, "drain time for Envoy proxy")
 	cmd.Flags().BoolVar(&ingressUseNodePort, "ingress-use-node-port", false, "use NodePort instead of LoadBalancer for the Ingress Service")
 	cmd.Flags().BoolVar(&args.WithoutKubernetesConnection, "without-kubernetes-connection", false, "install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades")

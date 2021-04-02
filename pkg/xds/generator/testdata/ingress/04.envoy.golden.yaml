@@ -110,19 +110,15 @@ resources:
       subsetSelectors:
       - fallbackPolicy: NO_FALLBACK
         keys:
-        - version
         - mesh
       - fallbackPolicy: NO_FALLBACK
         keys:
+        - mesh
         - region
-        - mesh
       - fallbackPolicy: NO_FALLBACK
         keys:
         - mesh
-      - fallbackPolicy: NO_FALLBACK
-        keys:
         - version
-        - mesh
     name: backend
     type: EDS
 - name: inbound:10.0.0.1:10001

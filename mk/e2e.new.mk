@@ -69,7 +69,7 @@ test/e2e/test:
 		KUMA_UNIVERSAL_IMAGE="$(KUMA_UNIVERSAL_IMAGE)" \
 		KUMA_WAIT_FOR_MESH_RETRIES="$(KUMA_WAIT_FOR_MESH_RETRIES)" \
         KUMA_WAIT_FOR_MESH_TIMEOUT="$(KUMA_WAIT_FOR_MESH_TIMEOUT)" \
-			$(GO_TEST) -v -timeout=45m $$t; \
+			$(GO_TEST) -v -timeout=45m $$t || exit; \
 	done
 
 # test/e2e/debug is used for quicker feedback of E2E tests (ex. debugging flaky tests)

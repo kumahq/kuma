@@ -44,7 +44,7 @@ func (_ TransparentProxyGenerator) Generate(ctx xds_context.Context, proxy *mode
 	}
 
 	outboundListener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.OutboundListener(outboundName, "0.0.0.0", redirectPortOutbound)).
+		Configure(envoy_listeners.OutboundListener(outboundName, "0.0.0.0", redirectPortOutbound, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
 			Configure(envoy_listeners.TcpProxy(outboundName, envoy_common.ClusterSubset{ClusterName: outboundName})).
 			Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, "external", proxy.Policies.Logs[mesh_core.PassThroughService], proxy)))).

@@ -10,7 +10,7 @@ import (
 )
 
 func EndpointMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
-	tags = tags.WithoutTag(mesh_proto.ServiceTag) // service name is already in cluster name, we don't need it in metadata
+	tags = tags.WithoutTags(mesh_proto.ServiceTag) // service name is already in cluster name, we don't need it in metadata
 	if len(tags) == 0 {
 		return nil
 	}
@@ -29,7 +29,7 @@ func EndpointMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
 }
 
 func LbMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
-	tags = tags.WithoutTag(mesh_proto.ServiceTag) // service name is already in cluster name, we don't need it in metadata
+	tags = tags.WithoutTags(mesh_proto.ServiceTag) // service name is already in cluster name, we don't need it in metadata
 	if len(tags) == 0 {
 		return nil
 	}

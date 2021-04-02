@@ -7,6 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -16,27 +18,24 @@ import (
 
 var _ = Describe("RetryConfigurer", func() {
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		service         string
-		subsets         []envoy_common.ClusterSubset
-		dpTags          mesh_proto.MultiValueTagSet
-		protocol        mesh_core.Protocol
-		retry           *mesh_core.RetryResource
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol core_xds.SocketAddressProtocol
+		statsName        string
+		service          string
+		subsets          []envoy_common.ClusterSubset
+		dpTags           mesh_proto.MultiValueTagSet
+		protocol         mesh_core.Protocol
+		retry            *mesh_core.RetryResource
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV2).
-				Configure(OutboundListener(
-					given.listenerName,
-					given.listenerAddress,
-					given.listenerPort,
-				)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpOutboundRoute(

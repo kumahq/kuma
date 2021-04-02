@@ -27,6 +27,7 @@ var _ = Describe("StrictDNSClusterConfigurer", func() {
 		expected := `
         altStatName: test_cluster
         connectTimeout: 5s
+        dnsLookupFamily: V4_ONLY
         loadAssignment:
           clusterName: test:cluster
           endpoints:

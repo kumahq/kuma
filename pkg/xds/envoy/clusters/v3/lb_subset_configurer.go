@@ -2,22 +2,21 @@ package clusters
 
 import (
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
+
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 type LbSubsetConfigurer struct {
-	KeySets [][]string
+	TagKeysSets envoy.TagKeysSlice
 }
 
 var _ ClusterConfigurer = &LbSubsetConfigurer{}
 
 func (e *LbSubsetConfigurer) Configure(c *envoy_cluster.Cluster) error {
 	var selectors []*envoy_cluster.Cluster_LbSubsetConfig_LbSubsetSelector
-	for _, keys := range e.KeySets {
-		if len(keys) == 0 {
-			continue
-		}
+	for _, tagSet := range e.TagKeysSets {
 		selectors = append(selectors, &envoy_cluster.Cluster_LbSubsetConfig_LbSubsetSelector{
-			Keys: keys,
+			Keys: tagSet,
 			// if there is a split by "version", and there is no endpoint with such version we should not fallback to all endpoints of the service
 			FallbackPolicy: envoy_cluster.Cluster_LbSubsetConfig_LbSubsetSelector_NO_FALLBACK,
 		})

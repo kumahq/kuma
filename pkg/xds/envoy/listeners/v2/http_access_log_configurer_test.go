@@ -18,13 +18,14 @@ import (
 var _ = Describe("HttpAccessLogConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		routeName       string
-		backend         *mesh_proto.LoggingBackend
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol core_xds.SocketAddressProtocol
+		statsName        string
+		routeName        string
+		backend          *mesh_proto.LoggingBackend
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -60,7 +61,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV2).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV2).
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpAccessLog(mesh, envoy.TrafficDirectionOutbound, sourceService, destinationService, given.backend, proxy)))).
