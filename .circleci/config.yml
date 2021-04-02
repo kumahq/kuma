@@ -885,6 +885,12 @@ workflows:
         requires:
           - images
           - check
+    - eks-e2e:
+        <<: *commit_workflow_filters
+        name: test/e2e/eks
+        requires:
+        - images
+        - check
 
   clean-eks:
     triggers:
