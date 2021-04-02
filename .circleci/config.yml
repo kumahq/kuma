@@ -5,6 +5,7 @@ orbs:
   aws-ecr: circleci/aws-ecr@6.15.3
   aws-eks: circleci/aws-eks@1.0.3
   kubernetes: circleci/kubernetes@0.11.2
+  slack: circleci/slack@4.1
 
 commands:
   early_return_for_forked_pull_requests:
@@ -262,6 +263,14 @@ jobs:
           eksctl delete cluster --wait --name "${CLUSTER_2}" &
 
           wait || true
+
+    - slack/notify:
+        event: fail
+        template: basic_fail_1
+
+    - slack/notify:
+        event: pass
+        template: success_tagged_deploy_1
 
   eks-delete-clusters:
     executor: aws-eks/python3
