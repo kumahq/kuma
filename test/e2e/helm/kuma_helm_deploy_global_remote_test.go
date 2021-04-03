@@ -49,8 +49,12 @@ metadata:
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
-		c1 = clusters.GetCluster(Kuma1).WithTimeout(2 * time.Minute)
-		c2 = clusters.GetCluster(Kuma2).WithTimeout(2 * time.Minute)
+		c1 = clusters.GetCluster(Kuma1).
+			WithTimeout(2 * time.Minute).
+			WithRetries(2 * DefaultRetries)
+		c2 = clusters.GetCluster(Kuma2).
+			WithTimeout(2 * time.Minute).
+			WithRetries(2 * DefaultRetries)
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",

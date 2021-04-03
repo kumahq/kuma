@@ -43,6 +43,8 @@ var _ = Describe("Test upgrading with Helm chart", func() {
 				2*time.Minute)
 			Expect(err).ToNot(HaveOccurred())
 
+			cluster.WithRetries(2 * DefaultRetries)
+
 			releaseName := fmt.Sprintf(
 				"kuma-%s",
 				strings.ToLower(random.UniqueId()),
