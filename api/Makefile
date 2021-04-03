@@ -47,7 +47,8 @@ go_import_mapping_entries := \
 	google/protobuf/struct.proto=github.com/golang/protobuf/ptypes/struct \
 	google/protobuf/timestamp.proto=github.com/golang/protobuf/ptypes/timestamp \
 	google/protobuf/wrappers.proto=github.com/golang/protobuf/ptypes/wrappers \
-	envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2
+	envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2 \
+	envoy/service/discovery/v3/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3
 
 # see https://makefiletutorial.com/
 comma := ,

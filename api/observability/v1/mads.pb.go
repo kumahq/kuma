@@ -44,7 +44,7 @@ type MonitoringAssignment struct {
 	//
 	// E.g., `default`
 	Mesh string `protobuf:"bytes,2,opt,name=mesh,proto3" json:"mesh,omitempty"`
-	// Identifying service the dataplane is proxying.
+	// Identifying service being monitored.
 	//
 	// E.g., `backend`
 	Service string `protobuf:"bytes,3,opt,name=service,proto3" json:"service,omitempty"`
@@ -52,7 +52,7 @@ type MonitoringAssignment struct {
 	Targets []*MonitoringAssignment_Target `protobuf:"bytes,4,rep,name=targets,proto3" json:"targets,omitempty"`
 	// Arbitrary Labels associated with every target in the assignment.
 	//
-	// E.g., `{"zone" : "us-east-1", "team": "infra", "commit_hash": "620506a88"}`.
+	// E.g., `{"team": "infra"}`.
 	Labels map[string]string `protobuf:"bytes,5,rep,name=labels,proto3" json:"labels,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -122,7 +122,7 @@ type MonitoringAssignment_Target struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Dataplane xDS resource name.
+	// Dataplane name.
 	//
 	// E.g., `backend-01`
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
