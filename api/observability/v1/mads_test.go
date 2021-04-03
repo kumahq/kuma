@@ -39,30 +39,17 @@ var _ = Describe("Monitoring Assignment Discovery Service", func() {
 			},
 			Entry("MonitoringAssignment per service", testCase{
 				input: `
-                service: /meshes/default/services/backend
-                targets:
-                - address: 192.168.0.1:8080
-                  instance: backend-01
-                  labels:
-                    a: 192.168.0.1:8080
-                    instance: backend-01
-                - labels:
-                    __address__: 192.168.0.2:8080
-                    instance: backend-02
-                labels:
-                  job: backend
-				`,
-			}),
-			Entry("MonitoringAssignment per dataplane", testCase{
-				input: `
-                name: /meshes/default/dataplane/backend-01
-                targets:
-                - labels:
-                    __address__: 192.168.0.1:8080
-                labels:
-                  job: backend
-                  instance: backend-01
-				`,
+mesh: default
+service: backend
+targets:
+- address: 192.168.0.1:8080
+  name: backend-01
+  scheme: http
+- address: 192.168.0.2:8080
+  name: backend-02
+  scheme: http
+labels:
+  team: infra`,
 			}),
 		)
 	})
