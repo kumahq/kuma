@@ -239,11 +239,7 @@ spec:
             limits:
               cpu: 50m
               memory: 128Mi
-          securityContext:
-            runAsUser: 0
-            runAsGroup: 0
-            capabilities:
-              add: ["NET_ADMIN"]
+
 `
 	return Combine(
 		YamlK8s(service),
@@ -337,11 +333,6 @@ spec:
             limits:
               cpu: 50m
               memory: 128Mi
-          securityContext:
-            runAsUser: 0
-            runAsGroup: 0
-            capabilities:
-              add: ["NET_ADMIN"]
 `
 	return Combine(
 		YamlK8s(fmt.Sprintf(deployment, mesh)),
