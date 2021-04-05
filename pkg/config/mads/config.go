@@ -53,14 +53,14 @@ func (c *MonitoringAssignmentServerConfig) Sanitize() {
 
 func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
 	if c.GrpcPort != 0 {
-		log.V(1).Info("`grpcPort` is deprecated. Please use `port` instead")
+		log.V(1).Info(".GrpcPort is deprecated. Please use .Port instead")
 		if c.Port == 0 {
 			c.Port = c.GrpcPort
 		}
 	}
 
 	if 65535 < c.Port {
-		errs = multierr.Append(errs, errors.Errorf(".GrpcPort must be in the range [0, 65535]"))
+		errs = multierr.Append(errs, errors.Errorf(".Port must be in the range [0, 65535]"))
 	}
 
 	if len(c.ApiVersions) == 0 {
