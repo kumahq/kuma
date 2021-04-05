@@ -20,7 +20,7 @@ func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig
 		GrpcEnabled:               true,
 		HttpEnabled:               true,
 		FetchTimeout:              30 * time.Second,
-		ApiVersions:               []mads.ApiVersion{mads.API_V1, mads.API_V1_ALPHA1},
+		ApiVersions:               []mads.ApiVersion{mads.API_V1_ALPHA1, mads.API_V1},
 		AssignmentRefreshInterval: 1 * time.Second,
 	}
 }
