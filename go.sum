@@ -351,8 +351,9 @@ github.com/envoyproxy/go-control-plane v0.9.9-0.20201210154907-fd9021fe5dad/go.m
 github.com/envoyproxy/go-control-plane v0.9.9-0.20210107210257-6e771204fae6 h1:DZNZDoFHT7Q2zxdwbHkt2HFexENxiXTNd44M9pertiw=
 github.com/envoyproxy/go-control-plane v0.9.9-0.20210107210257-6e771204fae6/go.mod h1:cXg6YxExXjJnVBQHBLXeUAgxn2UodCpnH306RInaBQk=
 github.com/envoyproxy/protoc-gen-validate v0.1.0/go.mod h1:iSmxcyjqTsJpI2R4NaDN7+kN2VEUnK/pcBlmesArF7c=
-github.com/envoyproxy/protoc-gen-validate v0.5.0 h1:+ltcA/hEtDde/2Z+9EvwamSsAzPNE6z17oSOChokJzU=
 github.com/envoyproxy/protoc-gen-validate v0.5.0/go.mod h1:xL5IroIBOR+aTp0IZk48epGwBV3+LcuaosPL0pr0hE0=
+github.com/envoyproxy/protoc-gen-validate v0.5.1 h1:MkpAQXrYF26uVnlFruA05G0xmM5rfE0OZDZPGY/UABU=
+github.com/envoyproxy/protoc-gen-validate v0.5.1/go.mod h1:xL5IroIBOR+aTp0IZk48epGwBV3+LcuaosPL0pr0hE0=
 github.com/erikstmartin/go-testdb v0.0.0-20160219214506-8d10e4a1bae5/go.mod h1:a2zkGnVExMxdzMo3M0Hi/3sEU+cWnZpSni0O6/Yb/P0=
 github.com/evanphx/json-patch v0.0.0-20200808040245-162e5629780b/go.mod h1:NAJj0yf/KaRKURN6nyi7A9IZydMivZEm9oQLWNjfKDc=
 github.com/evanphx/json-patch v4.2.0+incompatible/go.mod h1:50XU6AFN0ol/bzJsmQLiYLvXMP4fmwYFNcr97nuDLSk=
