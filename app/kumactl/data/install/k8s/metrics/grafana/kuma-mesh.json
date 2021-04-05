@@ -17,7 +17,7 @@
   "gnetId": 11774,
   "graphTooltip": 0,
   "id": 1,
-  "iteration": 1617197281456,
+  "iteration": 1617598937098,
   "links": [],
   "panels": [
     {
@@ -31,7 +31,7 @@
       },
       "id": 23,
       "panels": [],
-      "title": "Overview",
+      "title": "HTTP",
       "type": "row"
     },
     {
@@ -263,7 +263,7 @@
       },
       "lines": true,
       "linewidth": 1,
-      "nullPointMode": "null",
+      "nullPointMode": "null as zero",
       "options": {
         "alertThreshold": true
       },
@@ -278,7 +278,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\", envoy_cluster_name=~\"localhost_.*\"}[1m])) by (kuma_io_service,envoy_response_code_class)",
+          "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\", envoy_cluster_name=~\"localhost_.*\", envoy_response_code_class=\"4\", envoy_response_code_class=\"5\"}[1m])) by (kuma_io_service,envoy_response_code_class)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{ kuma_io_service}} {{ envoy_response_code_class }}xx",
@@ -289,7 +289,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Status codes",
+      "title": "Error Status Codes",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -1154,7 +1154,7 @@
       {
         "allValue": null,
         "current": {
-          "selected": true,
+          "selected": false,
           "text": "default",
           "value": "default"
         },

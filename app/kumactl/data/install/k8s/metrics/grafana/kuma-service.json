@@ -16,7 +16,7 @@
   "gnetId": null,
   "graphTooltip": 0,
   "id": 3,
-  "iteration": 1617200528014,
+  "iteration": 1617599572135,
   "links": [],
   "panels": [
     {
@@ -100,7 +100,7 @@
       },
       "id": 23,
       "options": {
-        "showHeader": true
+        "showHeader": false
       },
       "pluginVersion": "7.4.3",
       "targets": [
@@ -113,7 +113,7 @@
       ],
       "timeFrom": null,
       "timeShift": null,
-      "title": "",
+      "title": "Dataplanes",
       "transformations": [
         {
           "id": "labelsToFields",
@@ -146,7 +146,10 @@
               "versions": true
             },
             "indexByName": {},
-            "renameByName": {}
+            "renameByName": {
+              "dataplane": "Dataplanes",
+              "env": ""
+            }
           }
         },
         {
@@ -297,7 +300,7 @@
       },
       "id": 14,
       "panels": [],
-      "title": "General",
+      "title": "HTTP",
       "type": "row"
     },
     {
@@ -573,14 +576,14 @@
           "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[1m])) by (envoy_response_code_class)",
           "hide": false,
           "interval": "",
-          "legendFormat": "incoming {{envoy_response_code_class}}xx",
+          "legendFormat": "Incoming {{envoy_response_code_class}}xx",
           "refId": "A"
         },
         {
           "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m])) by (envoy_response_code_class)",
           "hide": false,
           "interval": "",
-          "legendFormat": "outgoing {{envoy_response_code_class}}xx",
+          "legendFormat": "Outgoing {{envoy_response_code_class}}xx",
           "refId": "B"
         }
       ],
@@ -685,29 +688,15 @@
       "renderer": "flot",
       "seriesOverrides": [],
       "spaceLength": 10,
-      "stack": true,
+      "stack": false,
       "steppedLine": false,
       "targets": [
-        {
-          "expr": "max(sum(rate(container_cpu_usage_seconds_total[1m])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) / max(sum(kube_pod_container_resource_limits_cpu_cores) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"})",
-          "hide": true,
-          "interval": "",
-          "legendFormat": "usage",
-          "refId": "A"
-        },
         {
           "expr": "max(sum(rate(container_cpu_usage_seconds_total[1m])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane) /\nmax(sum(kube_pod_container_resource_limits_cpu_cores) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
           "hide": false,
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "{{ dataplane }}",
           "refId": "B"
-        },
-        {
-          "expr": "sum(sum(kube_pod_container_resource_limits_cpu_cores) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
-          "hide": true,
-          "interval": "",
-          "legendFormat": "",
-          "refId": "C"
         }
       ],
       "thresholds": [],
@@ -797,21 +786,14 @@
       "renderer": "flot",
       "seriesOverrides": [],
       "spaceLength": 10,
-      "stack": true,
+      "stack": false,
       "steppedLine": false,
       "targets": [
-        {
-          "expr": "max(sum(container_memory_working_set_bytes{image!=\"\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"})",
-          "hide": true,
-          "interval": "",
-          "legendFormat": "mem",
-          "refId": "A"
-        },
         {
           "expr": "max(sum(container_memory_working_set_bytes{image!=\"\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
           "hide": false,
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "{{ dataplane }}",
           "refId": "B"
         }
       ],
@@ -902,14 +884,14 @@
       "renderer": "flot",
       "seriesOverrides": [],
       "spaceLength": 10,
-      "stack": true,
+      "stack": false,
       "steppedLine": false,
       "targets": [
         {
           "expr": "max(sum(container_memory_working_set_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane) / max(sum(kube_pod_container_resource_limits_memory_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
           "hide": false,
           "interval": "",
-          "legendFormat": "",
+          "legendFormat": "{{ dataplane }}",
           "refId": "A"
         }
       ],
@@ -998,8 +980,8 @@
         "allValue": null,
         "current": {
           "selected": true,
-          "text": "auxsvc_kuma-demo_svc_4001",
-          "value": "auxsvc_kuma-demo_svc_4001"
+          "text": "backend_kuma-demo_svc_3001",
+          "value": "backend_kuma-demo_svc_3001"
         },
         "datasource": null,
         "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
