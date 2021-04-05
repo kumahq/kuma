@@ -3,7 +3,7 @@ FROM envoyproxy/envoy:v1.17.1 as envoy
 
 FROM ubuntu:focal as builder
 
-ENV GOVERSION 1.15.10
+ENV GOVERSION 1.15.11
 ENV GOROOT /opt/go
 ENV GOPATH /root/.go
 
