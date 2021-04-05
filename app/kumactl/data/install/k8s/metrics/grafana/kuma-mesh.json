@@ -16,8 +16,8 @@
   "editable": true,
   "gnetId": 11774,
   "graphTooltip": 0,
-  "id": 1,
-  "iteration": 1617598937098,
+  "id": 4,
+  "iteration": 1617606288684,
   "links": [],
   "panels": [
     {
@@ -278,7 +278,7 @@
       "steppedLine": false,
       "targets": [
         {
-          "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\", envoy_cluster_name=~\"localhost_.*\", envoy_response_code_class=\"4\", envoy_response_code_class=\"5\"}[1m])) by (kuma_io_service,envoy_response_code_class)",
+          "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\", envoy_cluster_name=~\"localhost_.*\", envoy_response_code_class=~\"4|5\"}[1m])) by (kuma_io_service,envoy_response_code_class)",
           "hide": false,
           "interval": "",
           "legendFormat": "{{ kuma_io_service}} {{ envoy_response_code_class }}xx",
