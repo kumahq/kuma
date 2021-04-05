@@ -13,9 +13,11 @@ import "validate/validate.proto";
 // xDS API that is meant for consumption by monitoring systems, e.g. Prometheus.
 service MonitoringAssignmentDiscoveryService {
   // GRPC
-  rpc DeltaMonitoringAssignments(stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
+  rpc DeltaMonitoringAssignments(
+      stream envoy.service.discovery.v3.DeltaDiscoveryRequest)
       returns (stream envoy.service.discovery.v3.DeltaDiscoveryResponse) {}
-  rpc StreamMonitoringAssignments(stream envoy.service.discovery.v3.DiscoveryRequest)
+  rpc StreamMonitoringAssignments(
+      stream envoy.service.discovery.v3.DiscoveryRequest)
       returns (stream envoy.service.discovery.v3.DiscoveryResponse) {}
   // HTTP
   rpc FetchMonitoringAssignments(envoy.service.discovery.v3.DiscoveryRequest)
@@ -50,7 +52,7 @@ message MonitoringAssignment {
     string name = 1 [ (validate.rules).string = {min_bytes : 1} ];
 
     // Scheme on which to scrape the target.
-    //E.g., `http`
+    // E.g., `http`
     string scheme = 2 [ (validate.rules).string = {min_bytes : 1} ];
 
     // Address (preferably IP) for the service
@@ -58,7 +60,7 @@ message MonitoringAssignment {
     string address = 3 [ (validate.rules).string = {min_bytes : 1} ];
 
     // Optional path to append to the address for scraping
-    //E.g., `/metrics`
+    // E.g., `/metrics`
     string metrics_path = 4;
 
     // Arbitrary labels associated with that particular target.
