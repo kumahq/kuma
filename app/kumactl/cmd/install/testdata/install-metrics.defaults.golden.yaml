@@ -9653,8 +9653,8 @@ data:
       "editable": true,
       "gnetId": null,
       "graphTooltip": 0,
-      "id": 3,
-      "iteration": 1617599572135,
+      "id": 4,
+      "iteration": 1617611866352,
       "links": [],
       "panels": [
         {
@@ -9743,7 +9743,7 @@ data:
           "pluginVersion": "7.4.3",
           "targets": [
             {
-              "expr": "envoy_server_live{kuma_io_services=~\".*$service.*\"}",
+              "expr": "sum(envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
               "interval": "",
               "legendFormat": "",
               "refId": "A"
@@ -10648,7 +10648,7 @@ data:
         ]
       },
       "time": {
-        "from": "now-3h",
+        "from": "now-15m",
         "to": "now"
       },
       "timepicker": {},
