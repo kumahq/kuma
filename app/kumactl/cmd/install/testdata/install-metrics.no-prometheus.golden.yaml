@@ -166,7 +166,15 @@ data:
       editable: true
       options:
         path: /etc/grafana/provisioning/dashboards
-
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: provisioning-dashboards-0
+  namespace: kuma-metrics
+  labels:
+    app: grafana
+data:
   kuma-dataplane.json: |
     {
       "annotations": {
@@ -2626,8 +2634,15 @@ data:
       "uid": "-SZYLFyWz",
       "version": 1
     }
-    
-
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: provisioning-dashboards-1
+  namespace: kuma-metrics
+  labels:
+    app: grafana
+data:
   kuma-mesh.json: |
     {
       "annotations": {
@@ -2647,9 +2662,318 @@ data:
       "editable": true,
       "gnetId": 11774,
       "graphTooltip": 0,
-      "iteration": 1616409568935,
+      "id": 4,
+      "iteration": 1617606288684,
       "links": [],
       "panels": [
+        {
+          "collapsed": false,
+          "datasource": null,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 0
+          },
+          "id": 23,
+          "panels": [],
+          "title": "HTTP",
+          "type": "row"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 0,
+            "y": 1
+          },
+          "hiddenSeries": false,
+          "id": 25,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m]))) by (kuma_io_service)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{ kuma_io_service }}",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Latency (99th percentile)",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:366",
+              "format": "ms",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:367",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 8,
+            "y": 1
+          },
+          "hiddenSeries": false,
+          "id": 26,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])) by (kuma_io_service)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{ kuma_io_service }}",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Traffic",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:366",
+              "format": "reqps",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            },
+            {
+              "$$hashKey": "object:367",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 16,
+            "y": 1
+          },
+          "hiddenSeries": false,
+          "id": 28,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null as zero",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\", envoy_cluster_name=~\"localhost_.*\", envoy_response_code_class=~\"4|5\"}[1m])) by (kuma_io_service,envoy_response_code_class)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{ kuma_io_service}} {{ envoy_response_code_class }}xx",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Error Status Codes",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:242",
+              "format": "reqps",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:243",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
         {
           "collapsed": false,
           "datasource": "Prometheus",
@@ -2657,11 +2981,344 @@ data:
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 0
+            "y": 10
+          },
+          "id": 16,
+          "panels": [],
+          "title": "Health Checks",
+          "type": "row"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "Prometheus",
+          "description": "Data is only available if HealthCheck policy is applied.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 7,
+            "w": 24,
+            "x": 0,
+            "y": 11
+          },
+          "hiddenSeries": false,
+          "id": 9,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "((sum(rate(envoy_cluster_health_check_success{mesh=\"$mesh\"}[1m])) / sum(rate(envoy_cluster_health_check_attempt{mesh=\"$mesh\"}[1m]))))",
+              "legendFormat": "Success rate",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Active Health Checks",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "percentunit",
+              "label": null,
+              "logBase": 1,
+              "max": "1",
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "collapsed": false,
+          "datasource": null,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 18
+          },
+          "id": 19,
+          "panels": [],
+          "title": "Circuit Breakers",
+          "type": "row"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "description": "Total times that the cluster’s connection circuit breaker overflowed",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 19
+          },
+          "hiddenSeries": false,
+          "id": 21,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{mesh=\"$mesh\"}[1m]))",
+              "interval": "",
+              "legendFormat": "Connection overflow",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Pending request overflow",
+              "refId": "B"
+            },
+            {
+              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{mesh=\"$mesh\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Retry overflow",
+              "refId": "C"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Thresholds Overflow",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:72",
+              "format": "ops",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:73",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": "Prometheus",
+          "description": "Data is only available if HealthCheck policy is applied. Note that passive health checks are executed on healthy instances marked by active health checks.",
+          "fieldConfig": {
+            "defaults": {
+              "custom": {},
+              "links": []
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 19
+          },
+          "hiddenSeries": false,
+          "id": 17,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{mesh=\"$mesh\"})",
+              "interval": "",
+              "legendFormat": "Healthy destinations",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Outlier detection",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "format": "percentunit",
+              "label": null,
+              "logBase": 1,
+              "max": "1",
+              "min": "0",
+              "show": true
+            },
+            {
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "collapsed": false,
+          "datasource": "Prometheus",
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 27
           },
           "id": 12,
           "panels": [],
-          "title": "Dataplanes",
+          "title": "Data Plane Proxies",
           "type": "row"
         },
         {
@@ -2683,7 +3340,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 1
+            "y": 28
           },
           "hiddenSeries": false,
           "id": 2,
@@ -2711,10 +3368,12 @@ data:
           "renderer": "flot",
           "seriesOverrides": [
             {
+              "$$hashKey": "object:224",
               "alias": "Off",
               "color": "#F2495C"
             },
             {
+              "$$hashKey": "object:225",
               "alias": "Live",
               "color": "#73BF69"
             }
@@ -2725,11 +3384,13 @@ data:
           "targets": [
             {
               "expr": "count(envoy_server_live{mesh=\"$mesh\"}) - sum(envoy_server_live{mesh=\"$mesh\"})",
+              "hide": false,
               "legendFormat": "Off",
               "refId": "B"
             },
             {
               "expr": "sum(envoy_server_live{mesh=\"$mesh\"})",
+              "hide": false,
               "legendFormat": "Live",
               "refId": "A"
             }
@@ -2754,6 +3415,7 @@ data:
           },
           "yaxes": [
             {
+              "$$hashKey": "object:238",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2762,6 +3424,7 @@ data:
               "show": true
             },
             {
+              "$$hashKey": "object:239",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2795,7 +3458,7 @@ data:
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 1
+            "y": 28
           },
           "hiddenSeries": false,
           "id": 3,
@@ -2823,10 +3486,12 @@ data:
           "renderer": "flot",
           "seriesOverrides": [
             {
+              "$$hashKey": "object:293",
               "alias": "Disconnected",
               "color": "#F2495C"
             },
             {
+              "$$hashKey": "object:294",
               "alias": "Connected",
               "color": "#73BF69"
             }
@@ -2866,6 +3531,7 @@ data:
           },
           "yaxes": [
             {
+              "$$hashKey": "object:307",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2874,6 +3540,7 @@ data:
               "show": true
             },
             {
+              "$$hashKey": "object:308",
               "format": "short",
               "label": null,
               "logBase": 1,
@@ -2886,20 +3553,6 @@ data:
             "align": false,
             "alignLevel": null
           }
-        },
-        {
-          "collapsed": false,
-          "datasource": "Prometheus",
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 8
-          },
-          "id": 14,
-          "panels": [],
-          "title": "Traffic",
-          "type": "row"
         },
         {
           "aliasColors": {},
@@ -2920,7 +3573,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 9
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 5,
@@ -3020,7 +3673,7 @@ data:
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 9
+            "y": 35
           },
           "hiddenSeries": false,
           "id": 7,
@@ -3136,341 +3789,9 @@ data:
             "align": false,
             "alignLevel": null
           }
-        },
-        {
-          "collapsed": false,
-          "datasource": "Prometheus",
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 17
-          },
-          "id": 16,
-          "panels": [],
-          "title": "Health Checks",
-          "type": "row"
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Data is only available if HealthCheck policy is applied.",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 7,
-            "w": 24,
-            "x": 0,
-            "y": 18
-          },
-          "hiddenSeries": false,
-          "id": 9,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "7.4.3",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "((sum(rate(envoy_cluster_health_check_success{mesh=\"$mesh\"}[1m])) / sum(rate(envoy_cluster_health_check_attempt{mesh=\"$mesh\"}[1m]))))",
-              "legendFormat": "Success rate",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Active Health Checks",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "percentunit",
-              "label": null,
-              "logBase": 1,
-              "max": "1",
-              "min": "0",
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "collapsed": false,
-          "datasource": null,
-          "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 25
-          },
-          "id": 19,
-          "panels": [],
-          "title": "Circuit Breakers",
-          "type": "row"
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": null,
-          "description": "Total times that the cluster’s connection circuit breaker overflowed",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {}
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 26
-          },
-          "hiddenSeries": false,
-          "id": 21,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "7.4.3",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_cx_overflow{mesh=\"$mesh\"}[1m]))",
-              "interval": "",
-              "legendFormat": "Connection overflow",
-              "refId": "A"
-            },
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_pending_overflow{mesh=\"$mesh\"}[1m]))",
-              "hide": false,
-              "interval": "",
-              "legendFormat": "Pending request overflow",
-              "refId": "B"
-            },
-            {
-              "expr": "sum(irate(envoy_cluster_upstream_rq_retry_overflow{mesh=\"$mesh\"}[1m]))",
-              "hide": false,
-              "interval": "",
-              "legendFormat": "Retry overflow",
-              "refId": "C"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Thresholds Overflow",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "$$hashKey": "object:72",
-              "format": "ops",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": "0",
-              "show": true
-            },
-            {
-              "$$hashKey": "object:73",
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
-        },
-        {
-          "aliasColors": {},
-          "bars": false,
-          "dashLength": 10,
-          "dashes": false,
-          "datasource": "Prometheus",
-          "description": "Data is only available if HealthCheck policy is applied. Note that passive health checks are executed on healthy instances marked by active health checks.",
-          "fieldConfig": {
-            "defaults": {
-              "custom": {},
-              "links": []
-            },
-            "overrides": []
-          },
-          "fill": 1,
-          "fillGradient": 0,
-          "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 26
-          },
-          "hiddenSeries": false,
-          "id": 17,
-          "legend": {
-            "avg": false,
-            "current": false,
-            "max": false,
-            "min": false,
-            "show": true,
-            "total": false,
-            "values": false
-          },
-          "lines": true,
-          "linewidth": 1,
-          "nullPointMode": "null",
-          "options": {
-            "alertThreshold": true
-          },
-          "percentage": false,
-          "pluginVersion": "7.4.3",
-          "pointradius": 2,
-          "points": false,
-          "renderer": "flot",
-          "seriesOverrides": [],
-          "spaceLength": 10,
-          "stack": false,
-          "steppedLine": false,
-          "targets": [
-            {
-              "expr": "1 - sum(envoy_cluster_outlier_detection_ejections_active{mesh=\"$mesh\"}) / sum(envoy_cluster_membership_total{mesh=\"$mesh\"})",
-              "interval": "",
-              "legendFormat": "Healthy destinations",
-              "refId": "A"
-            }
-          ],
-          "thresholds": [],
-          "timeFrom": null,
-          "timeRegions": [],
-          "timeShift": null,
-          "title": "Outlier detection",
-          "tooltip": {
-            "shared": true,
-            "sort": 0,
-            "value_type": "individual"
-          },
-          "type": "graph",
-          "xaxis": {
-            "buckets": null,
-            "mode": "time",
-            "name": null,
-            "show": true,
-            "values": []
-          },
-          "yaxes": [
-            {
-              "format": "percentunit",
-              "label": null,
-              "logBase": 1,
-              "max": "1",
-              "min": "0",
-              "show": true
-            },
-            {
-              "format": "short",
-              "label": null,
-              "logBase": 1,
-              "max": null,
-              "min": null,
-              "show": true
-            }
-          ],
-          "yaxis": {
-            "align": false,
-            "alignLevel": null
-          }
         }
       ],
+      "refresh": "5s",
       "schemaVersion": 27,
       "style": "dark",
       "tags": [],
@@ -3510,7 +3831,7 @@ data:
         ]
       },
       "time": {
-        "from": "now-1h",
+        "from": "now-15m",
         "to": "now"
       },
       "timepicker": {
@@ -3532,8 +3853,15 @@ data:
       "uid": "GW0DqjsWz",
       "version": 1
     }
-    
-
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: provisioning-dashboards-2
+  namespace: kuma-metrics
+  labels:
+    app: grafana
+data:
   kuma-service-to-service.json: |
     {
       "annotations": {
@@ -4562,8 +4890,15 @@ data:
       "uid": "QdCgOqyWz",
       "version": 1
     }
-    
-
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: provisioning-dashboards-3
+  namespace: kuma-metrics
+  labels:
+    app: grafana
+data:
   kuma-cp.json: |
     {
       "annotations": {
@@ -8928,6 +9263,1037 @@ data:
       "version": 1
     }
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: provisioning-dashboards-4
+  namespace: kuma-metrics
+  labels:
+    app: grafana
+data:
+  kuma-service.json: |
+    {
+      "annotations": {
+        "list": [
+          {
+            "builtIn": 1,
+            "datasource": "-- Grafana --",
+            "enable": true,
+            "hide": true,
+            "iconColor": "rgba(0, 211, 255, 1)",
+            "name": "Annotations & Alerts",
+            "type": "dashboard"
+          }
+        ]
+      },
+      "editable": true,
+      "gnetId": null,
+      "graphTooltip": 0,
+      "id": 4,
+      "iteration": 1617611866352,
+      "links": [],
+      "panels": [
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "fixedColor": "green",
+                "mode": "fixed"
+              },
+              "custom": {},
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": []
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 0
+          },
+          "id": 12,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "none",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {},
+            "textMode": "auto"
+          },
+          "pluginVersion": "7.4.3",
+          "targets": [
+            {
+              "expr": "count(envoy_server_live{kuma_io_services=~\".*$service.*\"})",
+              "interval": "",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Dataplanes",
+          "transformations": [],
+          "type": "stat"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {
+                "align": null,
+                "filterable": false
+              },
+              "mappings": [],
+              "thresholds": {
+                "mode": "absolute",
+                "steps": []
+              }
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 0
+          },
+          "id": 23,
+          "options": {
+            "showHeader": false
+          },
+          "pluginVersion": "7.4.3",
+          "targets": [
+            {
+              "expr": "sum(envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
+              "interval": "",
+              "legendFormat": "",
+              "refId": "A"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "Dataplanes",
+          "transformations": [
+            {
+              "id": "labelsToFields",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "Value": true,
+                  "app": true,
+                  "apps": true,
+                  "env": true,
+                  "envs": true,
+                  "instance": true,
+                  "job": true,
+                  "k8s_kuma_io_name": true,
+                  "k8s_kuma_io_namespace": true,
+                  "kuma_io_protocol": true,
+                  "kuma_io_protocols": true,
+                  "kuma_io_service": true,
+                  "kuma_io_services": true,
+                  "mesh": true,
+                  "namespace": true,
+                  "pod": true,
+                  "pod_template_hash": true,
+                  "pod_template_hashs": true,
+                  "version": true,
+                  "versions": true
+                },
+                "indexByName": {},
+                "renameByName": {
+                  "dataplane": "Dataplanes",
+                  "env": ""
+                }
+              }
+            },
+            {
+              "id": "merge",
+              "options": {}
+            }
+          ],
+          "type": "table"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {},
+              "displayName": "Incoming",
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 16,
+            "y": 0
+          },
+          "id": 15,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {},
+            "textMode": "value_and_name"
+          },
+          "pluginVersion": "7.4.3",
+          "targets": [
+            {
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\",envoy_cluster_name=~\"localhost_.*\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "",
+              "refId": "C"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "",
+          "type": "stat"
+        },
+        {
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "color": {
+                "mode": "thresholds"
+              },
+              "custom": {},
+              "displayName": "Outgoing",
+              "mappings": [],
+              "noValue": "0",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  },
+                  {
+                    "color": "red",
+                    "value": 80
+                  }
+                ]
+              },
+              "unit": "reqps"
+            },
+            "overrides": []
+          },
+          "gridPos": {
+            "h": 4,
+            "w": 8,
+            "x": 16,
+            "y": 4
+          },
+          "id": 22,
+          "options": {
+            "colorMode": "value",
+            "graphMode": "area",
+            "justifyMode": "auto",
+            "orientation": "auto",
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "text": {},
+            "textMode": "value_and_name"
+          },
+          "pluginVersion": "7.4.3",
+          "targets": [
+            {
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\",envoy_cluster_name!~\"localhost_.*\",envoy_cluster_name!=\"kuma_envoy_admin\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "",
+              "refId": "C"
+            }
+          ],
+          "timeFrom": null,
+          "timeShift": null,
+          "title": "",
+          "type": "stat"
+        },
+        {
+          "collapsed": false,
+          "datasource": null,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 8
+          },
+          "id": 14,
+          "panels": [],
+          "title": "HTTP",
+          "type": "row"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "color": {},
+              "custom": {},
+              "thresholds": {
+                "mode": "absolute",
+                "steps": []
+              }
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 0,
+            "y": 9
+          },
+          "hiddenSeries": false,
+          "id": 4,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "max(histogram_quantile(0.99, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "p99",
+              "refId": "A"
+            },
+            {
+              "expr": "max(histogram_quantile(0.95, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "p95",
+              "refId": "C"
+            },
+            {
+              "expr": "max(histogram_quantile(0.50, rate(envoy_cluster_upstream_rq_time_bucket{kuma_io_services=~\".*$service.*\",mesh=\"$mesh\",envoy_cluster_name=~\"localhost_.*\"}[1m])))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "p50",
+              "refId": "D"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Latency",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:631",
+              "format": "ms",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:632",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 8,
+            "y": 9
+          },
+          "hiddenSeries": false,
+          "id": 2,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Incoming",
+              "refId": "C"
+            },
+            {
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m]))",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Outgoing",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Traffic",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:429",
+              "format": "reqps",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:430",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 9,
+            "w": 8,
+            "x": 16,
+            "y": 9
+          },
+          "hiddenSeries": false,
+          "id": 10,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name=~\"localhost_.*\"}[1m])) by (envoy_response_code_class)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Incoming {{envoy_response_code_class}}xx",
+              "refId": "A"
+            },
+            {
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m])) by (envoy_response_code_class)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "Outgoing {{envoy_response_code_class}}xx",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Status codes",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:242",
+              "format": "reqps",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:243",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "collapsed": false,
+          "datasource": null,
+          "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 18
+          },
+          "id": 17,
+          "panels": [],
+          "title": "Kubernetes",
+          "type": "row"
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 0,
+            "y": 19
+          },
+          "hiddenSeries": false,
+          "id": 8,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "max(sum(rate(container_cpu_usage_seconds_total[1m])) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane) /\nmax(sum(kube_pod_container_resource_limits_cpu_cores) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{ dataplane }}",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "CPU",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:854",
+              "format": "percentunit",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:855",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 8,
+            "y": 19
+          },
+          "hiddenSeries": false,
+          "id": 21,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "max(sum(container_memory_working_set_bytes{image!=\"\"}) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{ dataplane }}",
+              "refId": "B"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Memory Utilization",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:44",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:45",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        },
+        {
+          "aliasColors": {},
+          "bars": false,
+          "dashLength": 10,
+          "dashes": false,
+          "datasource": null,
+          "fieldConfig": {
+            "defaults": {
+              "custom": {}
+            },
+            "overrides": []
+          },
+          "fill": 1,
+          "fillGradient": 0,
+          "gridPos": {
+            "h": 8,
+            "w": 8,
+            "x": 16,
+            "y": 19
+          },
+          "hiddenSeries": false,
+          "id": 7,
+          "legend": {
+            "avg": false,
+            "current": false,
+            "max": false,
+            "min": false,
+            "show": true,
+            "total": false,
+            "values": false
+          },
+          "lines": true,
+          "linewidth": 1,
+          "nullPointMode": "null",
+          "options": {
+            "alertThreshold": true
+          },
+          "percentage": false,
+          "pluginVersion": "7.4.3",
+          "pointradius": 2,
+          "points": false,
+          "renderer": "flot",
+          "seriesOverrides": [],
+          "spaceLength": 10,
+          "stack": false,
+          "steppedLine": false,
+          "targets": [
+            {
+              "expr": "max(sum(container_memory_working_set_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane) / max(sum(kube_pod_container_resource_limits_memory_bytes) by (namespace, pod) * on (namespace, pod) group_right(kuma_io_service) envoy_server_live{kuma_io_services=~\".*$service.*\"}) by (dataplane)",
+              "hide": false,
+              "interval": "",
+              "legendFormat": "{{ dataplane }}",
+              "refId": "A"
+            }
+          ],
+          "thresholds": [],
+          "timeFrom": null,
+          "timeRegions": [],
+          "timeShift": null,
+          "title": "Memory Saturation",
+          "tooltip": {
+            "shared": true,
+            "sort": 0,
+            "value_type": "individual"
+          },
+          "type": "graph",
+          "xaxis": {
+            "buckets": null,
+            "mode": "time",
+            "name": null,
+            "show": true,
+            "values": []
+          },
+          "yaxes": [
+            {
+              "$$hashKey": "object:854",
+              "format": "percentunit",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": "0",
+              "show": true
+            },
+            {
+              "$$hashKey": "object:855",
+              "format": "short",
+              "label": null,
+              "logBase": 1,
+              "max": null,
+              "min": null,
+              "show": true
+            }
+          ],
+          "yaxis": {
+            "align": false,
+            "alignLevel": null
+          }
+        }
+      ],
+      "refresh": "5s",
+      "schemaVersion": 27,
+      "style": "dark",
+      "tags": [],
+      "templating": {
+        "list": [
+          {
+            "allValue": null,
+            "current": {
+              "selected": false,
+              "text": "default",
+              "value": "default"
+            },
+            "datasource": null,
+            "definition": "label_values(envoy_server_live, mesh)",
+            "description": null,
+            "error": null,
+            "hide": 0,
+            "includeAll": false,
+            "label": "Mesh",
+            "multi": false,
+            "name": "mesh",
+            "options": [],
+            "query": {
+              "query": "label_values(envoy_server_live, mesh)",
+              "refId": "StandardVariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "tagValuesQuery": "",
+            "tags": [],
+            "tagsQuery": "",
+            "type": "query",
+            "useTags": false
+          },
+          {
+            "allValue": null,
+            "current": {
+              "selected": true,
+              "text": "backend_kuma-demo_svc_3001",
+              "value": "backend_kuma-demo_svc_3001"
+            },
+            "datasource": null,
+            "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+            "description": null,
+            "error": null,
+            "hide": 0,
+            "includeAll": false,
+            "label": "Service",
+            "multi": false,
+            "name": "service",
+            "options": [],
+            "query": {
+              "query": "label_values(envoy_server_live{mesh=\"$mesh\"}, kuma_io_service)",
+              "refId": "StandardVariableQuery"
+            },
+            "refresh": 1,
+            "regex": "",
+            "skipUrlSync": false,
+            "sort": 0,
+            "tagValuesQuery": "",
+            "tags": [],
+            "tagsQuery": "",
+            "type": "query",
+            "useTags": false
+          }
+        ]
+      },
+      "time": {
+        "from": "now-15m",
+        "to": "now"
+      },
+      "timepicker": {},
+      "timezone": "",
+      "title": "Kuma Service",
+      "uid": "FkJ7AxwMz",
+      "version": 1
+    }
+---
 kind: ClusterRole
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
@@ -9070,7 +10436,25 @@ spec:
           configMap:
             name: provisioning-datasource
         - name: provisioning-dashboards
-          configMap:
-            name: provisioning-dashboards
+          projected:
+            sources:
+              - configMap:
+                  name: provisioning-dashboards
+
+              - configMap:
+                  name: provisioning-dashboards-0
+
+              - configMap:
+                  name: provisioning-dashboards-1
+
+              - configMap:
+                  name: provisioning-dashboards-2
+
+              - configMap:
+                  name: provisioning-dashboards-3
+
+              - configMap:
+                  name: provisioning-dashboards-4
+
         - name: storage
           emptyDir: {}
