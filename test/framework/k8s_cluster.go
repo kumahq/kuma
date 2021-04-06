@@ -408,7 +408,7 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 		values["cni.chained"] = "true"
 		values["cni.netDir"] = "/etc/cni/net.d"
 		values["cni.binDir"] = "/opt/cni/bin"
-		values["cni.confName"] = "10-aws.conflist"
+		values["cni.confName"] = "10-kindnet.conflist"
 
 		cniConfName := os.Getenv("KUMA_CNI_CONF_NAME")
 		if cniConfName != "" {
