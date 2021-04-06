@@ -2,6 +2,7 @@ package framework
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
@@ -32,6 +33,22 @@ func NewUniversalClusters(clusterNames []string, verbose bool) (Clusters, error)
 		clusters: clusters,
 		verbose:  verbose,
 	}, nil
+}
+
+func (cs *UniversalClusters) WithTimeout(timeout time.Duration) Cluster {
+	for _, c := range cs.clusters {
+		c.WithTimeout(timeout)
+	}
+
+	return cs
+}
+
+func (cs *UniversalClusters) WithRetries(retries int) Cluster {
+	for _, c := range cs.clusters {
+		c.WithRetries(retries)
+	}
+
+	return cs
 }
 
 func (cs *UniversalClusters) Name() string {
