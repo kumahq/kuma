@@ -42,14 +42,14 @@ metadata:
 	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
-		cluster, err := NewK8sClusterWithTimeout(
+		c, err := NewK8sClusterWithTimeout(
 			NewTestingT(),
 			Kuma1,
 			Silent,
 			2*time.Minute)
 		Expect(err).ToNot(HaveOccurred())
 
-		cluster.WithRetries(2 * DefaultRetries)
+		cluster = c.WithRetries(2 * DefaultRetries)
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
