@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/random"
 
@@ -22,12 +23,14 @@ var _ = Describe("Test Control Plane autoscaling with Helm chart", func() {
 	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
-		clusters, err := NewK8sClusters(
-			[]string{Kuma1},
-			Silent)
+		c, err := NewK8sClusterWithTimeout(
+			NewTestingT(),
+			Kuma1,
+			Silent,
+			6*time.Second)
 		Expect(err).ToNot(HaveOccurred())
 
-		cluster = clusters.GetCluster(Kuma1)
+		cluster = c.WithRetries(60)
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
