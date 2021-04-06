@@ -3,8 +3,6 @@ package remote
 import (
 	"github.com/pkg/errors"
 
-	"github.com/kumahq/kuma/pkg/core/config/manager"
-
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/mux"
@@ -109,7 +107,12 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 			}
 			if rs.GetItemType() == system.ConfigType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					return r.GetMeta().GetName() == manager.ClusterIdConfigKey
+					for _, config := range rt.KDSContext().Configs {
+						if config == r.GetMeta().GetName() {
+							return true
+						}
+					}
+					return false
 				}))
 			}
 			return syncer.Sync(rs)

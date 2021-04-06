@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 
@@ -34,12 +36,21 @@ import (
 	"github.com/kumahq/kuma/pkg/test/kds/setup"
 )
 
+type testRuntimeContext struct {
+	core_runtime.Runtime
+	kds *kds_context.Context
+}
+
+func (t *testRuntimeContext) KDSContext() *kds_context.Context {
+	return t.kds
+}
+
 var _ = Describe("Remote Sync", func() {
 
 	remoteZone := "zone-1"
 
-	newPolicySink := func(zone string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream) component.Component {
-		return kds_client.NewKDSSink(core.Log, remote.ConsumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(nil, resourceSyncer, false, zone, nil))
+	newPolicySink := func(zone string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) component.Component {
+		return kds_client.NewKDSSink(core.Log, remote.ConsumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(rt, resourceSyncer, false, zone, nil))
 	}
 	start := func(comp component.Component, stop chan struct{}) {
 		go func() {
@@ -78,7 +89,9 @@ var _ = Describe("Remote Sync", func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		serverStream := setup.StartServer(globalStore, wg, "global", remote.ConsumedTypes, kds_context.GlobalProvidedFilter(manager.NewResourceManager(globalStore)))
+
+		kdsCtx := kds_context.DefaultContext(manager.NewResourceManager(globalStore), "global")
+		serverStream := setup.StartServer(globalStore, wg, "global", remote.ConsumedTypes, kdsCtx.GlobalProvidedFilter)
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)
@@ -86,7 +99,7 @@ var _ = Describe("Remote Sync", func() {
 		remoteStore = memory.NewStore()
 		remoteSyncer = sync_store.NewResourceSyncer(core.Log, remoteStore)
 
-		start(newPolicySink(remoteZone, remoteSyncer, clientStream), stop)
+		start(newPolicySink(remoteZone, remoteSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}), stop)
 		closeFunc = func() {
 			close(stop)
 		}
