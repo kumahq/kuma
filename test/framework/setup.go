@@ -3,6 +3,7 @@ package framework
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/logger"
@@ -442,6 +443,6 @@ func CreateCertsForIP(ip string) (cert, key string, err error) {
 }
 
 func IsIPv6() bool {
-	_, found := os.LookupEnv(envIPv6)
-	return found
+	value, found := os.LookupEnv(envIPv6)
+	return found && strings.ToLower(value) == "true"
 }
