@@ -12,7 +12,6 @@ KUMA_DP_IMAGE_REPOSITORY ?=
 KUMA_DP_INIT_IMAGE_REPOSITORY ?=
 KUMA_USE_LOAD_BALANCER ?=
 KUMA_IN_EKS ?=
-KUMA_UNIVERSAL_IMAGE ?= $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 KUMA_DEFAULT_RETRIES ?=
 KUMA_DEFAULT_TIMEOUT ?=
 
@@ -28,7 +27,6 @@ test/e2e/kind/start/cluster/$1:
 		$(MAKE) kind/start
 	KIND_CLUSTER_NAME=$1 \
 		$(MAKE) kind/load/images
-	@kind load docker-image $(KUMA_UNIVERSAL_DOCKER_IMAGE) --name=$1
 
 .PHONY: test/e2e/kind/stop/cluster/$1
 test/e2e/kind/stop/cluster/$1:
