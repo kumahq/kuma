@@ -1,8 +1,7 @@
-package deploy_test
+package hybrid_test
 
 import (
 	"fmt"
-
 	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
