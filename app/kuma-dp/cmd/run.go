@@ -123,7 +123,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				Stdout:          cmd.OutOrStdout(),
 				Stderr:          cmd.OutOrStderr(),
 				Quit:            shouldQuit,
-				Debug:           rootCtx.Debug,
+				LogLevel:        rootCtx.LogLevel,
 			})
 			if err != nil {
 				return err

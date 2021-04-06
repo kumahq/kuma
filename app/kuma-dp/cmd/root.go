@@ -30,7 +30,7 @@ func NewRootCmd(rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 			core.SetLogger(core.NewLogger(level))
-			rootCtx.Debug = (level == kuma_log.DebugLevel)
+			rootCtx.LogLevel = level
 
 			// once command line flags have been parsed,
 			// avoid printing usage instructions
