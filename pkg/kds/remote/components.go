@@ -3,6 +3,8 @@ package remote
 import (
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/core/config/manager"
+
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/mux"
@@ -103,6 +105,11 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 			if rs.GetItemType() == mesh.DataplaneType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return r.(*mesh.DataplaneResource).Spec.IsRemoteIngress(localZone)
+				}))
+			}
+			if rs.GetItemType() == system.ConfigType {
+				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
+					return r.GetMeta().GetName() == manager.ClusterIdConfigKey
 				}))
 			}
 			return syncer.Sync(rs)
