@@ -617,6 +617,8 @@ jobs:
                   export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export IPV6=true
+                  export KUMA_DEFAULT_RETRIES=60
+                  export KUMA_DEFAULT_TIMEOUT="6s"
                   make test/e2e
       - unless:
           condition: << parameters.ipv6 >>
