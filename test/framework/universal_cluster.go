@@ -3,8 +3,6 @@ package framework
 import (
 	"fmt"
 	"net"
-	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -29,29 +27,14 @@ type UniversalCluster struct {
 }
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
-	retries := DefaultRetries
-	timeout := DefaultTimeout
-
-	if r := os.Getenv("KUMA_DEFAULT_RETRIES"); r != "" {
-		if r, err := strconv.Atoi(r); err != nil {
-			retries = r
-		}
-	}
-
-	if t := os.Getenv("KUMA_DEFAULT_TIMEOUT"); t != "" {
-		if t, err := time.ParseDuration(t); err != nil {
-			timeout = t
-		}
-	}
-
 	return &UniversalCluster{
 		t:              t,
 		name:           name,
 		apps:           map[string]*UniversalApp{},
 		verbose:        verbose,
 		deployments:    map[string]Deployment{},
-		defaultRetries: retries,
-		defaultTimeout: timeout,
+		defaultRetries: GetDefaultRetries(),
+		defaultTimeout: GetDefaultTimeout(),
 	}
 }
 
@@ -107,9 +90,8 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
 	}
 
-	apiVersion := os.Getenv(envAPIVersion)
-	if apiVersion != "" {
-		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+apiVersion)
+	if HasApiVersion() {
+		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+GetApiVersion())
 	}
 
 	if opts.isipv6 {

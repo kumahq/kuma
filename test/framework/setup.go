@@ -2,8 +2,6 @@ package framework
 
 import (
 	"fmt"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/logger"
@@ -178,12 +176,6 @@ func WaitPodsNotAvailable(namespace, app string) InstallFunc {
 }
 
 func EchoServerK8s(mesh string) InstallFunc {
-	image := "kuma-universal"
-
-	if i := os.Getenv("KUMA_UNIVERSAL_IMAGE"); i != "" {
-		image = i
-	}
-
 	const name = "echo-server"
 	service := `
 apiVersion: v1
@@ -225,7 +217,7 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: ` + image + `
+          image: %s
           imagePullPolicy: IfNotPresent
           readinessProbe:
             httpGet:
@@ -250,7 +242,7 @@ spec:
 `
 	return Combine(
 		YamlK8s(service),
-		YamlK8s(fmt.Sprintf(deployment, mesh)),
+		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage())),
 		WaitService(TestNamespace, name),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
@@ -301,12 +293,6 @@ func IngressUniversal(mesh, token string) InstallFunc {
 }
 
 func DemoClientK8s(mesh string) InstallFunc {
-	image := "kuma-universal"
-
-	if i := os.Getenv("KUMA_UNIVERSAL_IMAGE"); i != "" {
-		image = i
-	}
-
 	const name = "demo-client"
 	deployment := `
 apiVersion: apps/v1
@@ -333,7 +319,7 @@ spec:
     spec:
       containers:
         - name: demo-client
-          image: ` + image + `
+          image: %s
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
@@ -348,19 +334,13 @@ spec:
               memory: 128Mi
 `
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, mesh)),
+		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage())),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
 	)
 }
 
 func DemoClientJobK8s(mesh, destination string) InstallFunc {
-	image := "kuma-universal"
-
-	if i := os.Getenv("KUMA_UNIVERSAL_IMAGE"); i != "" {
-		image = i
-	}
-
 	const name = "demo-job-client"
 	deployment := `
 apiVersion: batch/v1
@@ -380,7 +360,7 @@ spec:
     spec:
       containers:
       - name: demo-job-client
-        image: ` + image + `
+        image: %s
         imagePullPolicy: IfNotPresent
         command: [ "curl" ]
         args:
@@ -392,7 +372,7 @@ spec:
       restartPolicy: OnFailure
 `
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, mesh, destination)),
+		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage(), destination)),
 		WaitNumPods(1, name),
 		WaitPodsComplete(TestNamespace, name),
 	)
@@ -458,9 +438,4 @@ func CreateCertsForIP(ip string) (cert, key string, err error) {
 	}
 
 	return string(keyPair.CertPEM), string(keyPair.KeyPEM), nil
-}
-
-func IsIPv6() bool {
-	value, found := os.LookupEnv(envIPv6)
-	return found && strings.ToLower(value) == "true"
 }

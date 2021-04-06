@@ -27,7 +27,7 @@ type KumactlOptions struct {
 }
 
 func NewKumactlOptions(t testing.TestingT, cpname string, verbose bool) (*KumactlOptions, error) {
-	kumactl := os.Getenv(envKUMACTLBIN)
+	kumactl := GetKumactlBin()
 
 	_, err := os.Stat(kumactl)
 	if kumactl == "" || os.IsNotExist(err) {
@@ -122,7 +122,7 @@ func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 		cmd = append(cmd, "--zone", o.CPName)
 		fallthrough
 	case core.Global:
-		if useLoadBalancer := os.Getenv("KUMA_USE_LOAD_BALANCER"); useLoadBalancer == "" {
+		if UseLoadBalancer() {
 			cmd = append(cmd, "--use-node-port")
 		}
 	}
