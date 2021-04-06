@@ -50,11 +50,11 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		c1 = clusters.GetCluster(Kuma1).
-			WithTimeout(2 * time.Minute).
-			WithRetries(2 * DefaultRetries)
+			WithTimeout(6 * time.Second).
+			WithRetries(60)
 		c2 = clusters.GetCluster(Kuma2).
-			WithTimeout(2 * time.Minute).
-			WithRetries(2 * DefaultRetries)
+			WithTimeout(6 * time.Second).
+			WithRetries(60)
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",

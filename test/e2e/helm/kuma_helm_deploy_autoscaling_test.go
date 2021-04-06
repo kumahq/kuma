@@ -27,10 +27,10 @@ var _ = Describe("Test Control Plane autoscaling with Helm chart", func() {
 			NewTestingT(),
 			Kuma1,
 			Silent,
-			2*time.Minute)
+			6*time.Second)
 		Expect(err).ToNot(HaveOccurred())
 
-		cluster = c.WithRetries(2 * DefaultRetries)
+		cluster = c.WithRetries(60)
 
 		releaseName := fmt.Sprintf(
 			"kuma-%s",
