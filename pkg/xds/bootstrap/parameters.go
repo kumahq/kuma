@@ -12,6 +12,7 @@ type configParameters struct {
 	XdsPort            uint32
 	XdsConnectTimeout  time.Duration
 	AccessLogPipe      string
+	DataplaneToken     string
 	DataplaneTokenPath string
 	DataplaneResource  string
 	CertBytes          string
