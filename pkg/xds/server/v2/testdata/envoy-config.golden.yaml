@@ -10,7 +10,6 @@ resources:
     upstreamBindConfig:
       sourceAddress:
         address: 127.0.0.6
-        ipv4Compat: true
         portValue: 0
 - name: localhost:8080
   resource:
@@ -58,7 +57,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.1
-        ipv4Compat: true
         portValue: 443
     deprecatedV1:
       bindToPort: false
@@ -112,7 +110,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.1
-        ipv4Compat: true
         portValue: 80
     deprecatedV1:
       bindToPort: false
@@ -174,7 +171,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.2
-        ipv4Compat: true
         portValue: 443
     deprecatedV1:
       bindToPort: false
@@ -228,7 +224,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.2
-        ipv4Compat: true
         portValue: 80
     deprecatedV1:
       bindToPort: false
@@ -282,7 +277,6 @@ resources:
     address:
       socketAddress:
         address: 0.0.0.0
-        ipv4Compat: true
         portValue: 15006
     filterChains:
     - filters:

@@ -155,7 +155,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.1
-        ipv4Compat: true
         portValue: 80
     filterChains:
     - filters:
@@ -223,7 +222,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.1
-        ipv4Compat: true
         portValue: 9902
     filterChains:
     - filters:
@@ -292,7 +290,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.1
-        ipv4Compat: true
         portValue: 1234
     filterChains:
     - filterChainMatch:

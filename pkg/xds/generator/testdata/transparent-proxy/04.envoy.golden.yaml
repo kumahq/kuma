@@ -10,7 +10,6 @@ resources:
     upstreamBindConfig:
       sourceAddress:
         address: 127.0.0.6
-        ipv4Compat: true
         portValue: 0
 - name: inbound:passthrough:ipv6
   resource:
@@ -23,7 +22,6 @@ resources:
     upstreamBindConfig:
       sourceAddress:
         address: ::6
-        ipv4Compat: true
         portValue: 0
 - name: outbound:passthrough:ipv4
   resource:
@@ -47,7 +45,6 @@ resources:
     address:
       socketAddress:
         address: 0.0.0.0
-        ipv4Compat: true
         portValue: 15006
     filterChains:
     - filters:
@@ -65,7 +62,6 @@ resources:
     address:
       socketAddress:
         address: '::'
-        ipv4Compat: true
         portValue: 15010
     filterChains:
     - filters:

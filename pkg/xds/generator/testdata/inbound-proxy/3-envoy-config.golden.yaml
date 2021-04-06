@@ -37,7 +37,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.1
-        ipv4Compat: true
         portValue: 443
     filterChains:
     - filters:
@@ -89,7 +88,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.1
-        ipv4Compat: true
         portValue: 80
     filterChains:
     - filters:
@@ -177,7 +175,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.2
-        ipv4Compat: true
         portValue: 443
     filterChains:
     - filters:
@@ -229,7 +226,6 @@ resources:
     address:
       socketAddress:
         address: 192.168.0.2
-        ipv4Compat: true
         portValue: 80
     filterChains:
     - filters:
