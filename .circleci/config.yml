@@ -909,6 +909,7 @@ workflows:
         requires:
           - images
           - check
+# keep this one disabled and enable only for development
     - e2e:
         <<: *commit_workflow_filters
         name: test/e2e-ipv6
@@ -1044,13 +1045,21 @@ workflows:
             - images
             - check
       - e2e:
-          <<: *commit_workflow_filters
+          <<: *master_workflow_filters
           name: test/e2e V2
           requires:
             - images
             - check
           # custom parameters
           api: v2
+      - e2e:
+          <<: *master_workflow_filters
+          name: test/e2e-ipv6
+          requires:
+            - images
+            - check
+          # custom parameters
+          ipv6: true
 
   kuma-release:
     jobs:
