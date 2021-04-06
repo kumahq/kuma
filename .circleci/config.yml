@@ -1,5 +1,26 @@
 version: 2.1 # Adds support for executors, parameterized jobs, etc
 
+orbs:
+  aws-cli: circleci/aws-cli@1.4.0
+  aws-ecr: circleci/aws-ecr@6.15.3
+  aws-eks: circleci/aws-eks@1.0.3
+  kubernetes: circleci/kubernetes@0.11.2
+  slack: circleci/slack@4.1
+
+commands:
+  early_return_for_forked_pull_requests:
+    description: >-
+      If this build is from a fork, stop executing the current job and return success.
+      This is useful to avoid steps that will fail due to missing credentials.
+    steps:
+    - run:
+        name: "Early return if this build is from a forked PR"
+        command: |
+          if [ -n "${CIRCLE_PR_NUMBER}" ]; then
+            echo "Nothing to do for forked PRs, so marking this step successful"
+            circleci step halt
+          fi
+
 reusable:
 
   constants:
@@ -37,6 +58,12 @@ reusable:
           only: master, /^release-.*/
         tags:
           ignore: /.*/ # we don't want to run master workflow on commits with tag because use_local_kuma_images has to be false for all the jobs to pass
+
+    # filters for the eks-e2e workflow
+    master_only_workflow_filters: &master_only_workflow_filters
+      filters:
+        branches:
+          only: master, /^release-.*/
 
     # filters for the kuma-commit workflow
     commit_workflow_filters: &commit_workflow_filters
@@ -77,6 +104,196 @@ executors:
       GO111MODULE: "on"
 
 jobs:
+  eks-ecr-clean-registry:
+    executor: aws-cli/default
+    steps:
+    - aws-cli/install
+
+    - run:
+        name: "Remove all test images from repository"
+        command: |
+          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
+            images="$(aws ecr list-images --repository-name ${image})"
+
+            aws ecr batch-delete-image \
+              --repository-name "${image}" \
+              --cli-input-json "${images}" &
+          done
+
+          wait || true
+
+  eks-e2e:
+    executor: vm
+    environment:
+      GOPATH: /home/circleci/.go-kuma-go
+    parameters:
+      prefix:
+        description: "Prefix for the cluster names"
+        type: string
+        default: kuma-cicd-e2e-test
+      api_version:
+        description: "XDS API version"
+        type: string
+        default: v3
+    steps:
+    - early_return_for_forked_pull_requests
+
+    - checkout
+
+    - run:
+        name: "Setup Environment"
+        command: |
+          echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
+          echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
+          echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
+          echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
+          echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
+          echo "export CLUSTER_2=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-2" >> $BASH_ENV
+
+          # we have to install `unzip` to be able to install aws-cli
+          sudo apt update
+          sudo apt install -y \
+            unzip
+
+    - aws-cli/install
+
+    - aws-eks/install-eksctl
+
+    - aws-eks/install-aws-iam-authenticator
+
+    - kubernetes/install
+
+    # Mount files from the upstream jobs
+    - attach_workspace:
+        at: build
+
+    - run:
+        name: "Load Docker images from TAR archives"
+        command: make docker/load
+
+    - aws-ecr/ecr-login:
+        account-url: ECR_REGISTRY
+        region: AWS_DEFAULT_REGION
+
+    - run:
+        name: "Push images to ECR & Create clusters"
+        command: |
+          for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
+            make docker/tag/${image} \
+              BINTRAY_REGISTRY="${ECR_REGISTRY}" \
+              KUMA_VERSION="${TAG}" && \
+            docker push "${ECR_REGISTRY}"/${image}:"${TAG}" &
+          done
+
+          eksctl create cluster \
+            --name "${CLUSTER_1}" \
+            --nodes 1 \
+            &
+          eksctl create cluster \
+            --name "${CLUSTER_2}" \
+            --nodes 1 \
+            &
+
+          FAIL="0"
+          for job in $(jobs -p); do
+            wait "${job}" || FAIL=$((FAIL + 1))
+          done
+
+          exit ${FAIL}
+
+    - aws-eks/update-kubeconfig-with-authenticator:
+        cluster-name: "${CLUSTER_1}"
+        kubeconfig-file-path: ~/.kube/kind-kuma-1-config
+
+    - aws-eks/update-kubeconfig-with-authenticator:
+        cluster-name: "${CLUSTER_2}"
+        kubeconfig-file-path: ~/.kube/kind-kuma-2-config
+
+    - restore_cache:
+        keys:
+        # prefer the exact match
+        - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+
+    - run:
+        name: "Download Go modules"
+        command: go mod download
+
+    # since execution of go commands might change contents of "go.sum",
+    #  we have to save cache immediately
+    - save_cache:
+        key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        paths:
+        - "/home/circleci/.go-kuma-go"
+
+    - run:
+        name: "Install all development tools"
+        command: make dev/tools
+
+    - run:
+        name: "Setup Helm"
+        command: helm repo add kuma https://kumahq.github.io/charts
+
+    # We need kumactl to be built to run tests, and to not build it again,
+    #  we can use the one already build by earlier jobs
+    - attach_workspace:
+        at: build
+
+    - run:
+        name: "Run E2E tests"
+        command: |
+          export KUMA_UNIVERSAL_IMAGE="${ECR_REGISTRY}/kuma-universal:${TAG}";
+          export E2E_PKG_LIST="./test/e2e/helm";
+          export API_VERSION="<< parameters.api_version >>"
+
+          make test/e2e/test \
+            KUMA_GLOBAL_IMAGE_REGISTRY="${ECR_REGISTRY}" \
+            KUMA_GLOBAL_IMAGE_TAG="${TAG}" \
+            KUMA_CNI_CONF_NAME="10-aws.conflist" \
+            KUMA_USE_LOAD_BALANCER=true \
+            KUMA_IN_EKS=true \
+            KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}" \
+            KUMA_DEFAULT_RETRIES=60 \
+            KUMA_DEFAULT_TIMEOUT="6s"
+
+    - run:
+        name: "Cleanup"
+        when: always
+        command: |
+          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
+            aws ecr batch-delete-image \
+                --repository-name "${image}" \
+                --image-ids imageTag="${TAG}" &
+          done
+
+          eksctl delete cluster --wait --name "${CLUSTER_1}" &
+          eksctl delete cluster --wait --name "${CLUSTER_2}" &
+
+          wait || true
+
+    - slack/notify:
+        event: fail
+        template: basic_fail_1
+
+    - slack/notify:
+        event: pass
+        template: basic_success_1
+
+  eks-delete-clusters:
+    executor: aws-eks/python3
+    steps:
+    - aws-cli/install
+
+    - aws-eks/install-eksctl
+
+    - run:
+        name: "Clean clusters"
+        command: |
+          for cluster in $(eksctl get cluster -o json | jq -r '.[].metadata.name | select(. | test("kuma-cicd-e2e-test"))'); do
+            eksctl delete cluster --wait --name "${cluster}" &
+          done
+
+          wait
+
   dev_golang:
     docker:
     - image: *golang_image
@@ -669,6 +886,40 @@ workflows:
         name: test/e2e
         requires:
           - images
+
+  clean-eks:
+    triggers:
+    - schedule:
+        # run cleanup everyday at 02:00 - it's the last resort for cleanup of
+        # EKS resources if anything went wrong and because of any reason
+        # they were not cleaned immediately after tests
+        cron: "0 2 * * *"
+        <<: *master_only_workflow_filters
+    jobs:
+    - eks-ecr-clean-registry
+    - eks-delete-clusters
+
+  e2e-eks:
+    triggers:
+    - schedule:
+        # run every Monday at 00:00
+        cron: "0 0 * * 1"
+        <<: *master_only_workflow_filters
+    jobs:
+    - go_cache: *master_workflow_filters
+    - build:
+        <<: *master_workflow_filters
+        requires:
+        - go_cache
+    - images:
+        <<: *master_workflow_filters
+        requires:
+        - build
+    - eks-e2e:
+        <<: *master_workflow_filters
+        name: test/e2e/eks
+        requires:
+        - images
 
   kuma-master:
     jobs:
