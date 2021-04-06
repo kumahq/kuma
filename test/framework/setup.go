@@ -178,6 +178,12 @@ func WaitPodsNotAvailable(namespace, app string) InstallFunc {
 }
 
 func EchoServerK8s(mesh string) InstallFunc {
+	image := "kuma-universal"
+
+	if i := os.Getenv("KUMA_UNIVERSAL_IMAGE"); i != "" {
+		image = i
+	}
+
 	const name = "echo-server"
 	service := `
 apiVersion: v1
@@ -219,7 +225,7 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: kuma-universal
+          image: ` + image + `
           imagePullPolicy: IfNotPresent
           readinessProbe:
             httpGet:
@@ -295,6 +301,12 @@ func IngressUniversal(mesh, token string) InstallFunc {
 }
 
 func DemoClientK8s(mesh string) InstallFunc {
+	image := "kuma-universal"
+
+	if i := os.Getenv("KUMA_UNIVERSAL_IMAGE"); i != "" {
+		image = i
+	}
+
 	const name = "demo-client"
 	deployment := `
 apiVersion: apps/v1
@@ -321,7 +333,7 @@ spec:
     spec:
       containers:
         - name: demo-client
-          image: kuma-universal
+          image: ` + image + `
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
@@ -343,6 +355,12 @@ spec:
 }
 
 func DemoClientJobK8s(mesh, destination string) InstallFunc {
+	image := "kuma-universal"
+
+	if i := os.Getenv("KUMA_UNIVERSAL_IMAGE"); i != "" {
+		image = i
+	}
+
 	const name = "demo-job-client"
 	deployment := `
 apiVersion: batch/v1
@@ -362,7 +380,7 @@ spec:
     spec:
       containers:
       - name: demo-job-client
-        image: kuma-universal
+        image: ` + image + `
         imagePullPolicy: IfNotPresent
         command: [ "curl" ]
         args:

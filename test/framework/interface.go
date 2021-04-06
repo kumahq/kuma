@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"time"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 )
@@ -249,6 +251,8 @@ type Cluster interface {
 	GetKumactlOptions() *KumactlOptions
 	Deployment(name string) Deployment
 	Deploy(deployment Deployment) error
+	WithTimeout(timeout time.Duration) Cluster
+	WithRetries(retries int) Cluster
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions

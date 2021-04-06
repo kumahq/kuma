@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 
@@ -16,22 +18,53 @@ import (
 )
 
 type UniversalCluster struct {
-	t            testing.TestingT
-	name         string
-	controlplane *UniversalControlPlane
-	apps         map[string]*UniversalApp
-	verbose      bool
-	deployments  map[string]Deployment
+	t              testing.TestingT
+	name           string
+	controlplane   *UniversalControlPlane
+	apps           map[string]*UniversalApp
+	verbose        bool
+	deployments    map[string]Deployment
+	defaultTimeout time.Duration
+	defaultRetries int
 }
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
-	return &UniversalCluster{
-		t:           t,
-		name:        name,
-		apps:        map[string]*UniversalApp{},
-		verbose:     verbose,
-		deployments: map[string]Deployment{},
+	retries := DefaultRetries
+	timeout := DefaultTimeout
+
+	if r := os.Getenv("KUMA_DEFAULT_RETRIES"); r != "" {
+		if r, err := strconv.Atoi(r); err != nil {
+			retries = r
+		}
 	}
+
+	if t := os.Getenv("KUMA_DEFAULT_TIMEOUT"); t != "" {
+		if t, err := time.ParseDuration(t); err != nil {
+			timeout = t
+		}
+	}
+
+	return &UniversalCluster{
+		t:              t,
+		name:           name,
+		apps:           map[string]*UniversalApp{},
+		verbose:        verbose,
+		deployments:    map[string]Deployment{},
+		defaultRetries: retries,
+		defaultTimeout: timeout,
+	}
+}
+
+func (c *UniversalCluster) WithTimeout(timeout time.Duration) Cluster {
+	c.defaultTimeout = timeout
+
+	return c
+}
+
+func (c *UniversalCluster) WithRetries(retries int) Cluster {
+	c.defaultRetries = retries
+
+	return c
 }
 
 func (c *UniversalCluster) Name() string {
@@ -232,8 +265,8 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 	_, err := retry.DoWithRetryE(
 		c.t,
 		fmt.Sprintf("Trying %s", strings.Join(cmd, " ")),
-		DefaultRetries/3,
-		DefaultTimeout,
+		c.defaultRetries/3,
+		c.defaultTimeout,
 		func() (string, error) {
 			app, ok := c.apps[appname]
 			if !ok {

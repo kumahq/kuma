@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/kumahq/kuma/pkg/config/core"
@@ -106,6 +107,15 @@ func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
 		c.GetKubectlOptions(KumaNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + KumaServiceName,
+		},
+	)
+}
+
+func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
+	return k8s.ListServices(c.t,
+		c.GetKubectlOptions(KumaNamespace),
+		metav1.ListOptions{
+			FieldSelector: "metadata.name=" + KumaGlobalRemoteSyncServiceName,
 		},
 	)
 }
@@ -215,6 +225,18 @@ func (c *K8sControlPlane) InjectDNS(args ...string) error {
 
 // A naive implementation to find the URL where Remote CP exposes its API
 func (c *K8sControlPlane) GetKDSServerAddress() string {
+	useLoadBalancer := os.Getenv("KUMA_USE_LOAD_BALANCER")
+	inEks := os.Getenv("KUMA_IN_EKS")
+
+	// As EKS and AWS generally returns dns records of load balancers instead of
+	//  IP addresses, accessing this data (hostname) was only tested there,
+	//  so the env var was created for that purpose
+	if useLoadBalancer != "" && inEks != "" {
+		svc := c.GetKumaCPSvcs()[0]
+
+		return "grpcs://" + svc.Status.LoadBalancer.Ingress[0].Hostname + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
+	}
+
 	pod := c.GetKumaCPPods()[0]
 	return "grpcs://" + net.JoinHostPort(
 		pod.Status.HostIP, strconv.FormatUint(uint64(kdsPort), 10))
