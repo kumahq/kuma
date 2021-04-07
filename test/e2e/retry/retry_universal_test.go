@@ -46,8 +46,8 @@ var _ = Describe("Test Retry on Universal", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(DemoClientUniversal("demo-client", "default", demoClientToken)).
-			Install(EchoServerUniversal("universal1", "default", "universal", echoServerToken)).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)).
+			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

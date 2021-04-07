@@ -19,7 +19,8 @@ const (
 
 	KumaUniversalImage = "kuma-universal"
 
-	kdsPort = 30685
+	kdsPort             = 30685
+	loadBalancerKdsPort = 5685
 )
 
 const (
@@ -46,6 +47,7 @@ var HelmSubChartPrefix = ""
 
 var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
+var KumaGlobalRemoteSyncServiceName = "kuma-global-remote-sync"
 
 var CNIApp = "kuma-cni"
 var CNINamespace = "kube-system"

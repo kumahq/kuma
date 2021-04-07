@@ -22,6 +22,8 @@ type Context struct {
 	GlobalServerCallbacks []mux.Callbacks
 	GlobalProvidedFilter  reconcile.ResourceFilter
 	RemoteProvidedFilter  reconcile.ResourceFilter
+	// Configs contains the names of system.ConfigResource that will be transferred from Global to Remote
+	Configs []string
 }
 
 func DefaultContext(manager manager.ResourceManager, zone string) *Context {
@@ -29,6 +31,7 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 		RemoteClientCtx:      context.Background(),
 		GlobalProvidedFilter: GlobalProvidedFilter(manager),
 		RemoteProvidedFilter: RemoteProvidedFilter(zone),
+		Configs:              []string{config_manager.ClusterIdConfigKey},
 	}
 }
 

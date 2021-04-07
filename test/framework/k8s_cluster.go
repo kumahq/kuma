@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 
@@ -46,9 +47,26 @@ type K8sCluster struct {
 	verbose             bool
 	clientset           *kubernetes.Clientset
 	deployments         map[string]Deployment
+	defaultTimeout      time.Duration
+	defaultRetries      int
 }
 
 func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, error) {
+	retries := DefaultRetries
+	timeout := DefaultTimeout
+
+	if r := os.Getenv("KUMA_DEFAULT_RETRIES"); r != "" {
+		if r, err := strconv.Atoi(r); err != nil {
+			retries = r
+		}
+	}
+
+	if t := os.Getenv("KUMA_DEFAULT_TIMEOUT"); t != "" {
+		if t, err := time.ParseDuration(t); err != nil {
+			timeout = t
+		}
+	}
+
 	cluster := &K8sCluster{
 		t:                   t,
 		name:                clusterName,
@@ -58,6 +76,8 @@ func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, erro
 		forwardedPortsChans: map[uint32]chan struct{}{},
 		verbose:             verbose,
 		deployments:         map[string]Deployment{},
+		defaultRetries:      retries,
+		defaultTimeout:      timeout,
 	}
 
 	var err error
@@ -66,6 +86,27 @@ func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, erro
 		return nil, errors.Wrapf(err, "error in getting access to K8S")
 	}
 	return cluster, nil
+}
+
+func NewK8sClusterWithTimeout(t *TestingT, clusterName string, verbose bool, timeout time.Duration) (Cluster, error) {
+	c, err := NewK8SCluster(t, clusterName, verbose)
+	if err != nil {
+		return nil, err
+	}
+
+	return c.WithTimeout(timeout), nil
+}
+
+func (c *K8sCluster) WithTimeout(timeout time.Duration) Cluster {
+	c.defaultTimeout = timeout
+
+	return c
+}
+
+func (c *K8sCluster) WithRetries(retries int) Cluster {
+	c.defaultRetries = retries
+
+	return c
 }
 
 func (c *K8sCluster) Name() string {
@@ -97,16 +138,16 @@ func (c *K8sCluster) ApplyAndWaitServiceOnK8sCluster(namespace string, service s
 	k8s.WaitUntilServiceAvailable(c.t,
 		options,
 		service,
-		DefaultRetries,
-		DefaultTimeout)
+		c.defaultRetries,
+		c.defaultTimeout)
 
 	return nil
 }
 func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 	retry.DoWithRetry(c.t,
 		"Wait the Kuma Namespace to terminate.",
-		DefaultRetries,
-		DefaultTimeout,
+		c.defaultRetries,
+		c.defaultTimeout,
 		func() (string, error) {
 			_, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
@@ -122,8 +163,8 @@ func (c *K8sCluster) WaitNamespaceCreate(namespace string) {
 func (c *K8sCluster) WaitNamespaceDelete(namespace string) {
 	retry.DoWithRetry(c.t,
 		fmt.Sprintf("Wait for %s Namespace to terminate.", namespace),
-		2*DefaultRetries,
-		2*DefaultTimeout,
+		2*c.defaultRetries,
+		2*c.defaultTimeout,
 		func() (string, error) {
 			_, err := k8s.GetNamespaceE(c.t,
 				c.GetKubectlOptions(),
@@ -254,6 +295,21 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		"--dataplane-registry":      KumaImageRegistry,
 		"--dataplane-init-registry": KumaImageRegistry,
 	}
+
+	globalImageRegistry := os.Getenv("KUMA_GLOBAL_IMAGE_REGISTRY")
+	if globalImageRegistry != "" {
+		argsMap["--control-plane-registry"] = globalImageRegistry
+		argsMap["--dataplane-registry"] = globalImageRegistry
+		argsMap["--dataplane-init-registry"] = globalImageRegistry
+	}
+
+	globalImageTag := os.Getenv("KUMA_GLOBAL_IMAGE_TAG")
+	if globalImageTag != "" {
+		argsMap["--control-plane-version"] = globalImageTag
+		argsMap["--dataplane-version"] = globalImageTag
+		argsMap["--dataplane-init-version"] = globalImageTag
+	}
+
 	switch mode {
 	case core.Remote:
 		argsMap["--kds-global-address"] = opts.globalAddress
@@ -270,6 +326,11 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		argsMap["--cni-net-dir"] = "/etc/cni/net.d"
 		argsMap["--cni-bin-dir"] = "/opt/cni/bin"
 		argsMap["--cni-conf-name"] = "10-kindnet.conflist"
+
+		cniConfName := os.Getenv("KUMA_CNI_CONF_NAME")
+		if cniConfName != "" {
+			argsMap["--cni-conf-name"] = cniConfName
+		}
 	}
 
 	apiVersion := os.Getenv(envAPIVersion)
@@ -304,6 +365,31 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(opts.skipDefaultMesh),
 	}
 
+	globalImageTag := os.Getenv("KUMA_GLOBAL_IMAGE_TAG")
+	if globalImageTag != "" {
+		values["global.image.tag"] = globalImageTag
+	}
+
+	globalImageRegistry := os.Getenv("KUMA_GLOBAL_IMAGE_REGISTRY")
+	if globalImageRegistry != "" {
+		values["global.image.registry"] = globalImageRegistry
+	}
+
+	cpImageRepository := os.Getenv("KUMA_CP_IMAGE_REPOSITORY")
+	if cpImageRepository != "" {
+		values["controlPlane.image.repository"] = cpImageRepository
+	}
+
+	dpImageRepository := os.Getenv("KUMA_DP_IMAGE_REPOSITORY")
+	if dpImageRepository != "" {
+		values["dataPlane.image.repository"] = dpImageRepository
+	}
+
+	dpInitImageRepository := os.Getenv("KUMA_DP_INIT_IMAGE_REPOSITORY")
+	if dpInitImageRepository != "" {
+		values["dataPlane.initImage.repository"] = dpInitImageRepository
+	}
+
 	if opts.cpReplicas != 0 {
 		values["controlPlane.replicas"] = strconv.Itoa(opts.cpReplicas)
 	}
@@ -323,11 +409,18 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 		values["cni.netDir"] = "/etc/cni/net.d"
 		values["cni.binDir"] = "/opt/cni/bin"
 		values["cni.confName"] = "10-kindnet.conflist"
+
+		cniConfName := os.Getenv("KUMA_CNI_CONF_NAME")
+		if cniConfName != "" {
+			values["cni.confName"] = cniConfName
+		}
 	}
 
 	switch mode {
 	case core.Global:
-		values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
+		if useLoadBalancer := os.Getenv("KUMA_USE_LOAD_BALANCER"); useLoadBalancer == "" {
+			values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
+		}
 	case core.Remote:
 		values["controlPlane.zone"] = kumactlOpts.CPName
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
@@ -352,6 +445,11 @@ func (c *K8sCluster) processViaHelm(mode string, opts *deployOptions, fn helmFn)
 	helmChart, err := filepath.Abs(HelmChartPath)
 	if err != nil {
 		return err
+	}
+
+	helmChartPath := os.Getenv("HELM_CHART_PATH")
+	if helmChartPath != "" {
+		helmChart = helmChartPath
 	}
 
 	if opts.helmChartPath != nil {
@@ -444,8 +542,8 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 		// wait for the mesh
 		_, err = retry.DoWithRetryE(c.t,
 			"get default mesh",
-			DefaultRetries,
-			DefaultTimeout,
+			c.defaultRetries,
+			c.defaultTimeout,
 			func() (s string, err error) {
 				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
 			})
@@ -497,8 +595,8 @@ func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
 		// wait for the mesh
 		_, err := retry.DoWithRetryE(c.t,
 			"get default mesh",
-			DefaultRetries,
-			DefaultTimeout,
+			c.defaultRetries,
+			c.defaultTimeout,
 			func() (s string, err error) {
 				return k8s.RunKubectlAndGetOutputE(c.t, c.GetKubectlOptions(), "get", "mesh", "default")
 			})
@@ -658,7 +756,7 @@ func (c *K8sCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	namespace := opts.namespace
 	appname := opts.appname
 
-	retry.DoWithRetry(c.GetTesting(), "apply "+appname+" svc", DefaultRetries, DefaultTimeout,
+	retry.DoWithRetry(c.GetTesting(), "apply "+appname+" svc", c.defaultRetries, c.defaultTimeout,
 		func() (string, error) {
 			err := k8s.KubectlApplyE(c.GetTesting(),
 				c.GetKubectlOptions(namespace),
@@ -668,9 +766,9 @@ func (c *K8sCluster) DeployApp(fs ...DeployOptionsFunc) error {
 
 	k8s.WaitUntilServiceAvailable(c.GetTesting(),
 		c.GetKubectlOptions(namespace),
-		appname, DefaultRetries, DefaultTimeout)
+		appname, c.defaultRetries, c.defaultTimeout)
 
-	retry.DoWithRetry(c.GetTesting(), "apply "+appname, DefaultRetries, DefaultTimeout,
+	retry.DoWithRetry(c.GetTesting(), "apply "+appname, c.defaultRetries, c.defaultTimeout,
 		func() (string, error) {
 			err := k8s.KubectlApplyE(c.GetTesting(),
 				c.GetKubectlOptions(namespace),
@@ -683,7 +781,7 @@ func (c *K8sCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		metav1.ListOptions{
 			LabelSelector: "app=" + appname,
 		},
-		1, DefaultRetries, DefaultTimeout)
+		1, c.defaultRetries, c.defaultTimeout)
 
 	return nil
 }
@@ -740,8 +838,8 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 			LabelSelector: "app=" + name,
 		},
 		replicas,
-		DefaultRetries,
-		DefaultTimeout)
+		c.defaultRetries,
+		c.defaultTimeout)
 
 	pods := k8s.ListPods(c.t,
 		c.GetKubectlOptions(namespace),
@@ -757,8 +855,8 @@ func (c *K8sCluster) WaitApp(name, namespace string, replicas int) error {
 		k8s.WaitUntilPodAvailable(c.t,
 			c.GetKubectlOptions(namespace),
 			pods[i].Name,
-			DefaultRetries,
-			DefaultTimeout)
+			c.defaultRetries,
+			c.defaultTimeout)
 	}
 	return nil
 }
