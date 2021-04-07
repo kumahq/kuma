@@ -12,9 +12,9 @@ import "validate/validate.proto";
 import "config.proto";
 
 option (doc.config) = {
-  type: Policy,
-  name: "HealthCheck",
-  file_name: "health-check"
+  type : Policy,
+  name : "HealthCheck",
+  file_name : "health-check"
 };
 
 // HealthCheck defines configuration for health checking.

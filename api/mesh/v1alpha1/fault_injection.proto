@@ -10,9 +10,9 @@ import "google/protobuf/wrappers.proto";
 import "config.proto";
 
 option (doc.config) = {
-  type: Policy,
-  name: "FaultInjection",
-  file_name: "fault-injection"
+  type : Policy,
+  name : "FaultInjection",
+  file_name : "fault-injection"
 };
 
 // FaultInjection defines the configuration of faults between dataplanes.

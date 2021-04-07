@@ -10,9 +10,9 @@ import "google/protobuf/wrappers.proto";
 import "config.proto";
 
 option (doc.config) = {
-  type: Policy,
-  name: "CircuitBreaker",
-  file_name: "circuit-breaker"
+  type : Policy,
+  name : "CircuitBreaker",
+  file_name : "circuit-breaker"
 };
 
 // CircuitBreaker defines circuit breaking policy for dataplane's outbound

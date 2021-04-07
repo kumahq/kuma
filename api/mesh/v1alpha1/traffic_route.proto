@@ -9,9 +9,9 @@ import "validate/validate.proto";
 import "config.proto";
 
 option (doc.config) = {
-  type: Policy,
-  name: "TrafficRoute",
-  file_name: "traffic-route"
+  type : Policy,
+  name : "TrafficRoute",
+  file_name : "traffic-route"
 };
 
 // TrafficRoute defines routing rules for L4 traffic.

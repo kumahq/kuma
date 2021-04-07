@@ -12,9 +12,9 @@ import "validate/validate.proto";
 import "config.proto";
 
 option (doc.config) = {
-  type: Policy,
-  name: "Retry",
-  file_name: "retry"
+  type : Policy,
+  name : "Retry",
+  file_name : "retry"
 };
 
 message Retry {

@@ -8,9 +8,9 @@ import "mesh/v1alpha1/selector.proto";
 import "config.proto";
 
 option (doc.config) = {
-  type: Policy,
-  name: "TrafficTrace",
-  file_name: "traffic-trace"
+  type : Policy,
+  name : "TrafficTrace",
+  file_name : "traffic-trace"
 };
 
 // TrafficTrace defines trace configuration for selected dataplanes.

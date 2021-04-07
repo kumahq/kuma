@@ -9,9 +9,9 @@ import "google/protobuf/duration.proto";
 import "config.proto";
 
 option (doc.config) = {
-  type: Policy,
-  name: "Timeout",
-  file_name: "timeout"
+  type : Policy,
+  name : "Timeout",
+  file_name : "timeout"
 };
 
 message Timeout {
