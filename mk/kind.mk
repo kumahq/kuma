@@ -117,7 +117,15 @@ kind/deploy/kuma: build/kumactl kind/load
 kind/deploy/helm: kind/load
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete namespace $(KUMA_NAMESPACE) | true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(KUMA_NAMESPACE)
-	KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) --set global.image.registry="$(DOCKER_REGISTRY)",global.image.tag="$(BUILD_INFO_GIT_TAG)",cni.enabled=true kuma ./deployments/charts/kuma
+	KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) \
+                --set global.image.registry="$(DOCKER_REGISTRY)" \
+                --set global.image.tag="$(BUILD_INFO_GIT_TAG)" \
+                --set cni.enabled=true \
+                --set cni.chained=true \
+                --set cni.netDir=/etc/cni/net.d \
+                --set cni.binDir=/opt/cni/bin \
+                --set cni.confName=10-kindnet.conflist \
+                kuma ./deployments/charts/kuma
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 

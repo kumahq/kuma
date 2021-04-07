@@ -17,10 +17,6 @@ RUN cd /opt && wget https://storage.googleapis.com/golang/go${GOVERSION}.linux-a
 
 FROM ubuntu:20.04
 
-ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
-ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
-ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
-
 RUN mkdir /kuma
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
     && chmod a+rw /kuma/kuma-cp.conf
@@ -40,6 +36,10 @@ RUN ssh-keygen -A \
   && useradd -U kuma-dp
 
 COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
+
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 
 # do not detach (-D), log to stderr (-e)
 CMD ["/usr/sbin/sshd", "-D", "-e"]
