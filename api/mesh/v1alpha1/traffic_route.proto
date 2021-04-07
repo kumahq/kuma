@@ -6,6 +6,13 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/v1alpha1/selector.proto";
 import "validate/validate.proto";
+import "config.proto";
+
+option (doc.config) = {
+  type: Policy,
+  name: "TrafficRoute",
+  file_name: "traffic-route"
+};
 
 // TrafficRoute defines routing rules for L4 traffic.
 message TrafficRoute {

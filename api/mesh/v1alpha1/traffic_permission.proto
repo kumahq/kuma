@@ -5,6 +5,13 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/v1alpha1/selector.proto";
+import "config.proto";
+
+option (doc.config) = {
+  type: Policy,
+  name: "TrafficPermissions",
+  file_name: "traffic-permissions"
+};
 
 // TrafficPermission defines permission for traffic between dataplanes.
 message TrafficPermission {
