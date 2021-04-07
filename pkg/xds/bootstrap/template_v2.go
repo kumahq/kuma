@@ -149,7 +149,7 @@ static_resources:
                 path: {{ .AccessLogPipe }}
   - name: ads_cluster
     connect_timeout: {{ .XdsConnectTimeout }}
-    type: STRICT_DNS
+    type: {{ .XdsClusterType }}
     lb_policy: ROUND_ROBIN
     http2_protocol_options: {}
     upstream_connection_options:
