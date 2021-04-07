@@ -9,7 +9,7 @@ metadata:
     prometheus.io/scrape: "true"
     prometheus.io/port: "5680"
     {{- range $key, $value := .Values.controlPlane.service.annotations }}
-      {{ $key }}: {{ $value | quote }}
+    {{ $key }}: {{ $value | quote }}
     {{- end }}
 spec:
   type: {{ .Values.controlPlane.service.type }}

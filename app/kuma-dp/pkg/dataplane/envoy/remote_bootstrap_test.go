@@ -88,7 +88,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.Dataplane.Mesh = "demo"
 				cfg.Dataplane.Name = "sample"
 				cfg.Dataplane.AdminPort = config_types.MustExactPort(4321) // exact port
-				cfg.DataplaneRuntime.TokenPath = "/tmp/token"
+				cfg.DataplaneRuntime.Token = "token"
 
 				return testCase{
 					config:           cfg,
@@ -108,7 +108,7 @@ var _ = Describe("Remote Bootstrap", func() {
 					  "mesh": "demo",
 					  "name": "sample",
 					  "adminPort": 4321,
-					  "dataplaneTokenPath": "/tmp/token",
+					  "dataplaneToken": "token",
 					  "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
 					  "version": {
 						"kumaDp": {
@@ -122,6 +122,7 @@ var _ = Describe("Remote Bootstrap", func() {
 						  "build": "hash/1.15.0/RELEASE"
 						}
 					  },
+					  "caCert": "",
 					  "bootstrapVersion": "2",
 					  "dynamicMetadata": {
 					    "test": "value"
@@ -136,7 +137,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.Dataplane.Mesh = "demo"
 				cfg.Dataplane.Name = "sample"
 				cfg.Dataplane.AdminPort = config_types.MustPortRange(4321, 8765) // port range
-				cfg.DataplaneRuntime.TokenPath = "/tmp/token"
+				cfg.DataplaneRuntime.Token = "token"
 
 				return testCase{
 					config: cfg,
@@ -153,7 +154,7 @@ var _ = Describe("Remote Bootstrap", func() {
                       "mesh": "demo",
                       "name": "sample",
                       "adminPort": 4321,
-                      "dataplaneTokenPath": "/tmp/token",
+                      "dataplaneToken": "token",
                       "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
                       "version": {
                         "kumaDp": {
@@ -167,6 +168,7 @@ var _ = Describe("Remote Bootstrap", func() {
                           "build": "hash/1.15.0/RELEASE"
                         }
                       },
+                      "caCert": "",
                       "bootstrapVersion": "3",
 					  "dynamicMetadata": null
                     }`,
@@ -178,7 +180,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				cfg.Dataplane.Mesh = "demo"
 				cfg.Dataplane.Name = "sample"
 				cfg.Dataplane.AdminPort = config_types.PortRange{} // empty port range
-				cfg.DataplaneRuntime.TokenPath = "/tmp/token"
+				cfg.DataplaneRuntime.Token = "token"
 
 				return testCase{
 					config: cfg,
@@ -193,7 +195,7 @@ var _ = Describe("Remote Bootstrap", func() {
                     {
                       "mesh": "demo",
                       "name": "sample",
-                      "dataplaneTokenPath": "/tmp/token",
+                      "dataplaneToken": "token",
                       "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
                       "version": {
                         "kumaDp": {
@@ -207,6 +209,7 @@ var _ = Describe("Remote Bootstrap", func() {
                           "build": "hash/1.15.0/RELEASE"
                         }
                       },
+                      "caCert": "",
                       "bootstrapVersion": "",
 					  "dynamicMetadata": null
                     }`,
@@ -288,6 +291,6 @@ var _ = Describe("Remote Bootstrap", func() {
 		_, _, err = generator(fmt.Sprintf("http://localhost:%d", port), config, params)
 
 		// then
-		Expect(err).To(MatchError("retryable: Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))
+		Expect(err).To(MatchError("retryable: Dataplane entity not found. If you are running on Universal please create a Dataplane entity on kuma-cp before starting kuma-dp or pass it to kuma-dp run --dataplane-file=/file. If you are running on Kubernetes, please check the kuma-cp logs to determine why the Dataplane entity could not be created by the automatic sidecar injection."))
 	})
 })

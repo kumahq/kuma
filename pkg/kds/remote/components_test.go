@@ -8,6 +8,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
+
+	"github.com/kumahq/kuma/api/system/v1alpha1"
+	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
+
 	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -31,13 +36,21 @@ import (
 	"github.com/kumahq/kuma/pkg/test/kds/setup"
 )
 
+type testRuntimeContext struct {
+	core_runtime.Runtime
+	kds *kds_context.Context
+}
+
+func (t *testRuntimeContext) KDSContext() *kds_context.Context {
+	return t.kds
+}
+
 var _ = Describe("Remote Sync", func() {
 
 	remoteZone := "zone-1"
 
-	consumedTypes := []model.ResourceType{mesh.DataplaneType, mesh.MeshType, mesh.TrafficPermissionType}
-	newPolicySink := func(zone string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream) component.Component {
-		return kds_client.NewKDSSink(core.Log, consumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(nil, resourceSyncer, false, zone, nil))
+	newPolicySink := func(zone string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) component.Component {
+		return kds_client.NewKDSSink(core.Log, remote.ConsumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(rt, resourceSyncer, false, zone, nil))
 	}
 	start := func(comp component.Component, stop chan struct{}) {
 		go func() {
@@ -76,7 +89,9 @@ var _ = Describe("Remote Sync", func() {
 		globalStore = memory.NewStore()
 		wg := &sync.WaitGroup{}
 		wg.Add(1)
-		serverStream := setup.StartServer(globalStore, wg, "global", consumedTypes, kds_context.GlobalProvidedFilter(manager.NewResourceManager(globalStore)))
+
+		kdsCtx := kds_context.DefaultContext(manager.NewResourceManager(globalStore), "global")
+		serverStream := setup.StartServer(globalStore, wg, "global", remote.ConsumedTypes, kdsCtx.GlobalProvidedFilter)
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)
@@ -84,7 +99,7 @@ var _ = Describe("Remote Sync", func() {
 		remoteStore = memory.NewStore()
 		remoteSyncer = sync_store.NewResourceSyncer(core.Log, remoteStore)
 
-		start(newPolicySink(remoteZone, remoteSyncer, clientStream), stop)
+		start(newPolicySink(remoteZone, remoteSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}), stop)
 		closeFunc = func() {
 			close(stop)
 		}
@@ -160,5 +175,45 @@ var _ = Describe("Remote Sync", func() {
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
 		Expect(actualConsumedTypes).To(HaveLen(len(remote.ConsumedTypes)))
 		Expect(actualConsumedTypes).To(ConsistOf(remote.ConsumedTypes))
+	})
+
+	It("should not delete predefined ConfigMaps in the Remote cluster", func() {
+		// create kuma-cluster-id ConfigMap in Global
+		err := globalStore.Create(context.Background(), &system.ConfigResource{Spec: &v1alpha1.Config{Config: "cluster-id"}},
+			store.CreateByKey(config_manager.ClusterIdConfigKey, model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// create kuma-cp-leader ConfigMap in Remote
+		err = remoteStore.Create(context.Background(), &system.ConfigResource{Spec: &v1alpha1.Config{Config: "leader"}},
+			store.CreateByKey("kuma-cp-leader", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		// create kuma-control-plane-config ConfigMap in Remote
+		err = remoteStore.Create(context.Background(), &system.ConfigResource{Spec: &v1alpha1.Config{Config: "kuma-cp config"}},
+			store.CreateByKey("kuma-control-plane-config", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(func() int {
+			actual := system.ConfigResourceList{}
+			err := remoteStore.List(context.Background(), &actual)
+			Expect(err).ToNot(HaveOccurred())
+			return len(actual.Items)
+		}, "5s", "100ms").Should(Equal(3))
+
+		actual := system.ConfigResourceList{}
+		err = remoteStore.List(context.Background(), &actual)
+		Expect(err).ToNot(HaveOccurred())
+
+		actualNames := []string{}
+		for _, a := range actual.Items {
+			actualNames = append(actualNames, a.GetMeta().GetName())
+		}
+		expectedNames := []string{
+			"kuma-cp-leader",
+			"kuma-control-plane-config",
+			"kuma-cluster-id",
+		}
+		Expect(actualNames).To(ConsistOf(expectedNames))
+		closeFunc()
 	})
 })

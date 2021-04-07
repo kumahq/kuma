@@ -3,6 +3,8 @@ package framework
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -24,6 +26,20 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	t := NewTestingT()
 
 	clusters := map[string]*K8sCluster{}
+	retries := DefaultRetries
+	timeout := DefaultTimeout
+
+	if r := os.Getenv("KUMA_DEFAULT_RETRIES"); r != "" {
+		if r, err := strconv.Atoi(r); err != nil {
+			retries = r
+		}
+	}
+
+	if t := os.Getenv("KUMA_DEFAULT_TIMEOUT"); t != "" {
+		if t, err := time.ParseDuration(t); err != nil {
+			timeout = t
+		}
+	}
 
 	for i, name := range clusterNames {
 		clusters[name] = &K8sCluster{
@@ -35,6 +51,8 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 			forwardedPortsChans: map[uint32]chan struct{}{},
 			verbose:             verbose,
 			deployments:         map[string]Deployment{},
+			defaultTimeout:      timeout,
+			defaultRetries:      retries,
 		}
 
 		var err error
@@ -49,6 +67,22 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 		clusters: clusters,
 		verbose:  verbose,
 	}, nil
+}
+
+func (cs *K8sClusters) WithTimeout(timeout time.Duration) Cluster {
+	for _, c := range cs.clusters {
+		c.WithTimeout(timeout)
+	}
+
+	return cs
+}
+
+func (cs *K8sClusters) WithRetries(retries int) Cluster {
+	for _, c := range cs.clusters {
+		c.WithRetries(retries)
+	}
+
+	return cs
 }
 
 func (cs *K8sClusters) Name() string {

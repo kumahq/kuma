@@ -23,8 +23,8 @@ require (
 	github.com/gruntwork-io/terratest v0.30.15
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
-	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
+	github.com/kumahq/kuma/api v0.0.0-20210402104346-824b8542e3b9
+	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-20210402104346-824b8542e3b9
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
 	github.com/lib/pq v1.9.0
 	github.com/miekg/dns v1.1.40

@@ -97,13 +97,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                         apiConfigSource:
                           apiType: GRPC
                           grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_mesh_ca
-                              targetUri: kuma-control-plane:5677
+                          - envoyGrpc:
+                              clusterName: ads_cluster
                           transportApiVersion: V3
                         resourceApiVersion: V3
                   tlsCertificateSdsSecretConfigs:
@@ -112,13 +107,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                       apiConfigSource:
                         apiType: GRPC
                         grpcServices:
-                        - googleGrpc:
-                            channelCredentials:
-                              sslCredentials:
-                                rootCerts:
-                                  inlineBytes: Q0VSVElGSUNBVEU=
-                            statPrefix: sds_identity_cert
-                            targetUri: kuma-control-plane:5677
+                        - envoyGrpc:
+                            clusterName: ads_cluster
                         transportApiVersion: V3
                       resourceApiVersion: V3
             type: EDS`,
@@ -188,13 +178,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                           apiConfigSource:
                             apiType: GRPC
                             grpcServices:
-                            - googleGrpc:
-                                channelCredentials:
-                                  sslCredentials:
-                                    rootCerts:
-                                      inlineBytes: Q0VSVElGSUNBVEU=
-                                statPrefix: sds_mesh_ca
-                                targetUri: kuma-control-plane:5677
+                            - envoyGrpc:
+                                clusterName: ads_cluster
                             transportApiVersion: V3
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
@@ -203,13 +188,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                         apiConfigSource:
                           apiType: GRPC
                           grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_identity_cert
-                              targetUri: kuma-control-plane:5677
+                          - envoyGrpc:
+                              clusterName: ads_cluster
                           transportApiVersion: V3
                         resourceApiVersion: V3
                   sni: backend{cluster=1,mesh=default}
@@ -231,13 +211,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                           apiConfigSource:
                             apiType: GRPC
                             grpcServices:
-                            - googleGrpc:
-                                channelCredentials:
-                                  sslCredentials:
-                                    rootCerts:
-                                      inlineBytes: Q0VSVElGSUNBVEU=
-                                statPrefix: sds_mesh_ca
-                                targetUri: kuma-control-plane:5677
+                            - envoyGrpc:
+                                clusterName: ads_cluster
                             transportApiVersion: V3
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
@@ -246,13 +221,8 @@ var _ = Describe("EdsClusterConfigurer", func() {
                         apiConfigSource:
                           apiType: GRPC
                           grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_identity_cert
-                              targetUri: kuma-control-plane:5677
+                          - envoyGrpc:
+                              clusterName: ads_cluster
                           transportApiVersion: V3
                         resourceApiVersion: V3
                   sni: backend{cluster=2,mesh=default}
