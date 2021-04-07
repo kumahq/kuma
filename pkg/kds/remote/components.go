@@ -107,12 +107,7 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 			}
 			if rs.GetItemType() == system.ConfigType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					for _, config := range rt.KDSContext().Configs {
-						if config == r.GetMeta().GetName() {
-							return true
-						}
-					}
-					return false
+					return rt.KDSContext().Configs[r.GetMeta().GetName()]
 				}))
 			}
 			return syncer.Sync(rs)

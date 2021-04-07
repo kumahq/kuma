@@ -37,7 +37,7 @@ type BuilderContext interface {
 	ResourceStore() core_store.ResourceStore
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
-	ResourceManager() core_manager.ResourceManager
+	ResourceManager() core_manager.CustomizableResourceManager
 	Config() kuma_cp.Config
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
@@ -61,7 +61,7 @@ type Builder struct {
 	rs         core_store.ResourceStore
 	ss         store.SecretStore
 	cs         core_store.ResourceStore
-	rm         core_manager.ResourceManager
+	rm         core_manager.CustomizableResourceManager
 	rom        core_manager.ReadOnlyResourceManager
 	cam        core_ca.Managers
 	dsl        datasource.Loader
@@ -118,7 +118,7 @@ func (b *Builder) WithConfigStore(cs core_store.ResourceStore) *Builder {
 	return b
 }
 
-func (b *Builder) WithResourceManager(rm core_manager.ResourceManager) *Builder {
+func (b *Builder) WithResourceManager(rm core_manager.CustomizableResourceManager) *Builder {
 	b.rm = rm
 	return b
 }
@@ -297,7 +297,7 @@ func (b *Builder) SecretStore() store.SecretStore {
 func (b *Builder) ConfigStore() core_store.ResourceStore {
 	return b.cs
 }
-func (b *Builder) ResourceManager() core_manager.ResourceManager {
+func (b *Builder) ResourceManager() core_manager.CustomizableResourceManager {
 	return b.rm
 }
 func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {

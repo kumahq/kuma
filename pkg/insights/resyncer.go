@@ -99,6 +99,9 @@ func (r *resyncer) Start(stop <-chan struct{}) error {
 	eventReader := r.eventFactory.New()
 	for {
 		event, err := eventReader.Recv(stop)
+		if err == events.ListenerStopped {
+			return nil
+		}
 		if err != nil {
 			return err
 		}

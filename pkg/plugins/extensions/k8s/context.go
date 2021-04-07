@@ -45,3 +45,14 @@ func FromSecretClientContext(ctx context.Context) (client kube_client.Client, ok
 	client, ok = ctx.Value(secretClient{}).(kube_client.Client)
 	return
 }
+
+type compositeValidatorKey struct{}
+
+func NewCompositeValidatorContext(ctx context.Context, compositeValidator *k8s_common.CompositeValidator) context.Context {
+	return context.WithValue(ctx, compositeValidatorKey{}, compositeValidator)
+}
+
+func FromCompositeValidatorContext(ctx context.Context) (validator *k8s_common.CompositeValidator, ok bool) {
+	validator, ok = ctx.Value(compositeValidatorKey{}).(*k8s_common.CompositeValidator)
+	return
+}

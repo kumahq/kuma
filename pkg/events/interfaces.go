@@ -1,6 +1,8 @@
 package events
 
 import (
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 )
 
@@ -19,6 +21,8 @@ type ResourceChangedEvent struct {
 	Type      model.ResourceType
 	Key       model.ResourceKey
 }
+
+var ListenerStopped = errors.New("listener closed")
 
 type Listener interface {
 	Recv(stop <-chan struct{}) (Event, error)
