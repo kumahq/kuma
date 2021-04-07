@@ -400,7 +400,7 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 
 	switch mode {
 	case core.Global:
-		if UseLoadBalancer() {
+		if !UseLoadBalancer() {
 			values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
 		}
 	case core.Remote:

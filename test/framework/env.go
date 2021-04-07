@@ -15,6 +15,7 @@ func GetDefaultRetries() int {
 			retries = r
 		}
 	}
+
 	return retries
 }
 

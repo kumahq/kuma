@@ -122,7 +122,7 @@ func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 		cmd = append(cmd, "--zone", o.CPName)
 		fallthrough
 	case core.Global:
-		if UseLoadBalancer() {
+		if !UseLoadBalancer() {
 			cmd = append(cmd, "--use-node-port")
 		}
 	}
