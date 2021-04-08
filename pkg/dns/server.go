@@ -3,7 +3,10 @@ package dns
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
+
+	"github.com/asaskevich/govalidator"
 
 	"github.com/pkg/errors"
 
@@ -38,7 +41,7 @@ type SimpleDNSServer struct {
 
 func NewDNSServer(port uint32, resolver resolver.DNSResolver, metrics core_metrics.Metrics, modifier NameModifier) (DNSServer, error) {
 	handler := &SimpleDNSServer{
-		address:  fmt.Sprintf("0.0.0.0:%d", port),
+		address:  net.JoinHostPort("0.0.0.0", strconv.FormatUint(uint64(port), 10)),
 		resolver: resolver,
 		latencyMetric: prometheus.NewSummary(prometheus.SummaryOpts{
 			Name:       "dns_server",
@@ -64,7 +67,7 @@ func NewDNSServer(port uint32, resolver resolver.DNSResolver, metrics core_metri
 func (h *SimpleDNSServer) parseQuery(m *dns.Msg) {
 	for _, q := range m.Question {
 		switch q.Qtype {
-		case dns.TypeA:
+		case dns.TypeA, dns.TypeAAAA:
 			serverLog.V(1).Info("received a query for " + q.Name)
 			ip, err := h.lookup(q.Name)
 			if err != nil {
@@ -74,7 +77,12 @@ func (h *SimpleDNSServer) parseQuery(m *dns.Msg) {
 			}
 			h.resolutionMetric.WithLabelValues("resolved").Inc()
 
-			rr, err := dns.NewRR(fmt.Sprintf("%s %s IN A %s", q.Name, dnsTTL, ip))
+			recordType := "A"
+			if govalidator.IsIPv6(ip) {
+				recordType = "AAAA"
+			}
+
+			rr, err := dns.NewRR(fmt.Sprintf("%s %s IN %s %s", q.Name, dnsTTL, recordType, ip))
 			if err != nil {
 				serverLog.Error(err, "unable to create response for", "Name", q.Name)
 				return

@@ -2,8 +2,10 @@ package v1alpha1
 
 import (
 	"fmt"
+	"net"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -69,7 +71,8 @@ type OutboundInterface struct {
 }
 
 func (i OutboundInterface) String() string {
-	return fmt.Sprintf("%s:%d", i.DataplaneIP, i.DataplanePort)
+	return net.JoinHostPort(i.DataplaneIP,
+		strconv.FormatUint(uint64(i.DataplanePort), 10))
 }
 
 func (n *Dataplane_Networking) GetOutboundInterfaces() ([]OutboundInterface, error) {

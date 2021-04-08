@@ -52,21 +52,6 @@ type K8sCluster struct {
 }
 
 func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, error) {
-	retries := DefaultRetries
-	timeout := DefaultTimeout
-
-	if r := os.Getenv("KUMA_DEFAULT_RETRIES"); r != "" {
-		if r, err := strconv.Atoi(r); err != nil {
-			retries = r
-		}
-	}
-
-	if t := os.Getenv("KUMA_DEFAULT_TIMEOUT"); t != "" {
-		if t, err := time.ParseDuration(t); err != nil {
-			timeout = t
-		}
-	}
-
 	cluster := &K8sCluster{
 		t:                   t,
 		name:                clusterName,
@@ -76,8 +61,8 @@ func NewK8SCluster(t *TestingT, clusterName string, verbose bool) (Cluster, erro
 		forwardedPortsChans: map[uint32]chan struct{}{},
 		verbose:             verbose,
 		deployments:         map[string]Deployment{},
-		defaultRetries:      retries,
-		defaultTimeout:      timeout,
+		defaultRetries:      GetDefaultRetries(),
+		defaultTimeout:      GetDefaultTimeout(),
 	}
 
 	var err error
@@ -296,18 +281,16 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		"--dataplane-init-registry": KumaImageRegistry,
 	}
 
-	globalImageRegistry := os.Getenv("KUMA_GLOBAL_IMAGE_REGISTRY")
-	if globalImageRegistry != "" {
-		argsMap["--control-plane-registry"] = globalImageRegistry
-		argsMap["--dataplane-registry"] = globalImageRegistry
-		argsMap["--dataplane-init-registry"] = globalImageRegistry
+	if HasGlobalImageRegistry() {
+		argsMap["--control-plane-registry"] = GetGlobalImageRegistry()
+		argsMap["--dataplane-registry"] = GetGlobalImageRegistry()
+		argsMap["--dataplane-init-registry"] = GetGlobalImageRegistry()
 	}
 
-	globalImageTag := os.Getenv("KUMA_GLOBAL_IMAGE_TAG")
-	if globalImageTag != "" {
-		argsMap["--control-plane-version"] = globalImageTag
-		argsMap["--dataplane-version"] = globalImageTag
-		argsMap["--dataplane-init-version"] = globalImageTag
+	if HasGlobalImageTag() {
+		argsMap["--control-plane-version"] = GetGlobalImageTag()
+		argsMap["--dataplane-version"] = GetGlobalImageTag()
+		argsMap["--dataplane-init-version"] = GetGlobalImageTag()
 	}
 
 	switch mode {
@@ -327,15 +310,17 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 		argsMap["--cni-bin-dir"] = "/opt/cni/bin"
 		argsMap["--cni-conf-name"] = "10-kindnet.conflist"
 
-		cniConfName := os.Getenv("KUMA_CNI_CONF_NAME")
-		if cniConfName != "" {
-			argsMap["--cni-conf-name"] = cniConfName
+		if HasCniConfName() {
+			argsMap["--cni-conf-name"] = GetCniConfName()
 		}
 	}
 
-	apiVersion := os.Getenv(envAPIVersion)
-	if apiVersion != "" {
-		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + apiVersion
+	if HasApiVersion() {
+		argsMap["--env-var"] = "KUMA_BOOTSTRAP_SERVER_API_VERSION=" + GetApiVersion()
+	}
+
+	if opts.isipv6 {
+		argsMap["--env-var"] = fmt.Sprintf("KUMA_DNS_SERVER_CIDR=%s", cidrIPv6)
 	}
 
 	for opt, value := range opts.ctlOpts {
@@ -365,29 +350,24 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 		"controlPlane.defaults.skipMeshCreation": strconv.FormatBool(opts.skipDefaultMesh),
 	}
 
-	globalImageTag := os.Getenv("KUMA_GLOBAL_IMAGE_TAG")
-	if globalImageTag != "" {
-		values["global.image.tag"] = globalImageTag
+	if HasGlobalImageRegistry() {
+		values["global.image.registry"] = GetGlobalImageRegistry()
 	}
 
-	globalImageRegistry := os.Getenv("KUMA_GLOBAL_IMAGE_REGISTRY")
-	if globalImageRegistry != "" {
-		values["global.image.registry"] = globalImageRegistry
+	if HasGlobalImageTag() {
+		values["global.image.tag"] = GetGlobalImageTag()
 	}
 
-	cpImageRepository := os.Getenv("KUMA_CP_IMAGE_REPOSITORY")
-	if cpImageRepository != "" {
-		values["controlPlane.image.repository"] = cpImageRepository
+	if HasCpImageRegistry() {
+		values["controlPlane.image.repository"] = GetCpImageRegistry()
 	}
 
-	dpImageRepository := os.Getenv("KUMA_DP_IMAGE_REPOSITORY")
-	if dpImageRepository != "" {
-		values["dataPlane.image.repository"] = dpImageRepository
+	if HasDpImageRegistry() {
+		values["dataPlane.image.repository"] = GetDpImageRegistry()
 	}
 
-	dpInitImageRepository := os.Getenv("KUMA_DP_INIT_IMAGE_REPOSITORY")
-	if dpInitImageRepository != "" {
-		values["dataPlane.initImage.repository"] = dpInitImageRepository
+	if HasDpInitImageRegistry() {
+		values["dataPlane.initImage.repository"] = GetDpInitImageRegistry()
 	}
 
 	if opts.cpReplicas != 0 {
@@ -398,9 +378,8 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 		values[opt] = value
 	}
 
-	apiVersion := os.Getenv(envAPIVersion)
-	if apiVersion != "" {
-		values["controlPlane.envVars.KUMA_BOOTSTRAP_SERVER_API_VERSION"] = apiVersion
+	if HasApiVersion() {
+		values["controlPlane.envVars.KUMA_BOOTSTRAP_SERVER_API_VERSION"] = GetApiVersion()
 	}
 
 	if opts.cni {
@@ -410,15 +389,18 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 		values["cni.binDir"] = "/opt/cni/bin"
 		values["cni.confName"] = "10-kindnet.conflist"
 
-		cniConfName := os.Getenv("KUMA_CNI_CONF_NAME")
-		if cniConfName != "" {
-			values["cni.confName"] = cniConfName
+		if HasCniConfName() {
+			values["cni.confName"] = GetCniConfName()
 		}
+	}
+
+	if opts.isipv6 {
+		values["controlPlane.envVars.KUMA_DNS_SERVER_CIDR"] = cidrIPv6
 	}
 
 	switch mode {
 	case core.Global:
-		if useLoadBalancer := os.Getenv("KUMA_USE_LOAD_BALANCER"); useLoadBalancer == "" {
+		if !UseLoadBalancer() {
 			values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
 		}
 	case core.Remote:
@@ -447,9 +429,8 @@ func (c *K8sCluster) processViaHelm(mode string, opts *deployOptions, fn helmFn)
 		return err
 	}
 
-	helmChartPath := os.Getenv("HELM_CHART_PATH")
-	if helmChartPath != "" {
-		helmChart = helmChartPath
+	if HasHelmChartPath() {
+		helmChart = GetHelmChartPath()
 	}
 
 	if opts.helmChartPath != nil {

@@ -242,6 +242,26 @@ var _ = Describe("bootstrapGenerator", func() {
 			expectedBootstrapVersion: types.BootstrapV3,
 			hdsEnabled:               false,
 		}),
+		Entry("default config, kubernetes with IPv6", testCase{
+			dpAuthEnabled: true,
+			config: func() *bootstrap_config.BootstrapServerConfig {
+				cfg := bootstrap_config.DefaultBootstrapServerConfig()
+				cfg.Params.XdsHost = "fd00:a123::1"
+				cfg.Params.XdsPort = 5678
+				cfg.APIVersion = envoy_common.APIV3
+				return cfg
+			},
+			request: types.BootstrapRequest{
+				Mesh:               "mesh",
+				Name:               "name.namespace",
+				AdminPort:          1234,
+				DataplaneTokenPath: "/tmp/token",
+				Version:            defaultVersion,
+			},
+			expectedConfigFile:       "generator.default-config.kubernetes.ipv6.golden.yaml",
+			expectedBootstrapVersion: types.BootstrapV3,
+			hdsEnabled:               false,
+		}),
 	)
 
 	It("should fail bootstrap configuration due to conflicting port in inbound", func() {
@@ -394,7 +414,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				AdminPort: 9901,
 				Host:      "kuma.internal",
 			},
-			expected: `A data plane proxy is trying to connect to the control plane using "kuma.internal" address, but the certificate in the control plane has the following SANs ["localhost"]. Either change the --cp-address in kuma-dp to one of those or execute the following steps:
+			expected: `A data plane proxy is trying to connect to the control plane using "kuma.internal" address, but the certificate in the control plane has the following SANs ["fd00:a123::1" "localhost"]. Either change the --cp-address in kuma-dp to one of those or execute the following steps:
 1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --cp-hostname=kuma.internal'
 2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.
 3) Restart the control plane to read the new certificate and start kuma-dp.`,

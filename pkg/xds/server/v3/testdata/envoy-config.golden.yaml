@@ -1,11 +1,11 @@
 resources:
-- name: inbound:passthrough
+- name: inbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: inbound_passthrough
+    altStatName: inbound_passthrough_ipv4
     connectTimeout: 10s
     lbPolicy: CLUSTER_PROVIDED
-    name: inbound:passthrough
+    name: inbound:passthrough:ipv4
     type: ORIGINAL_DST
     upstreamBindConfig:
       sourceAddress:
@@ -43,13 +43,13 @@ resources:
                 portValue: 8443
     name: localhost:8443
     type: STATIC
-- name: outbound:passthrough
+- name: outbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: outbound_passthrough
+    altStatName: outbound_passthrough_ipv4
     connectTimeout: 10s
     lbPolicy: CLUSTER_PROVIDED
-    name: outbound:passthrough
+    name: outbound:passthrough:ipv4
     type: ORIGINAL_DST
 - name: inbound:192.168.0.1:443
   resource:
@@ -267,7 +267,7 @@ resources:
           requireClientCertificate: true
     name: inbound:192.168.0.2:80
     trafficDirection: INBOUND
-- name: inbound:passthrough
+- name: inbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -279,12 +279,12 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:passthrough
-          statPrefix: inbound_passthrough
-    name: inbound:passthrough
+          cluster: inbound:passthrough:ipv4
+          statPrefix: inbound_passthrough_ipv4
+    name: inbound:passthrough:ipv4
     trafficDirection: INBOUND
     useOriginalDst: true
-- name: outbound:passthrough
+- name: outbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -296,8 +296,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: outbound:passthrough
-          statPrefix: outbound_passthrough
-    name: outbound:passthrough
+          cluster: outbound:passthrough:ipv4
+          statPrefix: outbound_passthrough_ipv4
+    name: outbound:passthrough:ipv4
     trafficDirection: OUTBOUND
     useOriginalDst: true

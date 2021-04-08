@@ -76,6 +76,23 @@ var _ = Describe("Dataplane_Networking", func() {
 						{DataplaneIP: "192.168.0.1", DataplanePort: 443},
 					},
 				}),
+				Entry("2 outbound interfaces IPv6", testCase{
+					input: &Dataplane_Networking{
+						Outbound: []*Dataplane_Networking_Outbound{
+							{
+								Port: 8080,
+							},
+							{
+								Address: "fd00::1",
+								Port:    443,
+							},
+						},
+					},
+					expected: []OutboundInterface{
+						{DataplaneIP: "127.0.0.1", DataplanePort: 8080},
+						{DataplaneIP: "fd00::1", DataplanePort: 443},
+					},
+				}),
 			)
 		})
 	})

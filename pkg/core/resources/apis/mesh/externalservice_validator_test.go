@@ -49,12 +49,22 @@ var _ = Describe("ExternalService", func() {
               kuma.io/service: backend
               kuma.io/valid: abc.0123-789.under_score:90`,
 		),
-		Entry("external service domain name in the address", `
+		Entry("external service with a domain name in the address", `
             type: ExternalService
             name: es-1
             mesh: default
             networking:
               address: example.com:8080
+            tags:
+              kuma.io/service: backend
+              version: "1"`,
+		),
+		Entry("external service with IPv6 in the address", `
+            type: ExternalService
+            name: es-1
+            mesh: default
+            networking:
+              address: "[fd00:a123::1]:8080"
             tags:
               kuma.io/service: backend
               version: "1"`,
@@ -126,7 +136,7 @@ var _ = Describe("ExternalService", func() {
 			expected: `
                 violations:
                 - field: networking.address
-                  message:  address has to be valid IP address or domain name`,
+                  message:  address has to be a valid IP address or a domain name`,
 		}),
 		Entry("networking.address: invalid format using scheme", testCase{
 			dataplane: `
@@ -143,7 +153,28 @@ var _ = Describe("ExternalService", func() {
                 - field: networking.address
                   message: unable to parse address
                 - field: networking.address
-                  message: address has to be valid IP address or domain name
+                  message: address has to be a valid IP address or a domain name
+                - field: networking.address
+                  message: unable to parse port in address
+                - field: networking.address
+                  message: port has to be in range of [1, 65535]`,
+		}),
+		Entry("networking.address: invalid format IPv6", testCase{
+			dataplane: `
+                type: ExternalService
+                name: es-1
+                mesh: default
+                networking:
+                  address: fd00:1234::1:8080
+                tags:
+                  kuma.io/service: backend
+                  version: "1"`,
+			expected: `
+                violations:
+                - field: networking.address
+                  message: unable to parse address
+                - field: networking.address
+                  message: address has to be a valid IP address or a domain name
                 - field: networking.address
                   message: unable to parse port in address
                 - field: networking.address

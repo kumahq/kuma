@@ -21,13 +21,14 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			VirtualProbesEnabled: true,
 			VirtualProbesPort:    9000,
 			SidecarContainer: SidecarContainer{
-				Image:                "kuma/kuma-dp:latest",
-				RedirectPortInbound:  15006,
-				RedirectPortOutbound: 15001,
-				UID:                  5678,
-				GID:                  5678,
-				AdminPort:            9901,
-				DrainTime:            30 * time.Second,
+				Image:                 "kuma/kuma-dp:latest",
+				RedirectPortInbound:   15006,
+				RedirectPortInboundV6: 15010,
+				RedirectPortOutbound:  15001,
+				UID:                   5678,
+				GID:                   5678,
+				AdminPort:             9901,
+				DrainTime:             30 * time.Second,
 
 				ReadinessProbe: SidecarReadinessProbe{
 					InitialDelaySeconds: 1,
@@ -141,6 +142,8 @@ type SidecarContainer struct {
 	Image string `yaml:"image,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_image"`
 	// Redirect port for inbound traffic.
 	RedirectPortInbound uint32 `yaml:"redirectPortInbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound"`
+	// Redirect port for inbound IPv6 traffic.
+	RedirectPortInboundV6 uint32 `yaml:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
 	// Redirect port for outbound traffic.
 	RedirectPortOutbound uint32 `yaml:"redirectPortOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_outbound"`
 	// User ID.
@@ -281,6 +284,9 @@ func (c *SidecarContainer) Validate() (errs error) {
 	}
 	if 65535 < c.RedirectPortInbound {
 		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInbound must be in the range [0, 65535]"))
+	}
+	if 0 != c.RedirectPortInboundV6 && 65535 < c.RedirectPortInboundV6 {
+		errs = multierr.Append(errs, errors.Errorf(".RedirectPortInboundV6 must be in the range [0, 65535]"))
 	}
 	if 65535 < c.RedirectPortOutbound {
 		errs = multierr.Append(errs, errors.Errorf(".RedirectPortOutbound must be in the range [0, 65535]"))

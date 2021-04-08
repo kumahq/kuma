@@ -142,7 +142,7 @@ define verify_example_outbound
 	@echo "Checking number of Outbound requests via Envoy ..."
 	test $$( $(1) \
 		curl -s http://localhost:9901/stats/prometheus | \
-		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="outbound_passthrough"}' | \
+		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="outbound_passthrough_ipv4"}' | \
 		awk '{print $$2}' | tr -d [:space:] \
 	) -ge 1
 	@echo "Check passed!"
@@ -367,6 +367,7 @@ verify/example/minikube/mtls/outbound:
 	@echo "Check passed!"
 
 kumactl/example/minikube:
+	$(MAKE) docker/load/kumactl
 	cat tools/e2e/examples/minikube/kumactl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KUMACTL_DOCKER_IMAGE)
 
 undeploy/example/minikube: ## Minikube: Undeploy example setup

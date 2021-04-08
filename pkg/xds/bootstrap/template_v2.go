@@ -81,7 +81,7 @@ hds_config:
             inlineBytes: {{ .CertBytes }}
 {{ end }}
       statPrefix: hds
-      targetUri: {{ .XdsHost }}:{{ .XdsPort }}
+      targetUri: "{{ .XdsUri }}"
 {{ else }}
     - envoy_grpc:
         cluster_name: ads_cluster
@@ -118,7 +118,7 @@ dynamic_resources:
               inlineBytes: {{ .CertBytes }}
 {{ end }}
         statPrefix: ads
-        targetUri: {{ .XdsHost }}:{{ .XdsPort }}
+        targetUri: "{{ .XdsUri }}"
 {{ else }}
     - envoy_grpc:
         cluster_name: ads_cluster
@@ -149,7 +149,7 @@ static_resources:
                 path: {{ .AccessLogPipe }}
   - name: ads_cluster
     connect_timeout: {{ .XdsConnectTimeout }}
-    type: STRICT_DNS
+    type: {{ .XdsClusterType }}
     lb_policy: ROUND_ROBIN
     http2_protocol_options: {}
     upstream_connection_options:

@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/asaskevich/govalidator"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
@@ -86,6 +87,7 @@ networking:
       kuma.io/protocol: http
   transparentProxying:
     redirectPortInbound: %s
+    redirectPortInboundV6: %s
     redirectPortOutbound: %s
 `
 
@@ -150,6 +152,7 @@ networking:
       kuma.io/service: demo-client
   transparentProxying:
     redirectPortInbound: %s
+    redirectPortInboundV6: %s
     redirectPortOutbound: %s
 `
 )
@@ -213,7 +216,7 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 
 	retry.DoWithRetry(app.t, "get IP "+app.container, DefaultRetries, DefaultTimeout,
 		func() (string, error) {
-			app.ip, err = app.getIP()
+			app.ip, err = app.getIP(IsIPv6())
 			if err != nil {
 				return "Unable to get Container IP", err
 			}
@@ -372,22 +375,30 @@ func (s *UniversalApp) setupTransparent(cpIp string) {
 	}
 }
 
-func (s *UniversalApp) getIP() (string, error) {
+func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "ahosts", s.container[:12]})
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
 		return "invalid", errors.Wrapf(err, "getent failed with %s", string(bytes))
 	}
 	lines := strings.Split(string(bytes), "\n")
-	// search ipv4
+	// search for the requested IP
 	for _, line := range lines {
 		split := strings.Split(line, " ")
-		testInput := net.ParseIP(split[0])
-		if testInput.To4() != nil {
-			return split[0], nil
+		ip := split[0]
+		if isipv6 {
+			if govalidator.IsIPv6(ip) {
+				return ip, nil
+			}
+		} else if govalidator.IsIPv4(ip) {
+			return ip, nil
 		}
 	}
-	return "", errors.Errorf("No IPv4 address found")
+	errString := "No IPv4 address found"
+	if isipv6 {
+		errString = "No IPv6 address found"
+	}
+	return "", errors.Errorf(errString)
 }
 
 type SshApp struct {
