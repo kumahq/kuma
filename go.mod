@@ -4,7 +4,6 @@ go 1.15
 
 require (
 	cirello.io/pglock v1.8.0
-	github.com/Masterminds/semver v1.5.0 // indirect
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20200428143746-21a406dcc535
@@ -29,7 +28,7 @@ require (
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
 	github.com/lib/pq v1.9.0
 	github.com/miekg/dns v1.1.40
-	github.com/onsi/ginkgo v1.15.1
+	github.com/onsi/ginkgo v1.15.2
 	github.com/onsi/gomega v1.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1

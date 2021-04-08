@@ -28,13 +28,16 @@ UDPA_LATEST_VERSION := master
 UDPA_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/cncf,udpa))
 GOOGLEAPIS_LATEST_VERSION := master
 GOOGLEAPIS_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/googleapis,googleapis))
+KUMADOC_VERSION := v0.1.7
+KUMADOC_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/kumahq,protoc-gen-kumadoc))
 
 protoc_search_go_packages := \
 	github.com/golang/protobuf@$(GOLANG_PROTOBUF_VERSION) \
 	github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION) \
 	github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_ACTUAL_VERSION) \
 	github.com/cncf/udpa@$(UDPA_ACTUAL_VERSION) \
-	github.com/googleapis/googleapis@$(GOOGLEAPIS_ACTUAL_VERSION)
+	github.com/googleapis/googleapis@$(GOOGLEAPIS_ACTUAL_VERSION) \
+	github.com/kumahq/protoc-gen-kumadoc@$(KUMADOC_ACTUAL_VERSION)/proto
 
 protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(GOPATH_DIR)/pkg/mod/$(go_package))
 
@@ -51,15 +54,29 @@ comma := ,
 empty:=
 space := $(empty) $(empty)
 
+DOCS_OUTPUT_PATH ?= .
+
+additional_params ?=
+
+ifdef PLUGIN
+	additional_params += --plugin=protoc-gen-kumadoc=$(PLUGIN)
+endif
+
 go_mapping_with_spaces := $(foreach entry,$(go_import_mapping_entries),M$(entry),)
 go_mapping := $(subst $(space),$(empty),$(go_mapping_with_spaces))
 
-PROTOC_GO := protoc \
+PROTOC := protoc \
 	--proto_path=$(PROTOBUF_WKT_DIR)/include \
 	--proto_path=. \
-	$(protoc_search_go_paths) \
+	$(protoc_search_go_paths)
+
+PROTOC_GO := $(PROTOC) \
 	--go_opt=paths=source_relative \
 	--go_out=plugins=grpc,$(go_mapping):.
+
+PROTOC_KUMADOC := $(PROTOC) \
+	--kumadoc_out=$(DOCS_OUTPUT_PATH) \
+	$(additional_params)
 
 PROTOC_OS=unknown
 PROTOC_ARCH=$(shell uname -m)
@@ -76,7 +93,7 @@ endif
 help: ## Display this help screen
 	@grep -h -E '^[a-zA-Z_/-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-dev/tools: install/protoc install/protobuf-wellknown-types install/data-plane-api install/protoc-gen-go install/protoc-gen-validate ## Install development tools
+dev/tools: install/protoc install/protobuf-wellknown-types install/data-plane-api install/protoc-gen-go install/protoc-gen-validate install/protoc-gen-kumadoc ## Install development tools
 
 install/protoc:
 	@if [ -e $(PROTOC_PATH) ]; then echo "Protoc $$( $(PROTOC_PATH) --version ) is already installed at $(PROTOC_PATH)" ; fi
@@ -108,6 +125,9 @@ install/protobuf-wellknown-types:
 
 install/protoc-gen-go:
 	go get github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
+
+install/protoc-gen-kumadoc:
+	go get github.com/kumahq/protoc-gen-kumadoc@$(KUMADOC_VERSION)
 
 install/protoc-gen-validate:
 	go get github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
@@ -143,3 +163,6 @@ test: ## Run tests
 
 check: generate build test ## Verify that auto-generated code is up-to-date
 	git diff --quiet || test $$(git diff --name-only | grep -v -e 'go.mod$$' -e 'go.sum$$' | wc -l) -eq 0 || ( echo "The following changes (result of code generators) have been detected:" && git --no-pager diff && false ) # fail if Git working tree is dirty
+
+generate/docs:
+	$(PROTOC_KUMADOC) mesh/v1alpha1/*.proto
