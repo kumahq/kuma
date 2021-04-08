@@ -367,6 +367,7 @@ verify/example/minikube/mtls/outbound:
 	@echo "Check passed!"
 
 kumactl/example/minikube:
+	$(MAKE) docker/load/kumactl
 	cat tools/e2e/examples/minikube/kumactl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KUMACTL_DOCKER_IMAGE)
 
 undeploy/example/minikube: ## Minikube: Undeploy example setup
