@@ -44,8 +44,7 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 
 	node, ok := nodei.(*envoy_core.Node)
 	if !ok {
-		// TODO: should this panic instead?
-		return errors.Errorf("expecting a v3 DiscoveryRequest, got: %v", nodei)
+		return errors.Errorf("expecting a v3 Node, got: %v", nodei)
 	}
 
 	// only reconcile if there is not a valid response present
