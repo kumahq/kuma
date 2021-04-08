@@ -21,7 +21,7 @@ func DefaultConfig() Config {
 			},
 		},
 		Dataplane: Dataplane{
-			Mesh:      "default",
+			Mesh:      "",
 			Name:      "",                                                      // Dataplane name must be set explicitly
 			AdminPort: config_types.MustPortRange(30001, config_types.MaxPort), // by default, automatically choose a free port for Envoy Admin interface
 			DrainTime: 30 * time.Second,

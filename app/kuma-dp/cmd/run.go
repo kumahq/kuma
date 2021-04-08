@@ -57,6 +57,9 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 			if dp != nil {
+				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {
+					return errors.New("--name and --mesh cannot be specified when dataplane definition is provided. Mesh and name will be read from the dataplane definition.")
+				}
 				cfg.Dataplane.Mesh = dp.Meta.GetMesh()
 				cfg.Dataplane.Name = dp.Meta.GetName()
 			}
