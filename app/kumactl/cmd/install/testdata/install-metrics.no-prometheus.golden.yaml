@@ -195,7 +195,7 @@ data:
       "gnetId": 11775,
       "graphTooltip": 0,
       "id": 2,
-      "iteration": 1617907783537,
+      "iteration": 1617908292172,
       "links": [],
       "panels": [
         {
@@ -2192,7 +2192,7 @@ data:
           "timeFrom": null,
           "timeRegions": [],
           "timeShift": null,
-          "title": "Latency (99th percentile)",
+          "title": "Latency",
           "tooltip": {
             "shared": true,
             "sort": 0,
@@ -2953,7 +2953,7 @@ data:
         ]
       },
       "time": {
-        "from": "now-30m",
+        "from": "now-15m",
         "to": "now"
       },
       "timepicker": {
