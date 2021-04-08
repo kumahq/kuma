@@ -55,7 +55,9 @@ reusable:
     master_workflow_filters: &master_workflow_filters
       filters:
         branches:
-          only: master, /^release-.*/
+          only:
+           - master
+           - /^release-.*/
         tags:
           ignore: /.*/ # we don't want to run master workflow on commits with tag because use_local_kuma_images has to be false for all the jobs to pass
 
@@ -69,7 +71,10 @@ reusable:
     commit_workflow_filters: &commit_workflow_filters
       filters:
         branches:
-          ignore: master, /^release-.*/, gh-pages
+          ignore:
+           - master
+           - /^release-.*/
+           - gh-pages
 
 executors:
   golang:
