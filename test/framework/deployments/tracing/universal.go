@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/docker"
@@ -93,7 +94,7 @@ func (u *universalDeployment) Delete(cluster framework.Cluster) error {
 }
 
 func (u *universalDeployment) ZipkinCollectorURL() string {
-	return fmt.Sprintf("http://%s:9411/api/v2/spans", u.ip)
+	return fmt.Sprintf("http://%s/api/v2/spans", net.JoinHostPort(u.ip, "9411"))
 }
 
 func (u *universalDeployment) TracedServices() ([]string, error) {

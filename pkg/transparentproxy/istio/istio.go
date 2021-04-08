@@ -5,9 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	uninstall "istio.io/istio/tools/istio-clean-iptables/pkg/cmd"
-	install "istio.io/istio/tools/istio-iptables/pkg/cmd"
-	"istio.io/istio/tools/istio-iptables/pkg/constants"
+
+	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
+
+	uninstall "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-clean-iptables/pkg/cmd"
+	install "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/cmd"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
@@ -26,6 +28,7 @@ func NewIstioTransparentProxy() *IstioTransparentProxy {
 func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (string, error) {
 	viper.Set(constants.EnvoyPort, cfg.RedirectPortOutBound)
 	viper.Set(constants.InboundCapturePort, cfg.RedirectPortInBound)
+	viper.Set(constants.InboundCapturePortV6, cfg.RedirectPortInBoundV6)
 	viper.Set(constants.ProxyUID, cfg.UID)
 	viper.Set(constants.ProxyGID, cfg.GID)
 	viper.Set(constants.InboundInterceptionMode, "REDIRECT")

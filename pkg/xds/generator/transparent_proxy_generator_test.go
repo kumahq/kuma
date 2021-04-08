@@ -129,5 +129,37 @@ var _ = Describe("TransparentProxyGenerator", func() {
 			},
 			expected: "03.envoy.golden.yaml",
 		}),
+		Entry("transparent_proxying=true ipv6", testCase{
+			proxy: &model.Proxy{
+				Id: model.ProxyId{Name: "side-car"},
+				Dataplane: &mesh_core.DataplaneResource{
+					Meta: &test_model.ResourceMeta{
+						Version: "v1",
+					},
+					Spec: &mesh_proto.Dataplane{
+						Networking: &mesh_proto.Dataplane_Networking{
+							TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
+								RedirectPortOutbound:  15001,
+								RedirectPortInbound:   15006,
+								RedirectPortInboundV6: 15010,
+							},
+						},
+					},
+				},
+				APIVersion: envoy_common.APIV3,
+				Policies: model.MatchedPolicies{
+					Logs: map[model.ServiceName]*mesh_proto.LoggingBackend{ // to show that is not picked
+						"some-service": {
+							Name: "file",
+							Type: mesh_proto.LoggingFileType,
+							Conf: util_proto.MustToStruct(&mesh_proto.FileLoggingBackendConfig{
+								Path: "/var/log",
+							}),
+						},
+					},
+				},
+			},
+			expected: "04.envoy.golden.yaml",
+		}),
 	)
 })

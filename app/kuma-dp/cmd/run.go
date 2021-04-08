@@ -126,6 +126,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				Stdout:          cmd.OutOrStdout(),
 				Stderr:          cmd.OutOrStderr(),
 				Quit:            shouldQuit,
+				LogLevel:        rootCtx.LogLevel,
 			})
 			if err != nil {
 				return err

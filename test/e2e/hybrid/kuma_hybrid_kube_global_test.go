@@ -1,4 +1,4 @@
-package deploy_test
+package hybrid_test
 
 import (
 	"strings"

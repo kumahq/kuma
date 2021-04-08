@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net"
 	"regexp"
 	"strings"
 
@@ -66,7 +67,7 @@ This command requires that the KUBECONFIG environment is set`,
 				return err
 			}
 
-			kumaDNSAddress := fmt.Sprintf("%s:%s", kumaCPSVC.Spec.ClusterIP, args.Port)
+			kumaDNSAddress := net.JoinHostPort(kumaCPSVC.Spec.ClusterIP, args.Port)
 
 			var errs error
 			generated := false

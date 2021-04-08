@@ -3,7 +3,6 @@ package framework
 import (
 	"fmt"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -26,20 +25,6 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 	t := NewTestingT()
 
 	clusters := map[string]*K8sCluster{}
-	retries := DefaultRetries
-	timeout := DefaultTimeout
-
-	if r := os.Getenv("KUMA_DEFAULT_RETRIES"); r != "" {
-		if r, err := strconv.Atoi(r); err != nil {
-			retries = r
-		}
-	}
-
-	if t := os.Getenv("KUMA_DEFAULT_TIMEOUT"); t != "" {
-		if t, err := time.ParseDuration(t); err != nil {
-			timeout = t
-		}
-	}
 
 	for i, name := range clusterNames {
 		clusters[name] = &K8sCluster{
@@ -51,8 +36,8 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 			forwardedPortsChans: map[uint32]chan struct{}{},
 			verbose:             verbose,
 			deployments:         map[string]Deployment{},
-			defaultTimeout:      timeout,
-			defaultRetries:      retries,
+			defaultTimeout:      GetDefaultTimeout(),
+			defaultRetries:      GetDefaultRetries(),
 		}
 
 		var err error
@@ -228,10 +213,6 @@ func (cs *K8sClusters) InjectDNS(namespace ...string) error {
 
 func (cs *K8sClusters) GetTesting() testing.TestingT {
 	return cs.t
-}
-func IsK8sClustersStarted() bool {
-	_, found := os.LookupEnv(envK8SCLUSTERS)
-	return found
 }
 
 func (cs *K8sClusters) Deployment(name string) Deployment {

@@ -5,6 +5,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/log"
+
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
 	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
@@ -17,6 +19,7 @@ type RootContext struct {
 	BootstrapGenerator       envoy.BootstrapConfigFactoryFunc
 	BootstrapDynamicMetadata map[string]string
 	Config                   *kumadp.Config
+	LogLevel                 log.LogLevel
 }
 
 func DefaultRootContext() *RootContext {

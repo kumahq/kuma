@@ -1,9 +1,9 @@
 # using Envoy's base to copy the Envoy binary
-FROM envoyproxy/envoy-alpine:v1.17.1 as envoy
+FROM envoyproxy/envoy:v1.17.1 as envoy
 
 FROM ubuntu:focal as builder
 
-ENV GOVERSION 1.15.6
+ENV GOVERSION 1.15.11
 ENV GOROOT /opt/go
 ENV GOPATH /root/.go
 
@@ -17,12 +17,6 @@ RUN cd /opt && wget https://storage.googleapis.com/golang/go${GOVERSION}.linux-a
 
 FROM ubuntu:20.04
 
-COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
-
-ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
-ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
-ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
-
 RUN mkdir /kuma
 RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /kuma/kuma-cp.conf \
     && chmod a+rw /kuma/kuma-cp.conf
@@ -30,7 +24,7 @@ RUN echo "# use this file to override default configuration of \`kuma-cp\`" > /k
 RUN apt update \
   && apt dist-upgrade -y \
   && DEBIAN_FRONTEND=noninteractive apt-get install -y \
-  tzdata openssh-server curl ncat vim net-tools iptables dnsutils tmux \
+  tzdata openssh-server curl ncat vim net-tools iptables iproute2 dnsutils tmux \
   && rm -rf /var/lib/apt/lists/*
 
 RUN ssh-keygen -A \
@@ -40,6 +34,12 @@ RUN ssh-keygen -A \
   && passwd -d root \
   && chmod a+rwx /root \
   && useradd -U kuma-dp
+
+COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
+
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 
 # do not detach (-D), log to stderr (-e)
 CMD ["/usr/sbin/sshd", "-D", "-e"]

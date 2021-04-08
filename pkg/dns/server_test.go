@@ -115,6 +115,38 @@ var _ = Describe("DNS server", func() {
 			}
 		})
 
+		It("should resolve IPv6 concurrent", func() {
+			// given
+			dnsResolver.SetVIPs(map[string]string{
+				"service": "fd00::1",
+			})
+			ip, err := dnsResolver.ForwardLookupFQDN("service.mesh")
+			Expect(err).ToNot(HaveOccurred())
+
+			resolved := make(chan struct{})
+			for i := 0; i < 100; i++ {
+				go func() {
+					// when
+					client := new(dns.Client)
+					message := new(dns.Msg)
+					_ = message.SetQuestion("service.mesh.", dns.TypeAAAA)
+					var response *dns.Msg
+					var err error
+					Eventually(func() error {
+						response, _, err = client.Exchange(message, fmt.Sprintf("127.0.0.1:%d", port))
+						return err
+					}).ShouldNot(HaveOccurred())
+					// then
+					Expect(response.Answer[0].String()).To(Equal(fmt.Sprintf("service.mesh.\t60\tIN\tAAAA\t%s", ip)))
+					resolved <- struct{}{}
+				}()
+			}
+
+			for i := 0; i < 100; i++ {
+				<-resolved
+			}
+		})
+
 		It("should not resolve", func() {
 			// given
 			var err error

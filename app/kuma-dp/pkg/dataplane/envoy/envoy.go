@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	pkg_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 
 	"github.com/pkg/errors"
@@ -42,6 +43,7 @@ type Opts struct {
 	Stdout          io.Writer
 	Stderr          io.Writer
 	Quit            chan struct{}
+	LogLevel        pkg_log.LogLevel
 }
 
 func New(opts Opts) (*Envoy, error) {
@@ -154,6 +156,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		// and we don't expect users to do "hot restart" manually.
 		// so, let's turn it off to simplify getting started experience.
 		"--disable-hot-restart",
+		"-l ", e.opts.LogLevel.String(),
 	}
 	if version != "" { // version is always send by Kuma CP, but we check empty for backwards compatibility reasons (new Kuma DP connects to old Kuma CP)
 		args = append(args, "--bootstrap-version", string(version))

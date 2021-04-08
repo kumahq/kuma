@@ -2,6 +2,7 @@ K8SCLUSTERS = kuma-1 kuma-2
 K8SCLUSTERS_START_TARGETS = $(addprefix test/e2e/kind/start/cluster/, $(K8SCLUSTERS))
 K8SCLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/kind/stop/cluster/, $(K8SCLUSTERS))
 API_VERSION ?= v3
+# export `IPV6=true` to enable IPv6 testing
 
 HELM_CHART_PATH ?=
 KUMA_GLOBAL_IMAGE_TAG ?=
@@ -11,7 +12,6 @@ KUMA_DP_IMAGE_REPOSITORY ?=
 KUMA_DP_INIT_IMAGE_REPOSITORY ?=
 KUMA_USE_LOAD_BALANCER ?=
 KUMA_IN_EKS ?=
-KUMA_UNIVERSAL_IMAGE ?= $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 KUMA_DEFAULT_RETRIES ?=
 KUMA_DEFAULT_TIMEOUT ?=
 
@@ -27,7 +27,6 @@ test/e2e/kind/start/cluster/$1:
 		$(MAKE) kind/start
 	KIND_CLUSTER_NAME=$1 \
 		$(MAKE) kind/load/images
-	@kind load docker-image $(KUMA_UNIVERSAL_DOCKER_IMAGE) --name=$1
 
 .PHONY: test/e2e/kind/stop/cluster/$1
 test/e2e/kind/stop/cluster/$1:

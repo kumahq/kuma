@@ -126,7 +126,7 @@ metadata:
 		cmd := []string{"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh"}
 
 		checkInstance := func(instance string) {
-			_, err = retry.DoWithRetryE(remoteK8s.GetTesting(), fmt.Sprintf("kubectl exec -- %s", strings.Join(cmd, " ")),
+			_, err = retry.DoWithRetryE(remoteK8s.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pods[0].GetName(), strings.Join(cmd, " ")),
 				DefaultRetries, DefaultTimeout, func() (string, error) {
 					stdout, _, err := remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
 					if err != nil {

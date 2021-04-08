@@ -75,6 +75,7 @@ var _ = Describe("kumactl install tracing", func() {
 				"--kuma-cp-ip", "1.2.3.4",
 				"--redirect-outbound-port", "12345",
 				"--redirect-inbound-port", "12346",
+				"--redirect-inbound-port-v6", "123457",
 				"--exclude-outbound-ports", "2000,2001",
 				"--exclude-inbound-ports", "1000,1001",
 			},

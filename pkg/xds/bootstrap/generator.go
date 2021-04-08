@@ -8,9 +8,13 @@ import (
 	"encoding/pem"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"sort"
+	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/asaskevich/govalidator"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -196,14 +200,19 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 	}
 
 	accessLogSocket := envoy_common.AccessLogSocketName(request.Name, request.Mesh)
+	xdsHost := b.xdsHost(request)
+	xdsUri := net.JoinHostPort(xdsHost, strconv.FormatUint(uint64(b.config.Params.XdsPort), 10))
+
 	params := configParameters{
 		Id:                 proxyId.String(),
 		Service:            service,
 		AdminAddress:       b.config.Params.AdminAddress,
 		AdminPort:          adminPort,
 		AdminAccessLogPath: b.config.Params.AdminAccessLogPath,
-		XdsHost:            b.xdsHost(request),
+		XdsClusterType:     b.xdsClusterType(xdsHost),
+		XdsHost:            xdsHost,
 		XdsPort:            b.config.Params.XdsPort,
+		XdsUri:             xdsUri,
 		XdsConnectTimeout:  b.config.Params.XdsConnectTimeout,
 		AccessLogPipe:      accessLogSocket,
 		DataplaneTokenPath: request.DataplaneTokenPath,
@@ -344,6 +353,13 @@ func (b *bootstrapGenerator) configForParametersV3(params configParameters) (pro
 		return nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
 	}
 	return config, nil
+}
+
+func (b *bootstrapGenerator) xdsClusterType(address string) string {
+	if govalidator.IsIP(address) {
+		return "STATIC"
+	}
+	return "STRICT_DNS"
 }
 
 type SANSet map[string]bool

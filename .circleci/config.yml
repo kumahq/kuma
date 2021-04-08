@@ -24,14 +24,14 @@ commands:
 reusable:
 
   constants:
-  - &go_version "1.15.6"
+  - &go_version "1.15.11"
 
   docker_images:
-  - &golang_image "golang:1.15.6"
-  - &circleci_golang_image "circleci/golang:1.15.6"
+  - &golang_image "golang:1.15.11"
+  - &circleci_golang_image "circleci/golang:1.15.11"
 
   vm_images:
-  - &ubuntu_vm_image "ubuntu-1604:202007-01"
+  - &ubuntu_vm_image "ubuntu-2004:202101-01"
 
   snippets:
 
@@ -568,6 +568,10 @@ jobs:
         description: XDS API version
         type: string
         default: v3
+      ipv6:
+        description: use IPv6
+        type: boolean
+        default: false
     parallelism: 2
     environment:
       GOPATH: /home/circleci/.go-kuma-go
@@ -603,13 +607,29 @@ jobs:
           command: |
             export PATH=$HOME/go/bin:$PATH
             helm repo add kuma https://kumahq.github.io/charts
-      - run:
-          name: "Run E2E tests"
-          command: |
-            export PATH=$HOME/go/bin:$PATH
-            export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
-            export API_VERSION=<< parameters.api >>
-            make test/e2e
+      - when:
+          condition: << parameters.ipv6 >>
+          steps:
+            - run:
+                name: "Run IPv6 E2E tests"
+                command: |
+                  export PATH=$HOME/go/bin:$PATH
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export API_VERSION=<< parameters.api >>
+                  export IPV6=true
+                  export KUMA_DEFAULT_RETRIES=60
+                  export KUMA_DEFAULT_TIMEOUT="6s"
+                  make test/e2e
+      - unless:
+          condition: << parameters.ipv6 >>
+          steps:
+            - run:
+                name: "Run IPv4 E2E tests"
+                command: |
+                  export PATH=$HOME/go/bin:$PATH
+                  export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
+                  export API_VERSION=<< parameters.api >>
+                  make test/e2e
 
   build:
     executor: golang
@@ -695,7 +715,7 @@ jobs:
       kubernetes_version:
         description: The version of Kubernetes to test on.
         type: string
-        default: "v1.15.0"
+        default: "v1.20.0"
       use_local_kuma_images:
         description: Use local Docker images from CircleCI workspace instead of downloading ones from bintray.io.
         type: boolean
@@ -720,7 +740,7 @@ jobs:
           sudo apt-get install -y conntrack
     - run:
         name: Start Minikube
-        command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none --kubernetes-version=<< parameters.kubernetes_version >>
+        command: $HOME/bin/minikube start --vm-driver=docker --kubernetes-version=<< parameters.kubernetes_version >>
     - when:
         condition: << parameters.use_local_kuma_images >>
         steps:
@@ -887,10 +907,16 @@ workflows:
         use_local_kuma_images: true
     - e2e:
         <<: *commit_workflow_filters
-        name: test/e2e
+        name: test/e2e-ipv4
         requires:
           - images
           - check
+# keep this one disabled and enable only for development
+#    - e2e:
+#        <<: *commit_workflow_filters
+#        name: test/e2e-ipv6
+#        # custom parameters
+#        ipv6: true
 
   clean-eks:
     triggers:
@@ -1018,13 +1044,21 @@ workflows:
             - images
             - check
       - e2e:
-          <<: *commit_workflow_filters
+          <<: *master_workflow_filters
           name: test/e2e V2
           requires:
             - images
             - check
           # custom parameters
           api: v2
+      - e2e:
+          <<: *master_workflow_filters
+          name: test/e2e-ipv6
+          requires:
+            - images
+            - check
+          # custom parameters
+          ipv6: true
 
   kuma-release:
     jobs:
