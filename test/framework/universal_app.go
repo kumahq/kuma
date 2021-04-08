@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/asaskevich/govalidator"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
@@ -381,17 +382,23 @@ func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 		return "invalid", errors.Wrapf(err, "getent failed with %s", string(bytes))
 	}
 	lines := strings.Split(string(bytes), "\n")
-	// search ipv4
+	// search for the requested IP
 	for _, line := range lines {
 		split := strings.Split(line, " ")
-		testInput := net.ParseIP(split[0])
+		ip := split[0]
 		if isipv6 {
-			return split[0], nil
-		} else if testInput.To4() != nil {
-			return split[0], nil
+			if govalidator.IsIPv6(ip) {
+				return ip, nil
+			}
+		} else if govalidator.IsIPv4(ip) {
+			return ip, nil
 		}
 	}
-	return "", errors.Errorf("No IPv4 address found")
+	errString := "No IPv4 address found"
+	if isipv6 {
+		errString = "No IPv6 address found"
+	}
+	return "", errors.Errorf(errString)
 }
 
 type SshApp struct {
