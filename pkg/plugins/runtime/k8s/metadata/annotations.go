@@ -61,12 +61,13 @@ const (
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
-	KumaSidecarInjectedAnnotation                 = "kuma.io/sidecar-injected"
-	KumaTransparentProxyingAnnotation             = "kuma.io/transparent-proxying"
-	KumaTransparentProxyingInboundPortAnnotation  = "kuma.io/transparent-proxying-inbound-port"
-	KumaTransparentProxyingOutboundPortAnnotation = "kuma.io/transparent-proxying-outbound-port"
-	CNCFNetworkAnnotation                         = "k8s.v1.cni.cncf.io/networks"
-	KumaCNI                                       = "kuma-cni"
+	KumaSidecarInjectedAnnotation                  = "kuma.io/sidecar-injected"
+	KumaTransparentProxyingAnnotation              = "kuma.io/transparent-proxying"
+	KumaTransparentProxyingInboundPortAnnotation   = "kuma.io/transparent-proxying-inbound-port"
+	KumaTransparentProxyingInboundPortAnnotationV6 = "kuma.io/transparent-proxying-inbound-v6-port"
+	KumaTransparentProxyingOutboundPortAnnotation  = "kuma.io/transparent-proxying-outbound-port"
+	CNCFNetworkAnnotation                          = "k8s.v1.cni.cncf.io/networks"
+	KumaCNI                                        = "kuma-cni"
 )
 
 // Annotations related to the gateway

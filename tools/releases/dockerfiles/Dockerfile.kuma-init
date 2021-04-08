@@ -1,7 +1,7 @@
 FROM ubuntu:focal
 
 RUN apt-get update && \
-    apt-get -y install iptables && \
+    apt-get -y install iptables iproute2 && \
     rm -rf /var/lib/apt/lists/*
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin

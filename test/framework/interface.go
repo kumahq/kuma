@@ -37,6 +37,7 @@ type deployOptions struct {
 	proxyOnly        bool
 	hdsDisabled      bool
 	serviceProbe     bool
+	isipv6           bool
 
 	// app specific
 	namespace   string

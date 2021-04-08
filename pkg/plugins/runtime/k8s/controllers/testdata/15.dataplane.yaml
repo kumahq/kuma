@@ -1,0 +1,18 @@
+mesh: default
+metadata:
+  creationTimestamp: null
+spec:
+  networking:
+    address: fd00::1
+    inbound:
+      - port: 8080
+        tags:
+          app: example
+          kuma.io/protocol: tcp
+          kuma.io/service: example_demo_svc_80
+          version: "0.1"
+          kuma.io/zone: "zone-1"
+    transparentProxying:
+      redirectPortInbound: 15006
+      redirectPortInboundV6: 15010
+      redirectPortOutbound: 15001

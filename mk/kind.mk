@@ -5,6 +5,12 @@ KIND_CLUSTER_NAME ?= kuma
 
 METRICS_SERVER_VERSION := 0.4.1
 
+ifdef IPV6
+KIND_CONFIG=$(TOP)/test/kind/cluster-ipv6.yaml
+else
+KIND_CONFIG=$(TOP)/test/kind/cluster.yaml
+endif
+
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
 	KUMACTL_INSTALL_CONTROL_PLANE_IMAGES := --control-plane-registry=$(DOCKER_REGISTRY) --dataplane-registry=$(DOCKER_REGISTRY) --dataplane-init-registry=$(DOCKER_REGISTRY)
 else
@@ -40,6 +46,7 @@ kind/start: ${KIND_KUBECONFIG_DIR}
 	@kind get clusters | grep $(KIND_CLUSTER_NAME) >/dev/null 2>&1 && echo "Kind cluster already running." && exit 0 || \
 		(kind create cluster \
 			--name "$(KIND_CLUSTER_NAME)" \
+			--config "$(KIND_CONFIG)" \
 			--image=kindest/node:$(CI_KUBERNETES_VERSION) \
 			--kubeconfig $(KIND_KUBECONFIG) \
 			--quiet --wait 120s && \
@@ -83,17 +90,22 @@ kind/load/kuma-prometheus-sd:
 kind/load/kumactl:
 	@kind load docker-image $(KUMACTL_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
 
+.PHONY: kind/load/kuma-universal
+kind/load/kuma-universal:
+	@kind load docker-image kuma-universal:latest --name=$(KIND_CLUSTER_NAME)
+
 .PHONY: kind/load/images
-kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl
+kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl kind/load/kuma-universal
 
 .PHONY: kind/load
-kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl kind/load/images
+kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl docker/build/kuma-universal kind/load/images
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load
 	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
+	@KUBECONFIG=$(KIND_KUBECONFIG) kumactl install dns | kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete -n $(EXAMPLE_NAMESPACE) pod -l app=example-app
 	@until \
     	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait -n kube-system --timeout=5s --for condition=Ready --all pods ; \
@@ -105,7 +117,15 @@ kind/deploy/kuma: build/kumactl kind/load
 kind/deploy/helm: kind/load
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete namespace $(KUMA_NAMESPACE) | true
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(KUMA_NAMESPACE)
-	KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) --set global.image.registry="$(DOCKER_REGISTRY)",global.image.tag="$(BUILD_INFO_GIT_TAG)",cni.enabled=true kuma ./deployments/charts/kuma
+	KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) \
+                --set global.image.registry="$(DOCKER_REGISTRY)" \
+                --set global.image.tag="$(BUILD_INFO_GIT_TAG)" \
+                --set cni.enabled=true \
+                --set cni.chained=true \
+                --set cni.netDir=/etc/cni/net.d \
+                --set cni.binDir=/opt/cni/bin \
+                --set cni.confName=10-kindnet.conflist \
+                kuma ./deployments/charts/kuma
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 
@@ -134,8 +154,7 @@ kind/deploy/example-app:
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(EXAMPLE_NAMESPACE) || true
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl annotate namespace $(EXAMPLE_NAMESPACE) kuma.io/sidecar-injection=enabled --overwrite
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl apply -n $(EXAMPLE_NAMESPACE) -f dev/examples/k8s/example-app/example-app.yaml
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=120s --for=condition=Available -n $(EXAMPLE_NAMESPACE) deployment/example-app
-	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(EXAMPLE_NAMESPACE) pods -l app=example-app
 
 .PHONY: run/k8s
 run/k8s: fmt vet ## Dev: Run Control Plane locally in Kubernetes mode

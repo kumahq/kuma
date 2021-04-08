@@ -2,7 +2,6 @@ package framework
 
 import (
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/gruntwork-io/terratest/modules/logger"
@@ -52,6 +51,9 @@ func YamlPathK8s(path string) InstallFunc {
 
 func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
+		fs = append(fs, func(options *deployOptions) {
+			options.isipv6 = IsIPv6()
+		})
 		err := cluster.DeployKuma(mode, fs...)
 		return err
 	}
@@ -174,12 +176,6 @@ func WaitPodsNotAvailable(namespace, app string) InstallFunc {
 }
 
 func EchoServerK8s(mesh string) InstallFunc {
-	image := "kuma-universal"
-
-	if i := os.Getenv("KUMA_UNIVERSAL_IMAGE"); i != "" {
-		image = i
-	}
-
 	const name = "echo-server"
 	service := `
 apiVersion: v1
@@ -221,7 +217,7 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: ` + image + `
+          image: %s
           imagePullPolicy: IfNotPresent
           readinessProbe:
             httpGet:
@@ -242,10 +238,11 @@ spec:
             limits:
               cpu: 50m
               memory: 128Mi
+
 `
 	return Combine(
 		YamlK8s(service),
-		YamlK8s(fmt.Sprintf(deployment, mesh)),
+		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage())),
 		WaitService(TestNamespace, name),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
@@ -262,7 +259,7 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 		}
 		switch {
 		case opts.transparent:
-			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", "8080", redirectPortInbound, redirectPortOutbound)
+			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", "8080", redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 		case opts.serviceProbe:
 			appYaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, mesh, "8080", "80", "8080", opts.protocol)
 		default:
@@ -296,12 +293,6 @@ func IngressUniversal(mesh, token string) InstallFunc {
 }
 
 func DemoClientK8s(mesh string) InstallFunc {
-	image := "kuma-universal"
-
-	if i := os.Getenv("KUMA_UNIVERSAL_IMAGE"); i != "" {
-		image = i
-	}
-
 	const name = "demo-client"
 	deployment := `
 apiVersion: apps/v1
@@ -328,7 +319,7 @@ spec:
     spec:
       containers:
         - name: demo-client
-          image: ` + image + `
+          image: %s
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
@@ -343,19 +334,13 @@ spec:
               memory: 128Mi
 `
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, mesh)),
+		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage())),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
 	)
 }
 
 func DemoClientJobK8s(mesh, destination string) InstallFunc {
-	image := "kuma-universal"
-
-	if i := os.Getenv("KUMA_UNIVERSAL_IMAGE"); i != "" {
-		image = i
-	}
-
 	const name = "demo-job-client"
 	deployment := `
 apiVersion: batch/v1
@@ -375,7 +360,7 @@ spec:
     spec:
       containers:
       - name: demo-job-client
-        image: ` + image + `
+        image: %s
         imagePullPolicy: IfNotPresent
         command: [ "curl" ]
         args:
@@ -387,7 +372,7 @@ spec:
       restartPolicy: OnFailure
 `
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, mesh, destination)),
+		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage(), destination)),
 		WaitNumPods(1, name),
 		WaitPodsComplete(TestNamespace, name),
 	)
@@ -399,7 +384,7 @@ func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := ""
 		if opts.transparent {
-			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", redirectPortInbound, redirectPortOutbound)
+			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 		} else {
 			if opts.serviceProbe {
 				appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", "80", "8080")
