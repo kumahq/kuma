@@ -17,8 +17,6 @@ var log = core.Log.WithName("mads-config")
 func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig {
 	return &MonitoringAssignmentServerConfig{
 		Port:                      5676,
-		GrpcEnabled:               true,
-		HttpEnabled:               true,
 		FetchTimeout:              30 * time.Second,
 		ApiVersions:               []mads.ApiVersion{mads.API_V1_ALPHA1, mads.API_V1},
 		AssignmentRefreshInterval: 1 * time.Second,
@@ -40,10 +38,6 @@ type MonitoringAssignmentServerConfig struct {
 	ApiVersions []string `yaml:"apiVersions" envconfig:"kuma_monitoring_assignment_server_api_versions"`
 	// Interval for re-generating monitoring assignments for clients connected to the Control Plane.
 	AssignmentRefreshInterval time.Duration `yaml:"assignmentRefreshInterval" envconfig:"kuma_monitoring_assignment_server_assignment_refresh_interval"`
-	// Whether to run a HTTP discovery server. Only available for MADS v1.
-	HttpEnabled bool `yaml:"httpEnabled" envconfig:"kuma_monitoring_assignment_server_http_enabled"`
-	// Whether to run a gRPC server. Required for v1alpha1.
-	GrpcEnabled bool `yaml:"grpcEnabled" envconfig:"kuma_monitoring_assignment_server_grpc_enabled"`
 }
 
 var _ config.Config = &MonitoringAssignmentServerConfig{}
@@ -53,7 +47,7 @@ func (c *MonitoringAssignmentServerConfig) Sanitize() {
 
 func (c *MonitoringAssignmentServerConfig) Validate() (errs error) {
 	if c.GrpcPort != 0 {
-		log.V(1).Info(".GrpcPort is deprecated. Please use .Port instead")
+		log.Info(".GrpcPort is deprecated. Please use .Port instead")
 		if c.Port == 0 {
 			c.Port = c.GrpcPort
 		}

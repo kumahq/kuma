@@ -137,8 +137,6 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.MonitoringAssignmentServer.FetchTimeout).To(Equal(45 * time.Second))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(HaveLen(1))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(ContainElements("v1"))
-			Expect(cfg.MonitoringAssignmentServer.HttpEnabled).To(BeFalse())
-			Expect(cfg.MonitoringAssignmentServer.GrpcEnabled).To(BeFalse())
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
 
@@ -298,8 +296,6 @@ monitoringAssignmentServer:
   port: 2222
   fetchTimeout: 45s
   apiVersions: [v1]
-  httpEnabled: false
-  grpcEnabled: false
   assignmentRefreshInterval: 12s
 runtime:
   universal:
@@ -471,8 +467,6 @@ sdsServer:
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_FETCH_TIMEOUT":                                          "45s",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS":                                           "v1",
-				"KUMA_MONITORING_ASSIGNMENT_SERVER_HTTP_ENABLED":                                           "false",
-				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_ENABLED":                                           "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":                            "12s",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",

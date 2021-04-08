@@ -157,38 +157,22 @@ func (s *muxServer) NeedLeaderElection() bool {
 func SetupServer(rt core_runtime.Runtime) error {
 	config := rt.Config().MonitoringAssignmentServer
 
-	if !config.GrpcEnabled && !config.HttpEnabled {
-		return nil
-	}
-
 	rm := rt.ReadOnlyResourceManager()
 
 	var grpcServices []GrpcService
 	var httpServices []HttpService
 
-	addGRPCService := func(svc GrpcService) {
-		if config.GrpcEnabled {
-			grpcServices = append(grpcServices, svc)
-		}
-	}
-
-	addHTTPService := func(svc HttpService) {
-		if config.HttpEnabled {
-			httpServices = append(httpServices, svc)
-		}
-	}
-
 	if config.VersionIsEnabled(mads.API_V1_ALPHA1) {
 		log.Info("MADS v1alpha1 is enabled")
 		svc := mads_v1alpha1.NewService(config, rm, log.WithValues("apiVersion", mads.API_V1_ALPHA1))
-		addGRPCService(svc)
+		grpcServices = append(grpcServices, svc)
 	}
 
 	if config.VersionIsEnabled(mads.API_V1) {
 		log.Info("MADS v1 is enabled")
 		svc := mads_v1.NewService(config, rm, log.WithValues("apiVersion", mads.API_V1))
-		addGRPCService(svc)
-		addHTTPService(svc)
+		grpcServices = append(grpcServices, svc)
+		httpServices = append(httpServices, svc)
 	}
 
 	return rt.Add(&muxServer{
