@@ -915,9 +915,6 @@ workflows:
     - e2e:
         <<: *commit_workflow_filters
         name: test/e2e-ipv6
-        requires:
-          - images
-          - check
         # custom parameters
         ipv6: true
 
