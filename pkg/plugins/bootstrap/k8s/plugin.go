@@ -56,7 +56,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 		return err
 	}
 
-	secretClient, err := secretClient(b.Config().Store.Kubernetes.SystemNamespace, config, scheme, mgr.GetRESTMapper(), b.CloseCh())
+	secretClient, err := secretClient(b.Config().Store.Kubernetes.SystemNamespace, config, scheme, mgr.GetRESTMapper(), b.ShutdownCh())
 	if err != nil {
 		return err
 	}

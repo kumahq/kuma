@@ -26,11 +26,13 @@ var _ = Describe("Dataplane Lifecycle", func() {
 	var resManager core_manager.ResourceManager
 	var dpLifecycle *DataplaneLifecycle
 	var callbacks envoy_server.Callbacks
+	var shutdown chan struct{}
 
 	BeforeEach(func() {
 		store := memory.NewStore()
 		resManager = core_manager.NewResourceManager(store)
-		dpLifecycle = NewDataplaneLifecycle(resManager)
+		shutdown = make(chan struct{})
+		dpLifecycle = NewDataplaneLifecycle(resManager, shutdown)
 		callbacks = util_xds_v2.AdaptCallbacks(dpLifecycle)
 
 		err := resManager.Create(context.Background(), core_mesh.NewMeshResource(), core_store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
@@ -131,6 +133,56 @@ var _ = Describe("Dataplane Lifecycle", func() {
 		dpLifecycle.OnStreamClosed(streamId)
 
 		// then DP is not deleted because it was not carried in metadata
+		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
+		Expect(err).ToNot(HaveOccurred())
+	})
+
+	It("should not delete DP when Kuma CP is shutting down", func() {
+		// given
+		req := v2.DiscoveryRequest{
+			Node: &envoy_core.Node{
+				Id: "default.backend-01",
+				Metadata: &pstruct.Struct{
+					Fields: map[string]*pstruct.Value{
+						"dataplane.resource": &pstruct.Value{
+							Kind: &pstruct.Value_StringValue{
+								StringValue: `
+                                {
+                                  "type": "Dataplane",
+                                  "mesh": "default",
+                                  "name": "backend-01",
+                                  "networking": {
+                                    "address": "127.0.0.1",
+                                    "inbound": [
+                                      {
+                                        "port": 22022,
+                                        "servicePort": 8443,
+                                        "tags": {
+                                          "kuma.io/service": "backend"
+                                        }
+                                      },
+                                    ]
+                                  }
+                                }
+                                `,
+							},
+						},
+					},
+				},
+			},
+		}
+
+		const streamId = 123
+
+		// when
+		err := callbacks.OnStreamRequest(streamId, &req)
+		Expect(err).ToNot(HaveOccurred())
+
+		close(shutdown)
+		// when
+		dpLifecycle.OnStreamClosed(streamId)
+
+		// then DP is not deleted because Kuma CP was shutting down
 		err = resManager.Get(context.Background(), core_mesh.NewDataplaneResource(), core_store.GetByKey("backend-01", "default"))
 		Expect(err).ToNot(HaveOccurred())
 	})
