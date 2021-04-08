@@ -1,13 +1,13 @@
-package webhooks_test
+package k8s_test
 
 import (
 	"context"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 	sample_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/test/api/sample/v1alpha1"
-	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks"
 	sample_proto "github.com/kumahq/kuma/pkg/test/apis/sample/v1alpha1"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
@@ -24,7 +24,7 @@ import (
 type denyingValidator struct {
 }
 
-var _ webhooks.AdmissionValidator = &denyingValidator{}
+var _ k8s_common.AdmissionValidator = &denyingValidator{}
 
 func (d *denyingValidator) InjectDecoder(*admission.Decoder) error {
 	return nil
@@ -45,7 +45,7 @@ var _ = Describe("Composite Validator", func() {
 	var kubeTypes k8s_registry.TypeRegistry
 
 	BeforeEach(func() {
-		composite := webhooks.CompositeValidator{}
+		composite := k8s_common.CompositeValidator{}
 		composite.AddValidator(&denyingValidator{})
 
 		handler = composite.WebHook()

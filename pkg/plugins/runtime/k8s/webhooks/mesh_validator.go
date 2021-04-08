@@ -17,7 +17,7 @@ import (
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s_common.Converter, resourceManager manager.ResourceManager) AdmissionValidator {
+func NewMeshValidatorWebhook(validator managers_mesh.MeshValidator, converter k8s_common.Converter, resourceManager manager.ResourceManager) k8s_common.AdmissionValidator {
 	return &MeshValidator{
 		validator:       validator,
 		converter:       converter,

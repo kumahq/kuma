@@ -97,7 +97,7 @@ func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) er
 	return nil
 }
 
-func newResourceManager(builder *core_runtime.Builder) core_manager.ResourceManager {
+func newResourceManager(builder *core_runtime.Builder) core_manager.CustomizableResourceManager {
 	defaultManager := core_manager.NewResourceManager(builder.ResourceStore())
 	customManagers := map[core_model.ResourceType]core_manager.ResourceManager{}
 	customizableManager := core_manager.NewCustomizableResourceManager(defaultManager, customManagers)
