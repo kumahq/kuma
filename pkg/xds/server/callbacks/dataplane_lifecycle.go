@@ -33,18 +33,31 @@ type DataplaneLifecycle struct {
 	// we store nil values for streams without Dataplane in metadata to avoid accessing metadata with every DiscoveryRequest
 	createdDpForStream map[xds.StreamID]*model.ResourceKey
 	sync.RWMutex       // protects createdDpForStream
+	shutdownCh         <-chan struct{}
 }
 
 var _ util_xds.Callbacks = &DataplaneLifecycle{}
 
-func NewDataplaneLifecycle(resManager manager.ResourceManager) *DataplaneLifecycle {
+func NewDataplaneLifecycle(resManager manager.ResourceManager, shutdownCh <-chan struct{}) *DataplaneLifecycle {
 	return &DataplaneLifecycle{
 		resManager:         resManager,
 		createdDpForStream: map[xds.StreamID]*model.ResourceKey{},
+		shutdownCh:         shutdownCh,
 	}
 }
 
 func (d *DataplaneLifecycle) OnStreamClosed(streamID int64) {
+	// OnStreamClosed method could be called either in case data plane proxy is down or
+	// Kuma CP is gracefully shutting down. If Kuma CP is gracefully shutting down we
+	// must not delete Dataplane resource, data plane proxy will be reconnected to another
+	// instance of Kuma CP.
+	select {
+	case <-d.shutdownCh:
+		lifecycleLog.Info("graceful shutdown, don't delete Dataplane resource")
+		return
+	default:
+	}
+
 	d.Lock()
 	defer d.Unlock()
 	key := d.createdDpForStream[streamID]
