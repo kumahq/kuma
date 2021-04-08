@@ -22,7 +22,7 @@ type ResourceChangedEvent struct {
 	Key       model.ResourceKey
 }
 
-var ListenerStopped = errors.New("listener closed")
+var ListenerStoppedErr = errors.New("listener closed")
 
 type Listener interface {
 	Recv(stop <-chan struct{}) (Event, error)

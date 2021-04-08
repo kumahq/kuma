@@ -54,6 +54,6 @@ func (k *reader) Recv(stop <-chan struct{}) (Event, error) {
 		}
 		return event, nil
 	case <-stop:
-		return nil, ListenerStopped
+		return nil, ListenerStoppedErr
 	}
 }
