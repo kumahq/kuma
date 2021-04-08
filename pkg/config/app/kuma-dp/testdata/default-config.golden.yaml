@@ -6,7 +6,6 @@ controlPlane:
   caCert: ""
   caCertFile: ""
 dataplane:
-  mesh: default
   drainTime: 30s
   bootstrapVersion: ""
 dataplaneRuntime:
