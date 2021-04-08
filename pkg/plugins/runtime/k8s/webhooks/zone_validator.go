@@ -8,10 +8,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	mesh_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 )
 
-func NewZoneValidatorWebhook(validator zone.Validator) AdmissionValidator {
+func NewZoneValidatorWebhook(validator zone.Validator) k8s_common.AdmissionValidator {
 	return &ZoneValidator{
 		validator: validator,
 	}

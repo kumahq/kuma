@@ -16,6 +16,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
+	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 
@@ -69,6 +70,7 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 	} else {
 		b.WithExtensions(k8s_extensions.NewResourceConverterContext(b.Extensions(), k8s.NewSimpleConverter()))
 	}
+	b.WithExtensions(k8s_extensions.NewCompositeValidatorContext(b.Extensions(), &k8s_common.CompositeValidator{}))
 	return nil
 }
 

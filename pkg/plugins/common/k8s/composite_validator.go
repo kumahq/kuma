@@ -1,4 +1,4 @@
-package webhooks
+package k8s
 
 import (
 	"context"
