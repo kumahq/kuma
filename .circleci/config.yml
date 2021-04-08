@@ -740,7 +740,7 @@ jobs:
           sudo apt-get install -y conntrack
     - run:
         name: Start Minikube
-        command: sudo CHANGE_MINIKUBE_NONE_USER=true $HOME/bin/minikube start --vm-driver=none --kubernetes-version=<< parameters.kubernetes_version >>
+        command: $HOME/bin/minikube start --vm-driver=docker --kubernetes-version=<< parameters.kubernetes_version >>
     - when:
         condition: << parameters.use_local_kuma_images >>
         steps:
@@ -912,11 +912,11 @@ workflows:
           - images
           - check
 # keep this one disabled and enable only for development
-    - e2e:
-        <<: *commit_workflow_filters
-        name: test/e2e-ipv6
-        # custom parameters
-        ipv6: true
+#    - e2e:
+#        <<: *commit_workflow_filters
+#        name: test/e2e-ipv6
+#        # custom parameters
+#        ipv6: true
 
   clean-eks:
     triggers:
