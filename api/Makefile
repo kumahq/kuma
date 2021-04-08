@@ -28,7 +28,7 @@ UDPA_LATEST_VERSION := master
 UDPA_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/cncf,udpa))
 GOOGLEAPIS_LATEST_VERSION := master
 GOOGLEAPIS_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/googleapis,googleapis))
-KUMADOC_VERSION := v0.1.5
+KUMADOC_VERSION := v0.1.7
 KUMADOC_ACTUAL_VERSION := $(shell $(call go_mod_latest_version,github.com/kumahq,protoc-gen-kumadoc))
 
 protoc_search_go_packages := \
