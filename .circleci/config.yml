@@ -65,7 +65,9 @@ reusable:
     master_only_workflow_filters: &master_only_workflow_filters
       filters:
         branches:
-          only: master, /^release-.*/
+          only:
+            - master
+            - /^release-.*/
 
     # filters for the kuma-commit workflow
     commit_workflow_filters: &commit_workflow_filters
