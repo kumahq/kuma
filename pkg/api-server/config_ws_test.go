@@ -147,9 +147,7 @@ var _ = Describe("Config WS", func() {
 			],
 			"assignmentRefreshInterval": "1s",
 			"fetchTimeout": "30s",
-			"grpcEnabled": true,
 			"grpcPort": 0,
-			"httpEnabled": true,
 			"port": 5676
 		  },
 		  "multizone": {
