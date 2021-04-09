@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/pkg/errors"
+
 	"github.com/emicklei/go-restful"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
@@ -49,17 +51,11 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 
 	discoveryRes, err := s.server.FetchMonitoringAssignments(ctx, &discoveryReq)
 	if err != nil {
-		writeSkipUpdate := func() {
+		if errors.Is(err, &cache_types.SkipFetchError{}) {
 			// No update necessary, send 304
 			s.log.V(1).Info("no update needed")
 			res.WriteHeader(304)
-		}
-		switch err.(type) {
-		case *cache_types.SkipFetchError:
-			writeSkipUpdate()
-		case cache_types.SkipFetchError:
-			writeSkipUpdate()
-		default:
+		} else {
 			rest_errors.HandleError(res, err, "Could not fetch MonitoringAssignments")
 		}
 		return
