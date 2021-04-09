@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -34,10 +35,14 @@ var _ = Describe("MADS http service", func() {
 
 	var resManager core_manager.ResourceManager
 
+	const refreshInterval = time.Millisecond * 500
+
 	BeforeEach(func() {
 		resManager = core_manager.NewResourceManager(memory.NewStore())
 
 		cfg := mads_config.DefaultMonitoringAssignmentServerConfig()
+		cfg.AssignmentRefreshInterval = refreshInterval
+
 		svc := service.NewService(cfg, resManager, testing.NullLogger{})
 
 		ws := new(restful.WebService)
@@ -235,13 +240,16 @@ var _ = Describe("MADS http service", func() {
 			// when
 			discoveryRes := &envoy_v3.DiscoveryResponse{}
 			err = json.Unmarshal(respBody, discoveryRes)
+
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(discoveryRes.TypeUrl).To(Equal(mads_v1.MonitoringAssignmentType))
 			Expect(discoveryRes.VersionInfo).ToNot(BeEmpty())
 			Expect(discoveryRes.Resources).To(HaveLen(1))
+			Expect(discoveryRes.Resources[0].TypeUrl).To(Equal(mads_v1.MonitoringAssignmentType))
+			Expect(discoveryRes.Resources[0].Value).ToNot(BeEmpty())
 
-			// and given the same version
+			// given the same version
 			discoveryReq.VersionInfo = discoveryRes.VersionInfo
 			reqBytes, err = json.Marshal(&discoveryReq)
 			Expect(err).ToNot(HaveOccurred())
@@ -264,7 +272,6 @@ var _ = Describe("MADS http service", func() {
 			Expect(respBody).To(BeEmpty())
 		})
 
-		// TODO: add ticking refresh to rest-based methods
 		It("should return the refreshed monitoring assignments when there are updates", func() {
 			// given
 			discoveryReq := envoy_v3.DiscoveryRequest{
@@ -304,7 +311,6 @@ var _ = Describe("MADS http service", func() {
 			Expect(discoveryRes.VersionInfo).ToNot(BeEmpty())
 			Expect(discoveryRes.Resources).To(HaveLen(1))
 
-			// TODO: force a tick here
 			// given an updated mesh
 			err = createDataPlane(dp2)
 			Expect(err).ToNot(HaveOccurred())
@@ -313,6 +319,9 @@ var _ = Describe("MADS http service", func() {
 			discoveryReq.VersionInfo = discoveryRes.VersionInfo
 			reqBytes, err = json.Marshal(&discoveryReq)
 			Expect(err).ToNot(HaveOccurred())
+
+			// and given time to refresh
+			time.Sleep(refreshInterval * 2)
 
 			// when
 			req, err = http.NewRequest("POST", fmt.Sprintf("%s/v3/discovery:monitoringassignment", url), bytes.NewReader(reqBytes))

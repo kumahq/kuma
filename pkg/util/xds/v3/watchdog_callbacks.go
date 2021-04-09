@@ -35,6 +35,30 @@ type watchdogStreamState struct {
 
 var _ envoy_xds.Callbacks = &watchdogCallbacks{}
 
+// RestStreamID is used in the non-streaming REST context
+const RestStreamID = int64(-1)
+
+func (cb *watchdogCallbacks) hasStream(streamID int64) bool {
+	cb.mu.RLock() // read access to the map of all ADS streams
+	defer cb.mu.RUnlock()
+	_, ok := cb.streams[streamID]
+	return ok
+}
+
+func (cb *watchdogCallbacks) OnFetchRequest(ctx context.Context, req *envoy_discovery.DiscoveryRequest) error {
+	// Open up a new "stream" state, which all REST requests use, if
+	if cb.hasStream(RestStreamID) {
+		return nil
+	}
+
+	if err := cb.OnStreamOpen(ctx, RestStreamID, req.TypeUrl); err != nil {
+		return err
+	}
+	// TODO: could also register a TTL on the REST stream to clean it up if there is no activity over a certain period,
+	// 		 since it will currently never be closed once opened
+	return cb.OnStreamRequest(RestStreamID, req)
+}
+
 // OnStreamOpen is called once an xDS stream is open with a stream ID and the type URL (or "" for ADS).
 // Returning an error will end processing and close the stream. OnStreamClosed will still be called.
 func (cb *watchdogCallbacks) OnStreamOpen(ctx context.Context, streamID int64, typ string) error {
@@ -74,11 +98,11 @@ func (cb *watchdogCallbacks) OnStreamRequest(streamID int64, req *envoy_discover
 	cb.mu.Lock() // write access to the map of all ADS streams
 	defer cb.mu.Unlock()
 
-	// create a stop chanel even if there wan't be an actual watchdog
+	// create a stop channel even if there won't be an actual watchdog
 	stopCh := make(chan struct{})
-	watchdog.cancel = context.CancelFunc(func() {
+	watchdog.cancel = func() {
 		close(stopCh)
-	})
+	}
 	cb.streams[streamID] = watchdog
 
 	runnable, err := cb.newNodeWatchdog(watchdog.context, req.Node, streamID)

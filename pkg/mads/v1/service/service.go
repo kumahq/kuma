@@ -23,7 +23,7 @@ func NewService(config *mads.MonitoringAssignmentServerConfig, rm core_manager.R
 	syncTracker := NewSyncTracker(reconciler, config.AssignmentRefreshInterval, log)
 	callbacks := util_xds_v3.CallbacksChain{
 		util_xds_v3.AdaptMultiCallbacks(util_xds.LoggingCallbacks{Log: log}),
-		// For streaming synchronization
+		// For synchronization
 		syncTracker,
 		// For on-demand reconciliation
 		util_xds_v3.AdaptRestCallbacks(NewReconcilerRestCallbacks(reconciler)),

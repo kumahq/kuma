@@ -48,7 +48,7 @@ func (r *restReconcilerCallbacks) OnFetchRequest(ctx context.Context, request ut
 	}
 
 	// only reconcile if there is not a valid response present
-	if !r.reconciler.NeedsReconciliation(node, request.GetTypeUrl(), request.VersionInfo()) {
+	if !r.reconciler.NeedsReconciliation(node) {
 		return nil
 	}
 
