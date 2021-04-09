@@ -46,7 +46,7 @@ func (cb *watchdogCallbacks) hasStream(streamID int64) bool {
 }
 
 func (cb *watchdogCallbacks) OnFetchRequest(ctx context.Context, req *envoy_discovery.DiscoveryRequest) error {
-	// Open up a new "stream" state, which all REST requests use, if
+	// Open up a new "stream" state, which all REST requests use, if one doesn't already exist
 	if cb.hasStream(RestStreamID) {
 		return nil
 	}
