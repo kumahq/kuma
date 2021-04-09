@@ -22,7 +22,7 @@ service MonitoringAssignmentDiscoveryService {
   // HTTP
   rpc FetchMonitoringAssignments(envoy.service.discovery.v3.DiscoveryRequest)
       returns (envoy.service.discovery.v3.DiscoveryResponse) {
-    option (google.api.http).post = "/v3/discovery:monitoringassignment";
+    option (google.api.http).post = "/v3/discovery:monitoringassignments";
     option (google.api.http).body = "*";
   }
 }

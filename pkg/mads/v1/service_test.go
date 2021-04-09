@@ -3,11 +3,14 @@ package v1_test
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/ptypes"
 
 	"github.com/emicklei/go-restful"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -17,6 +20,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
+	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
 	mads_config "github.com/kumahq/kuma/pkg/config/mads"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -32,6 +36,9 @@ import (
 var _ = Describe("MADS http service", func() {
 
 	var url string
+	var monitoringAssignmentPath string
+
+	var pbMarshaller = &jsonpb.Marshaler{OrigName: true}
 
 	var resManager core_manager.ResourceManager
 
@@ -53,6 +60,7 @@ var _ = Describe("MADS http service", func() {
 
 		srv := test.NewHttpServer(container)
 		url = srv.Server().URL
+		monitoringAssignmentPath = fmt.Sprintf("%s%s", url, service.FetchMonitoringAssignmentsPath)
 
 		// wait for the server
 		Eventually(srv.Ready).ShouldNot(HaveOccurred())
@@ -69,18 +77,18 @@ var _ = Describe("MADS http service", func() {
 				Id: "test",
 			},
 		}
-		reqBytes, err := json.Marshal(&discoveryReq)
+		reqBytes, err := pbMarshaller.MarshalToString(&discoveryReq)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		req, err := http.NewRequest("POST", fmt.Sprintf("%s/v3/discovery:monitoringassignment", url), bytes.NewReader(reqBytes))
+		req, err := http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
 		Expect(err).ToNot(HaveOccurred())
 		req.Header.Add("content-type", "application/json")
 		resp, err := http.DefaultClient.Do(req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(200))
+		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 		// when
 		respBody, err := ioutil.ReadAll(resp.Body)
@@ -90,7 +98,7 @@ var _ = Describe("MADS http service", func() {
 
 		// when
 		discoveryRes := &envoy_v3.DiscoveryResponse{}
-		err = json.Unmarshal(respBody, discoveryRes)
+		err = jsonpb.Unmarshal(bytes.NewReader(respBody), discoveryRes)
 		// then
 		Expect(err).ToNot(HaveOccurred())
 		Expect(discoveryRes.TypeUrl).To(Equal(mads_v1.MonitoringAssignmentType))
@@ -99,18 +107,18 @@ var _ = Describe("MADS http service", func() {
 
 		// and given the same version
 		discoveryReq.VersionInfo = discoveryRes.VersionInfo
-		reqBytes, err = json.Marshal(&discoveryReq)
+		reqBytes, err = pbMarshaller.MarshalToString(&discoveryReq)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when
-		req, err = http.NewRequest("POST", fmt.Sprintf("%s/v3/discovery:monitoringassignment", url), bytes.NewReader(reqBytes))
+		req, err = http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
 		Expect(err).ToNot(HaveOccurred())
 		req.Header.Add("content-type", "application/json")
 		resp, err = http.DefaultClient.Do(req)
 
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.StatusCode).To(Equal(304))
+		Expect(resp.StatusCode).To(Equal(http.StatusNotModified))
 
 		// when
 		respBody, err = ioutil.ReadAll(resp.Body)
@@ -218,18 +226,18 @@ var _ = Describe("MADS http service", func() {
 					Id: "test",
 				},
 			}
-			reqBytes, err := json.Marshal(&discoveryReq)
+			reqBytes, err := pbMarshaller.MarshalToString(&discoveryReq)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", fmt.Sprintf("%s/v3/discovery:monitoringassignment", url), bytes.NewReader(reqBytes))
+			req, err := http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 			resp, err := http.DefaultClient.Do(req)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(200))
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			// when
 			respBody, err := ioutil.ReadAll(resp.Body)
@@ -239,7 +247,7 @@ var _ = Describe("MADS http service", func() {
 
 			// when
 			discoveryRes := &envoy_v3.DiscoveryResponse{}
-			err = json.Unmarshal(respBody, discoveryRes)
+			err = jsonpb.Unmarshal(bytes.NewReader(respBody), discoveryRes)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -249,20 +257,30 @@ var _ = Describe("MADS http service", func() {
 			Expect(discoveryRes.Resources[0].TypeUrl).To(Equal(mads_v1.MonitoringAssignmentType))
 			Expect(discoveryRes.Resources[0].Value).ToNot(BeEmpty())
 
+			// when
+			assignment := &observability_v1.MonitoringAssignment{}
+			err = ptypes.UnmarshalAny(discoveryRes.Resources[0], assignment)
+
+			// then
+			Expect(err).ToNot(HaveOccurred())
+			Expect(assignment.Mesh).To(Equal(dp1.GetMeta().GetMesh()))
+			Expect(assignment.Targets).To(HaveLen(1))
+			Expect(assignment.Targets[0].Name).To(Equal(dp1.GetMeta().GetName()))
+
 			// given the same version
 			discoveryReq.VersionInfo = discoveryRes.VersionInfo
-			reqBytes, err = json.Marshal(&discoveryReq)
+			reqBytes, err = pbMarshaller.MarshalToString(&discoveryReq)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err = http.NewRequest("POST", fmt.Sprintf("%s/v3/discovery:monitoringassignment", url), bytes.NewReader(reqBytes))
+			req, err = http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 			resp, err = http.DefaultClient.Do(req)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(304))
+			Expect(resp.StatusCode).To(Equal(http.StatusNotModified))
 
 			// when
 			respBody, err = ioutil.ReadAll(resp.Body)
@@ -283,18 +301,18 @@ var _ = Describe("MADS http service", func() {
 					Id: "test",
 				},
 			}
-			reqBytes, err := json.Marshal(&discoveryReq)
+			reqBytes, err := pbMarshaller.MarshalToString(&discoveryReq)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", fmt.Sprintf("%s/v3/discovery:monitoringassignment", url), bytes.NewReader(reqBytes))
+			req, err := http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 			resp, err := http.DefaultClient.Do(req)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(200))
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			// when
 			respBody, err := ioutil.ReadAll(resp.Body)
@@ -304,7 +322,7 @@ var _ = Describe("MADS http service", func() {
 
 			// when
 			discoveryRes := &envoy_v3.DiscoveryResponse{}
-			err = json.Unmarshal(respBody, discoveryRes)
+			err = jsonpb.Unmarshal(bytes.NewReader(respBody), discoveryRes)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(discoveryRes.TypeUrl).To(Equal(mads_v1.MonitoringAssignmentType))
@@ -317,21 +335,21 @@ var _ = Describe("MADS http service", func() {
 
 			// and given the same version
 			discoveryReq.VersionInfo = discoveryRes.VersionInfo
-			reqBytes, err = json.Marshal(&discoveryReq)
+			reqBytes, err = pbMarshaller.MarshalToString(&discoveryReq)
 			Expect(err).ToNot(HaveOccurred())
 
 			// and given time to refresh
 			time.Sleep(refreshInterval * 2)
 
 			// when
-			req, err = http.NewRequest("POST", fmt.Sprintf("%s/v3/discovery:monitoringassignment", url), bytes.NewReader(reqBytes))
+			req, err = http.NewRequest("POST", monitoringAssignmentPath, strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 			resp, err = http.DefaultClient.Do(req)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			Expect(resp.StatusCode).To(Equal(200))
+			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			// when
 			respBody, err = ioutil.ReadAll(resp.Body)
@@ -340,7 +358,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			err = json.Unmarshal(respBody, discoveryRes)
+			err = jsonpb.Unmarshal(bytes.NewReader(respBody), discoveryRes)
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			Expect(discoveryRes.TypeUrl).To(Equal(mads_v1.MonitoringAssignmentType))

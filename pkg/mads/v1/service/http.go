@@ -2,9 +2,10 @@ package service
 
 import (
 	"context"
-	"fmt"
+	"io/ioutil"
+	"net/http"
 
-	"github.com/pkg/errors"
+	"github.com/golang/protobuf/jsonpb"
 
 	"github.com/emicklei/go-restful"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -15,54 +16,74 @@ import (
 	mads_v1 "github.com/kumahq/kuma/pkg/mads/v1"
 )
 
+const FetchMonitoringAssignmentsPath = "/v3/discovery:monitoringassignments"
+
 func (s *service) RegisterRoutes(ws *restful.WebService) {
-	ws.Route(ws.POST("/v3/discovery:monitoringassignment").
+	ws.Route(ws.POST(FetchMonitoringAssignmentsPath).
 		Doc("Exposes the observability/v1 API").
-		Returns(200, "OK", v3.DiscoveryResponse{}).
-		Returns(304, "Not Modified", nil).
+		Returns(http.StatusOK, "OK", v3.DiscoveryResponse{}).
+		Returns(http.StatusNotModified, "Not Modified", nil).
+		Returns(http.StatusBadRequest, "Invalid request", rest_error_types.Error{}).
+		Returns(http.StatusInternalServerError, "Server error", rest_error_types.Error{}).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		To(s.handleDiscovery))
 }
 
 func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
-	var discoveryReq v3.DiscoveryRequest
-	if err := req.ReadEntity(&discoveryReq); err != nil {
-		rest_errors.HandleError(res, err, "Could not decode DiscoveryRequest from body")
-		return
-	}
-
-	if discoveryReq.TypeUrl != mads_v1.MonitoringAssignmentType {
-		discoveryErr := rest_error_types.Error{
-			Title:   "Can not handle MADS DiscoveryRequest",
-			Details: fmt.Sprintf("Invalid MADS type: %s", discoveryReq.TypeUrl),
+	body, err := ioutil.ReadAll(req.Request.Body)
+	if err != nil {
+		readErr := rest_error_types.Error{
+			Title:   "Can not read request body",
+			Details: err.Error(),
 		}
 
-		if err := res.WriteHeaderAndJson(400, discoveryErr, restful.MIME_JSON); err != nil {
+		if err := res.WriteHeaderAndJson(http.StatusBadRequest, readErr, restful.MIME_JSON); err != nil {
 			rest_errors.HandleError(res, err, "Could encode error")
 			return
 		}
-
-		return
 	}
+
+	discoveryReq := &v3.DiscoveryRequest{}
+	err = jsonpb.UnmarshalString(string(body), discoveryReq)
+	if err != nil {
+		readErr := rest_error_types.Error{
+			Title:   "Can not decode request body",
+			Details: err.Error(),
+		}
+
+		if err := res.WriteHeaderAndJson(http.StatusBadRequest, readErr, restful.MIME_JSON); err != nil {
+			rest_errors.HandleError(res, err, "Could encode error")
+			return
+		}
+	}
+
+	discoveryReq.TypeUrl = mads_v1.MonitoringAssignmentType
 
 	ctx, cancel := context.WithTimeout(context.Background(), s.config.FetchTimeout)
 	defer cancel()
 
-	discoveryRes, err := s.server.FetchMonitoringAssignments(ctx, &discoveryReq)
+	discoveryRes, err := s.server.FetchMonitoringAssignments(ctx, discoveryReq)
 	if err != nil {
-		if errors.Is(err, &cache_types.SkipFetchError{}) {
-			// No update necessary, send 304
+		if _, ok := err.(*cache_types.SkipFetchError); ok {
+			// No update necessary, send 304 Not Modified
 			s.log.V(1).Info("no update needed")
-			res.WriteHeader(304)
+			res.WriteHeader(http.StatusNotModified)
 		} else {
 			rest_errors.HandleError(res, err, "Could not fetch MonitoringAssignments")
 		}
 		return
 	}
 
-	if err = res.WriteEntity(discoveryRes); err != nil {
+	marshaller := &jsonpb.Marshaler{OrigName: true}
+	resStr, err := marshaller.MarshalToString(discoveryRes)
+	if err != nil {
 		rest_errors.HandleError(res, err, "Could encode DiscoveryResponse")
+		return
+	}
+
+	if _, err = res.Write([]byte(resStr)); err != nil {
+		rest_errors.HandleError(res, err, "Could write DiscoveryResponse")
 		return
 	}
 }
