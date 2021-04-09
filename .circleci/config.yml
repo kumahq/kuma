@@ -335,7 +335,7 @@ jobs:
 
   dev_ubuntu:
     docker:
-    - image: ubuntu:18.04
+    - image: ubuntu:20.04
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
@@ -379,11 +379,11 @@ jobs:
     #       wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
     #       apt update && apt install -y clang-format-11
-    - run:
-        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-        command: |
-          export PATH=$HOME/go/bin:$PATH
-          make check BUILD_INFO_VERSION=latest
+#    - run:
+#        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
+#        command: |
+#          export PATH=$HOME/go/bin:$PATH
+#          make check BUILD_INFO_VERSION=latest
     - run:
         name: "Build all binaries"
         command: |
