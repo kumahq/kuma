@@ -24,11 +24,13 @@ commands:
 reusable:
 
   constants:
-  - &go_version "1.15.11"
+    - &go_version "1.15.11"
+    - &go16_version "1.16.3"
 
   docker_images:
-  - &golang_image "golang:1.15.11"
-  - &circleci_golang_image "circleci/golang:1.15.11"
+    - &golang_image "golang:1.15.11"
+    - &golang16_image "golang:1.16.3"
+    - &circleci_golang_image "circleci/golang:1.15.11"
 
   vm_images:
   - &ubuntu_vm_image "ubuntu-2004:202101-01"
@@ -65,7 +67,9 @@ reusable:
     master_only_workflow_filters: &master_only_workflow_filters
       filters:
         branches:
-          only: master, /^release-.*/
+          only:
+            - master
+            - /^release-.*/
 
     # filters for the kuma-commit workflow
     commit_workflow_filters: &commit_workflow_filters
@@ -82,6 +86,14 @@ executors:
     - image: *golang_image
     environment:
       GO_VERSION: *go_version
+      GO111MODULE: "on"
+    working_directory: /go/src/github.com/kumahq/kuma
+
+  golang16:
+    docker:
+      - image: *golang16_image
+    environment:
+      GO_VERSION: *go16_version
       GO111MODULE: "on"
     working_directory: /go/src/github.com/kumahq/kuma
 
@@ -323,7 +335,7 @@ jobs:
 
   dev_ubuntu:
     docker:
-    - image: ubuntu:18.04
+    - image: ubuntu:20.04
     environment:
       GO_VERSION: *go_version
       GO111MODULE: "on"
@@ -367,11 +379,11 @@ jobs:
     #       wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|apt-key add -
 
     #       apt update && apt install -y clang-format-11
-    - run:
-        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
-        command: |
-          export PATH=$HOME/go/bin:$PATH
-          make check BUILD_INFO_VERSION=latest
+#    - run:
+#        name: "Run code generators (go generate, protoc, ...) and code checks (go fmt, go vet, ...)"
+#        command: |
+#          export PATH=$HOME/go/bin:$PATH
+#          make check BUILD_INFO_VERSION=latest
     - run:
         name: "Build all binaries"
         command: |
@@ -471,7 +483,7 @@ jobs:
         command: make check
 
   api_check:
-    executor: golang
+    executor: golang16
     steps:
     - checkout
     - restore_cache:

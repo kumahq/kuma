@@ -2,6 +2,7 @@ package dns_test
 
 import (
 	"fmt"
+	"os"
 	"runtime"
 
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -255,8 +256,8 @@ var _ = Describe("DNS server", func() {
 	Describe("host operation", func() {
 		It("should fail to bind to a privileged port", func() {
 
-			if runtime.GOOS != "linux" {
-				// this test will pass only on Linux
+			if runtime.GOOS != "linux" || os.Geteuid() == 0 {
+				// this test will pass only on Linux when not run as root
 				return
 			}
 

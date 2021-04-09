@@ -112,5 +112,11 @@ var _ = Describe("Versions WS", func() {
 		Expect(data.KumaDp).ToNot(BeNil())
 		Expect(data.KumaDp["1.1.1"]).ToNot(BeNil())
 		Expect(data.KumaDp["1.1.1"].Envoy).To(Equal("~1.17.0"))
+
+		// 1.1.2
+		Expect(data).ToNot(BeNil())
+		Expect(data.KumaDp).ToNot(BeNil())
+		Expect(data.KumaDp["1.1.2"]).ToNot(BeNil())
+		Expect(data.KumaDp["1.1.2"].Envoy).To(Equal("~1.17.0"))
 	})
 })
