@@ -28,7 +28,7 @@ type snapshotGenerator struct {
 }
 
 func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.Node) (util_xds_v3.Snapshot, error) {
-	meshes, err := s.getMeshes(ctx)
+	meshes, err := s.getMeshesWithPrometheusEnabled(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +51,7 @@ func (s *snapshotGenerator) GenerateSnapshot(ctx context.Context, _ *envoy_core.
 	return mads_v1_cache.NewSnapshot("", core_xds.ResourceList(resources).ToIndex()), nil
 }
 
-func (s *snapshotGenerator) getMeshes(ctx context.Context) ([]*mesh_core.MeshResource, error) {
+func (s *snapshotGenerator) getMeshesWithPrometheusEnabled(ctx context.Context) ([]*mesh_core.MeshResource, error) {
 	meshList := &mesh_core.MeshResourceList{}
 	if err := s.resourceManager.List(ctx, meshList); err != nil {
 		return nil, err
