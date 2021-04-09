@@ -54,7 +54,7 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 		}
 
 		resources = append(resources, &core_xds.Resource{
-			Name:     mads.DataplaneNamespacedName(dataplane),
+			Name:     mads.DataplaneAssignmentName(dataplane),
 			Resource: assignment,
 		})
 	}

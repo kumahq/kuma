@@ -58,7 +58,7 @@ func DataplaneLabels(dataplane *mesh_core.DataplaneResource) map[string]string {
 	return labels
 }
 
-func DataplaneNamespacedName(dataplane *mesh_core.DataplaneResource) string {
+func DataplaneAssignmentName(dataplane *mesh_core.DataplaneResource) string {
 	// unique name, e.g. REST API uri
 	return fmt.Sprintf("/meshes/%s/dataplanes/%s", dataplane.Meta.GetMesh(), dataplane.Meta.GetName())
 }

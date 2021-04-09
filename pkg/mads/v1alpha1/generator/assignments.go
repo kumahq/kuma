@@ -114,7 +114,7 @@ func (g MonitoringAssignmentsGenerator) Generate(args generator.Args) ([]*core_x
 		}
 
 		assignment := &observability_v1alpha1.MonitoringAssignment{
-			Name: mads.DataplaneNamespacedName(dataplane),
+			Name: mads.DataplaneAssignmentName(dataplane),
 			Targets: []*observability_v1alpha1.MonitoringAssignment_Target{{
 				Labels: g.addressLabel(dataplane, prometheusEndpoint),
 			}},
