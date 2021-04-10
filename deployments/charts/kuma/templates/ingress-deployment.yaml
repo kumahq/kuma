@@ -22,6 +22,11 @@ spec:
       annotations:
         kuma.io/ingress: enabled
         kuma.io/mesh: {{ .Values.ingress.mesh }}
+        {{- if .Values.ingress.annotations }}
+        {{- range $key, $value := .Values.ingress.annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
       labels:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
         app: kuma-ingress
