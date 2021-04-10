@@ -1,11 +1,11 @@
 PROTOC_VERSION := 3.14.0
 PROTOC_PGV_VERSION := v0.4.1
 GOLANG_PROTOBUF_VERSION := v1.4.3
-GOLANGCI_LINT_VERSION := v1.35.2
+GOLANGCI_LINT_VERSION := v1.37.1
 GINKGO_VERSION := v1.14.2
 HELM_DOCS_VERSION := 1.4.0
 
-CI_KUBEBUILDER_VERSION ?= 2.3.1
+CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_MINIKUBE_VERSION ?= v1.18.1
 CI_KUBECTL_VERSION ?= v1.18.14
 CI_TOOLS_IMAGE ?= circleci/golang:1.15.11
@@ -40,6 +40,12 @@ else
 	ifeq ($(UNAME_S), Darwin)
 		PROTOC_OS=osx
 	endif
+endif
+
+HELM_DOCS_ARCH := $(shell uname -m)
+ifeq ($(UNAME_ARCH), aarch64)
+	PROTOC_ARCH=aarch_64
+	HELM_DOCS_ARCH=arm64
 endif
 
 .PHONY: dev/tools
@@ -192,9 +198,9 @@ dev/install/helm-docs: ## Bootstrap: Install helm-docs
 	@if [ ! -e $(HELM_DOCS_PATH) ]; then \
 		echo "Installing helm-docs ...." \
 		&& set -x \
-		&& curl -Lo helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz https://github.com/norwoodj/helm-docs/releases/download/v$(HELM_DOCS_VERSION)/helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz \
-		&& tar -xf helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz helm-docs \
-		&& rm helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz \
+		&& curl -Lo helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz https://github.com/norwoodj/helm-docs/releases/download/v$(HELM_DOCS_VERSION)/helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
+		&& tar -xf helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz helm-docs \
+		&& rm helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
 		&& chmod +x helm-docs \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv helm-docs $(HELM_DOCS_PATH) \
