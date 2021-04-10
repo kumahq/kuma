@@ -1088,6 +1088,14 @@ workflows:
         <<: *release_workflow_filters
         requires:
         - go_cache
+    - build:
+        <<: *release_workflow_filters
+        requires:
+        - go_cache
+    - images:
+        <<: *release_workflow_filters
+        requires:
+        - build
     - test:
         <<: *release_workflow_filters
         requires:
@@ -1120,6 +1128,7 @@ workflows:
         name: minikube_v1_16
         requires:
         - release
+        - images
         # custom parameters
         kubernetes_version: v1.16.15
         # docker images for a release build must be downloaded from a public Docker registry
@@ -1129,6 +1138,7 @@ workflows:
         name: minikube_v1_17
         requires:
         - release
+        - images
         # custom parameters
         kubernetes_version: v1.17.17
         # docker images for a release build must be downloaded from a public Docker registry
@@ -1138,6 +1148,7 @@ workflows:
         name: minikube_v1_18
         requires:
           - release
+          - images
         # custom parameters
         kubernetes_version: v1.18.16
         # docker images for a release build must be downloaded from a public Docker registry
@@ -1147,6 +1158,7 @@ workflows:
         name: minikube_v1_19
         requires:
           - release
+          - images
         # custom parameters
         kubernetes_version: v1.19.8
         use_local_kuma_images: false
@@ -1155,6 +1167,7 @@ workflows:
         name: minikube_v1_20
         requires:
           - release
+          - images
         # custom parameters
         kubernetes_version: v1.20.4
         use_local_kuma_images: false
