@@ -9,6 +9,8 @@ import (
 
 // DNS Server configuration
 type DNSServerConfig struct {
+	// Enabled if true then Kuma CP will start a DNS Server on <Port> and will serve DNS requests for '.<Domain>'
+	Enabled bool `yaml:"enabled" envconfig:"kuma_dns_server_enabled"`
 	// The domain that the server will resolve the services for
 	Domain string `yaml:"domain" envconfig:"kuma_dns_server_domain"`
 	// Port on which the server is exposed
@@ -35,8 +37,9 @@ var _ config.Config = &DNSServerConfig{}
 
 func DefaultDNSServerConfig() *DNSServerConfig {
 	return &DNSServerConfig{
-		Domain: "mesh",
-		Port:   5653,
-		CIDR:   "240.0.0.0/4",
+		Enabled: false,
+		Domain:  "mesh",
+		Port:    5653,
+		CIDR:    "240.0.0.0/4",
 	}
 }

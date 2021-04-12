@@ -15,14 +15,17 @@ func Setup(rt runtime.Runtime) error {
 		return err
 	}
 
-	server, err := NewDNSServer(
-		rt.Config().DNSServer.Port,
-		rt.DNSResolver(),
-		rt.Metrics(),
-		DnsNameToKumaCompliant,
-	)
-	if err != nil {
-		return err
+	if rt.Config().DNSServer.Enabled {
+		if server, err := NewDNSServer(
+			rt.Config().DNSServer.Port,
+			rt.DNSResolver(),
+			rt.Metrics(),
+			DnsNameToKumaCompliant,
+		); err != nil {
+			return err
+		} else {
+			return rt.Add(server)
+		}
 	}
-	return rt.Add(server)
+	return nil
 }

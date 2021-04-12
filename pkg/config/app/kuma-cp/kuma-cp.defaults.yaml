@@ -289,6 +289,8 @@ guiServer:
 
 # DNS Server configuration
 dnsServer:
+  # If true then Kuma CP will start a DNS Server on <port> and will serve DNS requests for '.<domain>'
+  enabled: false # ENV: KUMA_DNS_SERVER_ENABLED
   # The domain that the server will resolve the services for
   domain: "mesh" # ENV: KUMA_DNS_SERVER_DOMAIN
   # Port on which the server is exposed

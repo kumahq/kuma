@@ -135,7 +135,7 @@ func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 }
 
 func (o *KumactlOptions) KumactlInstallDNS(args ...string) (string, error) {
-	args = append([]string{"install", "dns"}, args...)
+	args = append([]string{"install", "dns", "-f"}, args...)
 
 	return o.RunKumactlAndGetOutputV(
 		false, // silence the log output of Install

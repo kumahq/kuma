@@ -34,6 +34,7 @@ type InstallDNSArgs struct {
 	Namespace string
 	Service   string
 	Port      string
+	Force     bool
 }
 
 var DefaultInstallDNSArgs = InstallDNSArgs{
@@ -51,6 +52,11 @@ func newInstallDNS() *cobra.Command {
 		Long: `Install the DNS forwarding to the CoreDNS ConfigMap in the configured Kubernetes Cluster.
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
+			if !args.Force {
+				_, err := cmd.OutOrStderr().Write([]byte("Command \"dns\" is deprecated, if you still want to run it, please use either --force or -f flags\n"))
+				return err
+			}
+
 			kubeClientConfig, err := k8s.DefaultClientConfig()
 			if err != nil {
 				return errors.Wrap(err, "could not detect Kubernetes configuration")
@@ -102,6 +108,7 @@ This command requires that the KUBECONFIG environment is set`,
 	}
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to look for Kuma Control Plane service")
 	cmd.Flags().StringVar(&args.Port, "port", args.Port, "port of the Kuma DNS server")
+	cmd.Flags().BoolVarP(&args.Force, "force", "f", args.Force, "run the command even though it's deprecated")
 
 	return cmd
 }
