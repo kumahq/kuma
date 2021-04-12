@@ -223,7 +223,7 @@ func (iptConfigurator *IptablesConfigurator) handleInboundIpv6Rules(ipv6RangesEx
 	// Use this chain also for redirecting inbound traffic to the common Envoy port
 	// when not using TPROXY.
 	iptConfigurator.iptables.AppendRuleV6(constants.ISTIOINREDIRECT, constants.NAT, "-p", constants.TCP, "-j",
-		constants.REDIRECT, "--to-ports", iptConfigurator.cfg.InboundCapturePort)
+		constants.REDIRECT, "--to-ports", iptConfigurator.cfg.InboundCapturePortV6) //Kuma changed
 
 	// Handling of inbound ports. Traffic will be redirected to Envoy, which will process and forward
 	// to the local service. If not set, no inbound port will be intercepted by istio iptablesOrFail.
