@@ -10,7 +10,7 @@ require (
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emicklei/go-restful v2.15.0+incompatible
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20210107210257-6e771204fae6
-	github.com/envoyproxy/protoc-gen-validate v0.5.0
+	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
 	github.com/go-kit/kit v0.10.0
@@ -23,8 +23,8 @@ require (
 	github.com/gruntwork-io/terratest v0.30.15
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
-	github.com/kumahq/kuma/api v0.0.0-20210402104346-824b8542e3b9
-	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-20210402104346-824b8542e3b9
+	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
+	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
 	github.com/lib/pq v1.9.0
 	github.com/miekg/dns v1.1.40
