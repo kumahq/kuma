@@ -88,6 +88,7 @@ const (
 	RunValidation             = "run-validation"
 	IptablesProbePort         = "iptables-probe-port"
 	ProbeTimeout              = "probe-timeout"
+	RedirectDNS               = "redirect-dns"
 )
 
 const (
@@ -123,7 +124,8 @@ const (
 )
 
 const (
-	ValidationErrorCode = 126
+	ValidationContainerName = "istio-validation"
+	ValidationErrorCode     = 126
 )
 
 // DNS ports
