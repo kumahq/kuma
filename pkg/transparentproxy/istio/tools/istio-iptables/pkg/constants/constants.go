@@ -55,25 +55,25 @@ const (
 
 // iptables chains
 const (
-	ISTIOOUTPUT     = "ISTIO_OUTPUT"
-	ISTIOINBOUND    = "ISTIO_INBOUND"
-	ISTIODIVERT     = "ISTIO_DIVERT"
-	ISTIOTPROXY     = "ISTIO_TPROXY"
-	ISTIOREDIRECT   = "ISTIO_REDIRECT"
-	ISTIOINREDIRECT = "ISTIO_IN_REDIRECT"
+	ISTIOOUTPUT     = "MESH_OUTPUT"
+	ISTIOINBOUND    = "MESH_INBOUND"
+	ISTIODIVERT     = "MESH_DIVERT"
+	ISTIOTPROXY     = "MESH_TPROXY"
+	ISTIOREDIRECT   = "MESH_REDIRECT"
+	ISTIOINREDIRECT = "MESH_IN_REDIRECT"
 )
 
 // Constants used in cobra/viper CLI
 const (
-	InboundInterceptionMode   = "istio-inbound-interception-mode"
-	InboundTProxyMark         = "istio-inbound-tproxy-mark"
-	InboundTProxyRouteTable   = "istio-inbound-tproxy-route-table"
-	InboundPorts              = "istio-inbound-ports"
-	LocalExcludePorts         = "istio-local-exclude-ports"
-	ServiceCidr               = "istio-service-cidr"
-	ServiceExcludeCidr        = "istio-service-exclude-cidr"
-	OutboundPorts             = "istio-outbound-ports"
-	LocalOutboundPortsExclude = "istio-local-outbound-ports-exclude"
+	InboundInterceptionMode   = "mesh-inbound-interception-mode"
+	InboundTProxyMark         = "mesh-inbound-tproxy-mark"
+	InboundTProxyRouteTable   = "mesh-inbound-tproxy-route-table"
+	InboundPorts              = "mesh-inbound-ports"
+	LocalExcludePorts         = "mesh-local-exclude-ports"
+	ServiceCidr               = "mesh-service-cidr"
+	ServiceExcludeCidr        = "mesh-service-exclude-cidr"
+	OutboundPorts             = "mesh-outbound-ports"
+	LocalOutboundPortsExclude = "mesh-local-outbound-ports-exclude"
 	EnvoyPort                 = "envoy-port"
 	InboundCapturePort        = "inbound-capture-port"
 	InboundCapturePortV6      = "inbound-capture-port-v6"
