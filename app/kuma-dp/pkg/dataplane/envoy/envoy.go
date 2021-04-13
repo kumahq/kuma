@@ -29,6 +29,8 @@ var (
 type BootstrapParams struct {
 	Dataplane        *rest.Resource
 	BootstrapVersion types.BootstrapVersion
+	DNSPort          uint32
+	EmptyDNSPort     uint32
 	EnvoyVersion     EnvoyVersion
 	DynamicMetadata  map[string]string
 }
@@ -40,6 +42,8 @@ type Opts struct {
 	Generator       BootstrapConfigFactoryFunc
 	Dataplane       *rest.Resource
 	DynamicMetadata map[string]string
+	DNSPort         uint32
+	EmptyDNSPort    uint32
 	Stdout          io.Writer
 	Stderr          io.Writer
 	Quit            chan struct{}

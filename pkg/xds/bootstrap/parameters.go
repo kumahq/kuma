@@ -26,4 +26,6 @@ type configParameters struct {
 	EnvoyBuild         string
 	HdsEnabled         bool
 	DynamicMetadata    map[string]string
+	DNSPort            uint32
+	EmptyDNSPort       uint32
 }

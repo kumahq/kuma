@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dns"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
 	"github.com/pkg/errors"
@@ -133,7 +134,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
 
-			if err := rootCtx.ComponentManager.Add(server, dataplane); err != nil {
+			if err := rootCtx.ComponentManager.Add(server, dataplane, &dns.EmptyDNSServer{}); err != nil {
 				return err
 			}
 

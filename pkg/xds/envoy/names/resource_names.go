@@ -58,3 +58,7 @@ func GetAdminListenerName() string {
 func GetTracingClusterName(backendName string) string {
 	return fmt.Sprintf("tracing:%s", backendName)
 }
+
+func GetDNSListenerName() string {
+	return "kuma:dns"
+}

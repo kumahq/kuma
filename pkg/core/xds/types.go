@@ -48,6 +48,7 @@ type DestinationMap map[ServiceName]TagSelectorSet
 type ExternalService struct {
 	TLSEnabled bool
 	CaCert     []byte
+	Host       string
 	ClientCert []byte
 	ClientKey  []byte
 }

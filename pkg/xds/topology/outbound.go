@@ -5,6 +5,8 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/asaskevich/govalidator"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -136,7 +138,15 @@ func fillExternalServicesOutbounds(outbound core_xds.EndpointMap, externalServic
 }
 
 func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceResource, mesh *mesh_core.MeshResource, loader datasource.Loader) (*core_xds.Endpoint, error) {
+	host, _, err := net.SplitHostPort(externalService.Spec.Networking.Address)
+	if err != nil {
+		return nil, err
+	}
+	if !govalidator.IsDNSName(host) {
+		host = ""
+	}
 	es := &core_xds.ExternalService{
+		Host: host,
 		TLSEnabled: externalService.Spec.GetNetworking().GetTls().GetEnabled(),
 		CaCert: convertToEnvoy(
 			externalService.Spec.GetNetworking().GetTls().GetCaCert(),
