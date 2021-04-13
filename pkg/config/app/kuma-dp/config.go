@@ -31,11 +31,12 @@ func DefaultConfig() Config {
 			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
 		},
 		DNS: DNS{
-			Enabled:           false,
-			CoreDNSPort:       15053,
-			EnvoyDNSPort:      15054,
-			CoreDNSEmptyPort:  15055,
-			CoreDNSBinaryPath: "coredns",
+			Enabled:                   false,
+			CoreDNSPort:               15053,
+			EnvoyDNSPort:              15054,
+			CoreDNSEmptyPort:          15055,
+			CoreDNSBinaryPath:         "coredns",
+			CoreDNSConfigTemplatePath: "",
 		},
 	}
 }
@@ -243,6 +244,8 @@ type DNS struct {
 	EnvoyDNSPort uint32 `yaml:"envoyDnsPort,omitempty" envconfig:"kuma_dns_envoy_dns_port"`
 	// CoreDNSBinaryPath defines a path to CoreDNS binary.
 	CoreDNSBinaryPath string `yaml:"coreDnsBinaryPath,omitempty" envconfig:"kuma_dns_core_dns_binary_path"`
+	// CoreDNSConfigTemplatePath defines a path to a CoreDNS config template.
+	CoreDNSConfigTemplatePath string `yaml:"coreDnsConfigTemplatePath,omitempty" envconfig:"kuma_dns_core_dns_config_template_path"`
 }
 
 func (d *DNS) Sanitize() {
