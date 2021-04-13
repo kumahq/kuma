@@ -184,6 +184,8 @@ ingress:
     annotations: {}
     # -- Port on which Ingress is exposed
     port: 10001
+  # -- Additional deployment annotation
+  annotations: {}
 
 kumactl:
   image:
