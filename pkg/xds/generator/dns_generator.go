@@ -1,6 +1,8 @@
 package generator
 
 import (
+	"github.com/asaskevich/govalidator"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -58,8 +60,10 @@ func (g DNSGenerator) computeVIPs(ctx xds_context.Context, proxy *core_xds.Proxy
 			// add hostname from address in external service
 			endpoints := proxy.Routing.OutboundTargets[outbound.Tags[mesh_proto.ServiceTag]]
 			for _, endpoint := range endpoints {
-				if endpoint.ExternalService != nil && endpoint.ExternalService.Host != "" {
-					meshedVips[endpoint.ExternalService.Host] = outbound.Address
+				if govalidator.IsDNSName(endpoint.Target) {
+					if endpoint.ExternalService != nil && endpoint.Target != "" {
+						meshedVips[endpoint.Target] = outbound.Address
+					}
 				}
 			}
 		}

@@ -32,11 +32,6 @@ resources:
                   address:
                   - 240.0.0.1
               name: httpbin.mesh
-            - endpoint:
-                addressList:
-                  address:
-                  - 240.0.0.1
-              name: httpbin.org
         statPrefix: kuma_dns
     name: kuma:dns
     reusePort: true

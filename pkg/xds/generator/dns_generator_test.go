@@ -20,7 +20,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
-var _ = FDescribe("DNSGenerator", func() {
+var _ = Describe("DNSGenerator", func() {
 
 	type testCase struct {
 		dataplaneFile string
@@ -82,9 +82,7 @@ var _ = FDescribe("DNSGenerator", func() {
 					OutboundTargets: map[model.ServiceName][]model.Endpoint{
 						"httpbin": {
 							{
-								ExternalService: &model.ExternalService{
-									Host: "httpbin.org",
-								},
+								Target: "httpbin.org",
 							},
 						},
 					},
