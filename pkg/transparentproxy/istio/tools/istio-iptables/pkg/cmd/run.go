@@ -504,7 +504,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 	}
 
 	if redirectDNS {
-		for _, s := range append(iptConfigurator.cfg.DNSServersV4, iptConfigurator.cfg.DNSServersV6...) {
+		for _, s := range iptConfigurator.cfg.DNSServersV4 {
 			// redirect all TCP dns traffic on port 53 to the agent on port 15053 for all servers
 			// in etc/resolv.conf
 			// We avoid redirecting all IP ranges to avoid infinite loops when there are local DNS proxies
@@ -519,6 +519,17 @@ func (iptConfigurator *IptablesConfigurator) run() {
 				"-d", s+"/32",
 				"-j", constants.REDIRECT,
 				"--to-ports", iptConfigurator.cfg.AgentDNSListenerPort)
+		}
+		if iptConfigurator.cfg.EnableInboundIPv6 {
+			for _, s := range iptConfigurator.cfg.DNSServersV6 {
+				iptConfigurator.iptables.AppendRuleV6(
+					constants.ISTIOOUTPUT, constants.NAT,
+					"-p", constants.TCP,
+					"--dport", "53",
+					"-d", s+"/32",
+					"-j", constants.REDIRECT,
+					"--to-ports", iptConfigurator.cfg.AgentDNSListenerPort)
+			}
 		}
 	}
 
@@ -543,7 +554,15 @@ func (iptConfigurator *IptablesConfigurator) run() {
 			AppendOps, iptConfigurator.iptables, iptConfigurator.ext, "",
 			iptConfigurator.cfg.AgentDNSListenerPort,
 			iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
-			append(iptConfigurator.cfg.DNSServersV4, iptConfigurator.cfg.DNSServersV6...))
+			iptConfigurator.cfg.DNSServersV4)
+
+		if iptConfigurator.cfg.EnableInboundIPv6 {
+			HandleDNSUDPv6(
+				AppendOps, iptConfigurator.iptables, iptConfigurator.ext, "",
+				iptConfigurator.cfg.AgentDNSListenerPort,
+				iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
+				iptConfigurator.cfg.DNSServersV6)
+		}
 	}
 
 	if iptConfigurator.cfg.InboundInterceptionMode == constants.TPROXY {
@@ -619,6 +638,70 @@ func HandleDNSUDP(
 		}
 	}
 }
+
+// kuma changes start
+
+// HandleDNSUDPv6 is a IPv6 helper function to tackle with DNS UDP specific operations.
+// This helps the creation logic of DNS UDP rules in sync with the deletion.
+func HandleDNSUDPv6(
+	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
+	cmd, agentDNSListenerPort, proxyUID, proxyGID string, dnsServersV6 []string) {
+	const paramIdxRaw = 4
+	var raw []string
+	opsStr := opsToString[ops]
+	table := constants.NAT
+	chain := constants.OUTPUT
+
+	// Make sure that upstream DNS requests from agent/envoy dont get captured.
+	// TODO: add ip6 as well
+	for _, uid := range split(proxyUID) {
+		raw = []string{
+			"-t", table, opsStr, chain,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", constants.RETURN,
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	}
+	for _, gid := range split(proxyGID) {
+		raw = []string{
+			"-t", table, opsStr, chain,
+			"-p", constants.UDP, "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", constants.RETURN,
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV6(chain, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	}
+
+	// redirect all UDP dns traffic on port 53 to the agent on port 15053 for all servers
+	// in etc/resolv.conf
+	// We avoid redirecting all IP ranges to avoid infinite loops when there are local DNS proxies
+	// such as: app -> istio dns server -> dnsmasq -> upstream
+	// This ensures that we do not get requests from dnsmasq sent back to the agent dns server in a loop.
+	// Note: If a user somehow configured etc/resolv.conf to point to dnsmasq and server X, and dnsmasq also
+	// pointed to server X, this would not work. However, the assumption is that is not a common case.
+	for _, s := range dnsServersV6 {
+		raw = []string{
+			"-t", table, opsStr, chain,
+			"-p", constants.UDP, "--dport", "53", "-d", s + "/32",
+			"-j", constants.REDIRECT, "--to-port", agentDNSListenerPort,
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV6(chain, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	}
+}
+
+// kuma changes end
 
 func (iptConfigurator *IptablesConfigurator) handleOutboundPortsInclude() {
 	if iptConfigurator.cfg.OutboundPortsInclude != "" {
