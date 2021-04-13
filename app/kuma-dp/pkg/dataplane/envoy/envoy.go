@@ -126,6 +126,8 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	bootstrapConfig, version, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
 		Dataplane:        e.opts.Dataplane,
 		BootstrapVersion: types.BootstrapVersion(e.opts.Config.Dataplane.BootstrapVersion),
+		DNSPort:          e.opts.DNSPort,
+		EmptyDNSPort:     e.opts.EmptyDNSPort,
 		EnvoyVersion:     *envoyVersion,
 		DynamicMetadata:  e.opts.DynamicMetadata,
 	})

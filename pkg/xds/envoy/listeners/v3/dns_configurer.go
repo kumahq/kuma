@@ -1,6 +1,8 @@
 package v3
 
 import (
+	"sort"
+
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_data_dns "github.com/envoyproxy/go-control-plane/envoy/data/dns/v3"
@@ -11,7 +13,8 @@ import (
 )
 
 type DNSConfigurer struct {
-	VIPs map[string]string
+	VIPs         map[string]string
+	EmptyDNSPort uint32
 }
 
 func (c *DNSConfigurer) Configure(listener *envoy_listener.Listener) error {
@@ -46,9 +49,10 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 			AnswerTtl: nil,
 		})
 	}
+	sort.Stable(DnsTableByName(virtualDomains)) // for stable Envoy config
 
 	return &envoy_dns.DnsFilterConfig{
-		StatPrefix: "dns-resolver",
+		StatPrefix: "kuma_dns",
 		ClientConfig: &envoy_dns.DnsFilterConfig_ClientContextConfig{
 			UpstreamResolvers: []*envoy_core.Address{
 				{
@@ -56,13 +60,12 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 						SocketAddress: &envoy_core.SocketAddress{
 							Address: "127.0.0.1",
 							PortSpecifier: &envoy_core.SocketAddress_PortValue{
-								PortValue: 5691,
+								PortValue: c.EmptyDNSPort,
 							},
 						},
 					},
 				},
 			},
-			MaxPendingLookups: 1,
 		},
 		ServerConfig: &envoy_dns.DnsFilterConfig_ServerContextConfig{
 			ConfigSource: &envoy_dns.DnsFilterConfig_ServerContextConfig_InlineDnsTable{
@@ -83,4 +86,12 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 			},
 		},
 	}
+}
+
+type DnsTableByName []*envoy_data_dns.DnsTable_DnsVirtualDomain
+
+func (a DnsTableByName) Len() int      { return len(a) }
+func (a DnsTableByName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a DnsTableByName) Less(i, j int) bool {
+	return a[i].Name < a[j].Name
 }

@@ -16,33 +16,24 @@ type DNSGenerator struct {
 }
 
 func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (*core_xds.ResourceSet, error) {
+	dnsPort := proxy.Metadata.GetDNSPort()
+	emptyDnsPort := proxy.Metadata.GetEmptyDNSPort()
+	if dnsPort == 0 || emptyDnsPort == 0 {
+		return nil, nil
+	}
+
 	if proxy.APIVersion == envoy_common.APIV2 {
-		return nil, nil // DNS Filter is not supported for API V2
+		return nil, nil // DNS is not available for API V2
 	}
 
-	vips := ctx.ControlPlane.DNSResolver.GetVIPs()
-	ipToDomain := map[string]string{}
-	for domain, ip := range vips {
-		ipToDomain[ip] = domain
+	if proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying() == nil {
+		return nil, nil // DNS only makes sense when transparent proxy is used
 	}
 
-	meshedVips := map[string]string{}
-	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
-		if domain, ok := ipToDomain[outbound.Address]; ok {
-			meshedVips[domain + "." + ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
-			endpoints := proxy.Routing.OutboundTargets[outbound.Tags[mesh_proto.ServiceTag]]
-			for _, endpoint := range endpoints {
-				if endpoint.ExternalService != nil && endpoint.ExternalService.Host != "" {
-					meshedVips[endpoint.ExternalService.Host] = outbound.Address
-				}
-			}
-		}
-	}
-
-
+	vips := g.computeVIPs(ctx, proxy)
 	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.InboundListener(names.GetDNSListenerName(), proxy.Dataplane.GetIP(), 5690, core_xds.SocketAddressProtocolUDP)). // todo parametrize port
-		Configure(envoy_listeners.DNS(meshedVips)).
+		Configure(envoy_listeners.InboundListener(names.GetDNSListenerName(), proxy.Dataplane.GetIP(), dnsPort, core_xds.SocketAddressProtocolUDP)).
+		Configure(envoy_listeners.DNS(vips, emptyDnsPort)).
 		Build()
 	if err != nil {
 		return nil, err
@@ -55,4 +46,23 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 		Origin:   OriginDNS,
 	})
 	return resources, nil
+}
+
+func (g DNSGenerator) computeVIPs(ctx xds_context.Context, proxy *core_xds.Proxy) map[string]string {
+	domainsByIPs := ctx.ControlPlane.DNSResolver.GetVIPs().DomainsByIPs()
+	meshedVips := map[string]string{}
+	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
+		if domain, ok := domainsByIPs[outbound.Address]; ok {
+			// add regular .mesh domain
+			meshedVips[domain+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
+			// add hostname from address in external service
+			endpoints := proxy.Routing.OutboundTargets[outbound.Tags[mesh_proto.ServiceTag]]
+			for _, endpoint := range endpoints {
+				if endpoint.ExternalService != nil && endpoint.ExternalService.Host != "" {
+					meshedVips[endpoint.ExternalService.Host] = outbound.Address
+				}
+			}
+		}
+	}
+	return meshedVips
 }

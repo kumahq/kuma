@@ -39,11 +39,23 @@ var _ = DescribeTable("DataplaneMetadataFromXdsMetadata",
 						StringValue: "1234",
 					},
 				},
+				"dataplane.dns.port": &pstruct.Value{
+					Kind: &pstruct.Value_StringValue{
+						StringValue: "8000",
+					},
+				},
+				"dataplane.dns.empty.port": &pstruct.Value{
+					Kind: &pstruct.Value_StringValue{
+						StringValue: "8001",
+					},
+				},
 			},
 		},
 		expected: xds.DataplaneMetadata{
 			DataplaneTokenPath: "/tmp/token",
 			AdminPort:          1234,
+			DNSPort:            8000,
+			EmptyDNSPort:       8001,
 		},
 	}),
 )

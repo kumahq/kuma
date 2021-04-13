@@ -76,6 +76,7 @@ func NewDefaultProxyProfile() ResourceGenerator {
 		DirectAccessProxyGenerator{},
 		TracingProxyGenerator{},
 		ProbeProxyGenerator{},
+		DNSGenerator{},
 	}
 }
 
