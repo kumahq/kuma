@@ -22,12 +22,13 @@ import (
 // Command line options
 // nolint: maligned
 type Config struct {
-	DryRun       bool     `json:"DRY_RUN"`
-	ProxyUID     string   `json:"PROXY_UID"`
-	ProxyGID     string   `json:"PROXY_GID"`
-	RedirectDNS  bool     `json:"REDIRECT_DNS"`
-	DNSServersV4 []string `json:"DNS_SERVERS_V4"`
-	DNSServersV6 []string `json:"DNS_SERVERS_V6"`
+	DryRun               bool     `json:"DRY_RUN"`
+	ProxyUID             string   `json:"PROXY_UID"`
+	ProxyGID             string   `json:"PROXY_GID"`
+	RedirectDNS          bool     `json:"REDIRECT_DNS"`
+	DNSServersV4         []string `json:"DNS_SERVERS_V4"`
+	DNSServersV6         []string `json:"DNS_SERVERS_V6"`
+	AgentDNSListenerPort string   `json:"AGENT_DNS_LISTENER_PORT"`
 }
 
 func (c *Config) String() string {
@@ -46,5 +47,6 @@ func (c *Config) Print() {
 	fmt.Printf("PROXY_GID=%s\n", c.ProxyGID)
 	fmt.Printf("DNS_CAPTURE=%t\n", c.RedirectDNS)
 	fmt.Printf("DNS_SERVERS=%s,%s\n", c.DNSServersV4, c.DNSServersV6)
+	fmt.Printf("AGENT_DNS_LISTENER_PORT=%s\n", c.AgentDNSListenerPort)
 	fmt.Println("")
 }

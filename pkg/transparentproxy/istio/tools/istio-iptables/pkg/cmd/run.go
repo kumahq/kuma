@@ -504,7 +504,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 	}
 
 	if redirectDNS {
-		for _, s := range iptConfigurator.cfg.DNSServersV4 {
+		for _, s := range append(iptConfigurator.cfg.DNSServersV4, iptConfigurator.cfg.DNSServersV6...) {
 			// redirect all TCP dns traffic on port 53 to the agent on port 15053 for all servers
 			// in etc/resolv.conf
 			// We avoid redirecting all IP ranges to avoid infinite loops when there are local DNS proxies
@@ -518,7 +518,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 				"--dport", "53",
 				"-d", s+"/32",
 				"-j", constants.REDIRECT,
-				"--to-ports", constants.IstioAgentDNSListenerPort)
+				"--to-ports", iptConfigurator.cfg.AgentDNSListenerPort)
 		}
 	}
 
@@ -541,7 +541,9 @@ func (iptConfigurator *IptablesConfigurator) run() {
 	if redirectDNS {
 		HandleDNSUDP(
 			AppendOps, iptConfigurator.iptables, iptConfigurator.ext, "",
-			iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID, iptConfigurator.cfg.DNSServersV4)
+			iptConfigurator.cfg.AgentDNSListenerPort,
+			iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
+			append(iptConfigurator.cfg.DNSServersV4, iptConfigurator.cfg.DNSServersV6...))
 	}
 
 	if iptConfigurator.cfg.InboundInterceptionMode == constants.TPROXY {
@@ -562,7 +564,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 // This helps the creation logic of DNS UDP rules in sync with the deletion.
 func HandleDNSUDP(
 	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
-	cmd, proxyUID, proxyGID string, dnsServersV4 []string) {
+	cmd, agentDNSListenerPort, proxyUID, proxyGID string, dnsServersV4 []string) {
 	const paramIdxRaw = 4
 	var raw []string
 	opsStr := opsToString[ops]
@@ -596,7 +598,7 @@ func HandleDNSUDP(
 		}
 	}
 
-	// redirect all TCP dns traffic on port 53 to the agent on port 15053 for all servers
+	// redirect all UDP dns traffic on port 53 to the agent on port 15053 for all servers
 	// in etc/resolv.conf
 	// We avoid redirecting all IP ranges to avoid infinite loops when there are local DNS proxies
 	// such as: app -> istio dns server -> dnsmasq -> upstream
@@ -607,7 +609,7 @@ func HandleDNSUDP(
 		raw = []string{
 			"-t", table, opsStr, chain,
 			"-p", "udp", "--dport", "53", "-d", s + "/32",
-			"-j", constants.REDIRECT, "--to-port", constants.IstioAgentDNSListenerPort,
+			"-j", constants.REDIRECT, "--to-port", agentDNSListenerPort,
 		}
 		switch ops {
 		case AppendOps:

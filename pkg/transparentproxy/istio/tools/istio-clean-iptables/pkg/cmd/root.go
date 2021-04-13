@@ -51,10 +51,11 @@ var rootCmd = &cobra.Command{
 
 func constructConfig() *config.Config {
 	cfg := &config.Config{
-		DryRun:      viper.GetBool(constants.DryRun),
-		ProxyUID:    viper.GetString(constants.ProxyUID),
-		ProxyGID:    viper.GetString(constants.ProxyGID),
-		RedirectDNS: viper.GetBool(constants.RedirectDNS),
+		DryRun:               viper.GetBool(constants.DryRun),
+		ProxyUID:             viper.GetString(constants.ProxyUID),
+		ProxyGID:             viper.GetString(constants.ProxyGID),
+		RedirectDNS:          viper.GetBool(constants.RedirectDNS),
+		AgentDNSListenerPort: viper.GetString(constants.AgentDNSListenerPort),
 	}
 
 	// TODO: Make this more configurable, maybe with an allowlist of users to be captured for output instead of a denylist.
@@ -114,6 +115,11 @@ func bindFlags(cmd *cobra.Command, args []string) {
 		handleError(err)
 	}
 	viper.SetDefault(constants.RedirectDNS, dnsCaptureByAgent)
+
+	if err := viper.BindPFlag(constants.AgentDNSListenerPort, cmd.Flags().Lookup(constants.AgentDNSListenerPort)); err != nil {
+		handleError(err)
+	}
+	viper.SetDefault(constants.AgentDNSListenerPort, constants.IstioAgentDNSListenerPort)
 }
 
 // https://github.com/spf13/viper/issues/233.
@@ -129,6 +135,8 @@ func init() {
 		"Specify the GID of the user for which the redirection is not applied. (same default value as -u param)")
 
 	rootCmd.Flags().Bool(constants.RedirectDNS, dnsCaptureByAgent, "Enable capture of dns traffic by istio-agent")
+
+	rootCmd.Flags().String(constants.AgentDNSListenerPort, constants.IstioAgentDNSListenerPort, "set listen port for DNS agent")
 }
 
 func GetCommand() *cobra.Command {
