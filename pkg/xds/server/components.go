@@ -26,7 +26,7 @@ var (
 		core_mesh.ServiceInsightType:    true,
 	}
 	HashMeshIncludedGlobalResources = map[core_model.ResourceType]bool{
-		core_system.ConfigType:          true,
+		core_system.ConfigType: true,
 	}
 )
 

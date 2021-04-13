@@ -146,7 +146,7 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 		host = ""
 	}
 	es := &core_xds.ExternalService{
-		Host: host,
+		Host:       host,
 		TLSEnabled: externalService.Spec.GetNetworking().GetTls().GetEnabled(),
 		CaCert: convertToEnvoy(
 			externalService.Spec.GetNetworking().GetTls().GetCaCert(),

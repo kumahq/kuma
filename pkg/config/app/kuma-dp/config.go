@@ -32,9 +32,9 @@ func DefaultConfig() Config {
 		},
 		DNS: DNS{
 			Enabled:           false,
-			CoreDNSPort:       53000,
-			EnvoyDNSPort:      53001,
-			CoreDNSEmptyPort:  53002,
+			CoreDNSPort:       15053,
+			EnvoyDNSPort:      15054,
+			CoreDNSEmptyPort:  15055,
 			CoreDNSBinaryPath: "coredns",
 		},
 	}
@@ -246,7 +246,6 @@ type DNS struct {
 }
 
 func (d *DNS) Sanitize() {
-	return
 }
 
 func (d *DNS) Validate() error {
@@ -262,7 +261,7 @@ func (d *DNS) Validate() error {
 	if d.EnvoyDNSPort > 65353 {
 		return errors.New(".EnvoyDNSPort has to be in [0, 65353] range")
 	}
-	if d.CoreDNSBinaryPath ==  "" {
+	if d.CoreDNSBinaryPath == "" {
 		return errors.New(".CoreDNSBinaryPath cannot be empty")
 	}
 	return nil
