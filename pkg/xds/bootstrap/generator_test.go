@@ -142,6 +142,8 @@ var _ = Describe("bootstrapGenerator", func() {
 				AdminPort:      1234,
 				DataplaneToken: "token",
 				Version:        defaultVersion,
+				DNSPort:        53001,
+				EmptyDNSPort:   53002,
 			},
 			expectedConfigFile:       "generator.default-config.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV3,
