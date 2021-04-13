@@ -67,6 +67,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
+| ingress.annotations | object | `{}` | Additional deployment annotation |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 
 ## Custom Resource Definitions
