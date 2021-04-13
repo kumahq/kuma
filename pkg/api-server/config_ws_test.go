@@ -173,6 +173,7 @@ var _ = Describe("Config WS", func() {
                     "successThreshold": 1,
                     "timeoutSeconds": 3
                   },
+                  "redirectPortDNSOutbound": 15053,
                   "redirectPortInbound": 15006,
                   "redirectPortInboundV6": 15010,
                   "redirectPortOutbound": 15001,

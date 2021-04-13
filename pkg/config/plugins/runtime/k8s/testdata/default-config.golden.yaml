@@ -8,6 +8,7 @@ injector:
     redirectPortInbound: 15006
     redirectPortInboundV6: 15010
     redirectPortOutbound: 15001
+    redirectPortDNSOutbound: 15053
     uid: 5678
     gid: 5678
     adminPort: 9901

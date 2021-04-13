@@ -6,7 +6,9 @@ injector:
   cniEnabled: true
   sidecarContainer:
     image: kuma-sidecar:latest
+    useBuiltInDNS: true
     redirectPortOutbound: 1234
+    redirectPortDNSOutbound: 1253
     redirectPortInbound: 1236
     redirectPortInboundV6: 1237
     uid: 2345
