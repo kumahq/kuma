@@ -929,6 +929,7 @@ function _kumactl_install_crds {
 
 function _kumactl_install_dns {
   _arguments \
+    '(-f --force)'{-f,--force}'[run the command even though it'\''s deprecated]' \
     '--namespace[namespace to look for Kuma Control Plane service]:' \
     '--port[port of the Kuma DNS server]:' \
     '--config-file[path to the configuration file to use]:' \
