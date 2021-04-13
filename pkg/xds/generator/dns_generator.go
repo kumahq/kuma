@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
 
-// OriginInbound is a marker to indicate by which ProxyGenerator resources were generated.
+// OriginDNS is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginDNS = "dns"
 
 type DNSGenerator struct {
@@ -51,7 +51,7 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 }
 
 func (g DNSGenerator) computeVIPs(ctx xds_context.Context, proxy *core_xds.Proxy) map[string]string {
-	domainsByIPs := ctx.ControlPlane.DNSResolver.GetVIPs().DomainsByIPs()
+	domainsByIPs := ctx.ControlPlane.DNSResolver.GetVIPs().FQDNsByIPs()
 	meshedVips := map[string]string{}
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
 		if domain, ok := domainsByIPs[outbound.Address]; ok {
