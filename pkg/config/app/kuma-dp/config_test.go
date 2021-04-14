@@ -69,6 +69,7 @@ var _ = Describe("Config", func() {
 				"KUMA_DNS_ENVOY_DNS_PORT":                                "5302",
 				"KUMA_DNS_CORE_DNS_BINARY_PATH":                          "/tmp/coredns",
 				"KUMA_DNS_CORE_DNS_CONFIG_TEMPLATE_PATH":                 "/tmp/Corefile",
+				"KUMA_DNS_CONFIG_DIR":                                    "/var/run/dnsserver",
 			}
 			for key, value := range env {
 				os.Setenv(key, value)
@@ -100,6 +101,7 @@ var _ = Describe("Config", func() {
 			Expect(cfg.DNS.EnvoyDNSPort).To(Equal(uint32(5302)))
 			Expect(cfg.DNS.CoreDNSBinaryPath).To(Equal("/tmp/coredns"))
 			Expect(cfg.DNS.CoreDNSConfigTemplatePath).To(Equal("/tmp/Corefile"))
+			Expect(cfg.DNS.ConfigDir).To(Equal("/var/run/dnsserver"))
 		})
 	})
 
