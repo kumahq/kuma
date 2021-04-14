@@ -5,10 +5,10 @@ metadata:
   name: externalservice-http-server
   namespace: externalservice-namespace
   annotations:
-    80.service.kuma.io/protocol: http
+    10080.service.kuma.io/protocol: http
 spec:
   ports:
-    - port: 80
+    - port: 10080
       name: http
       targetPort: 80
   selector:
