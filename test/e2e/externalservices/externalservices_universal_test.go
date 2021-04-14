@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
-var _ = Describe("Test ExternalServices on Universal", func() {
+var _ = FDescribe("Test ExternalServices on Universal", func() {
 
 	meshDefaulMtlsOn := `
 type: Mesh
@@ -87,7 +87,7 @@ networking:
 		err = NewClusterSetup().
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -115,12 +115,12 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should route to external-service", func() {
+	FIt("should route to external-service", func() {
 		err := YamlUniversal(fmt.Sprintf(trafficRoute, es1))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "localhost:5000")
+			"curl", "-v", "-m", "3", "--fail", "external-service.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))

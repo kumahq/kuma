@@ -23,13 +23,13 @@ resources:
                 googleRe2: {}
                 regex: .*
             virtualDomains:
-            - answerTtl: 1s
+            - answerTtl: 30s
               endpoint:
                 addressList:
                   address:
                   - 240.0.0.0
               name: backend.mesh
-            - answerTtl: 1s
+            - answerTtl: 30s
               endpoint:
                 addressList:
                   address:
