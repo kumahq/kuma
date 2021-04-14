@@ -30,6 +30,11 @@ dynamicResources:
   ldsConfig:
     ads: {}
     resourceApiVersion: V3
+layeredRuntime:
+  layers:
+  - name: kuma
+    staticLayer:
+      envoy.restart_features.use_apple_api_for_dns_lookups: false
 node:
   cluster: backend
   id: mesh.name.namespace

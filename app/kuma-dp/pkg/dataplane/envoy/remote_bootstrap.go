@@ -139,6 +139,8 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 			},
 		},
 		DynamicMetadata: params.DynamicMetadata,
+		DNSPort:         params.DNSPort,
+		EmptyDNSPort:    params.EmptyDNSPort,
 	}
 	jsonBytes, err := json.Marshal(request)
 	if err != nil {

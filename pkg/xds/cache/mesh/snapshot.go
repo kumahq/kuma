@@ -8,10 +8,12 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
+	"github.com/kumahq/kuma/pkg/dns/vips"
 )
 
 var meshCacheLog = core.Log.WithName("mesh-cache")
@@ -52,6 +54,19 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 				}
 			}
 			snapshot.resources[typ] = meshedDpsAndIngresses
+		case system.ConfigType:
+			configs := &system.ConfigResourceList{}
+			var items []*system.ConfigResource
+			if err := rm.List(ctx, configs); err != nil {
+				return nil, err
+			}
+			for _, config := range configs.Items {
+				if configInHash(config.Meta.GetName(), meshName) {
+					items = append(items, config)
+				}
+			}
+			configs.Items = items
+			snapshot.resources[typ] = configs
 		default:
 			rlist, err := registry.Global().NewList(typ)
 			if err != nil {
@@ -64,6 +79,10 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 		}
 	}
 	return snapshot, nil
+}
+
+func configInHash(configName string, meshName string) bool {
+	return configName == vips.ConfigKey(meshName)
 }
 
 func (m *meshSnapshot) hash() string {

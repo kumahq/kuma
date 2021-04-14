@@ -127,6 +127,11 @@ func (b *bootstrapGenerator) validateRequest(request types.BootstrapRequest) err
 		verr.AddViolation("dataplaneToken", "only one of dataplaneToken and dataplaneTokenField can be defined")
 		return verr.OrNil()
 	}
+	if b.bootstrapVersion(request.BootstrapVersion) == types.BootstrapV2 && request.DNSPort != 0 {
+		verr := validators.ValidationError{}
+		verr.AddViolation("dnsPort", "DNS cannot be used in API V2. Upgrade Kuma DP to API V3")
+		return verr.OrNil()
+	}
 	return nil
 }
 
@@ -227,6 +232,8 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, dataplane *co
 		EnvoyBuild:         request.Version.Envoy.Build,
 		HdsEnabled:         b.hdsEnabled,
 		DynamicMetadata:    request.DynamicMetadata,
+		DNSPort:            request.DNSPort,
+		EmptyDNSPort:       request.EmptyDNSPort,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params, request.BootstrapVersion)
@@ -292,21 +299,31 @@ func (b *bootstrapGenerator) verifyAdminPort(adminPort uint32, dataplane *core_m
 	return nil
 }
 
-func (b *bootstrapGenerator) configForParameters(params configParameters, version types.BootstrapVersion) (proto.Message, types.BootstrapVersion, error) {
+func (b *bootstrapGenerator) bootstrapVersion(reqVersion types.BootstrapVersion) types.BootstrapVersion {
+	if reqVersion != "" {
+		return reqVersion
+	}
+	// if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
+	switch b.config.APIVersion {
+	case envoy_common.APIV2:
+		return types.BootstrapV2
+	case envoy_common.APIV3:
+		return types.BootstrapV3
+	default:
+		return ""
+	}
+}
+
+func (b *bootstrapGenerator) configForParameters(params configParameters, reqVersion types.BootstrapVersion) (proto.Message, types.BootstrapVersion, error) {
+	version := b.bootstrapVersion(reqVersion)
 	switch {
-	// V2
 	case version == types.BootstrapV2:
-		fallthrough
-	case version == "" && b.config.APIVersion == envoy_common.APIV2: // if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
 		cfg, err := b.configForParametersV2(params)
 		if err != nil {
 			return nil, "", err
 		}
 		return cfg, types.BootstrapV2, nil
-	// V3
 	case version == types.BootstrapV3:
-		fallthrough
-	case version == "" && b.config.APIVersion == envoy_common.APIV3: // if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
 		cfg, err := b.configForParametersV3(params)
 		if err != nil {
 			return nil, "", err

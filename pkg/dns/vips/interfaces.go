@@ -7,3 +7,11 @@ func (vips List) Append(other List) {
 		vips[k] = v
 	}
 }
+
+func (vips List) FQDNsByIPs() map[string]string {
+	ipToDomain := map[string]string{}
+	for domain, ip := range vips {
+		ipToDomain[ip] = domain
+	}
+	return ipToDomain
+}

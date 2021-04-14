@@ -29,6 +29,8 @@ var (
 type BootstrapParams struct {
 	Dataplane        *rest.Resource
 	BootstrapVersion types.BootstrapVersion
+	DNSPort          uint32
+	EmptyDNSPort     uint32
 	EnvoyVersion     EnvoyVersion
 	DynamicMetadata  map[string]string
 }
@@ -40,6 +42,8 @@ type Opts struct {
 	Generator       BootstrapConfigFactoryFunc
 	Dataplane       *rest.Resource
 	DynamicMetadata map[string]string
+	DNSPort         uint32
+	EmptyDNSPort    uint32
 	Stdout          io.Writer
 	Stderr          io.Writer
 	Quit            chan struct{}
@@ -122,6 +126,8 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	bootstrapConfig, version, err := e.opts.Generator(e.opts.Config.ControlPlane.URL, e.opts.Config, BootstrapParams{
 		Dataplane:        e.opts.Dataplane,
 		BootstrapVersion: types.BootstrapVersion(e.opts.Config.Dataplane.BootstrapVersion),
+		DNSPort:          e.opts.DNSPort,
+		EmptyDNSPort:     e.opts.EmptyDNSPort,
 		EnvoyVersion:     *envoyVersion,
 		DynamicMetadata:  e.opts.DynamicMetadata,
 	})
