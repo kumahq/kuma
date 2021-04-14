@@ -43,6 +43,12 @@ admin:
       port_value: {{ .AdminPort }}
 {{ end }}
 
+layered_runtime:
+  layers:
+  - name: kuma
+    static_layer:
+      envoy.restart_features.use_apple_api_for_dns_lookups: false
+
 stats_config:
   stats_tags:
   - tag_name: name

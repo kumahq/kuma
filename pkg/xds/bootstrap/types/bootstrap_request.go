@@ -26,6 +26,8 @@ type BootstrapRequest struct {
 	DynamicMetadata map[string]string `json:"dynamicMetadata"`
 	// BootstrapVersion is an optional version to override the control plane's default setting
 	BootstrapVersion BootstrapVersion `json:"bootstrapVersion"`
+	DNSPort          uint32           `json:"dnsPort,omitempty"`
+	EmptyDNSPort     uint32           `json:"emptyDnsPort,omitempty"`
 }
 
 type Version struct {

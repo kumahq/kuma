@@ -17,6 +17,12 @@ node:
 {{if .AdminPort }}
     dataplane.admin.port: "{{ .AdminPort }}"
 {{ end }}
+{{if .DNSPort }}
+    dataplane.dns.port: "{{ .DNSPort }}"
+{{ end }}
+{{if .EmptyDNSPort }}
+    dataplane.dns.empty.port: "{{ .EmptyDNSPort }}"
+{{ end }}
     version:
       kumaDp:
         version: "{{ .KumaDpVersion }}"
@@ -42,6 +48,12 @@ admin:
       address: "{{ .AdminAddress }}"
       port_value: {{ .AdminPort }}
 {{ end }}
+
+layered_runtime:
+  layers:
+  - name: kuma
+    static_layer:
+      envoy.restart_features.use_apple_api_for_dns_lookups: false
 
 stats_config:
   stats_tags:
