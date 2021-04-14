@@ -70,7 +70,7 @@ spec:
     kuma.io/protocol: http
     id: "%s"
   networking:
-    address: %s:80
+    address: %s:%d
     tls:
       enabled: %s
 `
@@ -122,7 +122,7 @@ metadata:
 
 		err = YamlK8s(fmt.Sprintf(externalService,
 			es1, es1,
-			externalServiceAddress,
+			externalServiceAddress, 10080,
 			"false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -131,7 +131,7 @@ metadata:
 
 		err = YamlK8s(fmt.Sprintf(externalService,
 			es2, es2,
-			externalServiceAddress,
+			externalServiceAddress, 10080,
 			"true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -168,7 +168,7 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh")
+			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
@@ -179,7 +179,7 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh")
+			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("externalservice-https-server"))
@@ -192,7 +192,7 @@ metadata:
 
 		// then communication outside of the Mesh works
 		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace")
+			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
@@ -203,7 +203,7 @@ metadata:
 		// then accessing the external service is no longer possible
 		_, err = retry.DoWithRetryE(cluster.GetTesting(), "passthrough access to service", 5, DefaultTimeout, func() (string, error) {
 			_, _, err := cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace")
+				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
 			if err != nil {
 				return "", err
 			}
