@@ -133,6 +133,7 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 	if err != nil {
 		return err
 	}
+	runLog.Info("configuration saved to a file", "file", configFile)
 
 	binaryPathConfig := dnsConfig.CoreDNSBinaryPath
 	resolvedPath, err := lookupDNSServerPath(binaryPathConfig)
@@ -148,6 +149,8 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 	command := exec.CommandContext(ctx, resolvedPath, args...)
 	command.Stdout = s.opts.Stdout
 	command.Stderr = s.opts.Stderr
+
+	runLog.Info("starting DNS Server (coredns)", "args", args)
 
 	if err := command.Start(); err != nil {
 		runLog.Error(err, "the DNS Server executable was found at "+resolvedPath+" but an error occurred when executing it")
