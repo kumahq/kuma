@@ -56,6 +56,7 @@ var _ = Describe("DNSConfigurer", func() {
               typedConfig:
                 '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3alpha.DnsFilterConfig
                 clientConfig:
+                  maxPendingLookups: "256"
                   upstreamResolvers:
                   - socketAddress:
                       address: 127.0.0.1
@@ -67,17 +68,20 @@ var _ = Describe("DNSConfigurer", func() {
                         googleRe2: {}
                         regex: .*
                     virtualDomains:
-                    - endpoint:
+                    - answerTtl: 1s
+                      endpoint:
                         addressList:
                           address:
                           - 240.0.0.1
                       name: backend.mesh
-                    - endpoint:
+                    - answerTtl: 1s
+                      endpoint:
                         addressList:
                           address:
                           - 240.0.0.0
                       name: something.com
-                    - endpoint:
+                    - answerTtl: 1s
+                      endpoint:
                         addressList:
                           address:
                           - 240.0.0.0

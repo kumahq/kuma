@@ -8,6 +8,7 @@ import (
 	envoy_data_dns "github.com/envoyproxy/go-control-plane/envoy/data/dns/v3"
 	envoy_dns "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/dns_filter/v3alpha"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
+	"github.com/golang/protobuf/ptypes/duration"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -46,7 +47,9 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 					},
 				},
 			},
-			AnswerTtl: nil,
+			AnswerTtl: &duration.Duration{
+				Seconds: 1,
+			},
 		})
 	}
 	sort.Stable(DnsTableByName(virtualDomains)) // for stable Envoy config
@@ -68,6 +71,7 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 					},
 				},
 			},
+			MaxPendingLookups: 256,
 		},
 		ServerConfig: &envoy_dns.DnsFilterConfig_ServerContextConfig{
 			ConfigSource: &envoy_dns.DnsFilterConfig_ServerContextConfig_InlineDnsTable{
@@ -79,7 +83,8 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 							MatchPattern: &v3.StringMatcher_SafeRegex{
 								SafeRegex: &v3.RegexMatcher{
 									EngineType: &v3.RegexMatcher_GoogleRe2{},
-									Regex:      ".*",
+									// This is just an indicator that Envoy will try to resolve any hostname using list of virtual domains
+									Regex: ".*",
 								},
 							},
 						},
