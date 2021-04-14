@@ -299,7 +299,7 @@ func (i *KumaInjector) sidecarEnvVars(mesh string, podAnnotations map[string]str
 			Value: i.caCert,
 		},
 	}
-	if i.cfg.SidecarContainer.UseBuiltInDNS {
+	if i.cfg.BuiltinDNS.Enabled {
 		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{
 			Name:  "KUMA_DNS_ENABLED",
 			Value: "true",
@@ -307,17 +307,17 @@ func (i *KumaInjector) sidecarEnvVars(mesh string, podAnnotations map[string]str
 
 		envVars["KUMA_DNS_CORE_DNS_PORT"] = kube_core.EnvVar{
 			Name:  "KUMA_DNS_CORE_DNS_PORT",
-			Value: strconv.FormatInt(int64(i.cfg.SidecarContainer.RedirectPortDNSOutbound), 10),
+			Value: strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port), 10),
 		}
 
 		envVars["KUMA_DNS_CORE_DNS_EMPTY_PORT"] = kube_core.EnvVar{
 			Name:  "KUMA_DNS_CORE_DNS_EMPTY_PORT",
-			Value: strconv.FormatInt(int64(i.cfg.SidecarContainer.RedirectPortDNSOutbound+1), 10),
+			Value: strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port+1), 10),
 		}
 
 		envVars["KUMA_DNS_ENVOY_DNS_PORT"] = kube_core.EnvVar{
 			Name:  "KUMA_DNS_ENVOY_DNS_PORT",
-			Value: strconv.FormatInt(int64(i.cfg.SidecarContainer.RedirectPortDNSOutbound+2), 10),
+			Value: strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port+2), 10),
 		}
 
 		envVars["KUMA_DNS_CORE_DNS_BINARY_PATH"] = kube_core.EnvVar{
@@ -422,10 +422,10 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 
 	dnsArg := []string{}
 
-	if i.cfg.SidecarContainer.UseBuiltInDNS {
+	if i.cfg.BuiltinDNS.Enabled {
 		dnsArg = append(dnsArg,
 			"--redirect-dns",
-			"--redirect-dns-port", strconv.FormatInt(int64(i.cfg.SidecarContainer.RedirectPortDNSOutbound), 10),
+			"--redirect-dns-port", strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port), 10),
 		)
 	}
 

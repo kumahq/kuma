@@ -32,9 +32,7 @@ var _ = Describe("Config", func() {
 		Expect(cfg.AdmissionServer.CertDir).To(Equal("/var/secret/kuma-cp"))
 		// and
 		Expect(cfg.Injector.SidecarContainer.Image).To(Equal("kuma-sidecar:latest"))
-		Expect(cfg.Injector.SidecarContainer.UseBuiltInDNS).To(Equal(true))
 		Expect(cfg.Injector.SidecarContainer.RedirectPortOutbound).To(Equal(uint32(1234)))
-		Expect(cfg.Injector.SidecarContainer.RedirectPortDNSOutbound).To(Equal(uint32(1253)))
 		Expect(cfg.Injector.SidecarContainer.RedirectPortInbound).To(Equal(uint32(1236)))
 		Expect(cfg.Injector.SidecarContainer.RedirectPortInboundV6).To(Equal(uint32(1237)))
 		Expect(cfg.Injector.SidecarContainer.UID).To(Equal(int64(2345)))
@@ -60,6 +58,9 @@ var _ = Describe("Config", func() {
 		// and
 		Expect(cfg.Injector.InitContainer.Image).To(Equal("kuma-init:latest"))
 		Expect(cfg.Injector.CNIEnabled).To(Equal(true))
+		// and
+		Expect(cfg.Injector.BuiltinDNS.Enabled).To(Equal(true))
+		Expect(cfg.Injector.BuiltinDNS.Port).To(Equal(uint32(1253)))
 		// and
 		Expect(cfg.MarshalingCacheExpirationTime).To(Equal(1 * time.Second))
 	})

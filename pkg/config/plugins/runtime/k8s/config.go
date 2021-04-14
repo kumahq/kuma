@@ -21,16 +21,14 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 			VirtualProbesEnabled: true,
 			VirtualProbesPort:    9000,
 			SidecarContainer: SidecarContainer{
-				Image:                   "kuma/kuma-dp:latest",
-				UseBuiltInDNS:           false,
-				RedirectPortInbound:     15006,
-				RedirectPortInboundV6:   15010,
-				RedirectPortOutbound:    15001,
-				RedirectPortDNSOutbound: 15053,
-				UID:                     5678,
-				GID:                     5678,
-				AdminPort:               9901,
-				DrainTime:               30 * time.Second,
+				Image:                 "kuma/kuma-dp:latest",
+				RedirectPortInbound:   15006,
+				RedirectPortInboundV6: 15010,
+				RedirectPortOutbound:  15001,
+				UID:                   5678,
+				GID:                   5678,
+				AdminPort:             9901,
+				DrainTime:             30 * time.Second,
 
 				ReadinessProbe: SidecarReadinessProbe{
 					InitialDelaySeconds: 1,
@@ -69,6 +67,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 					"openshift.io/build.name":            "*",
 					"openshift.io/deployer-pod-for.name": "*",
 				},
+			},
+			BuiltinDNS: BuiltinDNS{
+				Enabled: false,
+				Port:    15053,
 			},
 		},
 		MarshalingCacheExpirationTime: 5 * time.Minute,
@@ -120,7 +122,8 @@ type Injector struct {
 	// Exceptions defines list of exceptions for Kuma injection
 	Exceptions Exceptions `yaml:"exceptions"`
 	// CaCertFile is CA certificate which will be used to verify a connection to the control plane
-	CaCertFile string `yaml:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
+	CaCertFile string     `yaml:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
+	BuiltinDNS BuiltinDNS `yaml:"builtinDNS"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection
@@ -142,16 +145,12 @@ type SidecarTraffic struct {
 type SidecarContainer struct {
 	// Image name.
 	Image string `yaml:"image,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_image"`
-	// Use the built-in
-	UseBuiltInDNS bool `yaml:"useBuiltInDNS,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_use_builtin_dns"`
 	// Redirect port for inbound traffic.
 	RedirectPortInbound uint32 `yaml:"redirectPortInbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound"`
 	// Redirect port for inbound IPv6 traffic.
 	RedirectPortInboundV6 uint32 `yaml:"redirectPortInboundV6,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_inbound_v6"`
 	// Redirect port for outbound traffic.
 	RedirectPortOutbound uint32 `yaml:"redirectPortOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_outbound"`
-	// Redirect port for DNS outbound traffic.
-	RedirectPortDNSOutbound uint32 `yaml:"redirectPortDNSOutbound,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_redirect_port_dns_outbound"`
 	// User ID.
 	UID int64 `yaml:"uid,omitempty" envconfig:"kuma_runtime_kubernetes_injector_sidecar_container_uid"`
 	// Group ID.
@@ -226,6 +225,13 @@ type InitContainer struct {
 	Image string `yaml:"image,omitempty" envconfig:"kuma_injector_init_container_image"`
 }
 
+type BuiltinDNS struct {
+	// Use the built-in DNS
+	Enabled bool `yaml:"enabled,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_enabled"`
+	// Redirect port for DNS
+	Port uint32 `yaml:"port,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_port"`
+}
+
 var _ config.Config = &KubernetesRuntimeConfig{}
 
 func (c *KubernetesRuntimeConfig) Sanitize() {
@@ -296,9 +302,6 @@ func (c *SidecarContainer) Validate() (errs error) {
 	}
 	if 65535 < c.RedirectPortOutbound {
 		errs = multierr.Append(errs, errors.Errorf(".RedirectPortOutbound must be in the range [0, 65535]"))
-	}
-	if 65535 < c.RedirectPortDNSOutbound {
-		errs = multierr.Append(errs, errors.Errorf(".RedirectPortDNSOutbound must be in the range [0, 65535]"))
 	}
 	if 65535 < c.AdminPort {
 		errs = multierr.Append(errs, errors.Errorf(".AdminPort must be in the range [0, 65535]"))
@@ -418,6 +421,18 @@ func (c *SidecarResourceLimits) Validate() (errs error) {
 	}
 	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
+	}
+	return
+}
+
+var _ config.Config = &BuiltinDNS{}
+
+func (c *BuiltinDNS) Sanitize() {
+}
+
+func (c *BuiltinDNS) Validate() (errs error) {
+	if 65535 < c.Port {
+		errs = multierr.Append(errs, errors.Errorf(".port must be in the range [0, 65535]"))
 	}
 	return
 }
