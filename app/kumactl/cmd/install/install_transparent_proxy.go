@@ -30,7 +30,9 @@ type transparenProxyArgs struct {
 	ExcludeOutboundPorts  string
 	UID                   string
 	User                  string
-	SkipResolvConf        bool
+	RedirectDNS           bool
+	AgentDNSListenerPort  string
+	ModifyResolvConf      bool
 	StoreFirewalld        bool
 	KumaCpIP              net.IP
 }
@@ -49,7 +51,9 @@ func newInstallTransparentProxy() *cobra.Command {
 		ExcludeOutboundPorts:  "",
 		UID:                   "",
 		User:                  "",
-		SkipResolvConf:        false,
+		RedirectDNS:           false,
+		AgentDNSListenerPort:  "15053",
+		ModifyResolvConf:      false,
 		StoreFirewalld:        false,
 		KumaCpIP:              defaultCpIP,
 	}
@@ -117,7 +121,11 @@ runuser -u kuma-dp -- \
 				return errors.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
 			}
 
-			if !args.SkipResolvConf && args.KumaCpIP.String() == defaultCpIP.String() {
+			if args.RedirectDNS && args.ModifyResolvConf {
+				return errors.Errorf("please supply only one of --redirect-dns or --modify-resolv-conf")
+			}
+
+			if args.ModifyResolvConf && args.KumaCpIP.String() == defaultCpIP.String() {
 				return errors.Errorf("please supply a valid `--kuma-cp-ip`")
 			}
 
@@ -127,7 +135,7 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			if !args.SkipResolvConf {
+			if args.ModifyResolvConf {
 				if err := modifyResolvConf(cmd, &args); err != nil {
 					return err
 				}
@@ -148,7 +156,9 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
 	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the UID of the user that will run kuma-dp")
-	cmd.Flags().BoolVar(&args.SkipResolvConf, "skip-resolv-conf", args.SkipResolvConf, "skip modifying the host `/etc/resolv.conf`")
+	cmd.Flags().BoolVar(&args.RedirectDNS, "redirect-dns", args.RedirectDNS, "redirect the DNS requests to a specified port")
+	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
+	cmd.Flags().BoolVar(&args.ModifyResolvConf, "modify-resolv-conf", args.ModifyResolvConf, "skip modifying the host `/etc/resolv.conf`")
 	cmd.Flags().BoolVar(&args.StoreFirewalld, "store-firewalld", args.StoreFirewalld, "store the iptables changes with firewalld")
 	cmd.Flags().IPVar(&args.KumaCpIP, "kuma-cp-ip", args.KumaCpIP, "the IP address of the Kuma CP which exposes the DNS service on port 53.")
 
@@ -189,6 +199,8 @@ func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 		ExcludeOutboundPorts:  args.ExcludeOutboundPorts,
 		UID:                   uid,
 		GID:                   gid,
+		RedirectDNS:           args.RedirectDNS,
+		AgentDNSListenerPort:  args.AgentDNSListenerPort,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to setup transparent proxy")

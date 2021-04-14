@@ -2,6 +2,7 @@ package install_test
 
 import (
 	"bytes"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -52,7 +53,7 @@ var _ = Describe("kumactl install tracing", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// then
-			Expect(r.Find(stdout.Bytes())).ToNot(BeEmpty())
+			Expect(r.Find(stdout.Bytes())).ToNot(BeEmpty(), fmt.Sprintf("%v\n-----%v\n", stdout.String(), stderr.String()))
 
 		},
 		Entry("should generate defaults with username", testCase{
@@ -68,6 +69,15 @@ var _ = Describe("kumactl install tracing", func() {
 				"--kuma-cp-ip", "1.2.3.4",
 			},
 			goldenFile: "install-transparent-proxy.defaults.golden.txt",
+		}),
+		Entry("should generate defaults with user id and DNS redirected ", testCase{
+			extraArgs: []string{
+				"--kuma-dp-uid", "0",
+				"--kuma-cp-ip", "1.2.3.4",
+				"--redirect-dns",
+				"--redirect-dns-port", "12345",
+			},
+			goldenFile: "install-transparent-proxy.dns.golden.txt",
 		}),
 		Entry("should generate defaults with overrides", testCase{
 			extraArgs: []string{

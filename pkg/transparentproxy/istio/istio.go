@@ -41,6 +41,8 @@ func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (stri
 	viper.Set(constants.DryRun, cfg.DryRun)
 	viper.Set(constants.SkipRuleApply, false)
 	viper.Set(constants.RunValidation, false)
+	viper.Set(constants.RedirectDNS, cfg.RedirectDNS)
+	viper.Set(constants.AgentDNSListenerPort, cfg.AgentDNSListenerPort)
 
 	tp.redirectStdOutStdErr()
 	defer func() {
