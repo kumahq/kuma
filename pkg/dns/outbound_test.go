@@ -150,7 +150,7 @@ var _ = Describe("VIPOutbounds", func() {
 		Expect(outbounds[0].Port).To(Equal(dns.VIPListenPort))
 	})
 
-	FIt("should preserve ExternalService port", func() {
+	It("should preserve ExternalService port", func() {
 		dataplane := &core_mesh.DataplaneResource{
 			Meta: &test_model.ResourceMeta{Name: "dp1", Mesh: "default"},
 			Spec: &mesh_proto.Dataplane{
