@@ -471,7 +471,7 @@ var _ = Describe("ProxyTemplate", func() {
                 - field: conf.resources[0].resource
                   message: 'native Envoy resource is not valid: json: cannot unmarshal string into Go value of type map[string]json.RawMessage'`,
 			}),
-			FEntry("invalid cluster modifications", testCase{
+			Entry("invalid cluster modifications", testCase{
 				proxyTemplate: `
                 selectors:
                 - match:
