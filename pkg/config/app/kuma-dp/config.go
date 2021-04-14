@@ -37,6 +37,8 @@ func DefaultConfig() Config {
 			CoreDNSEmptyPort:          15055,
 			CoreDNSBinaryPath:         "coredns",
 			CoreDNSConfigTemplatePath: "",
+			ConfigDir:                 "", // if left empty, a temporary directory will be generated automatically
+			PrometheusPort:            19153,
 		},
 	}
 }
@@ -246,6 +248,10 @@ type DNS struct {
 	CoreDNSBinaryPath string `yaml:"coreDnsBinaryPath,omitempty" envconfig:"kuma_dns_core_dns_binary_path"`
 	// CoreDNSConfigTemplatePath defines a path to a CoreDNS config template.
 	CoreDNSConfigTemplatePath string `yaml:"coreDnsConfigTemplatePath,omitempty" envconfig:"kuma_dns_core_dns_config_template_path"`
+	// Dir to store auto-generated DNS Server config in.
+	ConfigDir string `yaml:"configDir,omitempty" envconfig:"kuma_dns_config_dir"`
+	// Port where Prometheus stats will be exposed for the DNS Server
+	PrometheusPort uint32 `yaml:"prometheusPort,omitempty" envconfig:"kuma_dns_prometheus_port"`
 }
 
 func (d *DNS) Sanitize() {
@@ -263,6 +269,9 @@ func (d *DNS) Validate() error {
 	}
 	if d.EnvoyDNSPort > 65353 {
 		return errors.New(".EnvoyDNSPort has to be in [0, 65353] range")
+	}
+	if d.PrometheusPort > 65353 {
+		return errors.New(".PrometheusPort has to be in [0, 65353] range")
 	}
 	if d.CoreDNSBinaryPath == "" {
 		return errors.New(".CoreDNSBinaryPath cannot be empty")

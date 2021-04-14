@@ -82,6 +82,7 @@ function create_tarball {
   cp -p build/artifacts-$system-$arch/kuma-cp/kuma-cp $kuma_dir/bin
   cp -p build/artifacts-$system-$arch/kuma-dp/kuma-dp $kuma_dir/bin
   cp -p build/artifacts-$system-$arch/kumactl/kumactl $kuma_dir/bin
+  cp -p build/artifacts-$system-$arch/coredns/coredns $kuma_dir/bin
   cp -p build/artifacts-$system-$arch/kuma-prometheus-sd/kuma-prometheus-sd $kuma_dir/bin
   cp -p $KUMA_CONFIG_PATH $kuma_dir/conf/kuma-cp.conf.yml
 
@@ -203,4 +204,3 @@ function main {
 
 
 main $@
-
