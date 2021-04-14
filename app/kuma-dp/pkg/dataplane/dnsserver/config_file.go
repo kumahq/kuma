@@ -5,8 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
-	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/pkg/errors"
+
+	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 )
 
 func GenerateConfigFile(cfg kuma_dp.DNS, config []byte) (string, error) {

@@ -9,9 +9,10 @@ import (
 	"path/filepath"
 	"text/template"
 
+	"github.com/pkg/errors"
+
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/pkg/errors"
 )
 
 var (
