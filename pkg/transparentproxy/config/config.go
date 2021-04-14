@@ -10,4 +10,6 @@ type TransparentProxyConfig struct {
 	ExcludeOutboundPorts  string
 	UID                   string
 	GID                   string
+	RedirectDNS           bool
+	AgentDNSListenerPort  string
 }

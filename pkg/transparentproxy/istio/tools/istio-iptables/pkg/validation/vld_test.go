@@ -12,14 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package cmd
+package validation
 
-import "strings"
+import (
+	"encoding/binary"
+	"testing"
+)
 
-func FormatIptablesCommands(commands [][]string) []string {
-	output := make([]string, 0, len(commands))
-	for _, cmd := range commands {
-		output = append(output, strings.Join(cmd, " "))
+func TestNtohs(t *testing.T) {
+	hostValue := ntohs(0xbeef)
+	expectValue := 0xbeef
+	if nativeByteOrder == binary.LittleEndian {
+		expectValue = 0xefbe
 	}
-	return output
+	if hostValue != uint16(expectValue) {
+		t.Errorf("Expected evaluating ntohs(%v) is %v, actual %v", 0xbeef, expectValue, hostValue)
+	}
 }
