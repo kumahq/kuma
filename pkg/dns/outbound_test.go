@@ -217,9 +217,21 @@ var _ = Describe("VIPOutbounds", func() {
 					},
 				},
 			},
+			{
+				Meta: &test_model.ResourceMeta{Name: "es2", Mesh: "default"},
+				Spec: &mesh_proto.ExternalService{
+					Networking: &mesh_proto.ExternalService_Networking{
+						Address: "kuma.io",
+					},
+					Tags: map[string]string{
+						mesh_proto.ServiceTag: "third-external-service",
+					},
+				},
+			},
 		}
 		vipList["first-external-service"] = "240.0.0.6"
 		vipList["second-external-service"] = "240.0.0.7"
+		vipList["third-external-service"] = "240.0.0.8"
 
 		actual := &mesh_proto.Dataplane_Networking{}
 		actual.Outbound = dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, vipList, externalServices)
@@ -250,6 +262,10 @@ var _ = Describe("VIPOutbounds", func() {
         port: 80
         tags:
           kuma.io/service: service-5
+      - address: 240.0.0.8
+        port: 80
+        tags:
+          kuma.io/service: third-external-service
 `
 		Expect(proto.ToYAML(actual)).To(MatchYAML(expected))
 	})
