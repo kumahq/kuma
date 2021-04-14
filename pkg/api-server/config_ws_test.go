@@ -87,7 +87,7 @@ var _ = Describe("Config WS", func() {
             "skipMeshCreation": false
           },
           "dnsServer": {
-            "enabled": false,
+            "enabled": true,
             "domain": "mesh",
             "port": 5653,
             "CIDR": "240.0.0.0/4"

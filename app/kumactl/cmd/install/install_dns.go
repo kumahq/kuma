@@ -53,7 +53,11 @@ func newInstallDNS() *cobra.Command {
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if !args.Force {
-				_, err := cmd.OutOrStderr().Write([]byte("Command \"dns\" is deprecated, if you still want to run it, please use either --force or -f flags\n"))
+				_, err := cmd.OutOrStderr().Write([]byte("This is an outdated way of setting up DNS for Kuma, this version of Kuma has an embedded DNS server in kuma-dp.\n" +
+					"DNS traffic in the Pod will be redirected to embedded server in kuma-dp, therefore there is no need to configure Kubernetes DNS anymore.\n" +
+					"This way of DNS resolving is more reliable and let's you use External Services without `.mesh` suffix.\n\n" +
+					"If you still want to configure Kubernetes' DNS to resolve `.mesh` domain using Kuma CP, run the command with either --force or -f flags:\n" +
+					"$ kumactl install dns --force | kubectl apply -f-\n"))
 				return err
 			}
 
