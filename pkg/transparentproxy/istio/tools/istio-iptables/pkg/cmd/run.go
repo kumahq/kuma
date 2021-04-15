@@ -444,7 +444,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 			// Instead, we just have:
 			// app => istio-agent => dns server
 			iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "!", "-d", "127.0.0.1/32",
-				"-p", "tcp", "!", "--dport", "53",
+				"-p", constants.TCP, "!", "--dport", "53",
 				"-m", "owner", "--uid-owner", uid, "-j", constants.ISTIOINREDIRECT)
 		} else {
 			iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "!", "-d", "127.0.0.1/32",
@@ -461,7 +461,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 				// handle this case, we exclude port 53 from this rule. Note: We cannot just move the
 				// port 53 redirection rule further up the list, as we will want to avoid capturing
 				// DNS requests from the proxy UID/GID
-				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", "tcp",
+				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", constants.TCP,
 					"!", "--dport", "53",
 					"-m", "owner", "!", "--uid-owner", uid, "-j", constants.RETURN)
 			} else {
@@ -490,7 +490,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 				// handle this case, we exclude port 53 from this rule. Note: We cannot just move the
 				// port 53 redirection rule further up the list, as we will want to avoid capturing
 				// DNS requests from the proxy UID/GID
-				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", "tcp",
+				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", constants.TCP,
 					"!", "--dport", "53",
 					"-m", "owner", "!", "--gid-owner", gid, "-j", constants.RETURN)
 			} else {
@@ -589,9 +589,9 @@ func HandleDNSUDP(
 	opsStr := opsToString[ops]
 	table := constants.NAT
 	chain := constants.OUTPUT
+	rulePosition := 1
 
 	// Make sure that upstream DNS requests from agent/envoy dont get captured.
-	// TODO: add ip6 as well
 	for _, uid := range split(proxyUID) {
 		raw = []string{
 			"-t", table, opsStr, chain,
@@ -599,7 +599,8 @@ func HandleDNSUDP(
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV4(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
@@ -611,7 +612,8 @@ func HandleDNSUDP(
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV4(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
@@ -632,7 +634,8 @@ func HandleDNSUDP(
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV4(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
@@ -651,9 +654,9 @@ func HandleDNSUDPv6(
 	opsStr := opsToString[ops]
 	table := constants.NAT
 	chain := constants.OUTPUT
+	rulePosition := 1
 
 	// Make sure that upstream DNS requests from agent/envoy dont get captured.
-	// TODO: add ip6 as well
 	for _, uid := range split(proxyUID) {
 		raw = []string{
 			"-t", table, opsStr, chain,
@@ -661,7 +664,8 @@ func HandleDNSUDPv6(
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV6(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
@@ -673,7 +677,8 @@ func HandleDNSUDPv6(
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV6(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV6(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
@@ -694,7 +699,8 @@ func HandleDNSUDPv6(
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV6(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV6(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
