@@ -39,6 +39,7 @@ COPY --from=envoy /usr/local/bin/envoy /usr/local/bin/envoy
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/coredns/coredns /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 
 # do not detach (-D), log to stderr (-e)

@@ -561,7 +561,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 			HandleDNSUDPv6(
 				AppendOps, iptConfigurator.iptables, iptConfigurator.ext, "",
 				iptConfigurator.cfg.AgentDNSListenerPort,
-				iptConfigurator.cfg.DNSUpstreamTargetChain,
+				constants.RETURN, // we cannot use iptConfigurator.cfg.DNSUpstreamTargetChain because the target might be available only in IP V4
 				iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
 				iptConfigurator.cfg.DNSServersV6)
 		}

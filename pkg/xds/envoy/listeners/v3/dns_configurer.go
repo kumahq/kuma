@@ -48,7 +48,7 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 				},
 			},
 			AnswerTtl: &duration.Duration{
-				Seconds: 1,
+				Seconds: 30,
 			},
 		})
 	}

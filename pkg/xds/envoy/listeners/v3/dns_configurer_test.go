@@ -68,19 +68,19 @@ var _ = Describe("DNSConfigurer", func() {
                         googleRe2: {}
                         regex: .*
                     virtualDomains:
-                    - answerTtl: 1s
+                    - answerTtl: 30s
                       endpoint:
                         addressList:
                           address:
                           - 240.0.0.1
                       name: backend.mesh
-                    - answerTtl: 1s
+                    - answerTtl: 30s
                       endpoint:
                         addressList:
                           address:
                           - 240.0.0.0
                       name: something.com
-                    - answerTtl: 1s
+                    - answerTtl: 30s
                       endpoint:
                         addressList:
                           address:

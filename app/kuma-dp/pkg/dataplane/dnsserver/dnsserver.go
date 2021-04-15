@@ -143,7 +143,7 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 
 	args := []string{
 		"-conf", configFile,
-		"-q",
+		"-quiet",
 	}
 
 	command := exec.CommandContext(ctx, resolvedPath, args...)
