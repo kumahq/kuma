@@ -20,42 +20,44 @@ import (
 )
 
 type transparenProxyArgs struct {
-	DryRun                bool
-	ModifyIptables        bool
-	RedirectPortOutBound  string
-	RedirectInbound       bool
-	RedirectPortInBound   string
-	RedirectPortInBoundV6 string
-	ExcludeInboundPorts   string
-	ExcludeOutboundPorts  string
-	UID                   string
-	User                  string
-	RedirectDNS           bool
-	AgentDNSListenerPort  string
-	ModifyResolvConf      bool
-	StoreFirewalld        bool
-	KumaCpIP              net.IP
+	DryRun                 bool
+	ModifyIptables         bool
+	RedirectPortOutBound   string
+	RedirectInbound        bool
+	RedirectPortInBound    string
+	RedirectPortInBoundV6  string
+	ExcludeInboundPorts    string
+	ExcludeOutboundPorts   string
+	UID                    string
+	User                   string
+	RedirectDNS            bool
+	AgentDNSListenerPort   string
+	DNSUpstreamTargetChain string
+	ModifyResolvConf       bool
+	StoreFirewalld         bool
+	KumaCpIP               net.IP
 }
 
 var defaultCpIP = net.IPv4(0, 0, 0, 0)
 
 func newInstallTransparentProxy() *cobra.Command {
 	args := transparenProxyArgs{
-		DryRun:                false,
-		ModifyIptables:        true,
-		RedirectPortOutBound:  "15001",
-		RedirectInbound:       true,
-		RedirectPortInBound:   "15006",
-		RedirectPortInBoundV6: "15010",
-		ExcludeInboundPorts:   "",
-		ExcludeOutboundPorts:  "",
-		UID:                   "",
-		User:                  "",
-		RedirectDNS:           false,
-		AgentDNSListenerPort:  "15053",
-		ModifyResolvConf:      false,
-		StoreFirewalld:        false,
-		KumaCpIP:              defaultCpIP,
+		DryRun:                 false,
+		ModifyIptables:         true,
+		RedirectPortOutBound:   "15001",
+		RedirectInbound:        true,
+		RedirectPortInBound:    "15006",
+		RedirectPortInBoundV6:  "15010",
+		ExcludeInboundPorts:    "",
+		ExcludeOutboundPorts:   "",
+		UID:                    "",
+		User:                   "",
+		RedirectDNS:            false,
+		AgentDNSListenerPort:   "15053",
+		DNSUpstreamTargetChain: "RETURN",
+		ModifyResolvConf:       false,
+		StoreFirewalld:         false,
+		KumaCpIP:               defaultCpIP,
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -158,6 +160,7 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the UID of the user that will run kuma-dp")
 	cmd.Flags().BoolVar(&args.RedirectDNS, "redirect-dns", args.RedirectDNS, "redirect the DNS requests to a specified port")
 	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
+	cmd.Flags().StringVar(&args.DNSUpstreamTargetChain, "redirect-dns-upstream-target-chain", args.DNSUpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. Use with care.")
 	cmd.Flags().BoolVar(&args.ModifyResolvConf, "modify-resolv-conf", args.ModifyResolvConf, "skip modifying the host `/etc/resolv.conf`")
 	cmd.Flags().BoolVar(&args.StoreFirewalld, "store-firewalld", args.StoreFirewalld, "store the iptables changes with firewalld")
 	cmd.Flags().IPVar(&args.KumaCpIP, "kuma-cp-ip", args.KumaCpIP, "the IP address of the Kuma CP which exposes the DNS service on port 53.")
@@ -190,17 +193,18 @@ func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 		_, _ = cmd.OutOrStdout().Write([]byte("kumactl is about to apply the iptables rules that will enable transparent proxying on the machine. The SSH connection may drop. If that happens, just reconnect again."))
 	}
 	output, err := tp.Setup(&config.TransparentProxyConfig{
-		DryRun:                args.DryRun,
-		RedirectPortOutBound:  args.RedirectPortOutBound,
-		RedirectInBound:       args.RedirectInbound,
-		RedirectPortInBound:   args.RedirectPortInBound,
-		RedirectPortInBoundV6: args.RedirectPortInBoundV6,
-		ExcludeInboundPorts:   args.ExcludeInboundPorts,
-		ExcludeOutboundPorts:  args.ExcludeOutboundPorts,
-		UID:                   uid,
-		GID:                   gid,
-		RedirectDNS:           args.RedirectDNS,
-		AgentDNSListenerPort:  args.AgentDNSListenerPort,
+		DryRun:                 args.DryRun,
+		RedirectPortOutBound:   args.RedirectPortOutBound,
+		RedirectInBound:        args.RedirectInbound,
+		RedirectPortInBound:    args.RedirectPortInBound,
+		RedirectPortInBoundV6:  args.RedirectPortInBoundV6,
+		ExcludeInboundPorts:    args.ExcludeInboundPorts,
+		ExcludeOutboundPorts:   args.ExcludeOutboundPorts,
+		UID:                    uid,
+		GID:                    gid,
+		RedirectDNS:            args.RedirectDNS,
+		AgentDNSListenerPort:   args.AgentDNSListenerPort,
+		DNSUpstreamTargetChain: args.DNSUpstreamTargetChain,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to setup transparent proxy")
