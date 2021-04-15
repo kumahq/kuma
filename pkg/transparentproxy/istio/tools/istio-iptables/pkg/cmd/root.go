@@ -100,6 +100,7 @@ func constructConfig() *config.Config {
 		RunValidation:           viper.GetBool(constants.RunValidation),
 		RedirectDNS:             viper.GetBool(constants.RedirectDNS),
 		AgentDNSListenerPort:    viper.GetString(constants.AgentDNSListenerPort),
+		DNSUpstreamTargetChain:  viper.GetString(constants.DNSUpstreamTargetChain),
 	}
 
 	// TODO: Make this more configurable, maybe with an allowlist of users to be captured for output instead of a denylist.
@@ -312,6 +313,11 @@ func bindFlags(cmd *cobra.Command, args []string) {
 		handleError(err)
 	}
 	viper.SetDefault(constants.AgentDNSListenerPort, constants.IstioAgentDNSListenerPort)
+
+	if err := viper.BindPFlag(constants.DNSUpstreamTargetChain, cmd.Flags().Lookup(constants.DNSUpstreamTargetChain)); err != nil {
+		handleError(err)
+	}
+	viper.SetDefault(constants.DNSUpstreamTargetChain, constants.RETURN)
 }
 
 // https://github.com/spf13/viper/issues/233.

@@ -41,6 +41,7 @@ func removeOldChains(cfg *config.Config, ext dep.Dependencies, cmd string) {
 	if redirectDNS {
 		common.HandleDNSUDP(common.DeleteOps, builder.NewIptablesBuilder(), ext, cmd,
 			cfg.AgentDNSListenerPort,
+			cfg.DNSUpstreamTargetChain,
 			cfg.ProxyUID, cfg.ProxyGID, cfg.DNSServersV4)
 	}
 

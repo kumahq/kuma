@@ -51,11 +51,12 @@ var rootCmd = &cobra.Command{
 
 func constructConfig() *config.Config {
 	cfg := &config.Config{
-		DryRun:               viper.GetBool(constants.DryRun),
-		ProxyUID:             viper.GetString(constants.ProxyUID),
-		ProxyGID:             viper.GetString(constants.ProxyGID),
-		RedirectDNS:          viper.GetBool(constants.RedirectDNS),
-		AgentDNSListenerPort: viper.GetString(constants.AgentDNSListenerPort),
+		DryRun:                 viper.GetBool(constants.DryRun),
+		ProxyUID:               viper.GetString(constants.ProxyUID),
+		ProxyGID:               viper.GetString(constants.ProxyGID),
+		RedirectDNS:            viper.GetBool(constants.RedirectDNS),
+		AgentDNSListenerPort:   viper.GetString(constants.AgentDNSListenerPort),
+		DNSUpstreamTargetChain: viper.GetString(constants.DNSUpstreamTargetChain),
 	}
 
 	// TODO: Make this more configurable, maybe with an allowlist of users to be captured for output instead of a denylist.
@@ -120,6 +121,11 @@ func bindFlags(cmd *cobra.Command, args []string) {
 		handleError(err)
 	}
 	viper.SetDefault(constants.AgentDNSListenerPort, constants.IstioAgentDNSListenerPort)
+
+	if err := viper.BindPFlag(constants.DNSUpstreamTargetChain, cmd.Flags().Lookup(constants.DNSUpstreamTargetChain)); err != nil {
+		handleError(err)
+	}
+	viper.SetDefault(constants.DNSUpstreamTargetChain, constants.RETURN)
 }
 
 // https://github.com/spf13/viper/issues/233.
