@@ -47,6 +47,7 @@ type deployOptions struct {
 	appArgs     []string
 	token       string
 	transparent bool
+	builtindns  bool
 	protocol    string
 	mesh        string
 	dpVersion   string
@@ -210,6 +211,12 @@ func WithToken(token string) DeployOptionsFunc {
 func WithTransparentProxy(transparent bool) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.transparent = transparent
+	}
+}
+
+func WithBuiltinDNS(builtindns bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.builtindns = builtindns
 	}
 }
 

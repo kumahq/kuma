@@ -339,7 +339,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	return nil
 }
 
-func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, transparent bool) {
+func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, builtindns bool) {
 	// create the token file on the app container
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
@@ -362,21 +362,27 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, tr
 		"--dataplane-var", "address=" + ip,
 		"--binary-path", "/usr/local/bin/envoy",
 	}
-	if transparent {
+	if builtindns {
 		args = append(args, "--dns-enabled")
 	}
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, args)
 }
 
-func (s *UniversalApp) setupTransparent(cpIp string) {
-	app := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool) {
+	args := []string{
 		"/usr/bin/kumactl", "install", "transparent-proxy",
-		"--skip-resolv-conf",
-		"--redirect-dns",
-		"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 		"--kuma-dp-user", "kuma-dp",
 		"--kuma-cp-ip", cpIp,
-	})
+	}
+
+	if builtindns {
+		args = append(args,
+			"--skip-resolv-conf",
+			"--redirect-dns",
+			"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT")
+	}
+
+	app := NewSshApp(s.verbose, s.ports[sshPort], []string{}, args)
 	err := app.Run()
 	if err != nil {
 		panic(fmt.Sprintf("err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out()))

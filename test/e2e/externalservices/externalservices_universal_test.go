@@ -3,6 +3,7 @@ package externalservices_test
 import (
 	"encoding/base64"
 	"fmt"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -87,7 +88,7 @@ networking:
 		err = NewClusterSetup().
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(true))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
