@@ -132,6 +132,6 @@ const (
 
 // DNS ports and others
 const (
-	EnvoyDNSListenerPort           = "15013"
-	IstioAgentDNSListenerPort      = "15053"
+	EnvoyDNSListenerPort      = "15013"
+	IstioAgentDNSListenerPort = "15053"
 )
