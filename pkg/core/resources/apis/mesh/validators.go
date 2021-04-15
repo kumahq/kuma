@@ -173,8 +173,8 @@ func ValidateAnyResourceYAML(resYAML string, msgs ...proto.Message) error {
 	var err error
 	for _, msg := range msgs {
 		err = ValidateResourceYAML(msg, resYAML)
-		if err != nil {
-			return err
+		if err == nil {
+			return nil
 		}
 	}
 	return err
@@ -185,8 +185,8 @@ func ValidateAnyResourceYAMLPatch(resYAML string, msgs ...proto.Message) error {
 	var err error
 	for _, msg := range msgs {
 		err = ValidateResourceYAMLPatch(msg, resYAML)
-		if err != nil {
-			return err
+		if err == nil {
+			return nil
 		}
 	}
 	return err
