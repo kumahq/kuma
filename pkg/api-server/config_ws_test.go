@@ -150,6 +150,9 @@ var _ = Describe("Config WS", func() {
                 "port": 5443
               },
               "injector": {
+                "builtinDNS": {
+                  "port": 15053
+                },
                 "cniEnabled": false,
                 "initContainer": {
                   "image": "kuma/kuma-init:latest"

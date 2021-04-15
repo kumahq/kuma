@@ -170,6 +170,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32(22)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32(24)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(41)))
+			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(Equal(true))
+			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge).To(Equal(1 * time.Hour))
 
@@ -347,6 +349,9 @@ runtime:
         excludeOutboundPorts:
         - 4321
         - 8765
+      builtinDNS:
+        enabled: true
+        port: 1053
 reports:
   enabled: false
 general:
@@ -490,6 +495,8 @@ sdsServer:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_FAILURE_THRESHOLD":     "22",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_TIMEOUT_SECONDS":       "24",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS": "41",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",
