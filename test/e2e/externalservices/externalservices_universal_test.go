@@ -13,7 +13,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
-var _ = FDescribe("Test ExternalServices on Universal", func() {
+var _ = Describe("Test ExternalServices on Universal", func() {
 
 	meshDefaulMtlsOn := `
 type: Mesh
@@ -115,7 +115,7 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	FIt("should route to external-service", func() {
+	It("should route to external-service", func() {
 		err := YamlUniversal(fmt.Sprintf(trafficRoute, es1))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
