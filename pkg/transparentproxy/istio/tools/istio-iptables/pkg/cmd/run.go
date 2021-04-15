@@ -444,7 +444,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 			// Instead, we just have:
 			// app => istio-agent => dns server
 			iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "!", "-d", "127.0.0.1/32",
-				"-p", "tcp", "!", "--dport", "53",
+				"-p", constants.TCP, "!", "--dport", "53",
 				"-m", "owner", "--uid-owner", uid, "-j", constants.ISTIOINREDIRECT)
 		} else {
 			iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "!", "-d", "127.0.0.1/32",
@@ -461,9 +461,9 @@ func (iptConfigurator *IptablesConfigurator) run() {
 				// handle this case, we exclude port 53 from this rule. Note: We cannot just move the
 				// port 53 redirection rule further up the list, as we will want to avoid capturing
 				// DNS requests from the proxy UID/GID
-				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", "tcp",
+				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", constants.TCP,
 					"!", "--dport", "53",
-					"-m", "owner", "!", "--uid-owner", uid, "-j", constants.RETURN)
+					"-m", "owner", "!", "--uid-owner", uid, "-j", iptConfigurator.cfg.DNSUpstreamTargetChain)
 			} else {
 				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-m", "owner", "!", "--uid-owner", uid, "-j", constants.RETURN)
 			}
@@ -490,9 +490,9 @@ func (iptConfigurator *IptablesConfigurator) run() {
 				// handle this case, we exclude port 53 from this rule. Note: We cannot just move the
 				// port 53 redirection rule further up the list, as we will want to avoid capturing
 				// DNS requests from the proxy UID/GID
-				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", "tcp",
+				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", constants.TCP,
 					"!", "--dport", "53",
-					"-m", "owner", "!", "--gid-owner", gid, "-j", constants.RETURN)
+					"-m", "owner", "!", "--gid-owner", gid, "-j", iptConfigurator.cfg.DNSUpstreamTargetChain)
 			} else {
 				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-m", "owner", "!", "--gid-owner", gid, "-j", constants.RETURN)
 			}
@@ -553,6 +553,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 		HandleDNSUDP(
 			AppendOps, iptConfigurator.iptables, iptConfigurator.ext, "",
 			iptConfigurator.cfg.AgentDNSListenerPort,
+			iptConfigurator.cfg.DNSUpstreamTargetChain,
 			iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
 			iptConfigurator.cfg.DNSServersV4)
 
@@ -560,6 +561,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 			HandleDNSUDPv6(
 				AppendOps, iptConfigurator.iptables, iptConfigurator.ext, "",
 				iptConfigurator.cfg.AgentDNSListenerPort,
+				iptConfigurator.cfg.DNSUpstreamTargetChain,
 				iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
 				iptConfigurator.cfg.DNSServersV6)
 		}
@@ -583,23 +585,24 @@ func (iptConfigurator *IptablesConfigurator) run() {
 // This helps the creation logic of DNS UDP rules in sync with the deletion.
 func HandleDNSUDP(
 	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
-	cmd, agentDNSListenerPort, proxyUID, proxyGID string, dnsServersV4 []string) {
+	cmd, agentDNSListenerPort, dnsUpstreamTargetChain, proxyUID, proxyGID string, dnsServersV4 []string) {
 	const paramIdxRaw = 4
 	var raw []string
 	opsStr := opsToString[ops]
 	table := constants.NAT
 	chain := constants.OUTPUT
+	rulePosition := 1
 
 	// Make sure that upstream DNS requests from agent/envoy dont get captured.
-	// TODO: add ip6 as well
 	for _, uid := range split(proxyUID) {
 		raw = []string{
 			"-t", table, opsStr, chain,
-			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", constants.RETURN,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", dnsUpstreamTargetChain,
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV4(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
@@ -607,11 +610,12 @@ func HandleDNSUDP(
 	for _, gid := range split(proxyGID) {
 		raw = []string{
 			"-t", table, opsStr, chain,
-			"-p", "udp", "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", constants.RETURN,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", dnsUpstreamTargetChain,
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV4(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
@@ -632,7 +636,8 @@ func HandleDNSUDP(
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV4(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
@@ -645,23 +650,24 @@ func HandleDNSUDP(
 // This helps the creation logic of DNS UDP rules in sync with the deletion.
 func HandleDNSUDPv6(
 	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
-	cmd, agentDNSListenerPort, proxyUID, proxyGID string, dnsServersV6 []string) {
+	cmd, agentDNSListenerPort, dnsUpstreamTargetChain, proxyUID, proxyGID string, dnsServersV6 []string) {
 	const paramIdxRaw = 4
 	var raw []string
 	opsStr := opsToString[ops]
 	table := constants.NAT
 	chain := constants.OUTPUT
+	rulePosition := 1
 
 	// Make sure that upstream DNS requests from agent/envoy dont get captured.
-	// TODO: add ip6 as well
 	for _, uid := range split(proxyUID) {
 		raw = []string{
 			"-t", table, opsStr, chain,
-			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", constants.RETURN,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", dnsUpstreamTargetChain,
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV6(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
@@ -669,11 +675,12 @@ func HandleDNSUDPv6(
 	for _, gid := range split(proxyGID) {
 		raw = []string{
 			"-t", table, opsStr, chain,
-			"-p", constants.UDP, "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", constants.RETURN,
+			"-p", constants.UDP, "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", dnsUpstreamTargetChain,
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV6(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV6(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
@@ -694,7 +701,8 @@ func HandleDNSUDPv6(
 		}
 		switch ops {
 		case AppendOps:
-			iptables.AppendRuleV6(chain, table, raw[paramIdxRaw:]...)
+			iptables.InsertRuleV6(chain, table, rulePosition, raw[paramIdxRaw:]...)
+			rulePosition++
 		case DeleteOps:
 			ext.RunQuietlyAndIgnore(cmd, raw...)
 		}
