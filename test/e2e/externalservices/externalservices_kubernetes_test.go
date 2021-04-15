@@ -195,9 +195,17 @@ metadata:
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
 
-		// and you can also use .mesh
+		// and you can also use .mesh on port of the provided host
 		stdout, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
+		Expect(err).ToNot(HaveOccurred())
+		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
+		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
+
+		// and you can also use .mesh on port 80
+		// todo (lobkovilya): check of backward compatibility, could be deleted in the next major release Kuma 1.2.x
+		stdout, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
