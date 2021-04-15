@@ -34,7 +34,7 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 
 	vips := g.computeVIPs(ctx, proxy)
 	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.InboundListener(names.GetDNSListenerName(), proxy.Dataplane.GetIP(), dnsPort, core_xds.SocketAddressProtocolUDP)).
+		Configure(envoy_listeners.InboundListener(names.GetDNSListenerName(), "127.0.0.1", dnsPort, core_xds.SocketAddressProtocolUDP)).
 		Configure(envoy_listeners.DNS(vips, emptyDnsPort)).
 		Build()
 	if err != nil {
