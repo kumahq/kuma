@@ -371,6 +371,7 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, tr
 func (s *UniversalApp) setupTransparent(cpIp string) {
 	app := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
 		"/usr/bin/kumactl", "install", "transparent-proxy",
+		"--skip-resolv-conf",
 		"--redirect-dns",
 		"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 		"--kuma-dp-user", "kuma-dp",
