@@ -83,14 +83,20 @@ func VIPOutbounds(
 	outbounds := []*mesh_proto.Dataplane_Networking_Outbound{}
 	for _, service := range services {
 		entry := serviceVIPMap[service]
-		outbounds = append(outbounds,
-			&mesh_proto.Dataplane_Networking_Outbound{
+		outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+			Address: entry.ip,
+			Port:    entry.port,
+			Tags:    map[string]string{mesh_proto.ServiceTag: service},
+		})
+
+		// todo (lobkovilya): backwards compatibility, could be deleted in the next major release Kuma 1.2.x
+		if entry.port != VIPListenPort {
+			outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
 				Address: entry.ip,
-				Port:    entry.port,
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: service,
-				},
+				Port:    VIPListenPort,
+				Tags:    map[string]string{mesh_proto.ServiceTag: service},
 			})
+		}
 	}
 
 	return outbounds
