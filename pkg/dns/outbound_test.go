@@ -242,8 +242,16 @@ var _ = Describe("VIPOutbounds", func() {
         port: 1234
         tags:
           kuma.io/service: first-external-service
+      - address: 240.0.0.6
+        port: 80
+        tags:
+          kuma.io/service: first-external-service
       - address: 240.0.0.7
         port: 4321
+        tags:
+          kuma.io/service: second-external-service
+      - address: 240.0.0.7
+        port: 80
         tags:
           kuma.io/service: second-external-service
       - address: 240.0.0.2
