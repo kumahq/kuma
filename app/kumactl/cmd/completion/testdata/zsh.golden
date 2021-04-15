@@ -977,6 +977,7 @@ function _kumactl_install_transparent-proxy {
     '--modify-resolv-conf[skip modifying the host `/etc/resolv.conf`]' \
     '--redirect-dns[redirect the DNS requests to a specified port]' \
     '--redirect-dns-port[the port where the DNS agent is listening]:' \
+    '--redirect-dns-upstream-target-chain[(optional) the iptables chain where the upstream DNS requests should be directed to. Use with care.]:' \
     '--redirect-inbound[redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.]' \
     '--redirect-inbound-port[inbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortInbound`]:' \
     '--redirect-inbound-port-v6[IPv6 inbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortInboundV6`]:' \
