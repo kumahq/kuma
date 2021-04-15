@@ -142,6 +142,8 @@ var _ = Describe("bootstrapGenerator", func() {
 				AdminPort:      1234,
 				DataplaneToken: "token",
 				Version:        defaultVersion,
+				DNSPort:        53001,
+				EmptyDNSPort:   53002,
 			},
 			expectedConfigFile:       "generator.default-config.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV3,
@@ -473,6 +475,17 @@ w/vjIriD0mGwwccxbojmEHq4rO4ZrjQNmwvOgxoL2dTm/L9Smr6RXmIgu/0Pnrlq
 			},
 			expected: `A data plane proxy is trying to verify the control plane using the certificate which is not a certificate authority (basic constraint 'CA' is set to 'false').
 Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE`,
+		}),
+		Entry("when DNS is used in API V2", errTestCase{
+			request: types.BootstrapRequest{
+				Host:             "localhost",
+				Mesh:             "mesh",
+				Name:             "name.namespace",
+				AdminPort:        9901,
+				BootstrapVersion: "2",
+				DNSPort:          1234,
+			},
+			expected: `dnsPort: DNS cannot be used in API V2. Upgrade Kuma DP to API V3`,
 		}),
 	)
 })

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -298,6 +299,32 @@ func (i *KumaInjector) sidecarEnvVars(mesh string, podAnnotations map[string]str
 			Value: i.caCert,
 		},
 	}
+	if i.cfg.BuiltinDNS.Enabled {
+		envVars["KUMA_DNS_ENABLED"] = kube_core.EnvVar{
+			Name:  "KUMA_DNS_ENABLED",
+			Value: "true",
+		}
+
+		envVars["KUMA_DNS_CORE_DNS_PORT"] = kube_core.EnvVar{
+			Name:  "KUMA_DNS_CORE_DNS_PORT",
+			Value: strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port), 10),
+		}
+
+		envVars["KUMA_DNS_CORE_DNS_EMPTY_PORT"] = kube_core.EnvVar{
+			Name:  "KUMA_DNS_CORE_DNS_EMPTY_PORT",
+			Value: strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port+1), 10),
+		}
+
+		envVars["KUMA_DNS_ENVOY_DNS_PORT"] = kube_core.EnvVar{
+			Name:  "KUMA_DNS_ENVOY_DNS_PORT",
+			Value: strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port+2), 10),
+		}
+
+		envVars["KUMA_DNS_CORE_DNS_BINARY_PATH"] = kube_core.EnvVar{
+			Name:  "KUMA_DNS_CORE_DNS_BINARY_PATH",
+			Value: "coredns",
+		}
+	}
 
 	// override defaults with cfg env vars
 	for envName, envVal := range i.cfg.SidecarContainer.EnvVars {
@@ -392,12 +419,22 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	}
 	excludeInboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
 	excludeOutboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPorts)
+
+	dnsArg := []string{}
+
+	if i.cfg.BuiltinDNS.Enabled {
+		dnsArg = append(dnsArg,
+			"--redirect-dns",
+			"--redirect-dns-port", strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port), 10),
+		)
+	}
+
 	return kube_core.Container{
 		Name:            util.KumaInitContainerName,
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
-		Args: []string{
+		Args: append([]string{
 			"--redirect-outbound-port",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
 			"--redirect-inbound=" + redirectInbound,
@@ -411,8 +448,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 			excludeInboundPorts,
 			"--exclude-outbound-ports",
 			excludeOutboundPorts,
-			"--skip-resolv-conf",
-		},
+		}, dnsArg...),
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  new(int64), // way to get pointer to int64(0)
 			RunAsGroup: new(int64),

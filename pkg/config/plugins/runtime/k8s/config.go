@@ -68,6 +68,10 @@ func DefaultKubernetesRuntimeConfig() *KubernetesRuntimeConfig {
 					"openshift.io/deployer-pod-for.name": "*",
 				},
 			},
+			BuiltinDNS: BuiltinDNS{
+				Enabled: false,
+				Port:    15053,
+			},
 		},
 		MarshalingCacheExpirationTime: 5 * time.Minute,
 	}
@@ -118,7 +122,8 @@ type Injector struct {
 	// Exceptions defines list of exceptions for Kuma injection
 	Exceptions Exceptions `yaml:"exceptions"`
 	// CaCertFile is CA certificate which will be used to verify a connection to the control plane
-	CaCertFile string `yaml:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
+	CaCertFile string     `yaml:"caCertFile" envconfig:"kuma_runtime_kubernetes_injector_ca_cert_file"`
+	BuiltinDNS BuiltinDNS `yaml:"builtinDNS"`
 }
 
 // Exceptions defines list of exceptions for Kuma injection
@@ -218,6 +223,13 @@ type SidecarResourceLimits struct {
 type InitContainer struct {
 	// Image name.
 	Image string `yaml:"image,omitempty" envconfig:"kuma_injector_init_container_image"`
+}
+
+type BuiltinDNS struct {
+	// Use the built-in DNS
+	Enabled bool `yaml:"enabled,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_enabled"`
+	// Redirect port for DNS
+	Port uint32 `yaml:"port,omitempty" envconfig:"kuma_runtime_kubernetes_injector_builtin_dns_port"`
 }
 
 var _ config.Config = &KubernetesRuntimeConfig{}
@@ -409,6 +421,18 @@ func (c *SidecarResourceLimits) Validate() (errs error) {
 	}
 	if _, err := kube_api.ParseQuantity(c.Memory); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".Memory is not valid"))
+	}
+	return
+}
+
+var _ config.Config = &BuiltinDNS{}
+
+func (c *BuiltinDNS) Sanitize() {
+}
+
+func (c *BuiltinDNS) Validate() (errs error) {
+	if 65535 < c.Port {
+		errs = multierr.Append(errs, errors.Errorf(".port must be in the range [0, 65535]"))
 	}
 	return
 }

@@ -10,3 +10,9 @@ dataplane:
   bootstrapVersion: ""
 dataplaneRuntime:
   binaryPath: envoy
+dns:
+  coreDnsBinaryPath: coredns
+  coreDnsEmptyPort: 15055
+  coreDnsPort: 15053
+  envoyDnsPort: 15054
+  prometheusPort: 19153

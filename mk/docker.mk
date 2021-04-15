@@ -34,7 +34,7 @@ docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp ## Dev: Build 
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
 
 .PHONY: docker/build/kuma-dp
-docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp ## Dev: Build `kuma-dp` Docker image using existing artifact
+docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/coredns/coredns ## Dev: Build `kuma-dp` Docker image using existing artifact
 	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
@@ -64,7 +64,7 @@ docker/build/kuma-universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/a
 image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
 
 .PHONY: image/kuma-dp
-image/kuma-dp: build/kuma-dp/linux-amd64 docker/build/kuma-dp ## Dev: Rebuild `kuma-dp` Docker image
+image/kuma-dp: build/kuma-dp/linux-amd64 build/coredns/linux-amd64 docker/build/kuma-dp ## Dev: Rebuild `kuma-dp` Docker image
 
 .PHONY: image/kumactl
 image/kumactl: build/kumactl/linux-amd64 docker/build/kumactl ## Dev: Rebuild `kumactl` Docker image

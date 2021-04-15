@@ -28,9 +28,23 @@ import (
 	dep "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/dependencies"
 )
 
+type Ops int
+
+const (
+	// AppendOps performs append operations of rules
+	AppendOps Ops = iota
+	// DeleteOps performs delete operations of rules
+	DeleteOps
+)
+
+var opsToString = map[Ops]string{
+	AppendOps: "-A",
+	DeleteOps: "-D",
+}
+
 type IptablesConfigurator struct {
 	iptables *builder.IptablesBuilderImpl
-	//TODO(abhide): Fix dep.Dependencies with better interface
+	// TODO(abhide): Fix dep.Dependencies with better interface
 	ext dep.Dependencies
 	cfg *config.Config
 }
@@ -99,7 +113,6 @@ func (iptConfigurator *IptablesConfigurator) separateV4V6(cidrList string) (Netw
 
 func (iptConfigurator *IptablesConfigurator) logConfig() {
 	// Dump out our environment for debugging purposes.
-	// TODO: Remove printing of obsolete environment variables, e.g. ISTIO_SERVICE_CIDR.
 	fmt.Println("Environment:")
 	fmt.Println("------------")
 	fmt.Printf("ENVOY_PORT=%s\n", os.Getenv("ENVOY_PORT"))
@@ -113,6 +126,7 @@ func (iptConfigurator *IptablesConfigurator) logConfig() {
 	fmt.Printf("ISTIO_LOCAL_EXCLUDE_PORTS=%s\n", os.Getenv("ISTIO_LOCAL_EXCLUDE_PORTS"))
 	fmt.Printf("ISTIO_SERVICE_CIDR=%s\n", os.Getenv("ISTIO_SERVICE_CIDR"))
 	fmt.Printf("ISTIO_SERVICE_EXCLUDE_CIDR=%s\n", os.Getenv("ISTIO_SERVICE_EXCLUDE_CIDR"))
+	fmt.Printf("ISTIO_META_DNS_CAPTURE=%s\n", os.Getenv("ISTIO_META_DNS_CAPTURE"))
 	fmt.Println("")
 	iptConfigurator.cfg.Print()
 }
@@ -133,25 +147,26 @@ func (iptConfigurator *IptablesConfigurator) handleInboundPortsInclude() {
 				iptConfigurator.cfg.InboundTProxyMark)
 			iptConfigurator.iptables.AppendRuleV4(constants.ISTIODIVERT, constants.MANGLE, "-j", constants.ACCEPT)
 			// Route all packets marked in chain ISTIODIVERT using routing table ${INBOUND_TPROXY_ROUTE_TABLE}.
-			//TODO: (abhide): Move this out of this method
+			// TODO: (abhide): Move this out of this method
 			iptConfigurator.ext.RunOrFail(
 				constants.IP, "-f", "inet", "rule", "add", "fwmark", iptConfigurator.cfg.InboundTProxyMark, "lookup",
 				iptConfigurator.cfg.InboundTProxyRouteTable)
 			// In routing table ${INBOUND_TPROXY_ROUTE_TABLE}, create a single default rule to route all traffic to
 			// the loopback interface.
-			//TODO: (abhide): Move this out of this method
+			// TODO: (abhide): Move this out of this method
 			err := iptConfigurator.ext.Run(constants.IP, "-f", "inet", "route", "add", "local", "default", "dev", "lo", "table",
 				iptConfigurator.cfg.InboundTProxyRouteTable)
 			if err != nil {
-				//TODO: (abhide): Move this out of this method
+				// TODO: (abhide): Move this out of this method
 				iptConfigurator.ext.RunOrFail(constants.IP, "route", "show", "table", "all")
 			}
+
 			// Create a new chain for redirecting inbound traffic to the common Envoy
 			// port.
 			// In the ISTIOINBOUND chain, '-j RETURN' bypasses Envoy and
 			// '-j ISTIOTPROXY' redirects to Envoy.
 			iptConfigurator.iptables.AppendRuleV4(constants.ISTIOTPROXY, constants.MANGLE, "!", "-d", "127.0.0.1/32", "-p", constants.TCP, "-j", constants.TPROXY,
-				"--tproxy-mark", iptConfigurator.cfg.InboundTProxyMark+"/0xffffffff", "--on-port", iptConfigurator.cfg.ProxyPort)
+				"--tproxy-mark", iptConfigurator.cfg.InboundTProxyMark+"/0xffffffff", "--on-port", iptConfigurator.cfg.InboundCapturePort)
 			table = constants.MANGLE
 		} else {
 			table = constants.NAT
@@ -208,7 +223,7 @@ func (iptConfigurator *IptablesConfigurator) handleInboundIpv6Rules(ipv6RangesEx
 	// Use this chain also for redirecting inbound traffic to the common Envoy port
 	// when not using TPROXY.
 	iptConfigurator.iptables.AppendRuleV6(constants.ISTIOINREDIRECT, constants.NAT, "-p", constants.TCP, "-j",
-		constants.REDIRECT, "--to-ports", iptConfigurator.cfg.InboundCapturePortV6)
+		constants.REDIRECT, "--to-ports", iptConfigurator.cfg.InboundCapturePortV6) //Kuma changed
 
 	// Handling of inbound ports. Traffic will be redirected to Envoy, which will process and forward
 	// to the local service. If not set, no inbound port will be intercepted by istio iptablesOrFail.
@@ -329,6 +344,27 @@ func (iptConfigurator *IptablesConfigurator) handleInboundIpv4Rules(ipv4RangesIn
 	}
 }
 
+func (iptConfigurator *IptablesConfigurator) shortCircuitKubeInternalInterface() {
+	for _, internalInterface := range split(iptConfigurator.cfg.KubevirtInterfaces) {
+		iptConfigurator.iptables.InsertRuleV4(constants.PREROUTING, constants.NAT, 1, "-i", internalInterface, "-j", constants.RETURN)
+		if iptConfigurator.cfg.EnableInboundIPv6 {
+			iptConfigurator.iptables.InsertRuleV6(constants.PREROUTING, constants.NAT, 1, "-i", internalInterface, "-j", constants.RETURN)
+		}
+	}
+}
+
+func SplitV4V6(ips []string) (ipv4 []string, ipv6 []string) {
+	for _, i := range ips {
+		parsed := net.ParseIP(i)
+		if parsed.To4() != nil {
+			ipv4 = append(ipv4, i)
+		} else {
+			ipv6 = append(ipv6, i)
+		}
+	}
+	return
+}
+
 func (iptConfigurator *IptablesConfigurator) run() {
 	defer func() {
 		// Best effort since we don't know if the commands exist
@@ -338,7 +374,6 @@ func (iptConfigurator *IptablesConfigurator) run() {
 		}
 	}()
 
-	//
 	// Since OUTBOUND_IP_RANGES_EXCLUDE could carry ipv4 and ipv6 ranges
 	// need to split them in different arrays one for ipv4 and one for ipv6
 	// in order to not to fail
@@ -356,20 +391,16 @@ func (iptConfigurator *IptablesConfigurator) run() {
 		panic(err)
 	}
 
-	redirectDNS := false
-	dnsTargetPort := constants.EnvoyDNSListenerPort
-	if dnsCaptureByAgent.Get() != "" || dnsCaptureByEnvoy.Get() != "" {
-		redirectDNS = true
-		if dnsCaptureByAgent.Get() != "" {
-			dnsTargetPort = constants.IstioAgentDNSListenerPort
-		}
-	}
+	redirectDNS := iptConfigurator.cfg.RedirectDNS
 	iptConfigurator.logConfig()
 
 	if iptConfigurator.cfg.EnableInboundIPv6 {
-		//TODO: (abhide): Move this out of this method
+		// TODO: (abhide): Move this out of this method
 		iptConfigurator.ext.RunOrFail(constants.IP, "-6", "addr", "add", "::6/128", "dev", "lo")
 	}
+
+	// Do not capture internal interface.
+	iptConfigurator.shortCircuitKubeInternalInterface()
 
 	// Create a new chain for to hit tunnel port directly. Envoy will be listening on port acting as VPN tunnel.
 	iptConfigurator.iptables.AppendRuleV4(constants.ISTIOINBOUND, constants.NAT, "-p", constants.TCP, "--dport",
@@ -407,13 +438,35 @@ func (iptConfigurator *IptablesConfigurator) run() {
 		// Redirect app calls back to itself via Envoy when using the service VIP
 		// e.g. appN => Envoy (client) => Envoy (server) => appN.
 		// nolint: lll
-		iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "!", "-d", "127.0.0.1/32", "-m", "owner", "--uid-owner", uid, "-j", constants.ISTIOINREDIRECT)
+		if redirectDNS {
+			// When DNS is enabled, we skip this for port 53. This ensures we do not have:
+			// app => istio-agent => Envoy inbound => dns server
+			// Instead, we just have:
+			// app => istio-agent => dns server
+			iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "!", "-d", "127.0.0.1/32",
+				"-p", "tcp", "!", "--dport", "53",
+				"-m", "owner", "--uid-owner", uid, "-j", constants.ISTIOINREDIRECT)
+		} else {
+			iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "!", "-d", "127.0.0.1/32",
+				"-m", "owner", "--uid-owner", uid, "-j", constants.ISTIOINREDIRECT)
+		}
 
 		// Do not redirect app calls to back itself via Envoy when using the endpoint address
 		// e.g. appN => appN by lo
 		// If loopback explicitly set via OutboundIPRangesInclude, then don't return.
 		if !ipv4RangesInclude.HasLoopBackIP && !ipv6RangesInclude.HasLoopBackIP {
-			iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-m", "owner", "!", "--uid-owner", uid, "-j", constants.RETURN)
+			if redirectDNS {
+				// Users may have a DNS server that is on localhost. In these cases, applications may
+				// send TCP traffic to the DNS server that we actually *do* want to intercept. To
+				// handle this case, we exclude port 53 from this rule. Note: We cannot just move the
+				// port 53 redirection rule further up the list, as we will want to avoid capturing
+				// DNS requests from the proxy UID/GID
+				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", "tcp",
+					"!", "--dport", "53",
+					"-m", "owner", "!", "--uid-owner", uid, "-j", constants.RETURN)
+			} else {
+				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-m", "owner", "!", "--uid-owner", uid, "-j", constants.RETURN)
+			}
 		}
 
 		// Avoid infinite loops. Don't redirect Envoy traffic directly back to
@@ -431,13 +484,55 @@ func (iptConfigurator *IptablesConfigurator) run() {
 		// e.g. appN => appN by lo
 		// If loopback explicitly set via OutboundIPRangesInclude, then don't return.
 		if !ipv4RangesInclude.HasLoopBackIP && !ipv6RangesInclude.HasLoopBackIP {
-			iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-m", "owner", "!", "--gid-owner", gid, "-j", constants.RETURN)
+			if redirectDNS {
+				// Users may have a DNS server that is on localhost. In these cases, applications may
+				// send TCP traffic to the DNS server that we actually *do* want to intercept. To
+				// handle this case, we exclude port 53 from this rule. Note: We cannot just move the
+				// port 53 redirection rule further up the list, as we will want to avoid capturing
+				// DNS requests from the proxy UID/GID
+				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", "tcp",
+					"!", "--dport", "53",
+					"-m", "owner", "!", "--gid-owner", gid, "-j", constants.RETURN)
+			} else {
+				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-m", "owner", "!", "--gid-owner", gid, "-j", constants.RETURN)
+			}
 		}
 
 		// Avoid infinite loops. Don't redirect Envoy traffic directly back to
 		// Envoy for non-loopback traffic.
 		iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-m", "owner", "--gid-owner", gid, "-j", constants.RETURN)
 	}
+
+	if redirectDNS {
+		for _, s := range iptConfigurator.cfg.DNSServersV4 {
+			// redirect all TCP dns traffic on port 53 to the agent on port 15053 for all servers
+			// in etc/resolv.conf
+			// We avoid redirecting all IP ranges to avoid infinite loops when there are local DNS proxies
+			// such as: app -> istio dns server -> dnsmasq -> upstream
+			// This ensures that we do not get requests from dnsmasq sent back to the agent dns server in a loop.
+			// Note: If a user somehow configured etc/resolv.conf to point to dnsmasq and server X, and dnsmasq also
+			// pointed to server X, this would not work. However, the assumption is that is not a common case.
+			iptConfigurator.iptables.AppendRuleV4(
+				constants.ISTIOOUTPUT, constants.NAT,
+				"-p", constants.TCP,
+				"--dport", "53",
+				"-d", s+"/32",
+				"-j", constants.REDIRECT,
+				"--to-ports", iptConfigurator.cfg.AgentDNSListenerPort)
+		}
+		if iptConfigurator.cfg.EnableInboundIPv6 {
+			for _, s := range iptConfigurator.cfg.DNSServersV6 {
+				iptConfigurator.iptables.AppendRuleV6(
+					constants.ISTIOOUTPUT, constants.NAT,
+					"-p", constants.TCP,
+					"--dport", "53",
+					"-d", s+"/32",
+					"-j", constants.REDIRECT,
+					"--to-ports", iptConfigurator.cfg.AgentDNSListenerPort)
+			}
+		}
+	}
+
 	// Skip redirection for Envoy-aware applications and
 	// container-to-container traffic both of which explicitly use
 	// localhost.
@@ -445,10 +540,6 @@ func (iptConfigurator *IptablesConfigurator) run() {
 	// Apply outbound IPv4 exclusions. Must be applied before inclusions.
 	for _, cidr := range ipv4RangesExclude.IPNets {
 		iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-d", cidr.String(), "-j", constants.RETURN)
-	}
-
-	for _, internalInterface := range split(iptConfigurator.cfg.KubevirtInterfaces) {
-		iptConfigurator.iptables.InsertRuleV4(constants.PREROUTING, constants.NAT, 1, "-i", internalInterface, "-j", constants.RETURN)
 	}
 
 	iptConfigurator.handleOutboundPortsInclude()
@@ -459,36 +550,158 @@ func (iptConfigurator *IptablesConfigurator) run() {
 	}
 
 	if redirectDNS {
-		// Make sure that upstream DNS requests from agent/envoy dont get captured.
-		for _, uid := range split(iptConfigurator.cfg.ProxyUID) {
-			iptConfigurator.iptables.AppendRuleV4(constants.OUTPUT, constants.NAT,
-				"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", constants.RETURN)
-		}
-		for _, gid := range split(iptConfigurator.cfg.ProxyGID) {
-			// TODO: add ip6 as well
-			iptConfigurator.iptables.AppendRuleV4(constants.OUTPUT, constants.NAT,
-				"-p", "udp", "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", constants.RETURN)
-		}
+		HandleDNSUDP(
+			AppendOps, iptConfigurator.iptables, iptConfigurator.ext, "",
+			iptConfigurator.cfg.AgentDNSListenerPort,
+			iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
+			iptConfigurator.cfg.DNSServersV4)
 
-		// from app to agent/envoy - dnat to 127.0.0.1:port
-		iptConfigurator.iptables.AppendRuleV4(constants.OUTPUT, constants.NAT,
-			"-p", "udp", "--dport", "53",
-			"-j", "DNAT", "--to-destination", "127.0.0.1:"+dnsTargetPort)
-		// overwrite the source IP so that when envoy/agent responds to the DNS request
-		// it responds to localhost on same interface. Otherwise, the connection will not
-		// match in the kernel. Note that the dest port here should be the rewritten port.
-		iptConfigurator.iptables.AppendRuleV4(constants.POSTROUTING, constants.NAT,
-			"-p", "udp", "--dport", dnsTargetPort, "-j", "SNAT", "--to-source", "127.0.0.1")
+		if iptConfigurator.cfg.EnableInboundIPv6 {
+			HandleDNSUDPv6(
+				AppendOps, iptConfigurator.iptables, iptConfigurator.ext, "",
+				iptConfigurator.cfg.AgentDNSListenerPort,
+				iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
+				iptConfigurator.cfg.DNSServersV6)
+		}
 	}
 
 	if iptConfigurator.cfg.InboundInterceptionMode == constants.TPROXY {
-		// mark outgoing packets from 127.0.0.1/32 with 1337, match it to policy routing entry setup for TPROXY mode
+		// save packet mark set by envoy.filters.listener.original_src as connection mark
+		iptConfigurator.iptables.AppendRuleV4(constants.PREROUTING, constants.MANGLE,
+			"-p", constants.TCP, "-m", "mark", "--mark", iptConfigurator.cfg.InboundTProxyMark, "-j", "CONNMARK", "--save-mark")
+		// mark outgoing packets from workload, match it to policy routing entry setup for TPROXY mode
 		iptConfigurator.iptables.AppendRuleV4(constants.OUTPUT, constants.MANGLE,
-			"-p", constants.TCP, "-s", "127.0.0.1/32", "!", "-d", "127.0.0.1/32",
-			"-j", constants.MARK, "--set-mark", iptConfigurator.cfg.InboundTProxyMark)
+			"-p", constants.TCP, "-m", "connmark", "--mark", iptConfigurator.cfg.InboundTProxyMark, "-j", "CONNMARK", "--restore-mark")
+		// prevent infinite redirect
+		iptConfigurator.iptables.InsertRuleV4(constants.ISTIOINBOUND, constants.MANGLE, 1,
+			"-p", constants.TCP, "-m", "mark", "--mark", iptConfigurator.cfg.InboundTProxyMark, "-j", constants.RETURN)
 	}
 	iptConfigurator.executeCommands()
 }
+
+// HandleDNSUDP is a helper function to tackle with DNS UDP specific operations.
+// This helps the creation logic of DNS UDP rules in sync with the deletion.
+func HandleDNSUDP(
+	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
+	cmd, agentDNSListenerPort, proxyUID, proxyGID string, dnsServersV4 []string) {
+	const paramIdxRaw = 4
+	var raw []string
+	opsStr := opsToString[ops]
+	table := constants.NAT
+	chain := constants.OUTPUT
+
+	// Make sure that upstream DNS requests from agent/envoy dont get captured.
+	// TODO: add ip6 as well
+	for _, uid := range split(proxyUID) {
+		raw = []string{
+			"-t", table, opsStr, chain,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", constants.RETURN,
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	}
+	for _, gid := range split(proxyGID) {
+		raw = []string{
+			"-t", table, opsStr, chain,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", constants.RETURN,
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	}
+
+	// redirect all UDP dns traffic on port 53 to the agent on port 15053 for all servers
+	// in etc/resolv.conf
+	// We avoid redirecting all IP ranges to avoid infinite loops when there are local DNS proxies
+	// such as: app -> istio dns server -> dnsmasq -> upstream
+	// This ensures that we do not get requests from dnsmasq sent back to the agent dns server in a loop.
+	// Note: If a user somehow configured etc/resolv.conf to point to dnsmasq and server X, and dnsmasq also
+	// pointed to server X, this would not work. However, the assumption is that is not a common case.
+	for _, s := range dnsServersV4 {
+		raw = []string{
+			"-t", table, opsStr, chain,
+			"-p", "udp", "--dport", "53", "-d", s + "/32",
+			"-j", constants.REDIRECT, "--to-port", agentDNSListenerPort,
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	}
+}
+
+// kuma changes start
+
+// HandleDNSUDPv6 is a IPv6 helper function to tackle with DNS UDP specific operations.
+// This helps the creation logic of DNS UDP rules in sync with the deletion.
+func HandleDNSUDPv6(
+	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
+	cmd, agentDNSListenerPort, proxyUID, proxyGID string, dnsServersV6 []string) {
+	const paramIdxRaw = 4
+	var raw []string
+	opsStr := opsToString[ops]
+	table := constants.NAT
+	chain := constants.OUTPUT
+
+	// Make sure that upstream DNS requests from agent/envoy dont get captured.
+	// TODO: add ip6 as well
+	for _, uid := range split(proxyUID) {
+		raw = []string{
+			"-t", table, opsStr, chain,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", constants.RETURN,
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV4(chain, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	}
+	for _, gid := range split(proxyGID) {
+		raw = []string{
+			"-t", table, opsStr, chain,
+			"-p", constants.UDP, "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", constants.RETURN,
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV6(chain, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	}
+
+	// redirect all UDP dns traffic on port 53 to the agent on port 15053 for all servers
+	// in etc/resolv.conf
+	// We avoid redirecting all IP ranges to avoid infinite loops when there are local DNS proxies
+	// such as: app -> istio dns server -> dnsmasq -> upstream
+	// This ensures that we do not get requests from dnsmasq sent back to the agent dns server in a loop.
+	// Note: If a user somehow configured etc/resolv.conf to point to dnsmasq and server X, and dnsmasq also
+	// pointed to server X, this would not work. However, the assumption is that is not a common case.
+	for _, s := range dnsServersV6 {
+		raw = []string{
+			"-t", table, opsStr, chain,
+			"-p", constants.UDP, "--dport", "53", "-d", s + "/32",
+			"-j", constants.REDIRECT, "--to-port", agentDNSListenerPort,
+		}
+		switch ops {
+		case AppendOps:
+			iptables.AppendRuleV6(chain, table, raw[paramIdxRaw:]...)
+		case DeleteOps:
+			ext.RunQuietlyAndIgnore(cmd, raw...)
+		}
+	}
+}
+
+// kuma changes end
 
 func (iptConfigurator *IptablesConfigurator) handleOutboundPortsInclude() {
 	if iptConfigurator.cfg.OutboundPortsInclude != "" {
