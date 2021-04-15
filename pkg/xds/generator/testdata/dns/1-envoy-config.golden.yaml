@@ -4,6 +4,7 @@ resources:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
+        address: 127.0.0.1
         portValue: 53001
         protocol: UDP
     listenerFilters:
