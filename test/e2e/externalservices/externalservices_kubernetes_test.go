@@ -17,7 +17,7 @@ import (
 	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 )
 
-var _ = FDescribe("Test ExternalServices on Kubernetes", func() {
+var _ = Describe("Test ExternalServices on Kubernetes", func() {
 
 	meshDefaulMtlsOn := `
 apiVersion: kuma.io/v1alpha1
@@ -119,7 +119,7 @@ metadata:
 
 		err = YamlK8s(fmt.Sprintf(externalService,
 			es1, es1,
-			"externalservice-http-server.externalservice-namespace", 10080,
+			"externalservice-http-server.externalservice-namespace.svc.cluster.local", 10080,
 			"false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -151,7 +151,7 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	FIt("should route to external-service", func() {
+	It("should route to external-service", func() {
 		// given Mesh with passthrough enabled
 		err := YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -181,34 +181,32 @@ metadata:
 		// when apply external service
 		err = YamlK8s(fmt.Sprintf(externalService,
 			es1, es1,
-			"externalservice-http-server.externalservice-namespace", 10080,
+			"externalservice-http-server.externalservice-namespace.svc.cluster.local", 10080, // .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
 			"false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlK8s(fmt.Sprintf(trafficRoute, es1))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		// then you can access external service with .mesh
+		// then you can access external service again
 		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
+			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
 
-		// and with a hostname
+		// and you can also use .mesh
 		stdout, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
+			"curl", "-v", "-m", "3", "--fail", "http://external-service.mesh:10080")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
 	})
 
 	It("should route to external-service over tls", func() {
-		externalServiceAddress := externalservice.From(cluster, externalservice.HttpsServer).GetExternalAppAddress()
-
 		err := YamlK8s(fmt.Sprintf(externalService,
 			es2, es2,
-			externalServiceAddress, 10080,
+			"externalservice-https-server.externalservice-namespace.svc.cluster.local", 10080,
 			"true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
