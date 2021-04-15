@@ -6,7 +6,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -450,5 +452,84 @@ var _ = Describe("PodReconciler", func() {
                 kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
 `))
+	})
+
+	It("should update Pods when ExternalService updated", func() {
+		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			Mesh: "mesh-1",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "dp-1",
+				OwnerReferences: []kube_meta.OwnerReference{{
+					Controller: utilpointer.BoolPtr(true),
+					Kind:       "Pod",
+					Name:       "dp-1",
+				}},
+			},
+			Spec: map[string]interface{}{
+				"networking": map[string]interface{}{},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		err = kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			Mesh: "mesh-1",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "dp-2",
+				OwnerReferences: []kube_meta.OwnerReference{{
+					Controller: utilpointer.BoolPtr(true),
+					Kind:       "Pod",
+					Name:       "dp-2",
+				}},
+			},
+			Spec: map[string]interface{}{
+				"networking": map[string]interface{}{},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		err = kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			Mesh: "mesh-2",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "dp-3",
+				OwnerReferences: []kube_meta.OwnerReference{{
+					Controller: utilpointer.BoolPtr(true),
+					Kind:       "Pod",
+					Name:       "dp-3",
+				}},
+			},
+			Spec: map[string]interface{}{
+				"networking": map[string]interface{}{},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		mapper := &ExternalServiceToPodsMapper{
+			Client: kubeClient,
+		}
+		es := &mesh_k8s.ExternalService{
+			Mesh: "mesh-1",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "es-1",
+			},
+			Spec: map[string]interface{}{
+				"networking": map[string]interface{}{
+					"address": "httpbin.org:443",
+				},
+				"tags": map[string]interface{}{
+					mesh_proto.ServiceTag: "httpbin",
+				},
+			},
+		}
+		requests := mapper.Map(handler.MapObject{Object: es})
+		requestsStr := []string{}
+		for _, r := range requests {
+			requestsStr = append(requestsStr, r.Name)
+		}
+		Expect(requestsStr).To(HaveLen(2))
+		Expect(requestsStr).To(ConsistOf("dp-1", "dp-2"))
 	})
 })
