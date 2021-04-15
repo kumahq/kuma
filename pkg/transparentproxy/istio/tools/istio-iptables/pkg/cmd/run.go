@@ -463,7 +463,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 				// DNS requests from the proxy UID/GID
 				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", constants.TCP,
 					"!", "--dport", "53",
-					"-m", "owner", "!", "--uid-owner", uid, "-j", constants.RETURN)
+					"-m", "owner", "!", "--uid-owner", uid, "-j", iptConfigurator.cfg.DNSUpstreamTargetChain)
 			} else {
 				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-m", "owner", "!", "--uid-owner", uid, "-j", constants.RETURN)
 			}
@@ -492,7 +492,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 				// DNS requests from the proxy UID/GID
 				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-p", constants.TCP,
 					"!", "--dport", "53",
-					"-m", "owner", "!", "--gid-owner", gid, "-j", constants.RETURN)
+					"-m", "owner", "!", "--gid-owner", gid, "-j", iptConfigurator.cfg.DNSUpstreamTargetChain)
 			} else {
 				iptConfigurator.iptables.AppendRuleV4(constants.ISTIOOUTPUT, constants.NAT, "-o", "lo", "-m", "owner", "!", "--gid-owner", gid, "-j", constants.RETURN)
 			}
@@ -553,6 +553,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 		HandleDNSUDP(
 			AppendOps, iptConfigurator.iptables, iptConfigurator.ext, "",
 			iptConfigurator.cfg.AgentDNSListenerPort,
+			iptConfigurator.cfg.DNSUpstreamTargetChain,
 			iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
 			iptConfigurator.cfg.DNSServersV4)
 
@@ -560,6 +561,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 			HandleDNSUDPv6(
 				AppendOps, iptConfigurator.iptables, iptConfigurator.ext, "",
 				iptConfigurator.cfg.AgentDNSListenerPort,
+				iptConfigurator.cfg.DNSUpstreamTargetChain,
 				iptConfigurator.cfg.ProxyUID, iptConfigurator.cfg.ProxyGID,
 				iptConfigurator.cfg.DNSServersV6)
 		}
@@ -583,7 +585,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 // This helps the creation logic of DNS UDP rules in sync with the deletion.
 func HandleDNSUDP(
 	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
-	cmd, agentDNSListenerPort, proxyUID, proxyGID string, dnsServersV4 []string) {
+	cmd, agentDNSListenerPort, dnsUpstreamTargetChain, proxyUID, proxyGID string, dnsServersV4 []string) {
 	const paramIdxRaw = 4
 	var raw []string
 	opsStr := opsToString[ops]
@@ -595,7 +597,7 @@ func HandleDNSUDP(
 	for _, uid := range split(proxyUID) {
 		raw = []string{
 			"-t", table, opsStr, chain,
-			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", constants.RETURN,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", dnsUpstreamTargetChain,
 		}
 		switch ops {
 		case AppendOps:
@@ -608,7 +610,7 @@ func HandleDNSUDP(
 	for _, gid := range split(proxyGID) {
 		raw = []string{
 			"-t", table, opsStr, chain,
-			"-p", "udp", "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", constants.RETURN,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", dnsUpstreamTargetChain,
 		}
 		switch ops {
 		case AppendOps:
@@ -648,7 +650,7 @@ func HandleDNSUDP(
 // This helps the creation logic of DNS UDP rules in sync with the deletion.
 func HandleDNSUDPv6(
 	ops Ops, iptables *builder.IptablesBuilderImpl, ext dep.Dependencies,
-	cmd, agentDNSListenerPort, proxyUID, proxyGID string, dnsServersV6 []string) {
+	cmd, agentDNSListenerPort, dnsUpstreamTargetChain, proxyUID, proxyGID string, dnsServersV6 []string) {
 	const paramIdxRaw = 4
 	var raw []string
 	opsStr := opsToString[ops]
@@ -660,7 +662,7 @@ func HandleDNSUDPv6(
 	for _, uid := range split(proxyUID) {
 		raw = []string{
 			"-t", table, opsStr, chain,
-			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", constants.RETURN,
+			"-p", "udp", "--dport", "53", "-m", "owner", "--uid-owner", uid, "-j", dnsUpstreamTargetChain,
 		}
 		switch ops {
 		case AppendOps:
@@ -673,7 +675,7 @@ func HandleDNSUDPv6(
 	for _, gid := range split(proxyGID) {
 		raw = []string{
 			"-t", table, opsStr, chain,
-			"-p", constants.UDP, "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", constants.RETURN,
+			"-p", constants.UDP, "--dport", "53", "-m", "owner", "--gid-owner", gid, "-j", dnsUpstreamTargetChain,
 		}
 		switch ops {
 		case AppendOps:

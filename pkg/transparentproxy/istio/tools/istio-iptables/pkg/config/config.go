@@ -50,6 +50,7 @@ type Config struct {
 	DNSServersV4            []string      `json:"DNS_SERVERS_V4"`
 	DNSServersV6            []string      `json:"DNS_SERVERS_V6"`
 	AgentDNSListenerPort    string        `json:"AGENT_DNS_LISTENER_PORT"`
+	DNSUpstreamTargetChain  string        `json:"DNS_UPSTREAM_TARGET_CHAIN"`
 }
 
 func (c *Config) String() string {
@@ -83,5 +84,6 @@ func (c *Config) Print() {
 	fmt.Printf("DNS_CAPTURE=%t\n", c.RedirectDNS)
 	fmt.Printf("DNS_SERVERS=%s,%s\n", c.DNSServersV4, c.DNSServersV6)
 	fmt.Printf("AGENT_DNS_LISTENER_PORT=%s\n", c.AgentDNSListenerPort)
+	fmt.Printf("DNS_UPSTREAM_TARGET_CHAIN=%s\n", c.DNSUpstreamTargetChain)
 	fmt.Println("")
 }

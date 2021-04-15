@@ -90,6 +90,7 @@ const (
 	ProbeTimeout              = "probe-timeout"
 	RedirectDNS               = "redirect-dns"
 	AgentDNSListenerPort      = "agent-dns-listener-port"
+	DNSUpstreamTargetChain    = "dns-upstream-target-chain"
 )
 
 const (
@@ -129,8 +130,8 @@ const (
 	ValidationErrorCode     = 126
 )
 
-// DNS ports
+// DNS ports and others
 const (
-	EnvoyDNSListenerPort      = "15013"
-	IstioAgentDNSListenerPort = "15053"
+	EnvoyDNSListenerPort           = "15013"
+	IstioAgentDNSListenerPort      = "15053"
 )

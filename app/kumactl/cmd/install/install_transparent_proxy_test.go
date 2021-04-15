@@ -76,6 +76,7 @@ var _ = Describe("kumactl install tracing", func() {
 				"--kuma-cp-ip", "1.2.3.4",
 				"--redirect-dns",
 				"--redirect-dns-port", "12345",
+				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 			},
 			goldenFile: "install-transparent-proxy.dns.golden.txt",
 		}),
