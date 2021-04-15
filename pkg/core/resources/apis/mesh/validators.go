@@ -168,6 +168,30 @@ func ProtocolValidator(protocols ...string) SelectorValidatorFunc {
 	}
 }
 
+// Resource is considered valid if it pass validation of any message
+func ValidateAnyResourceYAML(resYAML string, msgs ...proto.Message) error {
+	var err error
+	for _, msg := range msgs {
+		err = ValidateResourceYAML(msg, resYAML)
+		if err == nil {
+			return nil
+		}
+	}
+	return err
+}
+
+// Resource is considered valid if it pass validation of any message
+func ValidateAnyResourceYAMLPatch(resYAML string, msgs ...proto.Message) error {
+	var err error
+	for _, msg := range msgs {
+		err = ValidateResourceYAMLPatch(msg, resYAML)
+		if err == nil {
+			return nil
+		}
+	}
+	return err
+}
+
 func ValidateResourceYAML(msg proto.Message, resYAML string) error {
 	json, err := yaml.YAMLToJSON([]byte(resYAML))
 	if err != nil {
