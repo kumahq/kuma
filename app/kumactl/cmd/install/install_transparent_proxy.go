@@ -173,8 +173,15 @@ func findUidGid(uid, user string) (string, string, error) {
 	var err error
 
 	if u, err = os_user.LookupId(uid); err != nil {
-		if u, err = os_user.Lookup(user); err != nil {
-			return "", "", errors.Errorf("--kuma-dp-user or --kuma-dp-uid should refer to a valid user on the host")
+		if user != "" {
+			if u, err = os_user.Lookup(user); err != nil {
+				return "", "", errors.Errorf("--kuma-dp-user or --kuma-dp-uid should refer to a valid user on the host")
+			}
+		} else {
+			u = &os_user.User{
+				Uid: uid,
+				Gid: uid,
+			}
 		}
 	}
 
