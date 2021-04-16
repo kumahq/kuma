@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"context"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/dns/vips"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
