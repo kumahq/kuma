@@ -532,7 +532,7 @@ jobs:
       target:
         description: The integration make target.
         type: string
-        default: integration
+        default: test
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
@@ -875,7 +875,7 @@ workflows:
         requires:
         - check
         # custom parameters
-        target: -j1 integration test
+        target: -j1 test
     - images:
         <<: *commit_workflow_filters
         requires:
