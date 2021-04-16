@@ -431,8 +431,8 @@ func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
 }
 
-func CreateCertsForIP(ip string) (cert, key string, err error) {
-	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, "localhost", ip)
+func CreateCertsFor(names []string) (cert, key string, err error) {
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, names...)
 	if err != nil {
 		return "", "", err
 	}
