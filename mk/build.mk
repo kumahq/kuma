@@ -24,7 +24,7 @@ export PATH := $(BUILD_KUMACTL_DIR):$(PATH)
 GO_BUILD := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v $(GOFLAGS) $(LD_FLAGS)
 GO_BUILD_COREDNS := GOOS=${GOOS} GOARCH=${GOARCH} CGO_ENABLED=0 go build -v
 
-COREDNS_GIT_REPOSITORY ?= git@github.com:coredns/coredns.git
+COREDNS_GIT_REPOSITORY ?= https://github.com/coredns/coredns.git
 COREDNS_VERSION ?= v1.8.3
 COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
@@ -50,6 +50,7 @@ build/coredns:
 	git clone --branch $(COREDNS_VERSION) --depth 1 $(COREDNS_GIT_REPOSITORY) $(COREDNS_TMP_DIRECTORY)
 	cp $(COREDNS_PLUGIN_CFG_PATH) $(COREDNS_TMP_DIRECTORY)
 	cd $(COREDNS_TMP_DIRECTORY) && \
+		GOOS= GOARCH= go generate coredns.go && \
 		$(GO_BUILD_COREDNS) -ldflags="-s -w -X github.com/coredns/coredns/coremain.GitCommit=$(shell git describe --dirty --always)" -o $(BUILD_ARTIFACTS_DIR)/coredns/coredns
 	rm -rf "$(COREDNS_TMP_DIRECTORY)"
 
