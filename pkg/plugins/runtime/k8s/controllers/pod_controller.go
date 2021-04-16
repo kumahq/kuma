@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"context"
-	"strconv"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/dns/vips"
@@ -55,8 +54,6 @@ type PodReconciler struct {
 	Persistence       *vips.Persistence
 	ResourceConverter k8s_common.Converter
 	SystemNamespace   string
-	UseBuiltinDNS     bool
-	BuiltinDNSPort    uint32
 }
 
 func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -132,19 +129,6 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 
 	if err := r.createOrUpdateDataplane(pod, services, externalServices, others, vips); err != nil {
 		return kube_ctrl.Result{}, err
-	}
-
-	if r.UseBuiltinDNS {
-		if pod.Annotations == nil {
-			pod.Annotations = map[string]string{}
-		}
-		// will be used by the CNI to enable the relevant iptables settings
-		pod.Annotations[metadata.KumaBuiltinDNS] = metadata.AnnotationEnabled
-		pod.Annotations[metadata.KumaBuiltinDNSPort] = strconv.FormatInt(int64(r.BuiltinDNSPort), 10)
-
-		if err = r.Update(ctx, pod); err != nil {
-			return kube_ctrl.Result{}, errors.Wrapf(err, "unable to update annotations on pod %s", pod.Name)
-		}
 	}
 
 	return kube_ctrl.Result{}, nil
