@@ -37,7 +37,7 @@ sources:
    kuma.io/service: "*"
 destinations:
 - match:
-   kuma.io/service: external-service
+   kuma.io/service: external-service-%s
 conf:
   split:
   - weight: 1
@@ -73,7 +73,9 @@ networking:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma3)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = []DeployOptionsFunc{
+			WithIPv6(true),
+		}
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
@@ -117,7 +119,7 @@ networking:
 	})
 
 	It("should route to external-service", func() {
-		err := YamlUniversal(fmt.Sprintf(trafficRoute, es1))(cluster)
+		err := YamlUniversal(fmt.Sprintf(trafficRoute, es1, es1))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
@@ -127,7 +129,7 @@ networking:
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 
 		stdout, _, err = cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--ipv4", "--fail", "kuma-3_externalservice-http-server:80")
+			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server:80")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
@@ -135,7 +137,7 @@ networking:
 
 	It("should route to external-service over tls", func() {
 		// set the route to the secured external service
-		err := YamlUniversal(fmt.Sprintf(trafficRoute, es2))(cluster)
+		err := YamlUniversal(fmt.Sprintf(trafficRoute, es2, es2))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when set invalid certificate
@@ -149,7 +151,7 @@ networking:
 
 		// then accessing the secured external service fails
 		_, _, err = cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--ipv4", "--fail", "http://kuma-3_externalservice-https-server:443")
+			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
 		Expect(err).To(HaveOccurred())
 
 		// when set proper certificate
@@ -165,7 +167,7 @@ networking:
 
 		// then accessing the secured external service succeeds
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--ipv4", "--fail", "http://kuma-3_externalservice-https-server:443")
+			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("HTTPS"))

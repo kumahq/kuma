@@ -52,7 +52,9 @@ func YamlPathK8s(path string) InstallFunc {
 func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
 		fs = append(fs, func(options *deployOptions) {
-			options.isipv6 = IsIPv6()
+			if !options.isipv6 {
+				options.isipv6 = IsIPv6()
+			}
 		})
 		err := cluster.DeployKuma(mode, fs...)
 		return err

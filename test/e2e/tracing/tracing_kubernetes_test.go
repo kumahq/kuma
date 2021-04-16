@@ -66,7 +66,9 @@ spec:
 		c, err := NewK8SCluster(NewTestingT(), Kuma1, Silent)
 		Expect(err).ToNot(HaveOccurred())
 		cluster = c
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = []DeployOptionsFunc{
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"),
+		}
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
