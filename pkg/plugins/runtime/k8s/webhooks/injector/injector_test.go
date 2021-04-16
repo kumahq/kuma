@@ -503,5 +503,21 @@ var _ = Describe("Injector", func() {
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.env-vars.config.yaml",
 		}),
+		Entry("25. sidecar with builtinDNS", testCase{
+			num: "25",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.builtindns.config.yaml",
+		}),
 	)
 })

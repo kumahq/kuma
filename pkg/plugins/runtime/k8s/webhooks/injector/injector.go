@@ -486,6 +486,11 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 		annotations[metadata.CNCFNetworkAnnotation] = metadata.KumaCNI
 	}
 
+	if i.cfg.BuiltinDNS.Enabled {
+		annotations[metadata.KumaBuiltinDNS] = metadata.AnnotationEnabled
+		annotations[metadata.KumaBuiltinDNSPort] = strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port), 10)
+	}
+
 	if err := setVirtualProbesEnabledAnnotation(annotations, pod, i.cfg); err != nil {
 		return nil, errors.Wrap(err, fmt.Sprintf("unable to set %s", metadata.KumaVirtualProbesAnnotation))
 	}
