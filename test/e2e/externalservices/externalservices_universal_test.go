@@ -23,6 +23,9 @@ mtls:
   backends:
   - name: ca-1
     type: builtin
+networking:
+  outbound:
+    passthrough: false
 `
 
 	trafficRoute := `
@@ -34,13 +37,12 @@ sources:
    kuma.io/service: "*"
 destinations:
 - match:
-   kuma.io/service: external-service
+   kuma.io/service: external-service-%s
 conf:
   split:
   - weight: 1
     destination:
-      kuma.io/service: external-service
-      id: "%s"
+      kuma.io/service: external-service-%s
 `
 
 	externalService := `
@@ -48,9 +50,8 @@ type: ExternalService
 mesh: default
 name: external-service-%s
 tags:
-  kuma.io/service: external-service
+  kuma.io/service: external-service-%s
   kuma.io/protocol: http
-  id: "%s"
 networking:
   address: %s
   tls:
@@ -72,7 +73,9 @@ networking:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma3)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = []DeployOptionsFunc{
+			WithIPv6(true),
+		}
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
@@ -87,7 +90,7 @@ networking:
 		err = NewClusterSetup().
 			Install(externalservice.Install(externalservice.HttpServer, externalservice.UniversalAppEchoServer)).
 			Install(externalservice.Install(externalservice.HttpsServer, externalservice.UniversalAppHttpsEchoServer)).
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(true))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -116,11 +119,11 @@ networking:
 	})
 
 	It("should route to external-service", func() {
-		err := YamlUniversal(fmt.Sprintf(trafficRoute, es1))(cluster)
+		err := YamlUniversal(fmt.Sprintf(trafficRoute, es1, es1))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "external-service.mesh")
+			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
@@ -134,24 +137,21 @@ networking:
 
 	It("should route to external-service over tls", func() {
 		// set the route to the secured external service
-		err := YamlUniversal(fmt.Sprintf(trafficRoute, es2))(cluster)
+		err := YamlUniversal(fmt.Sprintf(trafficRoute, es2, es2))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// when set invalid certificate
-		externalServiceAddress := externalservice.From(cluster, externalservice.HttpsServer).GetExternalAppAddress()
-		Expect(externalServiceAddress).ToNot(BeEmpty())
-
 		otherCert := "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURMRENDQWhTZ0F3SUJBZ0lRSGRQaHhPZlhnV3VOeG9GbFYvRXdxVEFOQmdrcWhraUc5dzBCQVFzRkFEQVAKTVEwd0N3WURWUVFERXdScmRXMWhNQjRYRFRJd01Ea3hOakV5TWpnME5Gb1hEVE13TURreE5ERXlNamcwTkZvdwpEekVOTUFzR0ExVUVBeE1FYTNWdFlUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCCkFPWkdiV2hTbFFTUnhGTnQ1cC8yV0NLRnlIWjNDdXdOZ3lMRVA3blM0Wlh5a3hzRmJZU3VWM2JJZ0Y3YlQvdXEKYTVRaXJlK0M2MGd1aEZicExjUGgyWjZVZmdJZDY5R2xRekhNVlljbUxHalZRdXlBdDRGTU1rVGZWRWw1STRPYQorMml0M0J2aWhWa0toVXo4eTVSUjVLYnFKZkdwNFoyMEZoNmZ0dG9DRmJlT0RtdkJzWUpGbVVRUytpZm95TVkvClAzUjAzU3U3ZzVpSXZuejd0bWt5ZG9OQzhuR1JEemRENUM4Zkp2clZJMVVYNkpSR3lMS3Q0NW9RWHQxbXhLMTAKNUthTjJ6TlYyV3RIc2FKcDlid3JQSCtKaVpHZVp5dnVoNVV3ckxkSENtcUs3c205VG9kR3p0VVpZMFZ6QWM0cQprWVZpWFk4Z1VqZk5tK2NRclBPMWtOOENBd0VBQWFPQmd6Q0JnREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdIUVlEClZSMGxCQll3RkFZSUt3WUJCUVVIQXdFR0NDc0dBUVVGQndNQk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0hRWUQKVlIwT0JCWUVGR01EQlBQaUJGSjNtdjJvQTlDVHFqZW1GVFYyTUI4R0ExVWRFUVFZTUJhQ0NXeHZZMkZzYUc5egpkSUlKYkc5allXeG9iM04wTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFDLzE3UXdlT3BHZGIxTUVCSjhYUEc3CjNzSy91dG9XTFgxdGpmOFN1MURnYTZDRFQvZVRXSFpyV1JmODFLT1ZZMDdkbGU1U1JJREsxUWhmYkdHdEZQK1QKdlprcm9vdXNJOVVTMmFDV2xrZUNaV0dUbnF2TG1Eb091anFhZ0RvS1JSdWs0bVFkdE5Ob254aUwvd1p0VEZLaQorMWlOalVWYkxXaURYZEJMeG9SSVZkTE96cWIvTU54d0VsVXlhVERBa29wUXlPV2FURGtZUHJHbWFXamNzZlBHCmFPS293MHplK3pIVkZxVEhiam5DcUVWM2huc1V5UlV3c0JsbjkrakRKWGd3Wk0vdE1sVkpyWkNoMFNsZTlZNVoKTU9CMGZDZjZzVE1OUlRHZzVMcGw2dUlZTS81SU5wbUhWTW8zbjdNQlNucEVEQVVTMmJmL3VvNWdJaXE2WENkcAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
 		err = YamlUniversal(fmt.Sprintf(externalService,
 			es2, es2,
-			externalServiceAddress+":443",
+			"kuma-3_externalservice-https-server:443",
 			"true",
 			otherCert))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service fails
 		_, _, err = cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://localhost:5000")
+			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
 		Expect(err).To(HaveOccurred())
 
 		// when set proper certificate
@@ -160,14 +160,14 @@ networking:
 
 		err = YamlUniversal(fmt.Sprintf(externalService,
 			es2, es2,
-			externalServiceAddress+":443",
+			"kuma-3_externalservice-https-server:443",
 			"true",
 			base64.StdEncoding.EncodeToString([]byte(externalServiceCaCert))))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service succeeds
 		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://localhost:5000")
+			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("HTTPS"))
