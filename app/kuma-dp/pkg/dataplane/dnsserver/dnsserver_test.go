@@ -109,7 +109,7 @@ var _ = Describe("DNS Server", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-conf %s -q", expectedConfigFile)))
+			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-conf %s -quiet", expectedConfigFile)))
 
 			By("verifying the contents DNS Server config file")
 			// when

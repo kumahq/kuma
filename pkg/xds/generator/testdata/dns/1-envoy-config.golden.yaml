@@ -4,6 +4,7 @@ resources:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
       socketAddress:
+        address: 127.0.0.1
         portValue: 53001
         protocol: UDP
     listenerFilters:
@@ -23,13 +24,13 @@ resources:
                 googleRe2: {}
                 regex: .*
             virtualDomains:
-            - answerTtl: 1s
+            - answerTtl: 30s
               endpoint:
                 addressList:
                   address:
                   - 240.0.0.0
               name: backend.mesh
-            - answerTtl: 1s
+            - answerTtl: 30s
               endpoint:
                 addressList:
                   address:
