@@ -164,10 +164,10 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string) error {
+func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string, builtindns bool) error {
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, appname, ip, dpyaml)
+	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns)
 	return app.dpApp.Start()
 }
 
@@ -194,7 +194,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	}
 
 	if transparent {
-		app.setupTransparent(c.apps[AppModeCP].ip)
+		app.setupTransparent(c.apps[AppModeCP].ip, opts.builtindns)
 	}
 
 	ip := app.ip
@@ -205,7 +205,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		}
 	}
 
-	err = c.CreateDP(app, opts.name, ip, dpyaml, token)
+	err = c.CreateDP(app, opts.name, ip, dpyaml, token, opts.builtindns)
 	if err != nil {
 		return err
 	}

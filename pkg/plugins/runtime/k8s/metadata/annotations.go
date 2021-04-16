@@ -55,6 +55,10 @@ const (
 	// KumaMetricsPrometheusPath to override `Mesh`-wide default path
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
 
+	// KumaBuiltinDNS the sidecar will use its builtin DNS
+	KumaBuiltinDNS     = "kuma.io/builtindns"
+	KumaBuiltinDNSPort = "kuma.io/builtindnsport"
+
 	KumaTrafficExcludeInboundPorts  = "traffic.kuma.io/exclude-inbound-ports"
 	KumaTrafficExcludeOutboundPorts = "traffic.kuma.io/exclude-outbound-ports"
 )

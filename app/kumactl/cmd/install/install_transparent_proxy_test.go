@@ -74,6 +74,7 @@ var _ = Describe("kumactl install tracing", func() {
 			extraArgs: []string{
 				"--kuma-dp-uid", "0",
 				"--kuma-cp-ip", "1.2.3.4",
+				"--skip-resolv-conf",
 				"--redirect-dns",
 				"--redirect-dns-port", "12345",
 				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",

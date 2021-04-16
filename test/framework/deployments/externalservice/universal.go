@@ -57,6 +57,11 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 		return err
 	}
 
+	name, err := getName(cluster.GetTesting(), container)
+	if err != nil {
+		return err
+	}
+
 	u.ip = ip
 	u.container = container
 
@@ -65,7 +70,7 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 	env := []string{}
 
 	// ceritficates
-	cert, key, err := framework.CreateCertsForIP(ip)
+	cert, key, err := framework.CreateCertsFor([]string{"localhost", ip, name})
 	if err != nil {
 		return err
 	}
@@ -98,6 +103,20 @@ func getIP(t testing.TestingT, container string) (string, error) {
 		Logger:  logger.Discard,
 	}
 	return shell.RunCommandAndGetStdOutE(t, cmd)
+}
+
+func getName(t testing.TestingT, container string) (string, error) {
+	cmd := shell.Command{
+		Command: "docker",
+		Args:    []string{"container", "inspect", "-f", "{{.Name}}", container},
+		Logger:  logger.Discard,
+	}
+	out, err := shell.RunCommandAndGetStdOutE(t, cmd)
+	if err != nil {
+		return "", err
+	}
+
+	return out[1:], nil
 }
 
 func (j *universalDeployment) allocatePublicPortsFor(ports ...string) error {

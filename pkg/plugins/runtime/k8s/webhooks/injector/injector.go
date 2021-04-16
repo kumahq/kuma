@@ -420,7 +420,9 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	excludeInboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
 	excludeOutboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPorts)
 
-	dnsArg := []string{}
+	dnsArg := []string{
+		"--skip-resolv-conf",
+	}
 
 	if i.cfg.BuiltinDNS.Enabled {
 		dnsArg = append(dnsArg,
