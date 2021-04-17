@@ -56,7 +56,9 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/protoc-gen-go dev/install/protoc-gen-validate \
 	dev/install/ginkgo \
 	dev/install/kubebuilder dev/install/kustomize \
-	dev/install/kubectl dev/install/kind dev/install/minikube \
+	dev/install/kubectl \
+	dev/install/kind dev/install/k3d \
+	dev/install/minikube \
 	dev/install/golangci-lint \
 	dev/install/goimports \
 	dev/install/helm3 \
@@ -165,6 +167,20 @@ dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
 		&& mv kind $(KIND_PATH) \
 		&& set +x \
 		&& echo "Kind $(CI_KIND_VERSION) has been installed at $(KIND_PATH)" ; fi
+
+.PHONY: dev/install/k3d
+dev/install/k3d: ## Bootstrap: Install K3D (K3s in Docker)
+	# see https://raw.githubusercontent.com/rancher/k3d/main/install.sh
+	@if [ -e $(K3D_PATH) ]; then echo "K3d $$( $(K3D_PATH) version ) is already installed at $(K3D_PATH)" ; fi
+	@if [ ! -e $(K3D_PATH) ]; then \
+		echo "Installing Kind $(CI_K3D_VERSION) ..." \
+		&& set -x \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | \
+		        TAG=$(CI_K3D_VERSION) USE_SUDO="false" K3D_INSTALL_DIR="$(CI_TOOLS_DIR)" bash \
+		&& set +x \
+		&& echo "K3d $(CI_K3D_VERSION) has been installed at $(K3D_PATH)" ; fi
+
 
 .PHONY: dev/install/minikube
 dev/install/minikube: ## Bootstrap: Install Minikube

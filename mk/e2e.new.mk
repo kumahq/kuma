@@ -1,6 +1,6 @@
 K8SCLUSTERS = kuma-1 kuma-2
-K8SCLUSTERS_START_TARGETS = $(addprefix test/e2e/kind/start/cluster/, $(K8SCLUSTERS))
-K8SCLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/kind/stop/cluster/, $(K8SCLUSTERS))
+K8SCLUSTERS_START_TARGETS = $(addprefix test/e2e/k8s/start/cluster/, $(K8SCLUSTERS))
+K8SCLUSTERS_STOP_TARGETS  = $(addprefix test/e2e/k8s/stop/cluster/, $(K8SCLUSTERS))
 API_VERSION ?= v3
 # export `IPV6=true` to enable IPv6 testing
 
@@ -19,24 +19,26 @@ TEST_NAMES = $(shell ls -1 ./test/e2e)
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)
 
+ifdef K3D
+K8S_CLUSTER_TOOL=k3d
+else
+K8S_CLUSTER_TOOL=kind
+endif
+
 define gen-k8sclusters
-.PHONY: test/e2e/kind/start/cluster/$1
-test/e2e/kind/start/cluster/$1:
+.PHONY: test/e2e/k8s/start/cluster/$1
+test/e2e/k8s/start/cluster/$1:
 	KIND_CLUSTER_NAME=$1 \
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
-		$(MAKE) kind/start
+		$(MAKE) $(K8S_CLUSTER_TOOL)/start
 	KIND_CLUSTER_NAME=$1 \
-		$(MAKE) kind/load/images
+		$(MAKE) $(K8S_CLUSTER_TOOL)/load/images
 
-.PHONY: test/e2e/kind/stop/cluster/$1
-test/e2e/kind/stop/cluster/$1:
+.PHONY: test/e2e/k8s/stop/cluster/$1
+test/e2e/k8s/stop/cluster/$1:
 	KIND_CLUSTER_NAME=$1 \
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
-		$(MAKE) kind/stop
-
-.PHONE: kind/load/images/$1
-kind/load/images/$1:
-	KIND_CLUSTER_NAME=$1 $(MAKE) kind/load/images
+		$(MAKE) $(K8S_CLUSTER_TOOL)/stop
 endef
 
 $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
@@ -46,10 +48,10 @@ test/e2e/list:
 	@echo $(ALL_TESTS)
 
 .PHONY: test/e2e/kind/start
-test/e2e/kind/start: $(K8SCLUSTERS_START_TARGETS)
+test/e2e/k8s/start: $(K8SCLUSTERS_START_TARGETS)
 
 .PHONY: test/e2e/kind/stop
-test/e2e/kind/stop: $(K8SCLUSTERS_STOP_TARGETS)
+test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 
 .PHONY: test/e2e/test
 test/e2e/test:
@@ -86,7 +88,7 @@ test/e2e/debug: build/kumactl images docker/build/kuma-universal test/e2e/kind/s
 	$(MAKE) test/e2e/kind/stop
 
 .PHONY: test/e2e
-test/e2e: build/kumactl images docker/build/kuma-universal test/e2e/kind/start
+test/e2e: build/kumactl images docker/build/kuma-universal test/e2e/k8s/start
 	$(MAKE) test/e2e/test || \
 	(ret=$$?; \
 	$(MAKE) test/e2e/kind/stop && \
