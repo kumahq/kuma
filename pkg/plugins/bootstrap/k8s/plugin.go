@@ -2,6 +2,8 @@ package k8s
 
 import (
 	"context"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -13,6 +15,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/cache"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_manager "sigs.k8s.io/controller-runtime/pkg/manager"
+
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/hooks"
 
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
@@ -61,6 +65,15 @@ func (p *plugin) BeforeBootstrap(b *core_runtime.Builder, _ core_plugins.PluginC
 	if err != nil {
 		return err
 	}
+
+	apiServerAddress := os.Getenv("KUBERNETES_SERVICE_HOST")
+	port := os.Getenv("KUBERNETES_SERVICE_PORT")
+	apiServerPort, err := strconv.ParseUint(port, 10, 32)
+	if err != nil {
+		return errors.Wrapf(err, "could not parse KUBERNETES_SERVICE_PORT environment variable")
+	}
+
+	b.XDSHooks().AddResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
 
 	b.WithComponentManager(&kubeComponentManager{mgr})
 	b.WithExtensions(k8s_extensions.NewManagerContext(b.Extensions(), mgr))
