@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## [1.1.4]
+> Released on  2021/04/19
+
+Changes:
+* chore(*) force all DNS traffic capture [#1842](https://github.com//kumahq/kuma/pull/1842)
+
 ## [1.1.3]
 > Released on  2021/04/16
 
