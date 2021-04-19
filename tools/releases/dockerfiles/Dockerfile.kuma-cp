@@ -1,4 +1,4 @@
-FROM alpine:3.13.3
+FROM alpine:3.13.5
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
 
