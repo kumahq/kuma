@@ -26,6 +26,7 @@ type Config struct {
 	ProxyUID               string   `json:"PROXY_UID"`
 	ProxyGID               string   `json:"PROXY_GID"`
 	RedirectDNS            bool     `json:"REDIRECT_DNS"`
+	RedirectDNSServers     bool     `json:"REDIRECT_DNS_SERVERS"`
 	DNSServersV4           []string `json:"DNS_SERVERS_V4"`
 	DNSServersV6           []string `json:"DNS_SERVERS_V6"`
 	AgentDNSListenerPort   string   `json:"AGENT_DNS_LISTENER_PORT"`
