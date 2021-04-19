@@ -512,23 +512,41 @@ func (iptConfigurator *IptablesConfigurator) run() {
 			// This ensures that we do not get requests from dnsmasq sent back to the agent dns server in a loop.
 			// Note: If a user somehow configured etc/resolv.conf to point to dnsmasq and server X, and dnsmasq also
 			// pointed to server X, this would not work. However, the assumption is that is not a common case.
-			iptConfigurator.iptables.AppendRuleV4(
-				constants.ISTIOOUTPUT, constants.NAT,
-				"-p", constants.TCP,
-				"--dport", "53",
-				"-d", s+"/32",
-				"-j", constants.REDIRECT,
-				"--to-ports", iptConfigurator.cfg.AgentDNSListenerPort)
-		}
-		if iptConfigurator.cfg.EnableInboundIPv6 {
-			for _, s := range iptConfigurator.cfg.DNSServersV6 {
-				iptConfigurator.iptables.AppendRuleV6(
+			if s == "0.0.0.0" {
+				iptConfigurator.iptables.AppendRuleV4(
+					constants.ISTIOOUTPUT, constants.NAT,
+					"-p", constants.TCP,
+					"--dport", "53",
+					"-j", constants.REDIRECT,
+					"--to-ports", iptConfigurator.cfg.AgentDNSListenerPort)
+			} else {
+				iptConfigurator.iptables.AppendRuleV4(
 					constants.ISTIOOUTPUT, constants.NAT,
 					"-p", constants.TCP,
 					"--dport", "53",
 					"-d", s+"/32",
 					"-j", constants.REDIRECT,
 					"--to-ports", iptConfigurator.cfg.AgentDNSListenerPort)
+			}
+		}
+		if iptConfigurator.cfg.EnableInboundIPv6 {
+			for _, s := range iptConfigurator.cfg.DNSServersV6 {
+				if s == "0.0.0.0" {
+					iptConfigurator.iptables.AppendRuleV6(
+						constants.ISTIOOUTPUT, constants.NAT,
+						"-p", constants.TCP,
+						"--dport", "53",
+						"-j", constants.REDIRECT,
+						"--to-ports", iptConfigurator.cfg.AgentDNSListenerPort)
+				} else {
+					iptConfigurator.iptables.AppendRuleV6(
+						constants.ISTIOOUTPUT, constants.NAT,
+						"-p", constants.TCP,
+						"--dport", "53",
+						"-d", s+"/128",
+						"-j", constants.REDIRECT,
+						"--to-ports", iptConfigurator.cfg.AgentDNSListenerPort)
+				}
 			}
 		}
 	}
@@ -629,11 +647,20 @@ func HandleDNSUDP(
 	// Note: If a user somehow configured etc/resolv.conf to point to dnsmasq and server X, and dnsmasq also
 	// pointed to server X, this would not work. However, the assumption is that is not a common case.
 	for _, s := range dnsServersV4 {
-		raw = []string{
-			"-t", table, opsStr, chain,
-			"-p", "udp", "--dport", "53", "-d", s + "/32",
-			"-j", constants.REDIRECT, "--to-port", agentDNSListenerPort,
+		if s == "0.0.0.0" {
+			raw = []string{
+				"-t", table, opsStr, chain,
+				"-p", "udp", "--dport", "53",
+				"-j", constants.REDIRECT, "--to-port", agentDNSListenerPort,
+			}
+		} else {
+			raw = []string{
+				"-t", table, opsStr, chain,
+				"-p", "udp", "--dport", "53", "-d", s + "/32",
+				"-j", constants.REDIRECT, "--to-port", agentDNSListenerPort,
+			}
 		}
+
 		switch ops {
 		case AppendOps:
 			iptables.InsertRuleV4(chain, table, rulePosition, raw[paramIdxRaw:]...)
@@ -694,10 +721,18 @@ func HandleDNSUDPv6(
 	// Note: If a user somehow configured etc/resolv.conf to point to dnsmasq and server X, and dnsmasq also
 	// pointed to server X, this would not work. However, the assumption is that is not a common case.
 	for _, s := range dnsServersV6 {
-		raw = []string{
-			"-t", table, opsStr, chain,
-			"-p", constants.UDP, "--dport", "53", "-d", s + "/32",
-			"-j", constants.REDIRECT, "--to-port", agentDNSListenerPort,
+		if s == "0.0.0.0" {
+			raw = []string{
+				"-t", table, opsStr, chain,
+				"-p", constants.UDP, "--dport", "53",
+				"-j", constants.REDIRECT, "--to-port", agentDNSListenerPort,
+			}
+		} else {
+			raw = []string{
+				"-t", table, opsStr, chain,
+				"-p", constants.UDP, "--dport", "53", "-d", s + "/128",
+				"-j", constants.REDIRECT, "--to-port", agentDNSListenerPort,
+			}
 		}
 		switch ops {
 		case AppendOps:
