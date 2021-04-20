@@ -195,7 +195,7 @@ func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 	tp := transparentproxy.DefaultTransparentProxy()
 
 	// best effort cleanup before we apply the rules (again?)
-	_,err := tp.Cleanup(args.DryRun, args.Verbose)
+	_, err := tp.Cleanup(args.DryRun, args.Verbose)
 	if err != nil {
 		return errors.Wrapf(err, "unable to invoke cleanup")
 	}
