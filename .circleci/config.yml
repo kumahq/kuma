@@ -391,6 +391,7 @@ jobs:
       # if GOPATH is not set, `golang-ci` fails with an obscure message
       # "ERRO Running error: context loading failed: failed to load program with go/packages: could not determine GOARCH and Go compiler"
       GOPATH: /Users/distiller/.go-kuma-go
+      GO_VERSION: *go_version
     steps:
     - checkout
     - run:
@@ -532,6 +533,7 @@ jobs:
         default: integration
     environment:
       GOPATH: /home/circleci/.go-kuma-go
+      GO_VERSION: *go_version
     steps:
     - checkout
     - run:
@@ -582,12 +584,13 @@ jobs:
     parallelism: 2
     environment:
       GOPATH: /home/circleci/.go-kuma-go
+      GO_VERSION: *go_version
     steps:
       - checkout
       - run:
           name: "Install Go"
           command: |
-            apt update && apt install -y curl git make
+            sudo apt update && sudo apt install -y curl git make
             # see https://golang.org/doc/install#tarball
             curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
       - restore_cache:
@@ -614,6 +617,11 @@ jobs:
           command: |
             export PATH=$HOME/go/bin:$PATH
             helm repo add kuma https://kumahq.github.io/charts
+      - run: # build this a separate step so we can use -j in test/e2e
+          name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
+          command: |
+            export PATH=$HOME/go/bin:$PATH
+            make -j build
       - when:
           condition: << parameters.ipv6 >>
           steps:
@@ -626,7 +634,7 @@ jobs:
                   export IPV6=true
                   export KUMA_DEFAULT_RETRIES=60
                   export KUMA_DEFAULT_TIMEOUT="6s"
-                  make test/e2e
+                  make -j test/e2e
       - unless:
           condition: << parameters.ipv6 >>
           steps:
@@ -636,7 +644,7 @@ jobs:
                   export PATH=$HOME/go/bin:$PATH
                   export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
-                  make test/e2e
+                  make -j test/e2e
 
   build:
     executor: golang
