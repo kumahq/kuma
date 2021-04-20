@@ -2,7 +2,7 @@
 
 A Helm chart for the Kuma Control Plane
 
-![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.5.2](https://img.shields.io/badge/Version-0.5.2-informational?style=flat-square) ![AppVersion: 1.1.2](https://img.shields.io/badge/AppVersion-1.1.2-informational?style=flat-square)
+![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.5.5](https://img.shields.io/badge/Version-0.5.5-informational?style=flat-square) ![AppVersion: 1.1.4](https://img.shields.io/badge/AppVersion-1.1.4-informational?style=flat-square)
 
 **Homepage:** <https://github.com/kumahq/kuma>
 
@@ -56,7 +56,7 @@ A Helm chart for the Kuma Control Plane
 | cni.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
 | cni.image.registry | string | `"docker.io"` | CNI image registry |
 | cni.image.repository | string | `"lobkovilya/install-cni"` | CNI image repository |
-| cni.image.tag | string | `"0.0.4"` | CNI image tag |
+| cni.image.tag | string | `"0.0.6"` | CNI image tag |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
@@ -67,6 +67,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
+| ingress.annotations | object | `{}` | Additional deployment annotation |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
 
 ## Custom Resource Definitions

@@ -47,6 +47,7 @@ type deployOptions struct {
 	appArgs     []string
 	token       string
 	transparent bool
+	builtindns  bool
 	protocol    string
 	mesh        string
 	dpVersion   string
@@ -213,12 +214,24 @@ func WithTransparentProxy(transparent bool) DeployOptionsFunc {
 	}
 }
 
+func WithBuiltinDNS(builtindns bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.builtindns = builtindns
+	}
+}
+
 func WithCtlOpt(name, value string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		if o.ctlOpts == nil {
 			o.ctlOpts = map[string]string{}
 		}
 		o.ctlOpts[name] = value
+	}
+}
+
+func WithIPv6(isipv6 bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.isipv6 = isipv6
 	}
 }
 

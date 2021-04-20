@@ -155,7 +155,7 @@ cni:
     # -- CNI image repository
     repository: "lobkovilya/install-cni"
     # -- CNI image tag
-    tag: "0.0.4"
+    tag: "0.0.6"
 
 dataPlane:
   image:
@@ -184,6 +184,8 @@ ingress:
     annotations: {}
     # -- Port on which Ingress is exposed
     port: 10001
+  # -- Additional deployment annotation
+  annotations: {}
 
 kumactl:
   image:

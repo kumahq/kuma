@@ -2,6 +2,7 @@ package dns
 
 import (
 	"sort"
+	"strconv"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
@@ -21,7 +22,11 @@ func VIPOutbounds(
 	vips vips.List,
 	externalServices []*core_mesh.ExternalServiceResource,
 ) []*mesh_proto.Dataplane_Networking_Outbound {
-	serviceVIPMap := map[string]string{}
+	type vipEntry struct {
+		ip   string
+		port uint32
+	}
+	serviceVIPMap := map[string]vipEntry{}
 	services := []string{}
 	for _, dataplane := range dataplanes {
 		if resourceKey == model.MetaToResourceKey(dataplane.Meta) {
@@ -36,7 +41,7 @@ func VIPOutbounds(
 					if _, found := serviceVIPMap[inService]; !found {
 						vip, err := ForwardLookup(vips, inService)
 						if err == nil {
-							serviceVIPMap[inService] = vip
+							serviceVIPMap[inService] = vipEntry{vip, VIPListenPort}
 							services = append(services, inService)
 						}
 					}
@@ -48,7 +53,7 @@ func VIPOutbounds(
 				if _, found := serviceVIPMap[inService]; !found {
 					vip, err := ForwardLookup(vips, inService)
 					if err == nil {
-						serviceVIPMap[inService] = vip
+						serviceVIPMap[inService] = vipEntry{vip, VIPListenPort}
 						services = append(services, inService)
 					}
 				}
@@ -61,7 +66,14 @@ func VIPOutbounds(
 		if _, found := serviceVIPMap[inService]; !found {
 			vip, err := ForwardLookup(vips, inService)
 			if err == nil {
-				serviceVIPMap[inService] = vip
+				port := externalService.Spec.GetPort()
+				var p32 uint32
+				if p64, err := strconv.ParseUint(port, 10, 32); err != nil {
+					p32 = VIPListenPort
+				} else {
+					p32 = uint32(p64)
+				}
+				serviceVIPMap[inService] = vipEntry{vip, p32}
 				services = append(services, inService)
 			}
 		}
@@ -70,14 +82,21 @@ func VIPOutbounds(
 	sort.Strings(services)
 	outbounds := []*mesh_proto.Dataplane_Networking_Outbound{}
 	for _, service := range services {
-		outbounds = append(outbounds,
-			&mesh_proto.Dataplane_Networking_Outbound{
-				Address: serviceVIPMap[service],
+		entry := serviceVIPMap[service]
+		outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+			Address: entry.ip,
+			Port:    entry.port,
+			Tags:    map[string]string{mesh_proto.ServiceTag: service},
+		})
+
+		// todo (lobkovilya): backwards compatibility, could be deleted in the next major release Kuma 1.2.x
+		if entry.port != VIPListenPort {
+			outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+				Address: entry.ip,
 				Port:    VIPListenPort,
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: service,
-				},
+				Tags:    map[string]string{mesh_proto.ServiceTag: service},
 			})
+		}
 	}
 
 	return outbounds

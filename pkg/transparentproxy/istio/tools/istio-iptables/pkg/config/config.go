@@ -45,7 +45,13 @@ type Config struct {
 	RestoreFormat           bool          `json:"RESTORE_FORMAT"`
 	SkipRuleApply           bool          `json:"SKIP_RULE_APPLY"`
 	RunValidation           bool          `json:"RUN_VALIDATION"`
+	RedirectDNS             bool          `json:"REDIRECT_DNS"`
+	RedirectDNSServers      bool          `json:"REDIRECT_DNS_SERVERS"`
 	EnableInboundIPv6       bool          `json:"ENABLE_INBOUND_IPV6"`
+	DNSServersV4            []string      `json:"DNS_SERVERS_V4"`
+	DNSServersV6            []string      `json:"DNS_SERVERS_V6"`
+	AgentDNSListenerPort    string        `json:"AGENT_DNS_LISTENER_PORT"`
+	DNSUpstreamTargetChain  string        `json:"DNS_UPSTREAM_TARGET_CHAIN"`
 }
 
 func (c *Config) String() string {
@@ -76,5 +82,10 @@ func (c *Config) Print() {
 	fmt.Printf("OUTBOUND_PORTS_EXCLUDE=%s\n", c.OutboundPortsExclude)
 	fmt.Printf("KUBEVIRT_INTERFACES=%s\n", c.KubevirtInterfaces)
 	fmt.Printf("ENABLE_INBOUND_IPV6=%t\n", c.EnableInboundIPv6)
+	fmt.Printf("DNS_CAPTURE=%t\n", c.RedirectDNS)
+	fmt.Printf("DNS_CAPTURE_SERVERS=%t\n", c.RedirectDNSServers)
+	fmt.Printf("DNS_SERVERS=%s,%s\n", c.DNSServersV4, c.DNSServersV6)
+	fmt.Printf("AGENT_DNS_LISTENER_PORT=%s\n", c.AgentDNSListenerPort)
+	fmt.Printf("DNS_UPSTREAM_TARGET_CHAIN=%s\n", c.DNSUpstreamTargetChain)
 	fmt.Println("")
 }

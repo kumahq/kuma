@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## [1.1.4]
+> Released on  2021/04/19
+
+Changes:
+* chore(*) force all DNS traffic capture [#1842](https://github.com//kumahq/kuma/pull/1842)
+
+## [1.1.3]
+> Released on  2021/04/16
+
+Changes:
+* feat: support External Services with original hostname and port (built-in DNS) 
+  [#1807](https://github.com//kumahq/kuma/pull/1807) [#1811](https://github.com//kumahq/kuma/pull/1811) [#1817](https://github.com//kumahq/kuma/pull/1817) [#1812](https://github.com//kumahq/kuma/pull/1812) [#1821](https://github.com//kumahq/kuma/pull/1821) [#1824](https://github.com//kumahq/kuma/pull/1824) [#1828](https://github.com//kumahq/kuma/pull/1828) [#1822](https://github.com//kumahq/kuma/pull/1822)
+* fix: pass validation of V3 specific configs in ProxyTemplate [#1819](https://github.com//kumahq/kuma/pull/1819)
+* chore: support ingress annotations (kuma.io/ingress-public-address and kuma.io/ingress-public-port) in HELM [#1796](https://github.com//kumahq/kuma/pull/1796)
+
 ## [1.1.2]
 > Released on  2021/04/09
 

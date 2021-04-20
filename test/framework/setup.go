@@ -52,7 +52,9 @@ func YamlPathK8s(path string) InstallFunc {
 func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
 		fs = append(fs, func(options *deployOptions) {
-			options.isipv6 = IsIPv6()
+			if !options.isipv6 {
+				options.isipv6 = IsIPv6()
+			}
 		})
 		err := cluster.DeployKuma(mode, fs...)
 		return err
@@ -288,7 +290,7 @@ func IngressUniversal(mesh, token string) InstallFunc {
 
 		publicAddress := uniCluster.apps[AppIngress].ip
 		dpyaml := fmt.Sprintf(IngressDataplane, mesh, publicAddress, kdsPort, kdsPort)
-		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token)
+		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token, false)
 	}
 }
 
@@ -431,8 +433,8 @@ func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
 }
 
-func CreateCertsForIP(ip string) (cert, key string, err error) {
-	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, "localhost", ip)
+func CreateCertsFor(names []string) (cert, key string, err error) {
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, names...)
 	if err != nil {
 		return "", "", err
 	}

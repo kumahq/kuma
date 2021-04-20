@@ -811,7 +811,7 @@ spec:
         # priority scheduling and that its resources are reserved
         # if it ever gets evicted.
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        checksum/config: 33e9f5159ab22a4a3eed4308e6783b30bdd5ae6105f2969bb085fd7a3237f950
+        checksum/config: f6edafbaa0658567c76e0a81d05a24f7ec9545ebcda87578b3375affd596d456
     spec:
       nodeSelector:
       
@@ -834,7 +834,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
         - name: install-cni
-          image: "docker.io/lobkovilya/install-cni:0.0.4"
+          image: "docker.io/lobkovilya/install-cni:0.0.6"
           imagePullPolicy: Always
           command: ["/install-cni.sh"]
           env:
@@ -889,8 +889,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 0dbc3c6a5cd807aad7f3f984b5fb622a42d1a92bc2c743e0f6b0417c6d9f2370
-        checksum/tls-secrets: 40a8654ab8aaa411fd85f2e6040f4c29fc7d0ca4929af316991f8475200324fb
+        checksum/config: 148b8a93229593dd197541012a6303971d7830d729f6ad39a51f81b8f530df3e
+        checksum/tls-secrets: 150bb5918bda187dac20c96da03f5afb3b75a155c9ac835f11517fa8953aeb09
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma

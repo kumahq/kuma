@@ -48,6 +48,38 @@ func constructTestConfig() *config.Config {
 	}
 }
 
+func TestShortCircuitInternalIterface(t *testing.T) {
+	cfg := constructTestConfig()
+	cfg.InboundPortsInclude = ""
+	cfg.EnableInboundIPv6 = true
+	cfg.KubevirtInterfaces = "eth0,eth1"
+
+	iptConfigurator := NewIptablesConfigurator(cfg, &dep.StdoutStubDependencies{})
+	iptConfigurator.shortCircuitKubeInternalInterface()
+	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV6())
+	expected := []string{
+		"ip6tables -t nat -I PREROUTING 1 -i eth0 -j RETURN",
+		"ip6tables -t nat -I PREROUTING 1 -i eth1 -j RETURN",
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Output mismatch.\nExpected: %#v\nActual: %#v", expected, actual)
+	}
+
+	cfg.EnableInboundIPv6 = false
+	iptConfigurator = NewIptablesConfigurator(cfg, &dep.StdoutStubDependencies{})
+	iptConfigurator.shortCircuitKubeInternalInterface()
+	actual = FormatIptablesCommands(iptConfigurator.iptables.BuildV4())
+	expected = []string{
+		"iptables -t nat -I PREROUTING 1 -i eth0 -j RETURN",
+		"iptables -t nat -I PREROUTING 1 -i eth1 -j RETURN",
+	}
+
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Output mismatch.\nExpected: %#v\nActual: %#v", expected, actual)
+	}
+}
+
 func TestHandleInboundIpv6RulesWithEmptyInboundPorts(t *testing.T) {
 	cfg := constructTestConfig()
 	cfg.InboundPortsInclude = ""
@@ -61,22 +93,22 @@ func TestHandleInboundIpv6RulesWithEmptyInboundPorts(t *testing.T) {
 	iptConfigurator.handleInboundIpv6Rules(ipv6Range, ipv6Range)
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV6())
 	expected := []string{
-		"ip6tables -t nat -N ISTIO_INBOUND",
-		"ip6tables -t nat -N ISTIO_REDIRECT",
-		"ip6tables -t nat -N ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -N ISTIO_OUTPUT",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 15008 -j RETURN",
-		"ip6tables -t nat -A ISTIO_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
-		"ip6tables -t nat -A ISTIO_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
-		"ip6tables -t nat -A OUTPUT -p tcp -j ISTIO_OUTPUT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -s ::6/128 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 1337 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 1337 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -d ::1/128 -j RETURN",
+		"ip6tables -t nat -N MESH_INBOUND",
+		"ip6tables -t nat -N MESH_REDIRECT",
+		"ip6tables -t nat -N MESH_IN_REDIRECT",
+		"ip6tables -t nat -N MESH_OUTPUT",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 15008 -j RETURN",
+		"ip6tables -t nat -A MESH_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
+		"ip6tables -t nat -A MESH_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
+		"ip6tables -t nat -A OUTPUT -p tcp -j MESH_OUTPUT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -s ::6/128 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 1337 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --uid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --uid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 1337 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --gid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --gid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -d ::1/128 -j RETURN",
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch.\nExpected: %#v\nActual: %#v", expected, actual)
@@ -88,8 +120,8 @@ func TestRulesWithIpRange(t *testing.T) {
 	cfg.OutboundIPRangesExclude = "1.1.0.0/16"
 	cfg.OutboundIPRangesInclude = "9.9.0.0/16"
 	cfg.DryRun = true
-	dnsCaptureByEnvoy.DefaultValue = "ALL"
-	dnsCaptureByAgent.DefaultValue = ""
+	cfg.RedirectDNS = true
+	cfg.DNSServersV4 = []string{"127.0.0.53"}
 	iptConfigurator := NewIptablesConfigurator(cfg, &dep.StdoutStubDependencies{})
 	iptConfigurator.cfg.EnableInboundIPv6 = false
 	iptConfigurator.cfg.ProxyGID = "1,2"
@@ -97,38 +129,97 @@ func TestRulesWithIpRange(t *testing.T) {
 	iptConfigurator.run()
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV4())
 	expected := []string{
-		"iptables -t nat -N ISTIO_INBOUND",
-		"iptables -t nat -N ISTIO_REDIRECT",
-		"iptables -t nat -N ISTIO_IN_REDIRECT",
-		"iptables -t nat -N ISTIO_OUTPUT",
-		"iptables -t nat -A ISTIO_INBOUND -p tcp --dport 15008 -j RETURN",
-		"iptables -t nat -A ISTIO_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
-		"iptables -t nat -A ISTIO_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
-		"iptables -t nat -A OUTPUT -p tcp -j ISTIO_OUTPUT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -s 127.0.0.6/32 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --uid-owner 3 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 3 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 3 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --uid-owner 4 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 4 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 4 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 1 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 1 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 1 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 2 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 2 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 2 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -d 127.0.0.1/32 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -d 1.1.0.0/16 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -d 9.9.0.0/16 -j ISTIO_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -j RETURN",
+		"iptables -t nat -N MESH_INBOUND",
+		"iptables -t nat -N MESH_REDIRECT",
+		"iptables -t nat -N MESH_IN_REDIRECT",
+		"iptables -t nat -N MESH_OUTPUT",
+		"iptables -t nat -A MESH_INBOUND -p tcp --dport 15008 -j RETURN",
+		"iptables -t nat -A MESH_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
+		"iptables -t nat -A MESH_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
+		"iptables -t nat -A OUTPUT -p tcp -j MESH_OUTPUT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -s 127.0.0.6/32 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -p tcp ! --dport 53 -m owner --uid-owner 3 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -p tcp ! --dport 53 -m owner ! --uid-owner 3 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -m owner --uid-owner 3 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -p tcp ! --dport 53 -m owner --uid-owner 4 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -p tcp ! --dport 53 -m owner ! --uid-owner 4 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -m owner --uid-owner 4 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 1 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -p tcp ! --dport 53 -m owner ! --gid-owner 1 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -m owner --gid-owner 1 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 2 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -p tcp ! --dport 53 -m owner ! --gid-owner 2 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -m owner --gid-owner 2 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -p tcp --dport 53 -d 127.0.0.53/32 -j REDIRECT --to-ports 15053",
+		"iptables -t nat -A MESH_OUTPUT -d 127.0.0.1/32 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -d 1.1.0.0/16 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -d 9.9.0.0/16 -j MESH_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 3 -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 4 -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --gid-owner 1 -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --gid-owner 2 -j RETURN",
-		"iptables -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:15013",
-		"iptables -t nat -A POSTROUTING -p udp --dport 15013 -j SNAT --to-source 127.0.0.1",
+		"iptables -t nat -A OUTPUT -p udp --dport 53 -d 127.0.0.53/32 -j REDIRECT --to-port 15053",
 	}
+	if !reflect.DeepEqual(actual, expected) {
+		t.Errorf("Output mismatch. Expected: \n%#v ; Actual: \n%#v", expected, actual)
+	}
+}
+
+func TestRulesWithTproxy(t *testing.T) {
+	cfg := constructTestConfig()
+	cfg.InboundInterceptionMode = constants.TPROXY
+	cfg.InboundPortsInclude = "*"
+	cfg.OutboundIPRangesExclude = "1.1.0.0/16"
+	cfg.OutboundIPRangesInclude = "9.9.0.0/16"
+	cfg.DryRun = true
+	cfg.RedirectDNS = true
+	cfg.DNSServersV4 = []string{"127.0.0.53"}
+	iptConfigurator := NewIptablesConfigurator(cfg, &dep.StdoutStubDependencies{})
+	iptConfigurator.cfg.EnableInboundIPv6 = false
+	iptConfigurator.cfg.ProxyGID = "1337"
+	iptConfigurator.cfg.ProxyUID = "1337"
+	iptConfigurator.run()
+	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV4())
+	expected := []string{
+		"iptables -t nat -N MESH_INBOUND",
+		"iptables -t nat -N MESH_REDIRECT",
+		"iptables -t nat -N MESH_IN_REDIRECT",
+		"iptables -t mangle -N MESH_DIVERT",
+		"iptables -t mangle -N MESH_TPROXY",
+		"iptables -t mangle -N MESH_INBOUND",
+		"iptables -t nat -N MESH_OUTPUT",
+		"iptables -t nat -A MESH_INBOUND -p tcp --dport 15008 -j RETURN",
+		"iptables -t nat -A MESH_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
+		"iptables -t nat -A MESH_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
+		"iptables -t mangle -A MESH_DIVERT -j MARK --set-mark 1337",
+		"iptables -t mangle -A MESH_DIVERT -j ACCEPT",
+		"iptables -t mangle -A MESH_TPROXY ! -d 127.0.0.1/32 -p tcp -j TPROXY --tproxy-mark 1337/0xffffffff --on-port 15006",
+		"iptables -t mangle -A PREROUTING -p tcp -j MESH_INBOUND",
+		"iptables -t mangle -A MESH_INBOUND -p tcp --dport 22 -j RETURN",
+		"iptables -t mangle -A MESH_INBOUND -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j MESH_DIVERT",
+		"iptables -t mangle -A MESH_INBOUND -p tcp -j MESH_TPROXY",
+		"iptables -t nat -A OUTPUT -p tcp -j MESH_OUTPUT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -s 127.0.0.6/32 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -p tcp ! --dport 53 -m owner --uid-owner 1337 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -p tcp ! --dport 53 -m owner ! --uid-owner 1337 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -m owner --uid-owner 1337 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 1337 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -p tcp ! --dport 53 -m owner ! --gid-owner 1337 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -m owner --gid-owner 1337 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -p tcp --dport 53 -d 127.0.0.53/32 -j REDIRECT --to-ports 15053",
+		"iptables -t nat -A MESH_OUTPUT -d 127.0.0.1/32 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -d 1.1.0.0/16 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -d 9.9.0.0/16 -j MESH_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -j RETURN",
+		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 1337 -j RETURN",
+		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --gid-owner 1337 -j RETURN",
+		"iptables -t nat -A OUTPUT -p udp --dport 53 -d 127.0.0.53/32 -j REDIRECT --to-port 15053",
+		"iptables -t mangle -A PREROUTING -p tcp -m mark --mark 1337 -j CONNMARK --save-mark",
+		"iptables -t mangle -A OUTPUT -p tcp -m connmark --mark 1337 -j CONNMARK --restore-mark",
+		"iptables -t mangle -I MESH_INBOUND 1 -p tcp -m mark --mark 1337 -j RETURN",
+	}
+
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch. Expected: \n%#v ; Actual: \n%#v", expected, actual)
 	}
@@ -147,25 +238,25 @@ func TestHandleInboundIpv6RulesWithInboundPorts(t *testing.T) {
 	iptConfigurator.handleInboundIpv6Rules(ipv6Range, ipv6Range)
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV6())
 	expected := []string{
-		"ip6tables -t nat -N ISTIO_INBOUND",
-		"ip6tables -t nat -N ISTIO_REDIRECT",
-		"ip6tables -t nat -N ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -N ISTIO_OUTPUT",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 15008 -j RETURN",
-		"ip6tables -t nat -A ISTIO_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
-		"ip6tables -t nat -A ISTIO_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
-		"ip6tables -t nat -A PREROUTING -p tcp -j ISTIO_INBOUND",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 4000 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 5000 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A OUTPUT -p tcp -j ISTIO_OUTPUT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -s ::6/128 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 1337 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 1337 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -d ::1/128 -j RETURN",
+		"ip6tables -t nat -N MESH_INBOUND",
+		"ip6tables -t nat -N MESH_REDIRECT",
+		"ip6tables -t nat -N MESH_IN_REDIRECT",
+		"ip6tables -t nat -N MESH_OUTPUT",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 15008 -j RETURN",
+		"ip6tables -t nat -A MESH_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
+		"ip6tables -t nat -A MESH_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
+		"ip6tables -t nat -A PREROUTING -p tcp -j MESH_INBOUND",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 4000 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 5000 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A OUTPUT -p tcp -j MESH_OUTPUT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -s ::6/128 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 1337 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --uid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --uid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 1337 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --gid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --gid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -d ::1/128 -j RETURN",
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch. Expected: %#v ; Actual: %#v", expected, actual)
@@ -186,26 +277,26 @@ func TestHandleInboundIpv6RulesWithWildcardRanges(t *testing.T) {
 	iptConfigurator.handleInboundIpv6Rules(ipv6Range, ipv6Range)
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV6())
 	expected := []string{
-		"ip6tables -t nat -N ISTIO_INBOUND",
-		"ip6tables -t nat -N ISTIO_REDIRECT",
-		"ip6tables -t nat -N ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -N ISTIO_OUTPUT",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 15008 -j RETURN",
-		"ip6tables -t nat -A ISTIO_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
-		"ip6tables -t nat -A ISTIO_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
-		"ip6tables -t nat -A PREROUTING -p tcp -j ISTIO_INBOUND",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 4000 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 5000 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A OUTPUT -p tcp -j ISTIO_OUTPUT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -s ::6/128 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 1337 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 1337 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -d ::1/128 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -j ISTIO_REDIRECT",
+		"ip6tables -t nat -N MESH_INBOUND",
+		"ip6tables -t nat -N MESH_REDIRECT",
+		"ip6tables -t nat -N MESH_IN_REDIRECT",
+		"ip6tables -t nat -N MESH_OUTPUT",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 15008 -j RETURN",
+		"ip6tables -t nat -A MESH_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
+		"ip6tables -t nat -A MESH_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
+		"ip6tables -t nat -A PREROUTING -p tcp -j MESH_INBOUND",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 4000 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 5000 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A OUTPUT -p tcp -j MESH_OUTPUT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -s ::6/128 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 1337 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --uid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --uid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 1337 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --gid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --gid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -d ::1/128 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -j MESH_REDIRECT",
 		"ip6tables -t nat -I PREROUTING 1 -i eth0 -j RETURN",
 		"ip6tables -t nat -I PREROUTING 1 -i eth1 -j RETURN",
 	}
@@ -230,30 +321,30 @@ func TestHandleInboundIpv6RulesWithIpNets(t *testing.T) {
 	iptConfigurator.handleInboundIpv6Rules(ipv6Range, ipv6Range)
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV6())
 	expected := []string{
-		"ip6tables -t nat -N ISTIO_INBOUND",
-		"ip6tables -t nat -N ISTIO_REDIRECT",
-		"ip6tables -t nat -N ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -N ISTIO_OUTPUT",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 15008 -j RETURN",
-		"ip6tables -t nat -A ISTIO_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
-		"ip6tables -t nat -A ISTIO_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
-		"ip6tables -t nat -A PREROUTING -p tcp -j ISTIO_INBOUND",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 4000 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 5000 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A OUTPUT -p tcp -j ISTIO_OUTPUT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -s ::6/128 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 1337 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 1337 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 1337 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -d ::1/128 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -d 10.0.0.0/8 -j RETURN",
-		"ip6tables -t nat -I PREROUTING 1 -i eth0 -d 10.0.0.0/8 -j ISTIO_REDIRECT",
-		"ip6tables -t nat -I PREROUTING 1 -i eth1 -d 10.0.0.0/8 -j ISTIO_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -d 10.0.0.0/8 -j ISTIO_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -j RETURN",
+		"ip6tables -t nat -N MESH_INBOUND",
+		"ip6tables -t nat -N MESH_REDIRECT",
+		"ip6tables -t nat -N MESH_IN_REDIRECT",
+		"ip6tables -t nat -N MESH_OUTPUT",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 15008 -j RETURN",
+		"ip6tables -t nat -A MESH_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
+		"ip6tables -t nat -A MESH_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
+		"ip6tables -t nat -A PREROUTING -p tcp -j MESH_INBOUND",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 4000 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 5000 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A OUTPUT -p tcp -j MESH_OUTPUT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -s ::6/128 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 1337 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --uid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --uid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 1337 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --gid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --gid-owner 1337 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -d ::1/128 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -d 10.0.0.0/8 -j RETURN",
+		"ip6tables -t nat -I PREROUTING 1 -i eth0 -d 10.0.0.0/8 -j MESH_REDIRECT",
+		"ip6tables -t nat -I PREROUTING 1 -i eth1 -d 10.0.0.0/8 -j MESH_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -d 10.0.0.0/8 -j MESH_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -j RETURN",
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch.\nExpected: %#v\nActual: %#v", expected, actual)
@@ -278,36 +369,36 @@ func TestHandleInboundIpv6RulesWithUidGid(t *testing.T) {
 	iptConfigurator.handleInboundIpv6Rules(ipv6Range, ipv6Range)
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV6())
 	expected := []string{
-		"ip6tables -t nat -N ISTIO_INBOUND",
-		"ip6tables -t nat -N ISTIO_REDIRECT",
-		"ip6tables -t nat -N ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -N ISTIO_OUTPUT",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 15008 -j RETURN",
-		"ip6tables -t nat -A ISTIO_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
-		"ip6tables -t nat -A ISTIO_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
-		"ip6tables -t nat -A PREROUTING -p tcp -j ISTIO_INBOUND",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 4000 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_INBOUND -p tcp --dport 5000 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A OUTPUT -p tcp -j ISTIO_OUTPUT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -s ::6/128 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 3 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 3 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 3 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 4 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 4 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 4 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 1 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 1 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 1 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 2 -j ISTIO_IN_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 2 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 2 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -d ::1/128 -j RETURN",
-		"ip6tables -t nat -A ISTIO_OUTPUT -d 10.0.0.0/8 -j RETURN",
-		"ip6tables -t nat -I PREROUTING 1 -i eth0 -d 10.0.0.0/8 -j ISTIO_REDIRECT",
-		"ip6tables -t nat -I PREROUTING 1 -i eth1 -d 10.0.0.0/8 -j ISTIO_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -d 10.0.0.0/8 -j ISTIO_REDIRECT",
-		"ip6tables -t nat -A ISTIO_OUTPUT -j RETURN",
+		"ip6tables -t nat -N MESH_INBOUND",
+		"ip6tables -t nat -N MESH_REDIRECT",
+		"ip6tables -t nat -N MESH_IN_REDIRECT",
+		"ip6tables -t nat -N MESH_OUTPUT",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 15008 -j RETURN",
+		"ip6tables -t nat -A MESH_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
+		"ip6tables -t nat -A MESH_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
+		"ip6tables -t nat -A PREROUTING -p tcp -j MESH_INBOUND",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 4000 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_INBOUND -p tcp --dport 5000 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A OUTPUT -p tcp -j MESH_OUTPUT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -s ::6/128 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 3 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --uid-owner 3 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --uid-owner 3 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --uid-owner 4 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --uid-owner 4 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --uid-owner 4 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 1 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --gid-owner 1 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --gid-owner 1 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo ! -d ::1/128 -m owner --gid-owner 2 -j MESH_IN_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -o lo -m owner ! --gid-owner 2 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -m owner --gid-owner 2 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -d ::1/128 -j RETURN",
+		"ip6tables -t nat -A MESH_OUTPUT -d 10.0.0.0/8 -j RETURN",
+		"ip6tables -t nat -I PREROUTING 1 -i eth0 -d 10.0.0.0/8 -j MESH_REDIRECT",
+		"ip6tables -t nat -I PREROUTING 1 -i eth1 -d 10.0.0.0/8 -j MESH_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -d 10.0.0.0/8 -j MESH_REDIRECT",
+		"ip6tables -t nat -A MESH_OUTPUT -j RETURN",
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch.\nExpected: %#v\nActual: %#v", expected, actual)
@@ -325,8 +416,8 @@ func TestHandleInboundIpv4RulesWithWildCard(t *testing.T) {
 	iptConfigurator.handleInboundIpv4Rules(ipv4Range)
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV4())
 	expected := []string{
-		"iptables -t nat -N ISTIO_OUTPUT",
-		"iptables -t nat -A ISTIO_OUTPUT -j ISTIO_REDIRECT",
+		"iptables -t nat -N MESH_OUTPUT",
+		"iptables -t nat -A MESH_OUTPUT -j MESH_REDIRECT",
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch.\nExpected: %#v\nActual: %#v", expected, actual)
@@ -345,10 +436,10 @@ func TestHandleInboundIpv4RulesWithWildcardWithKubeVirtInterfaces(t *testing.T) 
 	iptConfigurator.handleInboundIpv4Rules(ipv4Range)
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV4())
 	expected := []string{
-		"iptables -t nat -N ISTIO_OUTPUT",
-		"iptables -t nat -A ISTIO_OUTPUT -j ISTIO_REDIRECT",
-		"iptables -t nat -I PREROUTING 1 -i eth1 -j ISTIO_REDIRECT",
-		"iptables -t nat -I PREROUTING 1 -i eth2 -j ISTIO_REDIRECT",
+		"iptables -t nat -N MESH_OUTPUT",
+		"iptables -t nat -A MESH_OUTPUT -j MESH_REDIRECT",
+		"iptables -t nat -I PREROUTING 1 -i eth1 -j MESH_REDIRECT",
+		"iptables -t nat -I PREROUTING 1 -i eth2 -j MESH_REDIRECT",
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch.\nExpected: %#v\nActual: %#v", expected, actual)
@@ -367,9 +458,9 @@ func TestHandleInboundIpv4RulesWithIpNets(t *testing.T) {
 	iptConfigurator.handleInboundIpv4Rules(ipv4Range)
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV4())
 	expected := []string{
-		"iptables -t nat -N ISTIO_OUTPUT",
-		"iptables -t nat -A ISTIO_OUTPUT -d 10.0.0.0/8 -j ISTIO_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -j RETURN",
+		"iptables -t nat -N MESH_OUTPUT",
+		"iptables -t nat -A MESH_OUTPUT -d 10.0.0.0/8 -j MESH_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -j RETURN",
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch.\nExpected: %#v\nActual: %#v", expected, actual)
@@ -389,11 +480,11 @@ func TestHandleInboundIpv4RulesWithIpNetsWithKubeVirtInterfaces(t *testing.T) {
 	iptConfigurator.handleInboundIpv4Rules(ipv4Range)
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV4())
 	expected := []string{
-		"iptables -t nat -N ISTIO_OUTPUT",
-		"iptables -t nat -I PREROUTING 1 -i eth1 -d 10.0.0.0/8 -j ISTIO_REDIRECT",
-		"iptables -t nat -I PREROUTING 1 -i eth2 -d 10.0.0.0/8 -j ISTIO_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -d 10.0.0.0/8 -j ISTIO_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -j RETURN",
+		"iptables -t nat -N MESH_OUTPUT",
+		"iptables -t nat -I PREROUTING 1 -i eth1 -d 10.0.0.0/8 -j MESH_REDIRECT",
+		"iptables -t nat -I PREROUTING 1 -i eth2 -d 10.0.0.0/8 -j MESH_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -d 10.0.0.0/8 -j MESH_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -j RETURN",
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch.\nExpected: %#v\nActual: %#v", expected, actual)
@@ -491,10 +582,10 @@ func TestHandleInboundPortsIncludeWithInboundPorts(t *testing.T) {
 		t.Errorf("Expected ip6Rules to be empty; instead got %#v", ip6Rules)
 	}
 	expectedIpv4Rules := []string{
-		"iptables -t nat -N ISTIO_INBOUND",
-		"iptables -t nat -A PREROUTING -p tcp -j ISTIO_INBOUND",
-		"iptables -t nat -A ISTIO_INBOUND -p tcp --dport 32000 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_INBOUND -p tcp --dport 31000 -j ISTIO_IN_REDIRECT",
+		"iptables -t nat -N MESH_INBOUND",
+		"iptables -t nat -A PREROUTING -p tcp -j MESH_INBOUND",
+		"iptables -t nat -A MESH_INBOUND -p tcp --dport 32000 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_INBOUND -p tcp --dport 31000 -j MESH_IN_REDIRECT",
 	}
 	if !reflect.DeepEqual(ip4Rules, expectedIpv4Rules) {
 		t.Errorf("Output mismatch\nExpected: %#v\nActual: %#v", expectedIpv4Rules, ip4Rules)
@@ -514,10 +605,10 @@ func TestHandleInboundPortsIncludeWithWildcardInboundPorts(t *testing.T) {
 		t.Errorf("Expected ip6Rules to be empty; instead got %#v", ip6Rules)
 	}
 	expectedIpv4Rules := []string{
-		"iptables -t nat -N ISTIO_INBOUND",
-		"iptables -t nat -A PREROUTING -p tcp -j ISTIO_INBOUND",
-		"iptables -t nat -A ISTIO_INBOUND -p tcp --dport 22 -j RETURN",
-		"iptables -t nat -A ISTIO_INBOUND -p tcp -j ISTIO_IN_REDIRECT",
+		"iptables -t nat -N MESH_INBOUND",
+		"iptables -t nat -A PREROUTING -p tcp -j MESH_INBOUND",
+		"iptables -t nat -A MESH_INBOUND -p tcp --dport 22 -j RETURN",
+		"iptables -t nat -A MESH_INBOUND -p tcp -j MESH_IN_REDIRECT",
 	}
 	if !reflect.DeepEqual(ip4Rules, expectedIpv4Rules) {
 		t.Errorf("Output mismatch\nExpected: %#v\nActual: %#v", expectedIpv4Rules, ip4Rules)
@@ -538,17 +629,17 @@ func TestHandleInboundPortsIncludeWithInboundPortsAndTproxy(t *testing.T) {
 		t.Errorf("Expected ip6Rules to be empty; instead got %#v", ip6Rules)
 	}
 	expectedIpv4Rules := []string{
-		"iptables -t mangle -N ISTIO_DIVERT",
-		"iptables -t mangle -N ISTIO_TPROXY",
-		"iptables -t mangle -N ISTIO_INBOUND",
-		"iptables -t mangle -A ISTIO_DIVERT -j MARK --set-mark 1337",
-		"iptables -t mangle -A ISTIO_DIVERT -j ACCEPT",
-		"iptables -t mangle -A ISTIO_TPROXY ! -d 127.0.0.1/32 -p tcp -j TPROXY --tproxy-mark 1337/0xffffffff --on-port 15001",
-		"iptables -t mangle -A PREROUTING -p tcp -j ISTIO_INBOUND",
-		"iptables -t mangle -A ISTIO_INBOUND -p tcp --dport 32000 -m conntrack --ctstate RELATED,ESTABLISHED -j ISTIO_DIVERT",
-		"iptables -t mangle -A ISTIO_INBOUND -p tcp --dport 32000 -j ISTIO_TPROXY",
-		"iptables -t mangle -A ISTIO_INBOUND -p tcp --dport 31000 -m conntrack --ctstate RELATED,ESTABLISHED -j ISTIO_DIVERT",
-		"iptables -t mangle -A ISTIO_INBOUND -p tcp --dport 31000 -j ISTIO_TPROXY",
+		"iptables -t mangle -N MESH_DIVERT",
+		"iptables -t mangle -N MESH_TPROXY",
+		"iptables -t mangle -N MESH_INBOUND",
+		"iptables -t mangle -A MESH_DIVERT -j MARK --set-mark 1337",
+		"iptables -t mangle -A MESH_DIVERT -j ACCEPT",
+		"iptables -t mangle -A MESH_TPROXY ! -d 127.0.0.1/32 -p tcp -j TPROXY --tproxy-mark 1337/0xffffffff --on-port 15006",
+		"iptables -t mangle -A PREROUTING -p tcp -j MESH_INBOUND",
+		"iptables -t mangle -A MESH_INBOUND -p tcp --dport 32000 -m conntrack --ctstate RELATED,ESTABLISHED -j MESH_DIVERT",
+		"iptables -t mangle -A MESH_INBOUND -p tcp --dport 32000 -j MESH_TPROXY",
+		"iptables -t mangle -A MESH_INBOUND -p tcp --dport 31000 -m conntrack --ctstate RELATED,ESTABLISHED -j MESH_DIVERT",
+		"iptables -t mangle -A MESH_INBOUND -p tcp --dport 31000 -j MESH_TPROXY",
 	}
 	if !reflect.DeepEqual(ip4Rules, expectedIpv4Rules) {
 		t.Errorf("Output mismatch\nExpected: %#v\nActual: %#v", expectedIpv4Rules, ip4Rules)
@@ -569,16 +660,16 @@ func TestHandleInboundPortsIncludeWithWildcardInboundPortsAndTproxy(t *testing.T
 		t.Errorf("Expected ip6Rules to be empty; instead got %#v", ip6Rules)
 	}
 	expectedIpv4Rules := []string{
-		"iptables -t mangle -N ISTIO_DIVERT",
-		"iptables -t mangle -N ISTIO_TPROXY",
-		"iptables -t mangle -N ISTIO_INBOUND",
-		"iptables -t mangle -A ISTIO_DIVERT -j MARK --set-mark 1337",
-		"iptables -t mangle -A ISTIO_DIVERT -j ACCEPT",
-		"iptables -t mangle -A ISTIO_TPROXY ! -d 127.0.0.1/32 -p tcp -j TPROXY --tproxy-mark 1337/0xffffffff --on-port 15001",
-		"iptables -t mangle -A PREROUTING -p tcp -j ISTIO_INBOUND",
-		"iptables -t mangle -A ISTIO_INBOUND -p tcp --dport 22 -j RETURN",
-		"iptables -t mangle -A ISTIO_INBOUND -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j ISTIO_DIVERT",
-		"iptables -t mangle -A ISTIO_INBOUND -p tcp -j ISTIO_TPROXY",
+		"iptables -t mangle -N MESH_DIVERT",
+		"iptables -t mangle -N MESH_TPROXY",
+		"iptables -t mangle -N MESH_INBOUND",
+		"iptables -t mangle -A MESH_DIVERT -j MARK --set-mark 1337",
+		"iptables -t mangle -A MESH_DIVERT -j ACCEPT",
+		"iptables -t mangle -A MESH_TPROXY ! -d 127.0.0.1/32 -p tcp -j TPROXY --tproxy-mark 1337/0xffffffff --on-port 15006",
+		"iptables -t mangle -A PREROUTING -p tcp -j MESH_INBOUND",
+		"iptables -t mangle -A MESH_INBOUND -p tcp --dport 22 -j RETURN",
+		"iptables -t mangle -A MESH_INBOUND -p tcp -m conntrack --ctstate RELATED,ESTABLISHED -j MESH_DIVERT",
+		"iptables -t mangle -A MESH_INBOUND -p tcp -j MESH_TPROXY",
 	}
 	if !reflect.DeepEqual(ip4Rules, expectedIpv4Rules) {
 		t.Errorf("Output mismatch\nExpected: %#v\nActual: %#v", expectedIpv4Rules, ip4Rules)
@@ -586,10 +677,10 @@ func TestHandleInboundPortsIncludeWithWildcardInboundPortsAndTproxy(t *testing.T
 }
 
 func TestHandleInboundIpv4RulesWithUidGid(t *testing.T) {
-	cfg := constructConfig()
+	cfg := constructTestConfig()
 	cfg.DryRun = true
-	dnsCaptureByEnvoy.DefaultValue = ""
-	dnsCaptureByAgent.DefaultValue = "ALL"
+	cfg.RedirectDNS = true
+	cfg.DNSServersV4 = []string{"127.0.0.53"}
 	iptConfigurator := NewIptablesConfigurator(cfg, &dep.StdoutStubDependencies{})
 	iptConfigurator.cfg.EnableInboundIPv6 = false
 	iptConfigurator.cfg.ProxyGID = "1,2"
@@ -597,34 +688,34 @@ func TestHandleInboundIpv4RulesWithUidGid(t *testing.T) {
 	iptConfigurator.run()
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV4())
 	expected := []string{
-		"iptables -t nat -N ISTIO_INBOUND",
-		"iptables -t nat -N ISTIO_REDIRECT",
-		"iptables -t nat -N ISTIO_IN_REDIRECT",
-		"iptables -t nat -N ISTIO_OUTPUT",
-		"iptables -t nat -A ISTIO_INBOUND -p tcp --dport 15008 -j RETURN",
-		"iptables -t nat -A ISTIO_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
-		"iptables -t nat -A ISTIO_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
-		"iptables -t nat -A OUTPUT -p tcp -j ISTIO_OUTPUT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -s 127.0.0.6/32 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --uid-owner 3 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 3 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 3 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --uid-owner 4 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --uid-owner 4 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 4 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 1 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 1 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 1 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 2 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -m owner ! --gid-owner 2 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 2 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -d 127.0.0.1/32 -j RETURN",
+		"iptables -t nat -N MESH_INBOUND",
+		"iptables -t nat -N MESH_REDIRECT",
+		"iptables -t nat -N MESH_IN_REDIRECT",
+		"iptables -t nat -N MESH_OUTPUT",
+		"iptables -t nat -A MESH_INBOUND -p tcp --dport 15008 -j RETURN",
+		"iptables -t nat -A MESH_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
+		"iptables -t nat -A MESH_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
+		"iptables -t nat -A OUTPUT -p tcp -j MESH_OUTPUT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -s 127.0.0.6/32 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -p tcp ! --dport 53 -m owner --uid-owner 3 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -p tcp ! --dport 53 -m owner ! --uid-owner 3 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -m owner --uid-owner 3 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -p tcp ! --dport 53 -m owner --uid-owner 4 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -p tcp ! --dport 53 -m owner ! --uid-owner 4 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -m owner --uid-owner 4 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 1 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -p tcp ! --dport 53 -m owner ! --gid-owner 1 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -m owner --gid-owner 1 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 2 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -p tcp ! --dport 53 -m owner ! --gid-owner 2 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -m owner --gid-owner 2 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -p tcp --dport 53 -d 127.0.0.53/32 -j REDIRECT --to-ports 15053",
+		"iptables -t nat -A MESH_OUTPUT -d 127.0.0.1/32 -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 3 -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 4 -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --gid-owner 1 -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --gid-owner 2 -j RETURN",
-		"iptables -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:15053",
-		"iptables -t nat -A POSTROUTING -p udp --dport 15053 -j SNAT --to-source 127.0.0.1",
+		"iptables -t nat -A OUTPUT -p udp --dport 53 -d 127.0.0.53/32 -j REDIRECT --to-port 15053",
 	}
 
 	if !reflect.DeepEqual(actual, expected) {
@@ -633,10 +724,9 @@ func TestHandleInboundIpv4RulesWithUidGid(t *testing.T) {
 }
 
 func TestGenerateEmptyV6ConfigOnV4OnlyEnv(t *testing.T) {
-	cfg := constructConfig()
+	cfg := constructTestConfig()
 	cfg.DryRun = true
-	dnsCaptureByEnvoy.DefaultValue = ""
-	dnsCaptureByAgent.DefaultValue = "ALL"
+	cfg.RedirectDNS = true
 	iptConfigurator := NewIptablesConfigurator(cfg, &dep.StdoutStubDependencies{})
 	iptConfigurator.cfg.EnableInboundIPv6 = false
 	iptConfigurator.cfg.ProxyGID = "1,2"
@@ -662,9 +752,9 @@ func TestHandleOutboundPortsIncludeWithOutboundPorts(t *testing.T) {
 		t.Errorf("Expected ip6Rules to be empty; instead got %#v", ip6Rules)
 	}
 	expectedIpv4Rules := []string{
-		"iptables -t nat -N ISTIO_OUTPUT",
-		"iptables -t nat -A ISTIO_OUTPUT -p tcp --dport 32000 -j ISTIO_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -p tcp --dport 31000 -j ISTIO_REDIRECT",
+		"iptables -t nat -N MESH_OUTPUT",
+		"iptables -t nat -A MESH_OUTPUT -p tcp --dport 32000 -j MESH_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -p tcp --dport 31000 -j MESH_REDIRECT",
 	}
 	if !reflect.DeepEqual(ip4Rules, expectedIpv4Rules) {
 		t.Errorf("Output mismatch\nExpected: %#v\nActual: %#v", expectedIpv4Rules, ip4Rules)
@@ -675,8 +765,8 @@ func TestRulesWithLoopbackIpInOutboundIpRanges(t *testing.T) {
 	cfg := constructTestConfig()
 	cfg.OutboundIPRangesInclude = "127.1.2.3/32"
 	cfg.DryRun = true
-	dnsCaptureByEnvoy.DefaultValue = "ALL"
-	dnsCaptureByAgent.DefaultValue = ""
+	cfg.RedirectDNS = true
+	cfg.DNSServersV4 = []string{"127.0.0.53"}
 	iptConfigurator := NewIptablesConfigurator(cfg, &dep.StdoutStubDependencies{})
 	iptConfigurator.cfg.EnableInboundIPv6 = false
 	iptConfigurator.cfg.ProxyGID = "1,2"
@@ -684,32 +774,32 @@ func TestRulesWithLoopbackIpInOutboundIpRanges(t *testing.T) {
 	iptConfigurator.run()
 	actual := FormatIptablesCommands(iptConfigurator.iptables.BuildV4())
 	expected := []string{
-		"iptables -t nat -N ISTIO_INBOUND",
-		"iptables -t nat -N ISTIO_REDIRECT",
-		"iptables -t nat -N ISTIO_IN_REDIRECT",
-		"iptables -t nat -N ISTIO_OUTPUT",
-		"iptables -t nat -A ISTIO_INBOUND -p tcp --dport 15008 -j RETURN",
-		"iptables -t nat -A ISTIO_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
-		"iptables -t nat -A ISTIO_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
-		"iptables -t nat -A OUTPUT -p tcp -j ISTIO_OUTPUT",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo -s 127.0.0.6/32 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --uid-owner 3 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 3 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --uid-owner 4 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --uid-owner 4 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 1 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 1 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 2 -j ISTIO_IN_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -m owner --gid-owner 2 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -d 127.0.0.1/32 -j RETURN",
-		"iptables -t nat -A ISTIO_OUTPUT -d 127.1.2.3/32 -j ISTIO_REDIRECT",
-		"iptables -t nat -A ISTIO_OUTPUT -j RETURN",
+		"iptables -t nat -N MESH_INBOUND",
+		"iptables -t nat -N MESH_REDIRECT",
+		"iptables -t nat -N MESH_IN_REDIRECT",
+		"iptables -t nat -N MESH_OUTPUT",
+		"iptables -t nat -A MESH_INBOUND -p tcp --dport 15008 -j RETURN",
+		"iptables -t nat -A MESH_REDIRECT -p tcp -j REDIRECT --to-ports 15001",
+		"iptables -t nat -A MESH_IN_REDIRECT -p tcp -j REDIRECT --to-ports 15006",
+		"iptables -t nat -A OUTPUT -p tcp -j MESH_OUTPUT",
+		"iptables -t nat -A MESH_OUTPUT -o lo -s 127.0.0.6/32 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -p tcp ! --dport 53 -m owner --uid-owner 3 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -m owner --uid-owner 3 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -p tcp ! --dport 53 -m owner --uid-owner 4 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -m owner --uid-owner 4 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 1 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -m owner --gid-owner 1 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -o lo ! -d 127.0.0.1/32 -m owner --gid-owner 2 -j MESH_IN_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -m owner --gid-owner 2 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -p tcp --dport 53 -d 127.0.0.53/32 -j REDIRECT --to-ports 15053",
+		"iptables -t nat -A MESH_OUTPUT -d 127.0.0.1/32 -j RETURN",
+		"iptables -t nat -A MESH_OUTPUT -d 127.1.2.3/32 -j MESH_REDIRECT",
+		"iptables -t nat -A MESH_OUTPUT -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 3 -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --uid-owner 4 -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --gid-owner 1 -j RETURN",
 		"iptables -t nat -A OUTPUT -p udp --dport 53 -m owner --gid-owner 2 -j RETURN",
-		"iptables -t nat -A OUTPUT -p udp --dport 53 -j DNAT --to-destination 127.0.0.1:15013",
-		"iptables -t nat -A POSTROUTING -p udp --dport 15013 -j SNAT --to-source 127.0.0.1",
+		"iptables -t nat -A OUTPUT -p udp --dport 53 -d 127.0.0.53/32 -j REDIRECT --to-port 15053",
 	}
 	if !reflect.DeepEqual(actual, expected) {
 		t.Errorf("Output mismatch. Expected: \n%#v ; Actual: \n%#v", expected, actual)

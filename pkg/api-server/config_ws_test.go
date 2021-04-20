@@ -181,7 +181,10 @@ var _ = Describe("Config WS", func() {
 			  "controlPlaneServiceName": "kuma-control-plane",
 			  "injector": {
 				"caCertFile": "",
-				"cniEnabled": false,
+				"builtinDNS": {
+                  "port": 15053
+                },
+                "cniEnabled": false,
 				"exceptions": {
 				  "labels": {
 					"openshift.io/build.name": "*",
@@ -213,71 +216,102 @@ var _ = Describe("Config WS", func() {
 				  "redirectPortInbound": 15006,
 				  "redirectPortInboundV6": 15010,
                   "redirectPortOutbound": 15001,
-				  "resources": {
-					"limits": {
-					  "cpu": "1000m",
-					  "memory": "512Mi"
-					},
-					"requests": {
-					  "cpu": "50m",
-					  "memory": "64Mi"
-					}
-				  },
-				  "uid": 5678
-				},
-				"sidecarTraffic": {
-				  "excludeInboundPorts": [],
-				  "excludeOutboundPorts": []
-				},
-				"virtualProbesEnabled": true,
-				"virtualProbesPort": 9000
-			  },
-			  "marshalingCacheExpirationTime": "5m0s"
-			},
-			"universal": {
-			  "dataplaneCleanupAge": "72h0m0s"
-			}
-		  },
-		  "sdsServer": {
-			"dataplaneConfigurationRefreshInterval": "1s"
-		  },
-		  "store": {
-			"cache": {
-			  "enabled": true,
-			  "expirationTime": "1s"
-			},
-			"kubernetes": {
-			  "systemNamespace": "kuma-system"
-			},
-			"postgres": {
-			  "connectionTimeout": 5,
-			  "dbName": "kuma",
-			  "host": "127.0.0.1",
-			  "maxOpenConnections": 0,
-			  "maxReconnectInterval": "1m0s",
-			  "minReconnectInterval": "10s",
-			  "password": "*****",
-			  "port": 15432,
-			  "tls": {
-				"caPath": "",
-				"certPath": "",
-				"keyPath": "",
-				"mode": "disable"
-			  },
-			  "user": "kuma"
-			},
-			"type": "memory",
-			"upsert": {
-			  "conflictRetryBaseBackoff": "100ms",
-			  "conflictRetryMaxTimes": 5
-			}
-		  },
-		  "xdsServer": {
-			"dataplaneConfigurationRefreshInterval": "1s",
-			"dataplaneStatusFlushInterval": "10s",
-			"nackBackoff": "5s"
-		  }
-		}
+                  "resources": {
+                    "limits": {
+                      "cpu": "1000m",
+                      "memory": "512Mi"
+                    },
+                    "requests": {
+                      "cpu": "50m",
+                      "memory": "64Mi"
+                    }
+                  },
+                  "uid": 5678
+                },
+                "sidecarTraffic": {
+                  "excludeInboundPorts": [],
+                  "excludeOutboundPorts": []
+                },
+                "virtualProbesEnabled": true,
+                "virtualProbesPort": 9000,
+                "exceptions": {
+                  "labels": {
+                    "openshift.io/build.name": "*",
+                    "openshift.io/deployer-pod-for.name": "*"
+                  }
+                },
+                "caCertFile": ""
+              },
+              "marshalingCacheExpirationTime": "5m0s"
+            },
+            "universal": {
+              "dataplaneCleanupAge": "72h0m0s"
+            }
+          },
+          "sdsServer": {
+            "dataplaneConfigurationRefreshInterval": "1s"
+          },
+          "dpServer": {
+            "port": 5678,
+            "tlsCertFile": "",
+            "tlsKeyFile": "",
+            "auth": {
+              "type": ""
+            },
+            "hds": {
+              "checkDefaults": {
+                "healthyThreshold": 1,
+                "interval": "1s",
+                "noTrafficInterval": "1s",
+                "timeout": "2s",
+                "unhealthyThreshold": 1
+              },
+              "enabled": true,
+              "interval": "5s",
+              "refreshInterval": "10s"
+            }
+          },
+          "store": {
+            "kubernetes": {
+              "systemNamespace": "kuma-system"
+            },
+            "postgres": {
+              "connectionTimeout": 5,
+              "dbName": "kuma",
+              "host": "127.0.0.1",
+              "maxOpenConnections": 0,
+              "password": "*****",
+              "port": 15432,
+              "maxReconnectInterval": "1m0s",
+              "minReconnectInterval": "10s",
+              "tls": {
+                "certPath": "",
+                "keyPath": "",
+                "mode": "disable",
+                "caPath": ""
+              },
+              "user": "kuma"
+            },
+            "cache": {
+              "enabled": true,
+              "expirationTime": "1s"
+            },
+            "upsert": {
+              "conflictRetryBaseBackoff": "100ms",
+              "conflictRetryMaxTimes": 5
+            },
+            "type": "memory"
+          },
+          "xdsServer": {
+            "dataplaneConfigurationRefreshInterval": "1s",
+            "dataplaneStatusFlushInterval": "10s",
+            "nackBackoff": "5s"
+          },
+          "diagnostics": {
+            "serverPort": 5680,
+            "debugEndpoints": false
+          }
+        }
 		`, port, cfg.HTTPS.Port)
 		// when
 		Expect(body).To(MatchJSON(json))

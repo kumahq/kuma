@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -74,14 +76,22 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				runLog.Info("picked a free port for Envoy Admin API to listen on", "port", cfg.Dataplane.AdminPort)
 			}
 
-			if cfg.DataplaneRuntime.ConfigDir == "" {
+			if cfg.DataplaneRuntime.ConfigDir == "" || cfg.DNS.ConfigDir == "" {
 				tmpDir, err = ioutil.TempDir("", "kuma-dp-")
 				if err != nil {
-					runLog.Error(err, "unable to create a temporary directory to store generated Envoy config at")
+					runLog.Error(err, "unable to create a temporary directory to store generated config sat")
 					return err
 				}
-				cfg.DataplaneRuntime.ConfigDir = tmpDir
-				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
+
+				if cfg.DataplaneRuntime.ConfigDir == "" {
+					cfg.DataplaneRuntime.ConfigDir = tmpDir
+				}
+
+				if cfg.DNS.ConfigDir == "" {
+					cfg.DNS.ConfigDir = tmpDir
+				}
+
+				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
 			}
 
 			if cfg.DataplaneRuntime.Token != "" {
@@ -116,9 +126,13 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 					}
 				}()
 			}
-			shouldQuit := setupQuitChannel()
 
-			dataplane, err := envoy.New(envoy.Opts{
+			shouldQuit := setupQuitChannel()
+			components := []component.Component{
+				accesslogs.NewAccessLogServer(cfg.Dataplane),
+			}
+
+			opts := envoy.Opts{
 				Config:          *cfg,
 				Generator:       rootCtx.BootstrapGenerator,
 				Dataplane:       dp,
@@ -127,13 +141,35 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				Stderr:          cmd.OutOrStderr(),
 				Quit:            shouldQuit,
 				LogLevel:        rootCtx.LogLevel,
-			})
+			}
+
+			if cfg.DNS.Enabled {
+				opts.DNSPort = cfg.DNS.EnvoyDNSPort
+				opts.EmptyDNSPort = cfg.DNS.CoreDNSEmptyPort
+
+				dnsOpts := &dnsserver.Opts{
+					Config: *cfg,
+					Stdout: cmd.OutOrStdout(),
+					Stderr: cmd.OutOrStderr(),
+					Quit:   shouldQuit,
+				}
+
+				dnsServer, err := dnsserver.New(dnsOpts)
+				if err != nil {
+					return err
+				}
+
+				components = append(components, dnsServer)
+			}
+
+			dataplane, err := envoy.New(opts)
 			if err != nil {
 				return err
 			}
-			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
 
-			if err := rootCtx.ComponentManager.Add(server, dataplane); err != nil {
+			components = append(components, dataplane)
+
+			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
 
@@ -160,6 +196,14 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Resource, "dataplane", "", "Dataplane template to apply (YAML or JSON)")
 	cmd.PersistentFlags().StringVarP(&cfg.DataplaneRuntime.ResourcePath, "dataplane-file", "d", "", "Path to Dataplane template to apply (YAML or JSON)")
 	cmd.PersistentFlags().StringToStringVarP(&cfg.DataplaneRuntime.ResourceVars, "dataplane-var", "v", map[string]string{}, "Variables to replace Dataplane template")
+	cmd.PersistentFlags().BoolVar(&cfg.DNS.Enabled, "dns-enabled", cfg.DNS.Enabled, "If true then builtin DNS functionality is enabled and CoreDNS server is started")
+	cmd.PersistentFlags().Uint32Var(&cfg.DNS.EnvoyDNSPort, "dns-envoy-port", cfg.DNS.EnvoyDNSPort, "A port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one")
+	cmd.PersistentFlags().Uint32Var(&cfg.DNS.CoreDNSPort, "dns-coredns-port", cfg.DNS.CoreDNSPort, "A port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.")
+	cmd.PersistentFlags().Uint32Var(&cfg.DNS.CoreDNSEmptyPort, "dns-coredns-empty-port", cfg.DNS.CoreDNSEmptyPort, "A port that always responds with empty NXDOMAIN respond. It is required to implement a fallback to a real DNS.")
+	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSBinaryPath, "dns-coredns-path", cfg.DNS.CoreDNSBinaryPath, "A path to CoreDNS binary.")
+	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSConfigTemplatePath, "dns-coredns-config-template-path", cfg.DNS.CoreDNSConfigTemplatePath, "A path to a CoreDNS config template.")
+	cmd.PersistentFlags().StringVar(&cfg.DNS.ConfigDir, "dns-server-config-dir", cfg.DNS.ConfigDir, "Directory in which DNS Server config will be generated")
+	cmd.PersistentFlags().Uint32Var(&cfg.DNS.PrometheusPort, "dns-prometheus-port", cfg.DNS.PrometheusPort, "A port for exposing Prometheus stats")
 	return cmd
 }
 
