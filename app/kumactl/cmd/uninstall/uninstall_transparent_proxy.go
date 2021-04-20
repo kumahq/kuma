@@ -34,7 +34,7 @@ func newUninstallTransparentProxy() *cobra.Command {
 
 			output, err := tp.Cleanup(args.DryRun, args.Verbose)
 			if err != nil {
-				return errors.Wrap(err, "Failed to setup transparent proxy")
+				return errors.Wrap(err, "Failed to cleanup transparent proxy")
 			}
 
 			if args.DryRun {

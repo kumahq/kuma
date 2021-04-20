@@ -78,6 +78,12 @@ func (tp *IstioTransparentProxy) Cleanup(dryRun, verbose bool) (string, error) {
 		}()
 	}
 
+	savedArgs := os.Args[1:]
+	os.Args = os.Args[:1]
+	defer func() {
+		os.Args = append(os.Args, savedArgs...)
+	}()
+
 	if err := uninstall.GetCommand().Execute(); err != nil {
 		return tp.getStdOutStdErr(), errors.Wrapf(err, "setting istio")
 	}

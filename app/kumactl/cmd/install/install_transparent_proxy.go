@@ -194,6 +194,12 @@ func findUidGid(uid, user string) (string, string, error) {
 func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 	tp := transparentproxy.DefaultTransparentProxy()
 
+	// best effort cleanup before we apply the rules (again?)
+	_,err := tp.Cleanup(args.DryRun, args.Verbose)
+	if err != nil {
+		return errors.Wrapf(err, "unable to invoke cleanup")
+	}
+
 	uid, gid, err := findUidGid(args.UID, args.User)
 	if err != nil {
 		return errors.Wrapf(err, "unable to find the kuma-dp user")
