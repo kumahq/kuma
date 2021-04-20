@@ -46,10 +46,12 @@ func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (stri
 	viper.Set(constants.AgentDNSListenerPort, cfg.AgentDNSListenerPort)
 	viper.Set(constants.DNSUpstreamTargetChain, cfg.DNSUpstreamTargetChain)
 
-	tp.redirectStdOutStdErr()
-	defer func() {
-		tp.restoreStdOutStderr()
-	}()
+	if !cfg.Verbose {
+		tp.redirectStdOutStdErr()
+		defer func() {
+			tp.restoreStdOutStderr()
+		}()
+	}
 
 	savedArgs := os.Args[1:]
 	os.Args = os.Args[:1]
@@ -64,15 +66,17 @@ func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (stri
 	return tp.getStdOutStdErr(), nil
 }
 
-func (tp *IstioTransparentProxy) Cleanup(dryRun bool) (string, error) {
+func (tp *IstioTransparentProxy) Cleanup(dryRun, verbose bool) (string, error) {
 
 	viper.Set(constants.DryRun, dryRun)
 	viper.Set(constants.DNSUpstreamTargetChain, "")
 
-	tp.redirectStdOutStdErr()
-	defer func() {
-		tp.restoreStdOutStderr()
-	}()
+	if !verbose {
+		tp.redirectStdOutStdErr()
+		defer func() {
+			tp.restoreStdOutStderr()
+		}()
+	}
 
 	if err := uninstall.GetCommand().Execute(); err != nil {
 		return tp.getStdOutStdErr(), errors.Wrapf(err, "setting istio")

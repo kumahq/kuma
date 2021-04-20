@@ -2,6 +2,7 @@ package config
 
 type TransparentProxyConfig struct {
 	DryRun                 bool
+	Verbose                bool
 	RedirectPortOutBound   string
 	RedirectInBound        bool
 	RedirectPortInBound    string

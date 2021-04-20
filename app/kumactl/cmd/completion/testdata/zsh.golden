@@ -983,6 +983,7 @@ function _kumactl_install_transparent-proxy {
     '--redirect-outbound-port[outbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortOutbound`]:' \
     '--skip-resolv-conf[skip modifying the host `/etc/resolv.conf`]' \
     '--store-firewalld[store the iptables changes with firewalld]' \
+    '--verbose[verbose]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
@@ -1018,6 +1019,7 @@ function _kumactl_uninstall {
 function _kumactl_uninstall_transparent-proxy {
   _arguments \
     '--dry-run[dry run]' \
+    '--verbose[verbose]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'

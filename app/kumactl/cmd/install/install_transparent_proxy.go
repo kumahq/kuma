@@ -21,6 +21,7 @@ import (
 
 type transparenProxyArgs struct {
 	DryRun                 bool
+	Verbose                bool
 	ModifyIptables         bool
 	RedirectPortOutBound   string
 	RedirectInbound        bool
@@ -43,6 +44,7 @@ var defaultCpIP = net.IPv4(0, 0, 0, 0)
 func newInstallTransparentProxy() *cobra.Command {
 	args := transparenProxyArgs{
 		DryRun:                 false,
+		Verbose:                false,
 		ModifyIptables:         true,
 		RedirectPortOutBound:   "15001",
 		RedirectInbound:        true,
@@ -149,6 +151,7 @@ runuser -u kuma-dp -- \
 	}
 
 	cmd.Flags().BoolVar(&args.DryRun, "dry-run", args.DryRun, "dry run")
+	cmd.Flags().BoolVar(&args.Verbose, "verbose", args.Verbose, "verbose")
 	cmd.Flags().BoolVar(&args.ModifyIptables, "modify-iptables", args.ModifyIptables, "modify the host iptables to redirect the traffic to Envoy")
 	cmd.Flags().StringVar(&args.RedirectPortOutBound, "redirect-outbound-port", args.RedirectPortOutBound, "outbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortOutbound`")
 	cmd.Flags().BoolVar(&args.RedirectInbound, "redirect-inbound", args.RedirectInbound, "redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.")
@@ -201,6 +204,7 @@ func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 	}
 	output, err := tp.Setup(&config.TransparentProxyConfig{
 		DryRun:                 args.DryRun,
+		Verbose:                args.Verbose,
 		RedirectPortOutBound:   args.RedirectPortOutBound,
 		RedirectInBound:        args.RedirectInbound,
 		RedirectPortInBound:    args.RedirectPortInBound,
