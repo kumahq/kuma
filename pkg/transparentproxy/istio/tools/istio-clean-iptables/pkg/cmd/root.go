@@ -55,7 +55,7 @@ func constructConfig() *config.Config {
 		ProxyUID:               viper.GetString(constants.ProxyUID),
 		ProxyGID:               viper.GetString(constants.ProxyGID),
 		RedirectDNS:            viper.GetBool(constants.RedirectDNS),
-		RedirectDNSServers:     viper.GetBool(constants.RedirectDNSServers),
+		RedirectAllDNSTraffic:  viper.GetBool(constants.RedirectAllDNSTraffic),
 		AgentDNSListenerPort:   viper.GetString(constants.AgentDNSListenerPort),
 		DNSUpstreamTargetChain: viper.GetString(constants.DNSUpstreamTargetChain),
 	}
@@ -80,14 +80,14 @@ func constructConfig() *config.Config {
 	// Lookup DNS nameservers. We only do this if DNS is enabled in case of some obscure theoretical
 	// case where reading /etc/resolv.conf could fail.
 	if cfg.RedirectDNS {
-		if cfg.RedirectDNSServers {
+		if cfg.RedirectAllDNSTraffic {
+			cfg.DNSServersV4, cfg.DNSServersV6 = []string{"0.0.0.0"}, []string{"::"}
+		} else {
 			dnsConfig, err := dns.ClientConfigFromFile("/etc/resolv.conf")
 			if err != nil {
 				panic(fmt.Sprintf("failed to load /etc/resolv.conf: %v", err))
 			}
 			cfg.DNSServersV4, cfg.DNSServersV6 = common.SplitV4V6(dnsConfig.Servers)
-		} else {
-			cfg.DNSServersV4, cfg.DNSServersV6 = []string{"0.0.0.0"}, []string{"::"}
 		}
 	}
 
@@ -122,10 +122,10 @@ func bindFlags(cmd *cobra.Command, args []string) {
 	}
 	viper.SetDefault(constants.RedirectDNS, dnsCaptureByAgent)
 
-	if err := viper.BindPFlag(constants.RedirectDNSServers, cmd.Flags().Lookup(constants.RedirectDNSServers)); err != nil {
+	if err := viper.BindPFlag(constants.RedirectAllDNSTraffic, cmd.Flags().Lookup(constants.RedirectAllDNSTraffic)); err != nil {
 		handleError(err)
 	}
-	viper.SetDefault(constants.RedirectDNSServers, false)
+	viper.SetDefault(constants.RedirectAllDNSTraffic, false)
 
 	if err := viper.BindPFlag(constants.AgentDNSListenerPort, cmd.Flags().Lookup(constants.AgentDNSListenerPort)); err != nil {
 		handleError(err)
@@ -152,7 +152,7 @@ func init() {
 
 	rootCmd.Flags().Bool(constants.RedirectDNS, dnsCaptureByAgent, "Enable capture of dns traffic by istio-agent")
 
-	rootCmd.Flags().Bool(constants.RedirectDNSServers, false, "Enable capture of configured dns servers traffic by istio-agent ")
+	rootCmd.Flags().Bool(constants.RedirectAllDNSTraffic, false, "Enable capture of all dns traffic by istio-agent ")
 
 	rootCmd.Flags().String(constants.AgentDNSListenerPort, constants.IstioAgentDNSListenerPort, "set listen port for DNS agent")
 }

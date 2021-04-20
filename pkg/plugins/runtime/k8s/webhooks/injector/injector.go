@@ -427,6 +427,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 	if i.cfg.BuiltinDNS.Enabled {
 		dnsArg = append(dnsArg,
 			"--redirect-dns",
+			"--redirect-all-dns-traffic",
 			"--redirect-dns-port", strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port), 10),
 		)
 	}
@@ -437,6 +438,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
 		Args: append([]string{
+			// changes here shall be reflected in CNI iptables.go
 			"--redirect-outbound-port",
 			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
 			"--redirect-inbound=" + redirectInbound,

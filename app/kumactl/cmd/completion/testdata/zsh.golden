@@ -974,7 +974,8 @@ function _kumactl_install_transparent-proxy {
     '--kuma-dp-uid[the UID of the user that will run kuma-dp]:' \
     '--kuma-dp-user[the user that will run kuma-dp]:' \
     '--modify-iptables[modify the host iptables to redirect the traffic to Envoy]' \
-    '--redirect-dns[redirect the DNS requests to a specified port]' \
+    '--redirect-all-dns-traffic[redirect all DNS requests to a specified port]' \
+    '--redirect-dns[redirect all DNS requests to the servers in /etc/resolv.conf to a specified port]' \
     '--redirect-dns-port[the port where the DNS agent is listening]:' \
     '--redirect-dns-upstream-target-chain[(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.]:' \
     '--redirect-inbound[redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.]' \

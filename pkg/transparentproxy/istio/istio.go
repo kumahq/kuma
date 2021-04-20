@@ -42,7 +42,7 @@ func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (stri
 	viper.Set(constants.SkipRuleApply, false)
 	viper.Set(constants.RunValidation, false)
 	viper.Set(constants.RedirectDNS, cfg.RedirectDNS)
-	viper.Set(constants.RedirectDNSServers, false) // force all DNS traffic capture
+	viper.Set(constants.RedirectAllDNSTraffic, cfg.RedirectAllDNSTraffic)
 	viper.Set(constants.AgentDNSListenerPort, cfg.AgentDNSListenerPort)
 	viper.Set(constants.DNSUpstreamTargetChain, cfg.DNSUpstreamTargetChain)
 

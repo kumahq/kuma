@@ -12,6 +12,7 @@ type TransparentProxyConfig struct {
 	UID                    string
 	GID                    string
 	RedirectDNS            bool
+	RedirectAllDNSTraffic  bool
 	AgentDNSListenerPort   string
 	DNSUpstreamTargetChain string
 }

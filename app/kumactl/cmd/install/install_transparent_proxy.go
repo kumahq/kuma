@@ -32,6 +32,7 @@ type transparenProxyArgs struct {
 	UID                    string
 	User                   string
 	RedirectDNS            bool
+	RedirectAllDNSTraffic  bool
 	AgentDNSListenerPort   string
 	DNSUpstreamTargetChain string
 	SkipResolvConf         bool
@@ -55,6 +56,7 @@ func newInstallTransparentProxy() *cobra.Command {
 		UID:                    "",
 		User:                   "",
 		RedirectDNS:            false,
+		RedirectAllDNSTraffic:  false,
 		AgentDNSListenerPort:   "15053",
 		DNSUpstreamTargetChain: "RETURN",
 		SkipResolvConf:         false,
@@ -161,7 +163,8 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
 	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the UID of the user that will run kuma-dp")
-	cmd.Flags().BoolVar(&args.RedirectDNS, "redirect-dns", args.RedirectDNS, "redirect the DNS requests to a specified port")
+	cmd.Flags().BoolVar(&args.RedirectDNS, "redirect-dns", args.RedirectDNS, "redirect all DNS requests to the servers in /etc/resolv.conf to a specified port")
+	cmd.Flags().BoolVar(&args.RedirectAllDNSTraffic, "redirect-all-dns-traffic", args.RedirectAllDNSTraffic, "redirect all DNS requests to a specified port")
 	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
 	cmd.Flags().StringVar(&args.DNSUpstreamTargetChain, "redirect-dns-upstream-target-chain", args.DNSUpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
 	cmd.Flags().BoolVar(&args.SkipResolvConf, "skip-resolv-conf", args.SkipResolvConf, "skip modifying the host `/etc/resolv.conf`")
@@ -220,6 +223,7 @@ func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 		UID:                    uid,
 		GID:                    gid,
 		RedirectDNS:            args.RedirectDNS,
+		RedirectAllDNSTraffic:  args.RedirectAllDNSTraffic,
 		AgentDNSListenerPort:   args.AgentDNSListenerPort,
 		DNSUpstreamTargetChain: args.DNSUpstreamTargetChain,
 	})

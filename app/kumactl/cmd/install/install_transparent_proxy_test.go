@@ -76,6 +76,7 @@ var _ = Describe("kumactl install tracing", func() {
 				"--kuma-cp-ip", "1.2.3.4",
 				"--skip-resolv-conf",
 				"--redirect-dns",
+				"--redirect-all-dns-traffic",
 				"--redirect-dns-port", "12345",
 				"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT",
 			},
