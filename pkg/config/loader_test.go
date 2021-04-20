@@ -130,8 +130,13 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
 
+			// nolint: staticcheck
 			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
+			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(2222)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
+			Expect(cfg.MonitoringAssignmentServer.FetchTimeout).To(Equal(45 * time.Second))
+			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(HaveLen(1))
+			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(ContainElements("v1"))
 
 			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
 
@@ -290,6 +295,9 @@ apiServer:
     - https://someapi
 monitoringAssignmentServer:
   grpcPort: 3333
+  port: 2222
+  fetchTimeout: 45s
+  apiVersions: [v1]
   assignmentRefreshInterval: 12s
 runtime:
   universal:
@@ -461,6 +469,9 @@ sdsServer:
 				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
 				"KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST":                                                "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                                              "3333",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_FETCH_TIMEOUT":                                          "45s",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS":                                           "v1",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":                            "12s",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
 				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
