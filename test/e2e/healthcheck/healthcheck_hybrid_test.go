@@ -126,29 +126,27 @@ metadata:
 
 		cmd := []string{"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh"}
 
-		checkInstances := func(instances ...string) {
-			set := map[string]bool{}
+		instances := []string{"echo-universal-1", "echo-universal-2"}
+		instanceSet := map[string]bool{}
 
-			_, err = retry.DoWithRetryE(remoteK8s.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pods[0].GetName(), strings.Join(cmd, " ")),
-				DefaultRetries, 500*time.Millisecond, func() (string, error) {
-					stdout, _, err := remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
-					if err != nil {
-						return "", err
+		_, err = retry.DoWithRetryE(remoteK8s.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pods[0].GetName(), strings.Join(cmd, " ")),
+			DefaultRetries, 500*time.Millisecond, func() (string, error) {
+				stdout, _, err := remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
+				if err != nil {
+					return "", err
+				}
+				for _, instance := range instances {
+					if strings.Contains(stdout, instance) {
+						instanceSet[instance] = true
 					}
-					for _, instance := range instances {
-						if strings.Contains(stdout, instance) {
-							set[instance] = true
-						}
-					}
-					if len(set) != len(instances) {
-						return "", errors.Errorf("checked %d/%d instances", len(set), len(instances))
-					}
-					return "", nil
-				},
-			)
-		}
-
-		checkInstances("echo-universal-1", "echo-universal-2")
+				}
+				if len(instanceSet) != len(instances) {
+					return "", errors.Errorf("checked %d/%d instances", len(instanceSet), len(instances))
+				}
+				return "", nil
+			},
+		)
+		Expect(err).ToNot(HaveOccurred())
 
 		var counter1, counter2, counter3 int
 		const numOfRequest = 100
