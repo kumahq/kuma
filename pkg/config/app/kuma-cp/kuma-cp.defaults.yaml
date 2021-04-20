@@ -89,12 +89,6 @@ sdsServer:
 
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
-  # MADS resources can be served either over HTTP or gRPC, simultaneously. To disable completely, set
-  # both of the below transport options to `false`.
-  # Whether to serve over HTTP for fetch-based discovery. NOTE: only supports v1 API
-  httpEnabled: true # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_HTTP_ENABLED
-  # Whether to server over gRPC. NOTE: required for v1alpha1
-  grpcEnabled: true # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_HTTP_ENABLED
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
   port: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_PORT
   # Which MADS API versions to serve
