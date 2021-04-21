@@ -126,7 +126,7 @@ metadata:
 
 		cmd := []string{"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh"}
 
-		instances := []string{"echo-universal-1", "echo-universal-2"}
+		instances := []string{"echo-universal-1", "echo-universal-3"}
 		instanceSet := map[string]bool{}
 
 		_, err = retry.DoWithRetryE(remoteK8s.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pods[0].GetName(), strings.Join(cmd, " ")),
