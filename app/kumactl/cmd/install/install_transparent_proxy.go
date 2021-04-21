@@ -127,8 +127,12 @@ runuser -u kuma-dp -- \
 				return errors.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
 			}
 
+			if args.RedirectAllDNSTraffic {
+				args.RedirectDNS = true
+			}
+
 			if args.RedirectDNS && !args.SkipResolvConf {
-				return errors.Errorf("please set --skip-resolv-conf when using --redirect-dns")
+				return errors.Errorf("please set --skip-resolv-conf when using --redirect-dns or --redirect-all-dns-traffic")
 			}
 
 			if !args.SkipResolvConf && args.KumaCpIP.String() == defaultCpIP.String() {
@@ -164,7 +168,7 @@ runuser -u kuma-dp -- \
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
 	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the UID of the user that will run kuma-dp")
 	cmd.Flags().BoolVar(&args.RedirectDNS, "redirect-dns", args.RedirectDNS, "redirect all DNS requests to the servers in /etc/resolv.conf to a specified port")
-	cmd.Flags().BoolVar(&args.RedirectAllDNSTraffic, "redirect-all-dns-traffic", args.RedirectAllDNSTraffic, "redirect all DNS requests to a specified port")
+	cmd.Flags().BoolVar(&args.RedirectAllDNSTraffic, "redirect-all-dns-traffic", args.RedirectAllDNSTraffic, "redirect all DNS requests to a specified port. Implies --redirect-dns.")
 	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
 	cmd.Flags().StringVar(&args.DNSUpstreamTargetChain, "redirect-dns-upstream-target-chain", args.DNSUpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
 	cmd.Flags().BoolVar(&args.SkipResolvConf, "skip-resolv-conf", args.SkipResolvConf, "skip modifying the host `/etc/resolv.conf`")

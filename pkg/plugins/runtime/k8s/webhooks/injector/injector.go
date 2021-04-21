@@ -426,7 +426,6 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 
 	if i.cfg.BuiltinDNS.Enabled {
 		dnsArg = append(dnsArg,
-			"--redirect-dns",
 			"--redirect-all-dns-traffic",
 			"--redirect-dns-port", strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port), 10),
 		)
