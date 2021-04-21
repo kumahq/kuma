@@ -60,6 +60,14 @@ func (d *discoveryRequest) NodeId() string {
 	return d.GetNode().GetId()
 }
 
+func (d *discoveryRequest) VersionInfo() string {
+	return d.GetVersionInfo()
+}
+
+func (d *discoveryRequest) Node() interface{} {
+	return d.GetNode()
+}
+
 func (d *discoveryRequest) HasErrors() bool {
 	return d.ErrorDetail != nil
 }

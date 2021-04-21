@@ -49,135 +49,172 @@ var _ = Describe("Config WS", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		json := fmt.Sprintf(`
-        {
-          "apiServer": {
-            "corsAllowedDomains": [
-              ".*"
-            ],
-            "http": {
-              "enabled": true,
-              "interface": "0.0.0.0",
-              "port": %s
-            },
-            "https": {
-              "enabled": true,
-              "interface": "0.0.0.0",
-              "port": %d,
-              "tlsCertFile": "../../test/certs/server-cert.pem",
-              "tlsKeyFile": "../../test/certs/server-key.pem"
-            },
-            "auth": {
-              "clientCertsDir": "../../test/certs/client",
-              "allowFromLocalhost": true
-            },
-            "readOnly": false
-          },
-          "bootstrapServer": {
-            "apiVersion": "v3",
-            "params": {
-              "adminAccessLogPath": "/dev/null",
-              "adminAddress": "127.0.0.1",
-              "adminPort": 0,
-              "xdsConnectTimeout": "1s",
-              "xdsHost": "",
-              "xdsPort": 0
-            }
-          },
-          "defaults": {
-            "skipMeshCreation": false
-          },
-          "dnsServer": {
-            "domain": "mesh",
-            "port": 5653,
-            "CIDR": "240.0.0.0/4"
-          },
-          "environment": "universal",
-          "general": {
-            "dnsCacheTTL": "10s",
-            "tlsCertFile": "",
-            "tlsKeyFile": "",
-            "workDir": ""
-          },
-          "guiServer": {
-            "apiServerUrl": ""
-          },
-          "metrics": {
-            "dataplane": {
-              "enabled": true,
-              "subscriptionLimit": 10
-            },
-            "mesh": {
-              "maxResyncTimeout": "20s",
-              "minResyncTimeout": "1s"
-            },
-            "zone": {
-              "enabled": true,
-              "subscriptionLimit": 10
-            }
-          },
-          "mode": "standalone",
-          "multizone": {
-            "global": {
-              "pollTimeout": "500ms",
-              "kds": {
-                "grpcPort": 5685,
-                "refreshInterval": "1s",
-                "zoneInsightFlushInterval": "10s",
-                "tlsCertFile": "",
-                "tlsKeyFile": ""
-              }
-            },
-            "remote": {
-              "kds": {
-                "refreshInterval": "1s",
-                "rootCaFile": ""
-              }
-            }
-          },
-          "monitoringAssignmentServer": {
-            "assignmentRefreshInterval": "1s",
-            "grpcPort": 5676
-          },
-          "reports": {
-            "enabled": true
-          },
-          "runtime": {
-            "kubernetes": {
-              "controlPlaneServiceName": "kuma-control-plane",
-              "admissionServer": {
-                "address": "",
-                "certDir": "",
-                "port": 5443
-              },
-              "injector": {
-                "builtinDNS": {
+		{
+		  "apiServer": {
+			"auth": {
+			  "allowFromLocalhost": true,
+			  "clientCertsDir": "../../test/certs/client"
+			},
+			"corsAllowedDomains": [
+			  ".*"
+			],
+			"http": {
+			  "enabled": true,
+			  "interface": "0.0.0.0",
+			  "port": %s
+			},
+			"https": {
+			  "enabled": true,
+			  "interface": "0.0.0.0",
+			  "port": %d,
+			  "tlsCertFile": "../../test/certs/server-cert.pem",
+			  "tlsKeyFile": "../../test/certs/server-key.pem"
+			},
+			"readOnly": false
+		  },
+		  "bootstrapServer": {
+			"apiVersion": "v3",
+			"params": {
+			  "adminAccessLogPath": "/dev/null",
+			  "adminAddress": "127.0.0.1",
+			  "adminPort": 0,
+			  "xdsConnectTimeout": "1s",
+			  "xdsHost": "",
+			  "xdsPort": 0
+			}
+		  },
+		  "defaults": {
+			"skipMeshCreation": false
+		  },
+		  "diagnostics": {
+			"debugEndpoints": false,
+			"serverPort": 5680
+		  },
+		  "dnsServer": {
+			"CIDR": "240.0.0.0/4",
+			"domain": "mesh",
+			"port": 5653
+		  },
+		  "dpServer": {
+			"auth": {
+			  "type": ""
+			},
+			"hds": {
+			  "checkDefaults": {
+				"healthyThreshold": 1,
+				"interval": "1s",
+				"noTrafficInterval": "1s",
+				"timeout": "2s",
+				"unhealthyThreshold": 1
+			  },
+			  "enabled": true,
+			  "interval": "5s",
+			  "refreshInterval": "10s"
+			},
+			"port": 5678,
+			"tlsCertFile": "",
+			"tlsKeyFile": ""
+		  },
+		  "environment": "universal",
+		  "general": {
+			"dnsCacheTTL": "10s",
+			"tlsCertFile": "",
+			"tlsKeyFile": "",
+			"workDir": ""
+		  },
+		  "guiServer": {
+			"apiServerUrl": ""
+		  },
+		  "metrics": {
+			"dataplane": {
+			  "enabled": true,
+			  "subscriptionLimit": 10
+			},
+			"mesh": {
+			  "maxResyncTimeout": "20s",
+			  "minResyncTimeout": "1s"
+			},
+			"zone": {
+			  "enabled": true,
+			  "subscriptionLimit": 10
+			}
+		  },
+		  "mode": "standalone",
+		  "monitoringAssignmentServer": {
+			"apiVersions": [
+			  "v1alpha1",
+			  "v1"
+			],
+			"assignmentRefreshInterval": "1s",
+			"fetchTimeout": "30s",
+			"grpcPort": 0,
+			"port": 5676
+		  },
+		  "multizone": {
+			"global": {
+			  "kds": {
+				"grpcPort": 5685,
+				"refreshInterval": "1s",
+				"tlsCertFile": "",
+				"tlsKeyFile": "",
+				"zoneInsightFlushInterval": "10s"
+			  },
+			  "pollTimeout": "500ms"
+			},
+			"remote": {
+			  "kds": {
+				"refreshInterval": "1s",
+				"rootCaFile": ""
+			  }
+			}
+		  },
+		  "reports": {
+			"enabled": true
+		  },
+		  "runtime": {
+			"kubernetes": {
+			  "admissionServer": {
+				"address": "",
+				"certDir": "",
+				"port": 5443
+			  },
+			  "controlPlaneServiceName": "kuma-control-plane",
+			  "injector": {
+				"caCertFile": "",
+				"builtinDNS": {
                   "port": 15053
                 },
                 "cniEnabled": false,
-                "initContainer": {
-                  "image": "kuma/kuma-init:latest"
-                },
-                "sidecarContainer": {
-                  "envVars": {},
-                  "adminPort": 9901,
-                  "drainTime": "30s",
-                  "gid": 5678,
-                  "image": "kuma/kuma-dp:latest",
-                  "livenessProbe": {
-                    "failureThreshold": 12,
-                    "initialDelaySeconds": 60,
-                    "periodSeconds": 5,
-                    "timeoutSeconds": 3
-                  },
-                  "readinessProbe": {
-                    "failureThreshold": 12,
-                    "initialDelaySeconds": 1,
-                    "periodSeconds": 5,
-                    "successThreshold": 1,
-                    "timeoutSeconds": 3
-                  },
-                  "redirectPortInbound": 15006,
-                  "redirectPortInboundV6": 15010,
+				"exceptions": {
+				  "labels": {
+					"openshift.io/build.name": "*",
+					"openshift.io/deployer-pod-for.name": "*"
+				  }
+				},
+				"initContainer": {
+				  "image": "kuma/kuma-init:latest"
+				},
+				"sidecarContainer": {
+				  "adminPort": 9901,
+				  "drainTime": "30s",
+				  "envVars": {},
+				  "gid": 5678,
+				  "image": "kuma/kuma-dp:latest",
+				  "livenessProbe": {
+					"failureThreshold": 12,
+					"initialDelaySeconds": 60,
+					"periodSeconds": 5,
+					"timeoutSeconds": 3
+				  },
+				  "readinessProbe": {
+					"failureThreshold": 12,
+					"initialDelaySeconds": 1,
+					"periodSeconds": 5,
+					"successThreshold": 1,
+					"timeoutSeconds": 3
+				  },
+				  "redirectPortInbound": 15006,
+				  "redirectPortInboundV6": 15010,
                   "redirectPortOutbound": 15001,
                   "resources": {
                     "limits": {
