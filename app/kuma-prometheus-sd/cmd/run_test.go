@@ -42,7 +42,6 @@ var _ = Describe("run", func() {
 
 		// then
 		By("waiting for Kuma Prometheus SD to become ready")
-		// TODO(yskopets)
 
 		// when
 		By("signalling Kuma Prometheus SD to stop")

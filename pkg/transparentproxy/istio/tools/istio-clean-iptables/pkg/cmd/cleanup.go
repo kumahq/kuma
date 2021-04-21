@@ -43,6 +43,10 @@ func removeOldChains(cfg *config.Config, ext dep.Dependencies, cmd string) {
 			cfg.AgentDNSListenerPort,
 			cfg.DNSUpstreamTargetChain,
 			cfg.ProxyUID, cfg.ProxyGID, cfg.DNSServersV4)
+		common.HandleDNSUDPv6(common.DeleteOps, builder.NewIptablesBuilder(), ext, cmd,
+			cfg.AgentDNSListenerPort,
+			constants.RETURN, // we cannot use iptConfigurator.cfg.DNSUpstreamTargetChain because the target might be available only in IP V4
+			cfg.ProxyUID, cfg.ProxyGID, cfg.DNSServersV6)
 	}
 
 	// Flush and delete the istio chains from NAT table.

@@ -10,7 +10,7 @@ import "google/api/annotations.proto";
 
 import "validate/validate.proto";
 
-// Monitoring Assignment Discovery Service (MDS).
+// Monitoring Assignment Discovery Service (MADS).
 //
 // xDS API that is meant for consumption by monitoring systems, e.g. Prometheus.
 service MonitoringAssignmentDiscoveryService {
@@ -28,12 +28,12 @@ service MonitoringAssignmentDiscoveryService {
   }
 }
 
-// MDS resource type.
+// MADS resource type.
 //
 // Describes a group of targets that need to be monitored.
 message MonitoringAssignment {
 
-  // MDS resource name.
+  // MADS resource name.
   //
   // E.g., `/meshes/default/services/backend` or
   // `/meshes/default/dataplanes/backend-01`.

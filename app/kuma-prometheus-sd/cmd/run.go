@@ -4,6 +4,8 @@ import (
 	"context"
 	"path/filepath"
 
+	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/common"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -55,9 +57,10 @@ func newRunCmd() *cobra.Command {
 			defer cancel()
 
 			discoverer, err := xds.NewDiscoverer(
-				xds.DiscoveryConfig{
+				common.DiscoveryConfig{
 					ServerURL:  cfg.MonitoringAssignment.Client.URL,
 					ClientName: cfg.MonitoringAssignment.Client.Name,
+					ApiVersion: common.ApiVersion(cfg.MonitoringAssignment.Client.ApiVersion),
 				},
 				runLog.WithName("xds_sd").WithName("discoverer"),
 			)
@@ -75,6 +78,7 @@ func newRunCmd() *cobra.Command {
 	// flags
 	cmd.PersistentFlags().StringVar(&cfg.MonitoringAssignment.Client.URL, "cp-address", cfg.MonitoringAssignment.Client.URL, "URL of the Control Plane Monitoring Assignment Discovery Server. Example: grpc://localhost:5676")
 	cmd.PersistentFlags().StringVar(&cfg.MonitoringAssignment.Client.Name, "name", cfg.MonitoringAssignment.Client.Name, "Name to use to identify itself to the Monitoring Assignment server.")
+	cmd.PersistentFlags().StringVar(&cfg.MonitoringAssignment.Client.ApiVersion, "api-version", cfg.MonitoringAssignment.Client.ApiVersion, "MADS API version to request from the Monitoring Assignment server.")
 	cmd.PersistentFlags().StringVar(&cfg.Prometheus.OutputFile, "output-file", cfg.Prometheus.OutputFile, "Path to an output file with a list of scrape targets. The same file path must be used on Prometheus side in a configuration of `file_sd` discovery mechanism.")
 	return cmd
 }
