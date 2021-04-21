@@ -6,19 +6,35 @@ import (
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/common"
+	v1 "github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/v1"
+	"github.com/kumahq/kuma/app/kuma-prometheus-sd/pkg/discovery/xds/v1alpha1"
+
+	"github.com/prometheus/prometheus/discovery"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 )
 
 type discoverer struct {
+	factory common.DiscovererFactory
 	log     logr.Logger
-	config  DiscoveryConfig
-	handler Handler
+	config  common.DiscoveryConfig
 }
 
-func NewDiscoverer(config DiscoveryConfig, log logr.Logger) (*discoverer, error) {
+func NewDiscoverer(config common.DiscoveryConfig, log logr.Logger) (discovery.Discoverer, error) {
+	var factory common.DiscovererFactory
+	switch config.ApiVersion {
+	case common.V1:
+		factory = v1.NewFactory()
+	case common.V1Alpha1:
+		factory = v1alpha1.NewFactory()
+	default:
+		return nil, errors.Errorf("invalid MADS apiVersion %s", config.ApiVersion)
+	}
+
 	return &discoverer{
-		log:    log,
-		config: config,
+		factory: factory,
+		log:     log,
+		config:  config,
 	}, nil
 }
 
@@ -27,6 +43,7 @@ func (d *discoverer) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 	// notice that Prometheus discovery.Discoverer abstraction doesn't allow failures,
 	// so we must ensure that xDS client is up-and-running all the time.
 	for streamID := uint64(1); ; streamID++ {
+		logger := d.log.WithValues("streamID", streamID)
 		errCh := make(chan error, 1)
 		go func(errCh chan<- error) {
 			defer close(errCh)
@@ -40,20 +57,16 @@ func (d *discoverer) Run(ctx context.Context, ch chan<- []*targetgroup.Group) {
 					}
 				}
 			}()
-			stream := stream{
-				log:     d.log.WithValues("streamID", streamID),
-				config:  d.config,
-				handler: &d.handler,
-			}
+			stream := d.factory.CreateDiscoverer(d.config, logger)
 			errCh <- stream.Run(ctx, ch)
 		}(errCh)
 		select {
 		case <-ctx.Done():
-			d.log.Info("done")
+			logger.Info("done")
 			break
 		case err := <-errCh:
 			if err != nil {
-				d.log.WithValues("streamID", streamID).Error(err, "xDS stream terminated with an error")
+				logger.Error(err, "xDS stream terminated with an error")
 			}
 		}
 	}
