@@ -3,6 +3,7 @@ package healthcheck_test
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
@@ -125,23 +126,27 @@ metadata:
 
 		cmd := []string{"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh"}
 
-		checkInstance := func(instance string) {
-			_, err = retry.DoWithRetryE(remoteK8s.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pods[0].GetName(), strings.Join(cmd, " ")),
-				DefaultRetries, DefaultTimeout, func() (string, error) {
-					stdout, _, err := remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
-					if err != nil {
-						return "", err
-					}
-					if !strings.Contains(stdout, instance) {
-						return "", errors.New("wrong instance")
-					}
-					return "", nil
-				},
-			)
-		}
+		instances := []string{"echo-universal-1", "echo-universal-3"}
+		instanceSet := map[string]bool{}
 
-		checkInstance("echo-universal-1")
-		checkInstance("echo-universal-2")
+		_, err = retry.DoWithRetryE(remoteK8s.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pods[0].GetName(), strings.Join(cmd, " ")),
+			100, 500*time.Millisecond, func() (string, error) {
+				stdout, _, err := remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
+				if err != nil {
+					return "", err
+				}
+				for _, instance := range instances {
+					if strings.Contains(stdout, instance) {
+						instanceSet[instance] = true
+					}
+				}
+				if len(instanceSet) != len(instances) {
+					return "", errors.Errorf("checked %d/%d instances", len(instanceSet), len(instances))
+				}
+				return "", nil
+			},
+		)
+		Expect(err).ToNot(HaveOccurred())
 
 		var counter1, counter2, counter3 int
 		const numOfRequest = 100
