@@ -18,7 +18,8 @@ var (
 
 func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker DataplaneMetadataTracker, apiVersion envoy.APIVersion) *DataplaneProxyBuilder {
 	return &DataplaneProxyBuilder{
-		ResManager:            rt.ReadOnlyResourceManager(),
+		CachingResManager:     rt.ReadOnlyResourceManager(),
+		NonCachingResManager:  rt.ResourceManager(),
 		LookupIP:              rt.LookupIP(),
 		DataSourceLoader:      rt.DataSourceLoader(),
 		MetadataTracker:       metadataTracker,
