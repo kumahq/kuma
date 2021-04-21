@@ -13,9 +13,6 @@ import (
 )
 
 var _ = Describe("Test Universal Transparent Proxy deployment", func() {
-
-	const iterations = 10
-
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
@@ -50,34 +47,68 @@ var _ = Describe("Test Universal Transparent Proxy deployment", func() {
 	})
 
 	It("should access the service using .mesh", func() {
-
-		for i := 0; i < iterations; i++ {
-			retry.DoWithRetry(cluster.GetTesting(), "curl remote service",
-				DefaultRetries, DefaultTimeout,
-				func() (string, error) {
-					stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-						"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_8080.mesh")
-					if err != nil {
-						return "should retry", err
-					}
-					if strings.Contains(stdout, "HTTP/1.1 200 OK") {
-						return "Accessing service successful", nil
-					}
-					return "should retry", errors.Errorf("should retry")
-				})
-			retry.DoWithRetry(cluster.GetTesting(), "curl remote service with dots",
-				DefaultRetries, DefaultTimeout,
-				func() (string, error) {
-					stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-						"curl", "-v", "-m", "3", "echo-server.kuma-test.svc.8080.mesh")
-					if err != nil {
-						return "should retry", err
-					}
-					if strings.Contains(stdout, "HTTP/1.1 200 OK") {
-						return "Accessing service successful", nil
-					}
-					return "should retry", errors.Errorf("should retry")
-				})
-		}
+		retry.DoWithRetry(cluster.GetTesting(), "curl remote service",
+			DefaultRetries, DefaultTimeout,
+			func() (string, error) {
+				stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+					"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_8080.mesh")
+				if err != nil {
+					return "should retry", err
+				}
+				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
+					return "Accessing service successful", nil
+				}
+				return "should retry", errors.Errorf("should retry")
+			})
+		retry.DoWithRetry(cluster.GetTesting(), "curl service with dots",
+			DefaultRetries, DefaultTimeout,
+			func() (string, error) {
+				stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+					"curl", "-v", "-m", "3", "echo-server.kuma-test.svc.8080.mesh")
+				if err != nil {
+					return "should retry", err
+				}
+				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
+					return "Accessing service successful", nil
+				}
+				return "should retry", errors.Errorf("should retry")
+			})
 	})
+
+	It("should re-install transparent proxy", func() {
+		retry.DoWithRetry(cluster.GetTesting(), "curl remote service",
+			DefaultRetries, DefaultTimeout,
+			func() (string, error) {
+				stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+					"curl", "-v", "-m", "3", "echo-server_kuma-test_svc_8080.mesh")
+				if err != nil {
+					return "should retry", err
+				}
+				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
+					return "Accessing service successful", nil
+				}
+				return "should retry", errors.Errorf("should retry")
+			})
+
+		stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+			"/usr/bin/kumactl", "install", "transparent-proxy",
+			"--kuma-dp-user", "kuma-dp", "--skip-resolv-conf", "--verbose")
+		Expect(stdout).To(ContainSubstring("Transparent proxy set up successfully"))
+		Expect(err).ToNot(HaveOccurred())
+
+		retry.DoWithRetry(cluster.GetTesting(), "curl service with dots",
+			DefaultRetries, DefaultTimeout,
+			func() (string, error) {
+				stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
+					"curl", "-v", "-m", "3", "echo-server.kuma-test.svc.8080.mesh")
+				if err != nil {
+					return "should retry", err
+				}
+				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
+					return "Accessing service successful", nil
+				}
+				return "should retry", errors.Errorf("should retry")
+			})
+	})
+
 })
