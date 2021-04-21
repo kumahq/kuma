@@ -90,9 +90,15 @@ sdsServer:
 #  Monitoring Assignment Discovery Service (MADS) server configuration
 monitoringAssignmentServer:
   # Port of a gRPC server that serves Monitoring Assignment Discovery Service (MADS).
-  grpcPort: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT
+  port: 5676 # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_PORT
+  # Which MADS API versions to serve
+  apiVersions: # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS
+    - v1alpha1
+    - v1
   # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
+  # Timeout for a single HTTP fetch-based discovery
+  fetchTimeout: 30s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_FETCH_TIMEOUT
 
 # Envoy XDS server configuration
 xdsServer:
