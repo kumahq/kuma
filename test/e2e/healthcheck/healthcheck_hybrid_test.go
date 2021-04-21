@@ -130,7 +130,7 @@ metadata:
 		instanceSet := map[string]bool{}
 
 		_, err = retry.DoWithRetryE(remoteK8s.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pods[0].GetName(), strings.Join(cmd, " ")),
-			DefaultRetries, 500*time.Millisecond, func() (string, error) {
+			100, 500*time.Millisecond, func() (string, error) {
 				stdout, _, err := remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
 				if err != nil {
 					return "", err
