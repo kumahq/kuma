@@ -8,7 +8,7 @@ HELM_DOCS_VERSION := 1.4.0
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_MINIKUBE_VERSION ?= v1.18.1
 CI_KUBECTL_VERSION ?= v1.18.14
-CI_TOOLS_IMAGE ?= circleci/golang:1.15.11
+CI_TOOLS_IMAGE ?= circleci/golang:1.16.3
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
