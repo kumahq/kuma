@@ -39,7 +39,7 @@ func (r *RealDependencies) execute(cmd string, redirectStdout bool, args ...stri
 func (r *RealDependencies) RunOrFail(cmd string, args ...string) {
 	err := r.execute(cmd, false, args...)
 	if err != nil {
-		fmt.Printf("Apply failed for:\n%s %s\n", cmd, strings.Join(args, " "))
+		fmt.Errorf("Apply failed for:\n%s %s\nWith error: %v", cmd, strings.Join(args, " "), err)
 		os.Exit(1)
 	}
 }
