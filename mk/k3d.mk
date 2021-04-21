@@ -31,6 +31,7 @@ k3d/start: ${KIND_KUBECONFIG_DIR}
 		(KUBECONFIG=$(KIND_KUBECONFIG)  \
 		  k3d cluster create "$(KIND_CLUSTER_NAME)" \
 		  	--k3s-server-arg '--no-deploy=traefik' \
+		  	--k3s-server-arg '--disable=metrics-server' \
 		  	--no-lb --no-hostip \
 		  	--network kind \
 		  	--timeout 120s && \
@@ -78,20 +79,20 @@ k3d/deploy/kuma: build/kumactl k3d/load
     done
 
 .PHONY: k3d/deploy/helm
-k3d/deploy/helm: kind/load
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete namespace $(KUMA_NAMESPACE) | true
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(KUMA_NAMESPACE)
-	KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) \
+k3d/deploy/helm: k3d/load
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl delete namespace $(KUMA_NAMESPACE) | true
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl create namespace $(KUMA_NAMESPACE)
+	@KUBECONFIG=$(KIND_KUBECONFIG) helm install --namespace $(KUMA_NAMESPACE) \
                 --set global.image.registry="$(DOCKER_REGISTRY)" \
                 --set global.image.tag="$(BUILD_INFO_GIT_TAG)" \
                 --set cni.enabled=true \
                 --set cni.chained=true \
-                --set cni.netDir=/etc/cni/net.d \
-                --set cni.binDir=/opt/cni/bin \
-                --set cni.confName=10-kindnet.conflist \
+                --set cni.netDir=/var/lib/rancher/k3s/agent/etc/cni/net.d/ \
+                --set cni.binDir=/bin/ \
+                --set cni.confName=10-flannel.conflist \
                 kuma ./deployments/charts/kuma
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
-	KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
+	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
 
 .PHONY: k3d/deploy/example-app
 k3d/deploy/example-app:

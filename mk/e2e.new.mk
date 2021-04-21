@@ -79,18 +79,18 @@ test/e2e/test:
 # GINKGO_EDITOR_INTEGRATION is required to work with focused test. Normally they exit with non 0 code which prevents clusters to be cleaned up.
 # We run ginkgo instead of "go test" to fail fast (builtin "go test" fail fast does not seem to work with individual ginkgo tests)
 .PHONY: test/e2e/debug
-test/e2e/debug: build/kumactl images docker/build/kuma-universal test/e2e/kind/start
+test/e2e/debug: build/kumactl images docker/build/kuma-universal test/e2e/k8s/start
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 	API_VERSION="$(API_VERSION)" \
 	GINKGO_EDITOR_INTEGRATION=true \
 		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
-	$(MAKE) test/e2e/kind/stop
+	$(MAKE) test/e2e/k8s/stop
 
 .PHONY: test/e2e
 test/e2e: build/kumactl images docker/build/kuma-universal test/e2e/k8s/start
 	$(MAKE) test/e2e/test || \
 	(ret=$$?; \
-	$(MAKE) test/e2e/kind/stop && \
+	$(MAKE) test/e2e/k8s/stop && \
 	exit $$ret)
-	$(MAKE) test/e2e/kind/stop
+	$(MAKE) test/e2e/k8s/stop
