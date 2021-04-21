@@ -150,7 +150,7 @@ spec:
     - --exclude-outbound-ports
     - ""
     - --skip-resolv-conf
-    - --redirect-dns
+    - --redirect-all-dns-traffic
     - --redirect-dns-port
     - "25053"
     command:
