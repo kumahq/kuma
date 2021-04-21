@@ -36,7 +36,7 @@ func GetGlobalImageRegistry() string {
 }
 
 func HasGlobalImageRegistry() bool {
-	return envBool("KUMA_GLOBAL_IMAGE_REGISTRY")
+	return envIsPresent("KUMA_GLOBAL_IMAGE_REGISTRY")
 }
 
 func GetGlobalImageTag() string {
@@ -44,7 +44,7 @@ func GetGlobalImageTag() string {
 }
 
 func HasGlobalImageTag() bool {
-	return envBool("KUMA_GLOBAL_IMAGE_TAG")
+	return envIsPresent("KUMA_GLOBAL_IMAGE_TAG")
 }
 
 func GetCpImageRegistry() string {
@@ -52,7 +52,7 @@ func GetCpImageRegistry() string {
 }
 
 func HasCpImageRegistry() bool {
-	return envBool("KUMA_CP_IMAGE_REPOSITORY")
+	return envIsPresent("KUMA_CP_IMAGE_REPOSITORY")
 }
 
 func GetDpImageRegistry() string {
@@ -60,7 +60,7 @@ func GetDpImageRegistry() string {
 }
 
 func HasDpImageRegistry() bool {
-	return envBool("KUMA_DP_IMAGE_REPOSITORY")
+	return envIsPresent("KUMA_DP_IMAGE_REPOSITORY")
 }
 
 func GetDpInitImageRegistry() string {
@@ -68,7 +68,7 @@ func GetDpInitImageRegistry() string {
 }
 
 func HasDpInitImageRegistry() bool {
-	return envBool("KUMA_DP_INIT_IMAGE_REPOSITORY")
+	return envIsPresent("KUMA_DP_INIT_IMAGE_REPOSITORY")
 }
 
 func GetUniversalImage() string {
@@ -84,7 +84,7 @@ func GetApiVersion() string {
 }
 
 func HasApiVersion() bool {
-	return envBool(envAPIVersion)
+	return envIsPresent(envAPIVersion)
 }
 
 func GetHelmChartPath() string {
@@ -92,7 +92,7 @@ func GetHelmChartPath() string {
 }
 
 func HasHelmChartPath() bool {
-	return envBool("HELM_CHART_PATH")
+	return envIsPresent("HELM_CHART_PATH")
 }
 
 func GetCniConfName() string {
@@ -100,7 +100,7 @@ func GetCniConfName() string {
 }
 
 func HasCniConfName() bool {
-	return envBool("KUMA_CNI_CONF_NAME")
+	return envIsPresent("KUMA_CNI_CONF_NAME")
 }
 
 func UseLoadBalancer() bool {
@@ -120,8 +120,13 @@ func GetKumactlBin() string {
 }
 
 func IsK8sClustersStarted() bool {
-	_, found := os.LookupEnv(envK8SCLUSTERS)
-	return found
+	return envIsPresent(envK8SCLUSTERS)
+}
+
+func envIsPresent(env string) bool {
+	_, ok := os.LookupEnv(env)
+
+	return ok
 }
 
 func envBool(env string) bool {
