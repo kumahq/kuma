@@ -396,7 +396,7 @@ func (iptConfigurator *IptablesConfigurator) run() {
 
 	if iptConfigurator.cfg.EnableInboundIPv6 {
 		// TODO: (abhide): Move this out of this method
-		iptConfigurator.ext.RunOrFail(constants.IP, "-6", "addr", "add", "::6/128", "dev", "lo")
+		iptConfigurator.ext.RunQuietlyAndIgnore(constants.IP, "-6", "addr", "add", "::6/128", "dev", "lo")
 	}
 
 	// Do not capture internal interface.
