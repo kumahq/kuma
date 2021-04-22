@@ -303,13 +303,30 @@ jobs:
       GOPATH: /home/circleci/.go-kuma-go
     parameters:
       prefix:
-        description: "Prefix for the cluster names"
+        description: |
+          Prefix for the cluster names
         type: string
         default: kuma-cicd-e2e-test
       api_version:
-        description: "XDS API version"
+        description: |
+          XDS API version
         type: string
         default: v3
+      node_count:
+        description: |
+          Amount of nodes for cluster's node pool
+        type: number
+        default: 1
+      node_vm_size:
+        description: |
+          Size of Virtual Machines to create as Kubernetes nodes
+        type: string
+        default: "Standard_DS2_v2"
+      kubernetes_version:
+        description: |
+          Version of Kubernetes to use for creating the cluster, such as "1.11.8" or "1.12.6".
+        type: string
+        default: "1.18.18"
     steps:
     - early_return_for_forked_pull_requests
 
@@ -340,16 +357,30 @@ jobs:
         command: make docker/load
 
     - azure-acr/acr-login:
-        registry-name: ACR_REGISTRY
+        registry-name: ${AZURE_ACR_REGISTRY}
 
     - run:
         name: "Push images to ECR & Create clusters"
         command: |
           for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
             make docker/tag/${image} \
-              BINTRAY_REGISTRY="${ACR_REGISTRY}" \
+              BINTRAY_REGISTRY="${AZURE_ACR_REGISTRY}" \
               KUMA_VERSION="${TAG}" && \
-            docker push "${ACR_REGISTRY}"/${image}:"${TAG}" &
+            docker push "${AZURE_ACR_REGISTRY}"/${image}:"${TAG}" &
+          done
+
+          for name in ${CLUSTER_1} ${CLUSTER_2}; do
+            az aks create \
+              --name "${name}" \
+              --resource-group ${AZURE_RESOURCE_GROUP} \
+              --location ${AZURE_LOCATION} \
+              --subscription ${AZURE_SUBSCRIPTION} \
+              --service-principal ${AZURE_SP} \
+              --client-secret ${AZURE_SP_PASSWORD} \
+              --node-count << parameters.node_count >> \
+              --node-vm-size << parameters.node_vm_size >> \
+              --kubernetes-version << parameters.kubernetes_version >> \
+              &
           done
 
           FAIL="0"
