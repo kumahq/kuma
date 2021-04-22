@@ -441,7 +441,7 @@ jobs:
 
             kubectl patch serviceaccount default \
               --kubeconfig="${kubeconfig}" \
-              -p '{\"imagePullSecrets\": [{\"name\": \"acr-secret\"}]}'
+              -p '{"imagePullSecrets": [{"name": "acr-secret"}]}'
           done
 
     - restore_cache:
