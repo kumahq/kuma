@@ -4,11 +4,12 @@ GOLANG_PROTOBUF_VERSION := v1.4.3
 GOLANGCI_LINT_VERSION := v1.35.2
 GINKGO_VERSION := v1.14.2
 HELM_DOCS_VERSION := 1.4.0
+GOIMPORTS_VERSION := v0.1.0
 
 CI_KUBEBUILDER_VERSION ?= 2.3.1
 CI_MINIKUBE_VERSION ?= v1.18.1
 CI_KUBECTL_VERSION ?= v1.18.14
-CI_TOOLS_IMAGE ?= circleci/golang:1.15.11
+CI_TOOLS_IMAGE ?= circleci/golang:1.16.3
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -88,17 +89,17 @@ dev/install/protobuf-wellknown-types:: ## Bootstrap: Install Protobuf well-known
 
 .PHONY: dev/install/protoc-gen-go
 dev/install/protoc-gen-go: ## Bootstrap: Install Protoc Go Plugin (protobuf Go generator)
-	go get github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
+	go install github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
 
 .PHONY: dev/install/protoc-gen-validate
 dev/install/protoc-gen-validate: ## Bootstrap: Install Protoc Gen Validate Plugin (protobuf validation code generator)
-	go get github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
+	go install github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
 .PHONY: dev/install/ginkgo
 dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	# see https://github.com/onsi/ginkgo#set-me-up
 	echo "Installing Ginkgo ..."
-	go get github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)  # installs the ginkgo CLI
+	go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)  # installs the ginkgo CLI
 	echo "Ginkgo has been installed at $(GOPATH_BIN_DIR)/ginkgo"
 
 .PHONY: dev/install/kubebuilder
@@ -180,7 +181,7 @@ dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 
 .PHONY: dev/install/goimports
 dev/install/goimports: ## Bootstrap: Install goimports
-	go get golang.org/x/tools/cmd/goimports
+	go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
 
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
