@@ -165,12 +165,6 @@ jobs:
           sudo apt install -y \
             unzip
 
-    - run:
-        name: "Install Go"
-        command: |
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
-
     - aws-cli/install
 
     - aws-eks/install-eksctl
@@ -240,6 +234,12 @@ jobs:
         key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
         paths:
         - "/home/circleci/.go-kuma-go"
+
+    - run:
+        name: "Install Go"
+        command: |
+          # see https://golang.org/doc/install#tarball
+          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
 
     - run:
         name: "Install all development tools"
@@ -364,12 +364,6 @@ jobs:
           echo "export CLUSTER_2=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-2" >> $BASH_ENV
           echo "export AZURE_ACR_REGISTRY_FULLNAME=${AZURE_ACR_REGISTRY}.azurecr.io" >> $BASH_ENV
 
-    - run:
-        name: "Install Go"
-        command: |
-          # see https://golang.org/doc/install#tarball
-          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
-
     - azure-cli/install
 
     - azure-cli/login-with-service-principal
@@ -476,6 +470,12 @@ jobs:
         key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
         paths:
         - "/home/circleci/.go-kuma-go"
+
+    - run:
+        name: "Install Go"
+        command: |
+          # see https://golang.org/doc/install#tarball
+          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
 
     - run:
         name: "Install all development tools"
