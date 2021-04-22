@@ -476,7 +476,8 @@ jobs:
           go version
           which go
           $HOME/go/bin/go version || true
-          go mod download
+          go mod download || $HOME/go/bin/go mod download
+
 
     # since execution of go commands might change contents of "go.sum",
     #  we have to save cache immediately
