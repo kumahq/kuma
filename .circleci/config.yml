@@ -408,7 +408,6 @@ jobs:
               --node-count << parameters.node_count >> \
               --node-vm-size << parameters.node_vm_size >> \
               --kubernetes-version << parameters.kubernetes_version >> \
-              --attach-acr "${AZURE_ACR_REGISTRY}" \
               &
           done
 
@@ -416,6 +415,23 @@ jobs:
           for job in $(jobs -p); do
             wait "${job}" || FAIL=$((FAIL + 1))
           done
+
+          # Workaround related to "--attach-acr" flag not working correctly
+          # https://github.com/Azure/AKS/issues/1517#issuecomment-676441378
+          if [ "${FAIL}" -eq "0" ]; then
+            az acr update -n kumacicd --admin-enabled true
+
+            acr_username=$(az acr credential show -n ${AZURE_ACR_REGISTRY} --query="username" -o tsv)
+            acr_password=$(az acr credential show -n ${AZURE_ACR_REGISTRY} --query="passwords[0].value" -o tsv)
+
+            kubectl create secret docker-registry acr-secret \
+              --docker-server="${AZURE_ACR_REGISTRY_FULLNAME}" \
+              --docker-username="${acr_username}" \
+              --docker-password="${acr_password}"
+
+            kubectl patch serviceaccount default \
+              -p '{\"imagePullSecrets\": [{\"name\": \"acr-secret\"}]}'
+          fi
 
           exit ${FAIL}
 
