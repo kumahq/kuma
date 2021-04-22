@@ -232,7 +232,10 @@ jobs:
 
     - run:
         name: "Download Go modules"
-        command: go mod download
+        command: |
+          export PATH="$HOME/go/bin:$PATH"
+
+          go mod download
 
     # since execution of go commands might change contents of "go.sum",
     #  we have to save cache immediately
@@ -243,7 +246,10 @@ jobs:
 
     - run:
         name: "Install all development tools"
-        command: make dev/tools
+        command: |
+          export PATH="$HOME/go/bin:$PATH"
+
+          make dev/tools
 
     - run:
         name: "Setup Helm"
@@ -257,6 +263,7 @@ jobs:
     - run:
         name: "Run E2E tests"
         command: |
+          export PATH="$HOME/go/bin:$PATH"
           export KUMA_UNIVERSAL_IMAGE="${ECR_REGISTRY}/kuma-universal:${TAG}";
           export E2E_PKG_LIST="./test/e2e/helm";
           export API_VERSION="<< parameters.api_version >>"
@@ -469,15 +476,9 @@ jobs:
     - run:
         name: "Download Go modules"
         command: |
-          env
-          echo $PATH
           export PATH="$HOME/go/bin:$PATH"
-          echo $PATH
-          go version
-          which go
-          $HOME/go/bin/go version || true
-          go mod download || $HOME/go/bin/go mod download
 
+          go mod download
 
     # since execution of go commands might change contents of "go.sum",
     #  we have to save cache immediately
@@ -488,7 +489,10 @@ jobs:
 
     - run:
         name: "Install all development tools"
-        command: make dev/tools
+        command: |
+          export PATH="$HOME/go/bin:$PATH"
+
+          make dev/tools
 
     - run:
         name: "Setup Helm"
@@ -502,6 +506,7 @@ jobs:
     - run:
         name: "Run E2E tests"
         command: |
+          export PATH="$HOME/go/bin:$PATH"
           export KUMA_UNIVERSAL_IMAGE="${AZURE_ACR_REGISTRY}/kuma-universal:${TAG}";
           export E2E_PKG_LIST="./test/e2e/helm";
           export API_VERSION="<< parameters.api_version >>"
