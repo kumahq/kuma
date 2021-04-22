@@ -80,7 +80,7 @@ func loadCharts(templates []data.File) (*chart.Chart, error) {
 	files := []*loader.BufferedFile{}
 	for _, f := range templates {
 		files = append(files, &loader.BufferedFile{
-			Name: f.FullPath[1:],
+			Name: f.FullPath,
 			Data: f.Data,
 		})
 	}
