@@ -399,14 +399,15 @@ jobs:
           for name in ${clusters}; do
             az aks create \
               --name "${name}" \
-              --resource-group ${AZURE_RESOURCE_GROUP} \
-              --location ${AZURE_LOCATION} \
+              --resource-group "${AZURE_RESOURCE_GROUP}" \
+              --location "${AZURE_LOCATION}" \
               --subscription ${AZURE_SUBSCRIPTION} \
-              --service-principal ${AZURE_SP} \
-              --client-secret ${AZURE_SP_PASSWORD} \
+              --service-principal "${AZURE_SP}" \
+              --client-secret "${AZURE_SP_PASSWORD}" \
               --node-count << parameters.node_count >> \
               --node-vm-size << parameters.node_vm_size >> \
               --kubernetes-version << parameters.kubernetes_version >> \
+              --attach-acr "${AZURE_ACR_REGISTRY}" \
               &
           done
 
