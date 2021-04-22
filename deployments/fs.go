@@ -7,7 +7,7 @@ import (
 
 // By default, go embed does not embed files that starts with `.` or `_` that's why we need to add _helpers.tpl explicitly
 
-//go:embed charts/* charts/kuma/templates/_helpers.tpl
+//go:embed charts/kuma/templates/* charts/kuma/crds/* charts/kuma/*.yaml
 var ChartsData embed.FS
 
 func KumaChartFS() fs.FS {
