@@ -1,12 +1,16 @@
 module github.com/kumahq/kuma/api
 
-go 1.15
+go 1.16
 
 require (
+	github.com/cncf/udpa v0.0.2-0.20201211205326-cc1b757b3edd // indirect
+	github.com/envoyproxy/data-plane-api v0.0.0-20210105195927-01fb099f5a86 // indirect
 	github.com/envoyproxy/go-control-plane v0.9.9-0.20201210154907-fd9021fe5dad
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/protobuf v1.4.3
+	github.com/googleapis/googleapis v0.0.0-20210422004218-6b711581c9a6 // indirect
+	github.com/kumahq/protoc-gen-kumadoc v0.1.7
 	github.com/onsi/ginkgo v1.15.2
 	github.com/onsi/gomega v1.11.0
 	github.com/pkg/errors v0.9.1
