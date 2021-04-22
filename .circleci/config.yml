@@ -6,6 +6,7 @@ orbs:
   aws-eks: circleci/aws-eks@1.0.3
   kubernetes: circleci/kubernetes@0.11.2
   slack: circleci/slack@4.1
+  azure-cli: circleci/azure-cli@1.1.0
   azure-acr: circleci/azure-acr@0.2.0
 
 commands:
@@ -324,6 +325,10 @@ jobs:
           echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
           echo "export CLUSTER_2=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-2" >> $BASH_ENV
 
+    - azure-cli/install
+
+    - azure-cli/login-with-service-principal
+
     - kubernetes/install
 
     # Mount files from the upstream jobs
@@ -337,6 +342,22 @@ jobs:
     - azure-acr/acr-login:
         registry-name: ACR_REGISTRY
 
+    - run:
+        name: "Push images to ECR & Create clusters"
+        command: |
+          for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
+            make docker/tag/${image} \
+              BINTRAY_REGISTRY="${ACR_REGISTRY}" \
+              KUMA_VERSION="${TAG}" && \
+            docker push "${ACR_REGISTRY}"/${image}:"${TAG}" &
+          done
+
+          FAIL="0"
+          for job in $(jobs -p); do
+            wait "${job}" || FAIL=$((FAIL + 1))
+          done
+
+          exit ${FAIL}
 
   eks-delete-clusters:
     executor: aws-eks/python3
