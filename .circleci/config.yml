@@ -498,7 +498,6 @@ jobs:
             az acr repository delete \
               --subscription "${AZURE_SUBSCRIPTION}" \
               --name "${AZURE_ACR_REGISTRY}" \
-              --repository "${image}" \
               --image "${image}:${TAG}" \
               --yes \
               &
@@ -508,10 +507,9 @@ jobs:
 
           for name in ${clusters}; do
             az aks delete \
+              --subscription "${AZURE_SUBSCRIPTION}" \
               --name "${name}" \
               --resource-group "${AZURE_RESOURCE_GROUP}" \
-              --location "${AZURE_LOCATION}" \
-              --subscription "${AZURE_SUBSCRIPTION}" \
               --yes \
               &
           done
