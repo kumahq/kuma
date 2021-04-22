@@ -394,7 +394,9 @@ jobs:
             docker push "${AZURE_ACR_REGISTRY}"/${image}:"${TAG}" &
           done
 
-          for name in ${CLUSTER_1} ${CLUSTER_2}; do
+          clusters="${CLUSTER_1} ${CLUSTER_2}"
+
+          for name in ${clusters}; do
             az aks create \
               --name "${name}" \
               --resource-group ${AZURE_RESOURCE_GROUP} \
@@ -487,7 +489,9 @@ jobs:
               &
           done
 
-          for name in ${CLUSTER_1} ${CLUSTER_2}; do
+          clusters="${CLUSTER_1} ${CLUSTER_2}"
+
+          for name in ${clusters}; do
             az aks delete \
               --name "${name}" \
               --resource-group "${AZURE_RESOURCE_GROUP}" \
