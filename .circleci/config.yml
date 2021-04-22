@@ -483,7 +483,7 @@ jobs:
         command: |
           for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
             az acr repository delete \
-              --subscription "${AZURE_SUBSCRIPTION}"
+              --subscription "${AZURE_SUBSCRIPTION}" \
               --name "${AZURE_ACR_REGISTRY}" \
               --repository "${image}" \
               --image "${image}:${TAG}" \
