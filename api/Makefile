@@ -125,13 +125,13 @@ install/protobuf-wellknown-types:
 		&& echo "Protobuf well-known types $(PROTOC_VERSION) have been installed at $(PROTOBUF_WKT_DIR)" ; fi
 
 install/protoc-gen-go:
-	go get github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
+	go install github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
 
 install/protoc-gen-kumadoc:
-	go get github.com/kumahq/protoc-gen-kumadoc@$(KUMADOC_VERSION)
+	go install github.com/kumahq/protoc-gen-kumadoc@$(KUMADOC_VERSION)
 
 install/protoc-gen-validate:
-	go get github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
+	go install github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
 install/data-plane-api:
 	go get github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
