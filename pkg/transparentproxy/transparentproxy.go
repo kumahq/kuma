@@ -18,7 +18,7 @@ type TransparentProxy interface {
 	Setup(cfg *config.TransparentProxyConfig) (string, error)
 
 	// returns the stdout and stderr as string and an error if such has occurred
-	Cleanup(dryRun bool) (string, error)
+	Cleanup(dryRun, verbose bool) (string, error)
 }
 
 func DefaultTransparentProxy() TransparentProxy {

@@ -2,6 +2,7 @@ package config
 
 type TransparentProxyConfig struct {
 	DryRun                 bool
+	Verbose                bool
 	RedirectPortOutBound   string
 	RedirectInBound        bool
 	RedirectPortInBound    string
@@ -11,6 +12,7 @@ type TransparentProxyConfig struct {
 	UID                    string
 	GID                    string
 	RedirectDNS            bool
+	RedirectAllDNSTraffic  bool
 	AgentDNSListenerPort   string
 	DNSUpstreamTargetChain string
 }
