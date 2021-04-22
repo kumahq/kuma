@@ -366,6 +366,7 @@ jobs:
           echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
           echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
           echo "export CLUSTER_2=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-2" >> $BASH_ENV
+          echo "export AZURE_ACR_REGISTRY_FULLNAME=${AZURE_ACR_REGISTRY}.azurecr.io" >> $BASH_ENV
 
     - azure-cli/install
 
@@ -389,9 +390,9 @@ jobs:
         command: |
           for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
             make docker/tag/${image} \
-              BINTRAY_REGISTRY="${AZURE_ACR_REGISTRY}" \
+              BINTRAY_REGISTRY="${AZURE_ACR_REGISTRY_FULLNAME}" \
               KUMA_VERSION="${TAG}" && \
-            docker push "${AZURE_ACR_REGISTRY}"/${image}:"${TAG}" &
+            docker push "${AZURE_ACR_REGISTRY_FULLNAME}"/${image}:"${TAG}" &
           done
 
           clusters="${CLUSTER_1} ${CLUSTER_2}"
