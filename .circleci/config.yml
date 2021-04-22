@@ -469,9 +469,13 @@ jobs:
     - run:
         name: "Download Go modules"
         command: |
+          env
+          echo $PATH
+          export PATH="$HOME/go/bin:$PATH"
+          echo $PATH
           go version
           which go
-          $HOME/bin/go version
+          $HOME/go/bin/go version || true
           go mod download
 
     # since execution of go commands might change contents of "go.sum",
