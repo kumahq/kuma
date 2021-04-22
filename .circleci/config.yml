@@ -326,7 +326,7 @@ jobs:
         description: |
           Version of Kubernetes to use for creating the cluster, such as "1.11.8" or "1.12.6".
         type: string
-        default: "1.18.18"
+        default: "1.18.17"
     steps:
     - early_return_for_forked_pull_requests
 
