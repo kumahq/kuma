@@ -125,18 +125,18 @@ install/protobuf-wellknown-types:
 		&& echo "Protobuf well-known types $(PROTOC_VERSION) have been installed at $(PROTOBUF_WKT_DIR)" ; fi
 
 install/protoc-gen-go:
-	go get github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
+	go install github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
 
 install/protoc-gen-kumadoc:
-	go get github.com/kumahq/protoc-gen-kumadoc@$(KUMADOC_VERSION)
+	go install github.com/kumahq/protoc-gen-kumadoc@$(KUMADOC_VERSION)
 
 install/protoc-gen-validate:
-	go get github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
+	go install github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
 install/data-plane-api:
-	go get github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
-	go get github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
-	go get github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
+	go install github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
+	go install github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
+	go install github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
 
 clean: ## Remove generated files
 	find . -name '*.pb.go' -delete
