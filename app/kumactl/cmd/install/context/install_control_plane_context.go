@@ -2,7 +2,7 @@ package context
 
 import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
-	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
+	"github.com/kumahq/kuma/deployments"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/tls"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -98,7 +98,7 @@ func DefaultInstallCpContext() InstallCpContext {
 		},
 		NewSelfSignedCert: tls.NewSelfSignedCert,
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
-			return data.ReadFiles(controlplane.HelmTemplates)
+			return data.ReadFiles(deployments.KumaChartFS())
 		},
 		HELMValuesPrefix: "",
 	}

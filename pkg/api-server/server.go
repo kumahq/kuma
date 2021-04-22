@@ -135,7 +135,7 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 
 	// Handle the GUI
 	if enableGUI {
-		container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(resources.GuiDir)))
+		container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(http.FS(resources.GuiFS()))))
 	} else {
 		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)
 	}
