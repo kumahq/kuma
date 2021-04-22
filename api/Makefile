@@ -134,9 +134,9 @@ install/protoc-gen-validate:
 	go install github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
 install/data-plane-api:
-	go install github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
-	go install github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
-	go install github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
+	go get github.com/envoyproxy/data-plane-api@$(DATAPLANE_API_LATEST_VERSION)
+	go get github.com/cncf/udpa@$(UDPA_LATEST_VERSION)
+	go get github.com/googleapis/googleapis@$(GOOGLEAPIS_LATEST_VERSION)
 
 clean: ## Remove generated files
 	find . -name '*.pb.go' -delete
