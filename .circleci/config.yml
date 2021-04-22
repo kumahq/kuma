@@ -8,6 +8,7 @@ orbs:
   slack: circleci/slack@4.1
   azure-cli: circleci/azure-cli@1.1.0
   azure-acr: circleci/azure-acr@0.2.0
+  azure-aks: circleci/azure-aks@0.2.1
 
 commands:
   early_return_for_forked_pull_requests:
@@ -297,6 +298,30 @@ jobs:
         event: pass
         template: basic_success_1
 
+  aks-acr-clean-registry:
+    executor: azure-cli/default
+    steps:
+    - azure-cli/install
+
+    - azure-cli/login-with-service-principal
+
+    - run:
+        name: "Remove all test images from repository"
+        command: |
+          PURGE_CMD="acr purge \
+            --filter 'kumactl:.*' \
+            --filter 'kuma-cp:.*' \
+            --filter 'kuma-dp:.*' \
+            --filter 'kuma-init:.*' \
+            --filter 'kuma-universal:.*' \
+            --untagged \
+            --ago 1s"
+
+          az acr run \                                                                                                                                              09:32:53
+             --cmd "${PURGE_CMD}" \
+             --registry "${AZURE_ACR_REGISTRY}" \
+             /dev/null
+
   aks-e2e:
     executor: vm
     environment:
@@ -389,6 +414,98 @@ jobs:
           done
 
           exit ${FAIL}
+
+    - azure-aks/update-kubeconfig-with-credentials:
+        cluster-name: "${CLUSTER_1}"
+        resource-group: "${AZURE_RESOURCE_GROUP}"
+        subscription: "${AZURE_SUBSCRIPTION}"
+        file: ~/.kube/kind-kuma-1-config
+
+    - azure-aks/update-kubeconfig-with-credentials:
+        cluster-name: "${CLUSTER_2}"
+        resource-group: "${AZURE_RESOURCE_GROUP}"
+        subscription: "${AZURE_SUBSCRIPTION}"
+        file: ~/.kube/kind-kuma-2-config
+
+    - restore_cache:
+        keys:
+        # prefer the exact match
+        - vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+
+    - run:
+        name: "Download Go modules"
+        command: go mod download
+
+    # since execution of go commands might change contents of "go.sum",
+    #  we have to save cache immediately
+    - save_cache:
+        key: vm-executor-go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
+        paths:
+        - "/home/circleci/.go-kuma-go"
+
+    - run:
+        name: "Install all development tools"
+        command: make dev/tools
+
+    - run:
+        name: "Setup Helm"
+        command: helm repo add kuma https://kumahq.github.io/charts
+
+    # We need kumactl to be built to run tests, and to not build it again,
+    #  we can use the one already build by earlier jobs
+    - attach_workspace:
+        at: build
+
+    - run:
+        name: "Run E2E tests"
+        command: |
+          export KUMA_UNIVERSAL_IMAGE="${AZURE_ACR_REGISTRY}/kuma-universal:${TAG}";
+          export E2E_PKG_LIST="./test/e2e/helm";
+          export API_VERSION="<< parameters.api_version >>"
+
+          make test/e2e/test \
+            KUMA_GLOBAL_IMAGE_REGISTRY="${AZURE_ACR_REGISTRY}" \
+            KUMA_GLOBAL_IMAGE_TAG="${TAG}" \
+            KUMA_CNI_CONF_NAME="10-azure.conflist" \
+            KUMA_USE_LOAD_BALANCER=true \
+            KUMA_IN_EKS=true \
+            KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}" \
+            KUMA_DEFAULT_RETRIES=60 \
+            KUMA_DEFAULT_TIMEOUT="6s"
+
+    - run:
+        name: "Cleanup"
+        when: always
+        command: |
+          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
+            az acr repository delete \
+              --subscription "${AZURE_SUBSCRIPTION}"
+              --name "${AZURE_ACR_REGISTRY}" \
+              --repository "${image}" \
+              --image "${image}:${TAG}" \
+              --yes \
+              &
+          done
+
+          for name in ${CLUSTER_1} ${CLUSTER_2}; do
+            az aks delete \
+              --name "${name}" \
+              --resource-group "${AZURE_RESOURCE_GROUP}" \
+              --location "${AZURE_LOCATION}" \
+              --subscription "${AZURE_SUBSCRIPTION}" \
+              --yes \
+              &
+          done
+
+          wait || true
+
+    - slack/notify:
+        event: fail
+        template: basic_fail_1
+
+    - slack/notify:
+        event: pass
+        template: basic_success_1
 
   eks-delete-clusters:
     executor: aws-eks/python3
