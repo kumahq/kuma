@@ -315,7 +315,7 @@ jobs:
       node_count:
         description: |
           Amount of nodes for cluster's node pool
-        type: number
+        type: integer
         default: 1
       node_vm_size:
         description: |
