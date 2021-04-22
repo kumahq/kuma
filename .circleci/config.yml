@@ -6,6 +6,7 @@ orbs:
   aws-eks: circleci/aws-eks@1.0.3
   kubernetes: circleci/kubernetes@0.11.2
   slack: circleci/slack@4.1
+  azure-acr: circleci/azure-acr@0.2.0
 
 commands:
   early_return_for_forked_pull_requests:
@@ -294,6 +295,48 @@ jobs:
     - slack/notify:
         event: pass
         template: basic_success_1
+
+  aks-e2e:
+    executor: vm
+    environment:
+      GOPATH: /home/circleci/.go-kuma-go
+    parameters:
+      prefix:
+        description: "Prefix for the cluster names"
+        type: string
+        default: kuma-cicd-e2e-test
+      api_version:
+        description: "XDS API version"
+        type: string
+        default: v3
+    steps:
+    - early_return_for_forked_pull_requests
+
+    - checkout
+
+    - run:
+        name: "Setup Environment"
+        command: |
+          echo "export PATH=$HOME/.local/bin:$PATH" >> $BASH_ENV
+          echo "export PATH=$HOME/go/bin:$PATH" >> $BASH_ENV
+          echo "export PATH=$HOME/bin:$PATH" >> $BASH_ENV
+          echo "export TAG=${CIRCLE_SHA1:0:7}" >> $BASH_ENV
+          echo "export CLUSTER_1=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-1" >> $BASH_ENV
+          echo "export CLUSTER_2=<< parameters.prefix >>-${CIRCLE_SHA1:0:7}-2" >> $BASH_ENV
+
+    - kubernetes/install
+
+    # Mount files from the upstream jobs
+    - attach_workspace:
+        at: build
+
+    - run:
+        name: "Load Docker images from TAR archives"
+        command: make docker/load
+
+    - azure-acr/acr-login:
+        registry-name: ACR_REGISTRY
+
 
   eks-delete-clusters:
     executor: aws-eks/python3
@@ -966,6 +1009,23 @@ workflows:
     - eks-e2e:
         <<: *master_workflow_filters
         name: test/e2e/eks
+        requires:
+        - images
+
+  e2e-aks:
+    jobs:
+    - go_cache: *commit_workflow_filters
+    - build:
+        <<: *commit_workflow_filters
+        requires:
+        - go_cache
+    - images:
+        <<: *commit_workflow_filters
+        requires:
+        - build
+    - aks-e2e:
+        <<: *commit_workflow_filters
+        name: test/e2e/aks
         requires:
         - images
 
