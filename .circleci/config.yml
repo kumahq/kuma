@@ -507,7 +507,7 @@ jobs:
         name: "Run E2E tests"
         command: |
           export PATH="$HOME/go/bin:$PATH"
-          export KUMA_UNIVERSAL_IMAGE="${AZURE_ACR_REGISTRY}/kuma-universal:${TAG}";
+          export KUMA_UNIVERSAL_IMAGE="${AZURE_ACR_REGISTRY_FULLNAME}/kuma-universal:${TAG}";
           export E2E_PKG_LIST="./test/e2e/helm";
           export API_VERSION="<< parameters.api_version >>"
 
