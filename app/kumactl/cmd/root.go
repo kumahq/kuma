@@ -42,12 +42,6 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 		Short: "Management tool for Kuma",
 		Long:  `Management tool for Kuma.`,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			client, err := root.CurrentApiClient()
-			if err != nil {
-				kumactlLog.Error(err, "Unable to get index client")
-			} else {
-				kumaBuildVersion, _ = client.GetVersion()
-			}
 			level, err := kuma_log.ParseLogLevel(args.logLevel)
 			if err != nil {
 				return err
@@ -57,16 +51,25 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			// once command line flags have been parsed,
 			// avoid printing usage instructions
 			cmd.SilenceUsage = true
-			if kumaBuildVersion != nil && kumaBuildVersion.Version != kuma_version.Build.Version {
-				cmd.Println("Warning: Your kumactl version is " + kuma_version.Build.Version + " which is not the same as " + kumaBuildVersion.Version + " for CP. Update your kumactl.")
-			}
 			if root.IsFirstTimeUsage() {
 				root.Runtime.Config = kumactl_config.DefaultConfiguration()
 				if err := root.SaveConfig(); err != nil {
 					return err
 				}
 			}
-			return root.LoadConfig()
+
+			retval := root.LoadConfig()
+			client, err := root.CurrentApiClient()
+			if err != nil {
+				kumactlLog.Error(err, "Unable to get index client")
+			} else {
+				kumaBuildVersion, _ = client.GetVersion()
+			}
+
+			if kumaBuildVersion != nil && (kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product) {
+				cmd.Println("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version)
+			}
+			return retval
 		},
 	}
 	// root flags
