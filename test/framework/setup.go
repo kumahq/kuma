@@ -275,8 +275,9 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 func IngressUniversal(mesh, token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
-		isipv6 := IsIPv6() // should we check opts as everyone else does?
-		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, true, isipv6, []string{})
+		isipv6 := IsIPv6()
+		verbose := false
+		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, isipv6, verbose, []string{})
 		if err != nil {
 			return err
 		}
