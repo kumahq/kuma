@@ -230,13 +230,18 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 	if UseLoadBalancer() {
 		svc := c.GetKumaCPSvcs()[0]
 
-		fmt.Println()
-		fmt.Println()
-		fmt.Printf("svc.Status.LoadBalancer.Ingress[0]: %+v", svc.Status.LoadBalancer.Ingress[0])
-		fmt.Println()
-		fmt.Println()
+		ip, hostname := svc.Status.LoadBalancer.Ingress[0].IP, svc.Status.LoadBalancer.Ingress[0].Hostname
+		var address string
 
-		return "grpcs://" + svc.Status.LoadBalancer.Ingress[0].Hostname + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
+		if ip != "" {
+			address = ip
+		}
+
+		if hostname != "" {
+			address = hostname
+		}
+
+		return "grpcs://" + address + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
 	}
 
 	pod := c.GetKumaCPPods()[0]
