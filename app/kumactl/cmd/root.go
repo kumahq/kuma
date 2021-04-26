@@ -58,7 +58,11 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 				}
 			}
 
-			retval := root.LoadConfig()
+			err = root.LoadConfig()
+			if err != nil {
+				return err
+			}
+
 			client, err := root.CurrentApiClient()
 			if err != nil {
 				kumactlLog.Error(err, "Unable to get index client")
@@ -67,9 +71,9 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			}
 
 			if kumaBuildVersion != nil && (kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product) {
-				cmd.Println("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version)
+				cmd.PrintErr("WARNING: You are using kumactl version " + kuma_version.Build.Version + " for " + kuma_version.Product + ", but the server returned version: " + kumaBuildVersion.Tagline + " " + kumaBuildVersion.Version + "\n")
 			}
-			return retval
+			return nil
 		},
 	}
 	// root flags
