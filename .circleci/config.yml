@@ -421,6 +421,7 @@ jobs:
               --kubernetes-version << parameters.kubernetes_version >> \
               --enable-addons monitoring \
               --generate-ssh-keys \
+              --network-plugin azure \
               --enable-managed-identity \
               --assign-identity "${AZURE_IDENTITY_CONTROL_PLANE}" \
               --assign-kubelet-identity "${AZURE_IDENTITY_KUBELET}" \
