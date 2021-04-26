@@ -58,8 +58,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 				}
 			}
 
-			err = root.LoadConfig()
-			if err != nil {
+			if err := root.LoadConfig(); err != nil {
 				return err
 			}
 
