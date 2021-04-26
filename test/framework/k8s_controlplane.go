@@ -235,9 +235,7 @@ func (c *K8sControlPlane) GetKDSServerAddress() string {
 
 		if ip != "" {
 			address = ip
-		}
-
-		if hostname != "" {
+		} else if hostname != "" {
 			address = hostname
 		}
 
