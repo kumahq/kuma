@@ -516,7 +516,6 @@ jobs:
             KUMA_GLOBAL_IMAGE_TAG="${TAG}" \
             KUMA_CNI_CONF_NAME="10-azure.conflist" \
             KUMA_USE_LOAD_BALANCER=true \
-            KUMA_IN_EKS=true \
             KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}" \
             KUMA_DEFAULT_RETRIES=60 \
             KUMA_DEFAULT_TIMEOUT="6s"
