@@ -325,6 +325,22 @@ jobs:
              --registry "${AZURE_ACR_REGISTRY}" \
              /dev/null
 
+  aks-delete-clusters:
+    executor: azure-cli/default
+    steps:
+    - azure-cli/install
+
+    - azure-cli/login-with-service-principal
+
+    - run:
+        name: "Remove all test images from repository"
+        command: |
+          for name in $(az aks list --resource-group=${AZURE_RESOURCE_GROUP} | jq -r '.[].name'); do
+            az aks delete --resource-group=${AZURE_RESOURCE_GROUP} --name ${name} --yes &
+          done
+
+          wait
+
   aks-e2e:
     executor: vm
     environment:
@@ -447,30 +463,6 @@ jobs:
         subscription: "${AZURE_SUBSCRIPTION}"
         file: ~/.kube/kind-kuma-2-config
 
-#    # Workaround related to "--attach-acr" flag not working correctly
-#    # https://github.com/Azure/AKS/issues/1517#issuecomment-676441378
-#    - run:
-#        name: "Create and attach ACR secrets"
-#        command: |
-#          az acr update -n kumacicd --admin-enabled true
-#
-#          acr_username=$(az acr credential show -n ${AZURE_ACR_REGISTRY} --query="username" -o tsv)
-#          acr_password=$(az acr credential show -n ${AZURE_ACR_REGISTRY} --query="passwords[0].value" -o tsv)
-#
-#          for i in 1 2; do
-#            kubeconfig="${HOME}/.kube/kind-kuma-${i}-config"
-#
-#            kubectl create secret docker-registry acr-secret \
-#              --kubeconfig="${kubeconfig}" \
-#              --docker-server="${AZURE_ACR_REGISTRY_FULLNAME}" \
-#              --docker-username="${acr_username}" \
-#              --docker-password="${acr_password}"
-#
-#            kubectl patch serviceaccount default \
-#              --kubeconfig="${kubeconfig}" \
-#              -p '{"imagePullSecrets": [{"name": "acr-secret"}]}'
-#          done
-
     - restore_cache:
         keys:
         # prefer the exact match
@@ -530,31 +522,31 @@ jobs:
             KUMA_DEFAULT_TIMEOUT="3s" \
             KUMA_USE_LOAD_BALANCER=true
 
-#    - run:
-#        name: "Cleanup"
-#        when: always
-#        command: |
-#          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
-#            az acr repository delete \
-#              --subscription "${AZURE_SUBSCRIPTION}" \
-#              --name "${AZURE_ACR_REGISTRY}" \
-#              --image "${image}:${TAG}" \
-#              --yes \
-#              &
-#          done
-#
-#          clusters="${CLUSTER_1} ${CLUSTER_2}"
-#
-#          for name in ${clusters}; do
-#            az aks delete \
-#              --subscription "${AZURE_SUBSCRIPTION}" \
-#              --name "${name}" \
-#              --resource-group "${AZURE_RESOURCE_GROUP}" \
-#              --yes \
-#              &
-#          done
-#
-#          wait || true
+    - run:
+        name: "Cleanup"
+        when: always
+        command: |
+          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
+            az acr repository delete \
+              --subscription "${AZURE_SUBSCRIPTION}" \
+              --name "${AZURE_ACR_REGISTRY}" \
+              --image "${image}:${TAG}" \
+              --yes \
+              &
+          done
+
+          clusters="${CLUSTER_1} ${CLUSTER_2}"
+
+          for name in ${clusters}; do
+            az aks delete \
+              --subscription "${AZURE_SUBSCRIPTION}" \
+              --name "${name}" \
+              --resource-group "${AZURE_RESOURCE_GROUP}" \
+              --yes \
+              &
+          done
+
+          wait || true
 
     - slack/notify:
         event: fail
@@ -1216,6 +1208,18 @@ workflows:
     - eks-ecr-clean-registry
     - eks-delete-clusters
 
+  clean-aks:
+    triggers:
+    - schedule:
+        # run cleanup everyday at 02:00 - it's the last resort for cleanup of
+        # AKS resources if anything went wrong and because of any reason
+        # they were not cleaned immediately after tests
+        cron: "0 2 * * *"
+        <<: *master_only_workflow_filters
+    jobs:
+    - aks-acr-clean-registry
+    - aks-delete-clusters
+
   e2e-eks:
     triggers:
     - schedule:
@@ -1240,17 +1244,17 @@ workflows:
 
   e2e-aks:
     jobs:
-    - go_cache: *commit_workflow_filters
+    - go_cache: *master_only_workflow_filters
     - build:
-        <<: *commit_workflow_filters
+        <<: *master_only_workflow_filters
         requires:
         - go_cache
     - images:
-        <<: *commit_workflow_filters
+        <<: *master_only_workflow_filters
         requires:
         - build
     - aks-e2e:
-        <<: *commit_workflow_filters
+        <<: *master_only_workflow_filters
         name: test/e2e/aks
         requires:
         - images

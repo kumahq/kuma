@@ -16,7 +16,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var _ = PDescribe("Test upgrading with Helm chart", func() {
+var _ = Describe("Test upgrading with Helm chart", func() {
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
