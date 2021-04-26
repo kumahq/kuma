@@ -520,31 +520,31 @@ jobs:
             KUMA_DEFAULT_RETRIES=60 \
             KUMA_DEFAULT_TIMEOUT="6s"
 
-    - run:
-        name: "Cleanup"
-        when: always
-        command: |
-          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
-            az acr repository delete \
-              --subscription "${AZURE_SUBSCRIPTION}" \
-              --name "${AZURE_ACR_REGISTRY}" \
-              --image "${image}:${TAG}" \
-              --yes \
-              &
-          done
-
-          clusters="${CLUSTER_1} ${CLUSTER_2}"
-
-          for name in ${clusters}; do
-            az aks delete \
-              --subscription "${AZURE_SUBSCRIPTION}" \
-              --name "${name}" \
-              --resource-group "${AZURE_RESOURCE_GROUP}" \
-              --yes \
-              &
-          done
-
-          wait || true
+#    - run:
+#        name: "Cleanup"
+#        when: always
+#        command: |
+#          for image in kumactl kuma-cp kuma-dp kuma-init kuma-universal; do
+#            az acr repository delete \
+#              --subscription "${AZURE_SUBSCRIPTION}" \
+#              --name "${AZURE_ACR_REGISTRY}" \
+#              --image "${image}:${TAG}" \
+#              --yes \
+#              &
+#          done
+#
+#          clusters="${CLUSTER_1} ${CLUSTER_2}"
+#
+#          for name in ${clusters}; do
+#            az aks delete \
+#              --subscription "${AZURE_SUBSCRIPTION}" \
+#              --name "${name}" \
+#              --resource-group "${AZURE_RESOURCE_GROUP}" \
+#              --yes \
+#              &
+#          done
+#
+#          wait || true
 
     - slack/notify:
         event: fail
