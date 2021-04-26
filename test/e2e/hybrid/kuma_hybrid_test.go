@@ -14,7 +14,10 @@ import (
 )
 
 var _ = Describe("Test Kubernetes/Universal deployment", func() {
-
+	if IsApiV2() {
+		fmt.Println("Test not supported on API v2")
+		return
+	}
 	meshMTLSOn := func(mesh string) string {
 		return fmt.Sprintf(`
 type: Mesh
