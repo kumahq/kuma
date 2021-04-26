@@ -8,7 +8,7 @@ import (
 //go:embed data
 var GuiData embed.FS
 
-func GuiFS() fs.FS {
+var GuiFS = func() fs.FS {
 	fsys, err := fs.Sub(GuiData, "data")
 	if err != nil {
 		panic(err)
