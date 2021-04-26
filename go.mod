@@ -24,7 +24,6 @@ require (
 	github.com/hoisie/mustache v0.0.0-20160804235033-6375acf62c69
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
-	github.com/kumahq/kuma/deployments v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
 	github.com/lib/pq v1.9.0
@@ -63,7 +62,6 @@ require (
 
 replace (
 	github.com/kumahq/kuma/api => ./api
-	github.com/kumahq/kuma/deployments => ./deployments
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native => ./pkg/plugins/resources/k8s/native
 	github.com/kumahq/kuma/pkg/transparentproxy/istio => ./pkg/transparentproxy/istio
 
