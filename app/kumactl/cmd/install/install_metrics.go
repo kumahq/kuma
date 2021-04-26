@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd/install/context"
+	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 
 	"github.com/pkg/errors"
@@ -11,7 +12,6 @@ import (
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/metrics"
 )
 
 func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -23,7 +23,8 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			args.Mesh = pctx.Args.Mesh
 
-			templateFiles, err := data.ReadFiles(metrics.Templates)
+			installMetricsFS := kumactl_data.InstallMetricsFS()
+			templateFiles, err := data.ReadFiles(installMetricsFS)
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
 			}
@@ -31,7 +32,7 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				return strings.HasSuffix(file.Name, ".yaml")
 			})
 
-			dashboard, err := data.ReadFile(metrics.Templates, "/grafana/kuma-dataplane.json")
+			dashboard, err := data.ReadFile(installMetricsFS, "grafana/kuma-dataplane.json")
 			if err != nil {
 				return err
 			}
@@ -40,7 +41,7 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				Content:  dashboard.String(),
 			})
 
-			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-mesh.json")
+			dashboard, err = data.ReadFile(installMetricsFS, "grafana/kuma-mesh.json")
 			if err != nil {
 				return err
 			}
@@ -49,7 +50,7 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				Content:  dashboard.String(),
 			})
 
-			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-service-to-service.json")
+			dashboard, err = data.ReadFile(installMetricsFS, "grafana/kuma-service-to-service.json")
 			if err != nil {
 				return err
 			}
@@ -58,7 +59,7 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				Content:  dashboard.String(),
 			})
 
-			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-cp.json")
+			dashboard, err = data.ReadFile(installMetricsFS, "grafana/kuma-cp.json")
 			if err != nil {
 				return err
 			}
@@ -67,7 +68,7 @@ func newInstallMetrics(pctx *kumactl_cmd.RootContext) *cobra.Command {
 				Content:  dashboard.String(),
 			})
 
-			dashboard, err = data.ReadFile(metrics.Templates, "/grafana/kuma-service.json")
+			dashboard, err = data.ReadFile(installMetricsFS, "grafana/kuma-service.json")
 			if err != nil {
 				return err
 			}
@@ -109,11 +110,11 @@ func getExcludePrefixesFilter(withoutPrometheus, withoutGrafana bool) ExcludePre
 	prefixes := []string{}
 
 	if withoutPrometheus {
-		prefixes = append(prefixes, "/prometheus")
+		prefixes = append(prefixes, "prometheus")
 	}
 
 	if withoutGrafana {
-		prefixes = append(prefixes, "/grafana")
+		prefixes = append(prefixes, "grafana")
 	}
 
 	return ExcludePrefixesFilter{

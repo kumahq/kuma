@@ -4,10 +4,9 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	kumactl_data "github.com/kumahq/kuma/app/kumactl/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s"
-
-	"github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/logging"
 )
 
 type loggingTemplateArgs struct {
@@ -29,7 +28,7 @@ func newInstallLogging() *cobra.Command {
 				Namespace: args.Namespace,
 			}
 
-			templateFiles, err := data.ReadFiles(logging.Templates)
+			templateFiles, err := data.ReadFiles(kumactl_data.InstallLoggingFS())
 			if err != nil {
 				return errors.Wrap(err, "Failed to read template files")
 			}

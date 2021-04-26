@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"net/http"
 	"strconv"
 	"strings"
 
@@ -58,7 +59,7 @@ func newMigrate(cfg postgres_cfg.PostgresStoreConfig) (*migrate.Migrate, error) 
 	if err != nil {
 		return nil, err
 	}
-	sourceDriver, err := httpfs.New(migrations.Migrations, "")
+	sourceDriver, err := httpfs.New(http.FS(migrations.MigrationFS()), ".")
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +92,7 @@ func isDbMigrated(cfg postgres_cfg.PostgresStoreConfig) (bool, error) {
 }
 
 func newestMigration() (core_plugins.DbVersion, error) {
-	files, err := data.ReadFiles(migrations.Migrations)
+	files, err := data.ReadFiles(migrations.MigrationFS())
 	if err != nil {
 		return 0, err
 	}

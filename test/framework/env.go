@@ -72,7 +72,7 @@ func HasDpInitImageRegistry() bool {
 }
 
 func GetUniversalImage() string {
-	if envBool("KUMA_UNIVERSAL_IMAGE") {
+	if envIsPresent("KUMA_UNIVERSAL_IMAGE") {
 		return os.Getenv("KUMA_UNIVERSAL_IMAGE")
 	}
 

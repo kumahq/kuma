@@ -75,7 +75,7 @@ var _ = Describe("GUI Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "app", "kuma-ui", "data", "resources", given.expectedFile))
+			fileContent, err := ioutil.ReadFile(filepath.Join("..", "..", "app", "kuma-ui", "pkg", "resources", "data", given.expectedFile))
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
