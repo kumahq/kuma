@@ -320,7 +320,7 @@ jobs:
             --untagged \
             --ago 1s"
 
-          az acr run \                                                                                                                                              09:32:53
+          az acr run \
              --cmd "${PURGE_CMD}" \
              --registry "${AZURE_ACR_REGISTRY}" \
              /dev/null
