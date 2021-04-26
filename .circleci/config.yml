@@ -375,6 +375,11 @@ jobs:
 
     - azure-cli/login-with-service-principal
 
+    - run:
+        name: "Install AKS Preview Azure CLI Extension"
+        command: |
+          az extension add --name aks-preview
+
     - kubernetes/install
 
     # Mount files from the upstream jobs
@@ -411,8 +416,6 @@ jobs:
               --resource-group "${AZURE_RESOURCE_GROUP}" \
               --location "${AZURE_LOCATION}" \
               --subscription ${AZURE_SUBSCRIPTION} \
-              --service-principal "${AZURE_SP}" \
-              --client-secret "${AZURE_SP_PASSWORD}" \
               --node-count << parameters.node_count >> \
               --node-vm-size << parameters.node_vm_size >> \
               --kubernetes-version << parameters.kubernetes_version >> \
