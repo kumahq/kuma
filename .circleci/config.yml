@@ -526,8 +526,9 @@ jobs:
             KUMA_CNI_CONF_NAME="10-azure.conflist" \
             KUMA_USE_LOAD_BALANCER=true \
             KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}" \
-            KUMA_DEFAULT_RETRIES=60 \
-            KUMA_DEFAULT_TIMEOUT="6s"
+            KUMA_DEFAULT_RETRIES=30 \
+            KUMA_DEFAULT_TIMEOUT="3s" \
+            KUMA_USE_LOAD_BALANCER=true
 
 #    - run:
 #        name: "Cleanup"
