@@ -16,6 +16,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
+	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
+
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
@@ -42,6 +44,7 @@ var _ = Describe("kumactl apply", func() {
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
 				},
+				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
 			},
 		}
 		store = core_store.NewPaginationStore(memory_resources.NewStore())
