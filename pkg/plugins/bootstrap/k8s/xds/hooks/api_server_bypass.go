@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	OriginApiServerBypass            = "api_server_bypass"
-	apiServerBypassHookResourcesName = "plugins:bootstrap:k8s:hooks:api_server_bypass"
+	OriginApiServerBypass            = "apiServerBypass"
+	apiServerBypassHookResourcesName = "plugins:bootstrap:k8s:hooks:apiServerBypass"
 )
 
 type ApiServerBypass struct {
