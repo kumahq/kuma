@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"time"
 
-	hooks2 "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -19,6 +18,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -133,7 +133,7 @@ func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginCo
 		return errors.Wrapf(err, "could not parse KUBERNETES_SERVICE_PORT environment variable")
 	}
 
-	b.XDSHooks().AddResourceSetHook(hooks2.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
+	b.XDSHooks().AddResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
 
 	return nil
 }
