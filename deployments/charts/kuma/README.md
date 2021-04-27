@@ -56,7 +56,7 @@ A Helm chart for the Kuma Control Plane
 | cni.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the CNI pods |
 | cni.image.registry | string | `"docker.io"` | CNI image registry |
 | cni.image.repository | string | `"lobkovilya/install-cni"` | CNI image repository |
-| cni.image.tag | string | `"0.0.6"` | CNI image tag |
+| cni.image.tag | string | `"0.0.7"` | CNI image tag |
 | dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
@@ -99,7 +99,6 @@ the [k8s metrics-server][kube-metrics-server] to be running on the cluster.
 ## Development
 
 The charts are used internally in `kumactl install`, therefore the following rules apply when developing new chat features:
- * use `make generate/kumactl/install/k8s/control-plane` to sync the Helm Chart and `kumactl install` templates
  * all templates that start with `pre-` and `post-` are omitted when processing in `kumactl install`
 
 ### Installing Metrics Server for Autoscaling

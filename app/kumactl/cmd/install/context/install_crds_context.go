@@ -4,7 +4,7 @@ import (
 	"strings"
 
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
-	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
+	"github.com/kumahq/kuma/deployments"
 )
 
 type InstallCrdsArgs struct {
@@ -23,13 +23,13 @@ func DefaultInstallCrdsContext() InstallCrdsContext {
 			OnlyMissing: false,
 		},
 		InstallCrdTemplateFiles: func(args InstallCrdsArgs) (data.FileList, error) {
-			helmFiles, err := data.ReadFiles(controlplane.HelmTemplates)
+			helmFiles, err := data.ReadFiles(deployments.KumaChartFS())
 			if err != nil {
 				return nil, err
 			}
 
 			crdFiles := helmFiles.Filter(func(file data.File) bool {
-				return strings.HasPrefix(file.FullPath, "/crds")
+				return strings.Contains(file.FullPath, "crds/")
 			})
 
 			return crdFiles, nil

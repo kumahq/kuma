@@ -1,14 +1,15 @@
 PROTOC_VERSION := 3.14.0
 PROTOC_PGV_VERSION := v0.4.1
 GOLANG_PROTOBUF_VERSION := v1.4.3
-GOLANGCI_LINT_VERSION := v1.35.2
+GOLANGCI_LINT_VERSION := v1.37.1
 GINKGO_VERSION := v1.14.2
 HELM_DOCS_VERSION := 1.4.0
+GOIMPORTS_VERSION := v0.1.0
 
-CI_KUBEBUILDER_VERSION ?= 2.3.1
+CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_MINIKUBE_VERSION ?= v1.18.1
 CI_KUBECTL_VERSION ?= v1.18.14
-CI_TOOLS_IMAGE ?= circleci/golang:1.15.11
+CI_TOOLS_IMAGE ?= circleci/golang:1.16.3
 
 CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
@@ -42,6 +43,12 @@ else
 	endif
 endif
 
+HELM_DOCS_ARCH := $(shell uname -m)
+ifeq ($(UNAME_ARCH), aarch64)
+	PROTOC_ARCH=aarch_64
+	HELM_DOCS_ARCH=arm64
+endif
+
 .PHONY: dev/tools
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
 
@@ -50,7 +57,9 @@ dev/tools/all: dev/install/protoc dev/install/protobuf-wellknown-types \
 	dev/install/protoc-gen-go dev/install/protoc-gen-validate \
 	dev/install/ginkgo \
 	dev/install/kubebuilder dev/install/kustomize \
-	dev/install/kubectl dev/install/kind dev/install/minikube \
+	dev/install/kubectl \
+	dev/install/kind dev/install/k3d \
+	dev/install/minikube \
 	dev/install/golangci-lint \
 	dev/install/goimports \
 	dev/install/helm3 \
@@ -88,17 +97,17 @@ dev/install/protobuf-wellknown-types:: ## Bootstrap: Install Protobuf well-known
 
 .PHONY: dev/install/protoc-gen-go
 dev/install/protoc-gen-go: ## Bootstrap: Install Protoc Go Plugin (protobuf Go generator)
-	go get github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
+	go install github.com/golang/protobuf/protoc-gen-go@$(GOLANG_PROTOBUF_VERSION)
 
 .PHONY: dev/install/protoc-gen-validate
 dev/install/protoc-gen-validate: ## Bootstrap: Install Protoc Gen Validate Plugin (protobuf validation code generator)
-	go get github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
+	go install github.com/envoyproxy/protoc-gen-validate@$(PROTOC_PGV_VERSION)
 
 .PHONY: dev/install/ginkgo
 dev/install/ginkgo: ## Bootstrap: Install Ginkgo (BDD testing framework)
 	# see https://github.com/onsi/ginkgo#set-me-up
 	echo "Installing Ginkgo ..."
-	go get github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)  # installs the ginkgo CLI
+	go install github.com/onsi/ginkgo/ginkgo@$(GINKGO_VERSION)  # installs the ginkgo CLI
 	echo "Ginkgo has been installed at $(GOPATH_BIN_DIR)/ginkgo"
 
 .PHONY: dev/install/kubebuilder
@@ -160,6 +169,20 @@ dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
 		&& set +x \
 		&& echo "Kind $(CI_KIND_VERSION) has been installed at $(KIND_PATH)" ; fi
 
+.PHONY: dev/install/k3d
+dev/install/k3d: ## Bootstrap: Install K3D (K3s in Docker)
+	# see https://raw.githubusercontent.com/rancher/k3d/main/install.sh
+	@if [ -e $(K3D_PATH) ]; then echo "K3d $$( $(K3D_PATH) version ) is already installed at $(K3D_PATH)" ; fi
+	@if [ ! -e $(K3D_PATH) ]; then \
+		echo "Installing Kind $(CI_K3D_VERSION) ..." \
+		&& set -x \
+		&& mkdir -p $(CI_TOOLS_DIR) \
+		&& curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | \
+		        TAG=$(CI_K3D_VERSION) USE_SUDO="false" K3D_INSTALL_DIR="$(CI_TOOLS_DIR)" bash \
+		&& set +x \
+		&& echo "K3d $(CI_K3D_VERSION) has been installed at $(K3D_PATH)" ; fi
+
+
 .PHONY: dev/install/minikube
 dev/install/minikube: ## Bootstrap: Install Minikube
 	# see https://kubernetes.io/docs/tasks/tools/install-minikube/#linux
@@ -180,7 +203,7 @@ dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
 
 .PHONY: dev/install/goimports
 dev/install/goimports: ## Bootstrap: Install goimports
-	go get golang.org/x/tools/cmd/goimports
+	go install golang.org/x/tools/cmd/goimports@$(GOIMPORTS_VERSION)
 
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
@@ -192,9 +215,9 @@ dev/install/helm-docs: ## Bootstrap: Install helm-docs
 	@if [ ! -e $(HELM_DOCS_PATH) ]; then \
 		echo "Installing helm-docs ...." \
 		&& set -x \
-		&& curl -Lo helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz https://github.com/norwoodj/helm-docs/releases/download/v$(HELM_DOCS_VERSION)/helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz \
-		&& tar -xf helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz helm-docs \
-		&& rm helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(UNAME_ARCH).tar.gz \
+		&& curl -Lo helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz https://github.com/norwoodj/helm-docs/releases/download/v$(HELM_DOCS_VERSION)/helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
+		&& tar -xf helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz helm-docs \
+		&& rm helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
 		&& chmod +x helm-docs \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv helm-docs $(HELM_DOCS_PATH) \

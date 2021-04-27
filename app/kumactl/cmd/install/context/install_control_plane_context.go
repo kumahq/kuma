@@ -2,7 +2,7 @@ package context
 
 import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
-	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
+	"github.com/kumahq/kuma/deployments"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/tls"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -87,7 +87,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			Cni_conf_name:                             "kuma-cni.conf",
 			Cni_image_registry:                        "docker.io",
 			Cni_image_repository:                      "lobkovilya/install-cni",
-			Cni_image_tag:                             "0.0.6",
+			Cni_image_tag:                             "0.0.7",
 			ControlPlane_mode:                         core.Standalone,
 			ControlPlane_zone:                         "",
 			ControlPlane_globalRemoteSyncService_type: "LoadBalancer",
@@ -98,7 +98,7 @@ func DefaultInstallCpContext() InstallCpContext {
 		},
 		NewSelfSignedCert: tls.NewSelfSignedCert,
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
-			return data.ReadFiles(controlplane.HelmTemplates)
+			return data.ReadFiles(deployments.KumaChartFS())
 		},
 		HELMValuesPrefix: "",
 	}

@@ -59,7 +59,6 @@ var _ = Describe("TrafficRoute", func() {
 		dataSourceLoader = datasource.NewDataSourceLoader(secretManager)
 	})
 	Describe("GetOutboundTargets()", func() {
-
 		It("should pick proper dataplanes for each outbound destination", func() {
 			// given
 			backend := &mesh_core.DataplaneResource{ // dataplane that is a source of traffic
@@ -197,12 +196,18 @@ var _ = Describe("TrafficRoute", func() {
 						mesh_proto.ServiceTag: "elastic",
 						mesh_proto.RegionTag:  "eu",
 					},
+					Locality: &core_xds.Locality{
+						Region: "eu",
+					},
 					Weight: 1,
 				},
 				{
 					Target: "192.168.0.6",
 					Port:   9200,
 					Tags:   map[string]string{mesh_proto.ServiceTag: "elastic", mesh_proto.RegionTag: "us"},
+					Locality: &core_xds.Locality{
+						Region: "us",
+					},
 					Weight: 1,
 				},
 			}))
@@ -214,6 +219,9 @@ var _ = Describe("TrafficRoute", func() {
 						mesh_proto.ServiceTag: "frontend",
 						mesh_proto.RegionTag:  "eu",
 					},
+					Locality: &core_xds.Locality{
+						Region: "eu",
+					},
 					Weight: 1,
 				},
 			}))
@@ -224,6 +232,9 @@ var _ = Describe("TrafficRoute", func() {
 					Tags: map[string]string{
 						mesh_proto.ServiceTag: "backend",
 						mesh_proto.RegionTag:  "eu",
+					},
+					Locality: &core_xds.Locality{
+						Region: "eu",
 					},
 					Weight: 1,
 				},
@@ -362,6 +373,9 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+							Locality: &core_xds.Locality{
+								Region: "eu",
+							},
 							Weight: 2,
 						},
 						{
@@ -374,6 +388,9 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.101",
 							Port:   12345,
 							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+							Locality: &core_xds.Locality{
+								Region: "eu",
+							},
 							Weight: 2,
 						},
 						{
@@ -445,6 +462,9 @@ var _ = Describe("TrafficRoute", func() {
 							Target: "192.168.0.100",
 							Port:   12345,
 							Tags:   map[string]string{mesh_proto.ServiceTag: "redis", "version": "v2", mesh_proto.RegionTag: "eu"},
+							Locality: &core_xds.Locality{
+								Region: "eu",
+							},
 							Weight: 2,
 						},
 						{

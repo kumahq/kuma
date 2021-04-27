@@ -1,20 +1,6 @@
 # using Envoy's base to copy the Envoy binary
 FROM envoyproxy/envoy:v1.17.1 as envoy
 
-FROM ubuntu:focal as builder
-
-ENV GOVERSION 1.15.11
-ENV GOROOT /opt/go
-ENV GOPATH /root/.go
-
-RUN apt-get update
-RUN apt-get -y install wget
-
-RUN cd /opt && wget https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz && \
-    tar zxf go${GOVERSION}.linux-amd64.tar.gz && rm go${GOVERSION}.linux-amd64.tar.gz && \
-    ln -s /opt/go/bin/go /usr/bin/ && \
-    mkdir $GOPATH
-
 FROM ubuntu:20.04
 
 RUN mkdir /kuma

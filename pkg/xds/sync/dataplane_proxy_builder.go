@@ -23,7 +23,8 @@ import (
 var syncLog = core.Log.WithName("sync")
 
 type DataplaneProxyBuilder struct {
-	ResManager            manager.ReadOnlyResourceManager
+	CachingResManager     manager.ReadOnlyResourceManager
+	NonCachingResManager  manager.ReadOnlyResourceManager
 	LookupIP              lookup.LookupIPFunc
 	DataSourceLoader      datasource.Loader
 	MetadataTracker       DataplaneMetadataTracker
@@ -69,7 +70,7 @@ func (p *DataplaneProxyBuilder) resolveDataplane(ctx context.Context, key core_m
 
 	// we use non-cached ResourceManager to always fetch fresh version of the Dataplane.
 	// Otherwise, technically MeshCache can use newer version because it uses List operation instead of Get
-	if err := p.ResManager.Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
+	if err := p.NonCachingResManager.Get(ctx, dataplane, core_store.GetBy(key)); err != nil {
 		return nil, err
 	}
 
@@ -87,12 +88,12 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	dataplane *core_mesh.DataplaneResource,
 ) (*xds.Routing, xds.DestinationMap, error) {
 	externalServices := &core_mesh.ExternalServiceResourceList{}
-	if err := p.ResManager.List(ctx, externalServices, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
+	if err := p.CachingResManager.List(ctx, externalServices, core_store.ListByMesh(dataplane.Meta.GetMesh())); err != nil {
 		return nil, nil, err
 	}
 
 	// pick a single the most specific route for each outbound interface
-	routes, err := xds_topology.GetRoutes(ctx, dataplane, p.ResManager)
+	routes, err := xds_topology.GetRoutes(ctx, dataplane, p.CachingResManager)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -111,17 +112,17 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 }
 
 func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *xds_context.MeshContext, dataplane *core_mesh.DataplaneResource, outboundSelectors xds.DestinationMap) (*xds.MatchedPolicies, error) {
-	healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, outboundSelectors, p.ResManager)
+	healthChecks, err := xds_topology.GetHealthChecks(ctx, dataplane, outboundSelectors, p.CachingResManager)
 	if err != nil {
 		return nil, err
 	}
 
-	circuitBreakers, err := xds_topology.GetCircuitBreakers(ctx, dataplane, outboundSelectors, p.ResManager)
+	circuitBreakers, err := xds_topology.GetCircuitBreakers(ctx, dataplane, outboundSelectors, p.CachingResManager)
 	if err != nil {
 		return nil, err
 	}
 
-	trafficTrace, err := xds_topology.GetTrafficTrace(ctx, dataplane, p.ResManager)
+	trafficTrace, err := xds_topology.GetTrafficTrace(ctx, dataplane, p.CachingResManager)
 	if err != nil {
 		return nil, err
 	}
@@ -130,7 +131,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		tracingBackend = meshContext.Resource.GetTracingBackend(trafficTrace.Spec.GetConf().GetBackend())
 	}
 
-	retries, err := xds_topology.GetRetries(ctx, dataplane, outboundSelectors, p.ResManager)
+	retries, err := xds_topology.GetRetries(ctx, dataplane, outboundSelectors, p.CachingResManager)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +151,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		return nil, err
 	}
 
-	timeouts, err := xds_topology.GetTimeouts(ctx, dataplane, p.ResManager)
+	timeouts, err := xds_topology.GetTimeouts(ctx, dataplane, p.CachingResManager)
 	if err != nil {
 		return nil, err
 	}
