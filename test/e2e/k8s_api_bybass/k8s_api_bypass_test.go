@@ -3,10 +3,7 @@ package k8s_api_bybass_test
 import (
 	"fmt"
 
-	"github.com/gruntwork-io/terratest/modules/retry"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-
-	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -40,24 +37,6 @@ spec:
       passthrough: %s
 `
 
-	externalService := `
-apiVersion: kuma.io/v1alpha1
-kind: ExternalService
-mesh: default
-metadata:
-  name: external-service-%s
-spec:
-  tags:
-    kuma.io/service: external-service
-    kuma.io/protocol: http
-    id: "%s"
-  networking:
-    address: %s:%d
-    tls:
-      enabled: %s
-`
-	es1 := "1"
-
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -79,28 +58,16 @@ metadata:
 
 		cluster = c.(*K8sCluster)
 
-		// Global
-		deployOptsFuncs = []DeployOptionsFunc{
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"),
-		}
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
-			Install(externalservice.Install(externalservice.HttpServer, []string{})).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlK8s(fmt.Sprintf(externalService,
-			es1, es1,
-			"externalservice-http-server.externalservice-namespace.svc.cluster.local", 10080,
-			"false"))(cluster)
+		err = YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "true"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		pods, err := k8s.ListPodsE(
@@ -141,21 +108,11 @@ metadata:
 
 		cmd := fmt.Sprintf("curl --cacert %s --header %q -X GET -v -m 3 --fail %s", caCert, header, url)
 
-		// given Mesh with passthrough enabled
-		err := YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "true"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then communication with API Server works
+		// given Mesh with passthrough enabled then communication with API Server works
 		_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"bash", "-c", cmd)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/2 200"))
-
-		// the same as overall communication outside the mesh
-		_, stderr, err = cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
 
 		// when passthrough is disabled on the Mesh
 		err = YamlK8s(fmt.Sprintf(meshDefaultMtlsOn, "false"))(cluster)
@@ -166,31 +123,5 @@ metadata:
 			"bash", "-c", cmd)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stderr).To(ContainSubstring("HTTP/2 200"))
-
-		// but accessing the external service is no longer possible
-		_, err = retry.DoWithRetryE(cluster.GetTesting(), "passthrough access to service", 5, DefaultTimeout, func() (string, error) {
-			_, _, err := cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
-			if err != nil {
-				return "", err
-			}
-
-			return "", nil
-		})
-		Expect(err).To(HaveOccurred())
-
-		// when apply external service
-		err = YamlK8s(fmt.Sprintf(externalService,
-			es1, es1,
-			"externalservice-http-server.externalservice-namespace.svc.cluster.local", 10080, // .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
-			"false"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		// then you can access external service again
-		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
-			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(ContainSubstring("HTTP/1.1 200 OK"))
-		Expect(stdout).ToNot(ContainSubstring("externalservice-https-server"))
 	})
 })
