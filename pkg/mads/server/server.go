@@ -106,7 +106,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 	}
 	defer func() {
 		if err := l.Close(); err != nil {
-			log.Error(err, "")
+			log.Error(err, "unable to close the listener")
 		}
 	}()
 
@@ -158,7 +158,7 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 			case http.ErrServerClosed:
 				log.Info("shutting down server")
 			default:
-				log.Error(err, "could not start an mux Server")
+				log.Error(err, "could not start a mux Server")
 				errChan <- err
 			}
 		}

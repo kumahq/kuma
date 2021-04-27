@@ -2,11 +2,13 @@ package server_test
 
 import (
 	"bytes"
+	"fmt"
 	"net/http"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/golang/protobuf/jsonpb"
+	"github.com/kumahq/kuma/pkg/util/net"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/prometheus/common/config"
@@ -52,6 +54,7 @@ var _ = Describe("MADS Server", func() {
 	var rt *testRuntime
 	var stopCh chan struct{}
 	var errCh chan error
+	var port uint32
 
 	BeforeEach(func() {
 		m, err := metrics.NewMetrics("zone-1")
@@ -62,7 +65,11 @@ var _ = Describe("MADS Server", func() {
 			config:  kuma_cp.Config{MonitoringAssignmentServer: mads.DefaultMonitoringAssignmentServerConfig()},
 			metrics: m,
 		}
-		rt.config.MonitoringAssignmentServer.Port = 15676
+
+		port, err = net.PickTCPPort("127.0.0.1", 10000, 20000)
+		Expect(err).ToNot(HaveOccurred())
+
+		rt.config.MonitoringAssignmentServer.Port = port
 		err = server.SetupServer(rt)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(rt.components).To(HaveLen(1))
@@ -83,8 +90,8 @@ var _ = Describe("MADS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should be reachable on port 15676 and return an empty list of assignments", func() {
-		client, err := mads_v1_client.New("grpc://localhost:15676")
+	It("should serve GRPC requests", func() {
+		client, err := mads_v1_client.New(fmt.Sprintf("grpc://localhost:%d", port))
 		Expect(err).ToNot(HaveOccurred())
 
 		stream, err := client.StartStream()
@@ -98,7 +105,7 @@ var _ = Describe("MADS Server", func() {
 		Expect(assignments).To(HaveLen(0))
 	})
 
-	It("", func() {
+	It("should serve HTTP/1.1 requests", func() {
 		rt, err := config.NewRoundTripperFromConfig(config.HTTPClientConfig{TLSConfig: config.TLSConfig{InsecureSkipVerify: true}}, "mads", false, false)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -119,7 +126,7 @@ var _ = Describe("MADS Server", func() {
 		err = marshaller.Marshal(reqbuf, req)
 		Expect(err).ToNot(HaveOccurred())
 
-		request, err := http.NewRequest("POST", "http://localhost:15676/v3/discovery:monitoringassignments", reqbuf)
+		request, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/v3/discovery:monitoringassignments", port), reqbuf)
 		Expect(err).ToNot(HaveOccurred())
 
 		request.Header.Add("Content-Type", "application/json")
@@ -128,6 +135,5 @@ var _ = Describe("MADS Server", func() {
 		resp, err := client.Do(request)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Status).To(Equal("200 OK"))
-
 	})
 })
