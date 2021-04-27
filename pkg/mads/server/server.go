@@ -1,15 +1,15 @@
 package server
 
 import (
-	"context"
 	"fmt"
+	"net"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/emicklei/go-restful"
 	http_prometheus "github.com/slok/go-http-metrics/metrics/prometheus"
 	"github.com/slok/go-http-metrics/middleware"
+	"github.com/soheilhy/cmux"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/keepalive"
 
@@ -40,23 +40,6 @@ type muxServer struct {
 	grpcServices []GrpcService
 	config       *mads_config.MonitoringAssignmentServerConfig
 	metrics      core_metrics.Metrics
-}
-
-// muxHandler implements http.Handler for gRPC by intercepting
-// all gRPC traffic and passing through all other traffic
-type muxHandler struct {
-	grpcServer *grpc.Server
-	// passthrough handles all non-gRPC traffic
-	passthrough http.Handler
-}
-
-func (m *muxHandler) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
-	if req.ProtoMajor == 2 &&
-		strings.Contains(req.Header.Get("Content-Type"), "application/grpc") {
-		m.grpcServer.ServeHTTP(writer, req)
-		return
-	}
-	m.passthrough.ServeHTTP(writer, req)
 }
 
 type HttpService interface {
@@ -117,34 +100,82 @@ func (s *muxServer) createHttpServicesHandler() http.Handler {
 }
 
 func (s *muxServer) Start(stop <-chan struct{}) error {
-	server := &http.Server{
-		Addr: fmt.Sprintf(":%d", s.config.Port),
-		Handler: &muxHandler{
-			grpcServer:  s.createGRPCServer(),
-			passthrough: s.createHttpServicesHandler(),
-		},
+	l, err := net.Listen("tcp", fmt.Sprintf(":%d", s.config.Port))
+	if err != nil {
+		return err
 	}
+	defer func() {
+		if err := l.Close(); err != nil {
+			log.Error(err, "unable to close the listener")
+		}
+	}()
 
-	errChan := make(chan error)
+	m := cmux.New(l)
+
+	grpcL := m.MatchWithWriters(
+		cmux.HTTP2MatchHeaderFieldSendSettings("content-type", "application/grpc"),
+	)
+	httpL := m.Match(cmux.HTTP1Fast())
+
+	grpcS := s.createGRPCServer()
+	errChanGrpc := make(chan error)
 	go func() {
-		defer close(errChan)
-		err := server.ListenAndServe()
-		if err != nil {
+		defer close(errChanGrpc)
+		if err := grpcS.Serve(grpcL); err != nil {
+			switch err {
+			case http.ErrServerClosed:
+				log.Info("shutting down server")
+			default:
+				log.Error(err, "could not start an GRPC Server")
+				errChanGrpc <- err
+			}
+		}
+	}()
+
+	httpS := &http.Server{
+		Handler: s.createHttpServicesHandler(),
+	}
+	errChanHttp := make(chan error)
+	go func() {
+		defer close(errChanHttp)
+		if err := httpS.Serve(httpL); err != nil {
 			switch err {
 			case http.ErrServerClosed:
 				log.Info("shutting down server")
 			default:
 				log.Error(err, "could not start an HTTP Server")
+				errChanHttp <- err
+			}
+		}
+	}()
+
+	errChan := make(chan error)
+	go func() {
+		defer close(errChan)
+		err := m.Serve()
+		if err != nil {
+			switch err {
+			case http.ErrServerClosed:
+				log.Info("shutting down server")
+			default:
+				log.Error(err, "could not start a mux Server")
 				errChan <- err
 			}
 		}
 	}()
+
 	log.Info("starting", "interface", "0.0.0.0", "port", s.config.Port)
+
+	defer m.Close()
 
 	select {
 	case <-stop:
 		log.Info("stopping gracefully")
-		return server.Shutdown(context.Background())
+		return nil
+	case err := <-errChanGrpc:
+		return err
+	case err := <-errChanHttp:
+		return err
 	case err := <-errChan:
 		return err
 	}

@@ -7,6 +7,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
+
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
@@ -31,7 +33,11 @@ var _ = Describe("kumactl root cmd", func() {
 
 	It("should create default config at startup", func() {
 		// given
-		rootCtx := &kumactl_cmd.RootContext{}
+		rootCtx := &kumactl_cmd.RootContext{
+			Runtime: kumactl_cmd.RootRuntime{
+				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+			},
+		}
 		rootCmd := cmd.NewRootCmd(rootCtx)
 
 		// when
