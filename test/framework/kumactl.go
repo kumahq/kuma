@@ -75,7 +75,7 @@ func (o *KumactlOptions) RunKumactlAndGetOutputV(verbose bool, args ...string) (
 		command.Logger = logger.Discard
 	}
 
-	return shell.RunCommandAndGetOutputE(o.t, command)
+	return shell.RunCommandAndGetStdOutE(o.t, command)
 }
 
 func (o *KumactlOptions) KumactlDelete(kumatype, name, mesh string) error {
