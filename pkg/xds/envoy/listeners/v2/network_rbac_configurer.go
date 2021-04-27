@@ -66,31 +66,75 @@ func createPolicy(permission *mesh_core.TrafficPermissionResource) *rbac_config.
 	principals := []*rbac_config.Principal{}
 
 	// build principals list: one per sources/destinations rule
-	for _, source := range permission.Spec.Sources {
-		service := source.Match[mesh_proto.ServiceTag]
-		principal := &rbac_config.Principal{}
-		if service == mesh_proto.MatchAllTag {
-			principal.Identifier = &rbac_config.Principal_Any{
-				Any: true,
-			}
-		} else {
-			principal.Identifier = &rbac_config.Principal_Authenticated_{
-				Authenticated: &rbac_config.Principal_Authenticated{
-					PrincipalName: tls.ServiceSpiffeIDMatcher(permission.Meta.GetMesh(), service),
-				},
-			}
-		}
-		principals = append(principals, principal)
+	for _, selector := range permission.Spec.Sources {
+		principals = append(principals, principalFromSelector(selector, permission.GetMeta().GetMesh()))
 	}
 
 	return &rbac_config.Policy{
 		Permissions: []*rbac_config.Permission{
 			{
 				Rule: &rbac_config.Permission_Any{
-					Any: true,
+					Any: true, // the relation between many selector is OR
 				},
 			},
 		},
 		Principals: principals,
 	}
+}
+
+func principalFromSelector(selector *mesh_proto.Selector, mesh string) *rbac_config.Principal {
+	principals := kumaPrincipals(selector)
+
+	service := selector.Match[mesh_proto.ServiceTag]
+	if service != "" && service != mesh_proto.MatchAllTag {
+		spiffePrincipal := &rbac_config.Principal{
+			Identifier: &rbac_config.Principal_Authenticated_{
+				Authenticated: &rbac_config.Principal_Authenticated{
+					PrincipalName: tls.ServiceSpiffeIDMatcher(mesh, service),
+				},
+			},
+		}
+		principals = append(principals, spiffePrincipal)
+	}
+
+	switch len(principals) {
+	case 0:
+		return &rbac_config.Principal{
+			Identifier: &rbac_config.Principal_Any{
+				Any: true,
+			},
+		}
+	case 1:
+		return principals[0]
+	default:
+		return &rbac_config.Principal{
+			Identifier: &rbac_config.Principal_AndIds{ // many tags in selector means that all of them have to match therefore AND
+				AndIds: &rbac_config.Principal_Set{
+					Ids: principals,
+				},
+			},
+		}
+	}
+}
+
+// kumaPrincipals can match any other tag than kuma.io/service tag
+func kumaPrincipals(selector *mesh_proto.Selector) []*rbac_config.Principal {
+	principals := []*rbac_config.Principal{}
+	for tag, value := range selector.Match {
+		if tag == mesh_proto.ServiceTag {
+			continue // service tag is matched by spiffe principal
+		}
+		if value == mesh_proto.MatchAllTag {
+			continue // '*' can match anything so no need to build principal for it
+		}
+		principal := &rbac_config.Principal{
+			Identifier: &rbac_config.Principal_Authenticated_{
+				Authenticated: &rbac_config.Principal_Authenticated{
+					PrincipalName: tls.KumaIDMatcher(tag, value),
+				},
+			},
+		}
+		principals = append(principals, principal)
+	}
+	return principals
 }

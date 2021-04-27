@@ -204,7 +204,16 @@ var _ = Describe("Provided CA", func() {
 	Context("GenerateDataplaneCert", func() {
 		It("should generate dataplane cert", func() {
 			// when
-			pair, err := caManager.GenerateDataplaneCert(context.Background(), "default", backendWithTestCerts, []string{"web", "web-api"})
+			tags := map[string]map[string]bool{
+				"kuma.io/service": {
+					"web":     true,
+					"web-api": true,
+				},
+				"version": {
+					"v1": true,
+				},
+			}
+			pair, err := caManager.GenerateDataplaneCert(context.Background(), "default", backendWithTestCerts, tags)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -215,15 +224,18 @@ var _ = Describe("Provided CA", func() {
 			block, _ := pem.Decode(pair.CertPEM)
 			cert, err := x509.ParseCertificate(block.Bytes)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(cert.URIs).To(HaveLen(2))
+			Expect(cert.URIs).To(HaveLen(5))
 			Expect(cert.URIs[0].String()).To(Equal("spiffe://default/web"))
 			Expect(cert.URIs[1].String()).To(Equal("spiffe://default/web-api"))
+			Expect(cert.URIs[2].String()).To(Equal("kuma://kuma.io/service/web"))
+			Expect(cert.URIs[3].String()).To(Equal("kuma://kuma.io/service/web-api"))
+			Expect(cert.URIs[4].String()).To(Equal("kuma://version/v1"))
 			Expect(cert.NotAfter).To(Equal(now.UTC().Truncate(time.Second).Add(1 * time.Second))) // time in cert is in UTC and truncated to seconds
 		})
 
 		It("should throw an error on invalid certs", func() {
 			// when
-			_, err := caManager.GenerateDataplaneCert(context.Background(), "default", backendWithInvalidCerts, []string{"web"})
+			_, err := caManager.GenerateDataplaneCert(context.Background(), "default", backendWithInvalidCerts, mesh_proto.MultiValueTagSet{})
 
 			// then
 			Expect(err).To(MatchError(`failed to load CA key pair for Mesh "default" and backend "provided-2": could not load data: open testdata/invalid.key: no such file or directory`))
