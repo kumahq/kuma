@@ -4,8 +4,9 @@ import (
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
-	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/test/framework/deployments/externalservice"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -16,7 +17,6 @@ import (
 
 	. "github.com/kumahq/kuma/test/framework"
 )
-
 
 var _ = Describe("Test Kubernetes API Bypass", func() {
 	if IsApiV2() {
