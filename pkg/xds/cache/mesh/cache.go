@@ -66,6 +66,8 @@ func (c *Cache) GetHash(ctx context.Context, mesh string) (string, error) {
 		c.metrics.WithLabelValues("get", "miss").Inc()
 		snapshot, err := GetMeshSnapshot(ctx, mesh, c.rm, c.types, c.ipFunc)
 		if err != nil {
+			// Don't cache errors
+			c.onceMap.Delete(mesh)
 			return nil, err
 		}
 		hash = snapshot.hash()
