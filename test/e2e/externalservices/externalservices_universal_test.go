@@ -14,7 +14,10 @@ import (
 )
 
 var _ = Describe("Test ExternalServices on Universal", func() {
-
+	if IsApiV2() {
+		fmt.Println("Test not supported on API v2")
+		return
+	}
 	meshDefaulMtlsOn := `
 type: Mesh
 name: default
