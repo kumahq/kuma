@@ -10,6 +10,23 @@ orbs:
   azure-acr: circleci/azure-acr@0.2.0
   azure-aks: circleci/azure-aks@0.2.1
 
+parameters:
+  run_workflow_clean_eks:
+    default: true
+    type: boolean
+
+  run_workflow_clean_aks:
+    default: true
+    type: boolean
+
+  run_workflow_e2e_eks:
+    default: true
+    type: boolean
+
+  run_workflow_e2e_aks:
+    default: true
+    type: boolean
+
 commands:
   early_return_for_forked_pull_requests:
     description: >-
@@ -1197,6 +1214,7 @@ workflows:
 #        ipv6: true
 
   clean-eks:
+    when: << pipeline.parameters.run_workflow_clean_eks >>
     triggers:
     - schedule:
         # run cleanup everyday at 02:00 - it's the last resort for cleanup of
@@ -1209,6 +1227,7 @@ workflows:
     - eks-delete-clusters
 
   clean-aks:
+    when: << pipeline.parameters.run_workflow_clean_aks >>
     triggers:
     - schedule:
         # run cleanup everyday at 02:00 - it's the last resort for cleanup of
@@ -1221,6 +1240,7 @@ workflows:
     - aks-delete-clusters
 
   e2e-eks:
+    when: << pipeline.parameters.run_workflow_e2e_eks >>
     triggers:
     - schedule:
         # run every Monday at 00:00
@@ -1243,6 +1263,12 @@ workflows:
         - images
 
   e2e-aks:
+    when: << pipeline.parameters.run_workflow_e2e_aks >>
+    triggers:
+    - schedule:
+        # run every Monday at 00:00
+        cron: "0 0 * * 1"
+        <<: *master_only_workflow_filters
     jobs:
     - go_cache: *master_only_workflow_filters
     - build:
