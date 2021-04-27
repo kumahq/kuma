@@ -28,6 +28,7 @@ type testApiServerClient struct {
 func (c *testApiServerClient) GetVersion() (*types.IndexResponse, error) {
 	return &types.IndexResponse{
 		Version: kuma_version.Build.Version,
+		Tagline: kuma_version.Product,
 	}, nil
 }
 
@@ -110,6 +111,8 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 			} else {
 				Expect(outbuf.String()).To(Equal("Error: No resources found in default mesh\n"))
 			}
+
+			fmt.Println(errbuf.String())
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 
