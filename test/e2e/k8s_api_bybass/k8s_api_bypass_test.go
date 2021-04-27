@@ -16,11 +16,6 @@ import (
 )
 
 var _ = Describe("Test Kubernetes API Bypass", func() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
-
 	meshDefaultMtlsOn := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
