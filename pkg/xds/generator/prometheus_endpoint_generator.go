@@ -3,6 +3,8 @@ package generator
 import (
 	"net"
 
+	"github.com/pkg/errors"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -13,7 +15,6 @@ import (
 	envoy_clusters "github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	envoy_names "github.com/kumahq/kuma/pkg/xds/envoy/names"
-	"github.com/pkg/errors"
 )
 
 // OriginPrometheus is a marker to indicate by which ProxyGenerator resources were generated.

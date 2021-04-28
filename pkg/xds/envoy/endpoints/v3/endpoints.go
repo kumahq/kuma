@@ -6,6 +6,7 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/config/endpoint/v3"
 	proto_wrappers "github.com/golang/protobuf/ptypes/wrappers"
+
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )

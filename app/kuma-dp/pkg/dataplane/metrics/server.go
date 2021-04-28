@@ -8,10 +8,11 @@ import (
 	"net/http"
 	"os"
 
+	"github.com/pkg/errors"
+
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/pkg/errors"
 )
 
 var logger = core.Log.WithName("metrics-hijacker")
@@ -84,6 +85,7 @@ func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, request *http.Request) 
 		}
 		return
 	}
+	defer resp.Body.Close()
 	buf := new(bytes.Buffer)
 	if _, err := buf.ReadFrom(resp.Body); err != nil {
 		if _, err := writer.Write([]byte(err.Error())); err != nil {
