@@ -10,7 +10,7 @@ A Helm chart for the Kuma Control Plane
 
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
-| global.image.registry | string | `"kong-docker-kuma-docker.bintray.io"` | Default registry for all Kuma Images |
+| global.image.registry | string | `"docker.io/kumahq"` | Default registry for all Kuma Images |
 | global.image.tag | string | `nil` | The default tag for all Kuma images, which itself defaults to .Chart.AppVersion |
 | patchSystemNamespace | bool | `true` | Whether or not to patch the target namespace with the system label |
 | installCrdsOnUpgrade | object | `{"enabled":true,"imagePullSecrets":[]}` | Whether ot not install new CRDs before upgrade  (if any were introduced    with the new version of Kuma) |
