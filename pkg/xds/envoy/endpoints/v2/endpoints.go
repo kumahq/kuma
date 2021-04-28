@@ -7,7 +7,6 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_endpoint "github.com/envoyproxy/go-control-plane/envoy/api/v2/endpoint"
 	proto_wrappers "github.com/golang/protobuf/ptypes/wrappers"
-
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v2"
 )
@@ -27,6 +26,27 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *envo
 									PortSpecifier: &envoy_core.SocketAddress_PortValue{
 										PortValue: port,
 									},
+								},
+							},
+						},
+					},
+				},
+			}},
+		}},
+	}
+}
+
+func CreateStaticEndpointUnixSocket(clusterName string, path string) *envoy_api.ClusterLoadAssignment {
+	return &envoy_api.ClusterLoadAssignment{
+		ClusterName: clusterName,
+		Endpoints: []*envoy_endpoint.LocalityLbEndpoints{{
+			LbEndpoints: []*envoy_endpoint.LbEndpoint{{
+				HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
+					Endpoint: &envoy_endpoint.Endpoint{
+						Address: &envoy_core.Address{
+							Address: &envoy_core.Address_Pipe{
+								Pipe: &envoy_core.Pipe{
+									Path: path,
 								},
 							},
 						},

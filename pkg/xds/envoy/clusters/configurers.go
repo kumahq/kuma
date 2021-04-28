@@ -8,6 +8,8 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	v2 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v2"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/clusters/v3"
+	endpoints_v2 "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
+	endpoints_v3 "github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 )
 
 func OutlierDetection(circuitBreaker *mesh_core.CircuitBreakerResource) ClusterBuilderOpt {
@@ -195,16 +197,31 @@ func PassThroughCluster(name string) ClusterBuilderOpt {
 func StaticCluster(name string, address string, port uint32) ClusterBuilderOpt {
 	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
 		config.AddV2(&v2.StaticClusterConfigurer{
-			Name:    name,
-			Address: address,
-			Port:    port,
+			Name:           name,
+			LoadAssignment: endpoints_v2.CreateStaticEndpoint(name, address, port),
 		})
 		config.AddV2(&v2.AltStatNameConfigurer{})
 		config.AddV2(&v2.TimeoutConfigurer{})
 		config.AddV3(&v3.StaticClusterConfigurer{
-			Name:    name,
-			Address: address,
-			Port:    port,
+			Name:           name,
+			LoadAssignment: endpoints_v3.CreateStaticEndpoint(name, address, port),
+		})
+		config.AddV3(&v3.AltStatNameConfigurer{})
+		config.AddV3(&v3.TimeoutConfigurer{})
+	})
+}
+
+func StaticClusterUnixSocket(name string, path string) ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV2(&v2.StaticClusterConfigurer{
+			Name:           name,
+			LoadAssignment: endpoints_v2.CreateStaticEndpointUnixSocket(name, path),
+		})
+		config.AddV2(&v2.AltStatNameConfigurer{})
+		config.AddV2(&v2.TimeoutConfigurer{})
+		config.AddV3(&v3.StaticClusterConfigurer{
+			Name:           name,
+			LoadAssignment: endpoints_v3.CreateStaticEndpointUnixSocket(name, path),
 		})
 		config.AddV3(&v3.AltStatNameConfigurer{})
 		config.AddV3(&v3.TimeoutConfigurer{})

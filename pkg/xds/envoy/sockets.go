@@ -13,3 +13,7 @@ func AccessLogSocketName(name, mesh string) string {
 	}
 	return socketName[:trimLen] + ".sock"
 }
+
+func MetricsHijackerSocketName() string {
+	return "/tmp/kuma-metrics-hijacker.sock"
+}

@@ -95,13 +95,13 @@ kind/load/kuma-universal:
 	@kind load docker-image kuma-universal:latest --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/images
-kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl kind/load/kuma-universal
+kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl
 
 .PHONY: kind/load
-kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl docker/build/kuma-universal kind/load/images
+kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl kind/load/images
 
 .PHONY: kind/deploy/kuma
-kind/deploy/kuma: build/kumactl kind/load
+kind/deploy/kuma: #build/kumactl kind/load
 	@${BUILD_ARTIFACTS_DIR}/kumactl/kumactl install --mode $(KUMA_MODE) control-plane $(KUMACTL_INSTALL_CONTROL_PLANE_IMAGES) | KUBECONFIG=$(KIND_KUBECONFIG)  kubectl apply -f -
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Available -n $(KUMA_NAMESPACE) deployment/kuma-control-plane
 	@KUBECONFIG=$(KIND_KUBECONFIG) kubectl wait --timeout=60s --for=condition=Ready -n $(KUMA_NAMESPACE) pods -l app=kuma-control-plane
