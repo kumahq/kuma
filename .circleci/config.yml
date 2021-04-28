@@ -187,7 +187,7 @@ jobs:
         command: |
           for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
             make docker/tag/${image} \
-              BINTRAY_REGISTRY="${ECR_REGISTRY}" \
+              DOCKER_REGISTRY="${ECR_REGISTRY}" \
               KUMA_VERSION="${TAG}" && \
             docker push "${ECR_REGISTRY}"/${image}:"${TAG}" &
           done
@@ -681,7 +681,7 @@ jobs:
     executor: vm
     parameters:
       use_local_kuma_images:
-        description: Use local Docker images from CircleCI workspace instead of downloading ones from bintray.io.
+        description: Use local Docker images from CircleCI workspace instead of downloading ones from docker.io.
         type: boolean
         default: true
     environment:
@@ -724,7 +724,7 @@ jobs:
         type: string
         default: "v1.20.0"
       use_local_kuma_images:
-        description: Use local Docker images from CircleCI workspace instead of downloading ones from bintray.io.
+        description: Use local Docker images from CircleCI workspace instead of downloading ones from docker.io.
         type: boolean
         default: true
     environment:
