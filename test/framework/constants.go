@@ -55,7 +55,7 @@ var KumaGlobalRemoteSyncServiceName = "kuma-global-remote-sync"
 var CNIApp = "kuma-cni"
 var CNINamespace = "kube-system"
 
-var KumaImageRegistry = "kuma"
+var KumaImageRegistry = "kumahq"
 var KumaCPImageRepo = "kuma-cp"
 var KumaDPImageRepo = "kuma-dp"
 var KumaInitImageRepo = "kuma-init"

@@ -1,15 +1,13 @@
 BUILD_DOCKER_IMAGES_DIR ?= $(BUILD_DIR)/docker-images
 KUMA_VERSION ?= master
 
-BINTRAY_REGISTRY ?= kong-docker-kuma-docker.bintray.io
-BINTRAY_USERNAME ?=
-BINTRAY_API_KEY ?=
+DOCKER_REGISTRY ?= docker.io/kumahq
+DOCKER_USERNAME ?=
+DOCKER_API_KEY ?=
 
 KUMACTL_INSTALL_USE_LOCAL_IMAGES?=true
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
-	DOCKER_REGISTRY ?= kuma
-else
-	DOCKER_REGISTRY ?= $(BINTRAY_REGISTRY)
+	DOCKER_REGISTRY = kumahq
 endif
 
 KUMA_CP_DOCKER_IMAGE_NAME ?= $(DOCKER_REGISTRY)/kuma-cp
@@ -137,44 +135,44 @@ docker/load/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar
 
 .PHONY: docker/tag/kuma-cp
 docker/tag/kuma-cp:
-	docker tag $(KUMA_CP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-cp:$(KUMA_VERSION)
+	docker tag $(KUMA_CP_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-cp:$(KUMA_VERSION)
 
 .PHONY: docker/tag/kuma-dp
 docker/tag/kuma-dp:
-	docker tag $(KUMA_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-dp:$(KUMA_VERSION)
+	docker tag $(KUMA_DP_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-dp:$(KUMA_VERSION)
 
 .PHONY: docker/tag/kumactl
 docker/tag/kumactl:
-	docker tag $(KUMACTL_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kumactl:$(KUMA_VERSION)
+	docker tag $(KUMACTL_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kumactl:$(KUMA_VERSION)
 
 .PHONY: docker/tag/kuma-init
 docker/tag/kuma-init:
-	docker tag $(KUMA_INIT_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-init:$(KUMA_VERSION)
+	docker tag $(KUMA_INIT_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-init:$(KUMA_VERSION)
 
 .PHONY: docker/tag/kuma-universal
 docker/tag/kuma-universal:
-	docker tag $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-universal:$(KUMA_VERSION)
+	docker tag $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-universal:$(KUMA_VERSION)
 
 .PHONY: image/kuma-cp/push
 image/kuma-cp/push: image/kuma-cp
-	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KUMA_CP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-cp:$(KUMA_VERSION)
-	docker push $(BINTRAY_REGISTRY)/kuma-cp:$(KUMA_VERSION)
-	docker logout $(BINTRAY_REGISTRY)
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
+	docker tag $(KUMA_CP_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-cp:$(KUMA_VERSION)
+	docker push $(DOCKER_REGISTRY)/kuma-cp:$(KUMA_VERSION)
+	docker logout $(DOCKER_REGISTRY)
 
 .PHONY: image/kuma-dp/push
 image/kuma-dp/push: image/kuma-dp
-	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KUMA_DP_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kuma-dp:$(KUMA_VERSION)
-	docker push $(BINTRAY_REGISTRY)/kuma-dp:$(KUMA_VERSION)
-	docker logout $(BINTRAY_REGISTRY)
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
+	docker tag $(KUMA_DP_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-dp:$(KUMA_VERSION)
+	docker push $(DOCKER_REGISTRY)/kuma-dp:$(KUMA_VERSION)
+	docker logout $(DOCKER_REGISTRY)
 
 .PHONY: image/kumactl/push
 image/kumactl/push: image/kumactl
-	docker login -u $(BINTRAY_USERNAME) -p $(BINTRAY_API_KEY) $(BINTRAY_REGISTRY)
-	docker tag $(KUMACTL_DOCKER_IMAGE) $(BINTRAY_REGISTRY)/kumactl:$(KUMA_VERSION)
-	docker push $(BINTRAY_REGISTRY)/kumactl:$(KUMA_VERSION)
-	docker logout $(BINTRAY_REGISTRY)
+	docker login -u $(DOCKER_USERNAME) -p $(DOCKER_API_KEY) $(DOCKER_REGISTRY)
+	docker tag $(KUMACTL_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kumactl:$(KUMA_VERSION)
+	docker push $(DOCKER_REGISTRY)/kumactl:$(KUMA_VERSION)
+	docker logout $(DOCKER_REGISTRY)
 
 .PHONY: images/push
 images/push: image/kuma-cp/push image/kuma-dp/push image/kumactl/push
