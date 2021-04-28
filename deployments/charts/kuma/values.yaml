@@ -1,7 +1,7 @@
 global:
   image:
     # -- Default registry for all Kuma Images
-    registry: "docker.io"
+    registry: "docker.io/kumahq"
     # -- The default tag for all Kuma images, which itself defaults to .Chart.AppVersion
     tag:
 
@@ -112,7 +112,7 @@ controlPlane:
     # -- Kuma CP ImagePullPolicy
     pullPolicy: IfNotPresent
     # -- Kuma CP image repository
-    repository: "kumahq/kuma-cp"
+    repository: "kuma-cp"
 
   # -- (list of { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
   # where `Env` is the name of the env variable,
@@ -160,13 +160,13 @@ cni:
 dataPlane:
   image:
     # -- The Kuma DP image repository
-    repository: "kumahq/kuma-dp"
+    repository: "kuma-dp"
     # -- Kuma DP ImagePullPolicy
     pullPolicy: IfNotPresent
 
   initImage:
     # -- The Kuma DP init image repository
-    repository: "kumahq/kuma-init"
+    repository: "kuma-init"
 
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
@@ -190,4 +190,4 @@ ingress:
 kumactl:
   image:
     # -- The kumactl image repository
-    repository: kumahq/kumactl
+    repository: kumactl
