@@ -2,41 +2,41 @@ package once
 
 import "sync"
 
-type Once struct {
+type once struct {
 	syncOnce sync.Once
 	Value    interface{}
 	Err      error
 }
 
-func (o *Once) Do(f func() (interface{}, error)) {
+func (o *once) Do(f func() (interface{}, error)) {
 	o.syncOnce.Do(func() {
 		o.Value, o.Err = f()
 	})
 }
 
-func NewMap() *Map {
-	return &Map{
-		m: map[string]*Once{},
+func newMap() *omap {
+	return &omap{
+		m: map[string]*once{},
 	}
 }
 
-type Map struct {
+type omap struct {
 	mtx sync.Mutex
-	m   map[string]*Once
+	m   map[string]*once
 }
 
-func (c *Map) Get(key string) *Once {
+func (c *omap) Get(key string) *once {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	o, exist := c.m[key]
 	if !exist {
-		o = &Once{}
+		o = &once{}
 		c.m[key] = o
 	}
 	return o
 }
 
-func (c *Map) Delete(key string) {
+func (c *omap) Delete(key string) {
 	c.mtx.Lock()
 	delete(c.m, key)
 	c.mtx.Unlock()
