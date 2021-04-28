@@ -251,14 +251,14 @@ Flags:
       --cni-registry string                         registry for the image of the Kuma CNI component (default "docker.io")
       --cni-repository string                       repository for the image of the Kuma CNI component (default "lobkovilya/install-cni")
       --cni-version string                          version of the image of the Kuma CNI component (default "0.0.7")
-      --control-plane-registry string               registry for the image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io")
+      --control-plane-registry string               registry for the image of the Kuma Control Plane component (default "registry-1.docker.io")
       --control-plane-repository string             repository for the image of the Kuma Control Plane component (default "kuma-cp")
       --control-plane-service-name string           Service name of the Kuma Control Plane (default "kuma-control-plane")
       --control-plane-version string                version of the image of the Kuma Control Plane component (default "latest")
-      --dataplane-init-registry string              registry for the init image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
+      --dataplane-init-registry string              registry for the init image of the Kuma DataPlane component (default "registry-1.docker.io")
       --dataplane-init-repository string            repository for the init image of the Kuma DataPlane component (default "kuma-init")
       --dataplane-init-version string               version of the init image of the Kuma DataPlane component (default "latest")
-      --dataplane-registry string                   registry for the image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
+      --dataplane-registry string                   registry for the image of the Kuma DataPlane component (default "registry-1.docker.io")
       --dataplane-repository string                 repository for the image of the Kuma DataPlane component (default "kuma-dp")
       --dataplane-version string                    version of the image of the Kuma DataPlane component (default "latest")
       --env-var stringToString                      environment variables that will be passed to the control plane (default [])
@@ -298,7 +298,7 @@ Usage:
 Flags:
   -h, --help                                help for metrics
       --kuma-cp-address string              the address of Kuma CP (default "grpc://kuma-control-plane.kuma-system:5676")
-      --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd")
+      --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "registry-1.docker.io/kuma-prometheus-sd")
       --kuma-prometheus-sd-version string   version of Kuma Prometheus SD (default "latest")
       --namespace string                    namespace to install metrics to (default "kuma-metrics")
       --without-grafana                     disable Grafana resources generation

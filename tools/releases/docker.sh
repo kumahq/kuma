@@ -2,7 +2,7 @@
 
 set -e
 
-[ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="kong-docker-kuma-docker.bintray.io"
+[ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="registry-1.docker.io"
 KUMA_COMPONENTS=("kuma-cp" "kuma-dp" "kumactl" "kuma-init" "kuma-prometheus-sd")
 
 function msg_green {
@@ -51,7 +51,7 @@ function build {
 
 
 function docker_login {
-  docker login -u "$BINTRAY_USERNAME" -p "$BINTRAY_API_KEY" $KUMA_DOCKER_REPO
+  docker login -u "$DOCKER_USERNAME" -p "$DOCKER_API_KEY" $KUMA_DOCKER_REPO
 }
 
 
@@ -108,8 +108,8 @@ function main {
     shift
   done
 
-  [ -z "$BINTRAY_USERNAME" ] && msg_err "BINTRAY_USERNAME required"
-  [ -z "$BINTRAY_API_KEY" ] && msg_err "BINTRAY_API_KEY required"
+  [ -z "$DOCKER_USERNAME" ] && msg_err "$DOCKER_USERNAME required"
+  [ -z "$DOCKER_API_KEY" ] && msg_err "$DOCKER_API_KEY required"
   [ -z "$KUMA_VERSION" ] && msg_err "Error: --version required"
 
   case $op in

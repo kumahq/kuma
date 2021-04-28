@@ -47,7 +47,7 @@ spec:
     spec:
       containers:
       - name: kuma-example-web
-        image: kong-docker-kuma-ci-docker.bintray.io/curl
+        image: registry-1.docker.io/curl
         imagePullPolicy: IfNotPresent
         command:
         - nc

@@ -728,7 +728,7 @@ spec:
         kubernetes.io/os: linux
       containers:
         - name: control-plane
-          image: "kong-docker-kuma-docker.bintray.io/kuma-cp:0.0.1"
+          image: "registry-1.docker.io/kuma-cp:0.0.1"
           imagePullPolicy: IfNotPresent
           env:
             - name: KUMA_API_SERVER_READ_ONLY
@@ -744,7 +744,7 @@ spec:
             - name: KUMA_GENERAL_TLS_KEY_FILE
               value: "/var/run/secrets/kuma.io/tls-cert/tls.key"
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
-              value: "kong-docker-kuma-docker.bintray.io/kuma-init:0.0.1"
+              value: "registry-1.docker.io/kuma-init:0.0.1"
             - name: KUMA_MODE
               value: "standalone"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
@@ -758,7 +758,7 @@ spec:
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED
               value: "false"
             - name: KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_IMAGE
-              value: "kong-docker-kuma-docker.bintray.io/kuma-dp:0.0.1"
+              value: "registry-1.docker.io/kuma-dp:0.0.1"
             - name: KUMA_STORE_KUBERNETES_SYSTEM_NAMESPACE
               value: "kuma-system"
             - name: KUMA_STORE_TYPE

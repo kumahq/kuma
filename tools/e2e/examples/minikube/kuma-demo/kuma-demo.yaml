@@ -135,7 +135,7 @@ spec:
       serviceAccountName: demo-client-service-account
       containers:
       - name: demo-client
-        image: kong-docker-kuma-ci-docker.bintray.io/curl
+        image: registry-1.docker.io/curl
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000

@@ -8,7 +8,7 @@ Parameters:
       to locate and reference resources created by that stack.
   Image:
     Type: String
-    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:1.0.8"
+    Default: "registry-1.docker.io/kuma-cp:1.0.8"
     Description: The name of the kuma-cp docker image
   AllowedCidr:
     Type: String
