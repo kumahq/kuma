@@ -229,6 +229,12 @@ func WithCtlOpt(name, value string) DeployOptionsFunc {
 	}
 }
 
+func WithIPv6(isipv6 bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.isipv6 = isipv6
+	}
+}
+
 func newDeployOpt(fs ...DeployOptionsFunc) *deployOptions {
 	rv := &deployOptions{
 		installationMode: KumactlInstallationMode,

@@ -77,7 +77,9 @@ networking:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma3)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = []DeployOptionsFunc{
+			WithIPv6(true),
+		}
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
