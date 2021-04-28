@@ -12107,7 +12107,7 @@ spec:
             - mountPath: "/var/run/kuma.io/prometheus-sd"
               name: kuma-prometheus-sd-volume
         - name: kuma-prometheus-sd
-          image: kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd:0.0.1
+          image: docker.io/kumahq/kuma-prometheus-sd:0.0.1
           imagePullPolicy: IfNotPresent
           args:
             - run

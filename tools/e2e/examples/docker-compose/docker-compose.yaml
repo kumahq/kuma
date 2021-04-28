@@ -171,7 +171,7 @@ services:
   # Example client deployed into Kuma mesh.
   #
   kuma-example-client:
-    image: kong-docker-kuma-ci-docker.bintray.io/curl
+    image: docker.io/kumahq/curl
     command:
     - nc
     - -lk
@@ -249,7 +249,7 @@ services:
   # Example Web deployed into Kuma mesh.
   #
   kuma-example-web:
-    image: kong-docker-kuma-ci-docker.bintray.io/curl
+    image: docker.io/kumahq/curl
     command:
     - nc
     - -lk
