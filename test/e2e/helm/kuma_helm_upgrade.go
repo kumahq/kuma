@@ -28,9 +28,11 @@ func UpgradingWithHelmChart() {
 		Expect(cluster.DeleteKuma(deployOptsFuncs...)).To(Succeed())
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
+
 	type testCase struct {
 		initialChartVersion string
 	}
+
 	DescribeTable(
 		"should successfully upgrade Kuma via Helm",
 		func(given testCase) {
@@ -59,7 +61,6 @@ func UpgradingWithHelmChart() {
 
 			err = NewClusterSetup().
 				Install(Kuma(core.Standalone, deployOptsFuncs...)).
-				Install(KumaDNS()).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 

@@ -10,6 +10,8 @@ import (
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
+	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -74,6 +76,7 @@ var _ = Describe("kumactl get secrets", func() {
 					NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 						return store, nil
 					},
+					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
 				},
 			}
 
