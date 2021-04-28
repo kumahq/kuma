@@ -188,6 +188,13 @@ func TransparentProxying(transparentProxying *mesh_proto.Dataplane_Networking_Tr
 	})
 }
 
+func NoBindToPort() ListenerBuilderOpt {
+	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+		config.AddV2(&v2.TransparentProxyingConfigurer{})
+		config.AddV3(&v3.TransparentProxyingConfigurer{})
+	})
+}
+
 func TcpProxy(statsName string, clusters ...envoy_common.ClusterSubset) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV2(&v2.TcpProxyConfigurer{
