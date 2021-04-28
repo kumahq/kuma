@@ -74,11 +74,11 @@ var _ = Describe("VIPOutbounds", func() {
 		// when
 		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, vipList, externalServices.Items)
 		// and
-		Expect(outbounds).To(HaveLen(4))
+		Expect(outbounds).To(HaveLen(5))
 		// and
-		Expect(outbounds[3].GetTags()[mesh_proto.ServiceTag]).To(Equal("service-5"))
+		Expect(outbounds[4].GetTags()[mesh_proto.ServiceTag]).To(Equal("service-5"))
 		// and
-		Expect(outbounds[3].Port).To(Equal(dns.VIPListenPort))
+		Expect(outbounds[4].Port).To(Equal(dns.VIPListenPort))
 	})
 
 	It("shouldn't add outbounds from other meshes", func() {
@@ -254,6 +254,10 @@ var _ = Describe("VIPOutbounds", func() {
         port: 80
         tags:
           kuma.io/service: second-external-service
+      - address: 240.0.0.1
+        port: 80
+        tags:
+          kuma.io/service: service-1
       - address: 240.0.0.2
         port: 80
         tags:
