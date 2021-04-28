@@ -194,8 +194,8 @@ data:
       "editable": true,
       "gnetId": 11775,
       "graphTooltip": 0,
-      "id": 2,
-      "iteration": 1617908292172,
+      "id": 3,
+      "iteration": 1619601583109,
       "links": [],
       "panels": [
         {
@@ -2286,7 +2286,7 @@ data:
               "refId": "B"
             },
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",dataplane=\"$dataplane\",envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",dataplane=\"$dataplane\",envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing",
@@ -2391,7 +2391,7 @@ data:
               "refId": "A"
             },
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",dataplane=\"$dataplane\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing {{envoy_response_code_class}}xx",
@@ -2922,9 +2922,9 @@ data:
           {
             "allValue": null,
             "current": {
-              "selected": false,
-              "text": "kuma-demo-backend-v0-56db47c579-qql6t.kuma-demo",
-              "value": "kuma-demo-backend-v0-56db47c579-qql6t.kuma-demo"
+              "selected": true,
+              "text": "kuma-demo-backend-v0-56db47c579-pjztb.kuma-demo",
+              "value": "kuma-demo-backend-v0-56db47c579-pjztb.kuma-demo"
             },
             "datasource": "Prometheus",
             "definition": "label_values(envoy_server_live{mesh=\"$mesh\"}, dataplane)",
@@ -9960,8 +9960,8 @@ data:
       "editable": true,
       "gnetId": null,
       "graphTooltip": 0,
-      "id": 4,
-      "iteration": 1617611866352,
+      "id": 1,
+      "iteration": 1619601383600,
       "links": [],
       "panels": [
         {
@@ -10222,7 +10222,7 @@ data:
           "pluginVersion": "7.4.3",
           "targets": [
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\",envoy_cluster_name!~\"localhost_.*\",envoy_cluster_name!=\"kuma_envoy_admin\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\",envoy_cluster_name!~\"localhost_.*\",envoy_cluster_name!=\"kuma_envoy_admin\",envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "",
@@ -10420,7 +10420,7 @@ data:
               "refId": "C"
             },
             {
-              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m]))",
+              "expr": "sum(rate(envoy_cluster_upstream_rq_total{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\",envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m]))",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing",
@@ -10525,7 +10525,7 @@ data:
               "refId": "A"
             },
             {
-              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\"}[1m])) by (envoy_response_code_class)",
+              "expr": "sum(rate(envoy_cluster_external_upstream_rq_xx{mesh=\"$mesh\",kuma_io_services=~\".*$service.*\", envoy_cluster_name!~\"localhost_.*\", envoy_cluster_name!=\"kuma_envoy_admin\", envoy_cluster_name!=\"kuma_metrics_hijacker\"}[1m])) by (envoy_response_code_class)",
               "hide": false,
               "interval": "",
               "legendFormat": "Outgoing {{envoy_response_code_class}}xx",
