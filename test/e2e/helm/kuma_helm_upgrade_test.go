@@ -61,7 +61,6 @@ var _ = Describe("Test upgrading with Helm chart", func() {
 
 			err = NewClusterSetup().
 				Install(Kuma(core.Standalone, deployOptsFuncs...)).
-				Install(KumaDNS()).
 				Setup(cluster)
 			Expect(err).ToNot(HaveOccurred())
 
