@@ -135,7 +135,7 @@ spec:
       serviceAccountName: demo-client-service-account
       containers:
       - name: demo-client
-        image: registry-1.docker.io/curl
+        image: registry-1.docker.io/kumahq/curl
         imagePullPolicy: IfNotPresent
         ports:
         - containerPort: 3000

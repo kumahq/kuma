@@ -8,7 +8,7 @@ Parameters:
       to locate and reference resources created by that stack.
   Image:
     Type: String
-    Default: "registry-1.docker.io/kuma-dp:1.0.8"
+    Default: "registry-1.docker.io/kumahq/kuma-dp:1.0.8"
     Description: The name of the kuma-dp docker image
   WorkloadName:
     Type: String

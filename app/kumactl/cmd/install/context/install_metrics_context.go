@@ -26,7 +26,7 @@ func DefaultInstallMetricsContext() InstallMetricsContext {
 	return InstallMetricsContext{
 		TemplateArgs: MetricsTemplateArgs{
 			Namespace:               "kuma-metrics",
-			KumaPrometheusSdImage:   "registry-1.docker.io/kuma-prometheus-sd",
+			KumaPrometheusSdImage:   "registry-1.docker.io/kumahq/kuma-prometheus-sd",
 			KumaPrometheusSdVersion: kuma_version.Build.Version,
 			KumaCpAddress:           "grpc://kuma-control-plane.kuma-system:5676",
 			WithoutPrometheus:       false,

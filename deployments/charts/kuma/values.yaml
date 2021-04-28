@@ -112,7 +112,7 @@ controlPlane:
     # -- Kuma CP ImagePullPolicy
     pullPolicy: IfNotPresent
     # -- Kuma CP image repository
-    repository: "kuma-cp"
+    repository: "kumahq/kuma-cp"
 
   # -- (list of { Env: string, Secret: string, Key: string }) Secrets to add as environment variables,
   # where `Env` is the name of the env variable,
@@ -160,13 +160,13 @@ cni:
 dataPlane:
   image:
     # -- The Kuma DP image repository
-    repository: "kuma-dp"
+    repository: "kumahq/kuma-dp"
     # -- Kuma DP ImagePullPolicy
     pullPolicy: IfNotPresent
 
   initImage:
     # -- The Kuma DP init image repository
-    repository: "kuma-init"
+    repository: "kumahq/kuma-init"
 
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
@@ -190,4 +190,4 @@ ingress:
 kumactl:
   image:
     # -- The kumactl image repository
-    repository: kumactl
+    repository: kumahq/kumactl

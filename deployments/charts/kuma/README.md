@@ -42,7 +42,7 @@ A Helm chart for the Kuma Control Plane
 | controlPlane.tls.kdsGlobalServer.secretName | string | `""` | Secret that contains tls.crt, key.crt for protecting cross cluster communication |
 | controlPlane.tls.kdsRemoteClient.secretName | string | `""` | Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification |
 | controlPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma CP ImagePullPolicy |
-| controlPlane.image.repository | string | `"kuma-cp"` | Kuma CP image repository |
+| controlPlane.image.repository | string | `"kumahq/kuma-cp"` | Kuma CP image repository |
 | controlPlane.secrets | list of { Env: string, Secret: string, Key: string } | `nil` | Secrets to add as environment variables, where `Env` is the name of the env variable, `Secret` is the name of the Secret, and `Key` is the key of the Secret value to use |
 | controlPlane.envVars | object | `{}` | Additional environment variables that will be passed to the control plane |
 | controlPlane.webhooks.validator.additionalRules | string | `""` | Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma. |
@@ -57,9 +57,9 @@ A Helm chart for the Kuma Control Plane
 | cni.image.registry | string | `"docker.io"` | CNI image registry |
 | cni.image.repository | string | `"lobkovilya/install-cni"` | CNI image repository |
 | cni.image.tag | string | `"0.0.7"` | CNI image tag |
-| dataPlane.image.repository | string | `"kuma-dp"` | The Kuma DP image repository |
+| dataPlane.image.repository | string | `"kumahq/kuma-dp"` | The Kuma DP image repository |
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
-| dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
+| dataPlane.initImage.repository | string | `"kumahq/kuma-init"` | The Kuma DP init image repository |
 | ingress.enabled | bool | `false` | If true, it deploys Ingress for cross cluster communication |
 | ingress.mesh | string | `"default"` | Mesh to which Dataplane Ingress belongs to |
 | ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
@@ -68,7 +68,7 @@ A Helm chart for the Kuma Control Plane
 | ingress.service.annotations | object | `{}` | Additional annotations to put on the Ingress service |
 | ingress.service.port | int | `10001` | Port on which Ingress is exposed |
 | ingress.annotations | object | `{}` | Additional deployment annotation |
-| kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
+| kumactl.image.repository | string | `"kumahq/kumactl"` | The kumactl image repository |
 
 ## Custom Resource Definitions
 
