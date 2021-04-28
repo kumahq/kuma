@@ -1,9 +1,8 @@
 package healthcheck_test
 
 import (
+	"github.com/kumahq/kuma/test/e2e/healthcheck"
 	. "github.com/onsi/ginkgo"
-
-	"github.com/kumahq/kuma/test/e2e/externalservices"
 )
 
-var _ = Describe("Test application HealthCheck on Kubernetes/Universal", externalservices.ExternalServicesOnKubernetes)
+var _ = Describe("Test application HealthCheck on Kubernetes/Universal", healthcheck.ApplicationHealthCheckOnKubernetesUniversal)
