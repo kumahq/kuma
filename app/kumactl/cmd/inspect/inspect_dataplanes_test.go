@@ -22,6 +22,8 @@ import (
 
 	"github.com/spf13/cobra"
 
+	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -403,6 +405,7 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 					NewDataplaneOverviewClient: func(*config_proto.ControlPlaneCoordinates_ApiServer) (resources.DataplaneOverviewClient, error) {
 						return testClient, nil
 					},
+					NewAPIServerClient: kumactl_resources.NewAPIServerClient,
 				},
 			}
 
