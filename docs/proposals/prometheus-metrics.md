@@ -101,7 +101,7 @@ spec:
     spec:
       containers:
       - name: kuma-tcp-echo
-        image: registry-1.docker.io/kuma-tcp-echo:0.1.0
+        image: docker.io/kuma-tcp-echo:0.1.0
         imagePullPolicy: Always
         ports:
         - containerPort: 8000

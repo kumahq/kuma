@@ -171,7 +171,7 @@ services:
   # Example client deployed into Kuma mesh.
   #
   kuma-example-client:
-    image: registry-1.docker.io/kumahq/curl
+    image: docker.io/kumahq/curl
     command:
     - nc
     - -lk
@@ -249,7 +249,7 @@ services:
   # Example Web deployed into Kuma mesh.
   #
   kuma-example-web:
-    image: registry-1.docker.io/kumahq/curl
+    image: docker.io/kumahq/curl
     command:
     - nc
     - -lk

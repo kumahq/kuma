@@ -2,7 +2,7 @@
 
 set -e
 
-[ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="registry-1.docker.io"
+[ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="docker.io"
 KUMA_COMPONENTS=("kuma-cp" "kuma-dp" "kumactl" "kuma-init" "kuma-prometheus-sd")
 
 function msg_green {

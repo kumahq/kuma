@@ -1,7 +1,7 @@
 global:
   image:
     # -- Default registry for all Kuma Images
-    registry: "registry-1.docker.io"
+    registry: "docker.io"
     # -- The default tag for all Kuma images, which itself defaults to .Chart.AppVersion
     tag:
 

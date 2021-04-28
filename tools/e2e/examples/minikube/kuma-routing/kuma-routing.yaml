@@ -47,7 +47,7 @@ spec:
     spec:
       containers:
       - name: kuma-example-web
-        image: registry-1.docker.io/kumahq/curl
+        image: docker.io/kumahq/curl
         imagePullPolicy: IfNotPresent
         command:
         - nc
