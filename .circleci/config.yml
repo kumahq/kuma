@@ -795,34 +795,38 @@ jobs:
         command: make verify/traffic-routing/minikube/with-mtls
 
   release:
-    executor: golang
+    executor: vm
     steps:
     - checkout
-    - setup_remote_docker:
-        version: 19.03.12
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
-        name: "Install Docker client"
+        name: "Install Go"
         command: |
-          VER="19.03.12"
-          curl -L -o /tmp/docker-$VER.tgz https://download.docker.com/linux/static/stable/x86_64/docker-$VER.tgz
-          tar -xz -C /tmp -f /tmp/docker-$VER.tgz
-          mv /tmp/docker/docker /usr/bin
+          apt update && apt install -y curl git make
+          # see https://golang.org/doc/install#tarball
+          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
+    - run:
+        name: "Download Go modules"
+        command: go mod download
     - run:
         name: Build Packages
-        command: ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
     - run:
         name: Push Packages
-        command: ./tools/releases/distros.sh --release --version $CIRCLE_TAG
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          ./tools/releases/distros.sh --release --version $CIRCLE_TAG
     - run:
         name: Build Docker
-        command: ./tools/releases/docker.sh --build --version $CIRCLE_TAG
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          ./tools/releases/docker.sh --build --version $CIRCLE_TAG
     - run:
         name: Push Docker
-        command: ./tools/releases/docker.sh --push --version $CIRCLE_TAG
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          ./tools/releases/docker.sh --push --version $CIRCLE_TAG
 
   helm-release:
     executor: golang

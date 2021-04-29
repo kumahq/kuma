@@ -811,7 +811,7 @@ spec:
         # priority scheduling and that its resources are reserved
         # if it ever gets evicted.
         scheduler.alpha.kubernetes.io/critical-pod: ''
-        checksum/config: f6edafbaa0658567c76e0a81d05a24f7ec9545ebcda87578b3375affd596d456
+        checksum/config: 8c1781e5476779d07caea5030f6c3235f50854279b6123089b53d28034674127
     spec:
       nodeSelector:
       
@@ -889,8 +889,8 @@ spec:
   template:
     metadata:
       annotations:
-        checksum/config: 148b8a93229593dd197541012a6303971d7830d729f6ad39a51f81b8f530df3e
-        checksum/tls-secrets: 150bb5918bda187dac20c96da03f5afb3b75a155c9ac835f11517fa8953aeb09
+        checksum/config: aba058a922cd9666fca01c85b865edb7db982affb7af5da8a06d5de26fe65df4
+        checksum/tls-secrets: 60818142de220e484f5886e6ebc63ade84e2f72a96d3e3dbb48c00cae5923f19
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
