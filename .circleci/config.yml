@@ -617,11 +617,11 @@ jobs:
           command: |
             export PATH=$HOME/go/bin:$PATH
             helm repo add kuma https://kumahq.github.io/charts
-      - run: # build this a separate step so we can use -j in test/e2e
-          name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
-          command: |
-            export PATH=$HOME/go/bin:$PATH
-            make -j build
+#      - run: # build this a separate step so we can use -j in test/e2e
+#          name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
+#          command: |
+#            export PATH=$HOME/go/bin:$PATH
+#            make -j build
       - when:
           condition: << parameters.ipv6 >>
           steps:
