@@ -55,6 +55,7 @@ networking:
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: %s
+      team: server-owners
 `
 
 	EchoServerDataplaneWithServiceProbe = `
@@ -71,6 +72,7 @@ networking:
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: %s
+      team: server-owners
 `
 
 	EchoServerDataplaneTransparentProxy = `
@@ -85,6 +87,7 @@ networking:
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: http
+      team: server-owners
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
@@ -103,6 +106,7 @@ networking:
     servicePort: %s
     tags:
       kuma.io/service: demo-client
+      team: client-owners
   outbound:
   - port: 4000
     tags:
@@ -128,6 +132,7 @@ networking:
       tcp: {}
     tags:
       kuma.io/service: demo-client
+      team: client-owners
   outbound:
   - port: 4000
     tags:
@@ -150,6 +155,7 @@ networking:
   - port: %s
     tags:
       kuma.io/service: demo-client
+      team: client-owners
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
@@ -290,7 +296,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
 		"wget",
-		fmt.Sprintf("https://kong.bintray.com/kuma/kuma-%s-ubuntu-amd64.tar.gz", version),
+		fmt.Sprintf("https://download.konghq.com/mesh-alpine/kuma-%s-ubuntu-amd64.tar.gz", version),
 		"-O",
 		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
 	}).Run()

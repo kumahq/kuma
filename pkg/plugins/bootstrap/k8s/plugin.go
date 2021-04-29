@@ -2,6 +2,8 @@ package k8s
 
 import (
 	"context"
+	"os"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -16,6 +18,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_kube_cache "github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/cache"
+	"github.com/kumahq/kuma/pkg/plugins/bootstrap/k8s/xds/hooks"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
@@ -123,6 +126,15 @@ func secretClient(systemNamespace string, config *rest.Config, scheme *kube_runt
 }
 
 func (p *plugin) AfterBootstrap(b *core_runtime.Builder, _ core_plugins.PluginConfig) error {
+	apiServerAddress := os.Getenv("KUBERNETES_SERVICE_HOST")
+	port := os.Getenv("KUBERNETES_SERVICE_PORT")
+	apiServerPort, err := strconv.ParseUint(port, 10, 32)
+	if err != nil {
+		return errors.Wrapf(err, "could not parse KUBERNETES_SERVICE_PORT environment variable")
+	}
+
+	b.XDSHooks().AddResourceSetHook(hooks.NewApiServerBypass(apiServerAddress, uint32(apiServerPort)))
+
 	return nil
 }
 
