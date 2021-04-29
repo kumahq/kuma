@@ -16,6 +16,8 @@ type Cache struct {
 	metrics *prometheus.GaugeVec
 }
 
+// New creates a cache where items are evicted after being present for `expirationTime`.
+// `name` is used to name the gauge used for metrics reporting.
 func New(expirationTime time.Duration, name string, metrics metrics.Metrics) (*Cache, error) {
 	metric := prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name: name,
@@ -31,7 +33,20 @@ func New(expirationTime time.Duration, name string, metrics metrics.Metrics) (*C
 	}, nil
 }
 
-func (c *Cache) Get(ctx context.Context, key string, fn func(context.Context, string) (interface{}, error)) (interface{}, error) {
+type Retreiver interface {
+	// Call method called when a cache miss happens which will return the actual value that needs to be cached
+	Call(ctx context.Context, key string) (interface{}, error)
+}
+type FetcherFunc func(context.Context, string) (interface{}, error)
+
+func (f FetcherFunc) Call(ctx context.Context, key string) (interface{}, error) {
+	return f(ctx, key)
+}
+
+// GetOrRetrieve will return the cached value and if it isn't present will call `Retreiver`.
+// It is guaranteed there will only on one concurrent call to `Retreiver` for each key, other accesses to the key will be blocked until `Retreiver.Call` returns.
+// If `Retreiver.Call` fails the error will not be cached and subsequent calls will call the `Retreiver` again.
+func (c *Cache) GetOrRetrieve(ctx context.Context, key string, retriever Retreiver) (interface{}, error) {
 	v, found := c.cache.Get(key)
 	if found {
 		c.metrics.WithLabelValues("get", "hit").Inc()
@@ -43,7 +58,7 @@ func (c *Cache) Get(ctx context.Context, key string, fn func(context.Context, st
 		defer c.onceMap.Delete(key)
 		c.metrics.WithLabelValues("get", "hit-wait").Dec()
 		c.metrics.WithLabelValues("get", "miss").Inc()
-		res, err := fn(ctx, key)
+		res, err := retriever.Call(ctx, key)
 		if err != nil {
 			c.metrics.WithLabelValues("get", "error").Inc()
 			return nil, err
