@@ -12,7 +12,7 @@ import (
 func TestE2ETrafficPermissionUniversal(t *testing.T) {
 	if framework.IsK8sClustersStarted() {
 		RegisterFailHandler(Fail)
-		RunSpecs(t, "E2E Traffic Permission Universal Suite")
+		RunSpecs(t, "Traffic Permission Universal Suite")
 	} else {
 		t.SkipNow()
 	}
