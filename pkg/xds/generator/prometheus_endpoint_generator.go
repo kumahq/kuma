@@ -64,7 +64,8 @@ func (g PrometheusEndpointGenerator) Generate(ctx xds_context.Context, proxy *co
 
 	metricsHijackerClusterName := envoy_names.GetMetricsHijackerClusterName()
 	cluster, err := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-		Configure(envoy_clusters.StaticClusterUnixSocket(metricsHijackerClusterName, envoy_common.MetricsHijackerSocketName())).
+		Configure(envoy_clusters.StaticClusterUnixSocket(metricsHijackerClusterName,
+			envoy_common.MetricsHijackerSocketName(proxy.Dataplane.Meta.GetName(), proxy.Dataplane.Meta.GetMesh()))).
 		Build()
 	if err != nil {
 		return nil, err

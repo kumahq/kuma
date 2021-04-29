@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 
+	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -24,10 +25,10 @@ type Hijacker struct {
 	address        string
 }
 
-func New(envoyAdminPort uint32) *Hijacker {
+func New(dataplane kumadp.Dataplane, envoyAdminPort uint32) *Hijacker {
 	return &Hijacker{
 		envoyAdminPort: envoyAdminPort,
-		address:        envoy.MetricsHijackerSocketName(),
+		address:        envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
 	}
 }
 

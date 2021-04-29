@@ -171,7 +171,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 
 			components = append(components, dataplane)
 
-			metricsServer := metrics.New(adminPort)
+			metricsServer := metrics.New(cfg.Dataplane, adminPort)
 			components = append(components, metricsServer)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
