@@ -1,4 +1,4 @@
-# VirtualHost policy
+# VirtualOutbound policy
 
 ## Context
 
@@ -11,84 +11,109 @@ We propose here to create a new policy which will enable users to create arbitra
 We will add a new policy type:
 
 ```yaml
-type: VirtualHost
+type: VirtualOutbound
 mesh: string # The mesh this policy applies to
 name: string #The name of the policy
-tags:
-    # A map of tags that should be taken for creating the tag selector. 
+selectors:
+  - match:
+    # A dataplane selector that should be taken for selecting dps that should have a hostPort generated.
     # It can either have a value or have "*" in which case a different vip will be generated for each tuple
-host: string # A go template with a special function `tag` which can use tags present in the `tags` section.
-port: int # A port to expose the virtual host on
+conf:
+    host: string # A go template that uses tags to compile the template
+    port: int # A port to expose the virtual host on
+    tags:
+      # A set of key values that map tags to keys that can be used in the template of host
 ```
-
-It is impossible to create a VirtualHost that hasn't got a tag `kuma,io/service`.
 
 ### Example
 
 Simple service with no wildcard replacement:
 
 ```yaml
-type: VirtualHost
+type: VirtualOutbound
 mesh: default
 name: my-service
-tags:
-  kuma.io/service: my-service
-host: httpbin.mesh
-port: 8080
+selectors:
+  - match:
+    kuma.io/service: my-service
+conf:
+  host: httpbin.mesh
+  port: 8080
 ```
 
 Create different hostnames for each version of a service:
 
 ```yaml
-type: VirtualHost
+type: VirtualOutbound
 mesh: default
 name: my-service-by-version
-tags:
-  kuma.io/service: "*"
-  version: "*"
-host: "{{tag version}}.{{tag kuma.io/service}}.mesh"
-port: 8080
+selectors:
+  - match:
+    kuma.io/service: "*"
+    version: "*"
+conf:
+  host: "{{version}}.{{service}}.mesh"
+  port: 8080
+  tags:
+    "kuma.io/service": service
+    "version": version
 ```
 
 A policy to enable things to be backward compatible:
 
 ```yaml
-type: VirtualHost
+type: VirtualOutbound
 mesh: default
-name: my-service-by-version
-tags:
-  kuma.io/service: "*"
-host: "{{tag kuma.io/service}}.mesh"
-port: 80
+name: default
+selectors:
+  - match:
+    kuma.io/service: "*"
+conf:
+  host: "{{service}}.mesh"
+  port: 80
+  tags:
+    "kuma.io/service": service
 ```
 
 A virtual host to get per zone domains
 
 ```yaml
-type: VirtualHost
+type: VirtualOutbound
 mesh: default
-name: my-service-by-zone
-tags:
-  kuma.io/service: "*"
-  kuma.io/zone: "*"
-host: "{{tag kuma.io/service}}.{{kuma.io/zone}}.mesh"
-port: 80
+name: service-by-zone
+selectors:
+  - match:
+    kuma.io/service: "*"
+conf:
+  host: "{{service}}.{{zone}}.mesh"
+  port: 80
+  tags:
+    "kuma.io/service": service
+    "kuma.io/zone": zone
 ```
 
-
 ### Implementation
+The vip management and DNS propagation is already present we will simply add AAAA record to add IPv6 support to the DNS.
 
-The vip management and DNS propagation is already present.
-The main changes will be:
-- Replace `vips` by `virtualHosts` which will be a map of a selector to an ip and a port.
-- The selector for vips is: `<policyName>{key1=value1,key2=value2}` (similar to what is done for SNIs in ingress).
-- Expand the `vip_allocator` to allocate vips based on tuples of matches defined in the tags section of each policy.
+We'll add a `hostname` field in the `Dataplane_Networking_Outbound`.
+This field will be visible to users in their dataplane insights.
+
+Hostnames that overlaps won't be treated any differently. The user has the endpoint view to troubleshoot.
+In the future we might want to add a weight to prioritize a `VirtualOutbound` over another.
+
+VIPs will be allocated per DP and won't need to be persisted anywhere outside of the DP.
+This implies that a service may have a different ip on different DPs.
+
+### Steps to implement
+
+- Add hostname to outbound and populate it in `VipOutbounds()`.
+- Update `dns_generator` to read the hostname from the `hostname` field in the outbound instead of generating one.
+- Add `VirtualOutbound` policy and on reconcile populate the outbounds of the matching dataplanes accordingly.
 
 ### Backward compatibility
 
-- This new setup will have a different IPAM and will run concurrently to the existing one.
-- Add a flag to disable the old way to allocate vips.
-- Once it is proven reliable enough we will be able to add a default `virtualHost` and remove the auto generated vips.
+- Make sure that the new VirtualOutbound use ips not already used by the current vip allocator (execute them sequentially).
+- Once it is proven reliable enough we will be able to add a default `virtualOutbound` and remove the auto generated vips.
 
 ## Summary
 
