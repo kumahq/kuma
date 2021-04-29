@@ -22,7 +22,6 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/ca/issuer"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -136,7 +135,7 @@ func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_
 
 func (d *DataplaneReconciler) generateSnapshot(dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (envoy_cache.Snapshot, error) {
 	requestor := sds_identity.Identity{
-		Services: dataplane.Spec.TagSet().Values(mesh_proto.ServiceTag),
+		Services: dataplane.Spec.TagSet(),
 		Mesh:     dataplane.GetMeta().GetMesh(),
 	}
 	identitySecret, err := d.identityProvider.Get(context.Background(), requestor)
