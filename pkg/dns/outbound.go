@@ -29,10 +29,6 @@ func VIPOutbounds(
 	serviceVIPMap := map[string]vipEntry{}
 	services := []string{}
 	for _, dataplane := range dataplanes {
-		if resourceKey == model.MetaToResourceKey(dataplane.Meta) {
-			continue
-		}
-
 		if dataplane.Spec.IsIngress() {
 			for _, service := range dataplane.Spec.Networking.Ingress.AvailableServices {
 				if service.Mesh == resourceKey.Mesh {
