@@ -8,8 +8,9 @@ import (
 	"net/http"
 	"os"
 
-	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/pkg/errors"
+
+	kumadp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
