@@ -81,8 +81,6 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 				},
 			},
 			expected: `
-            name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 192.168.0.1
@@ -98,15 +96,22 @@ var _ = Describe("NetworkRbacConfigurer", func() {
                         permissions:
                         - any: true
                         principals:
-                        - authenticated:
-                            principalName:
-                              exact: spiffe://default/web1
+                        - andIds:
+                            ids:
+                            - authenticated:
+                                principalName:
+                                  exact: kuma://version/1.0
+                            - authenticated:
+                                principalName:
+                                  exact: spiffe://default/web1
                   statPrefix: inbound_192_168_0_1_8080.
               - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost_8080
+            name: inbound:192.168.0.1:8080
+            trafficDirection: INBOUND
 `,
 		}),
 		Entry("basic tcp_proxy with network RBAC disabled", testCase{

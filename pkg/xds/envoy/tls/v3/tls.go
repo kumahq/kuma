@@ -260,6 +260,14 @@ func ServiceSpiffeIDMatcher(mesh string, service string) *envoy_type_matcher.Str
 	}
 }
 
+func KumaIDMatcher(tagName, tagValue string) *envoy_type_matcher.StringMatcher {
+	return &envoy_type_matcher.StringMatcher{
+		MatchPattern: &envoy_type_matcher.StringMatcher_Exact{
+			Exact: xds_tls.KumaID(tagName, tagValue),
+		},
+	}
+}
+
 func StaticDownstreamTlsContext(keyPair *tls.KeyPair) *envoy_tls.DownstreamTlsContext {
 	return &envoy_tls.DownstreamTlsContext{
 		CommonTlsContext: &envoy_tls.CommonTlsContext{
