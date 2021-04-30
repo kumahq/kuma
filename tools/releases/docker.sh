@@ -46,7 +46,7 @@ function build() {
 }
 
 function docker_login() {
-  docker login -u "$DOCKER_USERNAME" -p "$DOCKER_API_KEY" $KUMA_DOCKER_REPO
+  docker login -u $DOCKER_USERNAME -p $DOCKER_API_KEY $KUMA_DOCKER_REPO
 }
 
 function docker_logout() {
