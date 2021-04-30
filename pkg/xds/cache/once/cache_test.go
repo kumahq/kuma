@@ -16,7 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-var _ = Describe("ClusterLoadAssignment Cache", func() {
+var _ = Describe("OnceCache", func() {
 	var metrics core_metrics.Metrics
 	var cache *once.Cache
 
@@ -34,7 +34,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 	It("should cache Get() queries", func() {
 		var count int32 = 0
 		var val int32 = 1
-		fn := once.FetcherFunc(func(ctx context.Context, s string) (interface{}, error) {
+		fn := once.RetrieverFunc(func(ctx context.Context, s string) (interface{}, error) {
 			atomic.AddInt32(&count, 1)
 			v := atomic.LoadInt32(&val)
 			return v, nil
@@ -85,7 +85,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 	It("should cache concurrent Get() requests", func() {
 		var count int32 = 0
 		var val int32 = 1
-		fn := once.FetcherFunc(func(ctx context.Context, s string) (interface{}, error) {
+		fn := once.RetrieverFunc(func(ctx context.Context, s string) (interface{}, error) {
 			atomic.AddInt32(&count, 1)
 			v := atomic.LoadInt32(&val)
 			return v, nil
@@ -104,6 +104,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		wg.Wait()
 
 		Expect(atomic.LoadInt32(&count)).To(Equal(int32(1)))
+		Expect(test_metrics.FindMetric(metrics, "cache", "operation", "get", "result", "error")).To(BeNil())
 		Expect(test_metrics.FindMetric(metrics, "cache", "operation", "get", "result", "miss").Gauge.GetValue()).To(Equal(1.0))
 		hitWaits := 0.0
 		if hw := test_metrics.FindMetric(metrics, "cache", "operation", "get", "result", "hit-wait"); hw != nil {
@@ -119,10 +120,10 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 	It("should retry previously failed Get() requests", func() {
 		var count int32 = 0
 		var hasError int32 = 1
-		fn := once.FetcherFunc(func(ctx context.Context, s string) (interface{}, error) {
+		fn := once.RetrieverFunc(func(ctx context.Context, s string) (interface{}, error) {
 			atomic.AddInt32(&count, 1)
 			if atomic.LoadInt32(&hasError) != 0 {
-				return "", errors.New("It's an error!")
+				return "", errors.New("it's an error")
 			}
 			return "hello", nil
 		})

@@ -43,7 +43,7 @@ func NewCache(
 }
 
 func (c *Cache) GetHash(ctx context.Context, mesh string) (string, error) {
-	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.FetcherFunc(func(ctx context.Context, key string) (interface{}, error) {
+	elt, err := c.cache.GetOrRetrieve(ctx, mesh, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
 		snapshot, err := GetMeshSnapshot(ctx, key, c.rm, c.types, c.ipFunc)
 		if err != nil {
 			return nil, err

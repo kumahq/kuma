@@ -33,30 +33,36 @@ func New(expirationTime time.Duration, name string, metrics metrics.Metrics) (*C
 	}, nil
 }
 
-type Retreiver interface {
+type Retriever interface {
 	// Call method called when a cache miss happens which will return the actual value that needs to be cached
 	Call(ctx context.Context, key string) (interface{}, error)
 }
-type FetcherFunc func(context.Context, string) (interface{}, error)
+type RetrieverFunc func(context.Context, string) (interface{}, error)
 
-func (f FetcherFunc) Call(ctx context.Context, key string) (interface{}, error) {
+func (f RetrieverFunc) Call(ctx context.Context, key string) (interface{}, error) {
 	return f(ctx, key)
 }
 
-// GetOrRetrieve will return the cached value and if it isn't present will call `Retreiver`.
-// It is guaranteed there will only on one concurrent call to `Retreiver` for each key, other accesses to the key will be blocked until `Retreiver.Call` returns.
-// If `Retreiver.Call` fails the error will not be cached and subsequent calls will call the `Retreiver` again.
-func (c *Cache) GetOrRetrieve(ctx context.Context, key string, retriever Retreiver) (interface{}, error) {
+// GetOrRetrieve will return the cached value and if it isn't present will call `Retriever`.
+// It is guaranteed there will only on one concurrent call to `Retriever` for each key, other accesses to the key will be blocked until `Retriever.Call` returns.
+// If `Retriever.Call` fails the error will not be cached and subsequent calls will call the `Retriever` again.
+func (c *Cache) GetOrRetrieve(ctx context.Context, key string, retriever Retriever) (interface{}, error) {
 	v, found := c.cache.Get(key)
 	if found {
 		c.metrics.WithLabelValues("get", "hit").Inc()
 		return v, nil
 	}
-	o := c.onceMap.Get(key)
-	c.metrics.WithLabelValues("get", "hit-wait").Inc()
+	o, stored := c.onceMap.Get(key)
+	if !stored {
+		c.metrics.WithLabelValues("get", "hit-wait").Inc()
+	}
 	o.Do(func() (interface{}, error) {
 		defer c.onceMap.Delete(key)
-		c.metrics.WithLabelValues("get", "hit-wait").Dec()
+		val, found := c.cache.Get(key)
+		if found {
+			c.metrics.WithLabelValues("get", "hit").Inc()
+			return val, nil
+		}
 		c.metrics.WithLabelValues("get", "miss").Inc()
 		res, err := retriever.Call(ctx, key)
 		if err != nil {
@@ -69,5 +75,6 @@ func (c *Cache) GetOrRetrieve(ctx context.Context, key string, retriever Retreiv
 	if o.Err != nil {
 		return "", o.Err
 	}
-	return o.Value, nil
+	v, _ = c.cache.Get(key)
+	return v, nil
 }

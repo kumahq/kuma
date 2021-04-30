@@ -60,7 +60,7 @@ func NewCache(
 
 func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string, apiVersion envoy_common.APIVersion) (proto.Message, error) {
 	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, service, meshHash)
-	elt, err := c.cache.GetOrRetrieve(ctx, key, once.FetcherFunc(func(ctx context.Context, key string) (interface{}, error) {
+	elt, err := c.cache.GetOrRetrieve(ctx, key, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
 		dataplanes, err := topology.GetDataplanes(claCacheLog, ctx, c.rm, c.ipFunc, meshName)
 		if err != nil {
 			return nil, err

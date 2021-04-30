@@ -25,15 +25,16 @@ type omap struct {
 	m   map[string]*once
 }
 
-func (c *omap) Get(key string) *once {
+func (c *omap) Get(key string) (*once, bool) {
 	c.mtx.Lock()
 	defer c.mtx.Unlock()
 	o, exist := c.m[key]
 	if !exist {
 		o = &once{}
 		c.m[key] = o
+		return o, true
 	}
-	return o
+	return o, false
 }
 
 func (c *omap) Delete(key string) {
