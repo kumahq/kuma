@@ -842,6 +842,7 @@ function _kumactl_install {
       "control-plane:Install Kuma Control Plane on Kubernetes"
       "crds:Install Kuma Custom Resource Definitions on Kubernetes"
       "dns:Install DNS to Kubernetes"
+      "gateway:Install ingress gateway on Kubernetes"
       "logging:Install Logging backend in Kubernetes cluster (Loki)"
       "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
       "tracing:Install Tracing backend in Kubernetes cluster (Jaeger)"
@@ -860,6 +861,9 @@ function _kumactl_install {
     ;;
   dns)
     _kumactl_install_dns
+    ;;
+  gateway)
+    _kumactl_install_gateway
     ;;
   logging)
     _kumactl_install_logging
@@ -931,6 +935,15 @@ function _kumactl_install_dns {
   _arguments \
     '--namespace[namespace to look for Kuma Control Plane service]:' \
     '--port[port of the Kuma DNS server]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_gateway {
+  _arguments \
+    '--namespace[namespace to install gateway to]:' \
+    '--type[type of gateway to install]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
