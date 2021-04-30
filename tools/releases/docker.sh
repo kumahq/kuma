@@ -3,7 +3,7 @@
 set -e
 
 [ -z "$KUMA_DOCKER_REPO" ] && KUMA_DOCKER_REPO="docker.io"
-KUMA_DOCKER_REPO_ORG=${KUMA_DOCKER_REPO}/kumahq
+[ -z "$KUMA_DOCKER_REPO_ORG" ] && KUMA_DOCKER_REPO_ORG=${KUMA_DOCKER_REPO}/kumahq
 KUMA_COMPONENTS=("kuma-cp" "kuma-dp" "kumactl" "kuma-init" "kuma-prometheus-sd")
 
 function msg_green() {
@@ -46,7 +46,7 @@ function build() {
 }
 
 function docker_login() {
-  docker login -u "$DOCKER_USERNAME" -p "$DOCKER_API_KEY" $KUMA_DOCKER_REPO
+  docker login -u $DOCKER_USERNAME -p $DOCKER_API_KEY $KUMA_DOCKER_REPO
 }
 
 function docker_logout() {
