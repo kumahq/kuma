@@ -1,5 +1,18 @@
 # CHANGELOG
 
+## [1.1.5]
+> Released on  2021/04/28
+
+Changes:
+* feat: generate outbounds for itself [#1900](https://github.com//kumahq/kuma/pull/1900)
+* chore: migrate from bintray [#1901](https://github.com//kumahq/kuma/pull/1901)
+* chore: GUI updates and fixes [#1897](https://github.com//kumahq/kuma/pull/1897)
+* chore: kumactl check version after loading config [#1879](https://github.com/kumahq/kuma/pull/1879)
+* chore: transparent proxy improvements [#1852](https://github.com//kumahq/kuma/pull/1852)
+* chore upgrade Go to 16.3 and use go embed [#1864](https://github.com//kumahq/kuma/pull/1864) [#1865](https://github.com//kumahq/kuma/pull/1865)
+* fix: always set locality in multizone [#1863](https://github.com//kumahq/kuma/pull/1863)
+* fix: Envoy config is created based on old Dataplane [#1848](https://github.com//kumahq/kuma/pull/1848)
+
 ## [1.1.4]
 > Released on  2021/04/19
 
