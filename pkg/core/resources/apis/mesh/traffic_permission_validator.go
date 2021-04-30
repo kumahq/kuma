@@ -12,7 +12,12 @@ func (d *TrafficPermissionResource) Validate() error {
 }
 
 func (d *TrafficPermissionResource) validateSources() validators.ValidationError {
-	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, OnlyServiceTagAllowed)
+	return ValidateSelectors(validators.RootedAt("sources"), d.Spec.Sources, ValidateSelectorsOpts{
+		RequireAtLeastOneSelector: true,
+		ValidateSelectorOpts: ValidateSelectorOpts{
+			RequireAtLeastOneTag: true,
+		},
+	})
 }
 
 func (d *TrafficPermissionResource) validateDestinations() (err validators.ValidationError) {
@@ -20,7 +25,6 @@ func (d *TrafficPermissionResource) validateDestinations() (err validators.Valid
 		RequireAtLeastOneSelector: true,
 		ValidateSelectorOpts: ValidateSelectorOpts{
 			RequireAtLeastOneTag: true,
-			RequireService:       true,
 		},
 	})
 }
