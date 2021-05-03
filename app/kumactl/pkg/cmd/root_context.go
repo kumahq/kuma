@@ -52,6 +52,7 @@ type RootContext struct {
 	InstallCpContext      install_context.InstallCpContext
 	InstallMetricsContext install_context.InstallMetricsContext
 	InstallCRDContext     install_context.InstallCrdsContext
+	InstallDemoContext    install_context.InstallDemoContext
 }
 
 func DefaultRootContext() *RootContext {
@@ -86,6 +87,7 @@ func DefaultRootContext() *RootContext {
 		InstallCpContext:      install_context.DefaultInstallCpContext(),
 		InstallCRDContext:     install_context.DefaultInstallCrdsContext(),
 		InstallMetricsContext: install_context.DefaultInstallMetricsContext(),
+		InstallDemoContext:    install_context.DefaultInstallDemoContext(),
 	}
 }
 
