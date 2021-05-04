@@ -78,6 +78,15 @@ reusable:
            - /^release-.*/
            - gh-pages
 
+parameters:
+  run_workflow_eks_e2e:
+    default: true
+    type: boolean
+
+  run_workflow_clean_eks:
+    default: true
+    type: boolean
+
 executors:
   golang:
     docker:
@@ -937,6 +946,7 @@ workflows:
 #        ipv6: true
 
   clean-eks:
+    when: << pipeline.parameters.run_workflow_clean_eks >>
     triggers:
     - schedule:
         # run cleanup everyday at 02:00 - it's the last resort for cleanup of
@@ -949,6 +959,7 @@ workflows:
     - eks-delete-clusters
 
   e2e-eks:
+    when: << pipeline.parameters.run_workflow_eks_e2e >>
     triggers:
     - schedule:
         # run every Monday at 00:00
