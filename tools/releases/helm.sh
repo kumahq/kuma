@@ -9,6 +9,7 @@ CHARTS_DIR="./deployments/charts"
 CHARTS_PACKAGE_PATH=".cr-release-packages"
 CHARTS_INDEX_FILE="index.yaml"
 GH_PAGES_BRANCH="gh-pages"
+[ -z "$GH_REPO_URL" ] && GH_REPO_URL="git@github.com:${GH_OWNER}/${GH_REPO}.git"
 
 function msg_green {
   builtin echo -en "\033[1;32m"
@@ -65,7 +66,7 @@ function release {
 
 
   # Then build and upload the index file to github pages
-  git clone --single-branch --branch "${GH_PAGES_BRANCH}" git@github.com:${GH_OWNER}/${GH_REPO}.git
+  git clone --single-branch --branch "${GH_PAGES_BRANCH}" $GH_REPO_URL
 
   cr index \
     --owner "${GH_OWNER}" \

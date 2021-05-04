@@ -51,7 +51,7 @@ var _ = Describe("Converter", func() {
 					}},
 				},
 				expected: []*targetgroup.Group{{
-					Source: "kuma",
+					Source: "/meshes/demo/targets/backend-01/0",
 					Targets: []model.LabelSet{
 						{
 							"__address__": "192.168.0.1:1234",

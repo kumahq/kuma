@@ -1,6 +1,8 @@
 package v1
 
 import (
+	"fmt"
+
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/discovery/targetgroup"
 	"github.com/prometheus/prometheus/util/strutil"
@@ -79,7 +81,7 @@ func (c Converter) Convert(assignment *observability_v1.MonitoringAssignment) []
 
 	var groups []*targetgroup.Group
 
-	for _, target := range assignment.Targets {
+	for i, target := range assignment.Targets {
 		targetLabels := convertLabels(target.Labels).Merge(commonLabels)
 
 		targetLabels[dataplaneLabel] = model.LabelValue(target.Name)
@@ -89,7 +91,7 @@ func (c Converter) Convert(assignment *observability_v1.MonitoringAssignment) []
 		targetLabels[model.JobLabel] = model.LabelValue(assignment.Service)
 
 		group := &targetgroup.Group{
-			Source: "kuma",
+			Source: sourceName(assignment, target, i),
 			Targets: []model.LabelSet{{
 				model.AddressLabel: model.LabelValue(target.Address),
 			}},
@@ -108,4 +110,9 @@ func convertLabels(labels map[string]string) model.LabelSet {
 		labelSet[model.LabelName(name)] = model.LabelValue(value)
 	}
 	return labelSet
+}
+
+func sourceName(assignment *observability_v1.MonitoringAssignment, target *observability_v1.MonitoringAssignment_Target, i int) string {
+	// unique name, e.g. REST API uri
+	return fmt.Sprintf("/meshes/%s/targets/%s/%d", assignment.GetMesh(), target.GetName(), i)
 }

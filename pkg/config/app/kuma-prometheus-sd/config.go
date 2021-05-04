@@ -17,7 +17,7 @@ func DefaultConfig() Config {
 			Client: MonitoringAssignmentClientConfig{
 				Name:       "kuma_sd",
 				URL:        "grpc://localhost:5676",
-				ApiVersion: mads.API_V1_ALPHA1,
+				ApiVersion: mads.API_V1,
 			},
 		},
 		Prometheus: PrometheusConfig{

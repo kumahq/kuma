@@ -1,14 +1,12 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"regexp"
 	"strconv"
 	"strings"
 
 	"github.com/go-git/go-git/v5/plumbing/object"
-	"github.com/google/go-github/v32/github"
 	"github.com/iancoleman/orderedmap"
 )
 
@@ -105,17 +103,17 @@ func (g *Generator) addToLog(tag string, c *object.Commit) error {
 	return nil
 }
 
-func (g *Generator) getGithubName(c *object.Commit) string {
-	client := github.NewClient(nil)
-	prNum := g.getPRNum(c)
-	pr, resp, err := client.PullRequests.Get(context.Background(), "kumahq", "kuma", prNum)
-	if err != nil {
-		Warning("Was not able to get PR %d with response [%v]", prNum, resp)
-		return ""
-	}
-
-	return *pr.User.Login
-}
+//func (g *Generator) getGithubName(c *object.Commit) string {
+//	client := github.NewClient(nil)
+//	prNum := g.getPRNum(c)
+//	pr, resp, err := client.PullRequests.Get(context.Background(), "kumahq", "kuma", prNum)
+//	if err != nil {
+//		Warning("Was not able to get PR %d with response [%v]", prNum, resp)
+//		return ""
+//	}
+//
+//	return *pr.User.Login
+//}
 
 func (g *Generator) addChangelog(add string) {
 	g.changelog += add

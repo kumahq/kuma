@@ -78,6 +78,15 @@ reusable:
            - /^release-.*/
            - gh-pages
 
+parameters:
+  run_workflow_eks_e2e:
+    default: true
+    type: boolean
+
+  run_workflow_clean_eks:
+    default: true
+    type: boolean
+
 executors:
   golang:
     docker:
@@ -187,7 +196,7 @@ jobs:
         command: |
           for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
             make docker/tag/${image} \
-              BINTRAY_REGISTRY="${ECR_REGISTRY}" \
+              DOCKER_REGISTRY="${ECR_REGISTRY}" \
               KUMA_VERSION="${TAG}" && \
             docker push "${ECR_REGISTRY}"/${image}:"${TAG}" &
           done
@@ -658,6 +667,11 @@ jobs:
 
   images:
     executor: remote-docker
+    parameters:
+      docker_registry:
+        description: "Registry for container images"
+        type: string
+        default: "docker.io/kumahq"
     steps:
     - checkout
     # Mount files from the upstream jobs
@@ -667,7 +681,9 @@ jobs:
         version: 19.03.12
     - run:
         name: Build Docker images
-        command: make docker/build
+        command: |
+          make docker/build \
+            DOCKER_REGISTRY="<< parameters.docker_registry >>"
     - run:
         name: Save Docker images into TAR archives
         command: make docker/save
@@ -681,7 +697,7 @@ jobs:
     executor: vm
     parameters:
       use_local_kuma_images:
-        description: Use local Docker images from CircleCI workspace instead of downloading ones from bintray.io.
+        description: Use local Docker images from CircleCI workspace instead of downloading ones from docker.io.
         type: boolean
         default: true
     environment:
@@ -724,7 +740,7 @@ jobs:
         type: string
         default: "v1.20.0"
       use_local_kuma_images:
-        description: Use local Docker images from CircleCI workspace instead of downloading ones from bintray.io.
+        description: Use local Docker images from CircleCI workspace instead of downloading ones from docker.io.
         type: boolean
         default: true
     environment:
@@ -795,34 +811,38 @@ jobs:
         command: make verify/traffic-routing/minikube/with-mtls
 
   release:
-    executor: golang
+    executor: vm
     steps:
     - checkout
-    - setup_remote_docker:
-        version: 19.03.12
-    - restore_cache:
-        keys:
-        # prefer the exact match
-        - go.mod-{{ .Branch }}-{{ checksum "go.sum" }}
     - run:
-        name: "Install Docker client"
+        name: "Install Go"
         command: |
-          VER="19.03.12"
-          curl -L -o /tmp/docker-$VER.tgz https://download.docker.com/linux/static/stable/x86_64/docker-$VER.tgz
-          tar -xz -C /tmp -f /tmp/docker-$VER.tgz
-          mv /tmp/docker/docker /usr/bin
+          apt update && apt install -y curl git make
+          # see https://golang.org/doc/install#tarball
+          curl -L https://dl.google.com/go/go${GO_VERSION}.linux-amd64.tar.gz | tar -xz -C $HOME
+    - run:
+        name: "Download Go modules"
+        command: go mod download
     - run:
         name: Build Packages
-        command: ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          ./tools/releases/distros.sh --package --version $CIRCLE_TAG --sha $CIRCLE_SHA1
     - run:
         name: Push Packages
-        command: ./tools/releases/distros.sh --release --version $CIRCLE_TAG
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          ./tools/releases/distros.sh --release --version $CIRCLE_TAG
     - run:
         name: Build Docker
-        command: ./tools/releases/docker.sh --build --version $CIRCLE_TAG
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          ./tools/releases/docker.sh --build --version $CIRCLE_TAG
     - run:
         name: Push Docker
-        command: ./tools/releases/docker.sh --push --version $CIRCLE_TAG
+        command: |
+          export PATH=$HOME/go/bin:$PATH
+          ./tools/releases/docker.sh --push --version $CIRCLE_TAG
 
   helm-release:
     executor: golang
@@ -926,6 +946,7 @@ workflows:
 #        ipv6: true
 
   clean-eks:
+    when: << pipeline.parameters.run_workflow_clean_eks >>
     triggers:
     - schedule:
         # run cleanup everyday at 02:00 - it's the last resort for cleanup of
@@ -938,6 +959,7 @@ workflows:
     - eks-delete-clusters
 
   e2e-eks:
+    when: << pipeline.parameters.run_workflow_eks_e2e >>
     triggers:
     - schedule:
         # run every Monday at 00:00
@@ -953,6 +975,7 @@ workflows:
         <<: *master_workflow_filters
         requires:
         - build
+        docker_registry: ${ECR_REGISTRY}
     - eks-e2e:
         <<: *master_workflow_filters
         name: test/e2e/eks
