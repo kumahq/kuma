@@ -658,6 +658,11 @@ jobs:
 
   images:
     executor: remote-docker
+    parameters:
+      docker_registry:
+        description: "Registry for container images"
+        type: string
+        default: "docker.io/kumahq"
     steps:
     - checkout
     # Mount files from the upstream jobs
@@ -667,7 +672,9 @@ jobs:
         version: 19.03.12
     - run:
         name: Build Docker images
-        command: make docker/build
+        command: |
+          make docker/build \
+            DOCKER_REGISTRY="<< parameters.docker_registry >>"
     - run:
         name: Save Docker images into TAR archives
         command: make docker/save
@@ -957,6 +964,7 @@ workflows:
         <<: *master_workflow_filters
         requires:
         - build
+        docker_registry: ${ECR_REGISTRY}
     - eks-e2e:
         <<: *master_workflow_filters
         name: test/e2e/eks
