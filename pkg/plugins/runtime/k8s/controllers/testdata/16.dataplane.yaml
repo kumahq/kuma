@@ -1,0 +1,31 @@
+mesh: default
+metadata:
+  creationTimestamp: null
+spec:
+  networking:
+    address: 192.168.0.1
+    inbound:
+      - port: 8080
+        tags:
+          app: example
+          kuma.io/protocol: tcp
+          kuma.io/service: example_demo_svc_80
+          version: "0.1"
+          kuma.io/zone: "zone-1"
+    outbound:
+      - address: 10.108.144.24
+        port: 443
+        tags:
+          kuma.io/service: test-app_playground_svc_443
+      - address: 10.108.144.24
+        port: 80
+        tags:
+          kuma.io/service: test-app_playground_svc_80
+      - address: 240.0.0.2
+        port: 80
+        tags:
+          kuma.io/service: test-app_playground_svc_443
+      - address: 240.0.0.1
+        port: 80
+        tags:
+          kuma.io/service: test-app_playground_svc_80

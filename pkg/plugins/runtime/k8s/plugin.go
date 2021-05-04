@@ -160,6 +160,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		ResourceConverter: converter,
 		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
 		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+		Domain:            rt.DNSResolver().GetDomain(),
 	}
 	return reconciler.SetupWithManager(mgr)
 }

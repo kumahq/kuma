@@ -84,6 +84,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 		pod             string
 		servicesForPod  string
 		otherDataplanes string
+		vips            vips.List
 		otherServices   string
 		node            string
 		dataplane       string
@@ -139,7 +140,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, vips.List{})
+			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, given.vips, "mesh")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -235,6 +236,18 @@ var _ = Describe("PodToDataplane(..)", func() {
 			pod:            "15.pod.yaml",
 			servicesForPod: "15.services-for-pod.yaml",
 			dataplane:      "15.dataplane.yaml",
+		}),
+		Entry("16. Pod with 1 Service and 1 other Dataplane and vips", testCase{
+			pod:             "16.pod.yaml",
+			servicesForPod:  "16.services-for-pod.yaml",
+			otherDataplanes: "16.other-dataplanes.yaml",
+			otherServices:   "16.other-services.yaml",
+			dataplane:       "16.dataplane.yaml",
+			vips: vips.List{
+				"test-app_playground_svc_80":  "240.0.0.1",
+				"test-app_playground_svc_443": "240.0.0.2",
+				"example_demo_svc_80":         "240.0.0.3",
+			},
 		}),
 	)
 
@@ -338,7 +351,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, vips.List{})
+				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, vips.List{}, "mesh")
 
 				// then
 				Expect(err).To(HaveOccurred())

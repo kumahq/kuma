@@ -199,6 +199,7 @@ var _ = Describe("PodReconciler", func() {
 			SystemNamespace:   "kuma-system",
 			Persistence:       vips.NewPersistence(core_manager.NewResourceManager(memory.NewStore()), manager.NewConfigManager(memory.NewStore())),
 			ResourceConverter: k8s.NewSimpleConverter(),
+			Domain:            "mesh",
 		}
 	})
 

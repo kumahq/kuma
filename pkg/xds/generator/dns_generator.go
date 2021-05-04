@@ -54,7 +54,9 @@ func (g DNSGenerator) computeVIPs(ctx xds_context.Context, proxy *core_xds.Proxy
 	domainsByIPs := ctx.ControlPlane.DNSResolver.GetVIPs().FQDNsByIPs()
 	meshedVips := map[string]string{}
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
-		if domain, ok := domainsByIPs[outbound.Address]; ok {
+		if outbound.Hostname != "" {
+			meshedVips[outbound.Hostname] = outbound.Address
+		} else if domain, ok := domainsByIPs[outbound.Address]; ok { // For legacy dns name generation
 			// add regular .mesh domain
 			meshedVips[domain+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
 			// add hostname from address in external service

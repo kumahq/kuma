@@ -1,0 +1,15 @@
+networking:
+  outbound:
+    - port: 80
+      address: 240.0.0.0
+      hostname: bar.com
+      tags:
+        kuma.io/service: backend
+    - port: 80
+      address: 240.0.0.1
+      hostname: foo.com
+      tags:
+        kuma.io/service: httpbin
+  transparentProxying:
+    redirectPort: 15001
+

@@ -118,6 +118,9 @@ message Dataplane {
 
       // Tags
       map<string, string> tags = 5;
+
+      // Hostname on which the service's dns will be advertised.
+      string hostname = 6;
     }
 
     // Gateway describes a service that ingress should not be proxied.
