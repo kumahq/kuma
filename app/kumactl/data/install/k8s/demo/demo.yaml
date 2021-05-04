@@ -81,7 +81,6 @@ metadata:
   namespace: {{ .Namespace }}
   annotations:
     5000.service.kuma.io/protocol: http
-    ingress.kubernetes.io/service-upstream: "true"
 spec:
   selector:
     app: demo-app

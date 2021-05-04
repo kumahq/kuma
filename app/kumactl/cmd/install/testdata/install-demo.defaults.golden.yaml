@@ -8,11 +8,6 @@ metadata:
     kuma.io/sidecar-injection: enabled
 ---
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: kuma-demo
----
-apiVersion: v1
 kind: Service
 metadata:
   name: redis
@@ -31,7 +26,6 @@ metadata:
   namespace: kuma-demo
   annotations:
     5000.service.kuma.io/protocol: http
-    ingress.kubernetes.io/service-upstream: "true"
 spec:
   selector:
     app: demo-app

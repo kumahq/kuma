@@ -20,8 +20,7 @@ func newInstallDemoCmd(ctx *install_context.InstallDemoContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "demo",
 		Short: "Install Kuma demo on Kubernetes",
-		Long: `Install Kuma demo on Kubernetes in a 'kuma-demo' namespace.
-This command requires that the KUBECONFIG environment is set`,
+		Long:  "Install Kuma demo on Kubernetes in a 'kuma-demo' namespace.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateDemoArgs(args); err != nil {
 				return err
@@ -62,6 +61,5 @@ This command requires that the KUBECONFIG environment is set`,
 }
 
 func validateDemoArgs(args install_context.InstallDemoArgs) error {
-	// TODO: Is there a valid list of zones ?
 	return nil
 }

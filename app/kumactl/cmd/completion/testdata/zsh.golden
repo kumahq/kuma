@@ -933,7 +933,7 @@ function _kumactl_install_crds {
 
 function _kumactl_install_demo {
   _arguments \
-    '--namespace[namespace to install demo to]:' \
+    '--namespace[Namespace to install demo to]:' \
     '--zone[Zone in which to install demo]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
