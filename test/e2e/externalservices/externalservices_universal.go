@@ -18,7 +18,6 @@ func ExternalServicesOnUniversal() {
 		fmt.Println("Test not supported on API v2")
 		return
 	}
-
 	meshDefaulMtlsOn := `
 type: Mesh
 name: default
@@ -77,9 +76,7 @@ networking:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma3)
-		deployOptsFuncs = []DeployOptionsFunc{
-			WithIPv6(true),
-		}
+		deployOptsFuncs = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).

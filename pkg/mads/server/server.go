@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/emicklei/go-restful"
@@ -123,8 +124,8 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 		defer close(errChanGrpc)
 		if err := grpcS.Serve(grpcL); err != nil {
 			switch err {
-			case http.ErrServerClosed:
-				log.Info("shutting down server")
+			case cmux.ErrServerClosed:
+				log.Info("shutting down a GRPC Server")
 			default:
 				log.Error(err, "could not start an GRPC Server")
 				errChanGrpc <- err
@@ -140,8 +141,8 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 		defer close(errChanHttp)
 		if err := httpS.Serve(httpL); err != nil {
 			switch err {
-			case http.ErrServerClosed:
-				log.Info("shutting down server")
+			case cmux.ErrServerClosed:
+				log.Info("shutting down an HTTP Server")
 			default:
 				log.Error(err, "could not start an HTTP Server")
 				errChanHttp <- err
@@ -154,10 +155,9 @@ func (s *muxServer) Start(stop <-chan struct{}) error {
 		defer close(errChan)
 		err := m.Serve()
 		if err != nil {
-			switch err {
-			case http.ErrServerClosed:
-				log.Info("shutting down server")
-			default:
+			if strings.Contains(err.Error(), "use of closed network connection") {
+				log.Info("shutting down a mux server")
+			} else {
 				log.Error(err, "could not start a mux Server")
 				errChan <- err
 			}

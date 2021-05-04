@@ -326,6 +326,22 @@ func (t MultiValueTagSet) Values(key string) []string {
 	return result
 }
 
+func (t MultiValueTagSet) UniqueValues(key string) []string {
+	if t == nil {
+		return nil
+	}
+	alreadyFound := map[string]bool{}
+	var result []string
+	for value := range t[key] {
+		if !alreadyFound[value] {
+			result = append(result, value)
+			alreadyFound[value] = true
+		}
+	}
+	sort.Strings(result)
+	return result
+}
+
 func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 	set := MultiValueTagSet{}
 	for tagName, values := range data {

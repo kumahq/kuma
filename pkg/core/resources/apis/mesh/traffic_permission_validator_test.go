@@ -56,13 +56,9 @@ var _ = Describe("TrafficPermission", func() {
 				expected: `
                 violations:
                 - field: sources[0].match
-                  message: must consist of exactly one tag "kuma.io/service"
-                - field: sources[0].match
-                  message: mandatory tag "kuma.io/service" is missing
-                - field: destinations[0].match
                   message: must have at least one tag
                 - field: destinations[0].match
-                  message: mandatory tag "kuma.io/service" is missing
+                  message: must have at least one tag
 `,
 			}),
 			Entry("selectors with empty tags values", testCase{
@@ -78,12 +74,8 @@ var _ = Describe("TrafficPermission", func() {
 `,
 				expected: `
                 violations:
-                - field: sources[0].match
-                  message: must consist of exactly one tag "kuma.io/service"
                 - field: sources[0].match["kuma.io/service"]
                   message: tag value must be non-empty
-                - field: sources[0].match["region"]
-                  message: tag "region" is not allowed
                 - field: sources[0].match["region"]
                   message: tag value must be non-empty
                 - field: destinations[0].match["kuma.io/service"]
@@ -107,26 +99,18 @@ var _ = Describe("TrafficPermission", func() {
 `,
 				expected: `
                 violations:
-                - field: sources[0].match
-                  message: must consist of exactly one tag "kuma.io/service"
                 - field: sources[0].match["kuma.io/service"]
                   message: tag value must be non-empty
                 - field: sources[0].match["region"]
-                  message: tag "region" is not allowed
-                - field: sources[0].match["region"]
                   message: tag value must be non-empty
                 - field: sources[1].match
-                  message: must consist of exactly one tag "kuma.io/service"
-                - field: sources[1].match
-                  message: mandatory tag "kuma.io/service" is missing
+                  message: must have at least one tag
                 - field: destinations[0].match["kuma.io/service"]
                   message: tag value must be non-empty
                 - field: destinations[0].match["region"]
                   message: tag value must be non-empty
                 - field: destinations[1].match
                   message: must have at least one tag
-                - field: destinations[1].match
-                  message: mandatory tag "kuma.io/service" is missing
 `,
 			}),
 		)

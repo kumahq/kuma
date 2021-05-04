@@ -100,9 +100,14 @@ resources:
                 permissions:
                 - any: true
                 principals:
-                - authenticated:
-                    principalName:
-                      exact: spiffe://default/web1
+                - andIds:
+                    ids:
+                    - authenticated:
+                        principalName:
+                          exact: kuma://version/1.0
+                    - authenticated:
+                        principalName:
+                          exact: spiffe://default/web1
           statPrefix: inbound_192_168_0_1_80.
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
