@@ -216,6 +216,7 @@ Usage:
 Available Commands:
   control-plane     Install Kuma Control Plane on Kubernetes
   crds              Install Kuma Custom Resource Definitions on Kubernetes
+  demo              Install Kuma demo on Kubernetes
   dns               Install DNS to Kubernetes
   logging           Install Logging backend in Kubernetes cluster (Loki)
   metrics           Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
