@@ -192,7 +192,7 @@ type UniversalApp struct {
 	verbose      bool
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMode, verbose bool, caps []string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMode, isipv6, verbose bool, caps []string) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:            t,
 		ports:        map[string]string{},
@@ -212,6 +212,12 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
 	}
 	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
+	if !isipv6 {
+		// For now supporting mixed environments with IPv4 and IPv6 addresses is challenging, specifically with
+		// builtin DNS. This is due to our mix of CoreDNS and Envoy DNS architecture.
+		// Here we make sure the IPv6 address is not allocated to the container unless explicitly requested.
+		opts.OtherOptions = append(opts.OtherOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
+	}
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
 	container, err := docker.RunAndGetIDE(t, KumaUniversalImage, &opts)
 	if err != nil {
