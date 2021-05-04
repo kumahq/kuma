@@ -71,6 +71,15 @@ reusable:
         branches:
           ignore: master, /^release-.*/, gh-pages
 
+parameters:
+  run_workflow_eks_e2e:
+    default: true
+    type: boolean
+
+  run_workflow_clean_eks:
+    default: true
+    type: boolean
+
 executors:
   golang:
     docker:
@@ -651,6 +660,11 @@ jobs:
 
   images:
     executor: remote-docker
+    parameters:
+      docker_registry:
+        description: "Registry for container images"
+        type: string
+        default: "docker.io/kumahq"
     steps:
     - checkout
     # Mount files from the upstream jobs
@@ -660,7 +674,9 @@ jobs:
         version: 19.03.12
     - run:
         name: Build Docker images
-        command: make docker/build
+        command: |
+          make docker/build \
+            DOCKER_REGISTRY="<< parameters.docker_registry >>"
     - run:
         name: Save Docker images into TAR archives
         command: make docker/save
@@ -919,6 +935,7 @@ workflows:
 #        ipv6: true
 
   clean-eks:
+    when: << pipeline.parameters.run_workflow_clean_eks >>
     triggers:
     - schedule:
         # run cleanup everyday at 02:00 - it's the last resort for cleanup of
@@ -931,6 +948,7 @@ workflows:
     - eks-delete-clusters
 
   e2e-eks:
+    when: << pipeline.parameters.run_workflow_eks_e2e >>
     triggers:
     - schedule:
         # run every Monday at 00:00
@@ -946,6 +964,7 @@ workflows:
         <<: *master_workflow_filters
         requires:
         - build
+        docker_registry: ${ECR_REGISTRY}
     - eks-e2e:
         <<: *master_workflow_filters
         name: test/e2e/eks
