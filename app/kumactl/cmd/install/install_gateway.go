@@ -19,8 +19,7 @@ func newInstallGatewayCmd(ctx *install_context.InstallGatewayContext) *cobra.Com
 	cmd := &cobra.Command{
 		Use:   "gateway",
 		Short: "Install ingress gateway on Kubernetes",
-		Long: `Install ingress gateway on Kubernetes in a 'kuma-gateway' namespace.
-This command requires that the KUBECONFIG environment is set`,
+		Long:  "Install ingress gateway on Kubernetes in a 'kuma-gateway' namespace.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			if err := validateGWArgs(args); err != nil {
 				return err
@@ -54,7 +53,7 @@ This command requires that the KUBECONFIG environment is set`,
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&args.Type, "type", args.Type, "type of gateway to install")
+	cmd.Flags().StringVar(&args.Type, "type", args.Type, "type of gateway to install. Available types: 'kong'")
 	cmd.MarkFlagRequired("type")
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install gateway to")
 	return cmd

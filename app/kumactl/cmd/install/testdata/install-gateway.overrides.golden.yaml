@@ -4,11 +4,8 @@ apiVersion: v1
 kind: Namespace
 metadata:
   name: notdefault
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: notdefault
+  annotations:
+    kuma.io/sidecar-injection: enabled
 ---
 apiVersion: v1
 kind: ServiceAccount

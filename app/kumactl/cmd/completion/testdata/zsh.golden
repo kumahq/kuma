@@ -943,7 +943,7 @@ function _kumactl_install_dns {
 function _kumactl_install_gateway {
   _arguments \
     '--namespace[namespace to install gateway to]:' \
-    '--type[type of gateway to install]:' \
+    '--type[type of gateway to install. Available types: '\''kong'\'']:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'

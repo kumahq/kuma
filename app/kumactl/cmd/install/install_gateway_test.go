@@ -28,6 +28,11 @@ var _ = Describe("kumactl install gateway", func() {
 		goldenFile string
 	}
 
+	type testCaseErr struct {
+		extraArgs   []string
+		expectedErr string
+	}
+
 	BeforeEach(func() {
 		kuma_version.Build = kuma_version.BuildInfo{
 			Version:   "0.0.1",
@@ -38,7 +43,7 @@ var _ = Describe("kumactl install gateway", func() {
 	})
 
 	DescribeTable("should generate error",
-		func(given testCase) {
+		func(given testCaseErr) {
 			// given
 			rootCmd := cmd.DefaultRootCmd()
 			rootCmd.SetArgs(append([]string{"install", "gateway"}, given.extraArgs...))
@@ -49,17 +54,17 @@ var _ = Describe("kumactl install gateway", func() {
 			err := rootCmd.Execute()
 
 			// then
-			Expect(err).ToNot(BeNil())
+			Expect(err.Error()).To(Equal(given.expectedErr))
 		},
-		Entry("should fail due to lack of type", testCase{
-			extraArgs:  nil,
-			goldenFile: "",
+		Entry("should fail due to lack of type", testCaseErr{
+			extraArgs:   nil,
+			expectedErr: "required flag(s) \"type\" not set",
 		}),
-		Entry("should fail due to invalid type", testCase{
+		Entry("should fail due to invalid type", testCaseErr{
 			extraArgs: []string{
 				"--type", "invalidtype",
 			},
-			goldenFile: "",
+			expectedErr: "Only gateway type 'kong' currently supported",
 		}),
 	)
 
