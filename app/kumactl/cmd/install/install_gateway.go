@@ -54,7 +54,7 @@ func newInstallGatewayCmd(ctx *install_context.InstallGatewayContext) *cobra.Com
 		},
 	}
 	cmd.Flags().StringVar(&args.Type, "type", args.Type, "type of gateway to install. Available types: 'kong'")
-	cmd.MarkFlagRequired("type")
+	_ = cmd.MarkFlagRequired("type")
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install gateway to")
 	return cmd
 }
