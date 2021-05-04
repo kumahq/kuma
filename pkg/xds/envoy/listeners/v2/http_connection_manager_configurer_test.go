@@ -30,7 +30,7 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy.APIV2).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV2).
-					Configure(HttpConnectionManager(given.statsName)))).
+					Configure(HttpConnectionManager(given.statsName, true)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -58,6 +58,7 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
               - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
+                  forwardClientCertDetails: SANITIZE_SET
                   statPrefix: localhost_8080
                   httpFilters:
                   - name: envoy.filters.http.router
