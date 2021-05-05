@@ -533,7 +533,6 @@ jobs:
             KUMA_GLOBAL_IMAGE_REGISTRY="${AZURE_ACR_REGISTRY_FULLNAME}" \
             KUMA_GLOBAL_IMAGE_TAG="${TAG}" \
             KUMA_CNI_CONF_NAME="10-azure.conflist" \
-            KUMA_USE_LOAD_BALANCER=true \
             KUMA_UNIVERSAL_IMAGE="${KUMA_UNIVERSAL_IMAGE}" \
             KUMA_DEFAULT_RETRIES=30 \
             KUMA_DEFAULT_TIMEOUT="3s" \
