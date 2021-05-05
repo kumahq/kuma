@@ -49,3 +49,48 @@ func BuildTrafficPermissionMap(
 	}
 	return result, nil
 }
+
+func (m *TrafficPermissionsMatcher) MatchExternalServices(ctx context.Context, dataplane *mesh_core.DataplaneResource, externalServices *mesh_core.ExternalServiceResourceList) ([]*mesh_core.ExternalServiceResource, error) {
+	permissions := &mesh_core.TrafficPermissionResourceList{}
+	if err := m.ResourceManager.List(ctx, permissions, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
+		return nil, errors.Wrap(err, "could not retrieve traffic permissions")
+	}
+
+	var matchedExternalServices []*mesh_core.ExternalServiceResource
+
+	externalServicePermissions := m.BuildExternalServicesPermissionsMap(externalServices, permissions.Items)
+	for _, externalService := range externalServices.Items {
+		permission := externalServicePermissions[externalService.GetMeta().GetName()]
+		if permission == nil {
+			continue
+		}
+		matched := false
+		for _, selector := range permission.Spec.Sources {
+			if dataplane.Spec.MatchTags(selector.Match) {
+				matched = true
+			}
+		}
+		if matched {
+			matchedExternalServices = append(matchedExternalServices, externalService)
+		}
+	}
+	return matchedExternalServices, nil
+}
+
+type ExternalServicePermissions map[string]*mesh_core.TrafficPermissionResource
+
+func (m *TrafficPermissionsMatcher) BuildExternalServicesPermissionsMap(externalServices *mesh_core.ExternalServiceResourceList, trafficPermissions []*mesh_core.TrafficPermissionResource) ExternalServicePermissions {
+	policies := make([]policy.ConnectionPolicy, len(trafficPermissions))
+	for i, permission := range trafficPermissions {
+		policies[i] = permission
+	}
+
+	result := ExternalServicePermissions{}
+	for _, externalService := range externalServices.Items {
+		matchedPolicy := policy.SelectInboundConnectionPolicy(externalService.Spec.Tags, policies)
+		if matchedPolicy != nil {
+			result[externalService.GetMeta().GetName()] = matchedPolicy.(*mesh_core.TrafficPermissionResource)
+		}
+	}
+	return result
+}

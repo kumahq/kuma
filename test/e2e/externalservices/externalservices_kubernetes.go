@@ -6,7 +6,6 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
@@ -58,6 +57,22 @@ spec:
 	es1 := "1"
 	es2 := "2"
 
+	trafficPermission := `
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  name: traffic-to-es
+spec:
+  sources:
+    - match:
+        kuma.io/service: '*'
+  destinations:
+    - match:
+        kuma.io/service: external-service
+
+`
+
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -96,6 +111,10 @@ metadata:
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
+		// remove default traffic permission
+		err = k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-default")
+		Expect(err).ToNot(HaveOccurred())
+
 		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -127,6 +146,12 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
+	trafficBlocked := func() error {
+		_, _, err := cluster.Exec(TestNamespace, clientPod.GetName(), "demo-client",
+			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
+		return err
+	}
+
 	It("should route to external-service", func() {
 		// given Mesh with passthrough enabled
 		err := YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true"))(cluster)
@@ -143,22 +168,20 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the external service is no longer possible
-		_, err = retry.DoWithRetryE(cluster.GetTesting(), "passthrough access to service", 5, DefaultTimeout, func() (string, error) {
-			_, _, err := cluster.Exec("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
-			if err != nil {
-				return "", err
-			}
-
-			return "", nil
-		})
-		Expect(err).To(HaveOccurred())
+		Eventually(trafficBlocked, "30s", "1s").Should(HaveOccurred())
 
 		// when apply external service
 		err = YamlK8s(fmt.Sprintf(externalService,
 			es1, es1,
 			"externalservice-http-server.externalservice-namespace.svc.cluster.local", 10080, // .svc.cluster.local is needed, otherwise Kubernetes will resolve this to the real IP
 			"false"))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then traffic is still blocked because of lack of the traffic permission
+		Consistently(trafficBlocked, "10s", "1s").Should(HaveOccurred())
+
+		// when TrafficPermission is added
+		err = YamlK8s(trafficPermission)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		// then you can access external service again
