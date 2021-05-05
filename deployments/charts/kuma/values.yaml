@@ -184,6 +184,8 @@ ingress:
     annotations: {}
     # -- Port on which Ingress is exposed
     port: 10001
+    # -- Port on which service is exposed on Node for service of type NodePort
+    nodePort:
   # -- Additional deployment annotation
   annotations: {}
 
