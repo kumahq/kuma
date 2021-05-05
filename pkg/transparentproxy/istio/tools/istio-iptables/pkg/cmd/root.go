@@ -121,13 +121,11 @@ func constructConfig() *config.Config {
 		cfg.ProxyGID = cfg.ProxyUID
 	}
 
-	// Kuma modification start
-	hasIPv6, err := hasLocalIPv6()
+	podIP, err := getLocalIP()
 	if err != nil {
 		panic(err)
 	}
-	cfg.EnableInboundIPv6 = hasIPv6
-	// Kuma modification end
+	cfg.EnableInboundIPv6 = podIP.To4() == nil
 
 	// Lookup DNS nameservers. We only do this if DNS is enabled in case of some obscure theoretical
 	// case where reading /etc/resolv.conf could fail.
@@ -159,23 +157,6 @@ func getLocalIP() (net.IP, error) {
 	}
 	return nil, fmt.Errorf("no valid local IP address found")
 }
-
-// Kuma modification start
-func hasLocalIPv6() (bool, error) {
-	addrs, err := net.InterfaceAddrs()
-	if err != nil {
-		return false, err
-	}
-
-	for _, a := range addrs {
-		if ipnet, ok := a.(*net.IPNet); ok && !ipnet.IP.IsLoopback() && ipnet.IP.To4() == nil {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// Kuma modification end
 
 func handleError(err error) {
 	handleErrorWithCode(err, 1)
