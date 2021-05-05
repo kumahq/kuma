@@ -166,6 +166,7 @@ resources:
       - name: envoy.filters.network.http_connection_manager
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+          forwardClientCertDetails: SANITIZE_SET
           httpFilters:
           - name: envoy.filters.http.router
           routeConfig:
