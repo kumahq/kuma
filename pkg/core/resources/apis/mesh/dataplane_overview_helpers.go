@@ -31,6 +31,10 @@ func (t *DataplaneOverviewResource) GetStatus() (Status, []string) {
 
 	allInboundsOffline := len(errs) == len(t.Spec.Dataplane.Networking.Inbound)
 	allInboundsOnline := len(errs) == 0
+	if t.Spec.Dataplane.DpType() == mesh_proto.GatewayDpType {
+		allInboundsOffline = false
+		allInboundsOnline = true
+	}
 
 	if !proxyOnline || allInboundsOffline {
 		return Offline, errs
