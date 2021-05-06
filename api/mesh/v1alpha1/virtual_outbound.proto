@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "mesh/v1alpha1/selector.proto";
+import "config.proto";
+
+option (doc.config) = {
+  type : Policy,
+  name : "VirtualOutbound",
+  file_name : "virtual-outbound"
+};
+
+// VirtualOutbound defines a way to generate hostname and ports from existing
+// services.
+message VirtualOutbound {
+
+  // List of selectors to match dataplanes.
+  repeated Selector selectors = 1;
+
+  // Configuration defines settings of the tracing.
+  message Conf {
+    // A gotemplate to generate hostnames for the matching DP.
+    // The template will use the keys in the parameters map.
+    string host = 1;
+    // A gotemplate to generate a port for the matching DP.
+    // The template will use the keys in the parameters map.
+    string port = 2;
+    // A map from name to tag names.
+    // Keys will be parameters for the gotemplate of host or port.
+    map<string, string> parameters = 3;
+  }
+
+  // Configuration of the virtualOutbound.
+  Conf conf = 3;
+}

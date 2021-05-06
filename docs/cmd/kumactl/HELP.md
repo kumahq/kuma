@@ -433,6 +433,8 @@ Available Commands:
   traffic-routes      Show TrafficRoute
   traffic-trace       Show a single TrafficTrace resource
   traffic-traces      Show TrafficTrace
+  virtual-outbound    Show a single VirtualOutbound resource
+  virtual-outbounds   Show VirtualOutbound
   zone                Show a single Retry resource
   zones               Show Zone
 

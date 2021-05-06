@@ -352,6 +352,8 @@ function _kumactl_get {
       "traffic-routes:Show TrafficRoute"
       "traffic-trace:Show a single TrafficTrace resource"
       "traffic-traces:Show TrafficTrace"
+      "virtual-outbound:Show a single VirtualOutbound resource"
+      "virtual-outbounds:Show VirtualOutbound"
       "zone:Show a single Retry resource"
       "zones:Show Zone"
     )
@@ -449,6 +451,12 @@ function _kumactl_get {
     ;;
   traffic-traces)
     _kumactl_get_traffic-traces
+    ;;
+  virtual-outbound)
+    _kumactl_get_virtual-outbound
+    ;;
+  virtual-outbounds)
+    _kumactl_get_virtual-outbounds
     ;;
   zone)
     _kumactl_get_zone
@@ -716,6 +724,24 @@ function _kumactl_get_traffic-trace {
 }
 
 function _kumactl_get_traffic-traces {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_virtual-outbound {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_virtual-outbounds {
   _arguments \
     '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
     '--size[maximum number of elements to return]:' \

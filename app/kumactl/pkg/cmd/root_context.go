@@ -81,6 +81,7 @@ func DefaultRootContext() *RootContext {
 			"traffic-permission": core_mesh.TrafficPermissionType,
 			"traffic-route":      core_mesh.TrafficRouteType,
 			"traffic-trace":      core_mesh.TrafficTraceType,
+			"virtual-outbound":   core_mesh.VirtualOutboundType,
 			"global-secret":      system.GlobalSecretType,
 			"secret":             system.SecretType,
 			"zone":               system.ZoneType,

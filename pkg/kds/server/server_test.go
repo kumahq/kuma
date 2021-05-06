@@ -79,6 +79,7 @@ var _ = Describe("KDS Server", func() {
 			kds_samples.TrafficTrace,
 			kds_samples.Secret,
 			kds_samples.Config,
+			kds_samples.VirtualOutbound,
 		}).
 			To(HaveLen(len(kds.SupportedTypes)))
 
@@ -97,7 +98,8 @@ var _ = Describe("KDS Server", func() {
 			Exec(kds_verifier.Create(ctx, &mesh.TrafficPermissionResource{Spec: kds_samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.TrafficRouteResource{Spec: kds_samples.TrafficRoute}, store.CreateByKey("tr-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.TrafficTraceResource{Spec: kds_samples.TrafficTrace}, store.CreateByKey("tt-1", "mesh-1"))).
-			Exec(kds_verifier.Create(ctx, &system.SecretResource{Spec: kds_samples.Secret}, store.CreateByKey("s-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.VirtualOutboundResource{Spec: kds_samples.VirtualOutbound}, store.CreateByKey("s-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &system.SecretResource{Spec: kds_samples.Secret}, store.CreateByKey("vo-1", "mesh-1"))).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.MeshType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
@@ -172,6 +174,11 @@ var _ = Describe("KDS Server", func() {
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
 				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.Timeout))
+			})).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.VirtualOutboundType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
+				Expect(rs).To(HaveLen(1))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.VirtualOutbound))
 			})).
 			Exec(kds_verifier.CloseStream())
 

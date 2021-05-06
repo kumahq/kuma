@@ -1,0 +1,31 @@
+items:
+- conf:
+    host: foo
+    port: "80"
+  creationTime: "0001-01-01T00:00:00Z"
+  mesh: default
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: simple
+  selectors:
+  - match:
+      service: web1
+      version: "1.0"
+  type: VirtualOutbound
+- conf:
+    host: '{{service}}.{{version}}.mesh'
+    parameters:
+      port: port
+      service: service
+      version: version
+    port: '{{port}}'
+  creationTime: "0001-01-01T00:00:00Z"
+  mesh: default
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: with-parameters
+  selectors:
+  - match:
+      service: web2
+      version: "1.0"
+  type: VirtualOutbound
+next: null
+total: 2

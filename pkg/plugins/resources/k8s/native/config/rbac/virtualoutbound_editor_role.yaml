@@ -1,0 +1,24 @@
+# permissions for end users to edit virtualoutbounds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: virtualoutbound-editor-role
+rules:
+- apiGroups:
+  - mesh.kuma.io
+  resources:
+  - virtualoutbounds
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - mesh.kuma.io
+  resources:
+  - virtualoutbounds/status
+  verbs:
+  - get

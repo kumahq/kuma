@@ -1,0 +1,7 @@
+apiVersion: mesh.kuma.io/v1alpha1
+kind: VirtualOutbound
+metadata:
+  name: virtualoutbound-sample
+spec:
+  # Add fields here
+  foo: bar

@@ -25,4 +25,5 @@ var DefaultCRUDLEndpoints = []ResourceWsDefinition{
 	GlobalSecretWsDefinition,
 	RetryWsDefinition,
 	TimeoutWsDefinition,
+	VirtualOutboundWsDefinition,
 }

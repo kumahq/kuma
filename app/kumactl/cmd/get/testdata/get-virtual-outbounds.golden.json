@@ -1,0 +1,49 @@
+{
+  "total": 2,
+  "items": [
+    {
+      "type": "VirtualOutbound",
+      "mesh": "default",
+      "name": "simple",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "selectors": [
+        {
+          "match": {
+            "service": "web1",
+            "version": "1.0"
+          }
+        }
+      ],
+      "conf": {
+        "host": "foo",
+        "port": "80"
+      }
+    },
+    {
+      "type": "VirtualOutbound",
+      "mesh": "default",
+      "name": "with-parameters",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "selectors": [
+        {
+          "match": {
+            "service": "web2",
+            "version": "1.0"
+          }
+        }
+      ],
+      "conf": {
+        "host": "{{service}}.{{version}}.mesh",
+        "port": "{{port}}",
+        "parameters": {
+          "port": "port",
+          "service": "service",
+          "version": "version"
+        }
+      }
+    }
+  ],
+  "next": null
+}

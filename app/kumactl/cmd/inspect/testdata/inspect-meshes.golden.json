@@ -38,6 +38,9 @@
         },
         "TrafficTrace": {
           "total": 1
+        },
+        "VirtualOutbound": {
+          "total": 1
         }
       }
     },
@@ -78,6 +81,9 @@
         },
         "TrafficTrace": {
           "total": 10
+        },
+        "VirtualOutbound": {
+          "total": 1
         }
       }
     }

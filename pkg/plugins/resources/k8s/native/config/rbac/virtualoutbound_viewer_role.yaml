@@ -1,0 +1,20 @@
+# permissions for end users to view virtualoutbounds.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: virtualoutbound-viewer-role
+rules:
+- apiGroups:
+  - mesh.kuma.io
+  resources:
+  - virtualoutbounds
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - mesh.kuma.io
+  resources:
+  - virtualoutbounds/status
+  verbs:
+  - get

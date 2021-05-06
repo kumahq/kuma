@@ -270,6 +270,17 @@ var (
 			},
 		},
 	}
+	VirtualOutbound = &mesh_proto.VirtualOutbound{
+		Selectors: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"service": "*",
+			},
+		}},
+		Conf: &mesh_proto.VirtualOutbound_Conf{
+			Port: "80",
+			Host: "foo.com",
+		},
+	}
 	Secret = &system_proto.Secret{
 		Data: &wrappers.BytesValue{Value: []byte("secret key")},
 	}

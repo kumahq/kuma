@@ -45,6 +45,7 @@ var (
 		mesh.TrafficPermissionType,
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
+		mesh.VirtualOutboundType,
 		system.SecretType,
 		system.ConfigType,
 	}
