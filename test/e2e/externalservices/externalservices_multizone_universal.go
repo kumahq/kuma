@@ -27,23 +27,6 @@ networking:
     passthrough: true
 `
 
-	trafficRoute := `
-type: TrafficRoute
-name: route-example
-mesh: default
-sources:
-- match:
-   kuma.io/service: "*"
-destinations:
-- match:
-   kuma.io/service: external-service-%s
-conf:
-  split:
-  - weight: 1
-    destination:
-      kuma.io/service: external-service-%s
-`
-
 	externalService := `
 type: ExternalService
 mesh: default
@@ -95,18 +78,9 @@ networking:
 		err = global.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		// add the external service
-		err = YamlUniversal(fmt.Sprintf(externalService,
-			es1, es1,
-			"kuma-3_externalservice-http-server:80",
-			"false", ""))(global)
-		Expect(err).ToNot(HaveOccurred())
-
 		globalCP := global.GetKuma()
 
 		demoClientToken, err := globalCP.GenerateDpToken(defaultMesh, "demo-client")
-		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 1
@@ -119,7 +93,6 @@ networking:
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote1...)).
 			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(true))).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_1.VerifyKuma()
@@ -135,7 +108,6 @@ networking:
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote2...)).
 			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(true))).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()
@@ -167,7 +139,10 @@ networking:
 	})
 
 	It("should route to external-service", func() {
-		err := YamlUniversal(fmt.Sprintf(trafficRoute, es1, es1))(global)
+		err := YamlUniversal(fmt.Sprintf(externalService,
+			es1, es1,
+			"kuma-3_externalservice-http-server:80",
+			"false", ""))(global)
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
@@ -196,13 +171,9 @@ networking:
 	})
 
 	It("should route to external-service over tls", func() {
-		// set the route to the secured external service
-		err := YamlUniversal(fmt.Sprintf(trafficRoute, es2, es2))(global)
-		Expect(err).ToNot(HaveOccurred())
-
 		// when set invalid certificate
 		otherCert := "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURMRENDQWhTZ0F3SUJBZ0lRSGRQaHhPZlhnV3VOeG9GbFYvRXdxVEFOQmdrcWhraUc5dzBCQVFzRkFEQVAKTVEwd0N3WURWUVFERXdScmRXMWhNQjRYRFRJd01Ea3hOakV5TWpnME5Gb1hEVE13TURreE5ERXlNamcwTkZvdwpEekVOTUFzR0ExVUVBeE1FYTNWdFlUQ0NBU0l3RFFZSktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCCkFPWkdiV2hTbFFTUnhGTnQ1cC8yV0NLRnlIWjNDdXdOZ3lMRVA3blM0Wlh5a3hzRmJZU3VWM2JJZ0Y3YlQvdXEKYTVRaXJlK0M2MGd1aEZicExjUGgyWjZVZmdJZDY5R2xRekhNVlljbUxHalZRdXlBdDRGTU1rVGZWRWw1STRPYQorMml0M0J2aWhWa0toVXo4eTVSUjVLYnFKZkdwNFoyMEZoNmZ0dG9DRmJlT0RtdkJzWUpGbVVRUytpZm95TVkvClAzUjAzU3U3ZzVpSXZuejd0bWt5ZG9OQzhuR1JEemRENUM4Zkp2clZJMVVYNkpSR3lMS3Q0NW9RWHQxbXhLMTAKNUthTjJ6TlYyV3RIc2FKcDlid3JQSCtKaVpHZVp5dnVoNVV3ckxkSENtcUs3c205VG9kR3p0VVpZMFZ6QWM0cQprWVZpWFk4Z1VqZk5tK2NRclBPMWtOOENBd0VBQWFPQmd6Q0JnREFPQmdOVkhROEJBZjhFQkFNQ0FxUXdIUVlEClZSMGxCQll3RkFZSUt3WUJCUVVIQXdFR0NDc0dBUVVGQndNQk1BOEdBMVVkRXdFQi93UUZNQU1CQWY4d0hRWUQKVlIwT0JCWUVGR01EQlBQaUJGSjNtdjJvQTlDVHFqZW1GVFYyTUI4R0ExVWRFUVFZTUJhQ0NXeHZZMkZzYUc5egpkSUlKYkc5allXeG9iM04wTUEwR0NTcUdTSWIzRFFFQkN3VUFBNElCQVFDLzE3UXdlT3BHZGIxTUVCSjhYUEc3CjNzSy91dG9XTFgxdGpmOFN1MURnYTZDRFQvZVRXSFpyV1JmODFLT1ZZMDdkbGU1U1JJREsxUWhmYkdHdEZQK1QKdlprcm9vdXNJOVVTMmFDV2xrZUNaV0dUbnF2TG1Eb091anFhZ0RvS1JSdWs0bVFkdE5Ob254aUwvd1p0VEZLaQorMWlOalVWYkxXaURYZEJMeG9SSVZkTE96cWIvTU54d0VsVXlhVERBa29wUXlPV2FURGtZUHJHbWFXamNzZlBHCmFPS293MHplK3pIVkZxVEhiam5DcUVWM2huc1V5UlV3c0JsbjkrakRKWGd3Wk0vdE1sVkpyWkNoMFNsZTlZNVoKTU9CMGZDZjZzVE1OUlRHZzVMcGw2dUlZTS81SU5wbUhWTW8zbjdNQlNucEVEQVVTMmJmL3VvNWdJaXE2WENkcAotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg=="
-		err = YamlUniversal(fmt.Sprintf(externalService,
+		err := YamlUniversal(fmt.Sprintf(externalService,
 			es2, es2,
 			"kuma-3_externalservice-https-server:443",
 			"true",
