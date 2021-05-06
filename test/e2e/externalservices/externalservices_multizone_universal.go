@@ -14,6 +14,11 @@ import (
 )
 
 func ExternalServicesOnMultizoneUniversal() {
+	if IsApiV2() {
+		fmt.Println("Test not supported on API v2")
+		return
+	}
+
 	meshDefaulMtlsOn := `
 type: Mesh
 name: default
