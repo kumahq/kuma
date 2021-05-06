@@ -39,28 +39,6 @@ spec:
       passthrough: %s
 `
 
-	trafficRoute := `
-apiVersion: kuma.io/v1alpha1
-kind: TrafficRoute
-mesh: default
-metadata:
-  name: rule-example
-  namespace: default
-spec:
-  sources:
-  - match:
-      kuma.io/service: "*"
-  destinations:
-  - match:
-      kuma.io/service: external-service
-  conf:
-    split:
-    - weight: 1
-      destination:
-        kuma.io/service: external-service
-        id: "%s"
-`
-
 	externalService := `
 apiVersion: kuma.io/v1alpha1
 kind: ExternalService
@@ -119,12 +97,6 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 
 		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlK8s(fmt.Sprintf(externalService,
-			es1, es1,
-			"externalservice-http-server.externalservice-namespace.svc.cluster.local", 10080,
-			"false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		pods, err := k8s.ListPodsE(
@@ -189,9 +161,6 @@ metadata:
 			"false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlK8s(fmt.Sprintf(trafficRoute, es1))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
 		// then you can access external service again
 		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://externalservice-http-server.externalservice-namespace:10080")
@@ -220,9 +189,6 @@ metadata:
 			es2, es2,
 			"externalservice-https-server.externalservice-namespace.svc.cluster.local", 10080,
 			"true"))(cluster)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = YamlK8s(fmt.Sprintf(trafficRoute, es2))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		stdout, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
