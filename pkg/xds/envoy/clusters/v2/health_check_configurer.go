@@ -137,38 +137,68 @@ func failTrafficOnPanic(cluster *envoy_api.Cluster, value *wrappers.BoolValue) {
 	cluster.CommonLbConfig.GetZoneAwareLbConfig().FailTrafficOnPanic = value.GetValue()
 }
 
+func buildHealthCheck(conf *mesh_proto.HealthCheck_Conf) *envoy_core.HealthCheck {
+	return &envoy_core.HealthCheck{
+		HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
+			TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
+		},
+		Interval:                     conf.Interval,
+		Timeout:                      conf.Timeout,
+		UnhealthyThreshold:           &wrappers.UInt32Value{Value: conf.UnhealthyThreshold},
+		HealthyThreshold:             &wrappers.UInt32Value{Value: conf.HealthyThreshold},
+		InitialJitter:                conf.InitialJitter,
+		IntervalJitter:               conf.IntervalJitter,
+		IntervalJitterPercent:        conf.IntervalJitterPercent,
+		EventLogPath:                 conf.EventLogPath,
+		AlwaysLogHealthCheckFailures: conf.AlwaysLogHealthCheckFailures.GetValue(),
+		NoTrafficInterval:            conf.NoTrafficInterval,
+	}
+}
+
+func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker interface{}) *envoy_core.HealthCheck {
+	if httpHc, ok := healthChecker.(*envoy_core.HealthCheck_HttpHealthCheck_); ok {
+		healthCheck.HealthChecker = httpHc
+	} else if tcpHc, ok := healthChecker.(*envoy_core.HealthCheck_TcpHealthCheck_); ok {
+		healthCheck.HealthChecker = tcpHc
+	}
+
+	return healthCheck
+}
+
 func (e *HealthCheckConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	if e.HealthCheck == nil || e.HealthCheck.Spec.Conf == nil {
 		return nil
 	}
+
 	activeChecks := e.HealthCheck.Spec.Conf
-	healthCheck := envoy_core.HealthCheck{
-		HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
-			TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
-		},
-		Interval:                     activeChecks.Interval,
-		Timeout:                      activeChecks.Timeout,
-		UnhealthyThreshold:           &wrappers.UInt32Value{Value: activeChecks.UnhealthyThreshold},
-		HealthyThreshold:             &wrappers.UInt32Value{Value: activeChecks.HealthyThreshold},
-		InitialJitter:                activeChecks.InitialJitter,
-		IntervalJitter:               activeChecks.IntervalJitter,
-		IntervalJitterPercent:        activeChecks.IntervalJitterPercent,
-		EventLogPath:                 activeChecks.EventLogPath,
-		AlwaysLogHealthCheckFailures: activeChecks.AlwaysLogHealthCheckFailures.GetValue(),
-		NoTrafficInterval:            activeChecks.NoTrafficInterval,
-	}
 
 	healthPanicThreshold(cluster, activeChecks.GetHealthyPanicThreshold())
 	failTrafficOnPanic(cluster, activeChecks.GetFailTrafficOnPanic())
 
-	if tcp := activeChecks.GetTcp(); tcp != nil {
-		healthCheck.HealthChecker = tcpHealthCheck(tcp)
+	tcp := activeChecks.GetTcp()
+	http := activeChecks.GetHttp()
+
+	if tcp == nil && http == nil {
+		cluster.HealthChecks = append(cluster.HealthChecks, buildHealthCheck(activeChecks))
+
+		return nil
 	}
 
-	if http := activeChecks.GetHttp(); http != nil {
-		healthCheck.HealthChecker = httpHealthCheck(e.Protocol, http)
+	if tcp != nil {
+		defaultHealthCheck := buildHealthCheck(activeChecks)
+		healthChecker := tcpHealthCheck(tcp)
+		healthCheck := addHealthChecker(defaultHealthCheck, healthChecker)
+
+		cluster.HealthChecks = append(cluster.HealthChecks, healthCheck)
 	}
 
-	cluster.HealthChecks = append(cluster.HealthChecks, &healthCheck)
+	if http != nil {
+		defaultHealthCheck := buildHealthCheck(activeChecks)
+		healthChecker := httpHealthCheck(e.Protocol, http)
+		healthCheck := addHealthChecker(defaultHealthCheck, healthChecker)
+
+		cluster.HealthChecks = append(cluster.HealthChecks, healthCheck)
+	}
+
 	return nil
 }
