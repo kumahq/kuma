@@ -1216,6 +1216,7 @@ workflows:
         requires:
           - images
           - check
+        ipv6: true
 # keep this one disabled and enable only for development
 #    - e2e:
 #        <<: *commit_workflow_filters

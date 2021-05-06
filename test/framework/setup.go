@@ -51,11 +51,7 @@ func YamlPathK8s(path string) InstallFunc {
 
 func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
-		fs = append(fs, func(options *deployOptions) {
-			if !options.isipv6 {
-				options.isipv6 = IsIPv6()
-			}
-		})
+		fs = append(fs, WithIPv6(IsIPv6()))
 		err := cluster.DeployKuma(mode, fs...)
 		return err
 	}
@@ -267,7 +263,7 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 		default:
 			appYaml = fmt.Sprintf(EchoServerDataplane, mesh, "8080", "80", "8080", opts.protocol)
 		}
-		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeEchoServer), WithToken(token), WithArgs(args), WithYaml(appYaml))
+		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeEchoServer), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
 		return cluster.DeployApp(fs...)
 	}
 }
@@ -396,7 +392,7 @@ func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 				appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", "80", "8080")
 			}
 		}
-		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token), WithArgs(args), WithYaml(appYaml))
+		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
 		return cluster.DeployApp(fs...)
 	}
 }
