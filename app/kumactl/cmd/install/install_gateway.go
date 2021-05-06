@@ -1,6 +1,7 @@
 package install
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -17,11 +18,9 @@ type gatewayTemplateArgs struct {
 }
 
 func availableTypesStr(types map[string]struct{}) string {
-	i := 0
-	typesArr := make([]string, len(types))
+	var typesArr []string
 	for typeStr := range types {
-		typesArr[i] = "'" + typeStr + "'"
-		i++
+		typesArr = append(typesArr, fmt.Sprintf("%q", typeStr))
 	}
 	return strings.Join(typesArr, ", ")
 }
