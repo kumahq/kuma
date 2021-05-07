@@ -905,6 +905,16 @@ jobs:
           condition: << parameters.ipv6 >>
           steps:
             - run:
+                name: enable ipv6
+                command: |
+                  cat <<'EOF' | sudo tee /etc/docker/daemon.json
+                  {
+                    "ipv6": true,
+                    "fixed-cidr-v6": "2001:db8:1::/64"
+                  }
+                  EOF
+                  sudo service docker restart
+            - run:
                 name: "Run IPv6 E2E tests"
                 command: |
                   export PATH=$HOME/go/bin:$PATH
