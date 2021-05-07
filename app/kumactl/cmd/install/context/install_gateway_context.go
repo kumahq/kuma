@@ -6,7 +6,8 @@ type InstallGatewayArgs struct {
 }
 
 type InstallGatewayContext struct {
-	Args InstallGatewayArgs
+	Args           InstallGatewayArgs
+	AvailableTypes map[string]struct{}
 }
 
 func DefaultInstallGatewayContext() InstallGatewayContext {
@@ -14,5 +15,6 @@ func DefaultInstallGatewayContext() InstallGatewayContext {
 		Args: InstallGatewayArgs{
 			Namespace: "kuma-gateway",
 		},
+		AvailableTypes: map[string]struct{}{"kong": {}},
 	}
 }

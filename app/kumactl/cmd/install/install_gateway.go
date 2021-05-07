@@ -1,6 +1,9 @@
 package install
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
@@ -14,14 +17,24 @@ type gatewayTemplateArgs struct {
 	Namespace string
 }
 
+func availableTypesStr(types map[string]struct{}) string {
+	var typesArr []string
+	for typeStr := range types {
+		typesArr = append(typesArr, fmt.Sprintf("%q", typeStr))
+	}
+	return strings.Join(typesArr, ", ")
+}
+
 func newInstallGatewayCmd(ctx *install_context.InstallGatewayContext) *cobra.Command {
 	args := ctx.Args
+	types := ctx.AvailableTypes
+	typesStr := availableTypesStr(types)
 	cmd := &cobra.Command{
 		Use:   "gateway",
 		Short: "Install ingress gateway on Kubernetes",
 		Long:  "Install ingress gateway on Kubernetes in a 'kuma-gateway' namespace.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			if err := validateGWArgs(args); err != nil {
+			if err := validateGWArgs(args, types); err != nil {
 				return err
 			}
 
@@ -53,15 +66,16 @@ func newInstallGatewayCmd(ctx *install_context.InstallGatewayContext) *cobra.Com
 			return nil
 		},
 	}
-	cmd.Flags().StringVar(&args.Type, "type", args.Type, "type of gateway to install. Available types: 'kong'")
+	cmd.Flags().StringVar(&args.Type, "type", args.Type, "type of gateway to install. Available types: "+typesStr)
 	_ = cmd.MarkFlagRequired("type")
 	cmd.Flags().StringVar(&args.Namespace, "namespace", args.Namespace, "namespace to install gateway to")
 	return cmd
 }
 
-func validateGWArgs(args install_context.InstallGatewayArgs) error {
-	if args.Type != "kong" {
-		return errors.New("Only gateway type 'kong' currently supported")
+func validateGWArgs(args install_context.InstallGatewayArgs, availableTypes map[string]struct{}) error {
+	if _, ok := availableTypes[args.Type]; !ok {
+		typesStr := availableTypesStr(availableTypes)
+		return errors.New("Unsupported type '" + args.Type + "'. Available types: " + typesStr)
 	}
 	return nil
 }
