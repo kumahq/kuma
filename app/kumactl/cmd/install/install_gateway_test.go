@@ -64,7 +64,7 @@ var _ = Describe("kumactl install gateway", func() {
 			extraArgs: []string{
 				"--type", "invalidtype",
 			},
-			expectedErr: "Only gateway type 'kong' currently supported",
+			expectedErr: "Unsupported type 'invalidtype'. Available types: \"kong\"",
 		}),
 	)
 
