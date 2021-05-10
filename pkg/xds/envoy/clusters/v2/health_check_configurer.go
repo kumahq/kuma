@@ -152,6 +152,7 @@ func buildHealthCheck(conf *mesh_proto.HealthCheck_Conf) *envoy_core.HealthCheck
 		EventLogPath:                 conf.EventLogPath,
 		AlwaysLogHealthCheckFailures: conf.AlwaysLogHealthCheckFailures.GetValue(),
 		NoTrafficInterval:            conf.NoTrafficInterval,
+		ReuseConnection:              conf.ReuseConnection,
 	}
 }
 
