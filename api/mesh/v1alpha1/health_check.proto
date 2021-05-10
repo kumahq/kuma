@@ -146,6 +146,9 @@ message HealthCheck {
 
     Tcp tcp = 5;
     Http http = 6;
+
+    // Reuse health check connection between health checks. Default is true.
+    google.protobuf.BoolValue reuse_connection = 15;
   }
 
   // Configuration for various types of health checking.

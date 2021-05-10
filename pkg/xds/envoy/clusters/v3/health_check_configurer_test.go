@@ -69,6 +69,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						Timeout:            ptypes.DurationProto(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
+						ReuseConnection:    &wrappers.BoolValue{Value: false},
 					},
 				},
 			},
@@ -81,6 +82,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
             healthChecks:
             - healthyThreshold: 2
               interval: 5s
+              reuseConnection: false
               tcpHealthCheck: {}
               timeout: 4s
               unhealthyThreshold: 3
