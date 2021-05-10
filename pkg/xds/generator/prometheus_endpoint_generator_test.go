@@ -40,7 +40,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 			// and
 			Expect(rs).To(BeNil())
 		},
-		Entry("both Mesh and Datalane have no Prometheus configuration", testCase{
+		Entry("both Mesh and Dataplane have no Prometheus configuration", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
@@ -63,7 +63,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				APIVersion: envoy_common.APIV3,
 			},
 		}),
-		Entry("Datalane has Prometheus configuration while Mesh doesn't", testCase{
+		Entry("Dataplane has Prometheus configuration while Mesh doesn't", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
@@ -95,7 +95,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 		}),
-		Entry("both Mesh and Datalane do have Prometheus configuration but dataplane metadata is unknown", testCase{
+		Entry("both Mesh and Dataplane do have Prometheus configuration but dataplane metadata is unknown", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
@@ -142,7 +142,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				Metadata: nil, // dataplane metadata is unknown
 			},
 		}),
-		Entry("both Mesh and Datalane do have Prometheus configuration but Admin API is not enabled on that dataplane", testCase{
+		Entry("both Mesh and Dataplane do have Prometheus configuration but Admin API is not enabled on that dataplane", testCase{
 			ctx: xds_context.Context{
 				Mesh: xds_context.MeshContext{
 					Resource: &mesh_core.MeshResource{
