@@ -31,21 +31,6 @@ mtls:
 `, mesh)
 	}
 
-	trafficPermissionAllTo2Remote := func(mesh string) string {
-		return fmt.Sprintf(`
-type: TrafficPermission
-name: all-to-2-remote
-mesh: %s
-sources:
-- match:
-   kuma.io/service: "*"
-destinations:
-- match:
-   kuma.io/service: "*"
-   kuma.io/zone: kuma-2-remote
-`, mesh)
-	}
-
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -251,54 +236,19 @@ metadata:
 			"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
-
-		// Remote 1
-		// check for job support
-		// k8s access remote k8s service
-		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_80.mesh")(remote_1)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Remote 2
-		// k8s access remote universal service
-		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_8080.mesh")(remote_2)
-		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should sync traffic permissions", func() {
-		// Remote 4
-		// universal access remote universal service
-		Eventually(func() (string, error) {
-			stdout, _, err := remote_4.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "localhost:4001")
-			return stdout, err
-		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
+	It("should support jobs with a sidecar", func() {
+		// when deploy job that connects to a service on other K8S cluster
+		err := DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_80.mesh")(remote_1)
 
-		err := global.GetKumactlOptions().KumactlDelete("traffic-permission", "allow-all-non-default", nonDefaultMesh) // remove builtin traffic permission
+		// then job is properly cleaned up and finished
 		Expect(err).ToNot(HaveOccurred())
 
-		err = YamlUniversal(trafficPermissionAllTo2Remote(nonDefaultMesh))(global)
+		// when deploy job that connects to a service on other Universal cluster
+		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_8080.mesh")(remote_2)
+
+		// then job is properly cleaned up and finished
 		Expect(err).ToNot(HaveOccurred())
-
-		// Remote 3
-		// universal access remote k8s service
-		Eventually(func() (string, error) {
-			stdout, _, err := remote_3.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			return stdout, err
-		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
-
-		// Remote 4
-		// universal can't access remote universal service
-		Eventually(func() (string, error) {
-			stdout, _, err := remote_4.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "localhost:4001")
-			return stdout, err
-		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 503 Service Unavailable"))
-
-		// Remote 1
-		// check for failing job support
-		// k8s can not access remote k8s service
-		err = DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_8080.mesh")(remote_1)
-		Expect(err).To(HaveOccurred())
 	})
 }
