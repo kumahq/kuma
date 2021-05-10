@@ -111,10 +111,6 @@ metadata:
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		// remove default traffic permission
-		err = k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-default")
-		Expect(err).ToNot(HaveOccurred())
-
 		err = YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "false"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -155,6 +151,10 @@ metadata:
 	It("should route to external-service", func() {
 		// given Mesh with passthrough enabled
 		err := YamlK8s(fmt.Sprintf(meshDefaulMtlsOn, "true"))(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// and no default traffic permission
+		err = k8s.RunKubectlE(cluster.GetTesting(), cluster.GetKubectlOptions(), "delete", "trafficpermission", "allow-all-default")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then communication outside of the Mesh works
