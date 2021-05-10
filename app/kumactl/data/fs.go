@@ -31,3 +31,11 @@ func InstallTracingFS() fs.FS {
 	}
 	return fsys
 }
+
+func InstallGatewayFS() fs.FS {
+	fsys, err := fs.Sub(InstallData, "install/k8s/gateway")
+	if err != nil {
+		panic(err)
+	}
+	return fsys
+}
