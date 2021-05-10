@@ -26,8 +26,8 @@ require (
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
-	github.com/lib/pq v1.9.0
-	github.com/miekg/dns v1.1.40
+	github.com/lib/pq v1.10.1
+	github.com/miekg/dns v1.1.42
 	github.com/onsi/ginkgo v1.16.1
 	github.com/onsi/gomega v1.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -38,6 +38,7 @@ require (
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
 	github.com/sethvargo/go-retry v0.1.0
 	github.com/slok/go-http-metrics v0.9.0
+	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.0.0
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v0.12.1
