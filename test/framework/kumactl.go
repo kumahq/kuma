@@ -1,6 +1,7 @@
 package framework
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/url"
@@ -80,6 +81,31 @@ func (o *KumactlOptions) RunKumactlAndGetOutputV(verbose bool, args ...string) (
 
 func (o *KumactlOptions) KumactlDelete(kumatype, name, mesh string) error {
 	return o.RunKumactl("delete", kumatype, name, "--mesh", mesh)
+}
+
+func (o *KumactlOptions) KumactlList(kumatype, mesh string) ([]string, error) {
+	out, err := o.RunKumactlAndGetOutput("get", kumatype, "--mesh", mesh, "-o", "json")
+	if err != nil {
+		return nil, err
+	}
+
+	type item struct {
+		Name string `json:"name"`
+	}
+	type resourceList struct {
+		Items []item `json:"items"`
+	}
+
+	list := &resourceList{}
+	if err := json.Unmarshal([]byte(out), list); err != nil {
+		return nil, err
+	}
+
+	var items []string
+	for _, item := range list.Items {
+		items = append(items, item.Name)
+	}
+	return items, nil
 }
 
 func (o *KumactlOptions) KumactlApply(configPath string) error {

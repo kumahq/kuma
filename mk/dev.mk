@@ -202,11 +202,15 @@ dev/install/helm-docs: ## Bootstrap: Install helm-docs
 		&& set +x \
 		&& echo "helm-docs $(HELM_DOCS_VERSION) has been installed at $(HELM_DOCS_PATH)" ; fi
 
-GEN_CHANGELOG_START_TAG ?= 0.7.2
-GEN_CHANGELOG_BRANCH ?= master
-GEN_CHANGELOG_MD ?= changelog.generated.md
+GEN_CHANGELOG_START_TAG ?= 0.7.1
+GEN_CHANGELOG_BRANCH ?= $(shell git branch --show-current)
+GEN_CHANGELOG_MD ?= $(TOP)/changelog.generated.md
+GEN_CHANGELOG_REPO ?= https://github.com/kumahq/kuma.git
 .PHONY: changelog
 changelog:
-	@cd tools/releases/changelog/ && \
-	go run ./... --branch refs/heads/$(GEN_CHANGELOG_BRANCH) --start refs/heads/$(GEN_CHANGELOG_START_TAG) > ../../../$(GEN_CHANGELOG_MD)
+	@cd $(TOOLS_DIR)/releases/changelog/ && \
+		go run ./... \
+		--repo $(GEN_CHANGELOG_REPO) \
+		--start refs/heads/$(GEN_CHANGELOG_START_TAG) \
+		--branch refs/heads/$(GEN_CHANGELOG_BRANCH) > $(GEN_CHANGELOG_MD)
 	@echo "The generated changelog is in $(GEN_CHANGELOG_MD)"

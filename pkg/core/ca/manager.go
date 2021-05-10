@@ -23,7 +23,7 @@ type Manager interface {
 	// GetRootCert returns root certificates of the CA
 	GetRootCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend) ([]Cert, error)
 	// GenerateDataplaneCert generates cert for a dataplane with service tags
-	GenerateDataplaneCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend, services []string) (KeyPair, error)
+	GenerateDataplaneCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend, tags mesh_proto.MultiValueTagSet) (KeyPair, error)
 }
 
 // Managers hold Manager instance for each type of backend available (by default: builtin, provided)
