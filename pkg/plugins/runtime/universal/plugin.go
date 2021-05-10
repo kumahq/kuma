@@ -37,6 +37,7 @@ func addVIPOutboundsReconciler(rt core_runtime.Runtime) error {
 		rt.ReadOnlyResourceManager(),
 		rt.ResourceManager(),
 		rt.DNSResolver(),
+		rt.Config().DNSServer.CIDRv2,
 		rt.Config().XdsServer.DataplaneStatusFlushInterval,
 	)
 	if err != nil {

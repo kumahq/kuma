@@ -55,6 +55,7 @@ type PodReconciler struct {
 	ResourceConverter k8s_common.Converter
 	SystemNamespace   string
 	Domain            string
+	Cidr              string
 }
 
 func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, error) {
@@ -115,6 +116,10 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 	if err != nil {
 		return kube_ctrl.Result{}, err
 	}
+	virtualOutbounds, err := r.findVirtualOutbounds(pod)
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
 
 	others, err := r.findOtherDataplanes(pod)
 	if err != nil {
@@ -128,7 +133,7 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, err
 	}
 
-	if err := r.createOrUpdateDataplane(pod, services, externalServices, others, vips, r.Domain); err != nil {
+	if err := r.createOrUpdateDataplane(pod, services, externalServices, virtualOutbounds, others, vips, r.Domain, r.Cidr); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
@@ -174,6 +179,28 @@ func (r *PodReconciler) findExternalServices(pod *kube_core.Pod) ([]*mesh_k8s.Ex
 	return meshedExternalServices, nil
 }
 
+func (r *PodReconciler) findVirtualOutbounds(pod *kube_core.Pod) ([]*mesh_k8s.VirtualOutbound, error) {
+	ctx := context.Background()
+
+	// List all VirtualOutbounds
+	allVirtualOutbounds := &mesh_k8s.VirtualOutboundList{}
+	if err := r.List(ctx, allVirtualOutbounds); err != nil {
+		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
+		log.Error(err, "unable to list VirtualOutbounds")
+		return nil, err
+	}
+
+	mesh := MeshFor(pod)
+	meshedVirtualOutbounds := []*mesh_k8s.VirtualOutbound{}
+	for i := range allVirtualOutbounds.Items {
+		es := allVirtualOutbounds.Items[i]
+		if es.Mesh == mesh {
+			meshedVirtualOutbounds = append(meshedVirtualOutbounds, &es)
+		}
+	}
+	return meshedVirtualOutbounds, nil
+}
+
 func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dataplane, error) {
 	ctx := context.Background()
 
@@ -207,9 +234,11 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
+	virtualOutbounds []*mesh_k8s.VirtualOutbound,
 	others []*mesh_k8s.Dataplane,
 	vips vips.List,
 	domain string,
+	cidr string,
 ) error {
 	ctx := context.Background()
 
@@ -220,7 +249,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, externalServices, others, vips, domain); err != nil {
+		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, externalServices, virtualOutbounds, others, vips, domain, cidr); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {

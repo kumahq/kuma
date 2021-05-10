@@ -45,7 +45,7 @@ var _ = Describe("UpdateOutbound", func() {
 			"service-2": "240.0.0.2",
 		})
 		// and
-		vipOutboundsReconciler, err = outbound.NewVIPOutboundsReconciler(rm, rm, r, time.Second)
+		vipOutboundsReconciler, err = outbound.NewVIPOutboundsReconciler(rm, rm, r, "240.128.255.255/9", time.Second)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

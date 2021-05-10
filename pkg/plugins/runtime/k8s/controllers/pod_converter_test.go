@@ -140,7 +140,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, given.vips, "mesh")
+			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, []*mesh_k8s.VirtualOutbound{}, otherDataplanes, given.vips, "mesh", "240.0.0.0/4")
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -351,7 +351,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, vips.List{}, "mesh")
+				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, []*mesh_k8s.VirtualOutbound{}, nil, vips.List{}, "mesh", "240.0.0.0/4")
 
 				// then
 				Expect(err).To(HaveOccurred())

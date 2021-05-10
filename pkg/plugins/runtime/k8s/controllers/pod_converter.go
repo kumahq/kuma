@@ -36,12 +36,14 @@ func (p *PodConverter) PodToDataplane(
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
+	virtualOutbounds []*mesh_k8s.VirtualOutbound,
 	others []*mesh_k8s.Dataplane,
 	vips vips.List,
 	domain string,
+	cidr string,
 ) error {
 	dataplane.Mesh = MeshFor(pod)
-	dataplaneProto, err := p.DataplaneFor(pod, services, externalServices, others, vips, domain)
+	dataplaneProto, err := p.DataplaneFor(pod, services, externalServices, virtualOutbounds, others, vips, domain, cidr)
 	if err != nil {
 		return err
 	}
@@ -83,9 +85,11 @@ func (p *PodConverter) DataplaneFor(
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
+	virtualOutbounds []*mesh_k8s.VirtualOutbound,
 	others []*mesh_k8s.Dataplane,
 	vips vips.List,
 	domain string,
+	cidr string,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
 		Networking: &mesh_proto.Dataplane_Networking{},
@@ -146,7 +150,7 @@ func (p *PodConverter) DataplaneFor(
 		dataplane.Networking.Inbound = ifaces
 	}
 
-	ofaces, err := p.OutboundInterfacesFor(pod, others, externalServices, vips, domain)
+	ofaces, err := p.OutboundInterfacesFor(pod, others, externalServices, virtualOutbounds, vips, domain, cidr)
 	if err != nil {
 		return nil, err
 	}

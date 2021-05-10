@@ -23,8 +23,10 @@ func (p *PodConverter) OutboundInterfacesFor(
 	pod *kube_core.Pod,
 	others []*mesh_k8s.Dataplane,
 	externalServices []*mesh_k8s.ExternalService,
+	virtualOutbounds []*mesh_k8s.VirtualOutbound,
 	vips vips.List,
 	domain string,
+	cidr string,
 ) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
 	dataplanes := []*core_mesh.DataplaneResource{}
@@ -44,6 +46,15 @@ func (p *PodConverter) OutboundInterfacesFor(
 			continue // one invalid ExternalService definition should not break the entire mesh
 		}
 		externalServicesRes = append(externalServicesRes, res)
+	}
+	virtualOutboundsRes := []*core_mesh.VirtualOutboundResource{}
+	for _, es := range virtualOutbounds {
+		res := core_mesh.NewVirtualOutboundResource()
+		if err := p.ResourceConverter.ToCoreResource(es, res); err != nil {
+			converterLog.Error(err, "failed to parse ExternalService", "externalService", es.Spec)
+			continue // one invalid ExternalService definition should not break the entire mesh
+		}
+		virtualOutboundsRes = append(virtualOutboundsRes, res)
 	}
 
 	endpoints := endpointsByService(dataplanes)
@@ -91,6 +102,11 @@ func (p *PodConverter) OutboundInterfacesFor(
 		Name: pod.Name,
 	}
 	outbounds = append(outbounds, dns.VIPOutbounds(resourceKey, dataplanes, vips, externalServicesRes)...)
+	generatedOutbounds, err := dns.VirtualOutbounds(resourceKey, dataplanes, externalServicesRes, virtualOutboundsRes, cidr)
+	if err != nil {
+		converterLog.Error(err, "Failed generating dns outbounds")
+	}
+	outbounds = append(outbounds, generatedOutbounds...)
 	return outbounds, nil
 }
 

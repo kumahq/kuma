@@ -17,6 +17,10 @@ func IsAddressAlreadyAllocated(err error) bool {
 	return err != nil && strings.HasPrefix(err.Error(), "Address already allocated")
 }
 
+func IsAddressOutsideCidr(err error) bool {
+	return err != nil && strings.HasPrefix(err.Error(), "Address outside the cidr")
+}
+
 type SimpleIPAM struct {
 	ipam.IPAM
 }

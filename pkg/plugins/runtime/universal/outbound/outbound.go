@@ -25,9 +25,10 @@ type VIPOutboundsReconciler struct {
 	rm        manager.ResourceManager
 	resolver  resolver.DNSResolver
 	newTicker func() *time.Ticker
+	cidr      string
 }
 
-func NewVIPOutboundsReconciler(rorm manager.ReadOnlyResourceManager, rm manager.ResourceManager, resolver resolver.DNSResolver, refresh time.Duration) (*VIPOutboundsReconciler, error) {
+func NewVIPOutboundsReconciler(rorm manager.ReadOnlyResourceManager, rm manager.ResourceManager, resolver resolver.DNSResolver, cidr string, refresh time.Duration) (*VIPOutboundsReconciler, error) {
 	return &VIPOutboundsReconciler{
 		rorm:     rorm,
 		rm:       rm,
@@ -35,6 +36,7 @@ func NewVIPOutboundsReconciler(rorm manager.ReadOnlyResourceManager, rm manager.
 		newTicker: func() *time.Ticker {
 			return time.NewTicker(refresh)
 		},
+		cidr: cidr,
 	}, nil
 }
 
@@ -86,6 +88,10 @@ func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 		if err := v.rorm.List(ctx, externalServices, store.ListByMesh(m.Meta.GetName())); err != nil {
 			return err
 		}
+		virtualOutbounds := &mesh.VirtualOutboundResourceList{}
+		if err := v.rorm.List(ctx, virtualOutbounds, store.ListByMesh(m.Meta.GetName())); err != nil {
+			return err
+		}
 		dpsUpdated := 0
 
 		allDps := make([]*mesh.DataplaneResource, len(ingresses)+len(dpList.Items))
@@ -97,6 +103,11 @@ func (v *VIPOutboundsReconciler) UpdateVIPOutbounds(ctx context.Context) error {
 				continue
 			}
 			newOutbounds := dns.VIPOutbounds(model.MetaToResourceKey(dp.Meta), allDps, v.resolver.GetVIPs(), externalServices.Items)
+			generatedOutbounds, err := dns.VirtualOutbounds(model.MetaToResourceKey(dp.Meta), allDps, externalServices.Items, virtualOutbounds.Items, v.cidr)
+			if err != nil {
+				log.Error(err, "Failed generating dns outbounds")
+			}
+			newOutbounds = append(newOutbounds, generatedOutbounds...)
 
 			if outboundsEqual(newOutbounds, dp.Spec.Networking.Outbound) {
 				continue

@@ -305,7 +305,9 @@ dnsServer:
   # Port on which the server is exposed
   port: 5653 # ENV: KUMA_DNS_SERVER_PORT
   # The CIDR range used to allocate
-  CIDR: "240.0.0.0/4" # ENV: KUMA_DNS_SERVER_CIDR
+  CIDR: "240.0.0.0/9" # ENV: KUMA_DNS_SERVER_CIDR
+  # The CIDR range used to allocate
+  CIDRv2: "240.128.0.0/9" # ENV: KUMA_DNS_SERVER_CIDR_V2
 
 # Multizone mode
 multizone:

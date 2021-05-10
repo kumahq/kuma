@@ -210,6 +210,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DNSServer.Domain).To(Equal("test-domain"))
 			Expect(cfg.DNSServer.Port).To(Equal(uint32(15653)))
 			Expect(cfg.DNSServer.CIDR).To(Equal("127.1.0.0/16"))
+			Expect(cfg.DNSServer.CIDRv2).To(Equal("127.2.0.0/16"))
 
 			Expect(cfg.XdsServer.DataplaneStatusFlushInterval).To(Equal(7 * time.Second))
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval).To(Equal(21 * time.Second))
@@ -389,6 +390,7 @@ dnsServer:
   domain: test-domain
   port: 15653
   CIDR: 127.1.0.0/16
+  CIDRv2: 127.2.0.0/16
 defaults:
   skipMeshCreation: true
 diagnostics:
@@ -521,6 +523,7 @@ sdsServer:
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
 				"KUMA_DNS_SERVER_PORT":                                                                     "15653",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",
+				"KUMA_DNS_SERVER_CIDR_V2":                                                                  "127.2.0.0/16",
 				"KUMA_MODE":                                                                                "remote",
 				"KUMA_MULTIZONE_GLOBAL_POLL_TIMEOUT":                                                       "750ms",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
