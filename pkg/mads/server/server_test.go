@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
-	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -97,14 +96,10 @@ var _ = Describe("MADS Server", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		var stream *mads_v1_client.Stream
-		for i := 0; i < 100; <-time.After(100 * time.Millisecond) {
+		Eventually(func() bool {
 			stream, err = client.StartStream()
-			if err == nil {
-				break
-			}
-			i++
-		}
-		Expect(err).ToNot(HaveOccurred())
+			return err == nil
+		}, "10s", "100ms").Should(BeTrue())
 
 		err = stream.RequestAssignments("client-1")
 		Expect(err).ToNot(HaveOccurred())
@@ -141,15 +136,13 @@ var _ = Describe("MADS Server", func() {
 		request.Header.Add("Content-Type", "application/json")
 		request.Header.Add("Accept", "application/json")
 
-		var resp *http.Response
-		for i := 0; i < 100; <-time.After(100 * time.Millisecond) {
-			resp, err = client.Do(request)
-			if err == nil {
-				break
+		Eventually(func() bool {
+			response, err := client.Do(request)
+			ok := err == nil && response.StatusCode == 200
+			if response != nil {
+				Expect(response.Body.Close()).To(Succeed())
 			}
-			i++
-		}
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.Status).To(Equal("200 OK"))
+			return ok
+		}, "10s", "100ms").Should(BeTrue())
 	})
 })
