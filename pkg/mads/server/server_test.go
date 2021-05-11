@@ -92,11 +92,14 @@ var _ = Describe("MADS Server", func() {
 	})
 
 	It("should serve GRPC requests", func() {
-		client, err := mads_v1_client.New(fmt.Sprintf("grpc://localhost:%d", port))
+		client, err := mads_v1_client.New(fmt.Sprintf("grpc://127.0.0.1:%d", port))
 		Expect(err).ToNot(HaveOccurred())
 
-		stream, err := client.StartStream()
-		Expect(err).ToNot(HaveOccurred())
+		var stream *mads_v1_client.Stream
+		Eventually(func() bool {
+			stream, err = client.StartStream()
+			return err == nil
+		}, "10s", "100ms").Should(BeTrue())
 
 		err = stream.RequestAssignments("client-1")
 		Expect(err).ToNot(HaveOccurred())
@@ -127,14 +130,19 @@ var _ = Describe("MADS Server", func() {
 		err = marshaller.Marshal(reqbuf, req)
 		Expect(err).ToNot(HaveOccurred())
 
-		request, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/v3/discovery:monitoringassignments", port), reqbuf)
+		request, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%d/v3/discovery:monitoringassignments", port), reqbuf)
 		Expect(err).ToNot(HaveOccurred())
 
 		request.Header.Add("Content-Type", "application/json")
 		request.Header.Add("Accept", "application/json")
 
-		resp, err := client.Do(request)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(resp.Status).To(Equal("200 OK"))
+		Eventually(func() bool {
+			response, err := client.Do(request)
+			ok := err == nil && response.StatusCode == 200
+			if response != nil {
+				Expect(response.Body.Close()).To(Succeed())
+			}
+			return ok
+		}, "10s", "100ms").Should(BeTrue())
 	})
 })
