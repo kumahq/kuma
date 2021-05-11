@@ -30,6 +30,16 @@ func BuildEndpointMap(
 	externalServices []*mesh_core.ExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
+	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes)
+	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader)
+	return outbound
+}
+
+func BuildEdsEndpointMap(
+	mesh *mesh_core.MeshResource,
+	zone string,
+	dataplanes []*mesh_core.DataplaneResource,
+) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	ingressInstances := fillIngressOutbounds(outbound, dataplanes, zone, mesh)
 	endpointWeight := uint32(1)
@@ -37,7 +47,6 @@ func BuildEndpointMap(
 		endpointWeight = ingressInstances
 	}
 	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight)
-	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader)
 	return outbound
 }
 

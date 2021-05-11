@@ -145,32 +145,36 @@ func SelectInboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, inb
 	sort.Stable(ConnectionPolicyByName(policies)) // sort to avoid flakiness
 	policiesMap := make(InboundConnectionPolicyMap)
 	for _, inbound := range inbounds {
-		var bestPolicy ConnectionPolicy
-		var bestRank mesh_proto.TagSelectorRank
-		sameRankCreatedLater := func(policy ConnectionPolicy, rank mesh_proto.TagSelectorRank) bool {
-			return rank.CompareTo(bestRank) == 0 && policy.GetMeta().GetCreationTime().After(bestPolicy.GetMeta().GetCreationTime())
-		}
-
-		for _, policy := range policies {
-			for _, selector := range policy.Destinations() {
-				tagSelector := mesh_proto.TagSelector(selector.Match)
-				if inbound.MatchTags(tagSelector) {
-					rank := tagSelector.Rank()
-					if rank.CompareTo(bestRank) > 0 || sameRankCreatedLater(policy, rank) {
-						bestRank = rank
-						bestPolicy = policy
-					}
-				}
-			}
-		}
-
-		if bestPolicy != nil {
+		if bestPolicy := SelectInboundConnectionPolicy(inbound.Tags, policies); bestPolicy != nil {
 			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
 			policiesMap[iface] = bestPolicy
 		}
 	}
 
 	return policiesMap
+}
+
+// SelectInboundConnectionPolicy picks a single the most specific policy for given inbound tags.
+func SelectInboundConnectionPolicy(inboundTags map[string]string, policies []ConnectionPolicy) ConnectionPolicy {
+	var bestPolicy ConnectionPolicy
+	var bestRank mesh_proto.TagSelectorRank
+	sameRankCreatedLater := func(policy ConnectionPolicy, rank mesh_proto.TagSelectorRank) bool {
+		return rank.CompareTo(bestRank) == 0 && policy.GetMeta().GetCreationTime().After(bestPolicy.GetMeta().GetCreationTime())
+	}
+
+	for _, policy := range policies {
+		for _, selector := range policy.Destinations() {
+			tagSelector := mesh_proto.TagSelector(selector.Match)
+			if tagSelector.Matches(inboundTags) {
+				rank := tagSelector.Rank()
+				if rank.CompareTo(bestRank) > 0 || sameRankCreatedLater(policy, rank) {
+					bestRank = rank
+					bestPolicy = policy
+				}
+			}
+		}
+	}
+	return bestPolicy
 }
 
 type ConnectionPolicyByName []ConnectionPolicy
