@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"net/http"
+	"time"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -92,10 +93,17 @@ var _ = Describe("MADS Server", func() {
 	})
 
 	It("should serve GRPC requests", func() {
-		client, err := mads_v1_client.New(fmt.Sprintf("grpc://localhost:%d", port))
+		client, err := mads_v1_client.New(fmt.Sprintf("grpc://127.0.0.1:%d", port))
 		Expect(err).ToNot(HaveOccurred())
 
-		stream, err := client.StartStream()
+		var stream *mads_v1_client.Stream
+		for i := 0; i < 100; <-time.After(100 * time.Millisecond) {
+			stream, err = client.StartStream()
+			if err == nil {
+				break
+			}
+			i++
+		}
 		Expect(err).ToNot(HaveOccurred())
 
 		err = stream.RequestAssignments("client-1")
@@ -127,13 +135,20 @@ var _ = Describe("MADS Server", func() {
 		err = marshaller.Marshal(reqbuf, req)
 		Expect(err).ToNot(HaveOccurred())
 
-		request, err := http.NewRequest("POST", fmt.Sprintf("http://localhost:%d/v3/discovery:monitoringassignments", port), reqbuf)
+		request, err := http.NewRequest("POST", fmt.Sprintf("http://127.0.0.1:%d/v3/discovery:monitoringassignments", port), reqbuf)
 		Expect(err).ToNot(HaveOccurred())
 
 		request.Header.Add("Content-Type", "application/json")
 		request.Header.Add("Accept", "application/json")
 
-		resp, err := client.Do(request)
+		var resp *http.Response
+		for i := 0; i < 100; <-time.After(100 * time.Millisecond) {
+			resp, err = client.Do(request)
+			if err == nil {
+				break
+			}
+			i++
+		}
 		Expect(err).ToNot(HaveOccurred())
 		Expect(resp.Status).To(Equal("200 OK"))
 	})
