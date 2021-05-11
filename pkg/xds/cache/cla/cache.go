@@ -64,7 +64,7 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string, 
 		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, model.NoMesh)); err != nil {
 			return nil, err
 		}
-		// External Services can be nil since GetCLA is used only for EDS clusters
+		// We pick here EndpointMap without External Services
 		//
 		// This also solves the problem that if the ExternalService is blocked by TrafficPermission
 		// OutboundProxyGenerate treats this as EDS cluster and tries to get endpoints via GetCLA
