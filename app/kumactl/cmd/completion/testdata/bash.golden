@@ -2225,6 +2225,39 @@ _kumactl_install_crds()
     noun_aliases=()
 }
 
+_kumactl_install_demo()
+{
+    last_command="kumactl_install_demo"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--namespace=")
+    two_word_flags+=("--namespace")
+    local_nonpersistent_flags+=("--namespace=")
+    flags+=("--zone=")
+    two_word_flags+=("--zone")
+    local_nonpersistent_flags+=("--zone=")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_install_dns()
 {
     last_command="kumactl_install_dns"
@@ -2477,6 +2510,7 @@ _kumactl_install()
     commands=()
     commands+=("control-plane")
     commands+=("crds")
+    commands+=("demo")
     commands+=("dns")
     commands+=("gateway")
     commands+=("logging")
