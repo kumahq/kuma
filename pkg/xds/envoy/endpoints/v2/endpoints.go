@@ -37,6 +37,27 @@ func CreateStaticEndpoint(clusterName string, address string, port uint32) *envo
 	}
 }
 
+func CreateStaticEndpointUnixSocket(clusterName string, path string) *envoy_api.ClusterLoadAssignment {
+	return &envoy_api.ClusterLoadAssignment{
+		ClusterName: clusterName,
+		Endpoints: []*envoy_endpoint.LocalityLbEndpoints{{
+			LbEndpoints: []*envoy_endpoint.LbEndpoint{{
+				HostIdentifier: &envoy_endpoint.LbEndpoint_Endpoint{
+					Endpoint: &envoy_endpoint.Endpoint{
+						Address: &envoy_core.Address{
+							Address: &envoy_core.Address_Pipe{
+								Pipe: &envoy_core.Pipe{
+									Path: path,
+								},
+							},
+						},
+					},
+				},
+			}},
+		}},
+	}
+}
+
 func CreateClusterLoadAssignment(clusterName string, endpoints []core_xds.Endpoint) *envoy_api.ClusterLoadAssignment {
 	localityLbEndpoints := LocalityLbEndpointsMap{}
 

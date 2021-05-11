@@ -47,6 +47,10 @@ func GetEnvoyAdminClusterName() string {
 	return "kuma:envoy:admin"
 }
 
+func GetMetricsHijackerClusterName() string {
+	return "kuma:metrics:hijacker"
+}
+
 func GetPrometheusListenerName() string {
 	return "kuma:metrics:prometheus"
 }

@@ -7,6 +7,7 @@ import (
 
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 
@@ -32,6 +33,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cfg := rootCtx.Config
 	var dp *rest.Resource
 	var tmpDir string
+	var adminPort uint32
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Dataplane (Envoy)",
@@ -68,7 +70,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 
 			if !cfg.Dataplane.AdminPort.Empty() {
 				// unless a user has explicitly opted out of Envoy Admin API, pick a free port from the range
-				adminPort, err := util_net.PickTCPPort("127.0.0.1", cfg.Dataplane.AdminPort.Lowest(), cfg.Dataplane.AdminPort.Highest())
+				adminPort, err = util_net.PickTCPPort("127.0.0.1", cfg.Dataplane.AdminPort.Lowest(), cfg.Dataplane.AdminPort.Highest())
 				if err != nil {
 					return errors.Wrapf(err, "unable to find a free port in the range %q for Envoy Admin API to listen on", cfg.Dataplane.AdminPort)
 				}
@@ -168,6 +170,9 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 
 			components = append(components, dataplane)
+
+			metricsServer := metrics.New(cfg.Dataplane, adminPort)
+			components = append(components, metricsServer)
 
 			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err

@@ -17,7 +17,7 @@ import (
 
 var _ = Describe("StaticClusterConfigurer", func() {
 
-	It("should generate proper Envoy config", func() {
+	It("should generate proper Envoy config for static cluster with socket", func() {
 		// given
 		clusterName := "test:cluster"
 		address := "192.168.0.1"
@@ -40,6 +40,38 @@ var _ = Describe("StaticClusterConfigurer", func() {
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
 			Configure(clusters.StaticCluster(clusterName, address, port)).
+			Configure(clusters.Timeout(mesh_core.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
+			Build()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		actual, err := util_proto.ToYAML(cluster)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(actual).To(MatchYAML(expected))
+	})
+
+	It("should generate proper Envoy config for static cluster with unix socket", func() {
+		// given
+		clusterName := "test:cluster"
+		path := "/tmp/socket_file_name.sock"
+		expected := `
+        altStatName: test_cluster
+        connectTimeout: 5s
+        loadAssignment:
+          clusterName: test:cluster
+          endpoints:
+          - lbEndpoints:
+            - endpoint:
+                address:
+                  pipe:
+                    path: /tmp/socket_file_name.sock
+        name: test:cluster
+        type: STATIC`
+
+		// when
+		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
+			Configure(clusters.StaticClusterUnixSocket(clusterName, path)).
 			Configure(clusters.Timeout(mesh_core.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
 			Build()
 
