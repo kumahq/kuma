@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 var meshMTLSOn = func(mesh, localityAware string) string {
@@ -53,7 +54,6 @@ conf:
 `
 
 func KumaStandalone() {
-
 	const defaultMesh = "default"
 
 	var universal Cluster
@@ -103,7 +103,6 @@ func KumaStandalone() {
 	})
 
 	It("should access all instances of the service", func() {
-
 		instances := map[string]bool{}
 		Eventually(func() bool {
 			stdout, _, err := universal.ExecWithRetries("", "", "demo-client",
