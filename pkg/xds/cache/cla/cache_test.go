@@ -9,10 +9,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kumahq/kuma/pkg/core/datasource"
-	"github.com/kumahq/kuma/pkg/core/secrets/cipher"
-	secret_manager "github.com/kumahq/kuma/pkg/core/secrets/manager"
-	secret_store "github.com/kumahq/kuma/pkg/core/secrets/store"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -57,10 +53,6 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 	expiration := 2 * time.Second
 
 	BeforeEach(func() {
-		dataSourceLoader := datasource.NewDataSourceLoader(
-			secret_manager.NewSecretManager(
-				secret_store.NewSecretStore(memory.NewStore()), cipher.None(), nil))
-
 		s = memory.NewStore()
 		countingManager = &countingResourcesManager{store: s}
 		var err error
@@ -68,7 +60,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		metrics, err = core_metrics.NewMetrics("Standalone")
 		Expect(err).ToNot(HaveOccurred())
 
-		claCache, err = cla.NewCache(countingManager, dataSourceLoader, "", expiration,
+		claCache, err = cla.NewCache(countingManager, "", expiration,
 			func(s string) ([]net.IP, error) {
 				return []net.IP{net.ParseIP(s)}, nil
 			}, metrics)
@@ -106,7 +98,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
-		Expect(countingManager.listQueries).To(Equal(2))
+		Expect(countingManager.listQueries).To(Equal(1))
 
 		expected, err := ioutil.ReadFile(filepath.Join("testdata", "cla.get.0.json"))
 		Expect(err).ToNot(HaveOccurred())
@@ -119,7 +111,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		_, err = claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
-		Expect(countingManager.listQueries).To(Equal(2))
+		Expect(countingManager.listQueries).To(Equal(1))
 
 		By("updating Dataplane in store and waiting until cache invalidation")
 		dp := core_mesh.NewDataplaneResource()
@@ -134,7 +126,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(2))
-		Expect(countingManager.listQueries).To(Equal(4))
+		Expect(countingManager.listQueries).To(Equal(2))
 
 		expected, err = ioutil.ReadFile(filepath.Join("testdata", "cla.get.1.json"))
 		Expect(err).ToNot(HaveOccurred())

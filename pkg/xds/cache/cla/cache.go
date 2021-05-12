@@ -34,14 +34,12 @@ var (
 type Cache struct {
 	cache  *once.Cache
 	rm     manager.ReadOnlyResourceManager
-	dsl    datasource.Loader
 	ipFunc lookup.LookupIPFunc
 	zone   string
 }
 
 func NewCache(
 	rm manager.ReadOnlyResourceManager,
-	dsl datasource.Loader,
 	zone string, expirationTime time.Duration,
 	ipFunc lookup.LookupIPFunc,
 	metrics metrics.Metrics,
@@ -53,7 +51,6 @@ func NewCache(
 	return &Cache{
 		cache:  c,
 		rm:     rm,
-		dsl:    dsl,
 		zone:   zone,
 		ipFunc: ipFunc,
 	}, nil
@@ -70,11 +67,12 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster e
 		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, model.NoMesh)); err != nil {
 			return nil, err
 		}
-		externalServices := &core_mesh.ExternalServiceResourceList{}
-		if err := c.rm.List(ctx, externalServices, core_store.ListByMesh(meshName)); err != nil {
-			return nil, err
-		}
-		endpointMap := topology.BuildEndpointMap(mesh, c.zone, dataplanes.Items, externalServices.Items, c.dsl)
+		// We pick here EndpointMap without External Services
+		//
+		// This also solves the problem that if the ExternalService is blocked by TrafficPermission
+		// OutboundProxyGenerate treats this as EDS cluster and tries to get endpoints via GetCLA
+		// Since GetCLA is consistent for a mesh, it would return an endpoint with address which is not valid for EDS.
+		endpointMap := topology.BuildEdsEndpointMap(mesh, c.zone, dataplanes.Items)
 		endpoints := []xds.Endpoint{}
 		for _, endpoint := range endpointMap[cluster.Service()] {
 			add := true
