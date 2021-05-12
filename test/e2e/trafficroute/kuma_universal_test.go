@@ -209,6 +209,7 @@ var _ = Describe("Test Standalone Universal deployment", func() {
 				WithServiceVersion("v3"))).
 			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Setup(universal)
+		Expect(err).ToNot(HaveOccurred())
 	})
 
 	AfterEach(func() {

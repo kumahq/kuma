@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	"github.com/kumahq/kuma/pkg/core/xds"
 

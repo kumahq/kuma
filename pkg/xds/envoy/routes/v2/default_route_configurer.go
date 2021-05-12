@@ -52,8 +52,8 @@ func (c DefaultRouteConfigurer) routeAction() *envoy_route.RouteAction {
 		var totalWeight uint32
 		for _, subset := range c.Clusters {
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
-				Name:          subset.Name(),
-				Weight:        &wrappers.UInt32Value{Value: subset.Weight()},
+				Name:   subset.Name(),
+				Weight: &wrappers.UInt32Value{Value: subset.Weight()},
 			})
 			totalWeight += subset.Weight()
 		}

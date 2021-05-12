@@ -6,10 +6,11 @@ import (
 	"io"
 	"os"
 
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 )
 
 func toLines(r io.Reader) (lines []string) {
