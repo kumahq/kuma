@@ -142,6 +142,8 @@ resources:
                 route:
                   cluster: localhost:8080
                   timeout: 0s
+          setCurrentClientCertDetails:
+            uri: true
           statPrefix: localhost_8080
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -261,6 +263,8 @@ resources:
                 route:
                   cluster: localhost:8080
                   timeout: 0s
+          setCurrentClientCertDetails:
+            uri: true
           statPrefix: localhost_8080
       transportSocket:
         name: envoy.transport_sockets.tls
