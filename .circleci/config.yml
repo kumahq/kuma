@@ -905,7 +905,7 @@ jobs:
           condition: << parameters.ipv6 >>
           steps:
             - run:
-                name: enable ipv6
+                name: Enable IPV6 and change DNS # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
                 command: |
                   cat \<<'EOF' | sudo tee /etc/docker/daemon.json
                   {

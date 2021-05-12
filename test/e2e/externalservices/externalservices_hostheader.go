@@ -11,10 +11,6 @@ import (
 )
 
 func ExternalServiceHostHeader() {
-	if IsIPv6() {
-		return // IPV6 tests has no internet connection to use httpbin, we could rewrite the test to use our external service
-	}
-
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
