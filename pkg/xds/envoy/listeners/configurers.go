@@ -371,7 +371,7 @@ func Timeout(timeout *mesh_proto.Timeout_Conf, protocol mesh_core.Protocol) Filt
 	})
 }
 
-func DNS(vips map[string]string, emptyDnsPort uint32) ListenerBuilderOpt {
+func DNS(vips map[string][]string, emptyDnsPort uint32) ListenerBuilderOpt {
 	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
 		// V2 does not have DNS Filter
 		config.AddV3(&v3.DNSConfigurer{

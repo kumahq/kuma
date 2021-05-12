@@ -289,19 +289,21 @@ var _ = Describe("VirtualOutbounds", func() {
 		givenDpName           string
 		givenDps              []*core_mesh.DataplaneResource
 		givenExternalServices []*core_mesh.ExternalServiceResource
+		givenCidr             string
 		givenVirtualOutbounds []*core_mesh.VirtualOutboundResource
 		expectedOutbounds     []*mesh_proto.Dataplane_Networking_Outbound
 	}
 	DescribeTable("SuccessfullyGenerates",
 		func(tc testCase) {
 			givenResource := model.ResourceKey{Mesh: "mesh", Name: tc.givenDpName}
-			res, err := dns.VirtualOutbounds(givenResource, tc.givenDps, tc.givenExternalServices, tc.givenVirtualOutbounds, "240.0.0.0/9")
+			res, err := dns.VirtualOutbounds(givenResource, tc.givenDps, tc.givenExternalServices, tc.givenVirtualOutbounds, tc.givenCidr)
 
 			Expect(err).To(BeNil())
 			Expect(res).To(Equal(tc.expectedOutbounds))
 		},
-		Entry("nothing", testCase{expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{}}),
+		Entry("nothing", testCase{expectedOutbounds: nil, givenCidr: "240.0.0.0/9"}),
 		Entry("no virtual outbounds return nothing", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
 				{
@@ -313,9 +315,10 @@ var _ = Describe("VirtualOutbounds", func() {
 					Spec: dp("a", "b"),
 				},
 			},
-			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{},
+			expectedOutbounds: nil,
 		}),
 		Entry("only me adds me", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
 				simpleDp("me", []map[string]string{
@@ -328,10 +331,13 @@ var _ = Describe("VirtualOutbounds", func() {
 			},
 			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
 				outbound("240.0.0.0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
+				outbound("::ffff:f000:0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
 				outbound("240.0.0.1", "b.mesh", 80, map[string]string{mesh_proto.ServiceTag: "b"}),
+				outbound("::ffff:f000:1", "b.mesh", 80, map[string]string{mesh_proto.ServiceTag: "b"}),
 			},
 		}),
 		Entry("port template", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
 				simpleDp("me", []map[string]string{
@@ -344,10 +350,13 @@ var _ = Describe("VirtualOutbounds", func() {
 			},
 			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
 				outbound("240.0.0.0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "port": "80"}),
+				outbound("::ffff:f000:0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "port": "80"}),
 				outbound("240.0.0.1", "b.mesh", 81, map[string]string{mesh_proto.ServiceTag: "b", "port": "81"}),
+				outbound("::ffff:f000:1", "b.mesh", 81, map[string]string{mesh_proto.ServiceTag: "b", "port": "81"}),
 			},
 		}),
 		Entry("multiple dps", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
 				simpleDp("me", []map[string]string{{mesh_proto.ServiceTag: "a"}}),
@@ -358,10 +367,13 @@ var _ = Describe("VirtualOutbounds", func() {
 			},
 			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
 				outbound("240.0.0.0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
+				outbound("::ffff:f000:0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
 				outbound("240.0.0.1", "b.mesh", 80, map[string]string{mesh_proto.ServiceTag: "b"}),
+				outbound("::ffff:f000:1", "b.mesh", 80, map[string]string{mesh_proto.ServiceTag: "b"}),
 			},
 		}),
 		Entry("overlap of hostnames dedupes and pick the most matching", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
 				simpleDp("me", []map[string]string{{mesh_proto.ServiceTag: "a", "version": "v1", "info": "hello"}}),
@@ -377,9 +389,11 @@ var _ = Describe("VirtualOutbounds", func() {
 			},
 			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
 				outbound("240.0.0.0", "v1.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v1", "info": "hello"}),
+				outbound("::ffff:f000:0", "v1.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v1", "info": "hello"}),
 			},
 		}),
 		Entry("ingress", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
 				simpleDp("me", []map[string]string{{mesh_proto.ServiceTag: "a"}}),
@@ -408,10 +422,13 @@ var _ = Describe("VirtualOutbounds", func() {
 			},
 			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
 				outbound("240.0.0.0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
+				outbound("::ffff:f000:0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
 				outbound("240.0.0.1", "foo.mesh", 80, map[string]string{mesh_proto.ServiceTag: "foo"}),
+				outbound("::ffff:f000:1", "foo.mesh", 80, map[string]string{mesh_proto.ServiceTag: "foo"}),
 			},
 		}),
 		Entry("external_services", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
 				simpleDp("me", []map[string]string{{mesh_proto.ServiceTag: "a"}}),
@@ -427,10 +444,13 @@ var _ = Describe("VirtualOutbounds", func() {
 			},
 			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
 				outbound("240.0.0.0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
+				outbound("::ffff:f000:0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
 				outbound("240.0.0.1", "bom.mesh", 80, map[string]string{mesh_proto.ServiceTag: "bom"}),
+				outbound("::ffff:f000:1", "bom.mesh", 80, map[string]string{mesh_proto.ServiceTag: "bom"}),
 			},
 		}),
 		Entry("multiple dps same tags generate hostnames depending on templates", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
 				simpleDp("me", []map[string]string{{mesh_proto.ServiceTag: "a", "version": "v1"}}),
@@ -442,14 +462,18 @@ var _ = Describe("VirtualOutbounds", func() {
 			},
 			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
 				outbound("240.0.0.0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
+				outbound("::ffff:f000:0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
 				outbound("240.0.0.1", "a.v1.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v1"}),
+				outbound("::ffff:f000:1", "a.v1.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v1"}),
 				outbound("240.0.0.2", "a.v2.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v2"}),
+				outbound("::ffff:f000:2", "a.v2.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v2"}),
 			},
 		}),
 		Entry("preserve previously defined outbounds", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
-				simpleDp("me", []map[string]string{{mesh_proto.ServiceTag: "a", "version": "v1"}}, outbound("240.0.3.0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"})),
+				simpleDp("me", []map[string]string{{mesh_proto.ServiceTag: "a", "version": "v1"}}, outbound("240.0.3.0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}), outbound("::ffff:f000:300", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"})),
 				simpleDp("other", []map[string]string{{mesh_proto.ServiceTag: "a", "version": "v2"}}),
 			},
 			givenVirtualOutbounds: []*core_mesh.VirtualOutboundResource{
@@ -458,11 +482,15 @@ var _ = Describe("VirtualOutbounds", func() {
 			},
 			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
 				outbound("240.0.3.0", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
+				outbound("::ffff:f000:300", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
 				outbound("240.0.0.0", "a.v1.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v1"}),
+				outbound("::ffff:f000:0", "a.v1.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v1"}),
 				outbound("240.0.0.1", "a.v2.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v2"}),
+				outbound("::ffff:f000:1", "a.v2.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v2"}),
 			},
 		}),
 		Entry("ignore invalid hostnames", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
 				simpleDp("me", []map[string]string{{mesh_proto.ServiceTag: "a", "version": "v1"}}),
@@ -473,9 +501,11 @@ var _ = Describe("VirtualOutbounds", func() {
 			},
 			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
 				outbound("240.0.0.0", "a.v1.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v1"}),
+				outbound("::ffff:f000:0", "a.v1.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v1"}),
 			},
 		}),
 		Entry("sorts picks by best matching selector if overlap", testCase{
+			givenCidr:   "240.0.0.0/9",
 			givenDpName: "me",
 			givenDps: []*core_mesh.DataplaneResource{
 				simpleDp("me", []map[string]string{{mesh_proto.ServiceTag: "a", "version": "v1"}}),
@@ -488,9 +518,30 @@ var _ = Describe("VirtualOutbounds", func() {
 			},
 			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
 				outbound("240.0.0.0", "a.v1.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v1"}),
+				outbound("::ffff:f000:0", "a.v1.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v1"}),
 				outbound("240.0.0.1", "a.v2.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v2"}),
+				outbound("::ffff:f000:1", "a.v2.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a", "version": "v2"}),
 				outbound("240.0.0.2", "b.v2.mesh", 80, map[string]string{mesh_proto.ServiceTag: "b", "version": "v2"}),
+				outbound("::ffff:f000:2", "b.v2.mesh", 80, map[string]string{mesh_proto.ServiceTag: "b", "version": "v2"}),
 				outbound("240.0.0.3", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
+				outbound("::ffff:f000:3", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
+			},
+		}),
+		Entry("v6 cidr doesn't generate v4 addresses", testCase{
+			givenCidr:   "2001:DB8::/96",
+			givenDpName: "a",
+			givenDps: []*core_mesh.DataplaneResource{
+				simpleDp("a", []map[string]string{{mesh_proto.ServiceTag: "a"}}, &mesh_proto.Dataplane_Networking_Outbound{Address: "2001:db8::1", Hostname: "c.mesh", Port: 80, Tags: map[string]string{mesh_proto.ServiceTag: "c"}}),
+				simpleDp("b", []map[string]string{{mesh_proto.ServiceTag: "b"}}),
+				simpleDp("c", []map[string]string{{mesh_proto.ServiceTag: "c"}}),
+			},
+			givenVirtualOutbounds: []*core_mesh.VirtualOutboundResource{
+				virtualOutbound("vo", []*mesh_proto.Selector{{Match: map[string]string{mesh_proto.ServiceTag: "*"}}}, "80", "{{.service}}.mesh", map[string]string{"service": mesh_proto.ServiceTag}),
+			},
+			expectedOutbounds: []*mesh_proto.Dataplane_Networking_Outbound{
+				outbound("2001:db8::", "a.mesh", 80, map[string]string{mesh_proto.ServiceTag: "a"}),
+				outbound("2001:db8::2", "b.mesh", 80, map[string]string{mesh_proto.ServiceTag: "b"}),
+				outbound("2001:db8::1", "c.mesh", 80, map[string]string{mesh_proto.ServiceTag: "c"}),
 			},
 		}),
 	)

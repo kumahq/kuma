@@ -17,7 +17,7 @@ import (
 var _ = Describe("DNSConfigurer", func() {
 
 	type testCase struct {
-		vips         map[string]string
+		vips         map[string][]string
 		emptyDnsPort uint32
 		expected     string
 	}
@@ -39,10 +39,10 @@ var _ = Describe("DNSConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic TCP listener", testCase{
-			vips: map[string]string{
-				"something.mesh": "240.0.0.0",
-				"something.com":  "240.0.0.0",
-				"backend.mesh":   "240.0.0.1",
+			vips: map[string][]string{
+				"something.mesh": {"240.0.0.0"},
+				"something.com":  {"240.0.0.0"},
+				"backend.mesh":   {"240.0.0.1"},
 			},
 			emptyDnsPort: 53002,
 			expected: `
@@ -84,6 +84,87 @@ var _ = Describe("DNSConfigurer", func() {
                       endpoint:
                         addressList:
                           address:
+                          - 240.0.0.0
+                      name: something.mesh
+                statPrefix: kuma_dns
+            name: kuma:dns
+            reusePort: true
+            trafficDirection: INBOUND
+`,
+		}),
+		Entry("basic ip6", testCase{
+			vips: map[string][]string{
+				"something.mesh": {"ab::beef"},
+			},
+			emptyDnsPort: 53002,
+			expected: `
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 1234
+                protocol: UDP
+            listenerFilters:
+            - name: envoy.filters.udp.dns_filter
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3alpha.DnsFilterConfig
+                clientConfig:
+                  maxPendingLookups: "256"
+                  upstreamResolvers:
+                  - socketAddress:
+                      address: 127.0.0.1
+                      portValue: 53002
+                serverConfig:
+                  inlineDnsTable:
+                    knownSuffixes:
+                    - safeRegex:
+                        googleRe2: {}
+                        regex: .*
+                    virtualDomains:
+                    - answerTtl: 30s
+                      endpoint:
+                        addressList:
+                          address:
+                          - ab::beef
+                      name: something.mesh
+                statPrefix: kuma_dns
+            name: kuma:dns
+            reusePort: true
+            trafficDirection: INBOUND
+`,
+		}),
+		Entry("basic ip6 and 4", testCase{
+			vips: map[string][]string{
+				"something.mesh": {"ab::beef", "240.0.0.0"},
+			},
+			emptyDnsPort: 53002,
+			expected: `
+            address:
+              socketAddress:
+                address: 192.168.0.1
+                portValue: 1234
+                protocol: UDP
+            listenerFilters:
+            - name: envoy.filters.udp.dns_filter
+              typedConfig:
+                '@type': type.googleapis.com/envoy.extensions.filters.udp.dns_filter.v3alpha.DnsFilterConfig
+                clientConfig:
+                  maxPendingLookups: "256"
+                  upstreamResolvers:
+                  - socketAddress:
+                      address: 127.0.0.1
+                      portValue: 53002
+                serverConfig:
+                  inlineDnsTable:
+                    knownSuffixes:
+                    - safeRegex:
+                        googleRe2: {}
+                        regex: .*
+                    virtualDomains:
+                    - answerTtl: 30s
+                      endpoint:
+                        addressList:
+                          address:
+                          - ab::beef
                           - 240.0.0.0
                       name: something.mesh
                 statPrefix: kuma_dns

@@ -2,10 +2,11 @@ package dns
 
 import (
 	"fmt"
-
 	"sort"
 	"strconv"
 	"strings"
+
+	util_net "github.com/kumahq/kuma/pkg/util/net"
 
 	"github.com/kumahq/kuma/pkg/core"
 
@@ -127,11 +128,12 @@ func VirtualOutbounds(
 	if err != nil {
 		return nil, err
 	}
+	cidrIsV4 := util_net.CidrIsIpV4(cidr)
 	ipByHostname := map[string]string{}
 	if self != nil {
 		// Retrieve existing ips from self to not change already assigned ips
 		for _, outbound := range self.Spec.Networking.Outbound {
-			if outbound.Hostname != "" {
+			if outbound.Hostname != "" && (!cidrIsV4 || util_net.IsV4(outbound.Address)) { // If we have a v4 cidr we only match things for v4
 				err := ipam.ReserveIP(outbound.Address)
 				if err != nil && !IsAddressAlreadyAllocated(err) && !IsAddressOutsideCidr(err) {
 					return nil, errors.Wrapf(err, "Failed reserving ip: %s", outbound.Address)
@@ -140,6 +142,7 @@ func VirtualOutbounds(
 			}
 		}
 	}
+	var outboundWithv6 []*mesh_proto.Dataplane_Networking_Outbound
 	for _, outbound := range outbounds {
 		if _, ok := ipByHostname[outbound.Hostname]; !ok {
 			// Allocate ip for hostname
@@ -151,8 +154,18 @@ func VirtualOutbounds(
 		}
 		// Set the address for the hostname
 		outbound.Address = ipByHostname[outbound.Hostname]
+		outboundWithv6 = append(outboundWithv6, outbound)
+		// Add a v6 listener is the ip wasn't v6
+		if cidrIsV4 {
+			outboundWithv6 = append(outboundWithv6, &mesh_proto.Dataplane_Networking_Outbound{
+				Tags:     outbound.Tags,
+				Port:     outbound.Port,
+				Hostname: outbound.Hostname,
+				Address:  util_net.ToV6(outbound.Address),
+			})
+		}
 	}
-	return outbounds, nil
+	return outboundWithv6, nil
 }
 
 func buildUniqueTagsList(resourceKey model.ResourceKey, dataplanes []*core_mesh.DataplaneResource, externalServices []*core_mesh.ExternalServiceResource) (*core_mesh.DataplaneResource, []map[string]string) {

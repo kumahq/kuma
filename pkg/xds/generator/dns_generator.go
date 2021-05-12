@@ -50,21 +50,21 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 	return resources, nil
 }
 
-func (g DNSGenerator) computeVIPs(ctx xds_context.Context, proxy *core_xds.Proxy) map[string]string {
+func (g DNSGenerator) computeVIPs(ctx xds_context.Context, proxy *core_xds.Proxy) map[string][]string {
 	domainsByIPs := ctx.ControlPlane.DNSResolver.GetVIPs().FQDNsByIPs()
-	meshedVips := map[string]string{}
+	meshedVips := map[string][]string{}
 	for _, outbound := range proxy.Dataplane.Spec.GetNetworking().GetOutbound() {
 		if outbound.Hostname != "" {
-			meshedVips[outbound.Hostname] = outbound.Address
-		} else if domain, ok := domainsByIPs[outbound.Address]; ok { // For legacy dns name generation
+			meshedVips[outbound.Hostname] = append(meshedVips[outbound.Hostname], outbound.Address)
+		} else if domain, ok := domainsByIPs[outbound.Address]; ok { // Only there for backward compatibility
 			// add regular .mesh domain
-			meshedVips[domain+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
+			meshedVips[domain+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = []string{outbound.Address}
 			// add hostname from address in external service
 			endpoints := proxy.Routing.OutboundTargets[outbound.Tags[mesh_proto.ServiceTag]]
 			for _, endpoint := range endpoints {
 				if govalidator.IsDNSName(endpoint.Target) {
 					if endpoint.ExternalService != nil && endpoint.Target != "" {
-						meshedVips[endpoint.Target] = outbound.Address
+						meshedVips[endpoint.Target] = []string{outbound.Address}
 					}
 				}
 			}
