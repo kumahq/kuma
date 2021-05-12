@@ -89,7 +89,25 @@ resources:
               address: 192.168.0.2
               portValue: 8082
         loadBalancingWeight: 1
-- name: db
+- name: db-_0_
+  resource:
+    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    clusterName: db
+    endpoints:
+    - lbEndpoints:
+      - endpoint:
+          address:
+            socketAddress:
+              address: 192.168.0.3
+              portValue: 5432
+        loadBalancingWeight: 1
+        metadata:
+          filterMetadata:
+            envoy.lb:
+              role: master
+            envoy.transport_socket_match:
+              role: master
+- name: db-_1_
   resource:
     '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
     clusterName: db
@@ -242,7 +260,7 @@ resources:
               resourceApiVersion: V3
         sni: backend{mesh=mesh1}
     type: EDS
-- name: db
+- name: db-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
@@ -251,38 +269,18 @@ resources:
         ads: {}
         resourceApiVersion: V3
     http2ProtocolOptions: {}
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - role
-    name: db
-    transportSocketMatches:
-    - match:
-        role: master
-      name: db{mesh=mesh1,role=master}
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchSubjectAltNames:
-                - exact: spiffe://mesh1/db
-              validationContextSdsSecretConfig:
-                name: mesh_ca
-                sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: identity_cert
+    name: db-_0_
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - exact: spiffe://mesh1/db
+            validationContextSdsSecretConfig:
+              name: mesh_ca
               sdsConfig:
                 apiConfigSource:
                   apiType: GRPC
@@ -291,31 +289,39 @@ resources:
                       clusterName: ads_cluster
                   transportApiVersion: V3
                 resourceApiVersion: V3
-          sni: db{mesh=mesh1,role=master}
-    - match:
-        role: replica
-      name: db{mesh=mesh1,role=replica}
-      transportSocket:
-        name: envoy.transport_sockets.tls
-        typedConfig:
-          '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
-          commonTlsContext:
-            combinedValidationContext:
-              defaultValidationContext:
-                matchSubjectAltNames:
-                - exact: spiffe://mesh1/db
-              validationContextSdsSecretConfig:
-                name: mesh_ca
-                sdsConfig:
-                  apiConfigSource:
-                    apiType: GRPC
-                    grpcServices:
-                    - envoyGrpc:
-                        clusterName: ads_cluster
-                    transportApiVersion: V3
-                  resourceApiVersion: V3
-            tlsCertificateSdsSecretConfigs:
-            - name: identity_cert
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: ads_cluster
+                transportApiVersion: V3
+              resourceApiVersion: V3
+        sni: db{mesh=mesh1,role=master}
+    type: EDS
+- name: db-_1_
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    http2ProtocolOptions: {}
+    name: db-_1_
+    transportSocket:
+      name: envoy.transport_sockets.tls
+      typedConfig:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        commonTlsContext:
+          combinedValidationContext:
+            defaultValidationContext:
+              matchSubjectAltNames:
+              - exact: spiffe://mesh1/db
+            validationContextSdsSecretConfig:
+              name: mesh_ca
               sdsConfig:
                 apiConfigSource:
                   apiType: GRPC
@@ -324,7 +330,17 @@ resources:
                       clusterName: ads_cluster
                   transportApiVersion: V3
                 resourceApiVersion: V3
-          sni: db{mesh=mesh1,role=replica}
+          tlsCertificateSdsSecretConfigs:
+          - name: identity_cert
+            sdsConfig:
+              apiConfigSource:
+                apiType: GRPC
+                grpcServices:
+                - envoyGrpc:
+                    clusterName: ads_cluster
+                transportApiVersion: V3
+              resourceApiVersion: V3
+        sni: db{mesh=mesh1,role=replica}
     type: EDS
 - name: outbound:127.0.0.1:18080
   resource:
@@ -431,17 +447,9 @@ resources:
           statPrefix: db
           weightedClusters:
             clusters:
-            - metadataMatch:
-                filterMetadata:
-                  envoy.lb:
-                    role: master
-              name: db
+            - name: db-_0_
               weight: 10
-            - metadataMatch:
-                filterMetadata:
-                  envoy.lb:
-                    role: replica
-              name: db
+            - name: db-_1_
               weight: 90
     name: outbound:127.0.0.1:54321
     trafficDirection: OUTBOUND

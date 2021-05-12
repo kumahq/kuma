@@ -3,17 +3,18 @@ package v3
 import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_tcp "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/tcp_proxy/v3"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
 	util_xds "github.com/kumahq/kuma/pkg/util/xds"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 )
 
 type TcpProxyConfigurer struct {
 	StatsName string
 	// Clusters to forward traffic to.
-	Clusters []envoy_common.ClusterSubset
+	Clusters    []envoy_common.Cluster
+	UseMetadata bool
 }
 
 func (c *TcpProxyConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -40,25 +41,32 @@ func (c *TcpProxyConfigurer) tcpProxy() *envoy_tcp.TcpProxy {
 	proxy := envoy_tcp.TcpProxy{
 		StatPrefix: util_xds.SanitizeMetric(c.StatsName),
 	}
+
 	if len(c.Clusters) == 1 {
 		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_Cluster{
-			Cluster: c.Clusters[0].ClusterName,
+			Cluster: c.Clusters[0].Name(),
 		}
-		proxy.MetadataMatch = envoy_metadata.LbMetadata(c.Clusters[0].Tags)
-	} else {
-		var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
-		for _, cluster := range c.Clusters {
-			weightedClusters = append(weightedClusters, &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
-				Name:          cluster.ClusterName,
-				Weight:        cluster.Weight,
-				MetadataMatch: envoy_metadata.LbMetadata(cluster.Tags),
-			})
+		if c.UseMetadata {
+			proxy.MetadataMatch = envoy_metadata.LbMetadata(c.Clusters[0].Tags())
 		}
-		proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_WeightedClusters{
-			WeightedClusters: &envoy_tcp.TcpProxy_WeightedCluster{
-				Clusters: weightedClusters,
-			},
+		return &proxy
+	}
+
+	var weightedClusters []*envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight
+	for _, cluster := range c.Clusters {
+		weightedCluster := &envoy_tcp.TcpProxy_WeightedCluster_ClusterWeight{
+			Name:   cluster.Name(),
+			Weight: cluster.Weight(),
 		}
+		if c.UseMetadata {
+			weightedCluster.MetadataMatch = envoy_metadata.LbMetadata(cluster.Tags())
+		}
+		weightedClusters = append(weightedClusters, weightedCluster)
+	}
+	proxy.ClusterSpecifier = &envoy_tcp.TcpProxy_WeightedClusters{
+		WeightedClusters: &envoy_tcp.TcpProxy_WeightedCluster{
+			Clusters: weightedClusters,
+		},
 	}
 	return &proxy
 }

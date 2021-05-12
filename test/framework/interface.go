@@ -40,17 +40,18 @@ type deployOptions struct {
 	isipv6           bool
 
 	// app specific
-	namespace   string
-	appname     string
-	name        string
-	appYaml     string
-	appArgs     []string
-	token       string
-	transparent bool
-	builtindns  bool
-	protocol    string
-	mesh        string
-	dpVersion   string
+	namespace      string
+	appname        string
+	name           string
+	appYaml        string
+	appArgs        []string
+	token          string
+	transparent    bool
+	builtindns     bool
+	protocol       string
+	serviceVersion string
+	mesh           string
+	dpVersion      string
 }
 
 type DeployOptionsFunc func(*deployOptions)
@@ -70,6 +71,12 @@ func WithProtocol(protocol string) DeployOptionsFunc {
 func WithArgs(appArgs []string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.appArgs = appArgs
+	}
+}
+
+func WithServiceVersion(version string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.serviceVersion = version
 	}
 }
 

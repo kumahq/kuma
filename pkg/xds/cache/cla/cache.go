@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-
 	"github.com/kumahq/kuma/pkg/core/datasource"
+	"github.com/kumahq/kuma/pkg/core/xds"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/metrics"
@@ -58,8 +58,8 @@ func NewCache(
 	}, nil
 }
 
-func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string, apiVersion envoy_common.APIVersion) (proto.Message, error) {
-	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, service, meshHash)
+func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error) {
+	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, cluster.Name(), meshHash)
 	elt, err := c.cache.GetOrRetrieve(ctx, key, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
 		dataplanes, err := topology.GetDataplanes(claCacheLog, ctx, c.rm, c.ipFunc, meshName)
 		if err != nil {
@@ -74,7 +74,24 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string, 
 			return nil, err
 		}
 		endpointMap := topology.BuildEndpointMap(mesh, c.zone, dataplanes.Items, externalServices.Items, c.dsl)
-		return envoy_endpoints.CreateClusterLoadAssignment(service, endpointMap[service], apiVersion)
+		endpoints := []xds.Endpoint{}
+		for _, endpoint := range endpointMap[cluster.Service()] {
+			add := true
+			for cKey, cValue := range cluster.Tags() {
+				eValue, ok := endpoint.Tags[cKey]
+				if !ok {
+					continue
+				}
+				if cValue != eValue {
+					add = false
+					break
+				}
+			}
+			if add {
+				endpoints = append(endpoints, endpoint)
+			}
+		}
+		return envoy_endpoints.CreateClusterLoadAssignment(cluster.Name(), endpoints, apiVersion)
 	}))
 	if err != nil {
 		return nil, err

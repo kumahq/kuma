@@ -65,23 +65,23 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
-					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterSubset{ClusterName: localClusterName}))
+					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
 			case mesh_core.ProtocolGRPC:
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
 					Configure(envoy_listeners.GrpcStats()).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
-					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.ClusterSubset{ClusterName: localClusterName}))
+					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
 			case mesh_core.ProtocolKafka:
 				filterChainBuilder.
 					Configure(envoy_listeners.Kafka(localClusterName)).
-					Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.ClusterSubset{ClusterName: localClusterName}))
+					Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
 			case mesh_core.ProtocolTCP:
 				fallthrough
 			default:
 				// configuration for non-HTTP cases
-				filterChainBuilder.Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.ClusterSubset{ClusterName: localClusterName}))
+				filterChainBuilder.Configure(envoy_listeners.TcpProxy(localClusterName, envoy_common.NewCluster(envoy_common.WithService(localClusterName))))
 			}
 			return filterChainBuilder.
 				Configure(envoy_listeners.ServerSideMTLS(ctx, proxy.Metadata)).

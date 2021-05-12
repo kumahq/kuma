@@ -7,12 +7,11 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v2"
 )
 
 type DefaultRouteConfigurer struct {
-	// Subsets to forward traffic to.
-	Subsets []envoy_common.ClusterSubset
+	// Clusters to forward traffic to.
+	Clusters []envoy_common.Cluster
 }
 
 func (c DefaultRouteConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
@@ -31,8 +30,8 @@ func (c DefaultRouteConfigurer) Configure(virtualHost *envoy_route.VirtualHost) 
 }
 
 func (c DefaultRouteConfigurer) hasExternal() bool {
-	for _, subset := range c.Subsets {
-		if subset.IsExternalService {
+	for _, subset := range c.Clusters {
+		if subset.IsExternalService() {
 			return true
 		}
 	}
@@ -41,24 +40,22 @@ func (c DefaultRouteConfigurer) hasExternal() bool {
 
 func (c DefaultRouteConfigurer) routeAction() *envoy_route.RouteAction {
 	routeAction := envoy_route.RouteAction{}
-	if len(c.Subsets) != 0 {
-		routeAction.Timeout = ptypes.DurationProto(c.Subsets[0].Timeout.GetHttp().GetRequestTimeout().AsDuration())
+	if len(c.Clusters) != 0 {
+		routeAction.Timeout = ptypes.DurationProto(c.Clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
 	}
-	if len(c.Subsets) == 1 {
+	if len(c.Clusters) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{
-			Cluster: c.Subsets[0].ClusterName,
+			Cluster: c.Clusters[0].Name(),
 		}
-		routeAction.MetadataMatch = envoy_metadata.LbMetadata(c.Subsets[0].Tags)
 	} else {
 		var weightedClusters []*envoy_route.WeightedCluster_ClusterWeight
 		var totalWeight uint32
-		for _, subset := range c.Subsets {
+		for _, subset := range c.Clusters {
 			weightedClusters = append(weightedClusters, &envoy_route.WeightedCluster_ClusterWeight{
-				Name:          subset.ClusterName,
-				Weight:        &wrappers.UInt32Value{Value: subset.Weight},
-				MetadataMatch: envoy_metadata.LbMetadata(subset.Tags),
+				Name:          subset.Name(),
+				Weight:        &wrappers.UInt32Value{Value: subset.Weight()},
 			})
-			totalWeight += subset.Weight
+			totalWeight += subset.Weight()
 		}
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_WeightedClusters{
 			WeightedClusters: &envoy_route.WeightedCluster{

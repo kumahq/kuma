@@ -24,7 +24,7 @@ var _ = Describe("RetryConfigurer", func() {
 		listenerProtocol core_xds.SocketAddressProtocol
 		statsName        string
 		service          string
-		subsets          []envoy_common.ClusterSubset
+		clusters         []envoy_common.Cluster
 		dpTags           mesh_proto.MultiValueTagSet
 		protocol         mesh_core.Protocol
 		retry            *mesh_core.RetryResource
@@ -40,7 +40,7 @@ var _ = Describe("RetryConfigurer", func() {
 					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpOutboundRoute(
 						given.service,
-						given.subsets,
+						given.clusters,
 						given.dpTags,
 					)).
 					Configure(Retry(given.retry, given.protocol)))).
@@ -61,11 +61,11 @@ var _ = Describe("RetryConfigurer", func() {
 			listenerPort:    17777,
 			statsName:       "127.0.0.1:17777",
 			service:         "backend",
-			subsets: []envoy_common.ClusterSubset{
-				{
-					ClusterName: "backend",
-					Weight:      100,
-				},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithService("backend"),
+					envoy_common.WithWeight(100),
+				),
 			},
 			dpTags: map[string]map[string]bool{
 				"kuma.io/service": {
@@ -127,11 +127,11 @@ var _ = Describe("RetryConfigurer", func() {
 			listenerPort:    18080,
 			statsName:       "127.0.0.1:18080",
 			service:         "backend",
-			subsets: []envoy_common.ClusterSubset{
-				{
-					ClusterName: "backend",
-					Weight:      100,
-				},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithService("backend"),
+					envoy_common.WithWeight(100),
+				),
 			},
 			dpTags: map[string]map[string]bool{
 				"kuma.io/service": {
@@ -212,11 +212,11 @@ var _ = Describe("RetryConfigurer", func() {
 			listenerPort:    17777,
 			statsName:       "127.0.0.1:17777",
 			service:         "backend",
-			subsets: []envoy_common.ClusterSubset{
-				{
-					ClusterName: "backend",
-					Weight:      100,
-				},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithService("backend"),
+					envoy_common.WithWeight(100),
+				),
 			},
 			dpTags: map[string]map[string]bool{
 				"kuma.io/service": {
@@ -278,11 +278,11 @@ var _ = Describe("RetryConfigurer", func() {
 			listenerPort:    18080,
 			statsName:       "127.0.0.1:18080",
 			service:         "backend",
-			subsets: []envoy_common.ClusterSubset{
-				{
-					ClusterName: "backend",
-					Weight:      100,
-				},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithService("backend"),
+					envoy_common.WithWeight(100),
+				),
 			},
 			dpTags: map[string]map[string]bool{
 				"kuma.io/service": {
@@ -362,11 +362,11 @@ var _ = Describe("RetryConfigurer", func() {
 			listenerPort:    18080,
 			statsName:       "127.0.0.1:18080",
 			service:         "backend",
-			subsets: []envoy_common.ClusterSubset{
-				{
-					ClusterName: "backend",
-					Weight:      100,
-				},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithService("backend"),
+					envoy_common.WithWeight(100),
+				),
 			},
 			dpTags: map[string]map[string]bool{
 				"kuma.io/service": {

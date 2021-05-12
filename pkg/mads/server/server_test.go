@@ -107,7 +107,7 @@ var _ = Describe("MADS Server", func() {
 	})
 
 	It("should serve HTTP/1.1 requests", func() {
-		rt, err := config.NewRoundTripperFromConfig(config.HTTPClientConfig{TLSConfig: config.TLSConfig{InsecureSkipVerify: true}}, "mads", false, false)
+		rt, err := config.NewRoundTripperFromConfig(config.HTTPClientConfig{TLSConfig: config.TLSConfig{InsecureSkipVerify: true}}, "mads", config.WithHTTP2Disabled())
 		Expect(err).ToNot(HaveOccurred())
 
 		client := &http.Client{Transport: rt}

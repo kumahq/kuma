@@ -25,7 +25,7 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 		listenerAddress  string
 		listenerPort     uint32
 		statsName        string
-		clusters         []envoy_common.ClusterSubset
+		clusters         []envoy_common.Cluster
 		rbacEnabled      bool
 		permission       *mesh_core.TrafficPermissionResource
 		expected         string
@@ -54,8 +54,11 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
-			rbacEnabled:     true,
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("localhost:8080"),
+				envoy_common.WithWeight(200),
+			)},
+			rbacEnabled: true,
 			permission: &mesh_core.TrafficPermissionResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "tp-1",
@@ -119,8 +122,11 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
-			rbacEnabled:     false,
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("localhost:8080"),
+				envoy_common.WithWeight(200),
+			)},
+			rbacEnabled: false,
 			permission: &mesh_core.TrafficPermissionResource{
 				Meta: &test_model.ResourceMeta{
 					Name: "tp-1",
