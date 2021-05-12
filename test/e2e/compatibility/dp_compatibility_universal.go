@@ -10,6 +10,11 @@ import (
 )
 
 func UniversalCompatibility() {
+	if IsIPv6() {
+		// IPV6 tests has no internet connection to fetch old Kuma binaries
+		return
+	}
+
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
