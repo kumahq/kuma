@@ -249,7 +249,7 @@ func (_ OutboundProxyGenerator) determineClusters(proxy *model.Proxy, outbound *
 		timeoutConf = timeout.Spec.GetConf()
 	}
 
-	for j, destination := range route.Spec.GetConf().GetSplit() {
+	for j, destination := range route.Spec.GetConf().GetSplitOrdered() {
 		service, ok := destination.Destination[kuma_mesh.ServiceTag]
 		if !ok { // should not happen since we validate traffic route
 			return nil, errors.Errorf("trafficroute{name=%q}.%s: mandatory tag %q is missing: %v", route.GetMeta().GetName(), validators.RootedAt("conf").Index(j).Field("destination"), kuma_mesh.ServiceTag, destination.Destination)
