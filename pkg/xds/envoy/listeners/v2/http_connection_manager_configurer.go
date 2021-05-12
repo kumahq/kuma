@@ -25,6 +25,9 @@ func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.
 
 	if c.ForwardClientCertDetails {
 		config.ForwardClientCertDetails = envoy_hcm.HttpConnectionManager_SANITIZE_SET
+		config.SetCurrentClientCertDetails = &envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails{
+			Uri: true,
+		}
 	}
 
 	pbst, err := util_proto.MarshalAnyDeterministic(config)
