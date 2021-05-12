@@ -59,6 +59,8 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
                   forwardClientCertDetails: SANITIZE_SET
+                  setCurrentClientCertDetails:
+                    uri: true
                   statPrefix: localhost_8080
                   httpFilters:
                   - name: envoy.filters.http.router

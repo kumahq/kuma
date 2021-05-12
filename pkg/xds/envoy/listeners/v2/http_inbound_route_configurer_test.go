@@ -64,6 +64,8 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.http_connection_manager.v2.HttpConnectionManager
                   forwardClientCertDetails: SANITIZE_SET
+                  setCurrentClientCertDetails:
+                    uri: true
                   httpFilters:
                   - name: envoy.filters.http.router
                   routeConfig:
