@@ -163,14 +163,16 @@ func NetworkRBAC(statsName string, rbacEnabled bool, permission *mesh_core.Traff
 	})
 }
 
-func OutboundListener(listenerName string, address string, port uint32) ListenerBuilderOpt {
+func OutboundListener(listenerName string, address string, port uint32, protocol core_xds.SocketAddressProtocol) ListenerBuilderOpt {
 	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
 		config.AddV2(&v2.OutboundListenerConfigurer{
+			Protocol:     protocol,
 			ListenerName: listenerName,
 			Address:      address,
 			Port:         port,
 		})
 		config.AddV3(&v3.OutboundListenerConfigurer{
+			Protocol:     protocol,
 			ListenerName: listenerName,
 			Address:      address,
 			Port:         port,
@@ -185,6 +187,13 @@ func TransparentProxying(transparentProxying *mesh_proto.Dataplane_Networking_Tr
 			config.AddV2(&v2.TransparentProxyingConfigurer{})
 			config.AddV3(&v3.TransparentProxyingConfigurer{})
 		}
+	})
+}
+
+func NoBindToPort() ListenerBuilderOpt {
+	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+		config.AddV2(&v2.TransparentProxyingConfigurer{})
+		config.AddV3(&v3.TransparentProxyingConfigurer{})
 	})
 }
 
@@ -356,6 +365,16 @@ func Timeout(timeout *mesh_proto.Timeout_Conf, protocol mesh_core.Protocol) Filt
 		config.AddV3(&v3.TimeoutConfigurer{
 			Conf:     timeout,
 			Protocol: protocol,
+		})
+	})
+}
+
+func DNS(vips map[string]string, emptyDnsPort uint32) ListenerBuilderOpt {
+	return ListenerBuilderOptFunc(func(config *ListenerBuilderConfig) {
+		// V2 does not have DNS Filter
+		config.AddV3(&v3.DNSConfigurer{
+			VIPs:         vips,
+			EmptyDNSPort: emptyDnsPort,
 		})
 	})
 }

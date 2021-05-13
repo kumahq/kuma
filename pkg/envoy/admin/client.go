@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/pkg/errors"
@@ -89,7 +90,7 @@ func (a *envoyAdminClient) adminAddress(dataplane *mesh_core.DataplaneResource) 
 	// in the DataplaneInsights.
 	portUint := a.cfg.Runtime.Kubernetes.Injector.SidecarContainer.AdminPort
 
-	return fmt.Sprintf("%s:%d", ip, portUint)
+	return net.JoinHostPort(ip, strconv.FormatUint(uint64(portUint), 10))
 }
 
 func (a *envoyAdminClient) PostQuit(dataplane *mesh_core.DataplaneResource) error {

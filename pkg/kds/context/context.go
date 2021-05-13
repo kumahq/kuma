@@ -22,21 +22,27 @@ type Context struct {
 	GlobalServerCallbacks []mux.Callbacks
 	GlobalProvidedFilter  reconcile.ResourceFilter
 	RemoteProvidedFilter  reconcile.ResourceFilter
+	// Configs contains the names of system.ConfigResource that will be transferred from Global to Remote
+	Configs map[string]bool
 }
 
 func DefaultContext(manager manager.ResourceManager, zone string) *Context {
+	configs := map[string]bool{
+		config_manager.ClusterIdConfigKey: true,
+	}
 	return &Context{
 		RemoteClientCtx:      context.Background(),
-		GlobalProvidedFilter: GlobalProvidedFilter(manager),
+		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
 		RemoteProvidedFilter: RemoteProvidedFilter(zone),
+		Configs:              configs,
 	}
 }
 
 // GlobalProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
 // excludes Dataplanes and Ingresses from 'clusterID' cluster
-func GlobalProvidedFilter(rm manager.ResourceManager) reconcile.ResourceFilter {
+func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) reconcile.ResourceFilter {
 	return func(clusterID string, r model.Resource) bool {
-		if r.GetType() == system.ConfigType && r.GetMeta().GetName() != config_manager.ClusterIdConfigKey {
+		if r.GetType() == system.ConfigType && !configs[r.GetMeta().GetName()] {
 			return false
 		}
 		if r.GetType() != mesh.DataplaneType {

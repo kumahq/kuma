@@ -31,7 +31,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 			// when
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV2).
 				Configure(clusters.EdsCluster(given.clusterName)).
-				Configure(clusters.HealthCheck(given.healthCheck)).
+				Configure(clusters.HealthCheck(mesh_core.ProtocolHTTP, given.healthCheck)).
 				Configure(clusters.Timeout(mesh_core.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
 				Build()
 
@@ -68,6 +68,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						Timeout:            ptypes.DurationProto(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
+						ReuseConnection:    &wrappers.BoolValue{Value: false},
 					},
 				},
 			},
@@ -79,6 +80,7 @@ var _ = Describe("HealthCheckConfigurer", func() {
             healthChecks:
             - healthyThreshold: 2
               interval: 5s
+              reuseConnection: false
               tcpHealthCheck: {}
               timeout: 4s
               unhealthyThreshold: 3
@@ -100,15 +102,13 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						Timeout:            ptypes.DurationProto(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
-						Protocol: &mesh_proto.HealthCheck_Conf_Tcp_{
-							Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
-								Send: &wrappers.BytesValue{
-									Value: []byte("foo"),
-								},
-								Receive: []*wrappers.BytesValue{
-									{Value: []byte("bar")},
-									{Value: []byte("baz")},
-								},
+						Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
+							Send: &wrappers.BytesValue{
+								Value: []byte("foo"),
+							},
+							Receive: []*wrappers.BytesValue{
+								{Value: []byte("bar")},
+								{Value: []byte("baz")},
 							},
 						},
 					},
@@ -148,11 +148,9 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						Timeout:            ptypes.DurationProto(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
-						Protocol: &mesh_proto.HealthCheck_Conf_Tcp_{
-							Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
-								Send: &wrappers.BytesValue{
-									Value: []byte("foo"),
-								},
+						Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
+							Send: &wrappers.BytesValue{
+								Value: []byte("foo"),
 							},
 						},
 					},
@@ -189,23 +187,21 @@ var _ = Describe("HealthCheckConfigurer", func() {
 						Timeout:            ptypes.DurationProto(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
-						Protocol: &mesh_proto.HealthCheck_Conf_Http_{
-							Http: &mesh_proto.HealthCheck_Conf_Http{
-								Path: "/foo",
-								RequestHeadersToAdd: []*mesh_proto.
-									HealthCheck_Conf_Http_HeaderValueOption{
-									{
-										Header: &mesh_proto.HealthCheck_Conf_Http_HeaderValue{
-											Key:   "foobar",
-											Value: "foobaz",
-										},
-										Append: &wrappers.BoolValue{Value: false},
+						Http: &mesh_proto.HealthCheck_Conf_Http{
+							Path: "/foo",
+							RequestHeadersToAdd: []*mesh_proto.
+								HealthCheck_Conf_Http_HeaderValueOption{
+								{
+									Header: &mesh_proto.HealthCheck_Conf_Http_HeaderValue{
+										Key:   "foobar",
+										Value: "foobaz",
 									},
+									Append: &wrappers.BoolValue{Value: false},
 								},
-								ExpectedStatuses: []*wrappers.UInt32Value{
-									{Value: 200},
-									{Value: 201},
-								},
+							},
+							ExpectedStatuses: []*wrappers.UInt32Value{
+								{Value: 200},
+								{Value: 201},
 							},
 						},
 					},
@@ -220,7 +216,6 @@ var _ = Describe("HealthCheckConfigurer", func() {
             - healthyThreshold: 2
               interval: 5s
               httpHealthCheck:
-                codecClientType: HTTP2
                 expectedStatuses:
                 - end: "201"
                   start: "200"
@@ -232,6 +227,85 @@ var _ = Describe("HealthCheckConfigurer", func() {
                   header:
                     key: foobar
                     value: foobaz
+              timeout: 4s
+              unhealthyThreshold: 3
+            name: testCluster
+            type: EDS`,
+		}),
+		Entry("HealthCheck with provided both, TCP and HTTP configurations", testCase{
+			clusterName: "testCluster",
+			healthCheck: &mesh_core.HealthCheckResource{
+				Spec: &mesh_proto.HealthCheck{
+					Sources: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "backend"}},
+					},
+					Destinations: []*mesh_proto.Selector{
+						{Match: mesh_proto.TagSelector{"kuma.io/service": "frontend"}},
+					},
+					Conf: &mesh_proto.HealthCheck_Conf{
+						Interval:           ptypes.DurationProto(5 * time.Second),
+						Timeout:            ptypes.DurationProto(4 * time.Second),
+						UnhealthyThreshold: 3,
+						HealthyThreshold:   2,
+						Http: &mesh_proto.HealthCheck_Conf_Http{
+							Path: "/foo",
+							RequestHeadersToAdd: []*mesh_proto.
+								HealthCheck_Conf_Http_HeaderValueOption{
+								{
+									Header: &mesh_proto.HealthCheck_Conf_Http_HeaderValue{
+										Key:   "foobar",
+										Value: "foobaz",
+									},
+									Append: &wrappers.BoolValue{Value: false},
+								},
+							},
+							ExpectedStatuses: []*wrappers.UInt32Value{
+								{Value: 200},
+								{Value: 201},
+							},
+						},
+						Tcp: &mesh_proto.HealthCheck_Conf_Tcp{
+							Send: &wrappers.BytesValue{
+								Value: []byte("foo"),
+							},
+							Receive: []*wrappers.BytesValue{
+								{Value: []byte("bar")},
+								{Value: []byte("baz")},
+							},
+						},
+					},
+				},
+			},
+			expected: `
+            connectTimeout: 5s
+            edsClusterConfig:
+              edsConfig:
+                ads: {}
+            healthChecks:
+            - healthyThreshold: 2
+              interval: 5s
+              tcpHealthCheck:
+                receive:
+                - text: "626172"
+                - text: 62617a
+                send:
+                  text: 666f6f
+              timeout: 4s
+              unhealthyThreshold: 3
+            - healthyThreshold: 2
+              httpHealthCheck:
+                expectedStatuses:
+                - end: "201"
+                  start: "200"
+                - end: "202"
+                  start: "201"
+                path: /foo
+                requestHeadersToAdd:
+                - append: false
+                  header:
+                    key: foobar
+                    value: foobaz
+              interval: 5s
               timeout: 4s
               unhealthyThreshold: 3
             name: testCluster

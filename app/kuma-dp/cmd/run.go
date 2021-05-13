@@ -6,7 +6,10 @@ import (
 	"path/filepath"
 
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -30,6 +33,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cfg := rootCtx.Config
 	var dp *rest.Resource
 	var tmpDir string
+	var adminPort uint32
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Dataplane (Envoy)",
@@ -57,13 +61,16 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 			if dp != nil {
+				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {
+					return errors.New("--name and --mesh cannot be specified when dataplane definition is provided. Mesh and name will be read from the dataplane definition.")
+				}
 				cfg.Dataplane.Mesh = dp.Meta.GetMesh()
 				cfg.Dataplane.Name = dp.Meta.GetName()
 			}
 
 			if !cfg.Dataplane.AdminPort.Empty() {
 				// unless a user has explicitly opted out of Envoy Admin API, pick a free port from the range
-				adminPort, err := util_net.PickTCPPort("127.0.0.1", cfg.Dataplane.AdminPort.Lowest(), cfg.Dataplane.AdminPort.Highest())
+				adminPort, err = util_net.PickTCPPort("127.0.0.1", cfg.Dataplane.AdminPort.Lowest(), cfg.Dataplane.AdminPort.Highest())
 				if err != nil {
 					return errors.Wrapf(err, "unable to find a free port in the range %q for Envoy Admin API to listen on", cfg.Dataplane.AdminPort)
 				}
@@ -71,14 +78,22 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				runLog.Info("picked a free port for Envoy Admin API to listen on", "port", cfg.Dataplane.AdminPort)
 			}
 
-			if cfg.DataplaneRuntime.ConfigDir == "" {
+			if cfg.DataplaneRuntime.ConfigDir == "" || cfg.DNS.ConfigDir == "" {
 				tmpDir, err = ioutil.TempDir("", "kuma-dp-")
 				if err != nil {
-					runLog.Error(err, "unable to create a temporary directory to store generated Envoy config at")
+					runLog.Error(err, "unable to create a temporary directory to store generated config sat")
 					return err
 				}
-				cfg.DataplaneRuntime.ConfigDir = tmpDir
-				runLog.Info("generated Envoy configuration will be stored in a temporary directory", "dir", tmpDir)
+
+				if cfg.DataplaneRuntime.ConfigDir == "" {
+					cfg.DataplaneRuntime.ConfigDir = tmpDir
+				}
+
+				if cfg.DNS.ConfigDir == "" {
+					cfg.DNS.ConfigDir = tmpDir
+				}
+
+				runLog.Info("generated configurations will be stored in a temporary directory", "dir", tmpDir)
 			}
 
 			if cfg.DataplaneRuntime.Token != "" {
@@ -113,9 +128,13 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 					}
 				}()
 			}
-			shouldQuit := setupQuitChannel()
 
-			dataplane, err := envoy.New(envoy.Opts{
+			shouldQuit := setupQuitChannel()
+			components := []component.Component{
+				accesslogs.NewAccessLogServer(cfg.Dataplane),
+			}
+
+			opts := envoy.Opts{
 				Config:          *cfg,
 				Generator:       rootCtx.BootstrapGenerator,
 				Dataplane:       dp,
@@ -123,13 +142,39 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				Stdout:          cmd.OutOrStdout(),
 				Stderr:          cmd.OutOrStderr(),
 				Quit:            shouldQuit,
-			})
+				LogLevel:        rootCtx.LogLevel,
+			}
+
+			if cfg.DNS.Enabled {
+				opts.DNSPort = cfg.DNS.EnvoyDNSPort
+				opts.EmptyDNSPort = cfg.DNS.CoreDNSEmptyPort
+
+				dnsOpts := &dnsserver.Opts{
+					Config: *cfg,
+					Stdout: cmd.OutOrStdout(),
+					Stderr: cmd.OutOrStderr(),
+					Quit:   shouldQuit,
+				}
+
+				dnsServer, err := dnsserver.New(dnsOpts)
+				if err != nil {
+					return err
+				}
+
+				components = append(components, dnsServer)
+			}
+
+			dataplane, err := envoy.New(opts)
 			if err != nil {
 				return err
 			}
-			server := accesslogs.NewAccessLogServer(cfg.Dataplane)
 
-			if err := rootCtx.ComponentManager.Add(server, dataplane); err != nil {
+			components = append(components, dataplane)
+
+			metricsServer := metrics.New(cfg.Dataplane, adminPort)
+			components = append(components, metricsServer)
+
+			if err := rootCtx.ComponentManager.Add(components...); err != nil {
 				return err
 			}
 
@@ -147,7 +192,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().Var(&cfg.Dataplane.AdminPort, "admin-port", `Port (or range of ports to choose from) for Envoy Admin API to listen on. Empty value indicates that Envoy Admin API should not be exposed over TCP. Format: "9901 | 9901-9999 | 9901- | -9901"`)
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane Dataplane Server. Example: https://localhost:5678")
-	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCert, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
+	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCertFile, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.BootstrapVersion, "bootstrap-version", cfg.Dataplane.BootstrapVersion, "Bootstrap version (and API version) of xDS config. If empty, default version defined in Kuma CP will be used. (ex. '2', '3')")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.ConfigDir, "config-dir", cfg.DataplaneRuntime.ConfigDir, "Directory in which Envoy config will be generated")
@@ -156,6 +201,14 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.Resource, "dataplane", "", "Dataplane template to apply (YAML or JSON)")
 	cmd.PersistentFlags().StringVarP(&cfg.DataplaneRuntime.ResourcePath, "dataplane-file", "d", "", "Path to Dataplane template to apply (YAML or JSON)")
 	cmd.PersistentFlags().StringToStringVarP(&cfg.DataplaneRuntime.ResourceVars, "dataplane-var", "v", map[string]string{}, "Variables to replace Dataplane template")
+	cmd.PersistentFlags().BoolVar(&cfg.DNS.Enabled, "dns-enabled", cfg.DNS.Enabled, "If true then builtin DNS functionality is enabled and CoreDNS server is started")
+	cmd.PersistentFlags().Uint32Var(&cfg.DNS.EnvoyDNSPort, "dns-envoy-port", cfg.DNS.EnvoyDNSPort, "A port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one")
+	cmd.PersistentFlags().Uint32Var(&cfg.DNS.CoreDNSPort, "dns-coredns-port", cfg.DNS.CoreDNSPort, "A port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.")
+	cmd.PersistentFlags().Uint32Var(&cfg.DNS.CoreDNSEmptyPort, "dns-coredns-empty-port", cfg.DNS.CoreDNSEmptyPort, "A port that always responds with empty NXDOMAIN respond. It is required to implement a fallback to a real DNS.")
+	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSBinaryPath, "dns-coredns-path", cfg.DNS.CoreDNSBinaryPath, "A path to CoreDNS binary.")
+	cmd.PersistentFlags().StringVar(&cfg.DNS.CoreDNSConfigTemplatePath, "dns-coredns-config-template-path", cfg.DNS.CoreDNSConfigTemplatePath, "A path to a CoreDNS config template.")
+	cmd.PersistentFlags().StringVar(&cfg.DNS.ConfigDir, "dns-server-config-dir", cfg.DNS.ConfigDir, "Directory in which DNS Server config will be generated")
+	cmd.PersistentFlags().Uint32Var(&cfg.DNS.PrometheusPort, "dns-prometheus-port", cfg.DNS.PrometheusPort, "A port for exposing Prometheus stats")
 	return cmd
 }
 

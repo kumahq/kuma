@@ -34,16 +34,17 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.SidecarContainer.Image).To(Equal("kuma-sidecar:latest"))
 		Expect(cfg.Injector.SidecarContainer.RedirectPortOutbound).To(Equal(uint32(1234)))
 		Expect(cfg.Injector.SidecarContainer.RedirectPortInbound).To(Equal(uint32(1236)))
+		Expect(cfg.Injector.SidecarContainer.RedirectPortInboundV6).To(Equal(uint32(1237)))
 		Expect(cfg.Injector.SidecarContainer.UID).To(Equal(int64(2345)))
 		Expect(cfg.Injector.SidecarContainer.GID).To(Equal(int64(3456)))
 		Expect(cfg.Injector.SidecarContainer.AdminPort).To(Equal(uint32(45678)))
 		Expect(cfg.Injector.SidecarContainer.DrainTime).To(Equal(15 * time.Second))
 		// and
 		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(11)))
-		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32((13))))
-		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.PeriodSeconds).To(Equal(int32((15))))
-		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.SuccessThreshold).To(Equal(int32((11))))
-		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32((112))))
+		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32(13)))
+		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.PeriodSeconds).To(Equal(int32(15)))
+		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.SuccessThreshold).To(Equal(int32(11)))
+		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32(112)))
 		// and
 		Expect(cfg.Injector.SidecarContainer.LivenessProbe.InitialDelaySeconds).To(Equal(int32(260)))
 		Expect(cfg.Injector.SidecarContainer.LivenessProbe.TimeoutSeconds).To(Equal(int32(23)))
@@ -57,6 +58,9 @@ var _ = Describe("Config", func() {
 		// and
 		Expect(cfg.Injector.InitContainer.Image).To(Equal("kuma-init:latest"))
 		Expect(cfg.Injector.CNIEnabled).To(Equal(true))
+		// and
+		Expect(cfg.Injector.BuiltinDNS.Enabled).To(Equal(true))
+		Expect(cfg.Injector.BuiltinDNS.Port).To(Equal(uint32(1253)))
 		// and
 		Expect(cfg.MarshalingCacheExpirationTime).To(Equal(1 * time.Second))
 	})

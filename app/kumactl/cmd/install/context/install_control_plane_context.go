@@ -2,7 +2,7 @@ package context
 
 import (
 	"github.com/kumahq/kuma/app/kumactl/pkg/install/data"
-	controlplane "github.com/kumahq/kuma/app/kumactl/pkg/install/k8s/control-plane"
+	"github.com/kumahq/kuma/deployments"
 	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/kumahq/kuma/pkg/tls"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -68,16 +68,16 @@ func DefaultInstallCpContext() InstallCpContext {
 		Args: InstallControlPlaneArgs{
 			Namespace:                                 "kuma-system",
 			ControlPlane_image_pullPolicy:             "IfNotPresent",
-			ControlPlane_image_registry:               "kong-docker-kuma-docker.bintray.io",
+			ControlPlane_image_registry:               "docker.io/kumahq",
 			ControlPlane_image_repository:             "kuma-cp",
 			ControlPlane_image_tag:                    kuma_version.Build.Version,
 			ControlPlane_service_name:                 "kuma-control-plane",
 			ControlPlane_envVars:                      map[string]string{},
 			ControlPlane_injectorFailurePolicy:        "Ignore",
-			DataPlane_image_registry:                  "kong-docker-kuma-docker.bintray.io",
+			DataPlane_image_registry:                  "docker.io/kumahq",
 			DataPlane_image_repository:                "kuma-dp",
 			DataPlane_image_tag:                       kuma_version.Build.Version,
-			DataPlane_initImage_registry:              "kong-docker-kuma-docker.bintray.io",
+			DataPlane_initImage_registry:              "docker.io/kumahq",
 			DataPlane_initImage_repository:            "kuma-init",
 			DataPlane_initImage_tag:                   kuma_version.Build.Version,
 			Cni_enabled:                               false,
@@ -85,9 +85,9 @@ func DefaultInstallCpContext() InstallCpContext {
 			Cni_net_dir:                               "/etc/cni/multus/net.d",
 			Cni_bin_dir:                               "/var/lib/cni/bin",
 			Cni_conf_name:                             "kuma-cni.conf",
-			Cni_image_registry:                        "docker.io",
-			Cni_image_repository:                      "lobkovilya/install-cni",
-			Cni_image_tag:                             "0.0.2",
+			Cni_image_registry:                        "docker.io/lobkovilya",
+			Cni_image_repository:                      "install-cni",
+			Cni_image_tag:                             "0.0.7",
 			ControlPlane_mode:                         core.Standalone,
 			ControlPlane_zone:                         "",
 			ControlPlane_globalRemoteSyncService_type: "LoadBalancer",
@@ -98,7 +98,7 @@ func DefaultInstallCpContext() InstallCpContext {
 		},
 		NewSelfSignedCert: tls.NewSelfSignedCert,
 		InstallCpTemplateFiles: func(args *InstallControlPlaneArgs) (data.FileList, error) {
-			return data.ReadFiles(controlplane.HelmTemplates)
+			return data.ReadFiles(deployments.KumaChartFS())
 		},
 		HELMValuesPrefix: "",
 	}

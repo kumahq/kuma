@@ -7,6 +7,13 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 import "mesh/v1alpha1/selector.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
+import "config.proto";
+
+option (doc.config) = {
+  type : Policy,
+  name : "CircuitBreaker",
+  file_name : "circuit-breaker"
+};
 
 // CircuitBreaker defines circuit breaking policy for dataplane's outbound
 message CircuitBreaker {
@@ -70,6 +77,22 @@ message CircuitBreaker {
       Failure failure = 5;
     }
     Detectors detectors = 5;
+
+    message Thresholds {
+      // The maximum number of connections that Envoy will make to the upstream
+      // cluster. If not specified, the default is 1024.
+      google.protobuf.UInt32Value maxConnections = 1;
+      // The maximum number of pending requests that Envoy will allow to the
+      // upstream cluster. If not specified, the default is 1024.
+      google.protobuf.UInt32Value maxPendingRequests = 2;
+      // The maximum number of parallel retries that Envoy will allow to the
+      // upstream cluster. If not specified, the default is 3.
+      google.protobuf.UInt32Value maxRetries = 3;
+      // The maximum number of parallel requests that Envoy will make to the
+      // upstream cluster. If not specified, the default is 1024.
+      google.protobuf.UInt32Value maxRequests = 4;
+    }
+    Thresholds thresholds = 6;
   }
 
   Conf conf = 3;

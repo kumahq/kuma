@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1beta1"
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -59,6 +59,9 @@ func (r *ServiceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, 
 	}
 
 	log.Info("annotating service which is part of the mesh", "annotation", fmt.Sprintf("%s=%s", metadata.IngressServiceUpstream, metadata.AnnotationTrue))
+	if svc.Annotations == nil {
+		svc.Annotations = map[string]string{}
+	}
 	svc.Annotations[metadata.IngressServiceUpstream] = metadata.AnnotationTrue
 
 	if err = r.Update(ctx, svc); err != nil {
@@ -75,8 +78,8 @@ func (r *ServiceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	if err := k8scnicncfio.AddToScheme(mgr.GetScheme()); err != nil {
 		return errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.GroupVersion)
 	}
-	if err := v1beta1.AddToScheme(mgr.GetScheme()); err != nil {
-		return errors.Wrapf(err, "could not add %q to scheme", v1beta1.SchemeGroupVersion)
+	if err := apiextensionsv1.AddToScheme(mgr.GetScheme()); err != nil {
+		return errors.Wrapf(err, "could not add %q to scheme", apiextensionsv1.SchemeGroupVersion)
 	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
 		For(&kube_core.Service{}, builder.WithPredicates(serviceEvents)).

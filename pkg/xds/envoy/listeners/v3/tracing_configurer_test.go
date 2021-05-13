@@ -72,6 +72,7 @@ var _ = Describe("TracingConfigurer", func() {
                         collectorCluster: tracing:zipkin
                         collectorEndpoint: /v2/spans
                         collectorEndpointVersion: HTTP_JSON
+                        collectorHostname: zipkin.us:9090
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND`,
 		}),
@@ -104,6 +105,7 @@ var _ = Describe("TracingConfigurer", func() {
                         collectorCluster: tracing:zipkin
                         collectorEndpoint: /v2/spans
                         collectorEndpointVersion: HTTP_JSON
+                        collectorHostname: zipkin.us:9090
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND`,
 		}),

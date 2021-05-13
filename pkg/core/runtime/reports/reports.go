@@ -135,7 +135,8 @@ func (b *reportsBuffer) dispatch(rt core_runtime.Runtime, host string, port int,
 		return err
 	}
 
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", host, port))
+	conn, err := net.Dial("tcp", net.JoinHostPort(host,
+		strconv.FormatUint(uint64(port), 10)))
 	if err != nil {
 		return err
 	}

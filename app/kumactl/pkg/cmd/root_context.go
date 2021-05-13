@@ -52,6 +52,8 @@ type RootContext struct {
 	InstallCpContext      install_context.InstallCpContext
 	InstallMetricsContext install_context.InstallMetricsContext
 	InstallCRDContext     install_context.InstallCrdsContext
+	InstallDemoContext    install_context.InstallDemoContext
+	InstallGatewayContext install_context.InstallGatewayContext
 }
 
 func DefaultRootContext() *RootContext {
@@ -66,35 +68,39 @@ func DefaultRootContext() *RootContext {
 			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
 		},
 		TypeArgs: map[string]core_model.ResourceType{
-			"mesh":               core_mesh.MeshType,
+			"circuit-breaker":    core_mesh.CircuitBreakerType,
 			"dataplane":          core_mesh.DataplaneType,
-			"externalservice":    core_mesh.ExternalServiceType,
+			"external-service":   core_mesh.ExternalServiceType,
+			"fault-injection":    core_mesh.FaultInjectionType,
 			"healthcheck":        core_mesh.HealthCheckType,
+			"mesh":               core_mesh.MeshType,
 			"proxytemplate":      core_mesh.ProxyTemplateType,
+			"retry":              core_mesh.RetryType,
+			"timeout":            core_mesh.TimeoutType,
 			"traffic-log":        core_mesh.TrafficLogType,
 			"traffic-permission": core_mesh.TrafficPermissionType,
 			"traffic-route":      core_mesh.TrafficRouteType,
 			"traffic-trace":      core_mesh.TrafficTraceType,
-			"fault-injection":    core_mesh.FaultInjectionType,
-			"circuit-breaker":    core_mesh.CircuitBreakerType,
-			"retry":              core_mesh.RetryType,
-			"secret":             system.SecretType,
 			"global-secret":      system.GlobalSecretType,
+			"secret":             system.SecretType,
 			"zone":               system.ZoneType,
 		},
 		InstallCpContext:      install_context.DefaultInstallCpContext(),
 		InstallCRDContext:     install_context.DefaultInstallCrdsContext(),
 		InstallMetricsContext: install_context.DefaultInstallMetricsContext(),
+		InstallDemoContext:    install_context.DefaultInstallDemoContext(),
+		InstallGatewayContext: install_context.DefaultInstallGatewayContext(),
 	}
 }
 
 func (rc *RootContext) TypeForArg(arg string) (core_model.ResourceType, error) {
 	typ, ok := rc.TypeArgs[arg]
 	if !ok {
-		return "", errors.Errorf("unknown TYPE: %s. Allowed values: mesh, dataplane, "+
-			"healthcheck, proxytemplate, traffic-log, traffic-permission, traffic-route, "+
-			"traffic-trace, fault-injection, circuit-breaker, retry, secret, zone",
-			arg)
+		allowedValues := ""
+		for v := range rc.TypeArgs {
+			allowedValues += v + ", "
+		}
+		return "", errors.Errorf("unknown TYPE: %s. Allowed values: %s:", arg, allowedValues)
 	}
 	return typ, nil
 }

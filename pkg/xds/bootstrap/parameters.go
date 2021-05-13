@@ -8,10 +8,13 @@ type configParameters struct {
 	AdminAddress       string
 	AdminPort          uint32
 	AdminAccessLogPath string
+	XdsClusterType     string
 	XdsHost            string
 	XdsPort            uint32
+	XdsUri             string
 	XdsConnectTimeout  time.Duration
 	AccessLogPipe      string
+	DataplaneToken     string
 	DataplaneTokenPath string
 	DataplaneResource  string
 	CertBytes          string
@@ -23,4 +26,6 @@ type configParameters struct {
 	EnvoyBuild         string
 	HdsEnabled         bool
 	DynamicMetadata    map[string]string
+	DNSPort            uint32
+	EmptyDNSPort       uint32
 }

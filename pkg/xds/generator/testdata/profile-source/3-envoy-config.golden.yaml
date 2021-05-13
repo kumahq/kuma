@@ -54,13 +54,8 @@ resources:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_mesh_ca
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
                   transportApiVersion: V3
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
@@ -69,13 +64,8 @@ resources:
               apiConfigSource:
                 apiType: GRPC
                 grpcServices:
-                - googleGrpc:
-                    channelCredentials:
-                      sslCredentials:
-                        rootCerts:
-                          inlineBytes: MTIzNDU=
-                    statPrefix: sds_identity_cert
-                    targetUri: kuma-system:5677
+                - envoyGrpc:
+                    clusterName: ads_cluster
                 transportApiVersion: V3
               resourceApiVersion: V3
         sni: db{mesh=demo}
@@ -111,13 +101,8 @@ resources:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_mesh_ca
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
                   transportApiVersion: V3
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
@@ -126,13 +111,8 @@ resources:
               apiConfigSource:
                 apiType: GRPC
                 grpcServices:
-                - googleGrpc:
-                    channelCredentials:
-                      sslCredentials:
-                        rootCerts:
-                          inlineBytes: MTIzNDU=
-                    statPrefix: sds_identity_cert
-                    targetUri: kuma-system:5677
+                - envoyGrpc:
+                    clusterName: ads_cluster
                 transportApiVersion: V3
               resourceApiVersion: V3
         sni: elastic{mesh=demo}
@@ -152,6 +132,21 @@ resources:
                 address: 127.0.0.1
                 portValue: 9902
     name: kuma:envoy:admin
+    type: STATIC
+- name: kuma:metrics:hijacker
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: kuma_metrics_hijacker
+    connectTimeout: 10s
+    loadAssignment:
+      clusterName: kuma:metrics:hijacker
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-mh-backend-01-demo.sock
+    name: kuma:metrics:hijacker
     type: STATIC
 - name: localhost:8080
   resource:
@@ -219,13 +214,8 @@ resources:
                   apiConfigSource:
                     apiType: GRPC
                     grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+                    - envoyGrpc:
+                        clusterName: ads_cluster
                     transportApiVersion: V3
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
@@ -234,13 +224,8 @@ resources:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_identity_cert
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
                   transportApiVersion: V3
                 resourceApiVersion: V3
           requireClientCertificate: true
@@ -342,8 +327,8 @@ resources:
               - match:
                   prefix: /non-standard-path
                 route:
-                  cluster: kuma:envoy:admin
-                  prefixRewrite: /stats/prometheus
+                  cluster: kuma:metrics:hijacker
+                  prefixRewrite: /
           statPrefix: kuma_metrics_prometheus
     - filters:
       - name: envoy.filters.network.rbac
@@ -366,8 +351,8 @@ resources:
               - match:
                   prefix: /non-standard-path
                 route:
-                  cluster: kuma:envoy:admin
-                  prefixRewrite: /stats/prometheus
+                  cluster: kuma:metrics:hijacker
+                  prefixRewrite: /
           statPrefix: kuma_metrics_prometheus
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -384,13 +369,8 @@ resources:
                   apiConfigSource:
                     apiType: GRPC
                     grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+                    - envoyGrpc:
+                        clusterName: ads_cluster
                     transportApiVersion: V3
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
@@ -399,13 +379,8 @@ resources:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_identity_cert
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
                   transportApiVersion: V3
                 resourceApiVersion: V3
           requireClientCertificate: true

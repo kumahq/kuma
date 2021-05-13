@@ -332,6 +332,15 @@ data:
       scrape_timeout: 30s
     - job_name: 'kuma-dataplanes'
       scrape_interval: "5s"
+      relabel_configs:
+      - source_labels:
+        - k8s_kuma_io_name
+        regex: "(.*)"
+        target_label: pod
+      - source_labels:
+        - k8s_kuma_io_namespace
+        regex: "(.*)"
+        target_label: namespace
       file_sd_configs:
       - files:
         - /var/run/kuma.io/prometheus-sd/kuma.file_sd.json
@@ -905,7 +914,7 @@ spec:
             - mountPath: "/var/run/kuma.io/prometheus-sd"
               name: kuma-prometheus-sd-volume
         - name: kuma-prometheus-sd
-          image: kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd:0.0.1
+          image: docker.io/kumahq/kuma-prometheus-sd:0.0.1
           imagePullPolicy: IfNotPresent
           args:
             - run

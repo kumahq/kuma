@@ -1,13 +1,10 @@
 package data
 
 import (
-	"io"
+	"io/fs"
 	"io/ioutil"
-	"net/http"
-	"os"
 
 	"github.com/pkg/errors"
-	"github.com/shurcooL/httpfs/vfsutil"
 )
 
 type FileList []File
@@ -22,37 +19,35 @@ func (f File) String() string {
 	return string(f.Data)
 }
 
-func ReadFiles(fs http.FileSystem) (FileList, error) {
+func ReadFiles(fileSys fs.FS) (FileList, error) {
 	files := []File{}
 
-	walkFn := func(path string, fi os.FileInfo, r io.ReadSeeker, err error) error {
+	err := fs.WalkDir(fileSys, ".", func(path string, dir fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !fi.IsDir() {
-			data, err := ioutil.ReadAll(r)
+		if !dir.IsDir() {
+			data, err := fs.ReadFile(fileSys, path)
 			if err != nil {
 				return errors.Wrapf(err, "Failed to read file: %s", path)
 			}
 			file := File{
 				Data:     data,
-				Name:     fi.Name(),
+				Name:     dir.Name(),
 				FullPath: path,
 			}
 			files = append(files, file)
 		}
 		return nil
-	}
-
-	err := vfsutil.WalkFiles(fs, "/", walkFn)
+	})
 	if err != nil {
 		return nil, err
 	}
 	return files, nil
 }
 
-func ReadFile(fs http.FileSystem, file string) (File, error) {
-	f, err := fs.Open(file)
+func ReadFile(fileSys fs.FS, file string) (File, error) {
+	f, err := fileSys.Open(file)
 	if err != nil {
 		return File{}, err
 	}

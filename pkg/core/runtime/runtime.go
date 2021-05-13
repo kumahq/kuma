@@ -62,6 +62,7 @@ type RuntimeContext interface {
 	XDSHooks() *xds_hooks.Hooks
 	DpServer() *dp_server.DpServer
 	KDSContext() *kds_context.Context
+	ShutdownCh() <-chan struct{}
 }
 
 var _ Runtime = &runtime{}
@@ -100,26 +101,27 @@ func (i *runtimeInfo) GetClusterId() string {
 var _ RuntimeContext = &runtimeContext{}
 
 type runtimeContext struct {
-	cfg      kuma_cp.Config
-	rm       core_manager.ResourceManager
-	rs       core_store.ResourceStore
-	ss       store.SecretStore
-	cs       core_store.ResourceStore
-	rom      core_manager.ReadOnlyResourceManager
-	cam      ca.Managers
-	dsl      datasource.Loader
-	ext      context.Context
-	dns      resolver.DNSResolver
-	configm  config_manager.ConfigManager
-	leadInfo component.LeaderInfo
-	lif      lookup.LookupIPFunc
-	eac      admin.EnvoyAdminClient
-	metrics  metrics.Metrics
-	erf      events.ListenerFactory
-	apim     api_server.APIInstaller
-	xdsh     *xds_hooks.Hooks
-	dps      *dp_server.DpServer
-	kdsctx   *kds_context.Context
+	cfg        kuma_cp.Config
+	rm         core_manager.ResourceManager
+	rs         core_store.ResourceStore
+	ss         store.SecretStore
+	cs         core_store.ResourceStore
+	rom        core_manager.ReadOnlyResourceManager
+	cam        ca.Managers
+	dsl        datasource.Loader
+	ext        context.Context
+	dns        resolver.DNSResolver
+	configm    config_manager.ConfigManager
+	leadInfo   component.LeaderInfo
+	lif        lookup.LookupIPFunc
+	eac        admin.EnvoyAdminClient
+	metrics    metrics.Metrics
+	erf        events.ListenerFactory
+	apim       api_server.APIInstaller
+	xdsh       *xds_hooks.Hooks
+	dps        *dp_server.DpServer
+	kdsctx     *kds_context.Context
+	shutdownCh <-chan struct{}
 }
 
 func (rc *runtimeContext) Metrics() metrics.Metrics {
@@ -199,4 +201,8 @@ func (rc *runtimeContext) XDSHooks() *xds_hooks.Hooks {
 
 func (rc *runtimeContext) KDSContext() *kds_context.Context {
 	return rc.kdsctx
+}
+
+func (rc *runtimeContext) ShutdownCh() <-chan struct{} {
+	return rc.shutdownCh
 }

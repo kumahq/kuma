@@ -6,6 +6,7 @@ metadata:
     kuma.io/sidecar-injected: "true"
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-inbound-port: "15006"
+    kuma.io/transparent-proxying-inbound-v6-port: "15010"
     kuma.io/transparent-proxying-outbound-port: "15001"
     kuma.io/virtual-probes: enabled
     kuma.io/virtual-probes-port: "9000"
@@ -104,23 +105,24 @@ spec:
     - name: KUMA_CONTROL_PLANE_CA_CERT
       value: |
         -----BEGIN CERTIFICATE-----
-        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
+        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
-        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
+        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
-        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
+        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
+        ypWGaanvPg==
         -----END CERTIFICATE-----
     - name: KUMA_CONTROL_PLANE_URL
       value: http://kuma-control-plane.kuma-system:5681
@@ -178,13 +180,15 @@ spec:
     - --redirect-inbound=true
     - --redirect-inbound-port
     - "15006"
+    - --redirect-inbound-port-v6
+    - "15010"
     - --kuma-dp-uid
     - "5678"
     - --exclude-inbound-ports
     - ""
     - --exclude-outbound-ports
     - ""
-    - --modify-resolv-conf=false
+    - --skip-resolv-conf
     command:
     - /usr/bin/kumactl
     - install

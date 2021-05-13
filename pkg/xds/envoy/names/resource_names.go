@@ -2,6 +2,7 @@ package names
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 	"strings"
 
@@ -25,11 +26,13 @@ func GetPortForLocalClusterName(cluster string) (uint32, error) {
 }
 
 func GetInboundListenerName(address string, port uint32) string {
-	return fmt.Sprintf("inbound:%s:%d", address, port)
+	return fmt.Sprintf("inbound:%s",
+		net.JoinHostPort(address, strconv.FormatUint(uint64(port), 10)))
 }
 
 func GetOutboundListenerName(address string, port uint32) string {
-	return fmt.Sprintf("outbound:%s:%d", address, port)
+	return fmt.Sprintf("outbound:%s",
+		net.JoinHostPort(address, strconv.FormatUint(uint64(port), 10)))
 }
 
 func GetInboundRouteName(service string) string {
@@ -44,6 +47,10 @@ func GetEnvoyAdminClusterName() string {
 	return "kuma:envoy:admin"
 }
 
+func GetMetricsHijackerClusterName() string {
+	return "kuma:metrics:hijacker"
+}
+
 func GetPrometheusListenerName() string {
 	return "kuma:metrics:prometheus"
 }
@@ -54,4 +61,8 @@ func GetAdminListenerName() string {
 
 func GetTracingClusterName(backendName string) string {
 	return fmt.Sprintf("tracing:%s", backendName)
+}
+
+func GetDNSListenerName() string {
+	return "kuma:dns"
 }

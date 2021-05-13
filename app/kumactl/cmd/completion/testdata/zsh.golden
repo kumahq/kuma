@@ -841,7 +841,9 @@ function _kumactl_install {
     commands=(
       "control-plane:Install Kuma Control Plane on Kubernetes"
       "crds:Install Kuma Custom Resource Definitions on Kubernetes"
+      "demo:Install Kuma demo on Kubernetes"
       "dns:Install DNS to Kubernetes"
+      "gateway:Install ingress gateway on Kubernetes"
       "logging:Install Logging backend in Kubernetes cluster (Loki)"
       "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
       "tracing:Install Tracing backend in Kubernetes cluster (Jaeger)"
@@ -858,8 +860,14 @@ function _kumactl_install {
   crds)
     _kumactl_install_crds
     ;;
+  demo)
+    _kumactl_install_demo
+    ;;
   dns)
     _kumactl_install_dns
+    ;;
+  gateway)
+    _kumactl_install_gateway
     ;;
   logging)
     _kumactl_install_logging
@@ -927,10 +935,28 @@ function _kumactl_install_crds {
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
 }
 
+function _kumactl_install_demo {
+  _arguments \
+    '--namespace[Namespace to install demo to]:' \
+    '--zone[Zone in which to install demo]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
 function _kumactl_install_dns {
   _arguments \
     '--namespace[namespace to look for Kuma Control Plane service]:' \
     '--port[port of the Kuma DNS server]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+}
+
+function _kumactl_install_gateway {
+  _arguments \
+    '--namespace[namespace to install gateway to]:' \
+    '--type[type of gateway to install. Available types: "kong"]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
@@ -974,10 +1000,17 @@ function _kumactl_install_transparent-proxy {
     '--kuma-dp-uid[the UID of the user that will run kuma-dp]:' \
     '--kuma-dp-user[the user that will run kuma-dp]:' \
     '--modify-iptables[modify the host iptables to redirect the traffic to Envoy]' \
-    '--modify-resolv-conf[modify the host `/etc/resolv.conf` to allow `.mesh` resolution through kuma-cp]' \
+    '--redirect-all-dns-traffic[redirect all DNS requests to a specified port. Implies --redirect-dns.]' \
+    '--redirect-dns[redirect all DNS requests to the servers in /etc/resolv.conf to a specified port]' \
+    '--redirect-dns-port[the port where the DNS agent is listening]:' \
+    '--redirect-dns-upstream-target-chain[(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.]:' \
     '--redirect-inbound[redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.]' \
     '--redirect-inbound-port[inbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortInbound`]:' \
+    '--redirect-inbound-port-v6[IPv6 inbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortInboundV6`]:' \
     '--redirect-outbound-port[outbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortOutbound`]:' \
+    '--skip-resolv-conf[skip modifying the host `/etc/resolv.conf`]' \
+    '--store-firewalld[store the iptables changes with firewalld]' \
+    '--verbose[verbose]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
@@ -1013,6 +1046,7 @@ function _kumactl_uninstall {
 function _kumactl_uninstall_transparent-proxy {
   _arguments \
     '--dry-run[dry run]' \
+    '--verbose[verbose]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:'

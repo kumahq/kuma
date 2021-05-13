@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"time"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 )
@@ -35,6 +37,7 @@ type deployOptions struct {
 	proxyOnly        bool
 	hdsDisabled      bool
 	serviceProbe     bool
+	isipv6           bool
 
 	// app specific
 	namespace   string
@@ -44,6 +47,7 @@ type deployOptions struct {
 	appArgs     []string
 	token       string
 	transparent bool
+	builtindns  bool
 	protocol    string
 	mesh        string
 	dpVersion   string
@@ -54,6 +58,12 @@ type DeployOptionsFunc func(*deployOptions)
 func WithYaml(appYaml string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.appYaml = appYaml
+	}
+}
+
+func WithIPv6(isipv6 bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.isipv6 = isipv6
 	}
 }
 
@@ -210,6 +220,12 @@ func WithTransparentProxy(transparent bool) DeployOptionsFunc {
 	}
 }
 
+func WithBuiltinDNS(builtindns bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.builtindns = builtindns
+	}
+}
+
 func WithCtlOpt(name, value string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		if o.ctlOpts == nil {
@@ -248,6 +264,8 @@ type Cluster interface {
 	GetKumactlOptions() *KumactlOptions
 	Deployment(name string) Deployment
 	Deploy(deployment Deployment) error
+	WithTimeout(timeout time.Duration) Cluster
+	WithRetries(retries int) Cluster
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions

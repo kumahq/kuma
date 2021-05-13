@@ -51,6 +51,7 @@ func YamlPathK8s(path string) InstallFunc {
 
 func Kuma(mode string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
+		fs = append(fs, WithIPv6(IsIPv6()))
 		err := cluster.DeployKuma(mode, fs...)
 		return err
 	}
@@ -214,7 +215,7 @@ spec:
     spec:
       containers:
         - name: echo-server
-          image: kuma-universal
+          image: %s
           imagePullPolicy: IfNotPresent
           readinessProbe:
             httpGet:
@@ -235,10 +236,11 @@ spec:
             limits:
               cpu: 50m
               memory: 128Mi
+
 `
 	return Combine(
 		YamlK8s(service),
-		YamlK8s(fmt.Sprintf(deployment, mesh)),
+		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage())),
 		WaitService(TestNamespace, name),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
@@ -255,13 +257,13 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 		}
 		switch {
 		case opts.transparent:
-			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", "8080", redirectPortInbound, redirectPortOutbound)
+			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", "8080", redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 		case opts.serviceProbe:
 			appYaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, mesh, "8080", "80", "8080", opts.protocol)
 		default:
 			appYaml = fmt.Sprintf(EchoServerDataplane, mesh, "8080", "80", "8080", opts.protocol)
 		}
-		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeEchoServer), WithToken(token), WithArgs(args), WithYaml(appYaml))
+		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeEchoServer), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
 		return cluster.DeployApp(fs...)
 	}
 }
@@ -269,7 +271,9 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 func IngressUniversal(mesh, token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
-		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, true, []string{})
+		isipv6 := IsIPv6()
+		verbose := false
+		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, isipv6, verbose, []string{})
 		if err != nil {
 			return err
 		}
@@ -284,7 +288,7 @@ func IngressUniversal(mesh, token string) InstallFunc {
 
 		publicAddress := uniCluster.apps[AppIngress].ip
 		dpyaml := fmt.Sprintf(IngressDataplane, mesh, publicAddress, kdsPort, kdsPort)
-		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token)
+		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token, false)
 	}
 }
 
@@ -315,7 +319,7 @@ spec:
     spec:
       containers:
         - name: demo-client
-          image: kuma-universal
+          image: %s
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000
@@ -330,7 +334,7 @@ spec:
               memory: 128Mi
 `
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, mesh)),
+		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage())),
 		WaitNumPods(1, name),
 		WaitPodsAvailable(TestNamespace, name),
 	)
@@ -356,7 +360,7 @@ spec:
     spec:
       containers:
       - name: demo-job-client
-        image: kuma-universal
+        image: %s
         imagePullPolicy: IfNotPresent
         command: [ "curl" ]
         args:
@@ -368,7 +372,7 @@ spec:
       restartPolicy: OnFailure
 `
 	return Combine(
-		YamlK8s(fmt.Sprintf(deployment, mesh, destination)),
+		YamlK8s(fmt.Sprintf(deployment, mesh, GetUniversalImage(), destination)),
 		WaitNumPods(1, name),
 		WaitPodsComplete(TestNamespace, name),
 	)
@@ -380,7 +384,7 @@ func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := ""
 		if opts.transparent {
-			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", redirectPortInbound, redirectPortOutbound)
+			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 		} else {
 			if opts.serviceProbe {
 				appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", "80", "8080")
@@ -388,7 +392,7 @@ func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 				appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", "80", "8080")
 			}
 		}
-		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token), WithArgs(args), WithYaml(appYaml))
+		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
 		return cluster.DeployApp(fs...)
 	}
 }
@@ -427,8 +431,8 @@ func (cs *ClusterSetup) Setup(cluster Cluster) error {
 	return Combine(cs.installFuncs...)(cluster)
 }
 
-func CreateCertsForIP(ip string) (cert, key string, err error) {
-	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, "localhost", ip)
+func CreateCertsFor(names []string) (cert, key string, err error) {
+	keyPair, err := tls.NewSelfSignedCert("kuma", tls.ServerCertType, names...)
 	if err != nil {
 		return "", "", err
 	}

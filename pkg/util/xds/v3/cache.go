@@ -74,8 +74,11 @@ type SnapshotCache interface {
 	// the version differs from the snapshot version.
 	SetSnapshot(node string, snapshot Snapshot) error
 
-	// GetSnapshots gets the snapshot for a node.
+	// GetSnapshot gets the snapshot for a node.
 	GetSnapshot(node string) (Snapshot, error)
+
+	// HasSnapshot checks whether there is a snapshot present for a node.
+	HasSnapshot(node string) bool
 
 	// ClearSnapshot removes all status and snapshot information associated with a node.
 	ClearSnapshot(node string)
@@ -85,6 +88,11 @@ type SnapshotCache interface {
 
 	// GetStatusKeys retrieves node IDs for all statuses.
 	GetStatusKeys() []string
+}
+
+// Generates a snapshot of xDS resources for a given node.
+type SnapshotGenerator interface {
+	GenerateSnapshot(context.Context, *envoy_config_core_v3.Node) (Snapshot, error)
 }
 
 type snapshotCache struct {
@@ -171,6 +179,14 @@ func (cache *snapshotCache) GetSnapshot(node string) (Snapshot, error) {
 		return nil, fmt.Errorf("no snapshot found for node %s", node)
 	}
 	return snap, nil
+}
+
+func (cache *snapshotCache) HasSnapshot(node string) bool {
+	cache.mu.RLock()
+	defer cache.mu.RUnlock()
+
+	_, ok := cache.snapshots[node]
+	return ok
 }
 
 // ClearSnapshot clears snapshot and info for a node.

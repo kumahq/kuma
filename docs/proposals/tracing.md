@@ -63,6 +63,7 @@ tracing:
         url: http://zipkin.local/api/v2/spans
         traceId128bit: false # Generate 128bit traces. Default: false
         apiVersion: httpJson # Pick a version of the API. values: httpJson, httpProto. Default: httpJson
+        sharedSpanCotext: true # whether client and server spans share the same span context. Default: true
 ```
 
 Note: Zipkin can be also supported via OpenCensus. Jaeger is also [compatible](https://www.jaegertracing.io/docs/1.13/features/#backwards-compatibility-with-zipkin) with Zipkin format.

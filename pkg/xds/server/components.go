@@ -24,7 +24,9 @@ var (
 		core_mesh.DataplaneInsightType:  true,
 		core_mesh.DataplaneOverviewType: true,
 		core_mesh.ServiceInsightType:    true,
-		core_system.ConfigType:          true,
+	}
+	HashMeshIncludedGlobalResources = map[core_model.ResourceType]bool{
+		core_system.ConfigType: true,
 	}
 )
 
@@ -38,6 +40,9 @@ func meshResourceTypes(exclude map[core_model.ResourceType]bool) []core_model.Re
 		if r.Scope() == core_model.ScopeMesh && !exclude[typ] {
 			types = append(types, typ)
 		}
+	}
+	for typ := range HashMeshIncludedGlobalResources {
+		types = append(types, typ)
 	}
 	return types
 }
@@ -57,11 +62,11 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	claCache, err := cla.NewCache(rt.ReadOnlyResourceManager(), rt.DataSourceLoader(), rt.Config().Multizone.Remote.Zone, rt.Config().Store.Cache.ExpirationTime, rt.LookupIP(), rt.Metrics())
+	claCache, err := cla.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Multizone.Remote.Zone, rt.Config().Store.Cache.ExpirationTime, rt.LookupIP(), rt.Metrics())
 	if err != nil {
 		return err
 	}
-	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache)
+	envoyCpCtx, err := xds_context.BuildControlPlaneContext(rt.Config(), claCache, rt.DNSResolver())
 	if err != nil {
 		return err
 	}

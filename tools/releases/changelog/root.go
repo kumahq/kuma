@@ -95,6 +95,6 @@ func Execute() {
 func init() {
 	rootCmd.Flags().StringVar(&config.gitHubRepo, "repo", "https://github.com/kumahq/kuma.git", "The GitHub repo to process")
 	rootCmd.Flags().StringVar(&config.branch, "branch", "master", "The branch to process")
-	rootCmd.Flags().StringVar(&config.startTag, "start", "", "The start hash or tag")
+	rootCmd.Flags().StringVar(&config.startTag, "start", "0.7.1", "The start hash or tag")
 	rootCmd.Flags().StringVar(&config.endTag, "end", "", "The end hash or tag")
 }

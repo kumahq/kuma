@@ -3,6 +3,7 @@ package context
 import (
 	"io/ioutil"
 
+	"github.com/kumahq/kuma/pkg/dns/resolver"
 	"github.com/kumahq/kuma/pkg/tls"
 
 	"github.com/kumahq/kuma/pkg/envoy/admin"
@@ -28,6 +29,7 @@ type ControlPlaneContext struct {
 	SdsTlsCert        []byte
 	AdminProxyKeyPair *tls.KeyPair
 	CLACache          xds.CLACache
+	DNSResolver       resolver.DNSResolver
 }
 
 func (c Context) SDSLocation() string {
@@ -41,7 +43,7 @@ type MeshContext struct {
 	Hash       string
 }
 
-func BuildControlPlaneContext(config kuma_cp.Config, claCache xds.CLACache) (*ControlPlaneContext, error) {
+func BuildControlPlaneContext(config kuma_cp.Config, claCache xds.CLACache, dnsResolver resolver.DNSResolver) (*ControlPlaneContext, error) {
 	var sdsCert []byte
 	if config.DpServer.TlsCertFile != "" {
 		c, err := ioutil.ReadFile(config.DpServer.TlsCertFile)
@@ -60,5 +62,6 @@ func BuildControlPlaneContext(config kuma_cp.Config, claCache xds.CLACache) (*Co
 		SdsTlsCert:        sdsCert,
 		AdminProxyKeyPair: &adminKeyPair,
 		CLACache:          claCache,
+		DNSResolver:       dnsResolver,
 	}, nil
 }

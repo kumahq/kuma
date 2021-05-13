@@ -2,8 +2,9 @@ package framework
 
 import (
 	"fmt"
-	"os"
+	"net"
 	"strings"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 
@@ -15,22 +16,38 @@ import (
 )
 
 type UniversalCluster struct {
-	t            testing.TestingT
-	name         string
-	controlplane *UniversalControlPlane
-	apps         map[string]*UniversalApp
-	verbose      bool
-	deployments  map[string]Deployment
+	t              testing.TestingT
+	name           string
+	controlplane   *UniversalControlPlane
+	apps           map[string]*UniversalApp
+	verbose        bool
+	deployments    map[string]Deployment
+	defaultTimeout time.Duration
+	defaultRetries int
 }
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
 	return &UniversalCluster{
-		t:           t,
-		name:        name,
-		apps:        map[string]*UniversalApp{},
-		verbose:     verbose,
-		deployments: map[string]Deployment{},
+		t:              t,
+		name:           name,
+		apps:           map[string]*UniversalApp{},
+		verbose:        verbose,
+		deployments:    map[string]Deployment{},
+		defaultRetries: GetDefaultRetries(),
+		defaultTimeout: GetDefaultTimeout(),
 	}
+}
+
+func (c *UniversalCluster) WithTimeout(timeout time.Duration) Cluster {
+	c.defaultTimeout = timeout
+
+	return c
+}
+
+func (c *UniversalCluster) WithRetries(retries int) Cluster {
+	c.defaultRetries = retries
+
+	return c
 }
 
 func (c *UniversalCluster) Name() string {
@@ -73,9 +90,12 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
 	}
 
-	apiVersion := os.Getenv(envAPIVersion)
-	if apiVersion != "" {
-		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+apiVersion)
+	if HasApiVersion() {
+		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+GetApiVersion())
+	}
+
+	if opts.isipv6 {
+		env = append(env, fmt.Sprintf("KUMA_DNS_SERVER_CIDR=\"%s\"", cidrIPv6))
 	}
 
 	switch mode {
@@ -85,7 +105,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		cmd = append(cmd, "--config-file", confPath)
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, true, caps)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, opts.isipv6, true, caps)
 	if err != nil {
 		return err
 	}
@@ -144,10 +164,10 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string) error {
+func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string, builtindns bool) error {
 	cpIp := c.apps[AppModeCP].ip
-	cpAddress := "https://" + cpIp + ":5678"
-	app.CreateDP(token, cpAddress, appname, ip, dpyaml)
+	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
+	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns)
 	return app.dpApp.Start()
 }
 
@@ -168,13 +188,14 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), c.verbose, caps)
+	fmt.Printf("IPV6 is %v\n", opts.isipv6)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, c.verbose, caps)
 	if err != nil {
 		return err
 	}
 
 	if transparent {
-		app.setupTransparent(c.apps[AppModeCP].ip)
+		app.setupTransparent(c.apps[AppModeCP].ip, opts.builtindns)
 	}
 
 	ip := app.ip
@@ -185,7 +206,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		}
 	}
 
-	err = c.CreateDP(app, opts.name, ip, dpyaml, token)
+	err = c.CreateDP(app, opts.name, ip, dpyaml, token, opts.builtindns)
 	if err != nil {
 		return err
 	}
@@ -227,8 +248,8 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 	_, err := retry.DoWithRetryE(
 		c.t,
 		fmt.Sprintf("Trying %s", strings.Join(cmd, " ")),
-		DefaultRetries/3,
-		DefaultTimeout,
+		c.defaultRetries/3,
+		c.defaultTimeout,
 		func() (string, error) {
 			app, ok := c.apps[appname]
 			if !ok {

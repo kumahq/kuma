@@ -8,11 +8,20 @@ node:
 {{if .DataplaneTokenPath}}
     dataplaneTokenPath: {{.DataplaneTokenPath}}
 {{end}}
+{{if .DataplaneToken }}
+    dataplane.token: "{{.DataplaneToken}}"
+{{end}}
 {{if .DataplaneResource}}
     dataplane.resource: '{{.DataplaneResource}}'
 {{end}}
 {{if .AdminPort }}
     dataplane.admin.port: "{{ .AdminPort }}"
+{{ end }}
+{{if .DNSPort }}
+    dataplane.dns.port: "{{ .DNSPort }}"
+{{ end }}
+{{if .EmptyDNSPort }}
+    dataplane.dns.empty.port: "{{ .EmptyDNSPort }}"
 {{ end }}
     version:
       kumaDp:
@@ -36,9 +45,15 @@ admin:
   address:
     socket_address:
       protocol: TCP
-      address: {{ .AdminAddress }}
+      address: "{{ .AdminAddress }}"
       port_value: {{ .AdminPort }}
 {{ end }}
+
+layered_runtime:
+  layers:
+  - name: kuma
+    static_layer:
+      envoy.restart_features.use_apple_api_for_dns_lookups: false
 
 stats_config:
   stats_tags:
@@ -59,9 +74,10 @@ stats_config:
 hds_config:
   api_type: GRPC
   transport_api_version: V3
+  set_node_on_first_message_only: true
   grpc_services:
-  - googleGrpc:
 {{ if .DataplaneTokenPath }}
+  - googleGrpc:
       callCredentials:
       - fromPlugin:
           name: envoy.grpc_credentials.file_based_metadata
@@ -70,7 +86,6 @@ hds_config:
             secretData:
               filename: {{ .DataplaneTokenPath }}
       credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-{{ end }}
 {{ if .CertBytes}}
       channelCredentials:
         sslCredentials:
@@ -78,8 +93,16 @@ hds_config:
             inlineBytes: {{ .CertBytes }}
 {{ end }}
       statPrefix: hds
-      targetUri: {{ .XdsHost }}:{{ .XdsPort }}
-  set_node_on_first_message_only: true
+      targetUri: "{{ .XdsUri }}"
+{{ else }}
+    - envoy_grpc:
+        cluster_name: ads_cluster
+{{ if .DataplaneToken }}
+      initialMetadata:
+      - key: "authorization"
+        value: "{{ .DataplaneToken }}"
+{{ end }}
+{{ end }}
 {{ end }}
 
 dynamic_resources:
@@ -94,8 +117,8 @@ dynamic_resources:
     transport_api_version: V3
     timeout: {{ .XdsConnectTimeout }}
     grpc_services:
-    - googleGrpc:
 {{ if .DataplaneTokenPath }}
+    - googleGrpc:
         callCredentials:
         - fromPlugin:
             name: envoy.grpc_credentials.file_based_metadata
@@ -104,7 +127,6 @@ dynamic_resources:
               secretData:
                 filename: {{ .DataplaneTokenPath }}
         credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-{{ end }}
 {{ if .CertBytes}}
         channelCredentials:
           sslCredentials:
@@ -112,7 +134,16 @@ dynamic_resources:
               inlineBytes: {{ .CertBytes }}
 {{ end }}
         statPrefix: ads
-        targetUri: {{ .XdsHost }}:{{ .XdsPort }}
+        targetUri: "{{ .XdsUri }}"
+{{ else }}
+    - envoy_grpc:
+        cluster_name: ads_cluster
+{{ if .DataplaneToken }}
+      initialMetadata:
+      - key: "authorization"
+        value: "{{ .DataplaneToken }}"
+{{ end }}
+{{ end }}
 static_resources:
   clusters:
   - name: access_log_sink
@@ -132,4 +163,37 @@ static_resources:
             address:
               pipe:
                 path: {{ .AccessLogPipe }}
+  - name: ads_cluster
+    connect_timeout: {{ .XdsConnectTimeout }}
+    type: {{ .XdsClusterType }}
+    lb_policy: ROUND_ROBIN
+    http2_protocol_options: {}
+    upstream_connection_options:
+      # configure a TCP keep-alive to detect and reconnect to the admin
+      # server in the event of a TCP socket half open connection
+      tcp_keepalive: {}
+    load_assignment:
+      cluster_name: ads_cluster
+      endpoints:
+      - lb_endpoints:
+        - endpoint:
+            address:
+              socket_address:
+                address: {{ .XdsHost }}
+                port_value: {{ .XdsPort }}
+    transport_socket:
+      name: envoy.transport_sockets.tls
+      typed_config:
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+        sni: {{ .XdsHost }}
+        common_tls_context:
+          tls_params:
+            tls_minimum_protocol_version: TLSv1_2
+          validation_context:
+            match_subject_alt_names:
+            - exact: {{ .XdsHost }}
+{{ if .CertBytes }}
+            trusted_ca:
+              inline_bytes: "{{ .CertBytes }}"
+{{ end }}
 `

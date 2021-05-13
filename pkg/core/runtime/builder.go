@@ -37,7 +37,7 @@ type BuilderContext interface {
 	ResourceStore() core_store.ResourceStore
 	SecretStore() store.SecretStore
 	ConfigStore() core_store.ResourceStore
-	ResourceManager() core_manager.ResourceManager
+	ResourceManager() core_manager.CustomizableResourceManager
 	Config() kuma_cp.Config
 	DataSourceLoader() datasource.Loader
 	Extensions() context.Context
@@ -56,28 +56,28 @@ var _ BuilderContext = &Builder{}
 
 // Builder represents a multi-step initialization process.
 type Builder struct {
-	cfg      kuma_cp.Config
-	cm       component.Manager
-	rs       core_store.ResourceStore
-	ss       store.SecretStore
-	cs       core_store.ResourceStore
-	rm       core_manager.ResourceManager
-	rom      core_manager.ReadOnlyResourceManager
-	cam      core_ca.Managers
-	dsl      datasource.Loader
-	ext      context.Context
-	dns      resolver.DNSResolver
-	configm  config_manager.ConfigManager
-	leadInfo component.LeaderInfo
-	lif      lookup.LookupIPFunc
-	eac      admin.EnvoyAdminClient
-	metrics  metrics.Metrics
-	erf      events.ListenerFactory
-	apim     api_server.APIManager
-	xdsh     *xds_hooks.Hooks
-	dps      *dp_server.DpServer
-	kdsctx   *kds_context.Context
-	closeCh  <-chan struct{}
+	cfg        kuma_cp.Config
+	cm         component.Manager
+	rs         core_store.ResourceStore
+	ss         store.SecretStore
+	cs         core_store.ResourceStore
+	rm         core_manager.CustomizableResourceManager
+	rom        core_manager.ReadOnlyResourceManager
+	cam        core_ca.Managers
+	dsl        datasource.Loader
+	ext        context.Context
+	dns        resolver.DNSResolver
+	configm    config_manager.ConfigManager
+	leadInfo   component.LeaderInfo
+	lif        lookup.LookupIPFunc
+	eac        admin.EnvoyAdminClient
+	metrics    metrics.Metrics
+	erf        events.ListenerFactory
+	apim       api_server.APIManager
+	xdsh       *xds_hooks.Hooks
+	dps        *dp_server.DpServer
+	kdsctx     *kds_context.Context
+	shutdownCh <-chan struct{}
 	*runtimeInfo
 }
 
@@ -94,7 +94,7 @@ func BuilderFor(cfg kuma_cp.Config, closeCh <-chan struct{}) (*Builder, error) {
 		runtimeInfo: &runtimeInfo{
 			instanceId: fmt.Sprintf("%s-%s", hostname, suffix),
 		},
-		closeCh: closeCh,
+		shutdownCh: closeCh,
 	}, nil
 }
 
@@ -118,7 +118,7 @@ func (b *Builder) WithConfigStore(cs core_store.ResourceStore) *Builder {
 	return b
 }
 
-func (b *Builder) WithResourceManager(rm core_manager.ResourceManager) *Builder {
+func (b *Builder) WithResourceManager(rm core_manager.CustomizableResourceManager) *Builder {
 	b.rm = rm
 	return b
 }
@@ -260,25 +260,26 @@ func (b *Builder) Build() (Runtime, error) {
 	return &runtime{
 		RuntimeInfo: b.runtimeInfo,
 		RuntimeContext: &runtimeContext{
-			cfg:      b.cfg,
-			rm:       b.rm,
-			rom:      b.rom,
-			rs:       b.rs,
-			ss:       b.ss,
-			cam:      b.cam,
-			dsl:      b.dsl,
-			ext:      b.ext,
-			dns:      b.dns,
-			configm:  b.configm,
-			leadInfo: b.leadInfo,
-			lif:      b.lif,
-			eac:      b.eac,
-			metrics:  b.metrics,
-			erf:      b.erf,
-			apim:     b.apim,
-			xdsh:     b.xdsh,
-			dps:      b.dps,
-			kdsctx:   b.kdsctx,
+			cfg:        b.cfg,
+			rm:         b.rm,
+			rom:        b.rom,
+			rs:         b.rs,
+			ss:         b.ss,
+			cam:        b.cam,
+			dsl:        b.dsl,
+			ext:        b.ext,
+			dns:        b.dns,
+			configm:    b.configm,
+			leadInfo:   b.leadInfo,
+			lif:        b.lif,
+			eac:        b.eac,
+			metrics:    b.metrics,
+			erf:        b.erf,
+			apim:       b.apim,
+			xdsh:       b.xdsh,
+			dps:        b.dps,
+			kdsctx:     b.kdsctx,
+			shutdownCh: b.shutdownCh,
 		},
 		Manager: b.cm,
 	}, nil
@@ -296,7 +297,7 @@ func (b *Builder) SecretStore() store.SecretStore {
 func (b *Builder) ConfigStore() core_store.ResourceStore {
 	return b.cs
 }
-func (b *Builder) ResourceManager() core_manager.ResourceManager {
+func (b *Builder) ResourceManager() core_manager.CustomizableResourceManager {
 	return b.rm
 }
 func (b *Builder) ReadOnlyResourceManager() core_manager.ReadOnlyResourceManager {
@@ -344,6 +345,6 @@ func (b *Builder) DpServer() *dp_server.DpServer {
 func (b *Builder) KDSContext() *kds_context.Context {
 	return b.kdsctx
 }
-func (b *Builder) CloseCh() <-chan struct{} {
-	return b.closeCh
+func (b *Builder) ShutdownCh() <-chan struct{} {
+	return b.shutdownCh
 }

@@ -28,19 +28,19 @@ var (
 		mesh.DataplaneInsightType,
 	}
 	ConsumedTypes = []model.ResourceType{
-		mesh.MeshType,
+		mesh.CircuitBreakerType,
 		mesh.DataplaneType,
 		mesh.ExternalServiceType,
-		mesh.CircuitBreakerType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,
+		mesh.MeshType,
+		mesh.ProxyTemplateType,
+		mesh.RetryType,
+		mesh.TimeoutType,
 		mesh.TrafficLogType,
 		mesh.TrafficPermissionType,
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
-		mesh.ProxyTemplateType,
-		mesh.RetryType,
-		mesh.TimeoutType,
 		system.SecretType,
 		system.ConfigType,
 	}
@@ -103,6 +103,11 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 			if rs.GetItemType() == mesh.DataplaneType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return r.(*mesh.DataplaneResource).Spec.IsRemoteIngress(localZone)
+				}))
+			}
+			if rs.GetItemType() == system.ConfigType {
+				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
+					return rt.KDSContext().Configs[r.GetMeta().GetName()]
 				}))
 			}
 			return syncer.Sync(rs)

@@ -2,8 +2,10 @@ package v1alpha1
 
 import (
 	"fmt"
+	"net"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -69,7 +71,8 @@ type OutboundInterface struct {
 }
 
 func (i OutboundInterface) String() string {
-	return fmt.Sprintf("%s:%d", i.DataplaneIP, i.DataplanePort)
+	return net.JoinHostPort(i.DataplaneIP,
+		strconv.FormatUint(uint64(i.DataplanePort), 10))
 }
 
 func (n *Dataplane_Networking) GetOutboundInterfaces() ([]OutboundInterface, error) {
@@ -318,6 +321,22 @@ func (t MultiValueTagSet) Values(key string) []string {
 	var result []string
 	for value := range t[key] {
 		result = append(result, value)
+	}
+	sort.Strings(result)
+	return result
+}
+
+func (t MultiValueTagSet) UniqueValues(key string) []string {
+	if t == nil {
+		return nil
+	}
+	alreadyFound := map[string]bool{}
+	var result []string
+	for value := range t[key] {
+		if !alreadyFound[value] {
+			result = append(result, value)
+			alreadyFound[value] = true
+		}
 	}
 	sort.Strings(result)
 	return result

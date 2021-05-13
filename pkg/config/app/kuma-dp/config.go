@@ -21,7 +21,7 @@ func DefaultConfig() Config {
 			},
 		},
 		Dataplane: Dataplane{
-			Mesh:      "default",
+			Mesh:      "",
 			Name:      "",                                                      // Dataplane name must be set explicitly
 			AdminPort: config_types.MustPortRange(30001, config_types.MaxPort), // by default, automatically choose a free port for Envoy Admin interface
 			DrainTime: 30 * time.Second,
@@ -29,6 +29,16 @@ func DefaultConfig() Config {
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
 			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
+		},
+		DNS: DNS{
+			Enabled:                   false,
+			CoreDNSPort:               15053,
+			EnvoyDNSPort:              15054,
+			CoreDNSEmptyPort:          15055,
+			CoreDNSBinaryPath:         "coredns",
+			CoreDNSConfigTemplatePath: "",
+			ConfigDir:                 "", // if left empty, a temporary directory will be generated automatically
+			PrometheusPort:            19153,
 		},
 	}
 }
@@ -41,12 +51,15 @@ type Config struct {
 	Dataplane Dataplane `yaml:"dataplane,omitempty"`
 	// DataplaneRuntime defines the context in which dataplane (Envoy) runs.
 	DataplaneRuntime DataplaneRuntime `yaml:"dataplaneRuntime,omitempty"`
+	// DNS defines a configuration for builtin DNS in Kuma DP
+	DNS DNS `yaml:"dns,omitempty"`
 }
 
 func (c *Config) Sanitize() {
 	c.ControlPlane.Sanitize()
 	c.Dataplane.Sanitize()
 	c.DataplaneRuntime.Sanitize()
+	c.DNS.Sanitize()
 }
 
 // ControlPlane defines coordinates of the Control Plane.
@@ -144,6 +157,9 @@ func (c *Config) Validate() (errs error) {
 	if err := c.DataplaneRuntime.Validate(); err != nil {
 		errs = multierr.Append(errs, errors.Wrapf(err, ".DataplaneRuntime is not valid"))
 	}
+	if err := c.DNS.Validate(); err != nil {
+		errs = multierr.Append(errs, errors.Wrapf(err, ".DNS is not valid"))
+	}
 	return
 }
 
@@ -217,4 +233,48 @@ func (d *ApiServer) Validate() (errs error) {
 		errs = multierr.Append(errs, errors.Wrap(err, ".Retry is not valid"))
 	}
 	return
+}
+
+type DNS struct {
+	// If true then builtin DNS functionality is enabled and CoreDNS server is started
+	Enabled bool `yaml:"enabled,omitempty" envconfig:"kuma_dns_enabled"`
+	// CoreDNSPort defines a port that handles DNS requests. When transparent proxy is enabled then iptables will redirect DNS traffic to this port.
+	CoreDNSPort uint32 `yaml:"coreDnsPort,omitempty" envconfig:"kuma_dns_core_dns_port"`
+	// CoreDNSEmptyPort defines a port that always responds with empty NXDOMAIN respond. It is required to implement a fallback to a real DNS
+	CoreDNSEmptyPort uint32 `yaml:"coreDnsEmptyPort,omitempty" envconfig:"kuma_dns_core_dns_empty_port"`
+	// EnvoyDNSPort defines a port that handles Virtual IP resolving by Envoy. CoreDNS should be configured that it first tries to use this DNS resolver and then the real one.
+	EnvoyDNSPort uint32 `yaml:"envoyDnsPort,omitempty" envconfig:"kuma_dns_envoy_dns_port"`
+	// CoreDNSBinaryPath defines a path to CoreDNS binary.
+	CoreDNSBinaryPath string `yaml:"coreDnsBinaryPath,omitempty" envconfig:"kuma_dns_core_dns_binary_path"`
+	// CoreDNSConfigTemplatePath defines a path to a CoreDNS config template.
+	CoreDNSConfigTemplatePath string `yaml:"coreDnsConfigTemplatePath,omitempty" envconfig:"kuma_dns_core_dns_config_template_path"`
+	// Dir to store auto-generated DNS Server config in.
+	ConfigDir string `yaml:"configDir,omitempty" envconfig:"kuma_dns_config_dir"`
+	// Port where Prometheus stats will be exposed for the DNS Server
+	PrometheusPort uint32 `yaml:"prometheusPort,omitempty" envconfig:"kuma_dns_prometheus_port"`
+}
+
+func (d *DNS) Sanitize() {
+}
+
+func (d *DNS) Validate() error {
+	if !d.Enabled {
+		return nil
+	}
+	if d.CoreDNSPort > 65353 {
+		return errors.New(".CoreDNSPort has to be in [0, 65353] range")
+	}
+	if d.CoreDNSEmptyPort > 65353 {
+		return errors.New(".CoreDNSEmptyPort has to be in [0, 65353] range")
+	}
+	if d.EnvoyDNSPort > 65353 {
+		return errors.New(".EnvoyDNSPort has to be in [0, 65353] range")
+	}
+	if d.PrometheusPort > 65353 {
+		return errors.New(".PrometheusPort has to be in [0, 65353] range")
+	}
+	if d.CoreDNSBinaryPath == "" {
+		return errors.New(".CoreDNSBinaryPath cannot be empty")
+	}
+	return nil
 }

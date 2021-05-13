@@ -64,8 +64,9 @@ var _ = Describe("UpdateOutbound", func() {
 							},
 						},
 						TransparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-							RedirectPortInbound:  15006,
-							RedirectPortOutbound: 15001,
+							RedirectPortInbound:   15006,
+							RedirectPortInboundV6: 15010,
+							RedirectPortOutbound:  15001,
 						},
 					},
 				},
@@ -99,9 +100,9 @@ var _ = Describe("UpdateOutbound", func() {
 			dp1 := mesh.NewDataplaneResource()
 			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(1))
-			Expect(dp1.Spec.Networking.Outbound[0].Tags["kuma.io/service"]).To(Equal("service-2"))
-			Expect(dp1.Spec.Networking.Outbound[0].Address).To(Equal("240.0.0.2"))
+			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(2))
+			Expect(dp1.Spec.Networking.Outbound[1].Tags["kuma.io/service"]).To(Equal("service-2"))
+			Expect(dp1.Spec.Networking.Outbound[1].Address).To(Equal("240.0.0.2"))
 		})
 
 		It("should not update dataplane outbounds when new service is added to another mesh", func() {
@@ -131,7 +132,7 @@ var _ = Describe("UpdateOutbound", func() {
 			dp1 := mesh.NewDataplaneResource()
 			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(0))
+			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(1))
 		})
 
 		It("should update dataplane outbounds when new service in the same mesh is added to an ingress", func() {
@@ -168,9 +169,9 @@ var _ = Describe("UpdateOutbound", func() {
 			dp1 := mesh.NewDataplaneResource()
 			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(1))
-			Expect(dp1.Spec.Networking.Outbound[0].Tags["kuma.io/service"]).To(Equal("service-2"))
-			Expect(dp1.Spec.Networking.Outbound[0].Address).To(Equal("240.0.0.2"))
+			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(2))
+			Expect(dp1.Spec.Networking.Outbound[1].Tags["kuma.io/service"]).To(Equal("service-2"))
+			Expect(dp1.Spec.Networking.Outbound[1].Address).To(Equal("240.0.0.2"))
 		})
 
 		It("shouldn't update dataplane outbounds when new service in a different mesh is added to an ingress", func() {
@@ -207,7 +208,7 @@ var _ = Describe("UpdateOutbound", func() {
 			dp1 := mesh.NewDataplaneResource()
 			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(0))
+			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(1))
 		})
 
 		It("should update dataplane outbounds when new service is added to an ingress in a different mesh", func() {
@@ -247,9 +248,9 @@ var _ = Describe("UpdateOutbound", func() {
 			dp1 := mesh.NewDataplaneResource()
 			err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
 			Expect(err).ToNot(HaveOccurred())
-			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(1))
-			Expect(dp1.Spec.Networking.Outbound[0].Tags["kuma.io/service"]).To(Equal("service-2"))
-			Expect(dp1.Spec.Networking.Outbound[0].Address).To(Equal("240.0.0.2"))
+			Expect(dp1.Spec.Networking.Outbound).To(HaveLen(2))
+			Expect(dp1.Spec.Networking.Outbound[1].Tags["kuma.io/service"]).To(Equal("service-2"))
+			Expect(dp1.Spec.Networking.Outbound[1].Address).To(Equal("240.0.0.2"))
 		})
 
 		Context("outbounds already updated", func() {
@@ -296,7 +297,7 @@ var _ = Describe("UpdateOutbound", func() {
 				dp1 := mesh.NewDataplaneResource()
 				err = rm.Get(context.Background(), dp1, store.GetByKey("dp-1", "default"))
 				Expect(err).ToNot(HaveOccurred())
-				Expect(dp1.Spec.Networking.Outbound).To(HaveLen(0))
+				Expect(dp1.Spec.Networking.Outbound).To(HaveLen(1))
 			})
 		})
 	})

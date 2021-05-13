@@ -5,9 +5,11 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/spf13/viper"
-	uninstall "istio.io/istio/tools/istio-clean-iptables/pkg/cmd"
-	install "istio.io/istio/tools/istio-iptables/pkg/cmd"
-	"istio.io/istio/tools/istio-iptables/pkg/constants"
+
+	"github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/constants"
+
+	uninstall "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-clean-iptables/pkg/cmd"
+	install "github.com/kumahq/kuma/pkg/transparentproxy/istio/tools/istio-iptables/pkg/cmd"
 
 	"github.com/kumahq/kuma/pkg/transparentproxy/config"
 )
@@ -26,6 +28,7 @@ func NewIstioTransparentProxy() *IstioTransparentProxy {
 func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (string, error) {
 	viper.Set(constants.EnvoyPort, cfg.RedirectPortOutBound)
 	viper.Set(constants.InboundCapturePort, cfg.RedirectPortInBound)
+	viper.Set(constants.InboundCapturePortV6, cfg.RedirectPortInBoundV6)
 	viper.Set(constants.ProxyUID, cfg.UID)
 	viper.Set(constants.ProxyGID, cfg.GID)
 	viper.Set(constants.InboundInterceptionMode, "REDIRECT")
@@ -38,11 +41,17 @@ func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (stri
 	viper.Set(constants.DryRun, cfg.DryRun)
 	viper.Set(constants.SkipRuleApply, false)
 	viper.Set(constants.RunValidation, false)
+	viper.Set(constants.RedirectDNS, cfg.RedirectDNS)
+	viper.Set(constants.RedirectAllDNSTraffic, cfg.RedirectAllDNSTraffic)
+	viper.Set(constants.AgentDNSListenerPort, cfg.AgentDNSListenerPort)
+	viper.Set(constants.DNSUpstreamTargetChain, cfg.DNSUpstreamTargetChain)
 
-	tp.redirectStdOutStdErr()
-	defer func() {
-		tp.restoreStdOutStderr()
-	}()
+	if !cfg.Verbose {
+		tp.redirectStdOutStdErr()
+		defer func() {
+			tp.restoreStdOutStderr()
+		}()
+	}
 
 	savedArgs := os.Args[1:]
 	os.Args = os.Args[:1]
@@ -57,13 +66,22 @@ func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (stri
 	return tp.getStdOutStdErr(), nil
 }
 
-func (tp *IstioTransparentProxy) Cleanup(dryRun bool) (string, error) {
+func (tp *IstioTransparentProxy) Cleanup(dryRun, verbose bool) (string, error) {
 
 	viper.Set(constants.DryRun, dryRun)
+	viper.Set(constants.DNSUpstreamTargetChain, "")
 
-	tp.redirectStdOutStdErr()
+	if !verbose {
+		tp.redirectStdOutStdErr()
+		defer func() {
+			tp.restoreStdOutStderr()
+		}()
+	}
+
+	savedArgs := os.Args[1:]
+	os.Args = os.Args[:1]
 	defer func() {
-		tp.restoreStdOutStderr()
+		os.Args = append(os.Args, savedArgs...)
 	}()
 
 	if err := uninstall.GetCommand().Execute(); err != nil {

@@ -2,6 +2,13 @@ package dns
 
 import (
 	"fmt"
+	"net"
+	"strconv"
+	"strings"
+
+	"github.com/asaskevich/govalidator"
+
+	"github.com/pkg/errors"
 
 	"github.com/miekg/dns"
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,7 +41,7 @@ type SimpleDNSServer struct {
 
 func NewDNSServer(port uint32, resolver resolver.DNSResolver, metrics core_metrics.Metrics, modifier NameModifier) (DNSServer, error) {
 	handler := &SimpleDNSServer{
-		address:  fmt.Sprintf("0.0.0.0:%d", port),
+		address:  net.JoinHostPort("0.0.0.0", strconv.FormatUint(uint64(port), 10)),
 		resolver: resolver,
 		latencyMetric: prometheus.NewSummary(prometheus.SummaryOpts{
 			Name:       "dns_server",
@@ -60,7 +67,7 @@ func NewDNSServer(port uint32, resolver resolver.DNSResolver, metrics core_metri
 func (h *SimpleDNSServer) parseQuery(m *dns.Msg) {
 	for _, q := range m.Question {
 		switch q.Qtype {
-		case dns.TypeA:
+		case dns.TypeA, dns.TypeAAAA:
 			serverLog.V(1).Info("received a query for " + q.Name)
 			ip, err := h.lookup(q.Name)
 			if err != nil {
@@ -70,7 +77,12 @@ func (h *SimpleDNSServer) parseQuery(m *dns.Msg) {
 			}
 			h.resolutionMetric.WithLabelValues("resolved").Inc()
 
-			rr, err := dns.NewRR(fmt.Sprintf("%s %s IN A %s", q.Name, dnsTTL, ip))
+			recordType := "A"
+			if govalidator.IsIPv6(ip) {
+				recordType = "AAAA"
+			}
+
+			rr, err := dns.NewRR(fmt.Sprintf("%s %s IN %s %s", q.Name, dnsTTL, recordType, ip))
 			if err != nil {
 				serverLog.Error(err, "unable to create response for", "Name", q.Name)
 				return
@@ -110,10 +122,15 @@ func (d *SimpleDNSServer) Start(stop <-chan struct{}) error {
 	errChan := make(chan error)
 	go func() {
 		defer close(errChan)
+
 		err := server.ListenAndServe()
 		if err != nil {
-			serverLog.Error(err, "failed to start the DNS listener.")
-			errChan <- err
+			errString := "failed to start the DNS listener."
+			if strings.Contains(err.Error(), "bind") {
+				errString = bindError(d.address)
+			}
+			serverLog.Error(err, errString)
+			errChan <- errors.Wrap(err, errString)
 		}
 	}()
 
@@ -156,4 +173,20 @@ func (h *SimpleDNSServer) lookup(qName string) (string, error) {
 	}
 
 	return ip, nil
+}
+
+func bindError(address string) string {
+	host, _, err := net.SplitHostPort(address)
+	if err != nil {
+		return fmt.Sprintf("invalid DNS bind address %s", address)
+	}
+	return fmt.Sprintf(
+		"unable to bind the DNS server to %s.\n\nPlease consider setting KUMA_DNS_SERVER_PORT=5653 (the default).\n"+
+			"Then redirect the incoming UDP traffinc on port 53 to it. The `iptables` command for this would be:\n\n"+
+			"iptables -t nat -A OUTPUT -p udp -d %s --dport 53 -j DNAT --to-destination %s:5653\n\n"+
+			"On hosts which use firewalld, the command would be:\n\n"+
+			"firewall-cmd --direct --add-rule ipv4 nat OUTPUT 1 -p udp -d %s --dport 53 -j DNAT --to-destination %s:5653\n\n",
+		address,
+		host, host,
+		host, host)
 }

@@ -7,6 +7,13 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 import "validate/validate.proto";
 
 import "system/v1alpha1/datasource.proto";
+import "config.proto";
+
+option (doc.config) = {
+  type : Policy,
+  name : "ExternalService",
+  file_name : "external-service"
+};
 
 // ExternalService defines configuration of the externally accessible service
 message ExternalService {

@@ -1,7 +1,7 @@
 global:
   image:
     # -- Default registry for all Kuma Images
-    registry: "kong-docker-kuma-docker.bintray.io"
+    registry: "docker.io/kumahq"
     # -- The default tag for all Kuma images, which itself defaults to .Chart.AppVersion
     tag:
 
@@ -155,7 +155,7 @@ cni:
     # -- CNI image repository
     repository: "lobkovilya/install-cni"
     # -- CNI image tag
-    tag: "0.0.2"
+    tag: "0.0.7"
 
 dataPlane:
   image:
@@ -184,6 +184,8 @@ ingress:
     annotations: {}
     # -- Port on which Ingress is exposed
     port: 10001
+  # -- Additional deployment annotation
+  annotations: {}
 
 kumactl:
   image:

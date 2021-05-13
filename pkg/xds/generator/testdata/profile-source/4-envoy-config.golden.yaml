@@ -54,13 +54,8 @@ resources:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_mesh_ca
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
                   transportApiVersion: V3
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
@@ -69,13 +64,8 @@ resources:
               apiConfigSource:
                 apiType: GRPC
                 grpcServices:
-                - googleGrpc:
-                    channelCredentials:
-                      sslCredentials:
-                        rootCerts:
-                          inlineBytes: MTIzNDU=
-                    statPrefix: sds_identity_cert
-                    targetUri: kuma-system:5677
+                - envoyGrpc:
+                    clusterName: ads_cluster
                 transportApiVersion: V3
               resourceApiVersion: V3
         sni: db{mesh=demo}
@@ -111,13 +101,8 @@ resources:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_mesh_ca
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
                   transportApiVersion: V3
                 resourceApiVersion: V3
           tlsCertificateSdsSecretConfigs:
@@ -126,24 +111,19 @@ resources:
               apiConfigSource:
                 apiType: GRPC
                 grpcServices:
-                - googleGrpc:
-                    channelCredentials:
-                      sslCredentials:
-                        rootCerts:
-                          inlineBytes: MTIzNDU=
-                    statPrefix: sds_identity_cert
-                    targetUri: kuma-system:5677
+                - envoyGrpc:
+                    clusterName: ads_cluster
                 transportApiVersion: V3
               resourceApiVersion: V3
         sni: elastic{mesh=demo}
     type: EDS
-- name: inbound:passthrough
+- name: inbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: inbound_passthrough
+    altStatName: inbound_passthrough_ipv4
     connectTimeout: 10s
     lbPolicy: CLUSTER_PROVIDED
-    name: inbound:passthrough
+    name: inbound:passthrough:ipv4
     type: ORIGINAL_DST
     upstreamBindConfig:
       sourceAddress:
@@ -165,6 +145,21 @@ resources:
                 portValue: 9902
     name: kuma:envoy:admin
     type: STATIC
+- name: kuma:metrics:hijacker
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    altStatName: kuma_metrics_hijacker
+    connectTimeout: 10s
+    loadAssignment:
+      clusterName: kuma:metrics:hijacker
+      endpoints:
+      - lbEndpoints:
+        - endpoint:
+            address:
+              pipe:
+                path: /tmp/kuma-mh-backend-01-demo.sock
+    name: kuma:metrics:hijacker
+    type: STATIC
 - name: localhost:8080
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -181,13 +176,13 @@ resources:
                 portValue: 8080
     name: localhost:8080
     type: STATIC
-- name: outbound:passthrough
+- name: outbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    altStatName: outbound_passthrough
+    altStatName: outbound_passthrough_ipv4
     connectTimeout: 10s
     lbPolicy: CLUSTER_PROVIDED
-    name: outbound:passthrough
+    name: outbound:passthrough:ipv4
     type: ORIGINAL_DST
 - name: inbound:192.168.0.1:80
   resource:
@@ -240,13 +235,8 @@ resources:
                   apiConfigSource:
                     apiType: GRPC
                     grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+                    - envoyGrpc:
+                        clusterName: ads_cluster
                     transportApiVersion: V3
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
@@ -255,19 +245,14 @@ resources:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_identity_cert
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
                   transportApiVersion: V3
                 resourceApiVersion: V3
           requireClientCertificate: true
     name: inbound:192.168.0.1:80
     trafficDirection: INBOUND
-- name: inbound:passthrough
+- name: inbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -279,9 +264,9 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: inbound:passthrough
-          statPrefix: inbound_passthrough
-    name: inbound:passthrough
+          cluster: inbound:passthrough:ipv4
+          statPrefix: inbound_passthrough_ipv4
+    name: inbound:passthrough:ipv4
     trafficDirection: INBOUND
     useOriginalDst: true
 - name: kuma:envoy:admin
@@ -380,8 +365,8 @@ resources:
               - match:
                   prefix: /non-standard-path
                 route:
-                  cluster: kuma:envoy:admin
-                  prefixRewrite: /stats/prometheus
+                  cluster: kuma:metrics:hijacker
+                  prefixRewrite: /
           statPrefix: kuma_metrics_prometheus
     - filters:
       - name: envoy.filters.network.rbac
@@ -404,8 +389,8 @@ resources:
               - match:
                   prefix: /non-standard-path
                 route:
-                  cluster: kuma:envoy:admin
-                  prefixRewrite: /stats/prometheus
+                  cluster: kuma:metrics:hijacker
+                  prefixRewrite: /
           statPrefix: kuma_metrics_prometheus
       transportSocket:
         name: envoy.transport_sockets.tls
@@ -422,13 +407,8 @@ resources:
                   apiConfigSource:
                     apiType: GRPC
                     grpcServices:
-                    - googleGrpc:
-                        channelCredentials:
-                          sslCredentials:
-                            rootCerts:
-                              inlineBytes: MTIzNDU=
-                        statPrefix: sds_mesh_ca
-                        targetUri: kuma-system:5677
+                    - envoyGrpc:
+                        clusterName: ads_cluster
                     transportApiVersion: V3
                   resourceApiVersion: V3
             tlsCertificateSdsSecretConfigs:
@@ -437,13 +417,8 @@ resources:
                 apiConfigSource:
                   apiType: GRPC
                   grpcServices:
-                  - googleGrpc:
-                      channelCredentials:
-                        sslCredentials:
-                          rootCerts:
-                            inlineBytes: MTIzNDU=
-                      statPrefix: sds_identity_cert
-                      targetUri: kuma-system:5677
+                  - envoyGrpc:
+                      clusterName: ads_cluster
                   transportApiVersion: V3
                 resourceApiVersion: V3
           requireClientCertificate: true
@@ -483,7 +458,7 @@ resources:
           statPrefix: elastic
     name: outbound:127.0.0.1:59200
     trafficDirection: OUTBOUND
-- name: outbound:passthrough
+- name: outbound:passthrough:ipv4
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
     address:
@@ -495,8 +470,8 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: outbound:passthrough
-          statPrefix: outbound_passthrough
-    name: outbound:passthrough
+          cluster: outbound:passthrough:ipv4
+          statPrefix: outbound_passthrough_ipv4
+    name: outbound:passthrough:ipv4
     trafficDirection: OUTBOUND
     useOriginalDst: true

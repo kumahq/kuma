@@ -64,6 +64,14 @@ var _ = Describe("ServiceReconciler", func() {
 					},
 				},
 				Spec: kube_core.ServiceSpec{},
+			},
+			&kube_core.Service{
+				ObjectMeta: kube_meta.ObjectMeta{
+					Namespace:   "non-system-ns-with-sidecar-injection",
+					Name:        "non-annotations-service",
+					Annotations: nil,
+				},
+				Spec: kube_core.ServiceSpec{},
 			})
 
 		reconciler = &ServiceReconciler{
@@ -80,17 +88,15 @@ var _ = Describe("ServiceReconciler", func() {
 
 		// when
 		result, err := reconciler.Reconcile(req)
+
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
 		Expect(result).To(BeZero())
 
-		// when
+		// and service is not annotated
 		svc := &kube_core.Service{}
 		err = kubeClient.Get(context.Background(), req.NamespacedName, svc)
-		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
 		Expect(svc.GetAnnotations()).ToNot(HaveKey(metadata.IngressServiceUpstream))
 	})
 
@@ -102,19 +108,37 @@ var _ = Describe("ServiceReconciler", func() {
 
 		// when
 		result, err := reconciler.Reconcile(req)
+
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
 		Expect(result).To(BeZero())
 
-		// when
+		// and service is annotated
 		svc := &kube_core.Service{}
 		err = kubeClient.Get(context.Background(), req.NamespacedName, svc)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(svc.GetAnnotations()).To(HaveKey(metadata.IngressServiceUpstream))
+		Expect(svc.GetAnnotations()[metadata.IngressServiceUpstream]).To(Equal(metadata.AnnotationTrue))
+	})
+
+	It("should update service that has no annotations in an annotated namespace", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: "non-system-ns-with-sidecar-injection", Name: "non-annotations-service"},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
+		Expect(result).To(BeZero())
+
+		// and service is annotated
+		svc := &kube_core.Service{}
+		err = kubeClient.Get(context.Background(), req.NamespacedName, svc)
+		Expect(err).ToNot(HaveOccurred())
 		Expect(svc.GetAnnotations()).To(HaveKey(metadata.IngressServiceUpstream))
-		// and
 		Expect(svc.GetAnnotations()[metadata.IngressServiceUpstream]).To(Equal(metadata.AnnotationTrue))
 	})
 
