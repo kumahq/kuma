@@ -9,7 +9,7 @@ Practically, it means that `Prometheus` will be retrieving a list of scrape targ
 **Direct integration** between `Kuma` Control Plane and `Prometheus` has the following **advantages**:
 * **consistent ease of use** of `Kuma` Service Mesh **in any environment**, be it `Kubernetes`, legacy datacenter, VMs, bare metal, etc
 * inherent **support for hybrid environments**
-* **dynamism of reconfiguration** that would not otherwise be possible even on `Kubernetes` (where `Prometheus` configuration would have to remain unchanged thought the entire lifecycle of a `Pod`)
+* **dynamism of reconfiguration** that would not otherwise be possible even on `Kubernetes` (where `Prometheus` configuration would have to remain unchanged throughout the entire lifecycle of a `Pod`)
 
 ## How it works
 
