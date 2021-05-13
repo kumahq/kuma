@@ -59,7 +59,7 @@ follows the standard procedure.
 
 ### Consuming services
 
-Let's look at an exmaple where a service `web` is accessing a service `backend` at port `9000`, and look at the different scenarios
+Let's look at an example where a service `web` is accessing a service `backend` at port `9000`, and look at the different scenarios
 
 1. Both services are in the same namespace `dev-1` in the same Kubernetes cluster `dev-cluster-1`. No changes or additional configurations
 needed, `web` can refer to `http://backend:9000`.
@@ -185,7 +185,7 @@ The Remote CP is the termination point of the API requests to the Global. Its fu
 
 ## Networking
 
-The cross-cluster networking model relies on the ability for each cluster to expose its services at a routable IP adress,
+The cross-cluster networking model relies on the ability for each cluster to expose its services at a routable IP address,
 which is reachable by the other clusters in the Kuma Multicluster deployment.
 
 ```
