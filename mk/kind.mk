@@ -92,7 +92,7 @@ kind/load/kumactl:
 
 .PHONY: kind/load/kuma-universal
 kind/load/kuma-universal:
-	@kind load docker-image $(KUMA_UNIVERSAL_DOCKER_IMAGE) --name=$(KIND_CLUSTER_NAME)
+	@kind load docker-image kuma-universal:latest --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/images
 kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl
