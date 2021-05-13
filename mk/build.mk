@@ -59,6 +59,14 @@ build/coredns:
 build/kuma-prometheus-sd: ## Dev: Build `kuma-prometheus-sd` binary
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/kuma-prometheus-sd/kuma-prometheus-sd ./app/kuma-prometheus-sd
 
+.PHONY: build/test-server
+build/test-server: ## Dev: Build `test-server` binary
+	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/test-server/test-server ./test/server
+
+.PHONY: build/linux-amd64
+build/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build
+
 .PHONY: build/kuma-cp/linux-amd64
 build/kuma-cp/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/kuma-cp
@@ -78,6 +86,10 @@ build/kuma-prometheus-sd/linux-amd64:
 .PHONY: build/coredns/linux-amd64
 build/coredns/linux-amd64:
 	GOOS=linux GOARCH=amd64 $(MAKE) build/coredns
+
+.PHONY: build/test-server/linux-amd64
+build/test-server/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/test-server
 
 .PHONY: clean
 clean: clean/build ## Dev: Clean
