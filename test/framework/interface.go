@@ -61,6 +61,12 @@ func WithYaml(appYaml string) DeployOptionsFunc {
 	}
 }
 
+func WithIPv6(isipv6 bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.isipv6 = isipv6
+	}
+}
+
 func WithProtocol(protocol string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.protocol = protocol

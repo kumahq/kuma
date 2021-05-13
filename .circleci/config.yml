@@ -51,7 +51,7 @@ reusable:
     - &circleci_golang_image "circleci/golang:1.16.3"
 
   vm_images:
-  - &ubuntu_vm_image "ubuntu-2004:202101-01"
+  - &ubuntu_vm_image "ubuntu-2004:202104-01"
 
   snippets:
 
@@ -904,6 +904,18 @@ jobs:
       - when:
           condition: << parameters.ipv6 >>
           steps:
+            - run:
+                name: Enable IPV6 and change DNS # CircleCI's DNS on IPV6 prevents resolving inside Kind. When change to 8.8.8.8 and remove "search" section (. removes it), resolving works again
+                command: |
+                  cat \<<'EOF' | sudo tee /etc/docker/daemon.json
+                  {
+                    "ipv6": true,
+                    "fixed-cidr-v6": "2001:db8:1::/64",
+                    "dns": ["8.8.8.8"],
+                    "dns-search": ["."]
+                  }
+                  EOF
+                  sudo service docker restart
             - run:
                 name: "Run IPv6 E2E tests"
                 command: |

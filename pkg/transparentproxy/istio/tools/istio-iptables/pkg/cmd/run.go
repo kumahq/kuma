@@ -721,7 +721,7 @@ func HandleDNSUDPv6(
 	// Note: If a user somehow configured etc/resolv.conf to point to dnsmasq and server X, and dnsmasq also
 	// pointed to server X, this would not work. However, the assumption is that is not a common case.
 	for _, s := range dnsServersV6 {
-		if s == "0.0.0.0" {
+		if s == "::" {
 			raw = []string{
 				"-t", table, opsStr, chain,
 				"-p", constants.UDP, "--dport", "53",
