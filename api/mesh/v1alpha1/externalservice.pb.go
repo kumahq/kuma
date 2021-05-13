@@ -27,7 +27,7 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-// ExternalService defines configuration of the externaly accessible service
+// ExternalService defines configuration of the externally accessible service
 type ExternalService struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache

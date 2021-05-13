@@ -8,7 +8,7 @@ import "validate/validate.proto";
 
 import "system/v1alpha1/datasource.proto";
 
-// ExternalService defines configuration of the externaly accessible service
+// ExternalService defines configuration of the externally accessible service
 message ExternalService {
 
   // Networking describes the properties of the external service connectivity
