@@ -195,9 +195,11 @@ jobs:
         at: build
 
     - run:
-      - name: "Load Docker images from TAR archives"
+        name: "Load Docker images from TAR archives"
         command: make docker/load
-      - name: "Load test Docker images from TAR archives"
+
+    - run:
+        name: "Load test Docker images from TAR archives"
         command: make docker/load/kuma-universal
 
     - aws-ecr/ecr-login:
