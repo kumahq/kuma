@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## [1.1.6]
+> Released on  2021/05/13
+
+Changes:
+* feat: expose reuse_connection in healthchecks [#1952](https://github.com//kumahq/kuma/pull/1952)
+* feat: allow tcp/http healthchecks together [#1951](https://github.com//kumahq/kuma/pull/1951)
+* feat: kumactl option to install gateway types [#1950](https://github.com//kumahq/kuma/pull/1950)
+* feat: kumactl option to install kuma demo app [#1932](https://github.com//kumahq/kuma/pull/1932)
+* feat: kumactl option to install Kong ingress [#1929](https://github.com//kumahq/kuma/pull/1929)
+* feat: support all tags in traffic permission [#1902](https://github.com//kumahq/kuma/pull/1902)
+* fix: gateway status was always reporting offline [#1946](https://github.com//kumahq/kuma/pull/1946)
+* fix: don't cache failed calls [#1894](https://github.com//kumahq/kuma/pull/1894)
+  👍contributed by @lahabana
+* chore: add hostname when sending traces to the collector [#1962](https://github.com//kumahq/kuma/pull/1962)
+* docs: prepare api docs generation [#1741](https://github.com//kumahq/kuma/pull/1741)
+* test: azure aks and e2e improvements for the CI [#1880](https://github.com//kumahq/kuma/pull/1880)
+  [#1871](https://github.com//kumahq/kuma/pull/1871)
+  [#1933](https://github.com//kumahq/kuma/pull/1933)
+  [#1953](https://github.com//kumahq/kuma/pull/1953)
+  [#1972](https://github.com//kumahq/kuma/pull/1972)
+
 ## [1.1.5]
 > Released on  2021/04/28
 
