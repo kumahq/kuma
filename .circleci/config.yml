@@ -912,6 +912,7 @@ jobs:
                 name: "Run IPv6 E2E tests"
                 command: |
                   export PATH=$HOME/go/bin:$PATH
+                  export KUMA_UNIVERSAL_IMAGE="<< parameters.docker_registry >>/kuma-universal:${TAG}";
                   export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   export IPV6=true
@@ -925,6 +926,7 @@ jobs:
                 name: "Run IPv4 E2E tests"
                 command: |
                   export PATH=$HOME/go/bin:$PATH
+                  export KUMA_UNIVERSAL_IMAGE="<< parameters.docker_registry >>/kuma-universal:${TAG}";
                   export E2E_PKG_LIST=$(circleci tests glob ./test/e2e/* | circleci tests split | xargs printf "./%s/... ")
                   export API_VERSION=<< parameters.api >>
                   make test/e2e
