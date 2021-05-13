@@ -130,7 +130,7 @@ conf:
 		Expect(cluster.DismissCluster()).To(Succeed())
 	})
 
-	FIt("should mark host as unhealthy if it doesn't reply on health checks", func() {
+	It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 		// check that test-server is healthy
 		cmd := []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
 		stdout, _, err := cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
