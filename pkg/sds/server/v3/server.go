@@ -51,6 +51,7 @@ func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *sds_metrics.Metrics) error
 		cache:              cache,
 		upsertConfig:       rt.Config().Store.Upsert,
 		sdsMetrics:         sdsMetrics,
+		proxySnapshotInfo:  map[string]snapshotInfo{},
 	}
 
 	syncTracker, err := syncTracker(&reconciler, rt.Config().SdsServer.DataplaneConfigurationRefreshInterval, sdsMetrics)
@@ -87,6 +88,9 @@ func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetr
 			OnError: func(err error) {
 				sdsMetrics.SdsGenerationsErrors(envoy_common.APIV3).Inc()
 				sdsServerLog.Error(err, "OnTick() failed")
+			},
+			OnStop: func() {
+				reconciler.Cleanup(dataplaneId)
 			},
 		}
 	}), nil

@@ -301,6 +301,31 @@ var _ = Describe("SDS Server", func() {
 
 			close(done)
 		}, 10)
+
+		It("should dataplane has changed", func(done Done) {
+			// when
+			dpRes := mesh_core.NewDataplaneResource()
+			Expect(resManager.Get(context.Background(), dpRes, core_store.GetByKey("backend-01", "default"))).To(Succeed())
+			dpRes.Spec.Networking.Inbound[0].Tags["version"] = "xyz"
+
+			// when new tag is added
+			Expect(resManager.Update(context.Background(), dpRes)).To(Succeed())
+
+			// and when send a request with version previously fetched
+			req := newRequestForSecrets()
+			req.VersionInfo = firstExchangeResponse.VersionInfo
+			req.ResponseNonce = firstExchangeResponse.Nonce
+			err := stream.Send(&req)
+			Expect(err).ToNot(HaveOccurred())
+			resp, err := stream.Recv()
+			Expect(err).ToNot(HaveOccurred())
+
+			// then certs are different
+			Expect(resp).ToNot(BeNil())
+			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
+
+			close(done)
+		}, 10)
 	})
 
 	It("should not return certs when DP is not authorized", func(done Done) {

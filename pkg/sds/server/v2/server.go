@@ -51,6 +51,7 @@ func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *sds_metrics.Metrics) error
 		cache:              cache,
 		upsertConfig:       rt.Config().Store.Upsert,
 		sdsMetrics:         sdsMetrics,
+		proxySnapshotInfo:  map[string]snapshotInfo{},
 	}
 
 	syncTracker, err := syncTracker(&reconciler, rt.Config().SdsServer.DataplaneConfigurationRefreshInterval, sdsMetrics)
