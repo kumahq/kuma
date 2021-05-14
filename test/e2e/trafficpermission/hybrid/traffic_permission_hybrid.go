@@ -15,7 +15,7 @@ import (
 
 func TrafficPermissionHybrid() {
 	var globalCluster, remoteUniversal, remoteKube Cluster
-	var optsGlobal, optsRemoteUniversal, optsRemoteKube []DeployOptionsFunc
+	var optsGlobal, optsRemoteUniversal, optsRemoteKube = KumaK8sDeployOpts, KumaUniversalDeployOpts, KumaRemoteK8sDeployOpts
 	var clientPodName string
 
 	namespaceWithSidecarInjection := func(namespace string) string {
@@ -57,7 +57,6 @@ spec:
 
 		// Global
 		globalCluster = k8sClusters.GetCluster(Kuma1)
-		optsGlobal = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Global, optsGlobal...)).
@@ -75,9 +74,8 @@ spec:
 
 		// Remote universal
 		remoteUniversal = universalClusters.GetCluster(Kuma3)
-		optsRemoteUniversal = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		optsRemoteUniversal = append(optsRemoteUniversal,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Remote, optsRemoteUniversal...)).
@@ -90,9 +88,8 @@ spec:
 
 		// Remote kubernetes
 		remoteKube = k8sClusters.GetCluster(Kuma2)
-		optsRemoteKube = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		optsRemoteKube = append(optsRemoteKube,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Remote, optsRemoteKube...)).

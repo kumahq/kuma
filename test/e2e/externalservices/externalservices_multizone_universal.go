@@ -52,7 +52,7 @@ networking:
 	const defaultMesh = "default"
 
 	var global, remote_1, remote_2, external Cluster
-	var optsGlobal, optsRemote1, optsRemote2 []DeployOptionsFunc
+	var optsGlobal, optsRemote1, optsRemote2 = KumaUniversalDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -74,7 +74,6 @@ networking:
 
 		// Global
 		global = clusters.GetCluster(Kuma6)
-		optsGlobal = []DeployOptionsFunc{}
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
 			Install(YamlUniversal(meshDefaulMtlsOn)).
@@ -90,10 +89,9 @@ networking:
 
 		// Cluster 1
 		remote_1 = clusters.GetCluster(Kuma4)
-		optsRemote1 = []DeployOptionsFunc{
+		optsRemote1 = append(optsRemote1,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithHDS(false),
-		}
+			WithHDS(false))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote1...)).
@@ -105,10 +103,9 @@ networking:
 
 		// Cluster 2
 		remote_2 = clusters.GetCluster(Kuma5)
-		optsRemote2 = []DeployOptionsFunc{
+		optsRemote2 = append(optsRemote2,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithHDS(false),
-		}
+			WithHDS(false))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote2...)).

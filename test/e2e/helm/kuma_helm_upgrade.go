@@ -18,7 +18,7 @@ import (
 
 func UpgradingWithHelmChart() {
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs = KumaK8sDeployOpts
 
 	AfterEach(func() {
 		if ShouldSkipCleanup() {
@@ -50,14 +50,13 @@ func UpgradingWithHelmChart() {
 				strings.ToLower(random.UniqueId()),
 			)
 
-			deployOptsFuncs = []DeployOptionsFunc{
+			deployOptsFuncs = append(deployOptsFuncs,
 				WithInstallationMode(HelmInstallationMode),
 				WithHelmChartPath("kuma/kuma"),
 				WithHelmReleaseName(releaseName),
 				WithHelmChartVersion(given.initialChartVersion),
 				WithoutHelmOpt("global.image.tag"),
-				WithoutHelmOpt("global.image.registry"),
-			}
+				WithoutHelmOpt("global.image.registry"))
 
 			err = NewClusterSetup().
 				Install(Kuma(core.Standalone, deployOptsFuncs...)).
@@ -68,9 +67,8 @@ func UpgradingWithHelmChart() {
 
 			k8sCluster := cluster.(*K8sCluster)
 
-			upgradeOptsFuncs := []DeployOptionsFunc{
-				WithHelmReleaseName(releaseName),
-			}
+			upgradeOptsFuncs := append(KumaK8sDeployOpts,
+				WithHelmReleaseName(releaseName))
 
 			err = k8sCluster.UpgradeKuma(core.Standalone, upgradeOptsFuncs...)
 			Expect(err).ToNot(HaveOccurred())
