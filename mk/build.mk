@@ -30,7 +30,25 @@ COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 
 .PHONY: build
-build: build/kuma-cp build/kuma-dp build/kumactl build/kuma-prometheus-sd build/coredns ## Dev: Build all binaries
+build: build/release build/test
+
+.PHONY: build/release
+build/release: build/kuma-cp build/kuma-dp build/kumactl build/kuma-prometheus-sd build/coredns ## Dev: Build all binaries
+
+.PHONY: build/test
+build/test: build/test-server
+
+.PHONY: build/linux-amd64
+build/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build
+
+.PHONY: build/release/linux-amd64
+build/release/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/release
+
+.PHONY: build/test/linux-amd64
+build/test/linux-amd64:
+	GOOS=linux GOARCH=amd64 $(MAKE) build/test
 
 .PHONY: build/kuma-cp
 build/kuma-cp: ## Dev: Build `Control Plane` binary
@@ -62,10 +80,6 @@ build/kuma-prometheus-sd: ## Dev: Build `kuma-prometheus-sd` binary
 .PHONY: build/test-server
 build/test-server: ## Dev: Build `test-server` binary
 	$(GO_BUILD) -o ${BUILD_ARTIFACTS_DIR}/test-server/test-server ./test/server
-
-.PHONY: build/linux-amd64
-build/linux-amd64:
-	GOOS=linux GOARCH=amd64 $(MAKE) build
 
 .PHONY: build/kuma-cp/linux-amd64
 build/kuma-cp/linux-amd64:

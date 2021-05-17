@@ -198,10 +198,6 @@ jobs:
         name: "Load Docker images from TAR archives"
         command: make docker/load
 
-    - run:
-        name: "Load test Docker images from TAR archives"
-        command: make docker/load/kuma-universal
-
     - aws-ecr/ecr-login:
         account-url: ECR_REGISTRY
         region: AWS_DEFAULT_REGION
@@ -940,9 +936,6 @@ jobs:
     - run:
         name: Build all Kuma binaries (such as, kumactl, kuma-cp, kuma-dp, kuma-prometheus-sd)
         command: make build
-    - run:
-        name: Build test Kuma binaries (such as test-server)
-        command: make build/test-server
 
     # Persist the specified paths into the workspace for use in downstream jobs
     - persist_to_workspace:
@@ -970,16 +963,8 @@ jobs:
           make docker/build \
             DOCKER_REGISTRY="<< parameters.docker_registry >>"
     - run:
-        name: Build test Docker images
-        command: |
-          make docker/build/kuma-universal \
-            DOCKER_REGISTRY="<< parameters.docker_registry >>"
-    - run:
         name: Save Docker images into TAR archives
         command: make docker/save
-    - run:
-        name: Save test Docker images into TAR archives
-        command: make docker/save/kuma-universal
     # Persist the specified paths into the workspace for use in downstream jobs
     - persist_to_workspace:
         root: build

@@ -24,7 +24,13 @@ export KUMA_PROMETHEUS_SD_DOCKER_IMAGE ?= $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME
 export KUMA_UNIVERSAL_DOCKER_IMAGE ?= $(DOCKER_REGISTRY)/kuma-universal:$(BUILD_INFO_VERSION)
 
 .PHONY: docker/build
-docker/build: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-init docker/build/kuma-prometheus-sd ## Dev: Build all Docker images using existing artifacts from build
+docker/build: docker/build/release docker/build/test
+
+.PHONY: docker/build/release
+docker/build/release: docker/build/kuma-cp docker/build/kuma-dp docker/build/kumactl docker/build/kuma-init docker/build/kuma-prometheus-sd ## Dev: Build all Docker images using existing artifacts from build
+
+.PHONY: docker/build/test
+docker/build/test: docker/build/kuma-universal
 
 .PHONY: docker/build/kuma-cp
 docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp ## Dev: Build `kuma-cp` Docker image using existing artifact
@@ -83,7 +89,13 @@ ${BUILD_DOCKER_IMAGES_DIR}:
 	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}
 
 .PHONY: docker/save
-docker/save: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-prometheus-sd
+docker/save: docker/save/release docker/save/test
+
+.PHONY: docker/save/release
+docker/save/release: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-prometheus-sd
+
+.PHONY: docker/save/test
+docker/save/test: docker/save/kuma-universal
 
 .PHONY: docker/save/kuma-cp
 docker/save/kuma-cp: ${BUILD_DOCKER_IMAGES_DIR}
@@ -110,7 +122,13 @@ docker/save/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}
 	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
 .PHONY: docker/load
-docker/load: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-init docker/load/kuma-prometheus-sd
+docker/load: docker/load/release docker/load/test
+
+.PHONY: docker/load/release
+docker/load/release: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-init docker/load/kuma-prometheus-sd
+
+.PHONY: docker/load/test
+docker/load/test: docker/load/kuma-universal
 
 .PHONY: docker/load/kuma-cp
 docker/load/kuma-cp: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
