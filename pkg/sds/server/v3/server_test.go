@@ -7,6 +7,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/pkg/errors"
 	prometheus_client "github.com/prometheus/client_model/go"
 
 	sds_server "github.com/kumahq/kuma/pkg/sds/server"
@@ -167,7 +168,7 @@ var _ = Describe("SDS Server", func() {
 		close(stop)
 	})
 
-	AfterEach(func() {
+	BeforeEach(func() {
 		err := resManager.Delete(context.Background(), mesh_core.NewDataplaneInsightResource(), core_store.DeleteByKey("backend-01", "default"))
 		if !core_store.IsResourceNotFound(err) {
 			Expect(err).ToNot(HaveOccurred())
@@ -206,13 +207,22 @@ var _ = Describe("SDS Server", func() {
 		Expect(resp).ToNot(BeNil())
 		Expect(resp.Resources).To(HaveLen(2))
 
-		// and insight is generated
-		dpInsight := mesh_core.NewDataplaneInsightResource()
-		err = resManager.Get(context.Background(), dpInsight, core_store.GetByKey("backend-01", "default"))
-		Expect(err).ToNot(HaveOccurred())
-		Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(1)))
-		expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
-		Expect(dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds).To(Equal(expirationSeconds))
+		// and insight is generated (insight is updated async, ot does not have to be done before response is sent)
+		Eventually(func() error {
+			dpInsight := mesh_core.NewDataplaneInsightResource()
+			err := resManager.Get(context.Background(), dpInsight, core_store.GetByKey("backend-01", "default"))
+			if err != nil {
+				return err
+			}
+			if dpInsight.Spec.MTLS.CertificateRegenerations != 1 {
+				return errors.Errorf("Certs was generated %d times. Expected 1", dpInsight.Spec.MTLS.CertificateRegenerations)
+			}
+			expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
+			if dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds != expirationSeconds {
+				return errors.Errorf("Expiration time is not correct. Got %d, expected %d", dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds, expirationSeconds)
+			}
+			return nil
+		}, "5s").ShouldNot(HaveOccurred())
 
 		// and metrics are published (metrics are published async, it does not have to be done before response is sent)
 		Eventually(func() float64 {
@@ -277,13 +287,18 @@ var _ = Describe("SDS Server", func() {
 			Expect(resp).ToNot(BeNil())
 			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
 
-			// and insight is updated
-			dpInsight := mesh_core.NewDataplaneInsightResource()
-			err = resManager.Get(context.Background(), dpInsight, core_store.GetByKey("backend-01", "default"))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(dpInsight.Spec.MTLS.CertificateRegenerations).To(Equal(uint32(2)))
-			expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
-			Expect(dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds).To(Equal(expirationSeconds))
+			// and insight is generated (insight is updated async, ot does not have to be done before response is sent)
+			Eventually(func() error {
+				dpInsight := mesh_core.NewDataplaneInsightResource()
+				err := resManager.Get(context.Background(), dpInsight, core_store.GetByKey("backend-01", "default"))
+				if err != nil {
+					return err
+				}
+				if dpInsight.Spec.MTLS.CertificateRegenerations != 2 {
+					return errors.Errorf("Certs was generated %d times. Expected 1", dpInsight.Spec.MTLS.CertificateRegenerations)
+				}
+				return nil
+			}, "5s").ShouldNot(HaveOccurred())
 
 			close(done)
 		}, 10)
