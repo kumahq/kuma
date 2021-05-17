@@ -32,7 +32,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(HttpConnectionManager(given.statsName)).
+					Configure(HttpConnectionManager(given.statsName, true)).
 					Configure(HttpInboundRoute(given.service, given.cluster)))).
 				Build()
 			// then
@@ -63,6 +63,9 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
               - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  forwardClientCertDetails: SANITIZE_SET
+                  setCurrentClientCertDetails:
+                    uri: true
                   httpFilters:
                   - name: envoy.filters.http.router
                   routeConfig:
