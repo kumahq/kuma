@@ -80,10 +80,16 @@ image/kuma-init: docker/build/kuma-init ## Dev: Rebuild `kuma-init` Docker image
 image/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-amd64 docker/build/kuma-prometheus-sd ## Dev: Rebuild `kuma-prometheus-sd` Docker image
 
 .PHONY: image/kuma-universal
-image/kuma-universal: build/linux-amd64 build/test-server/linux-amd64 docker/build/kuma-universal
+image/kuma-universal: build/linux-amd64 docker/build/kuma-universal
 
 .PHONY: images
-images: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd ## Dev: Rebuild all Docker images
+images: images/release images/test
+
+.PHONY: images/release
+images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd ## Dev: Rebuild all Docker images
+
+.PHONY: images/test
+images/test: image/kuma-universal
 
 ${BUILD_DOCKER_IMAGES_DIR}:
 	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}
