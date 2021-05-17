@@ -222,7 +222,7 @@ var _ = Describe("SDS Server", func() {
 				return errors.Errorf("Expiration time is not correct. Got %d, expected %d", dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds, expirationSeconds)
 			}
 			return nil
-		}, "5s").ShouldNot(HaveOccurred())
+		}, "10s", "1s").ShouldNot(HaveOccurred())
 
 		// and metrics are published (metrics are published async, it does not have to be done before response is sent)
 		Eventually(func() float64 {
@@ -298,7 +298,7 @@ var _ = Describe("SDS Server", func() {
 					return errors.Errorf("Certs was generated %d times. Expected 1", dpInsight.Spec.MTLS.CertificateRegenerations)
 				}
 				return nil
-			}, "5s").ShouldNot(HaveOccurred())
+			}, "10s", "1s").ShouldNot(HaveOccurred())
 
 			close(done)
 		}, 10)
