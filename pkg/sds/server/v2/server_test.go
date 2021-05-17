@@ -288,7 +288,7 @@ var _ = Describe("SDS Server", func() {
 			close(done)
 		}, 10)
 
-		It("should return pair when cert expired", func(done Done) {
+		It("should return a new pair when cert expired", func(done Done) {
 			// when time is moved 1s after 4/5 of 60s cert expiration
 			shiftedTime := now.Load().(time.Time).Add(49 * time.Second)
 			now.Store(shiftedTime)
@@ -309,7 +309,7 @@ var _ = Describe("SDS Server", func() {
 			close(done)
 		}, 10)
 
-		It("should dataplane has changed", func(done Done) {
+		It("should return a new pair when dataplane has changed", func(done Done) {
 			// when
 			dpRes := mesh_core.NewDataplaneResource()
 			Expect(resManager.Get(context.Background(), dpRes, core_store.GetByKey("backend-01", "default"))).To(Succeed())
