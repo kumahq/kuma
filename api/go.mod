@@ -8,7 +8,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/golang/protobuf v1.4.3
 	github.com/kumahq/protoc-gen-kumadoc v0.1.7
-	github.com/onsi/ginkgo v1.15.2
+	github.com/onsi/ginkgo v1.16.2
 	github.com/onsi/gomega v1.11.0
 	github.com/pkg/errors v0.9.1
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
