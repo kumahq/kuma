@@ -692,7 +692,7 @@ spec:
         - name: CONTROLLER_KONG_ADMIN_TLS_SKIP_VERIFY
           value: "true"
         - name: CONTROLLER_PUBLISH_SERVICE
-          value: kong/kong-proxy
+          value: {{ .Namespace }}/kong-proxy
         - name: POD_NAME
           valueFrom:
             fieldRef:
