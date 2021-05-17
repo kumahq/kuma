@@ -167,6 +167,13 @@ var _ = Describe("SDS Server", func() {
 		close(stop)
 	})
 
+	AfterEach(func() {
+		err := resManager.Delete(context.Background(), mesh_core.NewDataplaneInsightResource(), core_store.DeleteByKey("backend-01", "default"))
+		if !core_store.IsResourceNotFound(err) {
+			Expect(err).ToNot(HaveOccurred())
+		}
+	})
+
 	newRequestForSecrets := func() envoy_api.DiscoveryRequest {
 		return envoy_api.DiscoveryRequest{
 			Node: &envoy_api_core.Node{

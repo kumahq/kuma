@@ -89,6 +89,9 @@ func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetr
 				sdsMetrics.SdsGenerationsErrors(envoy_common.APIV2).Inc()
 				sdsServerLog.Error(err, "OnTick() failed")
 			},
+			OnStop: func() {
+				reconciler.Cleanup(dataplaneId)
+			},
 		}
 	}), nil
 }
