@@ -6,7 +6,7 @@ require (
 	github.com/go-logr/logr v0.1.0
 	github.com/golang/protobuf v1.4.3
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
-	github.com/onsi/ginkgo v1.16.1
+	github.com/onsi/ginkgo v1.16.2
 	github.com/onsi/gomega v1.11.0
 	github.com/pkg/errors v0.9.1
 	golang.org/x/net v0.0.0-20201202161906-c7110b5ffcbb
