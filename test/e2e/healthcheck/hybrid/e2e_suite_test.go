@@ -9,7 +9,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestE2EHealthCheckHybryd(t *testing.T) {
+func TestE2EHealthCheckHybrid(t *testing.T) {
 	if framework.IsK8sClustersStarted() {
 		RegisterFailHandler(Fail)
 		RunSpecs(t, "Health Check Hybrid Suite")
