@@ -78,7 +78,7 @@ test/e2e/k8s/start/cluster/$1:
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
 		$(MAKE) $(K8S_CLUSTER_TOOL)/start
 	KIND_CLUSTER_NAME=$1 \
-		$(MAKE) $(K8S_CLUSTER_TOOL)/load/images kind/load/kuma-universal
+		$(MAKE) $(K8S_CLUSTER_TOOL)/load/images
 
 .PHONY: test/e2e/k8s/stop/cluster/$1
 test/e2e/k8s/stop/cluster/$1:

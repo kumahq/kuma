@@ -95,10 +95,22 @@ kind/load/kuma-universal:
 	@kind load docker-image kuma-universal:latest --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/images
-kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl
+kind/load/images: kind/load/images/release kind/load/images/test
+
+.PHONY: kind/load/images/release
+kind/load/images/release: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl
+
+.PHONY: kind/load/images/test
+kind/load/images/test: kind/load/kuma-universal
 
 .PHONY: kind/load
-kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl kind/load/images
+kind/load: kind/load/release kind/load/test
+
+.PHONY: kind/load/release
+kind/load/release: images/release kind/load/images/release
+
+.PHONY: kind/load/test
+kind/load/test: images/test kind/load/images/test
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load
