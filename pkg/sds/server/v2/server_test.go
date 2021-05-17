@@ -222,7 +222,7 @@ var _ = Describe("SDS Server", func() {
 				return errors.Errorf("Expiration time is not correct. Got %d, expected %d", dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds, expirationSeconds)
 			}
 			return nil
-		}, "10s", "1s").ShouldNot(HaveOccurred())
+		}, "30s", "1s").ShouldNot(HaveOccurred())
 
 		// and metrics are published (metrics are published async, it does not have to be done before response is sent)
 		Eventually(func() float64 {
@@ -233,7 +233,7 @@ var _ = Describe("SDS Server", func() {
 		}, "5s").ShouldNot(BeNil())
 
 		close(done)
-	}, 10)
+	}, 60)
 
 	Context("should return new pair of + key", func() { // we cannot use DescribeTable because it does not support timeouts
 
@@ -259,7 +259,7 @@ var _ = Describe("SDS Server", func() {
 			Expect(resp.Resources).To(HaveLen(2))
 			firstExchangeResponse = resp
 			close(done)
-		}, 10)
+		}, 60)
 
 		AfterEach(func() {
 			Expect(stream.CloseSend()).To(Succeed())
@@ -298,10 +298,10 @@ var _ = Describe("SDS Server", func() {
 					return errors.Errorf("Certs was generated %d times. Expected 1", dpInsight.Spec.MTLS.CertificateRegenerations)
 				}
 				return nil
-			}, "10s", "1s").ShouldNot(HaveOccurred())
+			}, "30s", "1s").ShouldNot(HaveOccurred())
 
 			close(done)
-		}, 10)
+		}, 60)
 
 		It("should return a new pair when cert expired", func(done Done) {
 			// when time is moved 1s after 4/5 of 60s cert expiration
@@ -322,7 +322,7 @@ var _ = Describe("SDS Server", func() {
 			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
 
 			close(done)
-		}, 10)
+		}, 60)
 
 		It("should return a new pair when dataplane has changed", func(done Done) {
 			// when
@@ -347,7 +347,7 @@ var _ = Describe("SDS Server", func() {
 			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
 
 			close(done)
-		}, 10)
+		}, 60)
 	})
 
 	It("should not return certs when DP is not authorized", func(done Done) {
@@ -370,5 +370,5 @@ var _ = Describe("SDS Server", func() {
 		Expect(err).To(MatchError("rpc error: code = Unknown desc = authentication failed: could not parse token: token contains an invalid number of segments"))
 
 		close(done)
-	}, 10)
+	}, 60)
 })
