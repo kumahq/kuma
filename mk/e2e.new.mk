@@ -61,8 +61,7 @@ ifdef KUMA_DEFAULT_TIMEOUT
 	ENV_VARS += KUMA_DEFAULT_TIMEOUT=$(KUMA_DEFAULT_TIMEOUT)
 endif
 
-#TEST_NAMES = $(shell ls -1 ./test/e2e)
-TEST_NAMES = compatibility deploy externalservices healthcheck/hybrid healthcheck/universal helm hybrid k8s_api_bybass retry timeout tracing trafficpermission/hybrid trafficpermission/universal
+TEST_NAMES = $(shell ls -1 ./test/e2e)
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)
 
