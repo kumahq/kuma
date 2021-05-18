@@ -105,7 +105,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		cmd = append(cmd, "--config-file", confPath)
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, true, opts.isipv6, caps)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, opts.isipv6, true, caps)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,8 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), c.verbose, opts.isipv6, caps)
+	fmt.Printf("IPV6 is %v\n", opts.isipv6)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, c.verbose, caps)
 	if err != nil {
 		return err
 	}

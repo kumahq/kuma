@@ -9,7 +9,7 @@ require (
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/emicklei/go-restful v2.15.0+incompatible
-	github.com/envoyproxy/go-control-plane v0.9.9-0.20210107210257-6e771204fae6
+	github.com/envoyproxy/go-control-plane v0.9.9-0.20210217033140-668b12f5399d
 	github.com/envoyproxy/protoc-gen-validate v0.4.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/go-errors/errors v1.0.2-0.20180813162953-d98b870cc4e0
@@ -26,7 +26,7 @@ require (
 	github.com/kumahq/kuma/api v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/plugins/resources/k8s/native v0.0.0-00010101000000-000000000000
 	github.com/kumahq/kuma/pkg/transparentproxy/istio v0.0.0-00010101000000-000000000000
-	github.com/lib/pq v1.10.1
+	github.com/lib/pq v1.10.2
 	github.com/miekg/dns v1.1.42
 	github.com/onsi/ginkgo v1.16.1
 	github.com/onsi/gomega v1.11.0
@@ -43,12 +43,12 @@ require (
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v0.12.1
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
-	go.uber.org/multierr v1.6.0
+	go.uber.org/multierr v1.7.0
 	go.uber.org/zap v1.13.0
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
 	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/genproto v0.0.0-20201030142918-24207fddd1c3
-	google.golang.org/grpc v1.36.0
+	google.golang.org/grpc v1.37.1
 	google.golang.org/protobuf v1.25.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.3.4

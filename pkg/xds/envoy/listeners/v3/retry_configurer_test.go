@@ -37,7 +37,7 @@ var _ = Describe("RetryConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(HttpConnectionManager(given.statsName)).
+					Configure(HttpConnectionManager(given.statsName, false)).
 					Configure(HttpOutboundRoute(
 						given.service,
 						given.clusters,

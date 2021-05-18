@@ -9,7 +9,8 @@ import (
 )
 
 type HttpConnectionManagerConfigurer struct {
-	StatsName string
+	StatsName                string
+	ForwardClientCertDetails bool
 }
 
 func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -20,6 +21,13 @@ func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.
 			{Name: "envoy.filters.http.router"},
 		},
 		// notice that route configuration is left up to other configurers
+	}
+
+	if c.ForwardClientCertDetails {
+		config.ForwardClientCertDetails = envoy_hcm.HttpConnectionManager_SANITIZE_SET
+		config.SetCurrentClientCertDetails = &envoy_hcm.HttpConnectionManager_SetCurrentClientCertDetails{
+			Uri: true,
+		}
 	}
 
 	pbst, err := util_proto.MarshalAnyDeterministic(config)
