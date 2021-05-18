@@ -233,7 +233,7 @@ var _ = Describe("SDS Server", func() {
 		}, "5s").ShouldNot(BeNil())
 
 		close(done)
-	}, 20)
+	}, 60)
 
 	Context("should return new pair of + key", func() { // we cannot use DescribeTable because it does not support timeouts
 
@@ -301,7 +301,7 @@ var _ = Describe("SDS Server", func() {
 			}, "30s", "1s").ShouldNot(HaveOccurred())
 
 			close(done)
-		}, 20)
+		}, 60)
 
 		It("should return a new pair when cert expired", func(done Done) {
 			// when time is moved 1s after 4/5 of 60s cert expiration

@@ -215,7 +215,7 @@ var _ = Describe("SDS Server", func() {
 				return err
 			}
 			if dpInsight.Spec.MTLS.CertificateRegenerations != 1 {
-				return errors.Errorf("Certs was generated %d times. Expected 1", dpInsight.Spec.MTLS.CertificateRegenerations)
+				return errors.Errorf("Certs were generated %d times. Expected 1", dpInsight.Spec.MTLS.CertificateRegenerations)
 			}
 			expirationSeconds := now.Load().(time.Time).Add(60 * time.Second).Unix()
 			if dpInsight.Spec.MTLS.CertificateExpirationTime.Seconds != expirationSeconds {
@@ -295,7 +295,7 @@ var _ = Describe("SDS Server", func() {
 					return err
 				}
 				if dpInsight.Spec.MTLS.CertificateRegenerations != 2 {
-					return errors.Errorf("Certs was generated %d times. Expected 1", dpInsight.Spec.MTLS.CertificateRegenerations)
+					return errors.Errorf("Certs were generated %d times. Expected 2", dpInsight.Spec.MTLS.CertificateRegenerations)
 				}
 				return nil
 			}, "30s", "1s").ShouldNot(HaveOccurred())
