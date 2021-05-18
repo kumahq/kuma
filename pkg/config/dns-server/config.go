@@ -17,6 +17,8 @@ type DNSServerConfig struct {
 	CIDR string `yaml:"CIDR" envconfig:"kuma_dns_server_cidr"`
 	// v2CIDR used to allocate virtual IPs from
 	CIDRv2 string `yaml:"CIDRv2" envconfig:"kuma_dns_server_cidr_v2"`
+	// V1Disabled indicate that Kuma shouldn't start a DNS server or allocate legacy VIPs, it will only rely on virtual outbounds.
+	V1Disabled bool `yaml:"v1Disabled" envconfig:"kuma_dns_server_v1_disabled"`
 }
 
 func (g *DNSServerConfig) Sanitize() {
@@ -37,9 +39,10 @@ var _ config.Config = &DNSServerConfig{}
 
 func DefaultDNSServerConfig() *DNSServerConfig {
 	return &DNSServerConfig{
-		Domain: "mesh",
-		Port:   5653,
-		CIDR:   "240.0.0.0/9",
-		CIDRv2: "240.128.0.0/9",
+		Domain:     "mesh",
+		Port:       5653,
+		CIDR:       "240.0.0.0/9",
+		CIDRv2:     "240.128.0.0/9",
+		V1Disabled: false,
 	}
 }

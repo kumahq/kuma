@@ -122,3 +122,32 @@ func (s *dnsResolver) serviceFromName(name string) (string, error) {
 
 	return strings.Join(split, "."), nil
 }
+
+type noopResolver struct {
+}
+
+func (n noopResolver) GetDomain() string {
+	return "disabled"
+}
+
+func (n noopResolver) SetVIPs(list vips.List) {
+	panic("Vips shouldn't be updated when using noop resolver")
+}
+
+func (n noopResolver) GetVIPs() vips.List {
+	return vips.List{}
+}
+
+func (n noopResolver) ForwardLookup(service string) (string, error) {
+	return "", errors.New("ForwardLookup shouldn't be used")
+}
+
+func (n noopResolver) ForwardLookupFQDN(name string) (string, error) {
+	return "", errors.New("ForwardLookupFQDN shouldn't be used")
+}
+
+func (n noopResolver) ReverseLookup(ip string) (string, error) {
+	return "", errors.New("ReverseLookup shouldn't be used")
+}
+
+var NoopResolver DNSResolver = &noopResolver{}

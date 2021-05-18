@@ -179,6 +179,9 @@ func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, conv
 }
 
 func addDNS(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+	if rt.Config().DNSServer.V1Disabled {
+		return nil
+	}
 	if rt.Config().Mode == config_core.Global {
 		return nil
 	}

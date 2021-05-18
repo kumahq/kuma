@@ -94,7 +94,8 @@ var _ = Describe("Config WS", func() {
 			"CIDR": "240.0.0.0/9",
 			"CIDRv2": "240.128.0.0/9",
 			"domain": "mesh",
-			"port": 5653
+			"port": 5653,
+			"v1Disabled": false
 		  },
 		  "dpServer": {
 			"auth": {

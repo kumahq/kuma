@@ -344,7 +344,11 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 }
 
 func initializeDNSResolver(cfg kuma_cp.Config, builder *core_runtime.Builder) error {
-	builder.WithDNSResolver(resolver.NewDNSResolver(cfg.DNSServer.Domain))
+	if cfg.DNSServer.V1Disabled {
+		builder.WithDNSResolver(resolver.NoopResolver)
+	} else {
+		builder.WithDNSResolver(resolver.NewDNSResolver(cfg.DNSServer.Domain))
+	}
 	return nil
 }
 

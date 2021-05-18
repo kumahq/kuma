@@ -5,6 +5,9 @@ import (
 )
 
 func Setup(rt runtime.Runtime) error {
+	if rt.Config().DNSServer.V1Disabled {
+		return nil
+	}
 	vipsSync := NewVIPsSynchronizer(
 		rt.DNSResolver(),
 		rt.ReadOnlyResourceManager(),

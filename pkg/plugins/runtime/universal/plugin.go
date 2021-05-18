@@ -47,6 +47,9 @@ func addVIPOutboundsReconciler(rt core_runtime.Runtime) error {
 }
 
 func addDNS(rt core_runtime.Runtime) error {
+	if rt.Config().DNSServer.V1Disabled {
+		return nil
+	}
 	vipsAllocator, err := dns.NewVIPsAllocator(
 		rt.ReadOnlyResourceManager(),
 		rt.ConfigManager(),
