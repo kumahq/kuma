@@ -109,12 +109,15 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 	return nil
 }
 
-func (d *DataplaneReconciler) Cleanup(dataplaneId core_model.ResourceKey) {
+func (d *DataplaneReconciler) Cleanup(dataplaneId core_model.ResourceKey) error {
 	proxyID := core_xds.FromResourceKey(dataplaneId).String()
-	d.cache.ClearSnapshot(proxyID)
+	if err := d.cache.SetSnapshot(proxyID, envoy_cache.Snapshot{}); err != nil {
+		return err
+	}
 	d.Lock()
 	delete(d.proxySnapshotInfo, proxyID)
 	d.Unlock()
+	return nil
 }
 
 func (d *DataplaneReconciler) shouldGenerateSnapshot(proxyID string, mesh *mesh_helper.MeshResource, dataplane *mesh_helper.DataplaneResource) (bool, string, error) {

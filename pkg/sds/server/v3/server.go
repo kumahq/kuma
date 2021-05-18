@@ -90,7 +90,9 @@ func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetr
 				sdsServerLog.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {
-				reconciler.Cleanup(dataplaneId)
+				if err := reconciler.Cleanup(dataplaneId); err != nil {
+					sdsServerLog.Error(err, "could not cleanup sync", "dataplane", dataplaneId)
+				}
 			},
 		}
 	}), nil
