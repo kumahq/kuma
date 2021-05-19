@@ -34,19 +34,21 @@ func (f *fakeResourceManager) Update(context.Context, model.Resource, ...store.U
 var _ = Describe("Ingress Dataplane", func() {
 
 	type testCase struct {
-		dataplanes []string
+		dataplanes map[string][]string
 		expected   string
 	}
 	DescribeTable("should generate ingress based on other dataplanes",
 		func(given testCase) {
 			dataplanes := []*core_mesh.DataplaneResource{}
 
-			for i, dp := range given.dataplanes {
-				dpRes := core_mesh.NewDataplaneResource()
-				err := util_proto.FromYAML([]byte(dp), dpRes.Spec)
-				Expect(err).ToNot(HaveOccurred())
-				dpRes.SetMeta(&model2.ResourceMeta{Name: fmt.Sprintf("dp-%d", i), Mesh: "default"})
-				dataplanes = append(dataplanes, dpRes)
+			for mesh, dps := range given.dataplanes {
+				for i, dp := range dps {
+					dpRes := core_mesh.NewDataplaneResource()
+					err := util_proto.FromYAML([]byte(dp), dpRes.Spec)
+					Expect(err).ToNot(HaveOccurred())
+					dpRes.SetMeta(&model2.ResourceMeta{Name: fmt.Sprintf("dp-%d", i), Mesh: mesh})
+					dataplanes = append(dataplanes, dpRes)
+				}
 			}
 
 			actual := ingress.GetIngressAvailableServices(dataplanes)
@@ -55,40 +57,42 @@ var _ = Describe("Ingress Dataplane", func() {
 			Expect(actualYAML).To(MatchYAML(given.expected))
 		},
 		Entry("base", testCase{
-			dataplanes: []string{
-				`
-            networking:
-              inbound:
-                - address: 127.0.0.1
-                  port: 1010
-                  servicePort: 2020
-                  tags:
-                    service: backend
-                    version: "1"
-                    region: eu
+			dataplanes: map[string][]string{
+				"default": {
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        service: backend
+                        version: "1"
+                        region: eu
 `,
-				`
-            networking:
-              inbound:
-                - address: 127.0.0.1
-                  port: 1010
-                  servicePort: 2020
-                  tags:
-                    service: backend
-                    version: "2"
-                    region: us
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        service: backend
+                        version: "2"
+                        region: us
 `,
-				`
-            networking:
-              inbound:
-                - address: 127.0.0.1
-                  port: 1010
-                  servicePort: 2020
-                  tags:
-                    service: backend
-                    version: "2"
-                    region: us
+					`
+                networking:
+                  inbound:
+                    - address: 127.0.0.1
+                      port: 1010
+                      servicePort: 2020
+                      tags:
+                        service: backend
+                        version: "2"
+                        region: us
 `,
+				},
 			},
 			expected: `
             - instances: 1
@@ -103,6 +107,55 @@ var _ = Describe("Ingress Dataplane", func() {
                 service: backend
                 region: us
                 version: "2"
+`,
+		}),
+		Entry("multi-mesh", testCase{
+			dataplanes: map[string][]string{
+				"mesh1": {
+					`
+            networking:
+              inbound:
+                - address: 127.0.0.1
+                  port: 1010
+                  servicePort: 2020
+                  tags:
+                    service: b1
+`,
+					`
+            networking:
+              inbound:
+                - address: 127.0.0.1
+                  port: 1010
+                  servicePort: 2020
+                  tags:
+                    service: b2
+`,
+				},
+				"mesh2": {
+					`
+            networking:
+              inbound:
+                - address: 127.0.0.1
+                  port: 1010
+                  servicePort: 2020
+                  tags:
+                    service: b1
+`,
+				},
+			},
+			expected: `
+            - instances: 1
+              mesh: mesh1
+              tags:
+                service: b1
+            - instances: 1
+              mesh: mesh1
+              tags:
+                service: b2
+            - instances: 1
+              mesh: mesh2
+              tags:
+                service: b1
 `,
 		}),
 	)
