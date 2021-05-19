@@ -15,7 +15,7 @@ func PolicyHTTP() {
 	healthCheck := func(method, status string) string {
 		return fmt.Sprintf(`
 type: HealthCheck
-name: gateway-to-backend
+name: everything-to-backend
 mesh: default
 sources:
 - match:
@@ -76,12 +76,12 @@ conf:
 
 	It("should mark host as unhealthy if it doesn't reply on health checks", func() {
 		// check that test-server is healthy
-		cmd := []string{"curl", "test-server.mesh/content"}
+		cmd := []string{"curl", "--fail", "test-server.mesh/content"}
 		stdout, _, err := cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("response"))
 
-		// update HealthCheck policy to check for another 'recv' line
+		// update HealthCheck policy to check for another status code
 		err = YamlUniversal(healthCheck("are-you-healthy", "500"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
