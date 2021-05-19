@@ -41,7 +41,7 @@ Comparison table:
 
 #### Universal mode
 
- * To define application protocol explictly, a user should add tag `protocol` to the `inbound` interface of a `Dataplane`
+ * To define application protocol explicitly, a user should add tag `protocol` to the `inbound` interface of a `Dataplane`
  * Tag `protocol` is optional
  * If tag `protocol` is missing, `TCP` will be assumed (current behaviour)
 
@@ -62,7 +62,7 @@ networking:
 #### Kubernetes mode
 
 * Since `Dataplane` resource is auto-generated on `k8s`, a user should edit other `k8s` resources instead
-* To define application protocol explictly, a user should edit `Service` resource (rather than `Deployment` / `Pod`)
+* To define application protocol explicitly, a user should edit `Service` resource (rather than `Deployment` / `Pod`)
   * The reason for that is that `k8s` does not require `Deployment` / `Pod` to explicitly mention all ports exposed by the app
   * On the other hand, `k8s` does require `Service` to explicitly mention all its ports
 * Annotations might be too verbose and redundant if a user already sticks to minimal conventions when naming service ports

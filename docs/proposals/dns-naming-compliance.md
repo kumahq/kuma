@@ -84,7 +84,7 @@ The DNS name we try to supply is invalid according to the relevant RFCs and the 
 In addition to the already existing Kubernetes generated `frontend_default_svc_80.mesh`, we can add a couple of compliant aliases:
 * use dashes as separators `frontend-default-svc-80.mesh`. This can get compllicated, cosider a service name `my-complex-service`
   which naturally translates to `my-complex-service_default_svc_80.mesh`, and then the all dashes version `my-complex-service-default-svc-80.mesh`
-* use dots as separators `frontend.default.svc.80.mesh`. The complex service version then will be slighly more readable `my-complex-service.default.svc.80.mesh`
+* use dots as separators `frontend.default.svc.80.mesh`. The complex service version then will be slightly more readable `my-complex-service.default.svc.80.mesh`
 
 All three of these should refer to the same VIP. We can have a `kumactl` command that enumerates the services and ServiceInsights and expose
 the DNS names associated with it.

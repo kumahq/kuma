@@ -14,3 +14,10 @@ Fix #XXX
 ### Documentation
 
 - [ ] Link to the website [documentation PR](https://github.com/kumahq/kuma-website/pull/XXX)
+
+### Testing
+
+- [ ] Unit tests
+- [ ] E2E tests
+- [ ] Manual testing on Universal
+- [ ] Manual testing on Kubernetes 
