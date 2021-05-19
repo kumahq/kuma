@@ -46,6 +46,7 @@ const (
 	cidrIPv6              = "fd00:fd00::/64"
 )
 
+var HelmRepo = "kuma/kuma"
 var HelmChartPath = "../../../deployments/charts/kuma"
 var HelmSubChartPrefix = ""
 

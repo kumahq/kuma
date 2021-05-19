@@ -16,6 +16,9 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
+var OlderChart = "0.4.4"
+var OldChart = "0.4.5"
+
 func UpgradingWithHelmChart() {
 	var cluster Cluster
 	var deployOptsFuncs = KumaK8sDeployOpts
@@ -52,11 +55,10 @@ func UpgradingWithHelmChart() {
 
 			deployOptsFuncs = append(deployOptsFuncs,
 				WithInstallationMode(HelmInstallationMode),
-				WithHelmChartPath("kuma/kuma"),
+				WithHelmChartPath(HelmRepo),
 				WithHelmReleaseName(releaseName),
 				WithHelmChartVersion(given.initialChartVersion),
-				WithoutHelmOpt("global.image.tag"),
-				WithoutHelmOpt("global.image.registry"))
+				WithoutHelmOpt("global.image.tag"))
 
 			err = NewClusterSetup().
 				Install(Kuma(core.Standalone, deployOptsFuncs...)).
@@ -73,11 +75,11 @@ func UpgradingWithHelmChart() {
 			err = k8sCluster.UpgradeKuma(core.Standalone, upgradeOptsFuncs...)
 			Expect(err).ToNot(HaveOccurred())
 		},
-		Entry("should successfully upgrade from chart v0.4.4", testCase{
-			initialChartVersion: "0.4.4",
+		Entry("should successfully upgrade from chart v"+OlderChart, testCase{
+			initialChartVersion: OlderChart,
 		}),
-		Entry("should successfully upgrade from chart v0.4.5", testCase{
-			initialChartVersion: "0.4.5",
+		Entry("should successfully upgrade from chart v"+OldChart, testCase{
+			initialChartVersion: OldChart,
 		}),
 	)
 }
