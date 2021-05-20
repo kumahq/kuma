@@ -25,7 +25,6 @@ func (p *PodConverter) OutboundInterfacesFor(
 	externalServices []*mesh_k8s.ExternalService,
 	virtualOutbounds []*mesh_k8s.VirtualOutbound,
 	vips vips.List,
-	domain string,
 	cidr string,
 ) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound

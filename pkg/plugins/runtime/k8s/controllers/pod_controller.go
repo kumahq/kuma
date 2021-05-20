@@ -54,7 +54,6 @@ type PodReconciler struct {
 	Persistence       *vips.Persistence
 	ResourceConverter k8s_common.Converter
 	SystemNamespace   string
-	Domain            string
 	Cidr              string
 }
 
@@ -133,7 +132,7 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, err
 	}
 
-	if err := r.createOrUpdateDataplane(pod, services, externalServices, virtualOutbounds, others, vips, r.Domain, r.Cidr); err != nil {
+	if err := r.createOrUpdateDataplane(pod, services, externalServices, virtualOutbounds, others, vips, r.Cidr); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
@@ -237,7 +236,6 @@ func (r *PodReconciler) createOrUpdateDataplane(
 	virtualOutbounds []*mesh_k8s.VirtualOutbound,
 	others []*mesh_k8s.Dataplane,
 	vips vips.List,
-	domain string,
 	cidr string,
 ) error {
 	ctx := context.Background()
@@ -249,7 +247,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, externalServices, virtualOutbounds, others, vips, domain, cidr); err != nil {
+		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, externalServices, virtualOutbounds, others, vips, cidr); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
