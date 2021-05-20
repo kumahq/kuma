@@ -861,6 +861,10 @@ spec:
         app: kuma-ingress
     spec:
       serviceAccountName: kuma-ingress
+      nodeSelector:
+      
+        kubernetes.io/arch: amd64
+        kubernetes.io/os: linux
       containers:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"

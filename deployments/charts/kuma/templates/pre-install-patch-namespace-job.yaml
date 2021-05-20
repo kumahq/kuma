@@ -72,6 +72,10 @@ spec:
     {{ include "kuma.labels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ $serviceAccountName }}
+      {{- with .Values.hooks.nodeSelector }}
+      nodeSelector:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
       restartPolicy: OnFailure
       containers:
         - name: pre-install-job
