@@ -71,6 +71,16 @@ func WaitService(namespace, service string) InstallFunc {
 	}
 }
 
+func WaitNumPodsNamespace(namespace string, num int, app string) InstallFunc {
+	return func(c Cluster) error {
+		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(namespace),
+			kube_meta.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", app),
+			}, num, DefaultRetries, DefaultTimeout)
+		return nil
+	}
+}
+
 func WaitNumPods(num int, app string) InstallFunc {
 	return func(c Cluster) error {
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(),
