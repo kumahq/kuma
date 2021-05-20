@@ -15,7 +15,7 @@ option (doc.config) = {
   file_name : "external-service"
 };
 
-// ExternalService defines configuration of the externaly accessible service
+// ExternalService defines configuration of the externally accessible service
 message ExternalService {
 
   // Networking describes the properties of the external service connectivity
