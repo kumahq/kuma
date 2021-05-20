@@ -18,6 +18,9 @@ import (
 
 var OlderChart = "0.4.4"
 var OldChart = "0.4.5"
+var UpstreamImageRegistry = "kumahq"
+
+var InitCluster = func(cluster Cluster) {}
 
 func UpgradingWithHelmChart() {
 	var cluster Cluster
@@ -47,6 +50,7 @@ func UpgradingWithHelmChart() {
 			Expect(err).ToNot(HaveOccurred())
 
 			cluster = c.WithRetries(60)
+			InitCluster(cluster)
 
 			releaseName := fmt.Sprintf(
 				"kuma-%s",
@@ -58,7 +62,8 @@ func UpgradingWithHelmChart() {
 				WithHelmChartPath(HelmRepo),
 				WithHelmReleaseName(releaseName),
 				WithHelmChartVersion(given.initialChartVersion),
-				WithoutHelmOpt("global.image.tag"))
+				WithoutHelmOpt("global.image.tag"),
+				WithHelmOpt("global.image.registry", UpstreamImageRegistry))
 
 			err = NewClusterSetup().
 				Install(Kuma(core.Standalone, deployOptsFuncs...)).
