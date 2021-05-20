@@ -61,29 +61,24 @@ func (s *server) StreamHealthCheck(stream envoy_service_health.HealthDiscoverySe
 func (s *server) StreamHandler(stream Stream) error {
 	// a channel for receiving incoming requests
 	reqOrRespCh := make(chan *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse)
-	reqStop := int32(0)
 	go func() {
+		defer close(reqOrRespCh)
 		for {
 			req, err := stream.Recv()
-			if atomic.LoadInt32(&reqStop) != 0 {
-				return
-			}
 			if err != nil {
-				close(reqOrRespCh)
 				return
 			}
 			select {
 			case reqOrRespCh <- req:
+			case <-stream.Context().Done():
+				return
 			case <-s.ctx.Done():
 				return
 			}
 		}
 	}()
 
-	err := s.process(stream, reqOrRespCh)
-	atomic.StoreInt32(&reqStop, 1)
-
-	return err
+	return s.process(stream, reqOrRespCh)
 }
 
 func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.HealthCheckRequestOrEndpointHealthResponse) error {
