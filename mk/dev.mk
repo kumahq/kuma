@@ -63,6 +63,7 @@ dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 	@if [ ! -e $(PROTOC_PATH) ]; then \
 		echo "Installing Protoc $(PROTOC_VERSION) ..." \
 		&& set -x \
+		&& mkdir -p /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
 		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip bin/protoc -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& mkdir -p $(CI_TOOLS_DIR) \
@@ -78,6 +79,7 @@ dev/install/protobuf-wellknown-types:: ## Bootstrap: Install Protobuf well-known
 	@if [ ! -e $(PROTOBUF_WKT_DIR) ]; then \
 		echo "Installing Protobuf well-known types $(PROTOC_VERSION) ..." \
 		&& set -x \
+		&& mkdir -p /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
 		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip 'include/*' -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& mkdir -p $(PROTOBUF_WKT_DIR) \
