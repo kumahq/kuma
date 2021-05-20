@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/asaskevich/govalidator"
+
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 
 	"github.com/kumahq/kuma/pkg/core"
@@ -136,7 +138,7 @@ func VirtualOutbounds(
 	if self != nil {
 		// Retrieve existing ips from self to not change already assigned ips
 		for _, outbound := range self.Spec.Networking.Outbound {
-			if outbound.Hostname != "" && (!cidrIsV4 || util_net.IsV4(outbound.Address)) { // If we have a v4 cidr we only match things for v4
+			if outbound.Hostname != "" && (!cidrIsV4 || govalidator.IsIPv4(outbound.Address)) { // If we have a v4 cidr we only match things for v4
 				err := ipam.ReserveIP(outbound.Address)
 				if err != nil && !IsAddressAlreadyAllocated(err) && !IsAddressOutsideCidr(err) {
 					return nil, errors.Wrapf(err, "Failed reserving ip: %s", outbound.Address)
