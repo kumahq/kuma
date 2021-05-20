@@ -4,11 +4,12 @@ import (
 	"fmt"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	config_core "github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	config_core "github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 func KICKubernetes() {
@@ -44,7 +45,6 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 		err = kubernetes.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
-
 	})
 	E2EAfterEach(func() {
 		Expect(kubernetes.DeleteNamespace(ingressNamespace)).To(Succeed())
@@ -64,7 +64,6 @@ metadata:
 
 		// Wait for ingress
 		err = NewClusterSetup().Install(Combine(
-			//WaitService(ingressNamespace, "kong-proxy"),
 			WaitNumPodsNamespace(ingressNamespace, 1, ingressApp),
 			WaitPodsAvailable(ingressNamespace, ingressApp))).Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
@@ -95,7 +94,6 @@ metadata:
 
 		// Wait for ingress
 		err = NewClusterSetup().Install(Combine(
-			//WaitService(ingressNamespace, "kong-proxy"),
 			WaitNumPodsNamespace(ingressNamespace, 1, ingressApp),
 			WaitPodsAvailable(ingressNamespace, ingressApp))).Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
@@ -116,5 +114,4 @@ metadata:
 			"wget", "-O-", "echo-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 	})
-
 }
