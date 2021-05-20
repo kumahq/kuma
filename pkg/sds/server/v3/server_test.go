@@ -207,7 +207,7 @@ var _ = Describe("SDS Server", func() {
 		Expect(resp).ToNot(BeNil())
 		Expect(resp.Resources).To(HaveLen(2))
 
-		// and insight is generated (insight is updated async, ot does not have to be done before response is sent)
+		// and insight is generated (insight is updated async, to does not have to be done before response is sent)
 		Eventually(func() error {
 			dpInsight := mesh_core.NewDataplaneInsightResource()
 			err := resManager.Get(context.Background(), dpInsight, core_store.GetByKey("backend-01", "default"))
@@ -287,7 +287,7 @@ var _ = Describe("SDS Server", func() {
 			Expect(resp).ToNot(BeNil())
 			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
 
-			// and insight is generated (insight is updated async, ot does not have to be done before response is sent)
+			// and insight is generated (insight is updated async, to does not have to be done before response is sent)
 			Eventually(func() error {
 				dpInsight := mesh_core.NewDataplaneInsightResource()
 				err := resManager.Get(context.Background(), dpInsight, core_store.GetByKey("backend-01", "default"))
