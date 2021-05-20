@@ -30,7 +30,7 @@ mtls:
 		core.SetLogger = func(l logr.Logger) {}
 		logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
 
-		universalCluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
+		universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
 		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
