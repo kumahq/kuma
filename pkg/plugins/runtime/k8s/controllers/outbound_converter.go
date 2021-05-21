@@ -50,7 +50,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 	for _, es := range virtualOutbounds {
 		res := core_mesh.NewVirtualOutboundResource()
 		if err := p.ResourceConverter.ToCoreResource(es, res); err != nil {
-			converterLog.Error(err, "failed to parse ExternalService", "externalService", es.Spec)
+			converterLog.Error(err, "failed to parse VirtualOutbound", "virtualOutbound", es.Spec)
 			continue // one invalid ExternalService definition should not break the entire mesh
 		}
 		virtualOutboundsRes = append(virtualOutboundsRes, res)

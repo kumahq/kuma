@@ -33,7 +33,7 @@ func VIPOutbounds(
 	externalServices []*core_mesh.ExternalServiceResource,
 ) []*mesh_proto.Dataplane_Networking_Outbound {
 	if len(vips) == 0 {
-		dnsOutboundGeneratorLog.Info("Skipping legacy generation as there are no vips")
+		return nil
 	}
 	type vipEntry struct {
 		ip   string
