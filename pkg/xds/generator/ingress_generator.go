@@ -72,7 +72,7 @@ func (i IngressGenerator) generateLDS(
 	inbound := ingress.Spec.Networking.Inbound[0]
 	inboundListenerName := envoy_names.GetInboundListenerName(ingress.Spec.GetNetworking().GetAddress(), inbound.Port)
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(apiVersion).
-		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port)).
+		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), inbound.Port, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TLSInspector())
 
 	if !ingress.Spec.HasAvailableServices() {
@@ -98,10 +98,10 @@ func (i IngressGenerator) generateLDS(
 			sniUsed[sni] = true
 			inboundListenerBuilder = inboundListenerBuilder.
 				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion).
-					Configure(envoy_listeners.FilterChainMatch(sni)).
+					Configure(envoy_listeners.FilterChainMatch("tls", sni)).
 					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
 						ClusterName: service,
-						Tags:        meshDestination.WithoutTag(mesh_proto.ServiceTag),
+						Tags:        meshDestination.WithoutTags(mesh_proto.ServiceTag),
 					}))))
 		}
 	}
@@ -135,9 +135,12 @@ func (i IngressGenerator) generateCDS(
 	apiVersion envoy_common.APIVersion,
 ) (resources []*model.Resource, _ error) {
 	for _, service := range services {
+		tagSlice := envoy_common.TagsSlice(append(destinationsPerService[service], destinationsPerService[mesh_proto.MatchAllTag]...))
+		tagKeySlice := tagSlice.ToTagKeysSlice().Transform(envoy_common.Without(mesh_proto.ServiceTag), envoy_common.With("mesh"))
 		edsCluster, err := envoy_clusters.NewClusterBuilder(apiVersion).
 			Configure(envoy_clusters.EdsCluster(service)).
-			Configure(envoy_clusters.LbSubset(i.lbSubsets(service, destinationsPerService))).
+			Configure(envoy_clusters.LbSubset(tagKeySlice)).
+			Configure(envoy_clusters.DefaultTimeout()).
 			Build()
 		if err != nil {
 			return nil, err
@@ -149,17 +152,6 @@ func (i IngressGenerator) generateCDS(
 		})
 	}
 	return
-}
-func (_ IngressGenerator) lbSubsets(service string, destinationsPerService map[string][]envoy_common.Tags) [][]string {
-	selectors := [][]string{}
-	destinations := destinationsPerService[service]
-	destinations = append(destinations, destinationsPerService[mesh_proto.MatchAllTag]...)
-
-	for _, destination := range destinations {
-		keys := append(destination.WithoutTag(mesh_proto.ServiceTag).Keys(), "mesh")
-		selectors = append(selectors, keys)
-	}
-	return selectors
 }
 
 func (_ IngressGenerator) generateEDS(

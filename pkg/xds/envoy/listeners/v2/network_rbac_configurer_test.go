@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/xds"
+
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -18,21 +20,22 @@ import (
 var _ = Describe("NetworkRbacConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		clusters        []envoy_common.ClusterSubset
-		rbacEnabled     bool
-		permission      *mesh_core.TrafficPermissionResource
-		expected        string
+		listenerName     string
+		listenerProtocol xds.SocketAddressProtocol
+		listenerAddress  string
+		listenerPort     uint32
+		statsName        string
+		clusters         []envoy_common.ClusterSubset
+		rbacEnabled      bool
+		permission       *mesh_core.TrafficPermissionResource
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV2).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(TcpProxy(given.statsName, given.clusters...)).
 					Configure(NetworkRBAC(given.listenerName, given.rbacEnabled, given.permission)))).
@@ -78,8 +81,6 @@ var _ = Describe("NetworkRbacConfigurer", func() {
 				},
 			},
 			expected: `
-            name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND
             address:
               socketAddress:
                 address: 192.168.0.1
@@ -95,15 +96,22 @@ var _ = Describe("NetworkRbacConfigurer", func() {
                         permissions:
                         - any: true
                         principals:
-                        - authenticated:
-                            principalName:
-                              exact: spiffe://default/web1
+                        - andIds:
+                            ids:
+                            - authenticated:
+                                principalName:
+                                  exact: kuma://version/1.0
+                            - authenticated:
+                                principalName:
+                                  exact: spiffe://default/web1
                   statPrefix: inbound_192_168_0_1_8080.
               - name: envoy.filters.network.tcp_proxy
                 typedConfig:
                   '@type': type.googleapis.com/envoy.config.filter.network.tcp_proxy.v2.TcpProxy
                   cluster: localhost:8080
                   statPrefix: localhost_8080
+            name: inbound:192.168.0.1:8080
+            trafficDirection: INBOUND
 `,
 		}),
 		Entry("basic tcp_proxy with network RBAC disabled", testCase{

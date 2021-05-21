@@ -3,6 +3,11 @@ package controllers
 import (
 	"context"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
 	kube_core "k8s.io/api/core/v1"
@@ -34,6 +39,16 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 	log := r.Log.WithValues("namespace", req.Name)
 	ctx := context.Background()
 
+	hasNAD, err := r.hasNetworkAttachmentDefinition()
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
+
+	if !hasNAD {
+		log.V(1).Info("network-attachment-definitions.k8s.cni.cncf.io not found")
+		return kube_ctrl.Result{}, nil
+	}
+
 	ns := &kube_core.Namespace{}
 	if err := r.Get(ctx, req.NamespacedName, ns); err != nil {
 		if kube_apierrs.IsNotFound(err) {
@@ -61,6 +76,19 @@ func (r *NamespaceReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result
 		err := r.deleteNetworkAttachmentDefinition(log, req.Name)
 		return kube_ctrl.Result{}, err
 	}
+}
+
+func (r *NamespaceReconciler) hasNetworkAttachmentDefinition() (bool, error) {
+	crd := apiextensionsv1.CustomResourceDefinition{}
+	err := r.Client.Get(context.Background(), kube_client.ObjectKey{Name: "network-attachment-definitions.k8s.cni.cncf.io"}, &crd)
+	if err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, "could not get network-attachment-definitions.k8s.cni.cncf.io")
+	}
+
+	return true, nil
 }
 
 func (r *NamespaceReconciler) createOrUpdateNetworkAttachmentDefinition(namespace string) error {
@@ -102,7 +130,26 @@ func (r *NamespaceReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 	if err := k8scnicncfio.AddToScheme(mgr.GetScheme()); err != nil {
 		return errors.Wrapf(err, "could not add %q to scheme", k8scnicncfio.GroupVersion)
 	}
+	if err := apiextensionsv1.AddToScheme(mgr.GetScheme()); err != nil {
+		return errors.Wrapf(err, "could not add %q to scheme", apiextensionsv1.SchemeGroupVersion)
+	}
 	return kube_ctrl.NewControllerManagedBy(mgr).
-		For(&kube_core.Namespace{}).
+		For(&kube_core.Namespace{}, builder.WithPredicates(namespaceEvents)).
 		Complete(r)
+}
+
+// we only want create and update events
+var namespaceEvents = predicate.Funcs{
+	CreateFunc: func(event event.CreateEvent) bool {
+		return true
+	},
+	DeleteFunc: func(deleteEvent event.DeleteEvent) bool {
+		return false
+	},
+	UpdateFunc: func(updateEvent event.UpdateEvent) bool {
+		return true
+	},
+	GenericFunc: func(genericEvent event.GenericEvent) bool {
+		return false
+	},
 }

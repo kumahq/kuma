@@ -23,10 +23,11 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	dp_server "github.com/kumahq/kuma/pkg/dp-server"
+	"github.com/kumahq/kuma/pkg/dp-server/server"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap"
 )
@@ -73,9 +74,9 @@ var _ = Describe("Bootstrap Server", func() {
 			TlsCertFile: filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"),
 			TlsKeyFile:  filepath.Join("..", "..", "..", "test", "certs", "server-key.pem"),
 		}
-		dpServer := dp_server.NewDpServer(dpServerCfg, metrics)
+		dpServer := server.NewDpServer(dpServerCfg, metrics)
 
-		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true)
+		generator, err := bootstrap.NewDefaultBootstrapGenerator(resManager, config, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), true, true)
 		Expect(err).ToNot(HaveOccurred())
 		bootstrapHandler := bootstrap.BootstrapHandler{
 			Generator: generator,
@@ -148,11 +149,7 @@ var _ = Describe("Bootstrap Server", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
-
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.expectedConfigFile))
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(received).To(MatchYAML(expected))
+			Expect(received).To(matchers.MatchGoldenYAML(filepath.Join("testdata", given.expectedConfigFile)))
 		},
 		Entry("minimal data provided (universal)", testCase{
 			dataplaneName:      "dp-1",

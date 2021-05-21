@@ -6,7 +6,6 @@ import (
 
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
-	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -32,7 +31,6 @@ func RegisterXDS(
 	meshSnapshotCache *mesh.Cache,
 	envoyCpCtx *xds_context.ControlPlaneContext,
 	rt core_runtime.Runtime,
-	server *grpc.Server,
 ) error {
 	xdsContext := v3.NewXdsContext()
 
@@ -40,7 +38,7 @@ func RegisterXDS(
 	if err != nil {
 		return err
 	}
-	authCallbacks := auth.NewCallbacks(rt.ResourceManager(), authenticator)
+	authCallbacks := auth.NewCallbacks(rt.ResourceManager(), authenticator, auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in DataplaneLifecycle callback
 
 	metadataTracker := xds_callbacks.NewDataplaneMetadataTracker()
 	connectionInfoTracker := xds_callbacks.NewConnectionInfoTracker()
@@ -58,21 +56,23 @@ func RegisterXDS(
 		util_xds_v3.AdaptCallbacks(authCallbacks),
 		util_xds_v3.AdaptCallbacks(xds_callbacks.NewDataplaneSyncTracker(watchdogFactory.New)),
 		util_xds_v3.AdaptCallbacks(metadataTracker),
-		util_xds_v3.AdaptCallbacks(xds_callbacks.NewDataplaneLifecycle(rt.ResourceManager())),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.NewDataplaneLifecycle(rt.ResourceManager(), rt.ShutdownCh())),
 		util_xds_v3.AdaptCallbacks(DefaultDataplaneStatusTracker(rt)),
+		util_xds_v3.AdaptCallbacks(xds_callbacks.NewNackBackoff(rt.Config().XdsServer.NACKBackoff)),
 		newResourceWarmingForcer(xdsContext.Cache(), xdsContext.Hasher()),
 	}
 
 	srv := envoy_server.NewServer(context.Background(), xdsContext.Cache(), callbacks)
 
 	xdsServerLog.Info("registering Aggregated Discovery Service V3 in Dataplane Server")
-	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(server, srv)
+	envoy_service_discovery.RegisterAggregatedDiscoveryServiceServer(rt.DpServer().GrpcServer(), srv)
 	return nil
 }
 
 func DefaultReconciler(rt core_runtime.Runtime, xdsContext v3.XdsContext) xds_sync.SnapshotReconciler {
 	return &reconciler{
 		&templateSnapshotGenerator{
+			ResourceSetHooks: rt.XDSHooks().ResourceSetHooks(),
 			ProxyTemplateResolver: &xds_template.SimpleProxyTemplateResolver{
 				ReadOnlyResourceManager: rt.ReadOnlyResourceManager(),
 				DefaultProxyTemplate:    xds_template.DefaultProxyTemplate,
@@ -85,6 +85,7 @@ func DefaultReconciler(rt core_runtime.Runtime, xdsContext v3.XdsContext) xds_sy
 func DefaultIngressReconciler(rt core_runtime.Runtime, xdsContext v3.XdsContext) xds_sync.SnapshotReconciler {
 	return &reconciler{
 		generator: &templateSnapshotGenerator{
+			ResourceSetHooks: rt.XDSHooks().ResourceSetHooks(),
 			ProxyTemplateResolver: &xds_template.StaticProxyTemplateResolver{
 				Template: xds_template.IngressProxyTemplate,
 			},

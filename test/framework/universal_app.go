@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"net"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"github.com/asaskevich/govalidator"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/pkg/errors"
@@ -53,8 +54,27 @@ networking:
     servicePort: %s
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
-      kuma.io/protocol: http
+      kuma.io/protocol: %s
+      team: server-owners
 `
+
+	EchoServerDataplaneWithServiceProbe = `
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address:  {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    serviceProbe:
+      tcp: {}
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/protocol: %s
+      team: server-owners
+`
+
 	EchoServerDataplaneTransparentProxy = `
 type: Dataplane
 mesh: %s
@@ -63,11 +83,14 @@ networking:
   address:  {{ address }}
   inbound:
   - port: %s
+    servicePort: %s
     tags:
       kuma.io/service: echo-server_kuma-test_svc_%s
       kuma.io/protocol: http
+      team: server-owners
   transparentProxying:
     redirectPortInbound: %s
+    redirectPortInboundV6: %s
     redirectPortOutbound: %s
 `
 
@@ -83,6 +106,7 @@ networking:
     servicePort: %s
     tags:
       kuma.io/service: demo-client
+      team: client-owners
   outbound:
   - port: 4000
     tags:
@@ -94,6 +118,33 @@ networking:
     tags:
       kuma.io/service: external-service
 `
+
+	DemoClientDataplaneWithServiceProbe = `
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address: {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    serviceProbe:
+      tcp: {}
+    tags:
+      kuma.io/service: demo-client
+      team: client-owners
+  outbound:
+  - port: 4000
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+  - port: 4001
+    tags:
+      kuma.io/service: echo-server_kuma-test_svc_%s
+  - port: 5000
+    tags:
+      kuma.io/service: external-service
+`
+
 	DemoClientDataplaneTransparentProxy = `
 type: Dataplane
 mesh: %s
@@ -104,8 +155,10 @@ networking:
   - port: %s
     tags:
       kuma.io/service: demo-client
+      team: client-owners
   transparentProxying:
     redirectPortInbound: %s
+    redirectPortInboundV6: %s
     redirectPortOutbound: %s
 `
 )
@@ -139,7 +192,7 @@ type UniversalApp struct {
 	verbose      bool
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbose bool, caps []string) (*UniversalApp, error) {
+func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMode, isipv6, verbose bool, caps []string) (*UniversalApp, error) {
 	app := &UniversalApp{
 		t:            t,
 		ports:        map[string]string{},
@@ -154,11 +207,17 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 	}
 
 	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+string(mode))
+	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName)
 	for _, cap := range caps {
 		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
 	}
 	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
+	if !isipv6 {
+		// For now supporting mixed environments with IPv4 and IPv6 addresses is challenging, specifically with
+		// builtin DNS. This is due to our mix of CoreDNS and Envoy DNS architecture.
+		// Here we make sure the IPv6 address is not allocated to the container unless explicitly requested.
+		opts.OtherOptions = append(opts.OtherOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
+	}
 	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
 	container, err := docker.RunAndGetIDE(t, KumaUniversalImage, &opts)
 	if err != nil {
@@ -169,7 +228,7 @@ func NewUniversalApp(t testing.TestingT, clusterName string, mode AppMode, verbo
 
 	retry.DoWithRetry(app.t, "get IP "+app.container, DefaultRetries, DefaultTimeout,
 		func() (string, error) {
-			app.ip, err = app.getIP()
+			app.ip, err = app.getIP(IsIPv6())
 			if err != nil {
 				return "Unable to get Container IP", err
 			}
@@ -239,7 +298,60 @@ func (s *UniversalApp) CreateMainApp(env []string, args []string) {
 	s.mainApp = NewSshApp(s.verbose, s.ports[sshPort], env, args)
 }
 
-func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
+func (s *UniversalApp) OverrideDpVersion(version string) error {
+	// It is important to store installation package in /tmp/kuma/, not /tmp/ otherwise root was taking over /tmp/ and Kuma DP could not store /tmp files
+	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"wget",
+		fmt.Sprintf("https://download.konghq.com/mesh-alpine/kuma-%s-ubuntu-amd64.tar.gz", version),
+		"-O",
+		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"mkdir",
+		"-p",
+		"/tmp/kuma/",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"tar",
+		"xvzf",
+		fmt.Sprintf("/tmp/kuma-%s-ubuntu-amd64.tar.gz", version),
+		"-C",
+		"/tmp/kuma/",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"cp",
+		fmt.Sprintf("/tmp/kuma/kuma-%s/bin/kuma-dp", version),
+		"/usr/bin/kuma-dp",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	err = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+		"cp",
+		fmt.Sprintf("/tmp/kuma/kuma-%s/bin/envoy", version),
+		"/usr/local/bin/envoy",
+	}).Run()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, builtindns bool) {
 	// create the token file on the app container
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
@@ -252,45 +364,67 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string) {
 	}
 
 	// run the DP as user `envoy` so iptables can distinguish its traffic if needed
-	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+	args := []string{
 		"runuser", "-u", "kuma-dp", "--",
 		"/usr/bin/kuma-dp", "run",
 		"--cp-address=" + cpAddress,
 		"--dataplane-token-file=/kuma/token-" + appname,
 		"--dataplane-file=/kuma/dpyaml-" + appname,
-		"--dataplane-var", "name=dp-" + appname,
+		"--dataplane-var", "name=" + appname,
 		"--dataplane-var", "address=" + ip,
 		"--binary-path", "/usr/local/bin/envoy",
-	})
+	}
+	if builtindns {
+		args = append(args, "--dns-enabled")
+	}
+	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, args)
 }
 
-func (s *UniversalApp) setupTransparent(cpIp string) {
-	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{
+func (s *UniversalApp) setupTransparent(cpIp string, builtindns bool) {
+	args := []string{
 		"/usr/bin/kumactl", "install", "transparent-proxy",
 		"--kuma-dp-user", "kuma-dp",
 		"--kuma-cp-ip", cpIp,
-	}).Run()
+	}
+
+	if builtindns {
+		args = append(args,
+			"--skip-resolv-conf",
+			"--redirect-dns",
+			"--redirect-dns-upstream-target-chain", "DOCKER_OUTPUT")
+	}
+
+	app := NewSshApp(s.verbose, s.ports[sshPort], []string{}, args)
+	err := app.Run()
 	if err != nil {
-		panic(err)
+		panic(fmt.Sprintf("err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out()))
 	}
 }
 
-func (s *UniversalApp) getIP() (string, error) {
+func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 	cmd := SshCmd(s.ports[sshPort], []string{}, []string{"getent", "ahosts", s.container[:12]})
 	bytes, err := cmd.CombinedOutput()
 	if err != nil {
 		return "invalid", errors.Wrapf(err, "getent failed with %s", string(bytes))
 	}
 	lines := strings.Split(string(bytes), "\n")
-	// search ipv4
+	// search for the requested IP
 	for _, line := range lines {
 		split := strings.Split(line, " ")
-		testInput := net.ParseIP(split[0])
-		if testInput.To4() != nil {
-			return split[0], nil
+		ip := split[0]
+		if isipv6 {
+			if govalidator.IsIPv6(ip) {
+				return ip, nil
+			}
+		} else if govalidator.IsIPv4(ip) {
+			return ip, nil
 		}
 	}
-	return "", errors.Errorf("No IPv4 address found")
+	errString := "No IPv4 address found"
+	if isipv6 {
+		errString = "No IPv6 address found"
+	}
+	return "", errors.Errorf(errString)
 }
 
 type SshApp struct {

@@ -6,11 +6,12 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
-	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/kumahq/kuma/pkg/api-server/customization"
@@ -52,7 +53,7 @@ func (a *ApiServer) NeedLeaderElection() bool {
 }
 
 func (a *ApiServer) Address() string {
-	return fmt.Sprintf("%s:%d", a.config.HTTP.Interface, a.config.HTTP.Port)
+	return net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10))
 }
 
 func init() {
@@ -106,12 +107,13 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 	if err := addIndexWsEndpoints(ws); err != nil {
 		return nil, errors.Wrap(err, "could not create index webservice")
 	}
-	container.Add(catalogWs(*serverConfig.Catalog))
 	configWs, err := configWs(cfg)
 	if err != nil {
 		return nil, errors.Wrap(err, "could not create configuration webservice")
 	}
 	container.Add(configWs)
+
+	container.Add(versionsWs())
 
 	zonesWs := zonesWs(resManager)
 	container.Add(zonesWs)
@@ -133,7 +135,7 @@ func NewApiServer(resManager manager.ResourceManager, wsManager customization.AP
 
 	// Handle the GUI
 	if enableGUI {
-		container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(resources.GuiDir)))
+		container.Handle("/gui/", http.StripPrefix("/gui/", http.FileServer(http.FS(resources.GuiFS()))))
 	} else {
 		container.ServeMux.HandleFunc("/gui/", newApiServer.notAvailableHandler)
 	}
@@ -238,7 +240,7 @@ func (a *ApiServer) Start(stop <-chan struct{}) error {
 
 func (a *ApiServer) startHttpServer(errChan chan error) *http.Server {
 	server := &http.Server{
-		Addr:    fmt.Sprintf("%s:%d", a.config.HTTP.Interface, a.config.HTTP.Port),
+		Addr:    net.JoinHostPort(a.config.HTTP.Interface, strconv.FormatUint(uint64(a.config.HTTP.Port), 10)),
 		Handler: a.mux,
 	}
 
@@ -265,7 +267,7 @@ func (a *ApiServer) startHttpsServer(errChan chan error) *http.Server {
 	}
 
 	server := &http.Server{
-		Addr:      fmt.Sprintf("%s:%d", a.config.HTTPS.Interface, a.config.HTTPS.Port),
+		Addr:      net.JoinHostPort(a.config.HTTPS.Interface, strconv.FormatUint(uint64(a.config.HTTPS.Port), 10)),
 		Handler:   a.mux,
 		TLSConfig: tlsConfig,
 	}

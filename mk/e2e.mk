@@ -82,10 +82,16 @@ define curl_example_client
 	sh -c ' \
 		set -e ; \
 		for i in `seq 1 5`; do \
-			if [[ $$(curl -s http://localhost:3000 | jq -r ".headers[\"host\"]" ) = "mockbin.org" ]]; then \
+			if [[ "$$(curl -s http://localhost:3000 | grep -c nginx)" -gt 0 ]]; then \
 				echo "request #$$i successful" ; \
 			else \
 				echo "request #$$i failed" ; \
+				exit 1 ; \
+			fi ; \
+			if [[ "$$(curl -s http://httpbin.org | grep -c httpbin)" -gt 0 ]]; then \
+				echo "external request #$$i successful" ; \
+			else \
+				echo "external request #$$i failed" ; \
 				exit 1 ; \
 			fi ; \
 			sleep 1 ; \
@@ -125,8 +131,8 @@ endef
 define verify_example_inbound
 	@echo "Checking number of Inbound requests via Envoy ..."
 	test $$( $(1) \
-		wget -qO- http://localhost:9901/stats/prometheus | \
-		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_8000"}' | \
+		curl -s http://localhost:9901/stats/prometheus | \
+		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="localhost_80"}' | \
 		awk '{print $$2}' | tr -d [:space:] \
 	) -ge 5
 	@echo "Check passed!"
@@ -135,8 +141,8 @@ endef
 define verify_example_outbound
 	@echo "Checking number of Outbound requests via Envoy ..."
 	test $$( $(1) \
-		wget -qO- http://localhost:9901/stats/prometheus | \
-		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="outbound_passthrough"}' | \
+		curl -s http://localhost:9901/stats/prometheus | \
+		grep 'envoy_cluster_upstream_rq_total{envoy_cluster_name="outbound_passthrough_ipv4"}' | \
 		awk '{print $$2}' | tr -d [:space:] \
 	) -ge 1
 	@echo "Check passed!"
@@ -346,10 +352,10 @@ stats/example/minikube: ## Minikube: Observe Envoy metrics from demo setup
 	$(call kubectl_exec,kuma-demo,demo-app,kuma-sidecar) wget -qO- http://localhost:9901/stats/prometheus | grep upstream_rq_total
 
 verify/example/minikube/inbound:
-	$(call verify_example_inbound,$(call kubectl_exec,kuma-demo,demo-app,kuma-sidecar))
+	$(call verify_example_inbound,$(call kubectl_exec,kuma-demo,demo-app,demo-app))
 
 verify/example/minikube/outbound:
-	$(call verify_example_outbound,$(call kubectl_exec,kuma-demo,demo-app,kuma-sidecar))
+	$(call verify_example_outbound,$(call kubectl_exec,kuma-demo,demo-client,demo-client))
 
 verify/example/minikube: verify/example/minikube/inbound verify/example/minikube/outbound ## Minikube: Verify Envoy stats (after sample requests)
 
@@ -361,6 +367,7 @@ verify/example/minikube/mtls/outbound:
 	@echo "Check passed!"
 
 kumactl/example/minikube:
+	$(MAKE) docker/load/kumactl
 	cat tools/e2e/examples/minikube/kumactl_workflow.sh | docker run -i --rm --user $$(id -u):$$(id -g) --network host -v $$HOME/.kube:/tmp/.kube -v $$HOME/.minikube:$$HOME/.minikube -e HOME=/tmp -w /tmp $(KUMACTL_DOCKER_IMAGE)
 
 undeploy/example/minikube: ## Minikube: Undeploy example setup

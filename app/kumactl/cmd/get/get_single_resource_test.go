@@ -3,9 +3,7 @@ package get_test
 import (
 	"bytes"
 	"fmt"
-	"io/ioutil"
 	"path/filepath"
-	"strings"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -20,6 +18,7 @@ import (
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
@@ -29,6 +28,7 @@ type testApiServerClient struct {
 func (c *testApiServerClient) GetVersion() (*types.IndexResponse, error) {
 	return &types.IndexResponse{
 		Version: kuma_version.Build.Version,
+		Tagline: kuma_version.Product,
 	}, nil
 }
 
@@ -72,6 +72,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		Entry("traffic-route", "traffic-route"),
 		Entry("traffic-trace", "traffic-trace"),
 		Entry("secret", "secret"),
+		Entry("global-secret", "global-secret"),
 		Entry("retry", "retry"),
 	}
 
@@ -105,11 +106,13 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 			// then
 			Expect(err).To(HaveOccurred())
 			// and
-			if resource == "mesh" {
-				Expect(outbuf.String()).To(Equal("Error: No resources found in unknown-resource mesh\n"))
+			if resource == "mesh" || resource == "global-secret" {
+				Expect(outbuf.String()).To(Equal("Error: No resources found\n"))
 			} else {
 				Expect(outbuf.String()).To(Equal("Error: No resources found in default mesh\n"))
 			}
+
+			fmt.Println(errbuf.String())
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 
@@ -135,9 +138,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", resourceTable))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(outbuf.String()).To(WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected)))))
+			Expect(outbuf.String()).To(MatchGoldenEqual(filepath.Join("testdata", resourceTable)))
 		},
 		entries...,
 	)
@@ -160,9 +161,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", resourceJSON))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(outbuf.String()).To(MatchJSON(expected))
+			Expect(outbuf.String()).To(MatchGoldenEqual(filepath.Join("testdata", resourceJSON)))
 		},
 		entries...,
 	)
@@ -182,9 +181,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", resourceYAML))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(outbuf.String()).To(MatchYAML(expected))
+			Expect(outbuf.String()).To(MatchGoldenEqual(filepath.Join("testdata", resourceYAML)))
 		},
 		entries...,
 	)

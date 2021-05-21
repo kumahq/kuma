@@ -12,12 +12,14 @@ import (
 )
 
 type transparenProxyArgs struct {
-	DryRun bool
+	DryRun  bool
+	Verbose bool
 }
 
 func newUninstallTransparentProxy() *cobra.Command {
 	args := transparenProxyArgs{
-		DryRun: false,
+		DryRun:  false,
+		Verbose: false,
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -30,9 +32,9 @@ func newUninstallTransparentProxy() *cobra.Command {
 
 			tp := transparentproxy.DefaultTransparentProxy()
 
-			output, err := tp.Cleanup(args.DryRun)
+			output, err := tp.Cleanup(args.DryRun, args.Verbose)
 			if err != nil {
-				return errors.Wrap(err, "Failed to setup transparent proxy")
+				return errors.Wrap(err, "Failed to cleanup transparent proxy")
 			}
 
 			if args.DryRun {
@@ -62,5 +64,6 @@ func newUninstallTransparentProxy() *cobra.Command {
 	}
 
 	cmd.Flags().BoolVar(&args.DryRun, "dry-run", args.DryRun, "dry run")
+	cmd.Flags().BoolVar(&args.Verbose, "verbose", args.Verbose, "verbose")
 	return cmd
 }

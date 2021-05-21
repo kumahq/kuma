@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/xds"
+
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
@@ -14,20 +16,21 @@ import (
 var _ = Describe("HttpConnectionManagerConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		expected        string
+		listenerName     string
+		listenerProtocol xds.SocketAddressProtocol
+		listenerAddress  string
+		listenerPort     uint32
+		statsName        string
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
-					Configure(HttpConnectionManager(given.statsName)))).
+					Configure(HttpConnectionManager(given.statsName, true)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -55,6 +58,9 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
               - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  forwardClientCertDetails: SANITIZE_SET
+                  setCurrentClientCertDetails:
+                    uri: true
                   statPrefix: localhost_8080
                   httpFilters:
                   - name: envoy.filters.http.router

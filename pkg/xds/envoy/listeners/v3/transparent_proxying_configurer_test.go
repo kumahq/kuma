@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/xds"
+
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
@@ -17,6 +19,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 
 	type testCase struct {
 		listenerName        string
+		listenerProtocol    xds.SocketAddressProtocol
 		listenerAddress     string
 		listenerPort        uint32
 		transparentProxying *mesh_proto.Dataplane_Networking_TransparentProxying
@@ -27,7 +30,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(TransparentProxying(given.transparentProxying)).
 				Build()
 			// then
@@ -44,8 +47,9 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			transparentProxying: &mesh_proto.Dataplane_Networking_TransparentProxying{
-				RedirectPortOutbound: 12345,
-				RedirectPortInbound:  12346,
+				RedirectPortOutbound:  12345,
+				RedirectPortInbound:   12346,
+				RedirectPortInboundV6: 12347,
 			},
 			expected: `
             name: inbound:192.168.0.1:8080
@@ -54,8 +58,7 @@ var _ = Describe("TransparentProxyingConfigurer", func() {
               socketAddress:
                 address: 192.168.0.1
                 portValue: 8080
-            deprecatedV1:
-              bindToPort: false
+            bindToPort: false
 `,
 		}),
 		Entry("basic listener without transparent proxying", testCase{

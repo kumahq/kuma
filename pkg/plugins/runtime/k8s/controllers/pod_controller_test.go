@@ -6,7 +6,9 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -24,6 +26,7 @@ import (
 	kube_types "k8s.io/apimachinery/pkg/types"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 	kube_record "k8s.io/client-go/tools/record"
+	utilpointer "k8s.io/utils/pointer"
 	kube_ctrl "sigs.k8s.io/controller-runtime"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 	kube_client_fake "sigs.k8s.io/controller-runtime/pkg/client/fake"
@@ -86,6 +89,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Pod{
@@ -102,6 +110,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Pod{
@@ -118,6 +131,11 @@ var _ = Describe("PodReconciler", func() {
 				},
 				Status: kube_core.PodStatus{
 					PodIP: "192.168.0.1",
+					ContainerStatuses: []kube_core.ContainerStatus{
+						{
+							State: kube_core.ContainerState{},
+						},
+					},
 				},
 			},
 			&kube_core.Service{
@@ -146,9 +164,6 @@ var _ = Describe("PodReconciler", func() {
 				ObjectMeta: kube_meta.ObjectMeta{
 					Namespace: "demo",
 					Name:      "example",
-					Annotations: map[string]string{
-						"80.service.kuma.io/protocol": "http",
-					},
 				},
 				Spec: kube_core.ServiceSpec{
 					ClusterIP: "192.168.0.1",
@@ -159,6 +174,7 @@ var _ = Describe("PodReconciler", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
+							AppProtocol: utilpointer.StringPtr("http"),
 						},
 						{
 							Protocol: "TCP",
@@ -349,12 +365,14 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - port: 8080
+            - health: {} 
+              port: 8080
               tags:
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
-            - port: 6060
+            - health: {} 
+              port: 6060
               tags:
                 app: sample
                 kuma.io/service: example_demo_svc_6061
@@ -421,16 +439,97 @@ var _ = Describe("PodReconciler", func() {
           networking:
             address: 192.168.0.1
             inbound:
-            - port: 8080
+            - health: {} 
+              port: 8080
               tags:
                 app: sample
                 kuma.io/protocol: http
                 kuma.io/service: example_demo_svc_80
-            - port: 6060
+            - health: {} 
+              port: 6060
               tags:
                 app: sample
                 kuma.io/service: example_demo_svc_6061
                 kuma.io/protocol: tcp
 `))
+	})
+
+	It("should update Pods when ExternalService updated", func() {
+		err := kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			Mesh: "mesh-1",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "dp-1",
+				OwnerReferences: []kube_meta.OwnerReference{{
+					Controller: utilpointer.BoolPtr(true),
+					Kind:       "Pod",
+					Name:       "dp-1",
+				}},
+			},
+			Spec: map[string]interface{}{
+				"networking": map[string]interface{}{},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		err = kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			Mesh: "mesh-1",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "dp-2",
+				OwnerReferences: []kube_meta.OwnerReference{{
+					Controller: utilpointer.BoolPtr(true),
+					Kind:       "Pod",
+					Name:       "dp-2",
+				}},
+			},
+			Spec: map[string]interface{}{
+				"networking": map[string]interface{}{},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		err = kubeClient.Create(context.Background(), &mesh_k8s.Dataplane{
+			Mesh: "mesh-2",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "dp-3",
+				OwnerReferences: []kube_meta.OwnerReference{{
+					Controller: utilpointer.BoolPtr(true),
+					Kind:       "Pod",
+					Name:       "dp-3",
+				}},
+			},
+			Spec: map[string]interface{}{
+				"networking": map[string]interface{}{},
+			},
+		})
+		Expect(err).NotTo(HaveOccurred())
+
+		mapper := &ExternalServiceToPodsMapper{
+			Client: kubeClient,
+		}
+		es := &mesh_k8s.ExternalService{
+			Mesh: "mesh-1",
+			ObjectMeta: kube_meta.ObjectMeta{
+				Namespace: "demo",
+				Name:      "es-1",
+			},
+			Spec: map[string]interface{}{
+				"networking": map[string]interface{}{
+					"address": "httpbin.org:443",
+				},
+				"tags": map[string]interface{}{
+					mesh_proto.ServiceTag: "httpbin",
+				},
+			},
+		}
+		requests := mapper.Map(handler.MapObject{Object: es})
+		requestsStr := []string{}
+		for _, r := range requests {
+			requestsStr = append(requestsStr, r.Name)
+		}
+		Expect(requestsStr).To(HaveLen(2))
+		Expect(requestsStr).To(ConsistOf("dp-1", "dp-2"))
 	})
 })

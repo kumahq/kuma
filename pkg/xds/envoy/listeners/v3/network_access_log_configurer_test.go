@@ -18,13 +18,14 @@ import (
 var _ = Describe("NetworkAccessLogConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		clusters        []envoy_common.ClusterSubset
-		backend         *mesh_proto.LoggingBackend
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol core_xds.SocketAddressProtocol
+		statsName        string
+		clusters         []envoy_common.ClusterSubset
+		backend          *mesh_proto.LoggingBackend
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -60,7 +61,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(TcpProxy(given.statsName, given.clusters...)).
 					Configure(NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, destinationService, given.backend, proxy)))).
@@ -111,8 +112,6 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 				}),
 			},
 			expected: `
-            name: outbound:127.0.0.1:5432
-            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -132,9 +131,11 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                       path: /tmp/log
                   cluster: db
                   statPrefix: db
+            name: outbound:127.0.0.1:5432
+            trafficDirection: OUTBOUND
 `,
 		}),
-		XEntry("basic tcp_proxy with tcp access log", testCase{ // todo
+		Entry("basic tcp_proxy with tcp access log", testCase{
 			listenerName:    "outbound:127.0.0.1:5432",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
@@ -152,8 +153,6 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 				}),
 			},
 			expected: `
-            name: outbound:127.0.0.1:5432
-            trafficDirection: OUTBOUND
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -166,7 +165,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                   accessLog:
                   - name: envoy.access_loggers.http_grpc
                     typedConfig:
-                      '@type': type.googleapis.com/envoy.config.accesslog.v2.HttpGrpcAccessLogConfig
+                      '@type': type.googleapis.com/envoy.extensions.access_loggers.grpc.v3.HttpGrpcAccessLogConfig
                       additionalRequestHeadersToLog:
                       - origin
                       - content-type
@@ -180,12 +179,14 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                             clusterName: access_log_sink
                         logName: |+
                           127.0.0.1:1234;[%START_TIME%] "%REQ(x-request-id)%" "%REQ(:authority)%" "%REQ(origin)%" "%REQ(content-type)%" "backend" "db" "192.168.0.1:0" "192.168.0.1" "%UPSTREAM_HOST%
-
+            
                           "%RESP(server):5%" "%TRAILER(grpc-message):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
-
+            
+                        transportApiVersion: V3
                   cluster: db
                   statPrefix: db
-`,
+            name: outbound:127.0.0.1:5432
+            trafficDirection: OUTBOUND`,
 		}),
 	)
 })

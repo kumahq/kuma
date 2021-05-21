@@ -1,6 +1,12 @@
 package clusters_test
 
 import (
+	"time"
+
+	"google.golang.org/protobuf/types/known/durationpb"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
@@ -14,7 +20,7 @@ var _ = Describe("LbSubset", func() {
 
 	type testCase struct {
 		clusterName string
-		tags        [][]string
+		tags        envoy.TagKeysSlice
 		expected    string
 	}
 
@@ -24,6 +30,7 @@ var _ = Describe("LbSubset", func() {
 			cluster, err := clusters.NewClusterBuilder(envoy.APIV2).
 				Configure(clusters.EdsCluster(given.clusterName)).
 				Configure(clusters.LbSubset(given.tags)).
+				Configure(clusters.Timeout(mesh.ProtocolTCP, &mesh_proto.Timeout_Conf{ConnectTimeout: durationpb.New(5 * time.Second)})).
 				Build()
 
 			// then
@@ -35,7 +42,7 @@ var _ = Describe("LbSubset", func() {
 		},
 		Entry("LbSubset is empty if there are no tags", testCase{
 			clusterName: "backend",
-			tags:        [][]string{},
+			tags:        []envoy.TagKeys{},
 			expected: `
             connectTimeout: 5s
             edsClusterConfig:
@@ -46,7 +53,7 @@ var _ = Describe("LbSubset", func() {
 		}),
 		Entry("LbSubset is set when more than service tag is set", testCase{
 			clusterName: "backend",
-			tags: [][]string{
+			tags: []envoy.TagKeys{
 				{"version"},
 				{"cluster", "version"},
 			},

@@ -4,7 +4,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/mux"
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
@@ -18,30 +17,30 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
 	"github.com/kumahq/kuma/pkg/kds/util"
 )
 
 var (
 	kdsRemoteLog  = core.Log.WithName("kds-remote")
-	providedTypes = []model.ResourceType{
+	ProvidedTypes = []model.ResourceType{
 		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
 	}
-	consumedTypes = []model.ResourceType{
-		mesh.MeshType,
+	ConsumedTypes = []model.ResourceType{
+		mesh.CircuitBreakerType,
 		mesh.DataplaneType,
 		mesh.ExternalServiceType,
-		mesh.CircuitBreakerType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,
+		mesh.MeshType,
+		mesh.ProxyTemplateType,
+		mesh.RetryType,
+		mesh.TimeoutType,
 		mesh.TrafficLogType,
 		mesh.TrafficPermissionType,
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
-		mesh.ProxyTemplateType,
-		mesh.RetryType,
 		system.SecretType,
 		system.ConfigType,
 	}
@@ -49,9 +48,9 @@ var (
 
 func Setup(rt core_runtime.Runtime) error {
 	zone := rt.Config().Multizone.Remote.Zone
-	kdsServer, err := kds_server.New(kdsRemoteLog, rt, providedTypes,
+	kdsServer, err := kds_server.New(kdsRemoteLog, rt, ProvidedTypes,
 		zone, rt.Config().Multizone.Remote.KDS.RefreshInterval,
-		providedFilter(zone), false)
+		rt.KDSContext().RemoteProvidedFilter, false)
 	if err != nil {
 		return err
 	}
@@ -65,7 +64,7 @@ func Setup(rt core_runtime.Runtime) error {
 				log.Error(err, "StreamKumaResources finished with an error")
 			}
 		}()
-		sink := kds_client.NewKDSSink(log, consumedTypes, kds_client.NewKDSStream(session.ClientStream(), zone),
+		sink := kds_client.NewKDSSink(log, ConsumedTypes, kds_client.NewKDSStream(session.ClientStream(), zone),
 			Callbacks(rt, resourceSyncer, rt.Config().Store.Type == store.KubernetesStore, zone, kubeFactory),
 		)
 		go func() {
@@ -75,18 +74,15 @@ func Setup(rt core_runtime.Runtime) error {
 		}()
 		return nil
 	})
-	muxClient := mux.NewClient(rt.Config().Multizone.Remote.GlobalAddress, zone, onSessionStarted, *rt.Config().Multizone.Remote.KDS, rt.Metrics())
+	muxClient := mux.NewClient(
+		rt.Config().Multizone.Remote.GlobalAddress,
+		zone,
+		onSessionStarted,
+		*rt.Config().Multizone.Remote.KDS,
+		rt.Metrics(),
+		rt.KDSContext().RemoteClientCtx,
+	)
 	return rt.Add(component.NewResilientComponent(kdsRemoteLog.WithName("mux-client"), muxClient))
-}
-
-// providedFilter filter Resources provided by Remote, specifically Ingresses that belongs to another zones
-func providedFilter(clusterName string) reconcile.ResourceFilter {
-	return func(_ string, r model.Resource) bool {
-		if r.GetType() == mesh.DataplaneType {
-			return clusterName == util.ZoneTag(r)
-		}
-		return r.GetType() == mesh.DataplaneInsightType
-	}
 }
 
 func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory) *kds_client.Callbacks {
@@ -110,17 +106,9 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 				}))
 			}
 			if rs.GetItemType() == system.ConfigType {
-				for _, resource := range rs.GetItems() {
-					if resource.GetMeta().GetName() == config_manager.ClusterIdConfigKey {
-						if trr, ok := resource.(*system.ConfigResource); ok {
-							clusterId := trr.Spec.Config
-							rt.SetClusterId(clusterId)
-							return nil
-						} else {
-							return model.ErrorInvalidItemType((*system.ConfigResource)(nil), resource)
-						}
-					}
-				}
+				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
+					return rt.KDSContext().Configs[r.GetMeta().GetName()]
+				}))
 			}
 			return syncer.Sync(rs)
 		},
@@ -128,7 +116,7 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 }
 
 func ConsumesType(typ model.ResourceType) bool {
-	for _, consumedTyp := range consumedTypes {
+	for _, consumedTyp := range ConsumedTypes {
 		if consumedTyp == typ {
 			return true
 		}

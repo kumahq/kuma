@@ -4,8 +4,13 @@ import (
 	"context"
 	"net"
 
+	"github.com/kumahq/kuma/pkg/envoy/admin"
+	kds_context "github.com/kumahq/kuma/pkg/kds/context"
+
 	"github.com/kumahq/kuma/pkg/api-server/customization"
 	"github.com/kumahq/kuma/pkg/core/managers/apis/zone"
+	"github.com/kumahq/kuma/pkg/dp-server/server"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 
 	"github.com/pkg/errors"
 
@@ -89,7 +94,11 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	builder.WithLeaderInfo(leaderInfoComponent)
 
 	builder.WithLookupIP(lookup.CachedLookupIP(net.LookupIP, cfg.General.DNSCacheTTL))
+	builder.WithEnvoyAdminClient(admin.NewEnvoyAdminClient(builder.ResourceManager(), builder.Config()))
 	builder.WithAPIManager(customization.NewAPIList())
+	builder.WithXDSHooks(&xds_hooks.Hooks{})
+	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
+	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Remote.Zone))
 
 	if err := initializeAfterBootstrap(cfg, builder); err != nil {
 		return nil, err
@@ -318,6 +327,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	}
 	secretManager := secret_manager.NewSecretManager(builder.SecretStore(), cipher, secretValidator)
 	customManagers[system.SecretType] = secretManager
+	customManagers[system.GlobalSecretType] = secret_manager.NewGlobalSecretManager(builder.SecretStore(), cipher)
 
 	builder.WithResourceManager(customizableManager)
 

@@ -15,3 +15,4 @@ SUMMARY_GOES_HERE
 - Error logs
 - Configuration
 - Platform and Operating System
+- Installation Method (Helm, kumactl, AWS CloudFormation, etc.)

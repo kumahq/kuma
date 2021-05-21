@@ -1,6 +1,8 @@
 package mesh
 
 import (
+	"github.com/golang/protobuf/ptypes/wrappers"
+
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
@@ -97,8 +99,25 @@ func (d *HealthCheckResource) validateConf() (err validators.ValidationError) {
 	err.Add(ValidateDuration(path.Field("timeout"), d.Spec.Conf.Timeout))
 	err.Add(ValidateThreshold(path.Field("unhealthyThreshold"), d.Spec.Conf.UnhealthyThreshold))
 	err.Add(ValidateThreshold(path.Field("healthyThreshold"), d.Spec.Conf.HealthyThreshold))
+	if d.Spec.Conf.InitialJitter != nil {
+		err.Add(ValidateDuration(path.Field("initialJitter"), d.Spec.Conf.InitialJitter))
+	}
+	if d.Spec.Conf.IntervalJitter != nil {
+		err.Add(ValidateDuration(path.Field("intervalJitter"), d.Spec.Conf.IntervalJitter))
+	}
+	if d.Spec.Conf.NoTrafficInterval != nil {
+		err.Add(ValidateDuration(path.Field("noTrafficInterval"), d.Spec.Conf.NoTrafficInterval))
+	}
+	err.Add(d.validatePercentage(path.Field("healthyPanicThreshold"), d.Spec.Conf.HealthyPanicThreshold))
 	if d.Spec.Conf.GetHttp() != nil {
 		err.Add(d.validateConfHttp(path.Field("http")))
+	}
+	return
+}
+
+func (d *HealthCheckResource) validatePercentage(path validators.PathBuilder, value *wrappers.FloatValue) (err validators.ValidationError) {
+	if value.GetValue() < 0.0 || value.GetValue() > 100.0 {
+		err.AddViolationAt(path, "must be in range [0.0 - 100.0]")
 	}
 	return
 }

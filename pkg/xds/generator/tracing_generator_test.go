@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -9,25 +8,23 @@ import (
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-
-	"github.com/kumahq/kuma/pkg/xds/generator"
-
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	model "github.com/kumahq/kuma/pkg/core/xds"
-	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+	xds_context "github.com/kumahq/kuma/pkg/xds/context"
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
 var _ = Describe("TracingProxyGenerator", func() {
 
 	type testCase struct {
-		ctx          xds_context.Context
-		proxy        *core_xds.Proxy
-		expectedFile string
+		ctx      xds_context.Context
+		proxy    *core_xds.Proxy
+		expected string
 	}
 
 	DescribeTable("should not generate Envoy xDS resources unless tracing is present",
@@ -51,7 +48,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 						Mesh: "demo",
 					},
 				},
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 			},
 		}),
 	)
@@ -72,10 +69,8 @@ var _ = Describe("TracingProxyGenerator", func() {
 			actual, err := util_proto.ToYAML(resp)
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "tracing", given.expectedFile))
-			Expect(err).ToNot(HaveOccurred())
-
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "tracing", given.expected)))
 		},
 		Entry("should create cluster for Zipkin", testCase{
 			proxy: &model.Proxy{
@@ -91,7 +86,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 						},
 					},
 				},
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 				Policies: model.MatchedPolicies{
 					TracingBackend: &mesh_proto.TracingBackend{
 						Name: "zipkin",
@@ -102,7 +97,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 					},
 				},
 			},
-			expectedFile: "zipkin.envoy-config.golden.yaml",
+			expected: "zipkin.envoy-config.golden.yaml",
 		}),
 	)
 })

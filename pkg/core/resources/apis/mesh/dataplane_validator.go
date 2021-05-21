@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"net"
 	"net/url"
-	"regexp"
+
+	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -75,15 +76,13 @@ func validateProbes(probes *mesh_proto.Dataplane_Probes) validators.ValidationEr
 	return err
 }
 
-var DNSRegex = regexp.MustCompile(`^([a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62}){1}(\.[a-zA-Z0-9_]{1}[a-zA-Z0-9_-]{0,62})*[\._]?$`)
-
 func validateAddress(path validators.PathBuilder, address string) validators.ValidationError {
 	var err validators.ValidationError
 	if address == "" {
 		err.AddViolationAt(path.Field("address"), "address can't be empty")
 		return err
 	}
-	if !DNSRegex.MatchString(address) {
+	if !govalidator.IsIP(address) && !govalidator.IsDNSName(address) {
 		err.AddViolationAt(path.Field("address"), "address has to be valid IP address or domain name")
 	}
 	return err
@@ -189,7 +188,28 @@ func validateInbound(inbound *mesh_proto.Dataplane_Networking_Inbound, dpAddress
 		}
 	}
 	result.Add(validateTags(inbound.Tags))
+	result.Add(validateServiceProbe(inbound.ServiceProbe))
 	return result
+}
+
+func validateServiceProbe(serviceProbe *mesh_proto.Dataplane_Networking_Inbound_ServiceProbe) (err validators.ValidationError) {
+	if serviceProbe == nil {
+		return
+	}
+	path := validators.RootedAt("serviceProbe")
+	if serviceProbe.Interval != nil {
+		err.Add(ValidateDuration(path.Field("interval"), serviceProbe.Interval))
+	}
+	if serviceProbe.Timeout != nil {
+		err.Add(ValidateDuration(path.Field("timeout"), serviceProbe.Timeout))
+	}
+	if serviceProbe.UnhealthyThreshold != nil {
+		err.Add(ValidateThreshold(path.Field("unhealthyThreshold"), serviceProbe.UnhealthyThreshold.GetValue()))
+	}
+	if serviceProbe.HealthyThreshold != nil {
+		err.Add(ValidateThreshold(path.Field("healthyThreshold"), serviceProbe.HealthyThreshold.GetValue()))
+	}
+	return
 }
 
 func validateOutbound(outbound *mesh_proto.Dataplane_Networking_Outbound) validators.ValidationError {

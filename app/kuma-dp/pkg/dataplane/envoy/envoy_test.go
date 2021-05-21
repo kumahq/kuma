@@ -16,7 +16,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
@@ -69,7 +68,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, types.BootstrapVersion, EnvoyVersion) ([]byte, types.BootstrapVersion, error) {
+			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, types.BootstrapVersion, error) {
 				return []byte(`node:
   id: example`), types.BootstrapV2, nil
 			}
@@ -113,7 +112,7 @@ var _ = Describe("Envoy", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
-			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-c %s --drain-time-s 15 --disable-hot-restart --bootstrap-version 2", expectedConfigFile)))
+			Expect(strings.TrimSpace(buf.String())).To(Equal(fmt.Sprintf("-c %s --drain-time-s 15 --disable-hot-restart -l off --bootstrap-version 2", expectedConfigFile)))
 
 			By("verifying the contents Envoy config file")
 			// when
@@ -137,7 +136,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, types.BootstrapVersion, EnvoyVersion) ([]byte, types.BootstrapVersion, error) {
+			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, types.BootstrapVersion, error) {
 				return nil, "", nil
 			}
 
@@ -179,7 +178,7 @@ var _ = Describe("Envoy", func() {
 					ConfigDir:  configDir,
 				},
 			}
-			sampleConfig := func(string, kuma_dp.Config, *rest.Resource, types.BootstrapVersion, EnvoyVersion) ([]byte, types.BootstrapVersion, error) {
+			sampleConfig := func(string, kuma_dp.Config, BootstrapParams) ([]byte, types.BootstrapVersion, error) {
 				return nil, "", nil
 			}
 

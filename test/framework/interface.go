@@ -1,6 +1,8 @@
 package framework
 
 import (
+	"time"
+
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/testing"
 )
@@ -23,27 +25,88 @@ type deployOptions struct {
 	installationMode InstallationMode
 	skipDefaultMesh  bool
 	helmReleaseName  string
+	helmChartPath    *string
+	helmChartVersion string
 	helmOpts         map[string]string
+	noHelmOpts       []string
 	ctlOpts          map[string]string
 	env              map[string]string
 	ingress          bool
 	cni              bool
 	cpReplicas       int
+	proxyOnly        bool
+	hdsDisabled      bool
+	serviceProbe     bool
+	isipv6           bool
 
 	// app specific
 	namespace   string
 	appname     string
-	id          string
+	name        string
+	appYaml     string
+	appArgs     []string
 	token       string
 	transparent bool
+	builtindns  bool
+	protocol    string
 	mesh        string
+	dpVersion   string
 }
 
 type DeployOptionsFunc func(*deployOptions)
 
+func WithYaml(appYaml string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.appYaml = appYaml
+	}
+}
+
+func WithIPv6(isipv6 bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.isipv6 = isipv6
+	}
+}
+
+func WithProtocol(protocol string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.protocol = protocol
+	}
+}
+
+func WithArgs(appArgs []string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.appArgs = appArgs
+	}
+}
+
+func ProxyOnly() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.proxyOnly = true
+	}
+}
+
+func ServiceProbe() DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.serviceProbe = true
+	}
+}
+
+func WithHDS(enabled bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.hdsDisabled = !enabled
+	}
+}
+
 func WithGlobalAddress(address string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.globalAddress = address
+	}
+}
+
+// WithDPVersion only works with Universal now
+func WithDPVersion(version string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.dpVersion = version
 	}
 }
 
@@ -73,12 +136,30 @@ func WithHelmReleaseName(name string) DeployOptionsFunc {
 	}
 }
 
+func WithHelmChartPath(path string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.helmChartPath = &path
+	}
+}
+
+func WithHelmChartVersion(version string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.helmChartVersion = version
+	}
+}
+
 func WithHelmOpt(name, value string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		if o.helmOpts == nil {
 			o.helmOpts = map[string]string{}
 		}
 		o.helmOpts[name] = value
+	}
+}
+
+func WithoutHelmOpt(name string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.noHelmOpts = append(o.noHelmOpts, name)
 	}
 }
 
@@ -121,9 +202,9 @@ func WithAppname(appname string) DeployOptionsFunc {
 	}
 }
 
-func WithId(id string) DeployOptionsFunc {
+func WithName(name string) DeployOptionsFunc {
 	return func(o *deployOptions) {
-		o.id = id
+		o.name = name
 	}
 }
 
@@ -136,6 +217,12 @@ func WithToken(token string) DeployOptionsFunc {
 func WithTransparentProxy(transparent bool) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.transparent = transparent
+	}
+}
+
+func WithBuiltinDNS(builtindns bool) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.builtindns = builtindns
 	}
 }
 
@@ -177,6 +264,8 @@ type Cluster interface {
 	GetKumactlOptions() *KumactlOptions
 	Deployment(name string) Deployment
 	Deploy(deployment Deployment) error
+	WithTimeout(timeout time.Duration) Cluster
+	WithRetries(retries int) Cluster
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions

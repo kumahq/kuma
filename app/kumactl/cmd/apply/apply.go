@@ -45,11 +45,24 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 		Use:   "apply",
 		Short: "Create or modify Kuma resources",
 		Long:  `Create or modify Kuma resources.`,
+		Example: `
+Apply a resource from file
+$ kumactl apply -f resource.yaml
+
+Apply a resource from stdin
+$ echo "
+type: Mesh
+name: demo
+" | kumactl apply -f -
+
+Apply a resource from external URL
+$ kumactl apply -f https://example.com/resource.yaml
+`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			var b []byte
 			var err error
 
-			if ctx.args.file == "" || ctx.args.file == "-" {
+			if ctx.args.file == "-" {
 				b, err = ioutil.ReadAll(cmd.InOrStdin())
 				if err != nil {
 					return err
@@ -125,9 +138,10 @@ func NewApplyCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.PersistentFlags().StringVarP(&ctx.args.file, "file", "f", "", "Path to file to apply")
-	cmd.PersistentFlags().StringToStringVarP(&ctx.args.vars, "var", "v", map[string]string{}, "Variable to replace in configuration")
-	cmd.PersistentFlags().BoolVar(&ctx.args.dryRun, "dry-run", false, "Resolve variable and prints result out without actual applying")
+	cmd.Flags().StringVarP(&ctx.args.file, "file", "f", "", "Path to file to apply. Pass `-` to read from stdin")
+	_ = cmd.MarkFlagRequired("file")
+	cmd.Flags().StringToStringVarP(&ctx.args.vars, "var", "v", map[string]string{}, "Variable to replace in configuration")
+	cmd.Flags().BoolVar(&ctx.args.dryRun, "dry-run", false, "Resolve variable and prints result out without actual applying")
 	return cmd
 }
 

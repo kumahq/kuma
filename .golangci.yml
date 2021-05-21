@@ -36,6 +36,3 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: l.UseOriginalDst is deprecated: Do not use." # TODO What is the up-to-date alternative ?
-    - linters:
-        - staticcheck
-      text: "c.Http2ProtocolOptions is deprecated: Do not use." # TODO What is the up-to-date alternative ?

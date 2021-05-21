@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Kuma Control Plane on ECS
+Description: Kuma Global Control Plane on ECS
 Parameters:
   VPCStackName:
     Type: String
@@ -8,7 +8,7 @@ Parameters:
       to locate and reference resources created by that stack.
   Image:
     Type: String
-    Default: "kong-docker-kuma-docker.bintray.io/kuma-cp:080-preview-2"
+    Default: "docker.io/kumahq/kuma-cp:1.0.8"
     Description: The name of the kuma-cp docker image
   AllowedCidr:
     Type: String
@@ -173,7 +173,11 @@ Resources:
           Essential: true
           Image: !Ref Image
           PortMappings:
+            - ContainerPort: 5680
+              Protocol: tcp
             - ContainerPort: 5681
+              Protocol: tcp
+            - ContainerPort: 5682
               Protocol: tcp
             - ContainerPort: 5685
               Protocol: tcp

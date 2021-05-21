@@ -16,6 +16,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/spf13/cobra"
 
+	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
+
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
@@ -42,6 +44,7 @@ var _ = Describe("kumactl apply", func() {
 				NewResourceStore: func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error) {
 					return store, nil
 				},
+				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
 			},
 		}
 		store = core_store.NewPaginationStore(memory_resources.NewStore())
@@ -72,25 +75,18 @@ var _ = Describe("kumactl apply", func() {
 		Expect(resource.Spec.Networking.Outbound[0].Service).To(Equal("postgres"))
 	}
 
-	It("should read configuration from stdin (no -f arg)", func() {
+	It("should require -f arg", func() {
 		// setup
-		mockStdin, err := os.Open(filepath.Join("testdata", "apply-dataplane.yaml"))
-		Expect(err).ToNot(HaveOccurred())
-
-		// given
 		rootCmd.SetArgs([]string{
 			"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
 			"apply",
 		})
-		rootCmd.SetIn(mockStdin)
 
 		// when
-		err = rootCmd.Execute()
-		// then
-		Expect(err).ToNot(HaveOccurred())
+		err := rootCmd.Execute()
 
-		// and
-		ValidatePersistedResource()
+		// then
+		Expect(err).To(MatchError(`required flag(s) "file" not set`))
 	})
 
 	It("should read configuration from stdin (-f - arg)", func() {

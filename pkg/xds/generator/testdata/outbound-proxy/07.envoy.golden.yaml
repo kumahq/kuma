@@ -1,12 +1,12 @@
 resources:
-  - name: outbound:127.0.0.1:4040
-    resource:
-      '@type': type.googleapis.com/envoy.api.v2.Listener
-      address:
-        socketAddress:
-          address: 127.0.0.1
-          portValue: 4040
-      filterChains:
-        - {}
-      name: outbound:127.0.0.1:4040
-      trafficDirection: OUTBOUND
+- name: outbound:127.0.0.1:4040
+  resource:
+    '@type': type.googleapis.com/envoy.config.listener.v3.Listener
+    address:
+      socketAddress:
+        address: 127.0.0.1
+        portValue: 4040
+    filterChains:
+    - {}
+    name: outbound:127.0.0.1:4040
+    trafficDirection: OUTBOUND

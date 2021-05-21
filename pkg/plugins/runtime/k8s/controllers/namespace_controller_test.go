@@ -3,6 +3,8 @@ package controllers_test
 import (
 	"context"
 
+	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	kube_core "k8s.io/api/core/v1"
@@ -53,6 +55,15 @@ var _ = Describe("NamespaceReconciler", func() {
 	})
 
 	It("should create NetworkAttachmentDefinition", func() {
+		// setup CustomResourceDefinition
+		crd := &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name: "network-attachment-definitions.k8s.cni.cncf.io",
+			},
+		}
+		err := kubeClient.Create(context.Background(), crd)
+		Expect(err).ToNot(HaveOccurred())
+
 		// given
 		req := kube_ctrl.Request{
 			NamespacedName: kube_types.NamespacedName{
@@ -78,6 +89,15 @@ var _ = Describe("NamespaceReconciler", func() {
 	})
 
 	It("should delete NetworkAttachmentDefinition when injection annotation is no longer on the namespace", func() {
+		// setup CustomResourceDefinition
+		crd := &apiextensionsv1.CustomResourceDefinition{
+			ObjectMeta: kube_meta.ObjectMeta{
+				Name: "network-attachment-definitions.k8s.cni.cncf.io",
+			},
+		}
+		err := kubeClient.Create(context.Background(), crd)
+		Expect(err).ToNot(HaveOccurred())
+
 		// setup NetworkAttachmentDefinition in the namespace
 		nad := &v1.NetworkAttachmentDefinition{
 			ObjectMeta: kube_meta.ObjectMeta{
@@ -85,7 +105,7 @@ var _ = Describe("NamespaceReconciler", func() {
 				Name:      metadata.KumaCNI,
 			},
 		}
-		err := kubeClient.Create(context.Background(), nad)
+		err = kubeClient.Create(context.Background(), nad)
 		Expect(err).ToNot(HaveOccurred())
 
 		// given namespace without kuma.io/sidecar-injection annotation
@@ -127,6 +147,29 @@ var _ = Describe("NamespaceReconciler", func() {
 		Expect(result).To(BeZero())
 
 		// and NetworkAttachmentDefinition is not created
+		nads := &v1.NetworkAttachmentDefinitionList{}
+		err = kubeClient.List(context.Background(), nads)
+		Expect(err).ToNot(HaveOccurred())
+		Expect(nads.Items).To(HaveLen(0))
+	})
+
+	It("should skip creating NetworkAttachmentDefinition when CRD is absent in the cluster", func() {
+		// given
+		req := kube_ctrl.Request{
+			NamespacedName: kube_types.NamespacedName{
+				Namespace: "non-system-ns-with-sidecar-injection",
+				Name:      "non-system-ns-with-sidecar-injection",
+			},
+		}
+
+		// when
+		result, err := reconciler.Reconcile(req)
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+		Expect(result).To(BeZero())
+
+		// and NetworkAttachmentDefinition is created
 		nads := &v1.NetworkAttachmentDefinitionList{}
 		err = kubeClient.List(context.Background(), nads)
 		Expect(err).ToNot(HaveOccurred())

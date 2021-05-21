@@ -111,6 +111,10 @@ var _ = Describe("HealthCheck", func() {
                   timeout: 0s
                   unhealthyThreshold: 0
                   healthyThreshold: 0
+                  initialJitter: 0s
+                  intervalJitter: 0s
+                  healthyPanicThreshold: 101
+                  noTrafficInterval: 0s
                   http:
                     path: ""
                     requestHeadersToAdd:
@@ -131,6 +135,14 @@ var _ = Describe("HealthCheck", func() {
                   message: must have a positive value
                 - field: conf.healthyThreshold
                   message: must have a positive value
+                - field: conf.initialJitter
+                  message: must have a positive value
+                - field: conf.intervalJitter
+                  message: must have a positive value
+                - field: conf.noTrafficInterval
+                  message: must have a positive value
+                - field: conf.healthyPanicThreshold
+                  message: must be in range [0.0 - 100.0]
                 - field: conf.http.path
                   message: has to be defined and cannot be empty
                 - field: conf.http.expectedStatuses[0]

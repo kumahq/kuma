@@ -5,35 +5,21 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"net/http"
-	"net/url"
-	"time"
 
 	"github.com/pkg/errors"
 
+	kumactl_client "github.com/kumahq/kuma/app/kumactl/pkg/client"
 	kumactl_config "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/server/types"
 	util_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
-const (
-	timeout = 10 * time.Second
-)
-
 func NewDataplaneTokenClient(config *kumactl_config.ControlPlaneCoordinates_ApiServer) (DataplaneTokenClient, error) {
-	baseURL, err := url.Parse(config.Url)
+	client, err := kumactl_client.ApiServerClient(config)
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to parse Dataplane Token Server URL")
+		return nil, err
 	}
-	httpClient := &http.Client{
-		Timeout: timeout,
-	}
-	if baseURL.Scheme == "https" {
-		if err := util_http.ConfigureMTLS(httpClient, config.CaCertFile, config.ClientCertFile, config.ClientKeyFile); err != nil {
-			return nil, errors.Wrap(err, "could not configure tls for dataplane token client")
-		}
-	}
-	client := util_http.ClientWithBaseURL(httpClient, baseURL)
 	return &httpDataplaneTokenClient{
 		client: client,
 	}, nil

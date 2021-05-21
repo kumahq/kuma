@@ -37,28 +37,18 @@ protoc/plugins:
 	$(PROTOC_GO) pkg/plugins/ca/provided/config/*.proto
 	$(PROTOC_GO) pkg/plugins/ca/builtin/config/*.proto
 
-# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
-.PHONY: generate/kumactl/install/k8s/control-plane
-generate/kumactl/install/k8s/control-plane:
-	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/control-plane/...
+KUMA_GUI_GIT=https://github.com/kumahq/kuma-gui.git
+KUMA_GUI_VERSION=master
+KUMA_GUI_FOLDER=app/kuma-ui/pkg/resources/data
+KUMA_GUI_WORK_FOLDER=app/kuma-ui/data/work
 
-# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
-.PHONY: generate/kumactl/install/k8s/metrics
-generate/kumactl/install/k8s/metrics:
-	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/metrics/...
-
-# Notice that this command is not include into `make generate` by intention (since generated code differs between dev host and ci server)
-.PHONY: generate/kumactl/install/k8s/tracing
-generate/kumactl/install/k8s/tracing:
-	GOFLAGS='${GOFLAGS}' go generate ./app/kumactl/pkg/install/k8s/tracing/...
-
-.PHONY: generate/kuma-cp/migrations
-generate/kuma-cp/migrations:
-	GOFLAGS='${GOFLAGS}' go generate ./pkg/plugins/resources/postgres/migrations/...
-
-.PHONY: generate/gui
-generate/gui: ## Generate gGOFLAGSo files with GUI static files to embed it into binary
-	GOFLAGS='${GOFLAGS}' go generate ./app/kuma-ui/pkg/resources/...
+.PHONY: upgrade/gui
+upgrade/gui:
+	rm -rf $(KUMA_GUI_WORK_FOLDER); \
+	git clone --depth 1 -b $(KUMA_GUI_VERSION) https://github.com/kumahq/kuma-gui.git $(KUMA_GUI_WORK_FOLDER); \
+	pushd $(KUMA_GUI_WORK_FOLDER) && yarn install && yarn build && popd; \
+	rm -rf $(KUMA_GUI_FOLDER) && mv $(KUMA_GUI_WORK_FOLDER)/dist/ $(KUMA_GUI_FOLDER); \
+	rm -rf $(KUMA_GUI_WORK_FOLDER); \
 
 .PHONY: generate/envoy-imports
 generate/envoy-imports:

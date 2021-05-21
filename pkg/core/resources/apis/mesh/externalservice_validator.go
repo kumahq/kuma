@@ -5,6 +5,8 @@ import (
 	"net"
 	"strconv"
 
+	"github.com/asaskevich/govalidator"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
@@ -48,8 +50,8 @@ func validateExtarnalServiceAddress(path validators.PathBuilder, address string)
 	if e != nil {
 		err.AddViolationAt(path.Field("address"), "unable to parse address")
 	}
-	if !DNSRegex.MatchString(host) {
-		err.AddViolationAt(path.Field("address"), "address has to be valid IP address or domain name")
+	if !govalidator.IsIP(host) && !govalidator.IsDNSName(host) {
+		err.AddViolationAt(path.Field("address"), "address has to be a valid IP address or a domain name")
 	}
 
 	iport, e := strconv.Atoi(port)

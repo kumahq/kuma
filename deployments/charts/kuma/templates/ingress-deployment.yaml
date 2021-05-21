@@ -22,11 +22,20 @@ spec:
       annotations:
         kuma.io/ingress: enabled
         kuma.io/mesh: {{ .Values.ingress.mesh }}
+        {{- if .Values.ingress.annotations }}
+        {{- range $key, $value := .Values.ingress.annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
       labels:
         {{- include "kuma.selectorLabels" . | nindent 8 }}
         app: kuma-ingress
     spec:
       serviceAccountName: {{ include "kuma.name" . }}-ingress
+      {{- with .Values.ingress.nodeSelector }}
+      nodeSelector:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: ingress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}

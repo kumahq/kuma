@@ -2,7 +2,9 @@ package framework
 
 import (
 	"fmt"
+	"net"
 	"strings"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 
@@ -14,22 +16,38 @@ import (
 )
 
 type UniversalCluster struct {
-	t            testing.TestingT
-	name         string
-	controlplane *UniversalControlPlane
-	apps         map[string]*UniversalApp
-	verbose      bool
-	deployments  map[string]Deployment
+	t              testing.TestingT
+	name           string
+	controlplane   *UniversalControlPlane
+	apps           map[string]*UniversalApp
+	verbose        bool
+	deployments    map[string]Deployment
+	defaultTimeout time.Duration
+	defaultRetries int
 }
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
 	return &UniversalCluster{
-		t:           t,
-		name:        name,
-		apps:        map[string]*UniversalApp{},
-		verbose:     verbose,
-		deployments: map[string]Deployment{},
+		t:              t,
+		name:           name,
+		apps:           map[string]*UniversalApp{},
+		verbose:        verbose,
+		deployments:    map[string]Deployment{},
+		defaultRetries: GetDefaultRetries(),
+		defaultTimeout: GetDefaultTimeout(),
 	}
+}
+
+func (c *UniversalCluster) WithTimeout(timeout time.Duration) Cluster {
+	c.defaultTimeout = timeout
+
+	return c
+}
+
+func (c *UniversalCluster) WithRetries(retries int) Cluster {
+	c.defaultRetries = retries
+
+	return c
 }
 
 func (c *UniversalCluster) Name() string {
@@ -68,6 +86,17 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	if opts.globalAddress != "" {
 		env = append(env, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
 	}
+	if opts.hdsDisabled {
+		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
+	}
+
+	if HasApiVersion() {
+		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+GetApiVersion())
+	}
+
+	if opts.isipv6 {
+		env = append(env, fmt.Sprintf("KUMA_DNS_SERVER_CIDR=\"%s\"", cidrIPv6))
+	}
 
 	switch mode {
 	case core.Remote:
@@ -76,7 +105,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		cmd = append(cmd, "--config-file", confPath)
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, true, caps)
+	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, opts.isipv6, true, caps)
 	if err != nil {
 		return err
 	}
@@ -135,10 +164,10 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 	return nil
 }
 
-func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string) error {
+func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string, builtindns bool) error {
 	cpIp := c.apps[AppModeCP].ip
-	cpAddress := "https://" + cpIp + ":5678"
-	app.CreateDP(token, cpAddress, appname, ip, dpyaml)
+	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
+	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns)
 	return app.dpApp.Start()
 }
 
@@ -146,21 +175,12 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	opts := newDeployOpt(fs...)
 	appname := opts.appname
 	token := opts.token
-	id := opts.id
 	transparent := opts.transparent
+	dpyaml := opts.appYaml
+	args := opts.appArgs
 
 	if opts.mesh == "" {
 		opts.mesh = "default"
-	}
-
-	var args []string
-	switch appname {
-	case AppModeEchoServer:
-		args = []string{"ncat", "-lk", "-p", "80", "--sh-exec", "'echo \"HTTP/1.1 200 OK\n\n Echo " + id + "\n\"'"}
-	case AppModeDemoClient:
-		args = []string{"ncat", "-lvk", "-p", "3000"}
-	default:
-		return errors.Errorf("not supported app type %s", appname)
 	}
 
 	caps := []string{}
@@ -168,45 +188,38 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		caps = append(caps, "NET_ADMIN", "NET_RAW")
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppMode(appname), c.verbose, caps)
+	fmt.Printf("IPV6 is %v\n", opts.isipv6)
+	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, c.verbose, caps)
 	if err != nil {
 		return err
 	}
 
 	if transparent {
-		app.setupTransparent(c.apps[AppModeCP].ip)
+		app.setupTransparent(c.apps[AppModeCP].ip, opts.builtindns)
 	}
 
 	ip := app.ip
 
-	dpyaml := ""
-	switch appname {
-	case AppModeEchoServer:
-		if transparent {
-			dpyaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, opts.mesh, "80", "80", redirectPortInbound, redirectPortOutbound)
-		} else {
-			dpyaml = fmt.Sprintf(EchoServerDataplane, opts.mesh, "8080", "80", "8080")
-		}
-	case AppModeDemoClient:
-		if transparent {
-			dpyaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, opts.mesh, "3000", redirectPortInbound, redirectPortOutbound)
-		} else {
-			dpyaml = fmt.Sprintf(DemoClientDataplane, opts.mesh, "13000", "3000", "80", "8080")
+	if opts.dpVersion != "" {
+		if err := app.OverrideDpVersion(opts.dpVersion); err != nil {
+			return err
 		}
 	}
 
-	err = c.CreateDP(app, appname, ip, dpyaml, token)
+	err = c.CreateDP(app, opts.name, ip, dpyaml, token, opts.builtindns)
 	if err != nil {
 		return err
 	}
 
-	app.CreateMainApp([]string{}, args)
-	err = app.mainApp.Start()
-	if err != nil {
-		return err
+	if !opts.proxyOnly {
+		app.CreateMainApp([]string{}, args)
+		err = app.mainApp.Start()
+		if err != nil {
+			return err
+		}
 	}
 
-	c.apps[appname] = app
+	c.apps[opts.name] = app
 
 	return nil
 }
@@ -225,7 +238,8 @@ func (c *UniversalCluster) Exec(namespace, podName, appname string, cmd ...strin
 		return "", "", errors.Errorf("App %s not found", appname)
 	}
 	sshApp := NewSshApp(false, app.ports[sshPort], []string{}, cmd)
-	return sshApp.Out(), sshApp.Err(), sshApp.Run()
+	err := sshApp.Run()
+	return sshApp.Out(), sshApp.Err(), err
 }
 
 func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, cmd ...string) (string, string, error) {
@@ -234,8 +248,8 @@ func (c *UniversalCluster) ExecWithRetries(namespace, podName, appname string, c
 	_, err := retry.DoWithRetryE(
 		c.t,
 		fmt.Sprintf("Trying %s", strings.Join(cmd, " ")),
-		DefaultRetries/3,
-		DefaultTimeout,
+		c.defaultRetries/3,
+		c.defaultTimeout,
 		func() (string, error) {
 			app, ok := c.apps[appname]
 			if !ok {

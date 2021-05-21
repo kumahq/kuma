@@ -3,6 +3,8 @@ package v2_test
 import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
+	"github.com/kumahq/kuma/pkg/core/xds"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/kumahq/kuma/pkg/xds/envoy"
@@ -24,9 +26,9 @@ var _ = Describe("TracingConfigurer", func() {
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV2).
-				Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080)).
+				Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, xds.SocketAddressProtocolTCP)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV2).
-					Configure(HttpConnectionManager("localhost:8080")).
+					Configure(HttpConnectionManager("localhost:8080", false)).
 					Configure(Tracing(given.backend)))).
 				Build()
 			// then

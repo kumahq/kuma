@@ -76,6 +76,23 @@ var _ = Describe("Dataplane_Networking", func() {
 						{DataplaneIP: "192.168.0.1", DataplanePort: 443},
 					},
 				}),
+				Entry("2 outbound interfaces IPv6", testCase{
+					input: &Dataplane_Networking{
+						Outbound: []*Dataplane_Networking_Outbound{
+							{
+								Port: 8080,
+							},
+							{
+								Address: "fd00::1",
+								Port:    443,
+							},
+						},
+					},
+					expected: []OutboundInterface{
+						{DataplaneIP: "127.0.0.1", DataplanePort: 8080},
+						{DataplaneIP: "fd00::1", DataplanePort: 443},
+					},
+				}),
 			)
 		})
 	})
@@ -126,6 +143,44 @@ var _ = Describe("Dataplane_Networking", func() {
 					},
 				}),
 			)
+		})
+	})
+
+	Describe("GetHealthyInbounds()", func() {
+
+		It("should return only healty inbounds", func() {
+			networking := &Dataplane_Networking{
+				Inbound: []*Dataplane_Networking_Inbound{
+					{
+						Health:      nil,
+						Port:        8080,
+						ServicePort: 80,
+					},
+					{
+						Health:      &Dataplane_Networking_Inbound_Health{Ready: true},
+						Port:        9090,
+						ServicePort: 90,
+					},
+					{
+						Health:      &Dataplane_Networking_Inbound_Health{Ready: false},
+						Port:        7070,
+						ServicePort: 70,
+					},
+				},
+			}
+
+			actual := networking.GetHealthyInbounds()
+			Expect(actual).To(HaveLen(2))
+			Expect(actual).To(ConsistOf(
+				&Dataplane_Networking_Inbound{
+					Health:      &Dataplane_Networking_Inbound_Health{Ready: true},
+					Port:        9090,
+					ServicePort: 90,
+				},
+				&Dataplane_Networking_Inbound{
+					Port:        8080,
+					ServicePort: 80,
+				}))
 		})
 	})
 })

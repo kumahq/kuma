@@ -7,6 +7,9 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/core"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -14,6 +17,7 @@ import (
 
 type HealthCheckConfigurer struct {
 	HealthCheck *mesh_core.HealthCheckResource
+	Protocol    mesh_core.Protocol
 }
 
 var _ ClusterConfigurer = &HealthCheckConfigurer{}
@@ -72,6 +76,7 @@ func tcpHealthCheck(
 }
 
 func httpHealthCheck(
+	protocol mesh_core.Protocol,
 	httpConf *mesh_proto.HealthCheck_Conf_Http,
 ) *envoy_core.HealthCheck_HttpHealthCheck_ {
 	var expectedStatuses []*envoy_type.Int64Range
@@ -82,11 +87,16 @@ func httpHealthCheck(
 		)
 	}
 
+	codecClientType := envoy_type.CodecClientType_HTTP1
+	if protocol == mesh_core.ProtocolHTTP2 {
+		codecClientType = envoy_type.CodecClientType_HTTP2
+	}
+
 	httpHealthCheck := envoy_core.HealthCheck_HttpHealthCheck{
 		Path:                httpConf.Path,
 		RequestHeadersToAdd: mapHttpHeaders(httpConf.RequestHeadersToAdd),
 		ExpectedStatuses:    expectedStatuses,
-		CodecClientType:     envoy_type.CodecClientType_HTTP2,
+		CodecClientType:     codecClientType,
 	}
 
 	return &envoy_core.HealthCheck_HttpHealthCheck_{
@@ -94,29 +104,102 @@ func httpHealthCheck(
 	}
 }
 
+func healthPanicThreshold(cluster *envoy_api.Cluster, value *wrappers.FloatValue) {
+	if value == nil {
+		return
+	}
+	if cluster.CommonLbConfig == nil {
+		cluster.CommonLbConfig = &envoy_api.Cluster_CommonLbConfig{}
+	}
+	cluster.CommonLbConfig.HealthyPanicThreshold = &envoy_type.Percent{Value: float64(value.Value)}
+}
+
+func failTrafficOnPanic(cluster *envoy_api.Cluster, value *wrappers.BoolValue) {
+	if value == nil {
+		return
+	}
+	if cluster.CommonLbConfig == nil {
+		cluster.CommonLbConfig = &envoy_api.Cluster_CommonLbConfig{}
+	}
+	if cluster.CommonLbConfig.GetLocalityWeightedLbConfig() != nil {
+		// used load balancing type doesn't support 'fail_traffic_on_panic', right now we don't use
+		// 'locality_weighted_lb_config' in Kuma, locality aware load balancing is implemented based on priority levels
+		core.Log.WithName("health-check-configurer").Error(
+			errors.New("unable to set 'fail_traffic_on_panic' for 'locality_weighted_lb_config' load balancer"),
+			"unable to configure 'fail_traffic_on_panic', parameter is ignored")
+		return
+	}
+	if cluster.CommonLbConfig.LocalityConfigSpecifier == nil {
+		cluster.CommonLbConfig.LocalityConfigSpecifier = &envoy_api.Cluster_CommonLbConfig_ZoneAwareLbConfig_{
+			ZoneAwareLbConfig: &envoy_api.Cluster_CommonLbConfig_ZoneAwareLbConfig{},
+		}
+	}
+	cluster.CommonLbConfig.GetZoneAwareLbConfig().FailTrafficOnPanic = value.GetValue()
+}
+
+func buildHealthCheck(conf *mesh_proto.HealthCheck_Conf) *envoy_core.HealthCheck {
+	return &envoy_core.HealthCheck{
+		HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
+			TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
+		},
+		Interval:                     conf.Interval,
+		Timeout:                      conf.Timeout,
+		UnhealthyThreshold:           &wrappers.UInt32Value{Value: conf.UnhealthyThreshold},
+		HealthyThreshold:             &wrappers.UInt32Value{Value: conf.HealthyThreshold},
+		InitialJitter:                conf.InitialJitter,
+		IntervalJitter:               conf.IntervalJitter,
+		IntervalJitterPercent:        conf.IntervalJitterPercent,
+		EventLogPath:                 conf.EventLogPath,
+		AlwaysLogHealthCheckFailures: conf.AlwaysLogHealthCheckFailures.GetValue(),
+		NoTrafficInterval:            conf.NoTrafficInterval,
+		ReuseConnection:              conf.ReuseConnection,
+	}
+}
+
+func addHealthChecker(healthCheck *envoy_core.HealthCheck, healthChecker interface{}) *envoy_core.HealthCheck {
+	if httpHc, ok := healthChecker.(*envoy_core.HealthCheck_HttpHealthCheck_); ok {
+		healthCheck.HealthChecker = httpHc
+	} else if tcpHc, ok := healthChecker.(*envoy_core.HealthCheck_TcpHealthCheck_); ok {
+		healthCheck.HealthChecker = tcpHc
+	}
+
+	return healthCheck
+}
+
 func (e *HealthCheckConfigurer) Configure(cluster *envoy_api.Cluster) error {
 	if e.HealthCheck == nil || e.HealthCheck.Spec.Conf == nil {
 		return nil
 	}
+
 	activeChecks := e.HealthCheck.Spec.Conf
-	healthCheck := envoy_core.HealthCheck{
-		HealthChecker: &envoy_core.HealthCheck_TcpHealthCheck_{
-			TcpHealthCheck: &envoy_core.HealthCheck_TcpHealthCheck{},
-		},
-		Interval:           activeChecks.Interval,
-		Timeout:            activeChecks.Timeout,
-		UnhealthyThreshold: &wrappers.UInt32Value{Value: activeChecks.UnhealthyThreshold},
-		HealthyThreshold:   &wrappers.UInt32Value{Value: activeChecks.HealthyThreshold},
+
+	healthPanicThreshold(cluster, activeChecks.GetHealthyPanicThreshold())
+	failTrafficOnPanic(cluster, activeChecks.GetFailTrafficOnPanic())
+
+	tcp := activeChecks.GetTcp()
+	http := activeChecks.GetHttp()
+
+	if tcp == nil && http == nil {
+		cluster.HealthChecks = append(cluster.HealthChecks, buildHealthCheck(activeChecks))
+
+		return nil
 	}
 
-	if tcp := activeChecks.GetTcp(); tcp != nil {
-		healthCheck.HealthChecker = tcpHealthCheck(tcp)
+	if tcp != nil {
+		defaultHealthCheck := buildHealthCheck(activeChecks)
+		healthChecker := tcpHealthCheck(tcp)
+		healthCheck := addHealthChecker(defaultHealthCheck, healthChecker)
+
+		cluster.HealthChecks = append(cluster.HealthChecks, healthCheck)
 	}
 
-	if http := activeChecks.GetHttp(); http != nil {
-		healthCheck.HealthChecker = httpHealthCheck(http)
+	if http != nil {
+		defaultHealthCheck := buildHealthCheck(activeChecks)
+		healthChecker := httpHealthCheck(e.Protocol, http)
+		healthCheck := addHealthChecker(defaultHealthCheck, healthChecker)
+
+		cluster.HealthChecks = append(cluster.HealthChecks, healthCheck)
 	}
 
-	cluster.HealthChecks = append(cluster.HealthChecks, &healthCheck)
 	return nil
 }

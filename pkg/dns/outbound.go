@@ -2,6 +2,9 @@ package dns
 
 import (
 	"sort"
+	"strconv"
+
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	"github.com/pkg/errors"
 
@@ -14,26 +17,29 @@ import (
 const VIPListenPort = uint32(80)
 
 func VIPOutbounds(
-	name string,
+	resourceKey model.ResourceKey,
 	dataplanes []*core_mesh.DataplaneResource,
 	vips vips.List,
 	externalServices []*core_mesh.ExternalServiceResource,
 ) []*mesh_proto.Dataplane_Networking_Outbound {
-	serviceVIPMap := map[string]string{}
+	type vipEntry struct {
+		ip   string
+		port uint32
+	}
+	serviceVIPMap := map[string]vipEntry{}
 	services := []string{}
 	for _, dataplane := range dataplanes {
-		if dataplane.Meta.GetName() == name {
-			continue
-		}
-
 		if dataplane.Spec.IsIngress() {
 			for _, service := range dataplane.Spec.Networking.Ingress.AvailableServices {
-				inService := service.Tags[mesh_proto.ServiceTag]
-				if _, found := serviceVIPMap[inService]; !found {
-					vip, err := ForwardLookup(vips, inService)
-					if err == nil {
-						serviceVIPMap[inService] = vip
-						services = append(services, inService)
+				if service.Mesh == resourceKey.Mesh {
+					// Only add outbounds for services in the same mesh
+					inService := service.Tags[mesh_proto.ServiceTag]
+					if _, found := serviceVIPMap[inService]; !found {
+						vip, err := ForwardLookup(vips, inService)
+						if err == nil {
+							serviceVIPMap[inService] = vipEntry{vip, VIPListenPort}
+							services = append(services, inService)
+						}
 					}
 				}
 			}
@@ -43,7 +49,7 @@ func VIPOutbounds(
 				if _, found := serviceVIPMap[inService]; !found {
 					vip, err := ForwardLookup(vips, inService)
 					if err == nil {
-						serviceVIPMap[inService] = vip
+						serviceVIPMap[inService] = vipEntry{vip, VIPListenPort}
 						services = append(services, inService)
 					}
 				}
@@ -56,7 +62,14 @@ func VIPOutbounds(
 		if _, found := serviceVIPMap[inService]; !found {
 			vip, err := ForwardLookup(vips, inService)
 			if err == nil {
-				serviceVIPMap[inService] = vip
+				port := externalService.Spec.GetPort()
+				var p32 uint32
+				if p64, err := strconv.ParseUint(port, 10, 32); err != nil {
+					p32 = VIPListenPort
+				} else {
+					p32 = uint32(p64)
+				}
+				serviceVIPMap[inService] = vipEntry{vip, p32}
 				services = append(services, inService)
 			}
 		}
@@ -65,14 +78,21 @@ func VIPOutbounds(
 	sort.Strings(services)
 	outbounds := []*mesh_proto.Dataplane_Networking_Outbound{}
 	for _, service := range services {
-		outbounds = append(outbounds,
-			&mesh_proto.Dataplane_Networking_Outbound{
-				Address: serviceVIPMap[service],
+		entry := serviceVIPMap[service]
+		outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+			Address: entry.ip,
+			Port:    entry.port,
+			Tags:    map[string]string{mesh_proto.ServiceTag: service},
+		})
+
+		// todo (lobkovilya): backwards compatibility, could be deleted in the next major release Kuma 1.2.x
+		if entry.port != VIPListenPort {
+			outbounds = append(outbounds, &mesh_proto.Dataplane_Networking_Outbound{
+				Address: entry.ip,
 				Port:    VIPListenPort,
-				Tags: map[string]string{
-					mesh_proto.ServiceTag: service,
-				},
+				Tags:    map[string]string{mesh_proto.ServiceTag: service},
 			})
+		}
 	}
 
 	return outbounds

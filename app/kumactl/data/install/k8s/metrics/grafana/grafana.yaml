@@ -149,15 +149,21 @@ data:
       editable: true
       options:
         path: /etc/grafana/provisioning/dashboards
-  kuma-dataplane.json: |
-{{ .DashboardDataplane | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
-  kuma-mesh.json: |
-{{ .DashboardMesh | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
-  kuma-service-to-service.json: |
-{{ .DashboardServiceToService | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
-  kuma-cp.json: |
-{{ .DashboardCP | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
+{{ $namespace := .Namespace }}
+{{ range $index, $dashboard := .Dashboards }}
 ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: provisioning-dashboards-{{ $index }}
+  namespace: {{ $namespace }}
+  labels:
+    app: grafana
+data:
+{{ $dashboard.FileName | indent 2 }}: |
+{{ $dashboard.Content | replace "${DS_PROMETHEUS}" "Prometheus" | indent 4 }}
+---
+{{ end }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -265,7 +271,7 @@ spec:
         runAsUser: 472
       containers:
         - name: grafana
-          image: "grafana/grafana:7.1.4"
+          image: "grafana/grafana:7.4.3"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -308,7 +314,13 @@ spec:
           configMap:
             name: provisioning-datasource
         - name: provisioning-dashboards
-          configMap:
-            name: provisioning-dashboards
+          projected:
+            sources:
+              - configMap:
+                  name: provisioning-dashboards
+{{ range $index, $dashboard := .Dashboards }}
+              - configMap:
+                  name: provisioning-dashboards-{{ $index }}
+{{ end }}
         - name: storage
           emptyDir: {}

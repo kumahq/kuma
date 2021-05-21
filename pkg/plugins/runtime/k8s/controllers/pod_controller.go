@@ -75,6 +75,11 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, nil
 	}
 
+	// skip a Pod if is complete/terminated (most probably a completed job)
+	if r.isPodComplete(pod) {
+		return kube_ctrl.Result{}, nil
+	}
+
 	// for Pods marked with ingress annotation special type of Dataplane will be injected
 	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaIngressAnnotation)
 	if err != nil {
@@ -282,10 +287,28 @@ func (r *PodReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 		Watches(&kube_source.Kind{Type: &kube_core.Service{}}, &kube_handler.EnqueueRequestsFromMapFunc{
 			ToRequests: &ServiceToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("service-to-pods-mapper")},
 		}).
+		// on ExternalService update reconcile affected Pods (all Pods in the same mesh)
+		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, &kube_handler.EnqueueRequestsFromMapFunc{
+			ToRequests: &ExternalServiceToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("external-service-to-pods-mapper")},
+		}).
 		Watches(&kube_source.Kind{Type: &kube_core.ConfigMap{}}, &kube_handler.EnqueueRequestsFromMapFunc{
 			ToRequests: &ConfigMapToPodsMapper{Client: mgr.GetClient(), Log: r.Log.WithName("configmap-to-pods-mapper"), SystemNamespace: r.SystemNamespace},
 		}).
 		Complete(r)
+}
+
+func (r *PodReconciler) isPodComplete(pod *kube_core.Pod) bool {
+	for _, cs := range pod.Status.ContainerStatuses {
+		// the sidecar amy or may not be terminated yet
+		if cs.Name == util_k8s.KumaSidecarContainerName {
+			continue
+		}
+		if cs.State.Terminated == nil {
+			// at least one container not terminated, therefore pod is still active
+			return false
+		}
+	}
+	return true
 }
 
 type ServiceToPodsMapper struct {
@@ -305,6 +328,42 @@ func (m *ServiceToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Re
 	for _, pod := range pods.Items {
 		req = append(req, kube_reconile.Request{
 			NamespacedName: kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name},
+		})
+	}
+	return req
+}
+
+type ExternalServiceToPodsMapper struct {
+	kube_client.Client
+	Log logr.Logger
+}
+
+func (m *ExternalServiceToPodsMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
+	cause, ok := obj.Object.(*mesh_k8s.ExternalService)
+	if !ok {
+		m.Log.WithValues("externalService", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
+		return nil
+	}
+
+	// List Dataplanes in the same Mesh as the original
+	dataplanes := &mesh_k8s.DataplaneList{}
+	if err := m.Client.List(context.Background(), dataplanes); err != nil {
+		m.Log.WithValues("dataplane", obj.Meta).Error(err, "failed to fetch Dataplanes")
+		return nil
+	}
+
+	var req []kube_reconile.Request
+	for _, dataplane := range dataplanes.Items {
+		// skip Dataplanes from other Meshes
+		if dataplane.Mesh != cause.Mesh {
+			continue
+		}
+		ownerRef := kube_meta.GetControllerOf(&dataplane)
+		if ownerRef == nil || ownerRef.Kind != "Pod" {
+			continue
+		}
+		req = append(req, kube_reconile.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: dataplane.Namespace, Name: ownerRef.Name},
 		})
 	}
 	return req

@@ -61,43 +61,42 @@ var _ = Describe("KDS Server", func() {
 	It("should support all existing resource types", func() {
 		ctx := context.Background()
 
-		// Just to don't forget to update this test after updating 'kds.SupportedTypes
+		// Do not forget to update this test after updating 'kds.SupportedTypes
 		Expect([]proto.Message{
-			kds_samples.Mesh1,
-			kds_samples.Ingress,
+			kds_samples.CircuitBreaker,
+			kds_samples.Ingress, // mesh.DataplaneType
 			kds_samples.DataplaneInsight,
 			kds_samples.ExternalService,
-			kds_samples.CircuitBreaker,
 			kds_samples.FaultInjection,
 			kds_samples.HealthCheck,
+			kds_samples.Mesh1,
+			kds_samples.ProxyTemplate,
+			kds_samples.Retry,
+			kds_samples.Timeout,
 			kds_samples.TrafficLog,
 			kds_samples.TrafficPermission,
 			kds_samples.TrafficRoute,
 			kds_samples.TrafficTrace,
-			kds_samples.ProxyTemplate,
-			kds_samples.Retry,
 			kds_samples.Secret,
-			kds_samples.Config}).
+			kds_samples.Config,
+		}).
 			To(HaveLen(len(kds.SupportedTypes)))
 
 		vrf := kds_verifier.New().
-			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: kds_samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))).
+			Exec(kds_verifier.Create(ctx, &mesh.CircuitBreakerResource{Spec: kds_samples.CircuitBreaker}, store.CreateByKey("cb-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.DataplaneResource{Spec: kds_samples.Ingress}, store.CreateByKey("Ingress-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.DataplaneInsightResource{Spec: kds_samples.DataplaneInsight}, store.CreateByKey("insight-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.ExternalServiceResource{Spec: kds_samples.ExternalService}, store.CreateByKey("es-1", "mesh-1"))).
-			Exec(kds_verifier.Create(ctx, &mesh.CircuitBreakerResource{Spec: kds_samples.CircuitBreaker}, store.CreateByKey("cb-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.FaultInjectionResource{Spec: kds_samples.FaultInjection}, store.CreateByKey("fi-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.HealthCheckResource{Spec: kds_samples.HealthCheck}, store.CreateByKey("hc-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: kds_samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))).
+			Exec(kds_verifier.Create(ctx, &mesh.ProxyTemplateResource{Spec: kds_samples.ProxyTemplate}, store.CreateByKey("pt-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.RetryResource{Spec: kds_samples.Retry}, store.CreateByKey("retry-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.TimeoutResource{Spec: kds_samples.Timeout}, store.CreateByKey("timeout-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.TrafficLogResource{Spec: kds_samples.TrafficLog}, store.CreateByKey("tl-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.TrafficPermissionResource{Spec: kds_samples.TrafficPermission}, store.CreateByKey("tp-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.TrafficRouteResource{Spec: kds_samples.TrafficRoute}, store.CreateByKey("tr-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.TrafficTraceResource{Spec: kds_samples.TrafficTrace}, store.CreateByKey("tt-1", "mesh-1"))).
-			Exec(kds_verifier.Create(ctx, &mesh.ProxyTemplateResource{Spec: kds_samples.ProxyTemplate}, store.CreateByKey("pt-1", "mesh-1"))).
-			Exec(kds_verifier.Create(
-				ctx,
-				&mesh.RetryResource{Spec: kds_samples.Retry},
-				store.CreateByKey("r-1", "mesh-1"),
-			)).
 			Exec(kds_verifier.Create(ctx, &system.SecretResource{Spec: kds_samples.Secret}, store.CreateByKey("s-1", "mesh-1"))).
 			Exec(kds_verifier.DiscoveryRequest(node, mesh.MeshType)).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
@@ -163,6 +162,16 @@ var _ = Describe("KDS Server", func() {
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
 				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.Secret))
+			})).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.RetryType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
+				Expect(rs).To(HaveLen(1))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.Retry))
+			})).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.TimeoutType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
+				Expect(rs).To(HaveLen(1))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.Timeout))
 			})).
 			Exec(kds_verifier.CloseStream())
 

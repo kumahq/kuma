@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/pkg/errors"
 )
@@ -44,11 +45,19 @@ const (
 	// KumaVirtualProbesPortAnnotation is an insecure port for listening virtual probes
 	KumaVirtualProbesPortAnnotation = "kuma.io/virtual-probes-port"
 
+	// KumaSidecarEnvVarsAnnotation is a ; separated list of env vars that will be applied on Kuma Sidecar
+	// Example value: TEST1=1;TEST2=2
+	KumaSidecarEnvVarsAnnotation = "kuma.io/sidecar-env-vars"
+
 	// KumaMetricsPrometheusPort allows to override `Mesh`-wide default port
 	KumaMetricsPrometheusPort = "prometheus.metrics.kuma.io/port"
 
 	// KumaMetricsPrometheusPath to override `Mesh`-wide default path
 	KumaMetricsPrometheusPath = "prometheus.metrics.kuma.io/path"
+
+	// KumaBuiltinDNS the sidecar will use its builtin DNS
+	KumaBuiltinDNS     = "kuma.io/builtindns"
+	KumaBuiltinDNSPort = "kuma.io/builtindnsport"
 
 	KumaTrafficExcludeInboundPorts  = "traffic.kuma.io/exclude-inbound-ports"
 	KumaTrafficExcludeOutboundPorts = "traffic.kuma.io/exclude-outbound-ports"
@@ -56,17 +65,25 @@ const (
 
 // Annotations that are being automatically set by the Kuma Sidecar Injector.
 const (
-	KumaSidecarInjectedAnnotation                 = "kuma.io/sidecar-injected"
-	KumaTransparentProxyingAnnotation             = "kuma.io/transparent-proxying"
-	KumaTransparentProxyingInboundPortAnnotation  = "kuma.io/transparent-proxying-inbound-port"
-	KumaTransparentProxyingOutboundPortAnnotation = "kuma.io/transparent-proxying-outbound-port"
-	CNCFNetworkAnnotation                         = "k8s.v1.cni.cncf.io/networks"
-	KumaCNI                                       = "kuma-cni"
+	KumaSidecarInjectedAnnotation                  = "kuma.io/sidecar-injected"
+	KumaTransparentProxyingAnnotation              = "kuma.io/transparent-proxying"
+	KumaTransparentProxyingInboundPortAnnotation   = "kuma.io/transparent-proxying-inbound-port"
+	KumaTransparentProxyingInboundPortAnnotationV6 = "kuma.io/transparent-proxying-inbound-v6-port"
+	KumaTransparentProxyingOutboundPortAnnotation  = "kuma.io/transparent-proxying-outbound-port"
+	CNCFNetworkAnnotation                          = "k8s.v1.cni.cncf.io/networks"
+	KumaCNI                                        = "kuma-cni"
+)
+
+// Annotations related to the gateway
+const (
+	IngressServiceUpstream = "ingress.kubernetes.io/service-upstream"
 )
 
 const (
 	AnnotationEnabled  = "enabled"
 	AnnotationDisabled = "disabled"
+	AnnotationTrue     = "true"
+	AnnotationFalse    = "false"
 )
 
 type Annotations map[string]string
@@ -77,9 +94,9 @@ func (a Annotations) GetEnabled(key string) (bool, bool, error) {
 		return false, false, nil
 	}
 	switch value {
-	case AnnotationEnabled:
+	case AnnotationEnabled, AnnotationTrue:
 		return true, true, nil
-	case AnnotationDisabled:
+	case AnnotationDisabled, AnnotationFalse:
 		return false, true, nil
 	default:
 		return false, true, errors.Errorf("annotation \"%s\" has wrong value \"%s\", available values are: \"enabled\", \"disabled\"", key, value)
@@ -116,4 +133,23 @@ func (a Annotations) GetBool(key string) (bool, bool, error) {
 		return false, false, err
 	}
 	return b, true, nil
+}
+
+// GetMap returns map from annotation. Example: "kuma.io/sidecar-env-vars: TEST1=1;TEST2=2"
+func (a Annotations) GetMap(key string) (map[string]string, error) {
+	value, ok := a[key]
+	if !ok {
+		return nil, nil
+	}
+	result := map[string]string{}
+
+	pairs := strings.Split(value, ";")
+	for _, pair := range pairs {
+		kvSplit := strings.Split(pair, "=")
+		if len(kvSplit) != 2 {
+			return nil, errors.Errorf("invalid format. Map in %q has to be provided in the following format: key1=value1;key2=value2", key)
+		}
+		result[kvSplit[0]] = kvSplit[1]
+	}
+	return result, nil
 }

@@ -20,21 +20,22 @@ import (
 var _ = Describe("ServerMtlsConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		clusters        []envoy_common.ClusterSubset
-		ctx             xds_context.Context
-		metadata        core_xds.DataplaneMetadata
-		expected        string
+		listenerName     string
+		listenerProtocol core_xds.SocketAddressProtocol
+		listenerAddress  string
+		listenerPort     uint32
+		statsName        string
+		clusters         []envoy_common.ClusterSubset
+		ctx              xds_context.Context
+		metadata         core_xds.DataplaneMetadata
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV2).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(ServerSideMTLS(given.ctx, &given.metadata)).
 					Configure(TcpProxy(given.statsName, given.clusters...)))).
@@ -107,26 +108,20 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                           apiConfigSource:
                             apiType: GRPC
                             grpcServices:
-                            - googleGrpc:
-                                channelCredentials:
-                                  sslCredentials:
-                                    rootCerts:
-                                      inlineBytes: Q0VSVElGSUNBVEU=
-                                statPrefix: sds_mesh_ca
-                                targetUri: kuma-control-plane:5677
+                            - envoyGrpc:
+                                clusterName: ads_cluster
+                            transportApiVersion: V2
+                          resourceApiVersion: V2
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
                         apiConfigSource:
                           apiType: GRPC
                           grpcServices:
-                          - googleGrpc:
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              statPrefix: sds_identity_cert
-                              targetUri: kuma-control-plane:5677
+                          - envoyGrpc:
+                              clusterName: ads_cluster
+                          transportApiVersion: V2
+                        resourceApiVersion: V2
                   requireClientCertificate: true
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
@@ -209,6 +204,8 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                                 credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                                 statPrefix: sds_mesh_ca
                                 targetUri: kuma-control-plane:5677
+                            transportApiVersion: V2
+                          resourceApiVersion: V2
                     tlsCertificateSdsSecretConfigs:
                     - name: identity_cert
                       sdsConfig:
@@ -230,6 +227,8 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                               credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
                               statPrefix: sds_identity_cert
                               targetUri: kuma-control-plane:5677
+                          transportApiVersion: V2
+                        resourceApiVersion: V2
                   requireClientCertificate: true
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND

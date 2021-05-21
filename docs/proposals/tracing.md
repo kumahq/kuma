@@ -63,6 +63,7 @@ tracing:
         url: http://zipkin.local/api/v2/spans
         traceId128bit: false # Generate 128bit traces. Default: false
         apiVersion: httpJson # Pick a version of the API. values: httpJson, httpProto. Default: httpJson
+        sharedSpanCotext: true # whether client and server spans share the same span context. Default: true
 ```
 
 Note: Zipkin can be also supported via OpenCensus. Jaeger is also [compatible](https://www.jaegertracing.io/docs/1.13/features/#backwards-compatibility-with-zipkin) with Zipkin format.
@@ -156,6 +157,6 @@ This enables user to segment the destinations of traces.
 
 ## Summary
 
-We decided to start with Zipkin backend, and add more backends gradualy.
+We decided to start with Zipkin backend, and add more backends gradually.
 First implementation will require users to restart Envoy to reload configuration, but we want to make contribution
 to Envoy and improve it to have dynamic configuration like the rest of the configurations in Kuma.

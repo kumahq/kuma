@@ -1,19 +1,23 @@
 [![][kuma-logo]][kuma-url]
 
-[![CircleCI](https://circleci.com/gh/kumahq/kuma/tree/release-1.0.svg?style=svg&circle-token=e3f6c5429ee47ca0eb4bd2542e4b8801a7856373)](https://circleci.com/gh/kumahq/kuma/tree/release-1.0)
+[![CircleCI](https://circleci.com/gh/kumahq/kuma/tree/release-1.1.svg?style=svg&circle-token=e3f6c5429ee47ca0eb4bd2542e4b8801a7856373)](https://circleci.com/gh/kumahq/kuma/tree/release-1.1)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kumahq/kuma)](https://goreportcard.com/report/github.com/kumahq/kuma)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/kumahq/kuma/blob/master/LICENSE)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/kuma)](https://artifacthub.io/packages/search?repo=kuma)
 [![Slack](https://chat.kuma.io/badge.svg)](https://chat.kuma.io/)
 [![Twitter](https://img.shields.io/twitter/follow/KumaMesh.svg?style=social&label=Follow)](https://twitter.com/intent/follow?screen_name=KumaMesh)
 
-Kuma is a modern enterprise-ready control plane for service mesh and microservices, on every cloud, in a single or multi-zone capacity, across both Kubernetes and VMs. Thanks to this universality, combined with native support for Envoy as its data plane proxy technology (but with no Envoy expertise required), Kuma provides modern L4-L7 service connectivity, discovery, security, observability, routing and more across any service on any platform, databases included.
+Kuma is a modern Envoy-based service mesh that can run on every cloud, in a single or multi-zone capacity, across both Kubernetes and VMs. Thanks to its broad universal workload support, combined with native support for Envoy as its data plane proxy technology (but with no Envoy expertise required), Kuma provides modern L4-L7 service connectivity, discovery, security, observability, routing and more across any service on any platform, databases included.
 
-Originally created by Kong, Kuma is today CNCF (Cloud Native Computing Foundation) Sandbox project and therefore available with the same openness and neutrality as every other CNCF project. Kuma has been engineered to be both powerful yet simple to use, reducing the complexity of running a service mesh across every organization with very unique capabilities like multi-zone support, multi-mesh support, and a gradual and intuitive learning curve.
+Easy to use, with built-in service mesh policies for security, traffic control, discovery, observability and more, Kuma ships with an advanced multi-zone and multi-mesh support that automatically enables cross-zone communication across different clusters and clouds, and automatically propagates service mesh policies across the infrastructure. Kuma is currently being adopted by enterprise organization around the world to support distributed service meshes across the application teams, on both Kubernetes and VMs. 
 
-Kuma runs today across mission-critical production environments across a large variety of industries, including telecommunications, financial services, e-commerce, travel and technology organizations. Users that require enterprise-level support for Kuma can explore the [enterprise offerings](https://kuma.io/enterprise/) available.
+Originally created and donated by Kong, Kuma is today CNCF (Cloud Native Computing Foundation) Sandbox project and therefore available with the same openness and neutrality as every other CNCF project. Kuma has been engineered to be both powerful yet simple to use, reducing the complexity of running a service mesh across every organization with very unique capabilities like multi-zone support, multi-mesh support, and a gradual and intuitive learning curve.
+
+Users that require enterprise-level support for Kuma can explore the [enterprise offerings](https://kuma.io/enterprise/) available.
 
 Built by Envoy contributors at Kong 🦍.
+
+[![][kuma-gui]][kuma-url]
 
 **Need help?** In your journey with Kuma you can get in touch with the broader community via the official [Slack chat](https://kuma.io/community).
 
@@ -33,15 +37,40 @@ Built by Envoy contributors at Kong 🦍.
 
 ## Why Kuma?
 
-Built with enterprise use-cases in mind, Kuma is a universal service mesh that supports both Kubernetes and VMs deployments across single and multi-zone setups, with turnkey mesh policies to get up and running easily while supporting multi-tenancy and multi-mesh on the same control plane. Kuma is a CNCF Sandbox project.
+Built with enterprise use-cases in mind, Kuma is a universal service mesh that supports both Kubernetes and VMs deployments across single and multi-zone setups, with turnkey service mesh policies to get up and running easily while supporting multi-tenancy and multi-mesh on the same control plane. Kuma is a CNCF Sandbox project.
 
-Modern applications will inevitably make requests over a network to communicate to other services, like databases, caches or microservices. But - as we all know - the network is by default unreliable and unsecure, and can introduce significant challenges to any modern environment like security, tracing and routing among the others.
+Unlike other service mesh solutions, Kuma innovates the service mesh ecosystem by providing ease of use, native support for both Kubernetes and VMs on both the control plane and the data plane, multi-mesh support that can cross every boundary including Kubernetes namespaces, out of the box multi-zone and multi-cluster support with automatic policy synchronization and connectivity, zero-trust, observability and compliance in one-click, support for custom workload attributes that can be leveraged to accelerate PCI and GDPR compliance, and much more.
 
-Kuma is a better way to build L4/L7 connectivity among your services and applications (Service Mesh) by reducing the code that application teams have to write, enabling to ship products faster and improve the reliability and security of the overall architecture with minimal effort. 
+Below an example of using Kuma's attributes to route all traffic generated by any PCI-compliant service in Switzerland, to only be routed within the Swiss region:
 
-Kuma embraces the sidecar proxy model by bundling Envoy as its sidecar data-plane technology and by providing a platform-agnostic Control Plane that can run on both modern Kubernetes and existing VM/Bare Metal architectures in order to deliver business value across every team in the organization with one comprehensive solution.
+```yaml
+apiVersion: kuma.io/v1alpha1
+kind: TrafficRoute
+mesh: default
+metadata:
+  name: ch-pci-compliance
+spec:
+  sources:
+    - match:
+        kuma.io/service: '*'
+        kuma.io/zone: 'CH'
+        PCI: true
+  destinations:
+    - match:
+        kuma.io/service: '*'
+  conf:
+    loadBalancer:
+      roundRobin: {}
+    split:
+      - weight: 100
+        destination:
+          kuma.io/service: '*'
+          kuma.io/zone: 'CH'
+```
 
-Kuma has been built with universality and scalability in mind. Kubernetes and VMs are both first class citizens, it supports multiple isolated meshes on one control plane and offers global/remote CPs deployments for both single and multi zone setups across different platforms, clouds and data-centers in order to tackle the most complex deployments. With built-in connectivity thanks to the automatic ingress mode and built-in discovery, Kuma abstracts away connectivity across the entire mesh.
+The above example can also be applied on virtual machines via the built-in `kumactl` CLI.
+
+With Kuma, our application teams can stop building connectivity management code in every service and every application, and they can rely on modern service mesh infrastructure instead to improve their efficiency and the overall agility of the organization:
 
 [![][kuma-benefits]][kuma-url]
 
@@ -72,10 +101,6 @@ Kuma has been built with universality and scalability in mind. Kubernetes and VM
 * **Platform-Agnostic**: Support for Kubernetes, VMs, and bare metal. Including hybrid deployments.
 * **Transparent Proxying**: Out of the box transparent proxying on Kubernetes, VMs and any other platform.
 * **Network Overlay**: Create a configurable Mesh overlay across different Kubernetes clusters and namespaces.
-
-Below you can find a snapshot of the GUI that ships with Kuma:
-
-[![][kuma-gui]][kuma-url]
 
 ## Distributions
 
@@ -115,5 +140,5 @@ limitations under the License.
 
 [kuma-url]: https://kuma.io/
 [kuma-logo]: https://kuma-public-assets.s3.amazonaws.com/kuma-logo-v2.png
-[kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui-v2.png
+[kuma-gui]: https://kuma-public-assets.s3.amazonaws.com/kuma-gui-v3.jpg
 [kuma-benefits]: https://kuma-public-assets.s3.amazonaws.com/kuma-benefits-v2.png

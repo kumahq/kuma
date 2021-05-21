@@ -10,5 +10,6 @@ include mk/generate.mk
 include mk/docker.mk
 include mk/run.mk
 include mk/kind.mk
+include mk/k3d.mk
 include mk/e2e.mk
 include mk/e2e.new.mk

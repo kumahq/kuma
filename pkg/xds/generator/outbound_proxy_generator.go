@@ -2,7 +2,6 @@ package generator
 
 import (
 	"context"
-	"strings"
 
 	"github.com/pkg/errors"
 
@@ -82,12 +81,16 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 	serviceName := outbound.GetTagsIncludingLegacy()[kuma_mesh.ServiceTag]
 	outboundListenerName := envoy_names.GetOutboundListenerName(oface.DataplaneIP, oface.DataplanePort)
 	retryPolicy := proxy.Policies.Retries[serviceName]
+	var timeoutPolicyConf *kuma_mesh.Timeout_Conf
+	if timeoutPolicy := proxy.Policies.Timeouts[oface]; timeoutPolicy != nil {
+		timeoutPolicyConf = timeoutPolicy.Spec.GetConf()
+	}
 	filterChainBuilder := func() *envoy_listeners.FilterChainBuilder {
 		filterChainBuilder := envoy_listeners.NewFilterChainBuilder(proxy.APIVersion)
 		switch protocol {
 		case mesh_core.ProtocolGRPC:
 			filterChainBuilder.
-				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
+				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
 				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
 				Configure(envoy_listeners.HttpAccessLog(meshName, envoy_common.TrafficDirectionOutbound, sourceService, serviceName, proxy.Policies.Logs[serviceName], proxy)).
 				Configure(envoy_listeners.HttpOutboundRoute(serviceName, subsets, proxy.Dataplane.Spec.TagSet())).
@@ -95,7 +98,7 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 				Configure(envoy_listeners.GrpcStats())
 		case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 			filterChainBuilder.
-				Configure(envoy_listeners.HttpConnectionManager(serviceName)).
+				Configure(envoy_listeners.HttpConnectionManager(serviceName, false)).
 				Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
 				Configure(envoy_listeners.HttpAccessLog(
 					meshName,
@@ -137,10 +140,13 @@ func (_ OutboundProxyGenerator) generateLDS(proxy *model.Proxy, subsets []envoy_
 				)).
 				Configure(envoy_listeners.MaxConnectAttempts(retryPolicy))
 		}
+
+		filterChainBuilder.
+			Configure(envoy_listeners.Timeout(timeoutPolicyConf, protocol))
 		return filterChainBuilder
 	}()
 	listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort)).
+		Configure(envoy_listeners.OutboundListener(outboundListenerName, oface.DataplaneIP, oface.DataplanePort, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(filterChainBuilder)).
 		Configure(envoy_listeners.TransparentProxying(proxy.Dataplane.Spec.Networking.GetTransparentProxying())).
 		Build()
@@ -158,23 +164,27 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 		lb := clusters.Lb(clusterName)
 		healthCheck := proxy.Policies.HealthChecks[serviceName]
 		circuitBreaker := proxy.Policies.CircuitBreakers[serviceName]
+		protocol := o.inferProtocol(proxy, clusters.Get(clusterName).Subsets())
+
 		edsClusterBuilder := envoy_clusters.NewClusterBuilder(proxy.APIVersion).
-			Configure(envoy_clusters.LbSubset(o.lbSubsets(tags))).
+			Configure(envoy_clusters.Timeout(protocol, clusters.Get(clusterName).Timeout())).
+			Configure(envoy_clusters.LbSubset(envoy_common.TagKeySlice(tags).Transform(envoy_common.Without(kuma_mesh.ServiceTag)))).
+			Configure(envoy_clusters.CircuitBreaker(circuitBreaker)).
 			Configure(envoy_clusters.OutlierDetection(circuitBreaker)).
-			Configure(envoy_clusters.HealthCheck(healthCheck))
+			Configure(envoy_clusters.HealthCheck(protocol, healthCheck))
 
 		if clusters.Get(clusterName).HasExternalService() {
-			edsClusterBuilder = edsClusterBuilder.
-				Configure(envoy_clusters.StrictDNSCluster(clusterName, proxy.Routing.OutboundTargets[serviceName])).
+			edsClusterBuilder.
+				Configure(envoy_clusters.StrictDNSCluster(clusterName, proxy.Routing.OutboundTargets[serviceName],
+					proxy.Dataplane.IsIPv6())).
 				Configure(envoy_clusters.ClientSideTLS(proxy.Routing.OutboundTargets[serviceName]))
-			protocol := o.inferProtocol(proxy, clusters.Get(clusterName).Subsets())
 			switch protocol {
 			case mesh_core.ProtocolHTTP2, mesh_core.ProtocolGRPC:
-				edsClusterBuilder = edsClusterBuilder.Configure(envoy_clusters.Http2())
+				edsClusterBuilder.Configure(envoy_clusters.Http2())
 			default:
 			}
 		} else {
-			edsClusterBuilder = edsClusterBuilder.
+			edsClusterBuilder.
 				Configure(envoy_clusters.EdsCluster(clusterName)).
 				Configure(envoy_clusters.LB(lb)).
 				Configure(envoy_clusters.ClientSideMTLS(ctx, proxy.Metadata, serviceName, tags)).
@@ -190,21 +200,8 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 			Resource: edsCluster,
 		})
 	}
-	return resources, nil
-}
 
-func (_ OutboundProxyGenerator) lbSubsets(tagSets []envoy_common.Tags) [][]string {
-	var result [][]string
-	uniqueKeys := map[string]bool{}
-	for _, tags := range tagSets {
-		keys := tags.WithoutTag(kuma_mesh.ServiceTag).Keys()
-		joined := strings.Join(keys, ",")
-		if !uniqueKeys[joined] {
-			uniqueKeys[joined] = true
-			result = append(result, keys)
-		}
-	}
-	return result
+	return resources, nil
 }
 
 func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, clusters envoy_common.Clusters, apiVersion envoy_common.APIVersion) (*model.ResourceSet, error) {
@@ -247,6 +244,11 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 		return nil, nil
 	}
 
+	var timeoutConf *kuma_mesh.Timeout_Conf
+	if timeout := proxy.Policies.Timeouts[oface]; timeout != nil {
+		timeoutConf = timeout.Spec.GetConf()
+	}
+
 	for j, destination := range route.Spec.GetConf().GetSplit() {
 		service, ok := destination.Destination[kuma_mesh.ServiceTag]
 		if !ok { // should not happen since we validate traffic route
@@ -261,6 +263,7 @@ func (_ OutboundProxyGenerator) determineSubsets(proxy *model.Proxy, outbound *k
 			ClusterName: service,
 			Weight:      destination.Weight,
 			Tags:        destination.Destination,
+			Timeout:     timeoutConf,
 		}
 
 		// We assume that all the targets are either ExternalServices or not

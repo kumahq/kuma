@@ -2,8 +2,10 @@ package v1alpha1
 
 import (
 	"fmt"
+	"net"
 	"reflect"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -31,6 +33,9 @@ const (
 	RegularDpType DpType = "regular"
 	IngressDpType DpType = "ingress"
 	GatewayDpType DpType = "gateway"
+
+	// Used for Service-less dataplanes
+	TCPPortReserved = 49151 // IANA Reserved
 )
 
 type DpType string
@@ -56,13 +61,18 @@ func (i InboundInterface) String() string {
 	return fmt.Sprintf("%s:%d:%d", i.DataplaneIP, i.DataplanePort, i.WorkloadPort)
 }
 
+func (i *InboundInterface) IsServiceLess() bool {
+	return i.DataplanePort == TCPPortReserved
+}
+
 type OutboundInterface struct {
 	DataplaneIP   string
 	DataplanePort uint32
 }
 
 func (i OutboundInterface) String() string {
-	return fmt.Sprintf("%s:%d", i.DataplaneIP, i.DataplanePort)
+	return net.JoinHostPort(i.DataplaneIP,
+		strconv.FormatUint(uint64(i.DataplanePort), 10))
 }
 
 func (n *Dataplane_Networking) GetOutboundInterfaces() ([]OutboundInterface, error) {
@@ -130,6 +140,16 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		iface.WorkloadPort = inbound.Port
 	}
 	return iface
+}
+
+func (n *Dataplane_Networking) GetHealthyInbounds() (inbounds []*Dataplane_Networking_Inbound) {
+	for _, inbound := range n.GetInbound() {
+		if inbound.Health != nil && !inbound.Health.Ready {
+			continue
+		}
+		inbounds = append(inbounds, inbound)
+	}
+	return
 }
 
 // Matches is simply an alias for MatchTags to make source code more aesthetic.
@@ -306,6 +326,22 @@ func (t MultiValueTagSet) Values(key string) []string {
 	return result
 }
 
+func (t MultiValueTagSet) UniqueValues(key string) []string {
+	if t == nil {
+		return nil
+	}
+	alreadyFound := map[string]bool{}
+	var result []string
+	for value := range t[key] {
+		if !alreadyFound[value] {
+			result = append(result, value)
+			alreadyFound[value] = true
+		}
+	}
+	sort.Strings(result)
+	return result
+}
+
 func MultiValueTagSetFrom(data map[string][]string) MultiValueTagSet {
 	set := MultiValueTagSet{}
 	for tagName, values := range data {
@@ -351,6 +387,9 @@ func (d *Dataplane) GetIdentifyingService() string {
 }
 
 func (d *Dataplane) IsIngress() bool {
+	if d.GetNetworking() == nil {
+		return false
+	}
 	return d.Networking.Ingress != nil
 }
 

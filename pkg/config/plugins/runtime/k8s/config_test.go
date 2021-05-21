@@ -1,11 +1,11 @@
 package k8s_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 	"time"
 
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,6 +25,8 @@ var _ = Describe("Config", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
+		Expect(cfg.ControlPlaneServiceName).To(Equal("custom-control-plane"))
+
 		Expect(cfg.AdmissionServer.Address).To(Equal("127.0.0.2"))
 		Expect(cfg.AdmissionServer.Port).To(Equal(uint32(8442)))
 		Expect(cfg.AdmissionServer.CertDir).To(Equal("/var/secret/kuma-cp"))
@@ -32,16 +34,17 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.SidecarContainer.Image).To(Equal("kuma-sidecar:latest"))
 		Expect(cfg.Injector.SidecarContainer.RedirectPortOutbound).To(Equal(uint32(1234)))
 		Expect(cfg.Injector.SidecarContainer.RedirectPortInbound).To(Equal(uint32(1236)))
+		Expect(cfg.Injector.SidecarContainer.RedirectPortInboundV6).To(Equal(uint32(1237)))
 		Expect(cfg.Injector.SidecarContainer.UID).To(Equal(int64(2345)))
 		Expect(cfg.Injector.SidecarContainer.GID).To(Equal(int64(3456)))
 		Expect(cfg.Injector.SidecarContainer.AdminPort).To(Equal(uint32(45678)))
 		Expect(cfg.Injector.SidecarContainer.DrainTime).To(Equal(15 * time.Second))
 		// and
 		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(11)))
-		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32((13))))
-		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.PeriodSeconds).To(Equal(int32((15))))
-		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.SuccessThreshold).To(Equal(int32((11))))
-		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32((112))))
+		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32(13)))
+		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.PeriodSeconds).To(Equal(int32(15)))
+		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.SuccessThreshold).To(Equal(int32(11)))
+		Expect(cfg.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32(112)))
 		// and
 		Expect(cfg.Injector.SidecarContainer.LivenessProbe.InitialDelaySeconds).To(Equal(int32(260)))
 		Expect(cfg.Injector.SidecarContainer.LivenessProbe.TimeoutSeconds).To(Equal(int32(23)))
@@ -56,6 +59,9 @@ var _ = Describe("Config", func() {
 		Expect(cfg.Injector.InitContainer.Image).To(Equal("kuma-init:latest"))
 		Expect(cfg.Injector.CNIEnabled).To(Equal(true))
 		// and
+		Expect(cfg.Injector.BuiltinDNS.Enabled).To(Equal(true))
+		Expect(cfg.Injector.BuiltinDNS.Port).To(Equal(uint32(1253)))
+		// and
 		Expect(cfg.MarshalingCacheExpirationTime).To(Equal(1 * time.Second))
 	})
 
@@ -65,15 +71,10 @@ var _ = Describe("Config", func() {
 
 		// when
 		actual, err := config.ToYAML(cfg)
-		// then
-		Expect(err).ToNot(HaveOccurred())
 
-		// when
-		expected, err := ioutil.ReadFile(filepath.Join("testdata", "default-config.golden.yaml"))
 		// then
 		Expect(err).ToNot(HaveOccurred())
-		// and
-		Expect(actual).To(MatchYAML(expected))
+		Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "default-config.golden.yaml")))
 	})
 
 	It("should have validators", func() {

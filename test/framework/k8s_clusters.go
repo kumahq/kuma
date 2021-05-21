@@ -3,6 +3,7 @@ package framework
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -35,6 +36,8 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 			forwardedPortsChans: map[uint32]chan struct{}{},
 			verbose:             verbose,
 			deployments:         map[string]Deployment{},
+			defaultTimeout:      GetDefaultTimeout(),
+			defaultRetries:      GetDefaultRetries(),
 		}
 
 		var err error
@@ -49,6 +52,22 @@ func NewK8sClusters(clusterNames []string, verbose bool) (Clusters, error) {
 		clusters: clusters,
 		verbose:  verbose,
 	}, nil
+}
+
+func (cs *K8sClusters) WithTimeout(timeout time.Duration) Cluster {
+	for _, c := range cs.clusters {
+		c.WithTimeout(timeout)
+	}
+
+	return cs
+}
+
+func (cs *K8sClusters) WithRetries(retries int) Cluster {
+	for _, c := range cs.clusters {
+		c.WithRetries(retries)
+	}
+
+	return cs
 }
 
 func (cs *K8sClusters) Name() string {
@@ -86,6 +105,16 @@ func (cs *K8sClusters) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	for name, c := range cs.clusters {
 		if err := c.DeployKuma(mode, fs...); err != nil {
 			return errors.Wrapf(err, "Deploy Kuma on %s failed: %v", name, err)
+		}
+	}
+
+	return nil
+}
+
+func (cs *K8sClusters) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
+	for name, c := range cs.clusters {
+		if err := c.UpgradeKuma(mode, fs...); err != nil {
+			return errors.Wrapf(err, "Upgrade Kuma on %s failed: %v", name, err)
 		}
 	}
 
@@ -184,10 +213,6 @@ func (cs *K8sClusters) InjectDNS(namespace ...string) error {
 
 func (cs *K8sClusters) GetTesting() testing.TestingT {
 	return cs.t
-}
-func IsK8sClustersStarted() bool {
-	_, found := os.LookupEnv(envK8SCLUSTERS)
-	return found
 }
 
 func (cs *K8sClusters) Deployment(name string) Deployment {

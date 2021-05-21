@@ -64,6 +64,25 @@ var _ = Describe("Dataplane", func() {
                   tags:
                     kuma.io/service: redis`,
 		),
+		Entry("dataplane with full inbounds and outbounds ipv6", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 0:0:0:0:0:FFFF:C0A8:0001
+              inbound:
+                - port: 8080
+                  servicePort: 7777
+                  address: ::1
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  address: ::1
+                  tags:
+                    kuma.io/service: redis`,
+		),
 		Entry("dataplane with legacy outbounds", `
             type: Dataplane
             name: dp-1
@@ -120,6 +139,27 @@ var _ = Describe("Dataplane", func() {
                 address: 192.168.0.1
                 ingress:
                   publicAddress: 10.0.0.1
+                  publicPort: 1234
+                  availableServices:
+                    - tags:
+                        kuma.io/service: backend
+                        version: "1"
+                        region: us
+                    - tags:
+                        kuma.io/service: web
+                        version: v2
+                        region: eu
+                inbound:
+                  - port: 10001`,
+		),
+		Entry("dataplane in ingress mode with public ipv6 address and port", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+                address: 192.168.0.1
+                ingress:
+                  publicAddress: ::ffff:0a00:0001
                   publicPort: 1234
                   availableServices:
                     - tags:
@@ -197,6 +237,26 @@ var _ = Describe("Dataplane", func() {
                - inboundPort: 8088
                  inboundPath: /healthz
                  path: /8080/healthz`,
+		),
+		Entry("dataplane with service probes", `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  serviceProbe:
+                    interval: 1s
+                    unhealthyThreshold: 5
+                    tcp: {}
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  tags:
+                    kuma.io/service: redis`,
 		),
 	)
 
@@ -713,7 +773,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   ingress:
                     availableServices:
-                      - tags: 
+                      - tags:
                           kuma.io/service: backend
                           version: "1"
                           region: us
@@ -735,7 +795,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   ingress:
                     availableServices:
-                      - tags: 
+                      - tags:
                           kuma.io/service: backend
                           version: "1"
                           region: us
@@ -767,7 +827,7 @@ var _ = Describe("Dataplane", func() {
                     publicAddress: "!@#$"
                     publicPort: 100000
                     availableServices:
-                      - tags: 
+                      - tags:
                           kuma.io/service: backend
                           version: "1"
                           region: us
@@ -877,7 +937,7 @@ var _ = Describe("Dataplane", func() {
                   address: 192.168.0.1
                   ingress:
                     availableServices:
-                      - tags: 
+                      - tags:
                           kuma.io/service: backend
                           version: "1"
                           region: us
@@ -900,7 +960,7 @@ var _ = Describe("Dataplane", func() {
                 - field: tags["kuma.io/protocol"]
                   message: other values than TCP are not allowed`,
 		}),
-		Entry("", testCase{
+		Entry("dataplane with virtual probe", testCase{
 			dataplane: `
             type: Dataplane
             name: dp-1
@@ -926,7 +986,7 @@ var _ = Describe("Dataplane", func() {
                  inboundPath: healthz
                  path: 8080/healthz
                - inboundPort: 1000
-                 inboundPath: 
+                 inboundPath:
                  path: `,
 			expected: `
                 violations:
@@ -942,6 +1002,35 @@ var _ = Describe("Dataplane", func() {
                   message: should be a valid URL Path
                 - field: probes.endpoints[2].path
                   message: should be a valid URL Path`,
+		}),
+		Entry("dataplane with service probe", testCase{
+			dataplane: `
+            type: Dataplane
+            name: dp-1
+            mesh: default
+            networking:
+              address: 192.168.0.1
+              inbound:
+                - port: 8080
+                  serviceProbe:
+                    timeout: 1s
+                    interval: "0"
+                    healthyThreshold: 5
+                    unhealthyThreshold: 0
+                    tcp: {}
+                  tags:
+                    kuma.io/service: backend
+                    version: "1"
+              outbound:
+                - port: 3333
+                  tags:
+                    kuma.io/service: redis`,
+			expected: `
+                violations:
+                - field: networking.inbound[0].serviceProbe.interval
+                  message: must have a positive value
+                - field: networking.inbound[0].serviceProbe.unhealthyThreshold
+                  message: must have a positive value`,
 		}),
 	)
 

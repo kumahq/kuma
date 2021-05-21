@@ -17,6 +17,7 @@ message MeshInsight {
     uint32 total = 1;
     uint32 online = 2;
     uint32 offline = 3;
+    uint32 partially_degraded = 4;
   }
   DataplaneStat dataplanes = 2;
 

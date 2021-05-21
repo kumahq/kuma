@@ -106,7 +106,7 @@ func (p *providedCaManager) GetRootCert(ctx context.Context, mesh string, backen
 	return []ca.Cert{meshCa.CertPEM}, nil
 }
 
-func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend, services []string) (ca.KeyPair, error) {
+func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh string, backend *mesh_proto.CertificateAuthorityBackend, tags mesh_proto.MultiValueTagSet) (ca.KeyPair, error) {
 	meshCa, err := p.getCa(ctx, mesh, backend)
 	if err != nil {
 		return ca.KeyPair{}, errors.Wrapf(err, "failed to load CA key pair for Mesh %q and backend %q", mesh, backend.Name)
@@ -120,9 +120,9 @@ func (p *providedCaManager) GenerateDataplaneCert(ctx context.Context, mesh stri
 		}
 		opts = append(opts, ca_issuer.WithExpirationTime(duration))
 	}
-	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, services, opts...)
+	keyPair, err := ca_issuer.NewWorkloadCert(meshCa, mesh, tags, opts...)
 	if err != nil {
-		return ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for services %q in Mesh %q using backend %q", services, mesh, backend.Name)
+		return ca.KeyPair{}, errors.Wrapf(err, "failed to generate a Workload Identity cert for tags %q in Mesh %q using backend %q", tags.String(), mesh, backend.Name)
 	}
 	return *keyPair, nil
 }

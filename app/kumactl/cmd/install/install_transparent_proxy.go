@@ -1,12 +1,16 @@
 package install
 
 import (
+	"bufio"
 	"fmt"
 	"io/ioutil"
 	"net"
 	os_user "os/user"
+	"regexp"
 	"runtime"
 	"strings"
+
+	"github.com/kumahq/kuma/pkg/transparentproxy/firewalld"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -16,30 +20,48 @@ import (
 )
 
 type transparenProxyArgs struct {
-	DryRun               bool
-	ModifyIptables       bool
-	RedirectPortOutBound string
-	RedirectPortInBound  string
-	ExcludeInboundPorts  string
-	ExcludeOutboundPorts string
-	UID                  string
-	User                 string
-	ModifyResolvConf     bool
-	KumaCpIP             net.IP
+	DryRun                 bool
+	Verbose                bool
+	ModifyIptables         bool
+	RedirectPortOutBound   string
+	RedirectInbound        bool
+	RedirectPortInBound    string
+	RedirectPortInBoundV6  string
+	ExcludeInboundPorts    string
+	ExcludeOutboundPorts   string
+	UID                    string
+	User                   string
+	RedirectDNS            bool
+	RedirectAllDNSTraffic  bool
+	AgentDNSListenerPort   string
+	DNSUpstreamTargetChain string
+	SkipResolvConf         bool
+	StoreFirewalld         bool
+	KumaCpIP               net.IP
 }
+
+var defaultCpIP = net.IPv4(0, 0, 0, 0)
 
 func newInstallTransparentProxy() *cobra.Command {
 	args := transparenProxyArgs{
-		DryRun:               false,
-		ModifyIptables:       true,
-		RedirectPortOutBound: "15001",
-		RedirectPortInBound:  "15006",
-		ExcludeInboundPorts:  "",
-		ExcludeOutboundPorts: "",
-		UID:                  "",
-		User:                 "",
-		ModifyResolvConf:     true,
-		KumaCpIP:             net.IPv4(0, 0, 0, 0),
+		DryRun:                 false,
+		Verbose:                false,
+		ModifyIptables:         true,
+		RedirectPortOutBound:   "15001",
+		RedirectInbound:        true,
+		RedirectPortInBound:    "15006",
+		RedirectPortInBoundV6:  "15010",
+		ExcludeInboundPorts:    "",
+		ExcludeOutboundPorts:   "",
+		UID:                    "",
+		User:                   "",
+		RedirectDNS:            false,
+		RedirectAllDNSTraffic:  false,
+		AgentDNSListenerPort:   "15053",
+		DNSUpstreamTargetChain: "RETURN",
+		SkipResolvConf:         false,
+		StoreFirewalld:         false,
+		KumaCpIP:               defaultCpIP,
 	}
 	cmd := &cobra.Command{
 		Use:   "transparent-proxy",
@@ -105,8 +127,16 @@ runuser -u kuma-dp -- \
 				return errors.Errorf("--kuma-dp-user or --kuma-dp-uid should be supplied")
 			}
 
-			if args.ModifyResolvConf && args.KumaCpIP.String() == net.IPv4(0, 0, 0, 0).String() {
-				return errors.Errorf("please supply a valid `--kuma-cp-ip`")
+			if args.RedirectAllDNSTraffic {
+				args.RedirectDNS = true
+			}
+
+			if args.RedirectDNS && !args.SkipResolvConf {
+				return errors.Errorf("please set --skip-resolv-conf when using --redirect-dns or --redirect-all-dns-traffic")
+			}
+
+			if !args.SkipResolvConf && args.KumaCpIP.String() == defaultCpIP.String() {
+				return errors.Errorf("please supply a valid --kuma-cp-ip")
 			}
 
 			if args.ModifyIptables {
@@ -115,7 +145,7 @@ runuser -u kuma-dp -- \
 				}
 			}
 
-			if args.ModifyResolvConf {
+			if !args.SkipResolvConf {
 				if err := modifyResolvConf(cmd, &args); err != nil {
 					return err
 				}
@@ -127,14 +157,22 @@ runuser -u kuma-dp -- \
 	}
 
 	cmd.Flags().BoolVar(&args.DryRun, "dry-run", args.DryRun, "dry run")
+	cmd.Flags().BoolVar(&args.Verbose, "verbose", args.Verbose, "verbose")
 	cmd.Flags().BoolVar(&args.ModifyIptables, "modify-iptables", args.ModifyIptables, "modify the host iptables to redirect the traffic to Envoy")
 	cmd.Flags().StringVar(&args.RedirectPortOutBound, "redirect-outbound-port", args.RedirectPortOutBound, "outbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortOutbound`")
+	cmd.Flags().BoolVar(&args.RedirectInbound, "redirect-inbound", args.RedirectInbound, "redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.")
 	cmd.Flags().StringVar(&args.RedirectPortInBound, "redirect-inbound-port", args.RedirectPortInBound, "inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInbound`")
+	cmd.Flags().StringVar(&args.RedirectPortInBoundV6, "redirect-inbound-port-v6", args.RedirectPortInBoundV6, "IPv6 inbound port redirected to Envoy, as specified in dataplane's `networking.transparentProxying.redirectPortInboundV6`")
 	cmd.Flags().StringVar(&args.ExcludeInboundPorts, "exclude-inbound-ports", args.ExcludeInboundPorts, "a comma separated list of inbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.ExcludeOutboundPorts, "exclude-outbound-ports", args.ExcludeOutboundPorts, "a comma separated list of outbound ports to exclude from redirect to Envoy")
 	cmd.Flags().StringVar(&args.User, "kuma-dp-user", args.UID, "the user that will run kuma-dp")
 	cmd.Flags().StringVar(&args.UID, "kuma-dp-uid", args.UID, "the UID of the user that will run kuma-dp")
-	cmd.Flags().BoolVar(&args.ModifyResolvConf, "modify-resolv-conf", args.ModifyResolvConf, "modify the host `/etc/resolv.conf` to allow `.mesh` resolution through kuma-cp")
+	cmd.Flags().BoolVar(&args.RedirectDNS, "redirect-dns", args.RedirectDNS, "redirect all DNS requests to the servers in /etc/resolv.conf to a specified port")
+	cmd.Flags().BoolVar(&args.RedirectAllDNSTraffic, "redirect-all-dns-traffic", args.RedirectAllDNSTraffic, "redirect all DNS requests to a specified port. Implies --redirect-dns.")
+	cmd.Flags().StringVar(&args.AgentDNSListenerPort, "redirect-dns-port", args.AgentDNSListenerPort, "the port where the DNS agent is listening")
+	cmd.Flags().StringVar(&args.DNSUpstreamTargetChain, "redirect-dns-upstream-target-chain", args.DNSUpstreamTargetChain, "(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.")
+	cmd.Flags().BoolVar(&args.SkipResolvConf, "skip-resolv-conf", args.SkipResolvConf, "skip modifying the host `/etc/resolv.conf`")
+	cmd.Flags().BoolVar(&args.StoreFirewalld, "store-firewalld", args.StoreFirewalld, "store the iptables changes with firewalld")
 	cmd.Flags().IPVar(&args.KumaCpIP, "kuma-cp-ip", args.KumaCpIP, "the IP address of the Kuma CP which exposes the DNS service on port 53.")
 
 	return cmd
@@ -145,8 +183,15 @@ func findUidGid(uid, user string) (string, string, error) {
 	var err error
 
 	if u, err = os_user.LookupId(uid); err != nil {
-		if u, err = os_user.Lookup(user); err != nil {
-			return "", "", errors.Errorf("--kuma-dp-user or --kuma-dp-uid should refer to a valid user on the host")
+		if user != "" {
+			if u, err = os_user.Lookup(user); err != nil {
+				return "", "", errors.Errorf("--kuma-dp-user or --kuma-dp-uid should refer to a valid user on the host")
+			}
+		} else {
+			u = &os_user.User{
+				Uid: uid,
+				Gid: uid,
+			}
 		}
 	}
 
@@ -156,19 +201,35 @@ func findUidGid(uid, user string) (string, string, error) {
 func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 	tp := transparentproxy.DefaultTransparentProxy()
 
+	// best effort cleanup before we apply the rules (again?)
+	_, err := tp.Cleanup(args.DryRun, args.Verbose)
+	if err != nil {
+		return errors.Wrapf(err, "unable to invoke cleanup")
+	}
+
 	uid, gid, err := findUidGid(args.UID, args.User)
 	if err != nil {
 		return errors.Wrapf(err, "unable to find the kuma-dp user")
 	}
 
+	if !args.DryRun {
+		_, _ = cmd.OutOrStdout().Write([]byte("kumactl is about to apply the iptables rules that will enable transparent proxying on the machine. The SSH connection may drop. If that happens, just reconnect again."))
+	}
 	output, err := tp.Setup(&config.TransparentProxyConfig{
-		DryRun:               args.DryRun,
-		RedirectPortOutBound: args.RedirectPortOutBound,
-		RedirectPortInBound:  args.RedirectPortInBound,
-		ExcludeInboundPorts:  args.ExcludeInboundPorts,
-		ExcludeOutboundPorts: args.ExcludeOutboundPorts,
-		UID:                  uid,
-		GID:                  gid,
+		DryRun:                 args.DryRun,
+		Verbose:                args.Verbose,
+		RedirectPortOutBound:   args.RedirectPortOutBound,
+		RedirectInBound:        args.RedirectInbound,
+		RedirectPortInBound:    args.RedirectPortInBound,
+		RedirectPortInBoundV6:  args.RedirectPortInBoundV6,
+		ExcludeInboundPorts:    args.ExcludeInboundPorts,
+		ExcludeOutboundPorts:   args.ExcludeOutboundPorts,
+		UID:                    uid,
+		GID:                    gid,
+		RedirectDNS:            args.RedirectDNS,
+		RedirectAllDNSTraffic:  args.RedirectAllDNSTraffic,
+		AgentDNSListenerPort:   args.AgentDNSListenerPort,
+		DNSUpstreamTargetChain: args.DNSUpstreamTargetChain,
 	})
 	if err != nil {
 		return errors.Wrap(err, "failed to setup transparent proxy")
@@ -177,7 +238,55 @@ func modifyIpTables(cmd *cobra.Command, args *transparenProxyArgs) error {
 	if args.DryRun {
 		_, _ = cmd.OutOrStdout().Write([]byte(output))
 	} else {
-		_, _ = cmd.OutOrStdout().Write([]byte("iptables set to diverge the traffic to Envoy."))
+		_, _ = cmd.OutOrStdout().Write([]byte("iptables set to diverge the traffic to Envoy.\n"))
+	}
+
+	if args.StoreFirewalld {
+		err = storeFirewalld(cmd, args, output)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func storeFirewalld(cmd *cobra.Command, args *transparenProxyArgs, output string) error {
+	translator := firewalld.NewFirewalldIptablesTranslator(args.DryRun)
+	parser := regexp.MustCompile(`\* (?P<table>\w*)`)
+	rules := map[string][]string{}
+
+	scanner := bufio.NewScanner(strings.NewReader(output))
+	table := ""
+
+	scanner.Split(bufio.ScanLines)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if strings.Contains(line, "COMMIT") {
+			table = ""
+			continue
+		}
+
+		matches := parser.FindStringSubmatch(line)
+		if len(matches) > 1 {
+			table = matches[parser.SubexpIndex("table")]
+			continue
+		}
+
+		if table != "" {
+			rules[table] = append(rules[table], line)
+		}
+	}
+
+	translated, err := translator.StoreRules(rules)
+	if err != nil {
+		return err
+	}
+
+	if args.DryRun {
+		_, _ = cmd.OutOrStdout().Write([]byte("\n\n" + translated + "\n\n"))
+	} else {
+		_, _ = cmd.OutOrStdout().Write([]byte("iptables saved with firewalld."))
 	}
 
 	return nil

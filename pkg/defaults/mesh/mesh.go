@@ -44,14 +44,54 @@ func EnsureDefaultMeshResources(resManager manager.ResourceManager, meshName str
 		log.Info("default TrafficRoute already exist", "mesh", meshName, "name", defaultTrafficRouteKey(meshName).Name)
 	}
 
-	created, err = ensureSigningKey(resManager, meshName)
+	err, created = ensureDefaultTimeout(resManager, meshName)
 	if err != nil {
-		return errors.Wrap(err, "could not create default Signing Key")
+		return errors.Wrap(err, "could not create default Timeout")
 	}
 	if created {
-		log.Info("default Signing Key created", "mesh", meshName, "name", issuer.SigningKeyResourceKey(meshName).Name)
+		log.Info("default Timeout created", "mesh", meshName, "name", defaultTimeoutKey(meshName).Name)
 	} else {
-		log.Info("default Signing Key already exist", "mesh", meshName, "name", issuer.SigningKeyResourceKey(meshName).Name)
+		log.Info("default Timeout already exist", "mesh", meshName, "name", defaultTimeoutKey(meshName).Name)
+	}
+
+	err, created = ensureDefaultCircuitBreaker(resManager, meshName)
+	if err != nil {
+		return errors.Wrap(err, "could not create default CircuitBreaker")
+	}
+	if created {
+		log.Info("default CircuitBreaker created", "mesh", meshName, "name", defaultCircuitBreakerKey(meshName).Name)
+	} else {
+		log.Info("default CircuitBreaker already exist", "mesh", meshName, "name", defaultCircuitBreakerKey(meshName).Name)
+	}
+
+	err, created = ensureDefaultRetry(resManager, meshName)
+	if err != nil {
+		return errors.Wrap(err, "could not create default Retry")
+	}
+	if created {
+		log.Info("default Retry created", "mesh", meshName, "name", defaultRetryKey(meshName).Name)
+	} else {
+		log.Info("default Retry already exist", "mesh", meshName, "name", defaultRetryKey(meshName).Name)
+	}
+
+	created, err = ensureDataplaneTokenSigningKey(resManager, meshName)
+	if err != nil {
+		return errors.Wrap(err, "could not create default Dataplane Token Signing Key")
+	}
+	if created {
+		log.Info("default Signing Key created", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName).Name)
+	} else {
+		log.Info("default Signing Key already exist", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.DataplaneTokenPrefix, meshName).Name)
+	}
+
+	created, err = ensureEnvoyAdminClientSigningKey(resManager, meshName)
+	if err != nil {
+		return errors.Wrap(err, "could not create default Envoy Admin Client Token Signing Key")
+	}
+	if created {
+		log.Info("default Signing Key created", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, meshName).Name)
+	} else {
+		log.Info("default Signing Key already exist", "mesh", meshName, "name", issuer.SigningKeyResourceKey(issuer.EnvoyAdminClientTokenPrefix, meshName).Name)
 	}
 	return nil
 }

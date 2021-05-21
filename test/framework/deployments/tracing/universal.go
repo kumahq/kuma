@@ -2,6 +2,7 @@ package tracing
 
 import (
 	"fmt"
+	"net"
 	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/docker"
@@ -35,10 +36,10 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 	opts := docker.RunOptions{
 		Detach:               true,
 		Remove:               true,
-		EnvironmentVariables: []string{"COLLECTOR_ZIPKIN_HTTP_PORT=9411"},
+		EnvironmentVariables: []string{"COLLECTOR_ZIPKIN_HOST_PORT=9411"},
 		OtherOptions:         append([]string{"--network", "kind"}, u.publishPortsForDocker()...),
 	}
-	container, err := docker.RunAndGetIDE(cluster.GetTesting(), "jaegertracing/all-in-one:1.18", &opts)
+	container, err := docker.RunAndGetIDE(cluster.GetTesting(), "jaegertracing/all-in-one:1.22", &opts)
 	if err != nil {
 		return err
 	}
@@ -93,7 +94,7 @@ func (u *universalDeployment) Delete(cluster framework.Cluster) error {
 }
 
 func (u *universalDeployment) ZipkinCollectorURL() string {
-	return fmt.Sprintf("http://%s:9411/api/v2/spans", u.ip)
+	return fmt.Sprintf("http://%s/api/v2/spans", net.JoinHostPort(u.ip, "9411"))
 }
 
 func (u *universalDeployment) TracedServices() ([]string, error) {

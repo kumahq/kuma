@@ -18,13 +18,14 @@ import (
 var _ = Describe("HttpAccessLogConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		routeName       string
-		backend         *mesh_proto.LoggingBackend
-		expected        string
+		listenerName     string
+		listenerAddress  string
+		listenerPort     uint32
+		listenerProtocol core_xds.SocketAddressProtocol
+		statsName        string
+		routeName        string
+		backend          *mesh_proto.LoggingBackend
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
@@ -60,9 +61,9 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 
 			// when
 			listener, err := NewListenerBuilder(envoy.APIV3).
-				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
-					Configure(HttpConnectionManager(given.statsName)).
+					Configure(HttpConnectionManager(given.statsName, false)).
 					Configure(HttpAccessLog(mesh, envoy.TrafficDirectionOutbound, sourceService, destinationService, given.backend, proxy)))).
 				Build()
 			// then
@@ -112,7 +113,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 				}),
 			},
 			expected: `
-            name: outbound:127.0.0.1:27070
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -133,10 +133,11 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                   httpFilters:
                   - name: envoy.filters.http.router
                   statPrefix: backend
+            name: outbound:127.0.0.1:27070
             trafficDirection: OUTBOUND
 `,
 		}),
-		XEntry("basic http_connection_manager with tcp access log", testCase{ // todo
+		Entry("basic http_connection_manager with tcp access log", testCase{
 			listenerName:    "outbound:127.0.0.1:27070",
 			listenerAddress: "127.0.0.1",
 			listenerPort:    27070,
@@ -154,7 +155,6 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 				}),
 			},
 			expected: `
-            name: outbound:127.0.0.1:27070
             address:
               socketAddress:
                 address: 127.0.0.1
@@ -181,14 +181,15 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
                             clusterName: access_log_sink
                         logName: |+
                           127.0.0.1:1234;[%START_TIME%] "%REQ(x-request-id)%" "%REQ(:authority)%" "%REQ(origin)%" "%REQ(content-type)%" "web" "backend" "192.168.0.1:0" "192.168.0.1" "%UPSTREAM_HOST%"
-
+            
                           "%RESP(server):5%" "%TRAILER(grpc-message):7%" "DYNAMIC_METADATA(namespace:object:key):9" "FILTER_STATE(filter.state.key):12"
-
+            
+                        transportApiVersion: V3
                   httpFilters:
                   - name: envoy.filters.http.router
                   statPrefix: backend
-            trafficDirection: OUTBOUND
-`,
+            name: outbound:127.0.0.1:27070
+            trafficDirection: OUTBOUND`,
 		}),
 	)
 })

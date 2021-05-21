@@ -71,6 +71,7 @@ var (
 			}},
 			Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
 				{
+					Port: 1213,
 					Tags: map[string]string{
 						mesh_proto.ServiceTag:  "web",
 						mesh_proto.ProtocolTag: "http",
@@ -227,6 +228,45 @@ var (
 					},
 				},
 				RetriableStatusCodes: []uint32{500, 502},
+			},
+		},
+	}
+	Timeout = &mesh_proto.Timeout{
+		Sources: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"service": "*",
+			},
+		}},
+		Destinations: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"service": "*",
+			},
+		}},
+		Conf: &mesh_proto.Timeout_Conf{
+
+			ConnectTimeout: &duration.Duration{
+				Seconds: 5,
+			},
+			Tcp: &mesh_proto.Timeout_Conf_Tcp{
+				IdleTimeout: &duration.Duration{
+					Seconds: 5,
+				},
+			},
+			Http: &mesh_proto.Timeout_Conf_Http{
+				RequestTimeout: &duration.Duration{
+					Seconds: 5,
+				},
+				IdleTimeout: &duration.Duration{
+					Seconds: 5,
+				},
+			},
+			Grpc: &mesh_proto.Timeout_Conf_Grpc{
+				StreamIdleTimeout: &duration.Duration{
+					Seconds: 5,
+				},
+				MaxStreamDuration: &duration.Duration{
+					Seconds: 5,
+				},
 			},
 		},
 	}

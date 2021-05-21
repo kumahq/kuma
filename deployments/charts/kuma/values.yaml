@@ -1,12 +1,18 @@
 global:
   image:
     # -- Default registry for all Kuma Images
-    registry: "kong-docker-kuma-docker.bintray.io"
+    registry: "docker.io/kumahq"
     # -- The default tag for all Kuma images, which itself defaults to .Chart.AppVersion
     tag:
 
 # -- Whether or not to patch the target namespace with the system label
 patchSystemNamespace: true
+
+# -- Whether ot not install new CRDs before upgrade  (if any were introduced
+#    with the new version of Kuma)
+installCrdsOnUpgrade:
+  enabled: true
+  imagePullSecrets: []
 
 controlPlane:
   # -- Kuma CP log level: one of off,info,debug
@@ -117,6 +123,14 @@ controlPlane:
   # -- Additional environment variables that will be passed to the control plane
   envVars: {}
 
+  webhooks:
+    validator:
+      # -- Additional rules to apply on Kuma validator webhook. Useful when building custom policy on top of Kuma.
+      additionalRules: ""
+    ownerReference:
+      # -- Additional rules to apply on Kuma owner reference webhook. Useful when building custom policy on top of Kuma.
+      additionalRules: ""
+
 cni:
   # -- Install Kuma with CNI instead of proxy init container
   enabled: false
@@ -141,7 +155,7 @@ cni:
     # -- CNI image repository
     repository: "lobkovilya/install-cni"
     # -- CNI image tag
-    tag: "0.0.2"
+    tag: "0.0.7"
 
 dataPlane:
   image:
@@ -170,3 +184,20 @@ ingress:
     annotations: {}
     # -- Port on which Ingress is exposed
     port: 10001
+  # -- Additional deployment annotation
+  annotations: {}
+  # -- Node Selector for the Ingress pods
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/arch: amd64
+
+kumactl:
+  image:
+    # -- The kumactl image repository
+    repository: kumactl
+
+hooks:
+  # -- Node selector for the HELM hooks
+  nodeSelector:
+    kubernetes.io/os: linux
+    kubernetes.io/arch: amd64

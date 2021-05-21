@@ -8,10 +8,8 @@ import (
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
-	config_manager "github.com/kumahq/kuma/pkg/core/config/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/kds/reconcile"
 	resources_k8s "github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 
@@ -33,32 +31,33 @@ import (
 
 var (
 	kdsGlobalLog  = core.Log.WithName("kds-global")
-	providedTypes = []model.ResourceType{
-		mesh.MeshType,
+	ProvidedTypes = []model.ResourceType{
+		mesh.CircuitBreakerType,
 		mesh.DataplaneType,
 		mesh.ExternalServiceType,
-		mesh.CircuitBreakerType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,
+		mesh.MeshType,
+		mesh.ProxyTemplateType,
+		mesh.RetryType,
+		mesh.TimeoutType,
 		mesh.TrafficLogType,
 		mesh.TrafficPermissionType,
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
-		mesh.ProxyTemplateType,
-		mesh.RetryType,
 		system.SecretType,
 		system.ConfigType,
 	}
-	consumedTypes = []model.ResourceType{
+	ConsumedTypes = []model.ResourceType{
 		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
 	}
 )
 
 func Setup(rt runtime.Runtime) (err error) {
-	kdsServer, err := kds_server.New(kdsGlobalLog, rt, providedTypes,
+	kdsServer, err := kds_server.New(kdsGlobalLog, rt, ProvidedTypes,
 		"global", rt.Config().Multizone.Global.KDS.RefreshInterval,
-		ProvidedFilter(rt.ResourceManager()), true)
+		rt.KDSContext().GlobalProvidedFilter, true)
 	if err != nil {
 		return err
 	}
@@ -77,7 +76,7 @@ func Setup(rt runtime.Runtime) (err error) {
 			log.Error(err, "Global CP could not create a zone")
 			return errors.New("Global CP could not create a zone") // send back message without details. Remote CP will retry
 		}
-		sink := client.NewKDSSink(log, consumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
+		sink := client.NewKDSSink(log, ConsumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
 		go func() {
 			if err := sink.Start(session.Done()); err != nil {
 				log.Error(err, "KDSSink finished with an error")
@@ -85,7 +84,8 @@ func Setup(rt runtime.Runtime) (err error) {
 		}()
 		return nil
 	})
-	return rt.Add(mux.NewServer(onSessionStarted, *rt.Config().Multizone.Global.KDS, rt.Metrics()))
+	callbacks := append(rt.KDSContext().GlobalServerCallbacks, onSessionStarted)
+	return rt.Add(mux.NewServer(callbacks, *rt.Config().Multizone.Global.KDS, rt.Metrics()))
 }
 
 func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
@@ -104,34 +104,6 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 		}
 	}
 	return nil
-}
-
-// ProvidedFilter returns ResourceFilter which filters Resources provided by Global, specifically
-// excludes Dataplanes and Ingresses from 'clusterID' cluster
-func ProvidedFilter(rm manager.ResourceManager) reconcile.ResourceFilter {
-	return func(clusterID string, r model.Resource) bool {
-		if r.GetType() == system.ConfigType && r.GetMeta().GetName() != config_manager.ClusterIdConfigKey {
-			return false
-		}
-		if r.GetType() != mesh.DataplaneType {
-			return true
-		}
-		if !r.(*mesh.DataplaneResource).Spec.IsIngress() {
-			return false
-		}
-		if clusterID == util.ZoneTag(r) {
-			// don't need to sync resource to the zone where resource is originated from
-			return false
-		}
-		zone := system.NewZoneResource()
-		if err := rm.Get(context.Background(), zone, store.GetByKey(util.ZoneTag(r), model.NoMesh)); err != nil {
-			kdsGlobalLog.Error(err, "failed to get zone", "zone", util.ZoneTag(r))
-			// since there is no explicit 'enabled: false' then we don't
-			// make any strong decisions which might affect connectivity
-			return true
-		}
-		return zone.Spec.IsEnabled()
-	}
 }
 
 func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources_k8s.KubeFactory) *client.Callbacks {
@@ -157,7 +129,7 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 }
 
 func ConsumesType(typ model.ResourceType) bool {
-	for _, consumedTyp := range consumedTypes {
+	for _, consumedTyp := range ConsumedTypes {
 		if consumedTyp == typ {
 			return true
 		}

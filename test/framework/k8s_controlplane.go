@@ -3,6 +3,7 @@ package framework
 import (
 	"crypto/tls"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 
@@ -105,6 +106,15 @@ func (c *K8sControlPlane) GetKumaCPPods() []v1.Pod {
 		c.GetKubectlOptions(KumaNamespace),
 		metav1.ListOptions{
 			LabelSelector: "app=" + KumaServiceName,
+		},
+	)
+}
+
+func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
+	return k8s.ListServices(c.t,
+		c.GetKubectlOptions(KumaNamespace),
+		metav1.ListOptions{
+			FieldSelector: "metadata.name=" + KumaGlobalRemoteSyncServiceName,
 		},
 	)
 }
@@ -214,9 +224,27 @@ func (c *K8sControlPlane) InjectDNS(args ...string) error {
 
 // A naive implementation to find the URL where Remote CP exposes its API
 func (c *K8sControlPlane) GetKDSServerAddress() string {
-	pod := c.GetKumaCPPods()[0]
+	// As EKS and AWS generally returns dns records of load balancers instead of
+	//  IP addresses, accessing this data (hostname) was only tested there,
+	//  so the env var was created for that purpose
+	if UseLoadBalancer() {
+		svc := c.GetKumaCPSvcs()[0]
 
-	return "grpcs://" + pod.Status.HostIP + ":" + strconv.FormatUint(uint64(kdsPort), 10)
+		ip, hostname := svc.Status.LoadBalancer.Ingress[0].IP, svc.Status.LoadBalancer.Ingress[0].Hostname
+		var address string
+
+		if ip != "" {
+			address = ip
+		} else if hostname != "" {
+			address = hostname
+		}
+
+		return "grpcs://" + address + ":" + strconv.FormatUint(loadBalancerKdsPort, 10)
+	}
+
+	pod := c.GetKumaCPPods()[0]
+	return "grpcs://" + net.JoinHostPort(
+		pod.Status.HostIP, strconv.FormatUint(uint64(kdsPort), 10))
 }
 
 func (c *K8sControlPlane) GetGlobaStatusAPI() string {
@@ -224,11 +252,15 @@ func (c *K8sControlPlane) GetGlobaStatusAPI() string {
 }
 
 func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) {
+	dpType := ""
+	if service == "ingress" {
+		dpType = "ingress"
+	}
 	return http_helper.HTTPDoWithRetryE(
 		c.t,
 		"POST",
 		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
-		[]byte(fmt.Sprintf(`{"mesh": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, service)),
+		[]byte(fmt.Sprintf(`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, dpType, service)),
 		map[string]string{"content-type": "application/json"},
 		200,
 		DefaultRetries,

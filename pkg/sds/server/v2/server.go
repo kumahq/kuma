@@ -9,7 +9,6 @@ import (
 	envoy_cache "github.com/envoyproxy/go-control-plane/pkg/cache/v2"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
 	"github.com/go-logr/logr"
-	"google.golang.org/grpc"
 
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
@@ -31,7 +30,7 @@ var (
 	sdsServerLog = core.Log.WithName("sds-server")
 )
 
-func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *sds_metrics.Metrics, server *grpc.Server) error {
+func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *sds_metrics.Metrics) error {
 	hasher := hasher{sdsServerLog}
 	logger := util_xds.NewLogger(sdsServerLog)
 	cache := envoy_cache.NewSnapshotCache(false, hasher, logger)
@@ -42,7 +41,7 @@ func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *sds_metrics.Metrics, serve
 	if err != nil {
 		return err
 	}
-	authCallbacks := xds_auth.NewCallbacks(rt.ResourceManager(), authenticator)
+	authCallbacks := xds_auth.NewCallbacks(rt.ResourceManager(), authenticator, xds_auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in ADS before we initiate SDS
 
 	reconciler := DataplaneReconciler{
 		resManager:         rt.ResourceManager(),
@@ -52,6 +51,7 @@ func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *sds_metrics.Metrics, serve
 		cache:              cache,
 		upsertConfig:       rt.Config().Store.Upsert,
 		sdsMetrics:         sdsMetrics,
+		proxySnapshotInfo:  map[string]snapshotInfo{},
 	}
 
 	syncTracker, err := syncTracker(&reconciler, rt.Config().SdsServer.DataplaneConfigurationRefreshInterval, sdsMetrics)
@@ -68,7 +68,7 @@ func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *sds_metrics.Metrics, serve
 	srv := envoy_server.NewServer(context.Background(), cache, callbacks)
 
 	sdsServerLog.Info("registering Secret Discovery Service V2 in Dataplane Server")
-	envoy_discovery.RegisterSecretDiscoveryServiceServer(server, srv)
+	envoy_discovery.RegisterSecretDiscoveryServiceServer(rt.DpServer().GrpcServer(), srv)
 	return nil
 }
 
@@ -88,6 +88,11 @@ func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetr
 			OnError: func(err error) {
 				sdsMetrics.SdsGenerationsErrors(envoy_common.APIV2).Inc()
 				sdsServerLog.Error(err, "OnTick() failed")
+			},
+			OnStop: func() {
+				if err := reconciler.Cleanup(dataplaneId); err != nil {
+					sdsServerLog.Error(err, "could not cleanup sync", "dataplane", dataplaneId)
+				}
 			},
 		}
 	}), nil

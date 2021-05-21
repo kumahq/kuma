@@ -8,7 +8,7 @@ Parameters:
       to locate and reference resources created by that stack.
   Image:
     Type: String
-    Default: "kong-docker-kuma-docker.bintray.io/kuma-dp:080-preview-2"
+    Default: "docker.io/kumahq/kuma-dp:1.0.8"
     Description: The name of the kuma-dp docker image
   WorkloadName:
     Type: String
@@ -36,7 +36,7 @@ Parameters:
     Description: The desired replica count of the workload
   CPAddress:
     Type: String
-    Default: "http://controlplane.kuma.io:5681"
+    Default: "https://controlplane.kuma.io:5678"
     Description: The kuma-cp address
   DPTemplate:
     Type: String

@@ -5,6 +5,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/core/xds"
+
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -14,22 +16,23 @@ import (
 var _ = Describe("HttpInboundRouteConfigurer", func() {
 
 	type testCase struct {
-		listenerName    string
-		listenerAddress string
-		listenerPort    uint32
-		statsName       string
-		service         string
-		cluster         envoy_common.ClusterSubset
-		expected        string
+		listenerName     string
+		listenerProtocol xds.SocketAddressProtocol
+		listenerAddress  string
+		listenerPort     uint32
+		statsName        string
+		service          string
+		cluster          envoy_common.ClusterSubset
+		expected         string
 	}
 
 	DescribeTable("should generate proper Envoy config",
 		func(given testCase) {
 			// when
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
-				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort)).
+				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(HttpConnectionManager(given.statsName)).
+					Configure(HttpConnectionManager(given.statsName, true)).
 					Configure(HttpInboundRoute(given.service, given.cluster)))).
 				Build()
 			// then
@@ -60,6 +63,9 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
               - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+                  forwardClientCertDetails: SANITIZE_SET
+                  setCurrentClientCertDetails:
+                    uri: true
                   httpFilters:
                   - name: envoy.filters.http.router
                   routeConfig:

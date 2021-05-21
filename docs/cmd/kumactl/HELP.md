@@ -36,9 +36,24 @@ Create or modify Kuma resources.
 Usage:
   kumactl apply [flags]
 
+Examples:
+
+Apply a resource from file
+$ kumactl apply -f resource.yaml
+
+Apply a resource from stdin
+$ echo "
+type: Mesh
+name: demo
+" | kumactl apply -f -
+
+Apply a resource from external URL
+$ kumactl apply -f https://example.com/resource.yaml
+
+
 Flags:
       --dry-run              Resolve variable and prints result out without actual applying
-  -f, --file string          Path to file to apply
+  -f, --file -               Path to file to apply. Pass - to read from stdin
   -h, --help                 help for apply
   -v, --var stringToString   Variable to replace in configuration (default [])
 
@@ -200,7 +215,10 @@ Usage:
 
 Available Commands:
   control-plane     Install Kuma Control Plane on Kubernetes
+  crds              Install Kuma Custom Resource Definitions on Kubernetes
+  demo              Install Kuma demo on Kubernetes
   dns               Install DNS to Kubernetes
+  gateway           Install ingress gateway on Kubernetes
   logging           Install Logging backend in Kubernetes cluster (Loki)
   metrics           Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)
   tracing           Install Tracing backend in Kubernetes cluster (Jaeger)
@@ -232,17 +250,17 @@ Flags:
       --cni-conf-name string                        set the CNI configuration name (default "kuma-cni.conf")
       --cni-enabled                                 install Kuma with CNI instead of proxy init container
       --cni-net-dir string                          set the CNI install directory (default "/etc/cni/multus/net.d")
-      --cni-registry string                         registry for the image of the Kuma CNI component (default "docker.io")
-      --cni-repository string                       repository for the image of the Kuma CNI component (default "lobkovilya/install-cni")
-      --cni-version string                          version of the image of the Kuma CNI component (default "0.0.2")
-      --control-plane-registry string               registry for the image of the Kuma Control Plane component (default "kong-docker-kuma-docker.bintray.io")
+      --cni-registry string                         registry for the image of the Kuma CNI component (default "docker.io/lobkovilya")
+      --cni-repository string                       repository for the image of the Kuma CNI component (default "install-cni")
+      --cni-version string                          version of the image of the Kuma CNI component (default "0.0.7")
+      --control-plane-registry string               registry for the image of the Kuma Control Plane component (default "docker.io/kumahq")
       --control-plane-repository string             repository for the image of the Kuma Control Plane component (default "kuma-cp")
       --control-plane-service-name string           Service name of the Kuma Control Plane (default "kuma-control-plane")
       --control-plane-version string                version of the image of the Kuma Control Plane component (default "latest")
-      --dataplane-init-registry string              registry for the init image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
+      --dataplane-init-registry string              registry for the init image of the Kuma DataPlane component (default "docker.io/kumahq")
       --dataplane-init-repository string            repository for the init image of the Kuma DataPlane component (default "kuma-init")
       --dataplane-init-version string               version of the init image of the Kuma DataPlane component (default "latest")
-      --dataplane-registry string                   registry for the image of the Kuma DataPlane component (default "kong-docker-kuma-docker.bintray.io")
+      --dataplane-registry string                   registry for the image of the Kuma DataPlane component (default "docker.io/kumahq")
       --dataplane-repository string                 repository for the image of the Kuma DataPlane component (default "kuma-dp")
       --dataplane-version string                    version of the image of the Kuma DataPlane component (default "latest")
       --env-var stringToString                      environment variables that will be passed to the control plane (default [])
@@ -282,9 +300,11 @@ Usage:
 Flags:
   -h, --help                                help for metrics
       --kuma-cp-address string              the address of Kuma CP (default "grpc://kuma-control-plane.kuma-system:5676")
-      --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "kong-docker-kuma-docker.bintray.io/kuma-prometheus-sd")
+      --kuma-prometheus-sd-image string     image name of Kuma Prometheus SD (default "docker.io/kumahq/kuma-prometheus-sd")
       --kuma-prometheus-sd-version string   version of Kuma Prometheus SD (default "latest")
       --namespace string                    namespace to install metrics to (default "kuma-metrics")
+      --without-grafana                     disable Grafana resources generation
+      --without-prometheus                  disable Prometheus resources generation
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -350,7 +370,7 @@ Usage:
 Examples:
 
 Generate token bound by name and mesh
-$ kumactl generate dataplane-token --mesh demo --dataplane demo-01
+$ kumactl generate dataplane-token --mesh demo --name demo-01
 
 Generate token bound by mesh
 $ kumactl generate dataplane-token --mesh demo
@@ -384,33 +404,37 @@ Usage:
 
 Available Commands:
   circuit-breaker     Show a single CircuitBreaker resource
-  circuit-breakers    Show CircuitBreakers
+  circuit-breakers    Show CircuitBreaker
   dataplane           Show a single Dataplane resource
-  dataplanes          Show Dataplanes
+  dataplanes          Show Dataplane
   external-service    Show a single ExternalService resource
-  external-services   Show ExternalServices
-  fault-injection     Show a single Fault-Injection resource
-  fault-injections    Show FaultInjections
+  external-services   Show ExternalService
+  fault-injection     Show a single FaultInjection resource
+  fault-injections    Show FaultInjection
+  global-secret       Show a single GlobalSecret resource
+  global-secrets      Show GlobalSecret
   healthcheck         Show a single HealthCheck resource
-  healthchecks        Show HealthChecks
+  healthchecks        Show HealthCheck
   mesh                Show a single Mesh resource
-  meshes              Show Meshes
-  proxytemplate       Show a single Proxytemplate resource
-  proxytemplates      Show ProxyTemplates
-  retries             Show Retries
-  retry               Show a single retry resource
+  meshes              Show Mesh
+  proxytemplate       Show a single ProxyTemplate resource
+  proxytemplates      Show ProxyTemplate
+  retries             Show Retry
+  retry               Show a single Retry resource
   secret              Show a single Secret resource
-  secrets             Show Secrets
+  secrets             Show Secret
+  timeout             Show a single Timeout resource
+  timeouts            Show Timeout
   traffic-log         Show a single TrafficLog resource
-  traffic-logs        Show TrafficLogs
+  traffic-logs        Show TrafficLog
   traffic-permission  Show a single TrafficPermission resource
-  traffic-permissions Show TrafficPermissions
+  traffic-permissions Show TrafficPermission
   traffic-route       Show a single TrafficRoute resource
-  traffic-routes      Show TrafficRoutes
+  traffic-routes      Show TrafficRoute
   traffic-trace       Show a single TrafficTrace resource
-  traffic-traces      Show TrafficTraces
-  zone                Show a single Zone resource
-  zones               Show Zones
+  traffic-traces      Show TrafficTrace
+  zone                Show a single Retry resource
+  zones               Show Zone
 
 Flags:
   -h, --help            help for get
@@ -427,7 +451,7 @@ Use "kumactl get [command] --help" for more information about a command.
 ### kumactl get meshes
 
 ```
-Show Meshes.
+Show Mesh entities.
 
 Usage:
   kumactl get meshes [flags]
@@ -447,7 +471,7 @@ Global Flags:
 ### kumactl get dataplanes
 
 ```
-Show Dataplanes.
+Show Dataplane entities.
 
 Usage:
   kumactl get dataplanes [flags]
@@ -467,7 +491,7 @@ Global Flags:
 ### kumactl get healthchecks
 
 ```
-Show HealthChecks.
+Show HealthCheck entities.
 
 Usage:
   kumactl get healthchecks [flags]
@@ -487,7 +511,7 @@ Global Flags:
 ### kumactl get retries
 
 ```
-Show Retries.
+Show Retry entities.
 
 Usage:
   kumactl get retries [flags]
@@ -507,7 +531,7 @@ Global Flags:
 ### kumactl get proxytemplates
 
 ```
-Show ProxyTemplates.
+Show ProxyTemplate entities.
 
 Usage:
   kumactl get proxytemplates [flags]
@@ -567,7 +591,7 @@ Global Flags:
 ### kumactl get traffic-routes
 
 ```
-Show TrafficRoutes.
+Show TrafficRoute entities.
 
 Usage:
   kumactl get traffic-routes [flags]
@@ -645,7 +669,7 @@ Global Flags:
 ### kumactl get secrets
 
 ```
-Show Secrets.
+Show Secret entities.
 
 Usage:
   kumactl get secrets [flags]

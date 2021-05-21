@@ -1,0 +1,14 @@
+apiVersion: kuma.io/v1alpha1
+kind: ExternalService
+mesh: default
+metadata:
+  namespace: default
+  name: httpbin
+spec:
+  tags:
+    kuma.io/service: httpbin
+    kuma.io/protocol: http
+  networking:
+    address: httpbin.org:443
+    tls:
+      enabled: true

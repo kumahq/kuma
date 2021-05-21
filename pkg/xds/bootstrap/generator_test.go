@@ -2,12 +2,12 @@ package bootstrap_test
 
 import (
 	"context"
-	"io/ioutil"
 	"path/filepath"
 	"time"
 
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
 	. "github.com/onsi/ginkgo"
@@ -87,11 +87,12 @@ var _ = Describe("bootstrapGenerator", func() {
 		request                  types.BootstrapRequest
 		expectedConfigFile       string
 		expectedBootstrapVersion types.BootstrapVersion
+		hdsEnabled               bool
 	}
 	DescribeTable("should generate bootstrap configuration",
 		func(given testCase) {
 			// setup
-			generator, err := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled)
+			generator, err := NewDefaultBootstrapGenerator(resManager, given.config(), filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), given.dpAuthEnabled, given.hdsEnabled)
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
@@ -103,9 +104,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			// and config is as expected
 			actual, err := util_proto.ToYAML(bootstrapConfig)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", given.expectedConfigFile))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", given.expectedConfigFile)))
 
 			// and
 			Expect(version).To(Equal(given.expectedBootstrapVersion))
@@ -126,6 +125,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.default-config-minimal-request.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV2,
+			hdsEnabled:               true,
 		}),
 		Entry("default config", testCase{
 			dpAuthEnabled: true,
@@ -137,14 +137,17 @@ var _ = Describe("bootstrapGenerator", func() {
 				return cfg
 			},
 			request: types.BootstrapRequest{
-				Mesh:               "mesh",
-				Name:               "name.namespace",
-				AdminPort:          1234,
-				DataplaneTokenPath: "/tmp/token",
-				Version:            defaultVersion,
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				AdminPort:      1234,
+				DataplaneToken: "token",
+				Version:        defaultVersion,
+				DNSPort:        53001,
+				EmptyDNSPort:   53002,
 			},
 			expectedConfigFile:       "generator.default-config.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV3,
+			hdsEnabled:               true,
 		}),
 		Entry("custom config with minimal request", testCase{
 			dpAuthEnabled: false,
@@ -169,6 +172,7 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.custom-config-minimal-request.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV2,
+			hdsEnabled:               true,
 		}),
 		Entry("custom config", testCase{
 			dpAuthEnabled: true,
@@ -190,6 +194,9 @@ var _ = Describe("bootstrapGenerator", func() {
 				Name:               "name.namespace",
 				AdminPort:          1234,
 				DataplaneTokenPath: "/tmp/token",
+				DynamicMetadata: map[string]string{
+					"test": "value",
+				},
 				DataplaneResource: `
 {
   "type": "Dataplane",
@@ -215,6 +222,47 @@ var _ = Describe("bootstrapGenerator", func() {
 			},
 			expectedConfigFile:       "generator.custom-config.golden.yaml",
 			expectedBootstrapVersion: types.BootstrapV2,
+			hdsEnabled:               true,
+		}),
+		Entry("default config, kubernetes", testCase{
+			dpAuthEnabled: true,
+			config: func() *bootstrap_config.BootstrapServerConfig {
+				cfg := bootstrap_config.DefaultBootstrapServerConfig()
+				cfg.Params.XdsHost = "localhost"
+				cfg.Params.XdsPort = 5678
+				cfg.APIVersion = envoy_common.APIV3
+				return cfg
+			},
+			request: types.BootstrapRequest{
+				Mesh:               "mesh",
+				Name:               "name.namespace",
+				AdminPort:          1234,
+				DataplaneTokenPath: "/tmp/token",
+				Version:            defaultVersion,
+			},
+			expectedConfigFile:       "generator.default-config.kubernetes.golden.yaml",
+			expectedBootstrapVersion: types.BootstrapV3,
+			hdsEnabled:               false,
+		}),
+		Entry("default config, kubernetes with IPv6", testCase{
+			dpAuthEnabled: true,
+			config: func() *bootstrap_config.BootstrapServerConfig {
+				cfg := bootstrap_config.DefaultBootstrapServerConfig()
+				cfg.Params.XdsHost = "fd00:a123::1"
+				cfg.Params.XdsPort = 5678
+				cfg.APIVersion = envoy_common.APIV3
+				return cfg
+			},
+			request: types.BootstrapRequest{
+				Mesh:               "mesh",
+				Name:               "name.namespace",
+				AdminPort:          1234,
+				DataplaneTokenPath: "/tmp/token",
+				Version:            defaultVersion,
+			},
+			expectedConfigFile:       "generator.default-config.kubernetes.ipv6.golden.yaml",
+			expectedBootstrapVersion: types.BootstrapV3,
+			hdsEnabled:               false,
 		}),
 	)
 
@@ -261,7 +309,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		cfg.Params.XdsHost = "localhost"
 		cfg.Params.XdsPort = 5678
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true)
 		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
@@ -326,7 +374,7 @@ var _ = Describe("bootstrapGenerator", func() {
 		cfg.Params.XdsHost = "localhost"
 		cfg.Params.XdsPort = 5678
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
+		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true)
 		Expect(err).ToNot(HaveOccurred())
 		request := types.BootstrapRequest{
 			Mesh:      "mesh",
@@ -342,50 +390,102 @@ var _ = Describe("bootstrapGenerator", func() {
 		Expect(err.Error()).To(Equal("Resource precondition failed: Port 9901 requested as both admin and outbound port."))
 	})
 
-	It("should fail bootstrap due to invalid hostname", func() {
-		// given
-		cfg := bootstrap_config.DefaultBootstrapServerConfig()
+	type errTestCase struct {
+		request  types.BootstrapRequest
+		expected string
+	}
+	DescribeTable("should fail bootstrap",
+		func(given errTestCase) {
+			// given
+			cfg := bootstrap_config.DefaultBootstrapServerConfig()
 
-		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
-		Expect(err).ToNot(HaveOccurred())
-		request := types.BootstrapRequest{
-			Mesh:      "mesh",
-			Name:      "name-3.namespace",
-			AdminPort: 9901,
-			Host:      "kuma.internal",
-		}
+			generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false, true)
+			Expect(err).ToNot(HaveOccurred())
 
-		// when
-		_, _, err = generator.Generate(context.Background(), request)
-		// then
-		Expect(err).To(HaveOccurred())
-		// and
-		Expect(err.Error()).To(Equal(`A data plane proxy is trying to connect to the control plane using "kuma.internal" address, but the certificate in the control plane has the following SANs ["localhost"]. Either change the --cp-address in kuma-dp to one of those or execute the following steps:
+			// when
+			_, _, err = generator.Generate(context.Background(), given.request)
+			// then
+			Expect(err).To(HaveOccurred())
+			// and
+			Expect(err.Error()).To(Equal(given.expected))
+		},
+		Entry("due to invalid hostname", errTestCase{
+			request: types.BootstrapRequest{
+				Mesh:      "mesh",
+				Name:      "name-3.namespace",
+				AdminPort: 9901,
+				Host:      "kuma.internal",
+			},
+			expected: `A data plane proxy is trying to connect to the control plane using "kuma.internal" address, but the certificate in the control plane has the following SANs ["fd00:a123::1" "localhost"]. Either change the --cp-address in kuma-dp to one of those or execute the following steps:
 1) Generate a new certificate with the address you are trying to use. It is recommended to use trusted Certificate Authority, but you can also generate self-signed certificates using 'kumactl generate tls-certificate --type=server --cp-hostname=kuma.internal'
 2) Set KUMA_GENERAL_TLS_CERT_FILE and KUMA_GENERAL_TLS_KEY_FILE or the equivalent in Kuma CP config file to the new certificate.
-3) Restart the control plane to read the new certificate and start kuma-dp.`))
-	})
-
-	It("should fail bootstrap due to invalid bootstrap version", func() {
-		// given
-		cfg := bootstrap_config.DefaultBootstrapServerConfig()
-		cfg.Params.XdsHost = "localhost"
-		cfg.Params.XdsPort = 5678
-
-		generator, err := NewDefaultBootstrapGenerator(resManager, cfg, filepath.Join("..", "..", "..", "test", "certs", "server-cert.pem"), false)
-		Expect(err).ToNot(HaveOccurred())
-		request := types.BootstrapRequest{
-			Mesh:             "mesh",
-			Name:             "name.namespace",
-			AdminPort:        9901,
-			BootstrapVersion: "5",
-		}
-
-		// when
-		_, _, err = generator.Generate(context.Background(), request)
-		// then
-		Expect(err).To(HaveOccurred())
-		// and
-		Expect(err.Error()).To(Equal(`Invalid BootstrapVersion. Available values are: "2", "3"`))
-	})
+3) Restart the control plane to read the new certificate and start kuma-dp.`,
+		}),
+		Entry("due to invalid bootstrap version", errTestCase{
+			request: types.BootstrapRequest{
+				Host:             "localhost",
+				Mesh:             "mesh",
+				Name:             "name.namespace",
+				AdminPort:        9901,
+				BootstrapVersion: "5",
+			},
+			expected: `Invalid BootstrapVersion. Available values are: "2", "3"`,
+		}),
+		Entry("when both dataplane and dataplane token path are defined", errTestCase{
+			request: types.BootstrapRequest{
+				Host:               "localhost",
+				Mesh:               "mesh",
+				Name:               "name.namespace",
+				AdminPort:          9901,
+				DataplaneTokenPath: "/tmp",
+				DataplaneToken:     "token",
+			},
+			expected: `dataplaneToken: only one of dataplaneToken and dataplaneTokenField can be defined`,
+		}),
+		Entry("when CaCert is not a CA and EnvoyGRPC is used", errTestCase{
+			request: types.BootstrapRequest{
+				Host:           "localhost",
+				Mesh:           "mesh",
+				Name:           "name.namespace",
+				AdminPort:      9901,
+				DataplaneToken: "token",
+				CaCert: `
+-----BEGIN CERTIFICATE-----
+MIIDdzCCAl+gAwIBAgIJAPHcHHoejP+XMA0GCSqGSIb3DQEBCwUAMD4xCzAJBgNV
+BAYTAlBMMQ8wDQYDVQQIDAZXYXJzYXcxDzANBgNVBAcMBldhcnNhdzENMAsGA1UE
+CgwES29uZzAeFw0yMTAzMzAwOTEwMTFaFw0yMzA3MDMwOTEwMTFaMC8xCzAJBgNV
+BAYTAlBMMQ8wDQYDVQQIDAZXYXJzYXcxDzANBgNVBAcMBldhcnNhdzCCASIwDQYJ
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBAMOxLuQiRSsDKb+E/iliMN0ME1ENxx6v
+S362cmyL6pCS6HdsJnOiCeAiiezRdotf7pD87DkwLrAI2v6IOEueXmXu/pRkZZdj
+GFdYOJ0j28Qg79VfhLZPGZrATowUkmNfWFuX7gyjButP5+M6yMEm8piKkMgYtj8H
+13Jj5GBazYojBdVkdC7VCRjwiF3oudDC+I0f5RFwqrU89zfLf8fIYn0waioUZKT9
+W48oVmRw2SqYFf5O+T+EY3mcSWRNrzweZX7YdFvHFJLSglkmn7275cdwqle68iZn
+xbVn7MW5nlp5W0ONAFLB3JJ7TRee2o8P9CkiuqG+ppmMPQq5zWPGuxUCAwEAAaOB
+hjCBgzBYBgNVHSMEUTBPoUKkQDA+MQswCQYDVQQGEwJQTDEPMA0GA1UECAwGV2Fy
+c2F3MQ8wDQYDVQQHDAZXYXJzYXcxDTALBgNVBAoMBEtvbmeCCQDpKl9mxhgHFzAJ
+BgNVHRMEAjAAMAsGA1UdDwQEAwIE8DAPBgNVHREECDAGhwTAqAANMA0GCSqGSIb3
+DQEBCwUAA4IBAQCHU5JyuMwayeVBVSOnGw8A9ugrGfyHy4nN+vK+IjkyPaDynyob
+i1mXzK1JDn2koHqRRlSGQGy/eJdHRPxUj8+VzyIbCVqpiiOYxC2tQUQ5BhVGC08u
+oCZcflyypSej2QVYtj83ty8ty1EFSdO8v23oPhzVSjc+SkF5c+q326piXf+a5wWh
+uAxW1XJnTaqAFhGR9c0zRCrbz86yQTsdFAm1UVMMucnZjNpWL4pHLJC6FCiOO17q
+w/vjIriD0mGwwccxbojmEHq4rO4ZrjQNmwvOgxoL2dTm/L9Smr6RXmIgu/0Pnrlq
+7RLK1pnDttr4brFafbIvWIBvshe2hoCT6jBW
+-----END CERTIFICATE-----
+`,
+			},
+			expected: `A data plane proxy is trying to verify the control plane using the certificate which is not a certificate authority (basic constraint 'CA' is set to 'false').
+Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE`,
+		}),
+		Entry("when DNS is used in API V2", errTestCase{
+			request: types.BootstrapRequest{
+				Host:             "localhost",
+				Mesh:             "mesh",
+				Name:             "name.namespace",
+				AdminPort:        9901,
+				BootstrapVersion: "2",
+				DNSPort:          1234,
+			},
+			expected: `dnsPort: DNS cannot be used in API V2. Upgrade Kuma DP to API V3`,
+		}),
+	)
 })

@@ -2,16 +2,16 @@ package topology
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/kumahq/kuma/api/system/v1alpha1"
-
-	"github.com/kumahq/kuma/pkg/core"
+	"net"
+	"strconv"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/api/system/v1alpha1"
+	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	"github.com/kumahq/kuma/pkg/xds/envoy"
 )
 
 const (
@@ -30,6 +30,16 @@ func BuildEndpointMap(
 	externalServices []*mesh_core.ExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
+	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes)
+	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader)
+	return outbound
+}
+
+func BuildEdsEndpointMap(
+	mesh *mesh_core.MeshResource,
+	zone string,
+	dataplanes []*mesh_core.DataplaneResource,
+) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
 	ingressInstances := fillIngressOutbounds(outbound, dataplanes, zone, mesh)
 	endpointWeight := uint32(1)
@@ -37,7 +47,6 @@ func BuildEndpointMap(
 		endpointWeight = ingressInstances
 	}
 	fillDataplaneOutbounds(outbound, dataplanes, mesh, endpointWeight)
-	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader)
 	return outbound
 }
 
@@ -66,17 +75,11 @@ func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_co
 		if dataplane.Spec.IsIngress() {
 			continue
 		}
-		for _, inbound := range dataplane.Spec.Networking.GetInbound() {
+		for _, inbound := range dataplane.Spec.GetNetworking().GetHealthyInbounds() {
 			service := inbound.Tags[mesh_proto.ServiceTag]
 			iface := dataplane.Spec.Networking.ToInboundInterface(inbound)
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?
-
-			// if inbound.Health == nil we consider Dataplane as healthy in order to be compatible with Universal
-			// where we Kuma doesn't fill inbound.Health automatically
-			if inbound.Health != nil && !inbound.Health.Ready {
-				continue
-			}
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
 				Target:   iface.DataplaneIP,
 				Port:     iface.DataplanePort,
@@ -105,7 +108,8 @@ func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core
 		if !dataplane.Spec.HasPublicAddress() {
 			continue // Dataplane is not reachable yet from other clusters. This may happen when Ingress Service is pending waiting on External IP on Kubernetes.
 		}
-		ingressCoordinates := fmt.Sprintf("%s;%d", dataplane.Spec.Networking.Ingress.PublicAddress, dataplane.Spec.Networking.Ingress.PublicPort)
+		ingressCoordinates := net.JoinHostPort(dataplane.Spec.Networking.Ingress.PublicAddress,
+			strconv.FormatUint(uint64(dataplane.Spec.Networking.Ingress.PublicPort), 10))
 		if ingressInstances[ingressCoordinates] {
 			continue // many Ingress instances can be placed in front of one load balancer (all instances can have the same public address and port). In this case we only need one Instance avoiding creating unnecessary duplicated endpoints
 		}
@@ -156,7 +160,7 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 
 	tags := externalService.Spec.GetTags()
 	if es.TLSEnabled {
-		tags[`kuma.io/external-service-name`] = externalService.Meta.GetName()
+		tags = envoy.Tags(tags).WithTags(mesh_proto.ExternalServiceTag, externalService.Meta.GetName())
 	}
 
 	return &core_xds.Endpoint{
@@ -184,16 +188,23 @@ func convertToEnvoy(ds *v1alpha1.DataSource, mesh string, loader datasource.Load
 }
 
 func localityFromTags(mesh *mesh_core.MeshResource, priority uint32, tags map[string]string) *core_xds.Locality {
-	if !mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
-		return nil
-	}
-
 	region, regionPresent := tags[mesh_proto.RegionTag]
 	zone, zonePresent := tags[mesh_proto.ZoneTag]
 	subZone, subZonePresent := tags[mesh_proto.SubZoneTag]
 
 	if !regionPresent && !zonePresent && !subZonePresent {
+		// this means that we are running in standalone since in multi-zone Kuma always adds Zone tag automatically
 		return nil
+	}
+
+	if !mesh.Spec.GetRouting().GetLocalityAwareLoadBalancing() {
+		// we want to set the Locality even when localityAwareLoadbalancing is enabled
+		// If we set the locality we have an extra visibility about this in /clusters etc.
+		// Kuma's LocalityAwareLoadBalancing feature is based only on Priority therefore when it's disabled we need to set Priority to local
+		//
+		// Setting this regardless of LocalityAwareLoadBalancing on the mesh also solves the problem that endpoints have problems when moving from one locality to another
+		// https://github.com/envoyproxy/envoy/issues/12392
+		priority = priorityLocal
 	}
 
 	return &core_xds.Locality{

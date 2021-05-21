@@ -1,7 +1,6 @@
 package generator_test
 
 import (
-	"io/ioutil"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -11,6 +10,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -41,7 +41,7 @@ var _ = Describe("IngressGenerator", func() {
 					},
 					Spec: dataplane,
 				},
-				APIVersion: envoy_common.APIV2,
+				APIVersion: envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					OutboundTargets:  given.outboundTargets,
 					TrafficRouteList: given.trafficRoutes,
@@ -62,9 +62,8 @@ var _ = Describe("IngressGenerator", func() {
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.expected))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			// and output matches golden files
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.expected)))
 		},
 		Entry("01. default trafficroute, single mesh", testCase{
 			dataplane: `
@@ -456,6 +455,66 @@ var _ = Describe("IngressGenerator", func() {
 										},
 									},
 								},
+							},
+						},
+					},
+				},
+			},
+		}),
+		Entry("05. trafficroute repeated", testCase{
+			dataplane: `
+            networking:
+              address: 10.0.0.1
+              ingress:
+                availableServices:
+                  - mesh: mesh1
+                    tags:
+                      kuma.io/service: backend
+                      version: v1
+                      region: eu
+                  - mesh: mesh1
+                    tags:
+                      kuma.io/service: backend
+                      version: v2
+                      region: us
+              inbound:
+                - port: 10001
+`,
+			expected: "05.envoy.golden.yaml",
+			outboundTargets: map[core_xds.ServiceName][]core_xds.Endpoint{
+				"backend": {},
+			},
+			trafficRoutes: &mesh_core.TrafficRouteResourceList{
+				Items: []*mesh_core.TrafficRouteResource{
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchAnyService(),
+								}},
+							},
+						},
+					},
+					{
+						Spec: &mesh_proto.TrafficRoute{
+							Sources: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchService("foo"),
+							}},
+							Destinations: []*mesh_proto.Selector{{
+								Match: mesh_proto.MatchAnyService(),
+							}},
+							Conf: &mesh_proto.TrafficRoute_Conf{
+								Split: []*mesh_proto.TrafficRoute_Split{{
+									Weight:      100,
+									Destination: mesh_proto.MatchAnyService(),
+								}},
 							},
 						},
 					},

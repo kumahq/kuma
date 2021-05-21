@@ -8,6 +8,7 @@ injector:
     image: kuma-sidecar:latest
     redirectPortOutbound: 1234
     redirectPortInbound: 1236
+    redirectPortInboundV6: 1237
     uid: 2345
     gid: 3456
     adminPort: 45678
@@ -33,4 +34,8 @@ injector:
         memory: 1512Mi
   initContainer:
     image: kuma-init:latest
+  builtinDNS:
+    enabled: true
+    port: 1253
 marshalingCacheExpirationTime: 1s
+controlPlaneServiceName: custom-control-plane

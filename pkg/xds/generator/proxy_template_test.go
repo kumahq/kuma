@@ -11,6 +11,7 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	model "github.com/kumahq/kuma/pkg/core/xds"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -82,7 +83,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 							},
 						},
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				},
 				template: &mesh_proto.ProxyTemplate{
 					Conf: &mesh_proto.ProxyTemplate_Conf{
@@ -106,7 +107,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 		type testCase struct {
 			dataplane         string
 			proxyTemplateFile string
-			envoyConfigFile   string
+			expected          string
 		}
 
 		DescribeTable("Generate Envoy xDS resources",
@@ -160,7 +161,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 						},
 						Spec: dataplane,
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 					Metadata:   &model.DataplaneMetadata{},
 				}
 
@@ -179,9 +180,8 @@ var _ = Describe("ProxyTemplateGenerator", func() {
 				// then
 				Expect(err).ToNot(HaveOccurred())
 
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", "template-proxy", given.envoyConfigFile))
-				Expect(err).ToNot(HaveOccurred())
-				Expect(actual).To(MatchYAML(expected))
+				// and output matches golden files
+				Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "template-proxy", given.expected)))
 			},
 			Entry("should support a combination of pre-defined profiles and raw xDS resources", testCase{
 				dataplane: `
@@ -195,7 +195,7 @@ var _ = Describe("ProxyTemplateGenerator", func() {
                       servicePort: 8080
 `,
 				proxyTemplateFile: "1-proxy-template.input.yaml",
-				envoyConfigFile:   "1-envoy-config.golden.yaml",
+				expected:          "1-envoy-config.golden.yaml",
 			}),
 		)
 

@@ -129,10 +129,16 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.ApiServer.Auth.AllowFromLocalhost).To(Equal(false))
 			Expect(cfg.ApiServer.Auth.ClientCertsDir).To(Equal("/certs"))
 			Expect(cfg.ApiServer.CorsAllowedDomains).To(Equal([]string{"https://kuma", "https://someapi"}))
-			Expect(cfg.ApiServer.Catalog.Bootstrap.Url).To(Equal("https://test.bootstrap.url:1234/"))
 
+			// nolint: staticcheck
 			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
+			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(2222)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
+			Expect(cfg.MonitoringAssignmentServer.FetchTimeout).To(Equal(45 * time.Second))
+			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(HaveLen(1))
+			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(ContainElements("v1"))
+
+			Expect(cfg.Runtime.Kubernetes.ControlPlaneServiceName).To(Equal("custom-control-plane"))
 
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Address).To(Equal("127.0.0.2"))
 			Expect(cfg.Runtime.Kubernetes.AdmissionServer.Port).To(Equal(uint32(9443)))
@@ -147,7 +153,9 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.VirtualProbesPort).To(Equal(uint32(1111)))
 			Expect(cfg.Runtime.Kubernetes.Injector.CNIEnabled).To(BeTrue())
 			Expect(cfg.Runtime.Kubernetes.Injector.InitContainer.Image).To(Equal("test-image:test"))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.EnvVars).To(Equal(map[string]string{"a": "b", "c": "d"}))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.RedirectPortInbound).To(Equal(uint32(2020)))
+			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.RedirectPortInboundV6).To(Equal(uint32(2021)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.RedirectPortOutbound).To(Equal(uint32(1010)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.UID).To(Equal(int64(100)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.GID).To(Equal(int64(1212)))
@@ -167,6 +175,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.FailureThreshold).To(Equal(int32(22)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.TimeoutSeconds).To(Equal(int32(24)))
 			Expect(cfg.Runtime.Kubernetes.Injector.SidecarContainer.ReadinessProbe.InitialDelaySeconds).To(Equal(int32(41)))
+			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Enabled).To(Equal(true))
+			Expect(cfg.Runtime.Kubernetes.Injector.BuiltinDNS.Port).To(Equal(uint32(1053)))
 
 			Expect(cfg.Runtime.Universal.DataplaneCleanupAge).To(Equal(1 * time.Hour))
 
@@ -175,6 +185,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.TlsCertFile).To(Equal("/tmp/cert"))
 			Expect(cfg.General.TlsKeyFile).To(Equal("/tmp/key"))
 			Expect(cfg.General.DNSCacheTTL).To(Equal(19 * time.Second))
+			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
 
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
 			Expect(cfg.Mode).To(Equal(config_core.Remote))
@@ -202,6 +213,7 @@ var _ = Describe("Config loader", func() {
 
 			Expect(cfg.XdsServer.DataplaneStatusFlushInterval).To(Equal(7 * time.Second))
 			Expect(cfg.XdsServer.DataplaneConfigurationRefreshInterval).To(Equal(21 * time.Second))
+			Expect(cfg.XdsServer.NACKBackoff).To(Equal(10 * time.Second))
 
 			Expect(cfg.Metrics.Zone.Enabled).To(BeFalse())
 			Expect(cfg.Metrics.Zone.SubscriptionLimit).To(Equal(23))
@@ -214,6 +226,14 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.DpServer.TlsKeyFile).To(Equal("/test/path/key"))
 			Expect(cfg.DpServer.Auth.Type).To(Equal("dpToken"))
 			Expect(cfg.DpServer.Port).To(Equal(9876))
+			Expect(cfg.DpServer.Hds.Enabled).To(BeFalse())
+			Expect(cfg.DpServer.Hds.Interval).To(Equal(11 * time.Second))
+			Expect(cfg.DpServer.Hds.RefreshInterval).To(Equal(12 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.Timeout).To(Equal(5 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.Interval).To(Equal(6 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.NoTrafficInterval).To(Equal(7 * time.Second))
+			Expect(cfg.DpServer.Hds.CheckDefaults.HealthyThreshold).To(Equal(uint32(8)))
+			Expect(cfg.DpServer.Hds.CheckDefaults.UnhealthyThreshold).To(Equal(uint32(9)))
 
 			Expect(cfg.SdsServer.DataplaneConfigurationRefreshInterval).To(Equal(11 * time.Second))
 		},
@@ -273,16 +293,17 @@ apiServer:
   corsAllowedDomains:
     - https://kuma
     - https://someapi
-  catalog:
-    bootstrap:
-      url: https://test.bootstrap.url:1234/
 monitoringAssignmentServer:
   grpcPort: 3333
+  port: 2222
+  fetchTimeout: 45s
+  apiVersions: [v1]
   assignmentRefreshInterval: 12s
 runtime:
   universal:
     dataplaneCleanupAge: 1h
   kubernetes:
+    controlPlaneServiceName: custom-control-plane
     admissionServer:
       address: 127.0.0.2
       port: 9443
@@ -302,6 +323,7 @@ runtime:
       sidecarContainer:
         image: image:test
         redirectPortInbound: 2020
+        redirectPortInboundV6: 2021
         redirectPortOutbound: 1010
         uid: 100
         gid: 1212
@@ -325,6 +347,9 @@ runtime:
           periodSeconds: 18
           failureThreshold: 22
           timeoutSeconds: 24
+        envVars:
+          a: b
+          c: d
       sidecarTraffic:
         excludeInboundPorts:
         - 1234
@@ -332,12 +357,16 @@ runtime:
         excludeOutboundPorts:
         - 4321
         - 8765
+      builtinDNS:
+        enabled: true
+        port: 1053
 reports:
   enabled: false
 general:
   tlsKeyFile: /tmp/key
   tlsCertFile: /tmp/cert
   dnsCacheTTL: 19s
+  workDir: /custom/work/dir
 guiServer:
   apiServerUrl: http://localhost:1234
 mode: remote
@@ -368,6 +397,7 @@ diagnostics:
 xdsServer:
   dataplaneConfigurationRefreshInterval: 21s
   dataplaneStatusFlushInterval: 7s
+  nackBackoff: 10s
 metrics:
   zone:
     enabled: false
@@ -384,6 +414,16 @@ dpServer:
   port: 9876
   auth:
     type: dpToken
+  hds:
+    enabled: false
+    interval: 11s
+    refreshInterval: 12s
+    checkDefaults:
+      timeout: 5s
+      interval: 6s
+      noTrafficInterval: 7s
+      healthyThreshold: 8
+      unhealthyThreshold: 9
 sdsServer:
   dataplaneConfigurationRefreshInterval: 11s
 `,
@@ -428,10 +468,13 @@ sdsServer:
 				"KUMA_API_SERVER_HTTPS_TLS_KEY_FILE":                                                       "/key",
 				"KUMA_API_SERVER_AUTH_CLIENT_CERTS_DIR":                                                    "/certs",
 				"KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST":                                                "false",
-				"KUMA_API_SERVER_CATALOG_BOOTSTRAP_URL":                                                    "https://test.bootstrap.url:1234/",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                                              "3333",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_FETCH_TIMEOUT":                                          "45s",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS":                                           "v1",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":                            "12s",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
+				"KUMA_RUNTIME_KUBERNETES_CONTROL_PLANE_SERVICE_NAME":                                       "custom-control-plane",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_ADDRESS":                                         "127.0.0.2",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_PORT":                                            "9443",
 				"KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR":                                        "/var/run/secrets/kuma.io/kuma-admission-server/tls-cert",
@@ -445,8 +488,10 @@ sdsServer:
 				"KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_MEMORY":                                  "8Gi",
 				"KUMA_INJECTOR_SIDECAR_CONTAINER_RESOURCES_LIMITS_CPU":                                     "100m",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND":                 "2020",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_INBOUND_V6":              "2021",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_REDIRECT_PORT_OUTBOUND":                "1010",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_CNI_ENABLED":                                             "true",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ENV_VARS":                              "a:b,c:d",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_UID":                                   "100",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_ADMIN_PORT":                            "1099",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_DRAIN_TIME":                            "33s",
@@ -461,6 +506,8 @@ sdsServer:
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_FAILURE_THRESHOLD":     "22",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_TIMEOUT_SECONDS":       "24",
 				"KUMA_RUNTIME_KUBERNETES_INJECTOR_SIDECAR_CONTAINER_READINESS_PROBE_INITIAL_DELAY_SECONDS": "41",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED":                                     "true",
+				"KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT":                                        "1053",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED":                                           "false",
 				"KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT":                                              "1111",
 				"KUMA_RUNTIME_KUBERNETES_EXCEPTIONS_LABELS":                                                "openshift.io/build.name:value1,openshift.io/deployer-pod-for.name:value2",
@@ -468,6 +515,7 @@ sdsServer:
 				"KUMA_GENERAL_TLS_CERT_FILE":                                                               "/tmp/cert",
 				"KUMA_GENERAL_TLS_KEY_FILE":                                                                "/tmp/key",
 				"KUMA_GENERAL_DNS_CACHE_TTL":                                                               "19s",
+				"KUMA_GENERAL_WORK_DIR":                                                                    "/custom/work/dir",
 				"KUMA_API_SERVER_CORS_ALLOWED_DOMAINS":                                                     "https://kuma,https://someapi",
 				"KUMA_GUI_SERVER_API_SERVER_URL":                                                           "http://localhost:1234",
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
@@ -489,6 +537,7 @@ sdsServer:
 				"KUMA_DIAGNOSTICS_DEBUG_ENDPOINTS":                                                         "true",
 				"KUMA_XDS_SERVER_DATAPLANE_STATUS_FLUSH_INTERVAL":                                          "7s",
 				"KUMA_XDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "21s",
+				"KUMA_XDS_SERVER_NACK_BACKOFF":                                                             "10s",
 				"KUMA_METRICS_ZONE_ENABLED":                                                                "false",
 				"KUMA_METRICS_ZONE_SUBSCRIPTION_LIMIT":                                                     "23",
 				"KUMA_METRICS_MESH_MAX_RESYNC_TIMEOUT":                                                     "27s",
@@ -499,6 +548,14 @@ sdsServer:
 				"KUMA_DP_SERVER_TLS_KEY_FILE":                                                              "/test/path/key",
 				"KUMA_DP_SERVER_AUTH_TYPE":                                                                 "dpToken",
 				"KUMA_DP_SERVER_PORT":                                                                      "9876",
+				"KUMA_DP_SERVER_HDS_ENABLED":                                                               "false",
+				"KUMA_DP_SERVER_HDS_INTERVAL":                                                              "11s",
+				"KUMA_DP_SERVER_HDS_REFRESH_INTERVAL":                                                      "12s",
+				"KUMA_DP_SERVER_HDS_CHECK_TIMEOUT":                                                         "5s",
+				"KUMA_DP_SERVER_HDS_CHECK_INTERVAL":                                                        "6s",
+				"KUMA_DP_SERVER_HDS_CHECK_NO_TRAFFIC_INTERVAL":                                             "7s",
+				"KUMA_DP_SERVER_HDS_CHECK_HEALTHY_THRESHOLD":                                               "8",
+				"KUMA_DP_SERVER_HDS_CHECK_UNHEALTHY_THRESHOLD":                                             "9",
 				"KUMA_SDS_SERVER_DATAPLANE_CONFIGURATION_REFRESH_INTERVAL":                                 "11s",
 			},
 			yamlFileConfig: "",

@@ -6,11 +6,9 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/ptypes/timestamp"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -18,27 +16,15 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/events"
 	"github.com/kumahq/kuma/pkg/insights"
+	test_insights "github.com/kumahq/kuma/pkg/insights/test"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/util/proto"
+
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
-
-type testEventReader struct {
-	ch chan events.Event
-}
-
-func (t *testEventReader) Recv(stop <-chan struct{}) (events.Event, error) {
-	return <-t.ch, nil
-}
-
-type testEventReaderFactory struct {
-	reader *testEventReader
-}
-
-func (t *testEventReaderFactory) New() events.Listener {
-	return t.reader
-}
 
 var _ = Describe("Insight Persistence", func() {
 	var rm manager.ResourceManager
@@ -59,7 +45,11 @@ var _ = Describe("Insight Persistence", func() {
 
 	BeforeEach(func() {
 		rm = manager.NewResourceManager(memory.NewStore())
+
+		nowMtx.Lock()
 		now = time.Now()
+		nowMtx.Unlock()
+
 		eventCh = make(chan events.Event)
 		stopCh = make(chan struct{})
 
@@ -71,7 +61,7 @@ var _ = Describe("Insight Persistence", func() {
 			MinResyncTimeout:   5 * time.Second,
 			MaxResyncTimeout:   1 * time.Minute,
 			ResourceManager:    rm,
-			EventReaderFactory: &testEventReaderFactory{reader: &testEventReader{ch: eventCh}},
+			EventReaderFactory: &test_insights.TestEventReaderFactory{Reader: &test_insights.TestEventReader{Ch: eventCh}},
 			Tick: func(d time.Duration) (rv <-chan time.Time) {
 				tickMtx.RLock()
 				defer tickMtx.RUnlock()
@@ -79,10 +69,10 @@ var _ = Describe("Insight Persistence", func() {
 				return tickCh
 			},
 		})
-		go func() {
+		go func(stopCh chan struct{}) {
 			err := resyncer.Start(stopCh)
 			Expect(err).ToNot(HaveOccurred())
-		}()
+		}(stopCh)
 	})
 
 	It("should sync more often than MaxResyncTimeout", func() {
@@ -110,6 +100,9 @@ var _ = Describe("Insight Persistence", func() {
 		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
 		dp1 := core_mesh.NewDataplaneInsightResource()
 		dp1.Spec.Subscriptions = append(dp1.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 			Id: strconv.Itoa(1),
@@ -125,6 +118,9 @@ var _ = Describe("Insight Persistence", func() {
 		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
 		dp2 := core_mesh.NewDataplaneInsightResource()
 		dp2.Spec.Subscriptions = append(dp2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
 			Id: strconv.Itoa(2),
@@ -138,6 +134,9 @@ var _ = Describe("Insight Persistence", func() {
 			},
 		})
 		err = rm.Create(context.Background(), dp2, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp3", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		dp3 := core_mesh.NewDataplaneInsightResource()
@@ -159,9 +158,6 @@ var _ = Describe("Insight Persistence", func() {
 		}, "10s", "100ms").Should(BeNil())
 
 		// then
-		Expect(meshInsight.Spec.Dataplanes.Total).To(Equal(uint32(3)))
-		Expect(meshInsight.Spec.Dataplanes.Offline).To(Equal(uint32(3)))
-
 		kumaDp := meshInsight.Spec.DpVersions.KumaDp
 		Expect(kumaDp["unknown"].Total).To(Equal(uint32(1)))
 		Expect(kumaDp["unknown"].Offline).To(Equal(uint32(1)))
@@ -175,5 +171,363 @@ var _ = Describe("Insight Persistence", func() {
 		Expect(envoy["unknown"].Offline).To(Equal(uint32(1)))
 		Expect(envoy["1.15.0"].Total).To(Equal(uint32(2)))
 		Expect(envoy["1.15.0"].Offline).To(Equal(uint32(2)))
+	})
+
+	It("should not count dataplane as a policy", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = rm.Create(context.Background(), &core_mesh.DataplaneResource{Spec: samples.Dataplane}, store.CreateByKey("dp-1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		nowMtx.Lock()
+		now = now.Add(61 * time.Second)
+		nowMtx.Unlock()
+		tickCh <- now
+
+		insight := core_mesh.NewMeshInsightResource()
+		Eventually(func() error {
+			return rm.Get(context.Background(), insight, store.GetByKey("mesh-1", model.NoMesh))
+		}, "10s", "100ms").Should(BeNil())
+		Expect(insight.Spec.Policies[string(core_mesh.DataplaneType)]).To(BeNil())
+		Expect(insight.Spec.Dataplanes.Total).To(Equal(uint32(1)))
+		Expect(insight.Spec.LastSync).To(MatchProto(proto.MustTimestampProto(now)))
+	})
+
+	It("should return correct statuses in service insights", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp1 := core_mesh.NewDataplaneResource()
+		dp1.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.1",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 7777,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: true,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "backend-1",
+						},
+					},
+				},
+			},
+		}
+
+		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpi1 := core_mesh.NewDataplaneInsightResource()
+		dpi1.Spec.Subscriptions = append(dpi1.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamp.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+		})
+
+		err = rm.Create(context.Background(), dpi1, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp2 := core_mesh.NewDataplaneResource()
+		dp2.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.2",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 7777,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: true,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "backend-1",
+						},
+					},
+				},
+			},
+		}
+
+		err = rm.Create(context.Background(), dp2, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpi2 := core_mesh.NewDataplaneInsightResource()
+		dpi2.Spec.Subscriptions = append(dpi2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamp.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+		})
+
+		err = rm.Create(context.Background(), dpi2, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp3 := core_mesh.NewDataplaneResource()
+		dp3.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.3",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 7777,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: false,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "backend-1",
+						},
+					},
+					{
+						Port: 8888,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: true,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "db-1",
+						},
+					},
+				},
+			},
+		}
+
+		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpi3 := core_mesh.NewDataplaneInsightResource()
+		dpi3.Spec.Subscriptions = append(dpi3.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamp.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+		})
+
+		err = rm.Create(context.Background(), dpi3, store.CreateByKey("dp3", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp4 := core_mesh.NewDataplaneResource()
+		dp4.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.4",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 7777,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: true,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "backend-1",
+						},
+					},
+				},
+			},
+		}
+
+		err = rm.Create(context.Background(), dp4, store.CreateByKey("dp4", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpi4 := core_mesh.NewDataplaneInsightResource()
+		dpi4.Spec.Subscriptions = append(dpi4.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamp.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+			DisconnectTime: &timestamp.Timestamp{
+				Seconds: 101,
+				Nanos:   202,
+			},
+		})
+
+		err = rm.Create(context.Background(), dpi4, store.CreateByKey("dp4", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		nowMtx.Lock()
+		now = now.Add(61 * time.Second)
+		nowMtx.Unlock()
+		tickCh <- now
+
+		// when
+		serviceInsight := core_mesh.NewServiceInsightResource()
+		Eventually(func() error {
+			return rm.Get(context.Background(), serviceInsight, store.GetByKey("all-services-mesh-1", "mesh-1"))
+		}, "10s", "100ms").Should(BeNil())
+
+		service := serviceInsight.Spec.Services["backend-1"]
+
+		// then
+		Expect(service.Status).To(Equal(mesh_proto.ServiceInsight_Service_partially_degraded))
+		Expect(service.Dataplanes.Total).To(Equal(uint32(4)))
+		Expect(service.Dataplanes.Online).To(Equal(uint32(2)))
+		Expect(service.Dataplanes.Offline).To(Equal(uint32(2)))
+	})
+
+	It("should return correct dataplanes statuses in mesh insights", func() {
+		err := rm.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey("mesh-1", model.NoMesh))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp1 := core_mesh.NewDataplaneResource()
+		dp1.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.1",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 7777,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: true,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+						},
+					},
+				},
+			},
+		}
+
+		err = rm.Create(context.Background(), dp1, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpi1 := core_mesh.NewDataplaneInsightResource()
+		dpi1.Spec.Subscriptions = append(dpi1.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamp.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+		})
+
+		err = rm.Create(context.Background(), dpi1, store.CreateByKey("dp1", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp2 := core_mesh.NewDataplaneResource()
+		dp2.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.2",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 7777,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: true,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+						},
+					},
+					{
+						Port: 8888,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: true,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "db",
+						},
+					},
+				},
+			},
+		}
+
+		err = rm.Create(context.Background(), dp2, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpi2 := core_mesh.NewDataplaneInsightResource()
+		dpi2.Spec.Subscriptions = append(dpi2.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamp.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+		})
+
+		err = rm.Create(context.Background(), dpi2, store.CreateByKey("dp2", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp3 := core_mesh.NewDataplaneResource()
+		dp3.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.3",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 7777,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: true,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+						},
+					},
+					{
+						Port: 8888,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: false,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "db",
+						},
+					},
+				},
+			},
+		}
+
+		err = rm.Create(context.Background(), dp3, store.CreateByKey("dp3", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpi3 := core_mesh.NewDataplaneInsightResource()
+		dpi3.Spec.Subscriptions = append(dpi3.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamp.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+		})
+
+		err = rm.Create(context.Background(), dpi3, store.CreateByKey("dp3", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dp4 := core_mesh.NewDataplaneResource()
+		dp4.Spec = &mesh_proto.Dataplane{
+			Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.0.0.3",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
+					{
+						Port: 7777,
+						Health: &mesh_proto.Dataplane_Networking_Inbound_Health{
+							Ready: true,
+						},
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+						},
+					},
+				},
+			},
+		}
+
+		err = rm.Create(context.Background(), dp4, store.CreateByKey("dp4", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		dpi4 := core_mesh.NewDataplaneInsightResource()
+		dpi4.Spec.Subscriptions = append(dpi4.Spec.Subscriptions, &mesh_proto.DiscoverySubscription{
+			ConnectTime: &timestamp.Timestamp{
+				Seconds: 100,
+				Nanos:   200,
+			},
+			DisconnectTime: &timestamp.Timestamp{
+				Seconds: 101,
+				Nanos:   202,
+			},
+		})
+
+		err = rm.Create(context.Background(), dpi4, store.CreateByKey("dp4", "mesh-1"))
+		Expect(err).ToNot(HaveOccurred())
+
+		nowMtx.Lock()
+		now = now.Add(61 * time.Second)
+		nowMtx.Unlock()
+		tickCh <- now
+
+		// when
+		meshInsight := core_mesh.NewMeshInsightResource()
+		Eventually(func() error {
+			return rm.Get(context.Background(), meshInsight, store.GetByKey("mesh-1", model.NoMesh))
+		}, "10s", "100ms").Should(BeNil())
+
+		// then
+		Expect(meshInsight.Spec.Dataplanes.Total).To(Equal(uint32(4)))
+		Expect(meshInsight.Spec.Dataplanes.Online).To(Equal(uint32(2)))
+		Expect(meshInsight.Spec.Dataplanes.PartiallyDegraded).To(Equal(uint32(1)))
+		Expect(meshInsight.Spec.Dataplanes.Offline).To(Equal(uint32(1)))
 	})
 })

@@ -10,6 +10,7 @@ import (
 	runtime_k8s "github.com/kumahq/kuma/pkg/config/plugins/runtime/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/probes"
+	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/util"
 )
 
 func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
@@ -29,6 +30,10 @@ func (i *KumaInjector) overrideHTTPProbes(pod *kube_core.Pod) error {
 	}
 
 	for _, c := range pod.Spec.Containers {
+		if c.Name == util.KumaSidecarContainerName {
+			// we don't want to create virtual probes for Envoy container, because we generate real listener which is not protected by mTLS
+			continue
+		}
 		if c.LivenessProbe != nil && c.LivenessProbe.HTTPGet != nil {
 			log.V(1).Info("overriding liveness probe", "container", c.Name)
 			resolveNamedPort(c, c.LivenessProbe)

@@ -2,11 +2,13 @@ package v2
 
 import (
 	"github.com/golang/protobuf/proto"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/core"
 	model "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	"github.com/kumahq/kuma/pkg/xds/generator"
+	xds_hooks "github.com/kumahq/kuma/pkg/xds/hooks"
 	xds_sync "github.com/kumahq/kuma/pkg/xds/sync"
 	xds_template "github.com/kumahq/kuma/pkg/xds/template"
 
@@ -75,12 +77,12 @@ func reuseVersion(old, new envoy_cache.Resources) envoy_cache.Resources {
 	return new
 }
 
-func equalSnapshots(old, new map[string]envoy_types.Resource) bool {
+func equalSnapshots(old, new map[string]envoy_types.ResourceWithTtl) bool {
 	if len(new) != len(old) {
 		return false
 	}
 	for key, newValue := range new {
-		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue, oldValue) {
+		if oldValue, hasOldValue := old[key]; !hasOldValue || !proto.Equal(newValue.Resource, oldValue.Resource) {
 			return false
 		}
 	}
@@ -93,6 +95,7 @@ type snapshotGenerator interface {
 
 type templateSnapshotGenerator struct {
 	ProxyTemplateResolver xds_template.ProxyTemplateResolver
+	ResourceSetHooks      []xds_hooks.ResourceSetHook
 }
 
 func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, proxy *model.Proxy) (envoy_cache.Snapshot, error) {
@@ -104,6 +107,11 @@ func (s *templateSnapshotGenerator) GenerateSnapshot(ctx xds_context.Context, pr
 	if err != nil {
 		reconcileLog.Error(err, "failed to generate a snapshot", "proxy", proxy, "template", template)
 		return envoy_cache.Snapshot{}, err
+	}
+	for _, hook := range s.ResourceSetHooks {
+		if err := hook.Modify(rs, ctx, proxy); err != nil {
+			return envoy_cache.Snapshot{}, errors.Wrapf(err, "could not apply hook %T", hook)
+		}
 	}
 
 	version := "" // empty value is a sign to other components to generate the version automatically

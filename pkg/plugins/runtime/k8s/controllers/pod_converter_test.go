@@ -27,6 +27,7 @@ import (
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
+	utilpointer "k8s.io/utils/pointer"
 	kube_client "sigs.k8s.io/controller-runtime/pkg/client"
 )
 
@@ -47,25 +48,6 @@ var _ = Describe("PodToDataplane(..)", func() {
         #
         # containerPort: 8080
         # containerPort: 8443
-      - ports:
-        - containerPort: 7070
-        - containerPort: 6060
-          name: metrics
-    status:
-      podIP: 192.168.0.1
-`
-
-	gatewayPod := `
-    metadata:
-      namespace: demo
-      name: example
-      labels:
-        app: example
-        version: "0.1"
-      annotations:
-        kuma.io/gateway: enabled
-    spec:
-      containers:
       - ports:
         - containerPort: 7070
         - containerPort: 6060
@@ -117,11 +99,14 @@ var _ = Describe("PodToDataplane(..)", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// services for pod
-			bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.servicesForPod))
-			Expect(err).ToNot(HaveOccurred())
-			YAMLs := util_yaml.SplitYAML(string(bytes))
-			services, err := ParseServices(YAMLs)
-			Expect(err).ToNot(HaveOccurred())
+			services := []*kube_core.Service{}
+			if given.servicesForPod != "" {
+				bytes, err = ioutil.ReadFile(filepath.Join("testdata", given.servicesForPod))
+				Expect(err).ToNot(HaveOccurred())
+				YAMLs := util_yaml.SplitYAML(string(bytes))
+				services, err = ParseServices(YAMLs)
+				Expect(err).ToNot(HaveOccurred())
+			}
 
 			// other services
 			var serviceGetter kube_client.Reader
@@ -238,9 +223,22 @@ var _ = Describe("PodToDataplane(..)", func() {
 			servicesForPod: "12.services-for-pod.yaml",
 			dataplane:      "12.dataplane.yaml",
 		}),
+		Entry("13. Pod without a service", testCase{
+			pod:       "13.pod.yaml",
+			dataplane: "13.dataplane.yaml",
+		}),
+		Entry("14. Gateway pod without a service", testCase{
+			pod:       "14.pod.yaml",
+			dataplane: "14.dataplane.yaml",
+		}),
+		Entry("15. Pod with transparent proxy enabled, IPv6 and without direct access servies", testCase{
+			pod:            "15.pod.yaml",
+			servicesForPod: "15.services-for-pod.yaml",
+			dataplane:      "15.dataplane.yaml",
+		}),
 	)
 
-	DescribeTable("should convert Pod into a Dataplane YAML version",
+	DescribeTable("should convert Ingress Pod into an Ingress Dataplane YAML version",
 		func(given testCase) {
 			// given
 			// pod
@@ -346,16 +344,6 @@ var _ = Describe("PodToDataplane(..)", func() {
 				Expect(err).To(HaveOccurred())
 				Expect(err.Error()).To(Equal(given.expectedErr))
 			},
-			Entry("regular Pod without Services", testCase{
-				pod:         pod,
-				services:    nil,
-				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, there are no Services that select this Pod.`,
-			}),
-			Entry("gateway Pod without Services", testCase{
-				pod:         gatewayPod,
-				services:    nil,
-				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, there are no Services that select this Pod.`,
-			}),
 			Entry("Pod with a Service but mismatching ports", testCase{
 				pod: pod,
 				services: []string{`
@@ -375,7 +363,7 @@ var _ = Describe("PodToDataplane(..)", func() {
                     port: 6060
                     targetPort: diagnostics
 `},
-				expectedErr: `Kuma requires every Pod in a Mesh to be a part of at least one Service. However, this Pod doesn't have any container ports that would satisfy matching Service(s).`,
+				expectedErr: `A service that selects pod example was found, but it doesn't match any container ports.`,
 			}),
 		)
 	})
@@ -419,13 +407,14 @@ var _ = Describe("MeshFor(..)", func() {
 	)
 })
 
-var _ = Describe("InboundTagsFor(..)", func() {
+var _ = Describe("InboundTagsForService(..)", func() {
 
 	type testCase struct {
 		isGateway      bool
 		zone           string
 		podLabels      map[string]string
 		svcAnnotations map[string]string
+		appProtocol    *string
 		expected       map[string]string
 	}
 
@@ -450,8 +439,9 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				Spec: kube_core.ServiceSpec{
 					Ports: []kube_core.ServicePort{
 						{
-							Name: "http",
-							Port: 80,
+							Name:        "http",
+							Port:        80,
+							AppProtocol: given.appProtocol,
 							TargetPort: kube_intstr.IntOrString{
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
@@ -462,7 +452,7 @@ var _ = Describe("InboundTagsFor(..)", func() {
 			}
 
 			// expect
-			Expect(InboundTagsFor(given.zone, pod, svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
+			Expect(InboundTagsForService(given.zone, pod, svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
 		},
 		Entry("Pod without labels", testCase{
 			isGateway: false,
@@ -531,6 +521,20 @@ var _ = Describe("InboundTagsFor(..)", func() {
 				"kuma.io/protocol": "http",
 			},
 		}),
+		Entry("Service with appProtocol and a known value", testCase{
+			isGateway: false,
+			podLabels: map[string]string{
+				"app":     "example",
+				"version": "0.1",
+			},
+			appProtocol: utilpointer.StringPtr("http"),
+			expected: map[string]string{
+				"app":              "example",
+				"version":          "0.1",
+				"kuma.io/service":  "example_demo_svc_80",
+				"kuma.io/protocol": "http",
+			},
+		}),
 		Entry("Inject a zone tag if Zone is set", testCase{
 			isGateway: false,
 			zone:      "zone-1",
@@ -591,11 +595,12 @@ var _ = Describe("ServiceTagFor(..)", func() {
 var _ = Describe("ProtocolTagFor(..)", func() {
 
 	type testCase struct {
+		appProtocol *string
 		annotations map[string]string
 		expected    string
 	}
 
-	DescribeTable("should infer service protocol from a `<port>.service.kuma.io/protocol` annotation",
+	DescribeTable("should infer protocol from `appProtocol` or `<port>.service.kuma.io/protocol` field",
 		func(given testCase) {
 			// given
 			svc := &kube_core.Service{
@@ -613,6 +618,7 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 								Type:   kube_intstr.Int,
 								IntVal: 8080,
 							},
+							AppProtocol: given.appProtocol,
 						},
 					},
 				},
@@ -621,45 +627,41 @@ var _ = Describe("ProtocolTagFor(..)", func() {
 			// expect
 			Expect(ProtocolTagFor(svc, &svc.Spec.Ports[0])).To(Equal(given.expected))
 		},
-		Entry("no `<port>.service.kuma.io/protocol` annotation", testCase{
-			annotations: nil,
+		Entry("no appProtocol", testCase{
+			appProtocol: nil,
 			expected:    "tcp", // we want Kuma's default behaviour to be explicit to a user
 		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation has an empty value", testCase{
-			annotations: map[string]string{
-				"80.service.kuma.io/protocol": "",
-			},
-			expected: "tcp", // we want Kuma's default behaviour to be explicit to a user
+		Entry("appProtocol has an empty value", testCase{
+			appProtocol: utilpointer.StringPtr(""),
+			expected:    "tcp", // we want Kuma's default behaviour to be explicit to a user
 		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation is for a different port", testCase{
-			annotations: map[string]string{
-				"8080.service.kuma.io/protocol": "http",
-			},
-			expected: "tcp", // we want Kuma's default behaviour to be explicit to a user
-		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation has an unknown value", testCase{
-			annotations: map[string]string{
-				"80.service.kuma.io/protocol": "not-yet-supported-protocol",
-			},
-			expected: "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
-		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation has a non-lowercase value", testCase{
-			annotations: map[string]string{
-				"80.service.kuma.io/protocol": "HtTp",
-			},
-			expected: "HtTp", // we want Kuma's behaviour to be straightforward to a user (just copy annotation value "as is")
-		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation has a known value: http", testCase{
+		Entry("no appProtocol but with `<port>.service.kuma.io/protocol` annotation", testCase{
+			appProtocol: nil,
 			annotations: map[string]string{
 				"80.service.kuma.io/protocol": "http",
 			},
-			expected: "http",
+			expected: "http", // we want to support both ways of providing protocol
 		}),
-		Entry("`<port>.service.kuma.io/protocol` annotation has a known value: tcp", testCase{
-			annotations: map[string]string{
-				"80.service.kuma.io/protocol": "tcp",
-			},
-			expected: "tcp",
+		Entry("appProtocol has an unknown value", testCase{
+			appProtocol: utilpointer.StringPtr("not-yet-supported-protocol"),
+			expected:    "not-yet-supported-protocol", // we want Kuma's behaviour to be straightforward to a user (just copy appProtocol value "as is")
+		}),
+		Entry("appProtocol has a non-lowercase value", testCase{
+			appProtocol: utilpointer.StringPtr("HtTp"),
+			expected:    "HtTp", // we want Kuma's behaviour to be straightforward to a user (just copy appProtocol value "as is")
+		}),
+		Entry("appProtocol has a known value: http", testCase{
+			appProtocol: utilpointer.StringPtr("http"),
+			expected:    "http",
+		}),
+		Entry("appProtocol has a known value: tcp", testCase{
+			appProtocol: utilpointer.StringPtr("tcp"),
+			expected:    "tcp",
+		}),
+		Entry("no appProtocol and no `<port>.service.kuma.io/protocol`", testCase{
+			appProtocol: nil,
+			annotations: nil,
+			expected:    "tcp",
 		}),
 	)
 })

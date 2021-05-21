@@ -84,10 +84,16 @@ func addControllers(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8
 	if err := addNamespaceReconciler(mgr, rt); err != nil {
 		return err
 	}
+	if err := addServiceReconciler(mgr, rt); err != nil {
+		return err
+	}
 	if err := addMeshReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
 	if err := addPodReconciler(mgr, rt, converter); err != nil {
+		return err
+	}
+	if err := addPodStatusReconciler(mgr, rt, converter); err != nil {
 		return err
 	}
 	if err := addDNS(mgr, rt, converter); err != nil {
@@ -101,6 +107,14 @@ func addNamespaceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) erro
 		Client:     mgr.GetClient(),
 		Log:        core.Log.WithName("controllers").WithName("Namespace"),
 		CNIEnabled: rt.Config().Runtime.Kubernetes.Injector.CNIEnabled,
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error {
+	reconciler := &k8s_controllers.ServiceReconciler{
+		Client: mgr.GetClient(),
+		Log:    core.Log.WithName("controllers").WithName("Service"),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -146,6 +160,18 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		ResourceConverter: converter,
 		Persistence:       vips.NewPersistence(rt.ResourceManager(), rt.ConfigManager()),
 		SystemNamespace:   rt.Config().Store.Kubernetes.SystemNamespace,
+	}
+	return reconciler.SetupWithManager(mgr)
+}
+
+func addPodStatusReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
+	reconciler := &controllers.PodStatusReconciler{
+		Client:            mgr.GetClient(),
+		EventRecorder:     mgr.GetEventRecorderFor("k8s.kuma.io/dataplane-jobs-syncer"),
+		Scheme:            mgr.GetScheme(),
+		Log:               core.Log.WithName("controllers").WithName("Pod"),
+		ResourceConverter: converter,
+		EnvoyAdminClient:  rt.EnvoyAdminClient(),
 	}
 	return reconciler.SetupWithManager(mgr)
 }
@@ -209,7 +235,10 @@ func generateDefaulterPath(gvk kube_schema.GroupVersionKind) string {
 }
 
 func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	composite := k8s_webhooks.CompositeValidator{}
+	composite, ok := k8s_extensions.FromCompositeValidatorContext(rt.Extensions())
+	if !ok {
+		return errors.Errorf("could not find composite validator in the extensions context")
+	}
 
 	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode)
 	composite.AddValidator(handler)
@@ -248,7 +277,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 
 func addMutators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
 	if rt.Config().Mode != config_core.Global {
-		address := fmt.Sprintf("https://kuma-control-plane.%s:%d", rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
+		address := fmt.Sprintf("https://%s.%s:%d", rt.Config().Runtime.Kubernetes.ControlPlaneServiceName, rt.Config().Store.Kubernetes.SystemNamespace, rt.Config().DpServer.Port)
 		kumaInjector, err := injector.New(
 			rt.Config().Runtime.Kubernetes.Injector,
 			address,

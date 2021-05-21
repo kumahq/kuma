@@ -13,13 +13,15 @@ const (
 	Kuma3 = "kuma-3"
 	Kuma4 = "kuma-4"
 	Kuma5 = "kuma-5"
+	Kuma6 = "kuma-6"
 
 	DefaultRetries = 30
 	DefaultTimeout = 3 * time.Second
 
 	KumaUniversalImage = "kuma-universal"
 
-	kdsPort = 30685
+	kdsPort             = 30685
+	loadBalancerKdsPort = 5685
 )
 
 const (
@@ -28,28 +30,33 @@ const (
 
 	envKUMACTLBIN  = "KUMACTLBIN"
 	envK8SCLUSTERS = "K8SCLUSTERS"
+	envAPIVersion  = "API_VERSION"
+	envIPv6        = "IPV6"
 
-	maxClusters = 3
+	maxClusters = 4
 
 	confPath = "/kuma/kuma-cp.conf"
 
 	kumaCPAPIPort        = 5681
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 
-	cniApp       = "kuma-cni"
-	cniNamespace = "kube-system"
-
-	redirectPortInbound  = "15006"
-	redirectPortOutbound = "15001"
+	redirectPortInbound   = "15006"
+	redirectPortInboundV6 = "15010"
+	redirectPortOutbound  = "15001"
+	cidrIPv6              = "fd00:fd00::/64"
 )
 
-var HelmChartPath = "../../deployments/charts/kuma"
+var HelmChartPath = "../../../deployments/charts/kuma"
 var HelmSubChartPrefix = ""
 
 var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
+var KumaGlobalRemoteSyncServiceName = "kuma-global-remote-sync"
 
-var KumaImageRegistry = "kuma"
+var CNIApp = "kuma-cni"
+var CNINamespace = "kube-system"
+
+var KumaImageRegistry = "kumahq"
 var KumaCPImageRepo = "kuma-cp"
 var KumaDPImageRepo = "kuma-dp"
 var KumaInitImageRepo = "kuma-init"

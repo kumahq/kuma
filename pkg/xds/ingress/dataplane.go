@@ -23,9 +23,11 @@ type serviceKey struct {
 
 type serviceKeySlice []serviceKey
 
-func (s serviceKeySlice) Len() int           { return len(s) }
-func (s serviceKeySlice) Less(i, j int) bool { return s[i].mesh < s[j].mesh || s[i].tags < s[j].tags }
-func (s serviceKeySlice) Swap(i, j int)      { s[i], s[j] = s[j], s[i] }
+func (s serviceKeySlice) Len() int { return len(s) }
+func (s serviceKeySlice) Less(i, j int) bool {
+	return s[i].mesh < s[j].mesh || (s[i].mesh == s[j].mesh && s[i].tags < s[j].tags)
+}
+func (s serviceKeySlice) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
 func (sk *serviceKey) String() string {
 	return fmt.Sprintf("%s.%s", sk.tags, sk.mesh)
@@ -86,7 +88,7 @@ func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_
 		if dp.Spec.IsIngress() {
 			continue
 		}
-		for _, dpInbound := range dp.Spec.GetNetworking().GetInbound() {
+		for _, dpInbound := range dp.Spec.GetNetworking().GetHealthyInbounds() {
 			tagSets.addInstanceOfTags(dp.GetMeta().GetMesh(), dpInbound.Tags)
 		}
 	}

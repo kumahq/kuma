@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
 	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	inject "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/webhooks/injector"
+	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	kube_core "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime/serializer"
@@ -85,12 +86,7 @@ var _ = Describe("Injector", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			By("comparing actual against golden")
-			// when
-			expected, err := ioutil.ReadFile(goldenFile)
-			// then
-			Expect(err).ToNot(HaveOccurred())
-			// and
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(matchers.MatchGoldenYAML(goldenFile))
 		},
 		Entry("01. Pod without init containers and annotations", testCase{
 			num: "01",
@@ -490,6 +486,38 @@ var _ = Describe("Injector", func() {
                 annotations:
                   kuma.io/sidecar-injection: enabled`,
 			cfgFile: "inject.config.yaml",
+		}),
+		Entry("24. sidecar env var config overrides", testCase{
+			num: "24",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.env-vars.config.yaml",
+		}),
+		Entry("25. sidecar with builtinDNS", testCase{
+			num: "25",
+			mesh: `
+              apiVersion: kuma.io/v1alpha1
+              kind: Mesh
+              metadata:
+                name: default`,
+			namespace: `
+              apiVersion: v1
+              kind: Namespace
+              metadata:
+                name: default
+                annotations:
+                  kuma.io/sidecar-injection: enabled`,
+			cfgFile: "inject.builtindns.config.yaml",
 		}),
 	)
 })
