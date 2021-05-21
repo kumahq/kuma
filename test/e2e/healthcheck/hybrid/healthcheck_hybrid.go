@@ -1,4 +1,4 @@
-package healthcheck
+package hybrid
 
 import (
 	"fmt"
