@@ -429,7 +429,8 @@ networking:
 			WithAppname("test-server"),
 			WithToken(token),
 			WithArgs(args),
-			WithYaml(appYaml))
+			WithYaml(appYaml),
+			WithIPv6(IsIPv6()))
 		return cluster.DeployApp(fs...)
 	}
 }
