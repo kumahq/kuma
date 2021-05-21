@@ -126,6 +126,9 @@ func VirtualOutbounds(
 	virtualOutbounds []*core_mesh.VirtualOutboundResource,
 	cidr string,
 ) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
+	if len(virtualOutbounds) == 0 {
+		return nil, nil
+	}
 	self, tags := buildUniqueTagsList(resourceKey, dataplanes, externalServices)
 	outbounds := buildOutbounds(tags, virtualOutbounds)
 
