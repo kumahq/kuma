@@ -1,4 +1,4 @@
-package healthcheck
+package universal
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -8,7 +8,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func ApplicationHealthCheckOnUniversal() {
+func ServiceProbes() {
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
