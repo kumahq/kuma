@@ -252,7 +252,7 @@ Flags:
       --cni-net-dir string                          set the CNI install directory (default "/etc/cni/multus/net.d")
       --cni-registry string                         registry for the image of the Kuma CNI component (default "docker.io/lobkovilya")
       --cni-repository string                       repository for the image of the Kuma CNI component (default "install-cni")
-      --cni-version string                          version of the image of the Kuma CNI component (default "0.0.8-beta1")
+      --cni-version string                          version of the image of the Kuma CNI component (default "0.0.8")
       --control-plane-registry string               registry for the image of the Kuma Control Plane component (default "docker.io/kumahq")
       --control-plane-repository string             repository for the image of the Kuma Control Plane component (default "kuma-cp")
       --control-plane-service-name string           Service name of the Kuma Control Plane (default "kuma-control-plane")
