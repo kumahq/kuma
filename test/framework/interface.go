@@ -49,6 +49,7 @@ type deployOptions struct {
 	transparent    bool
 	builtindns     bool
 	protocol       string
+	serviceName    string
 	serviceVersion string
 	mesh           string
 	dpVersion      string
@@ -77,6 +78,12 @@ func WithProtocol(protocol string) DeployOptionsFunc {
 func WithArgs(appArgs []string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.appArgs = appArgs
+	}
+}
+
+func WithServiceName(name string) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.serviceName = name
 	}
 }
 

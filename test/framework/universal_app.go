@@ -53,7 +53,7 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/service: %s
       kuma.io/protocol: %s
       team: server-owners
       version: %s
@@ -71,7 +71,7 @@ networking:
     serviceProbe:
       tcp: {}
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/service: %s
       kuma.io/protocol: %s
       team: server-owners
       version: %s
@@ -87,7 +87,7 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/service: %s
       kuma.io/protocol: %s
       team: server-owners
       version: %s

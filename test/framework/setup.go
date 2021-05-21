@@ -255,18 +255,21 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 		if opts.protocol == "" {
 			opts.protocol = "http"
 		}
+		if opts.serviceName == "" {
+			opts.serviceName = "echo-server_kuma-test_svc_8080"
+		}
 		if opts.serviceVersion == "" {
 			opts.serviceVersion = "v1"
 		}
 		switch {
 		case opts.transparent:
-			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", "8080",
+			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", opts.serviceName,
 				opts.protocol, opts.serviceVersion, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 		case opts.serviceProbe:
-			appYaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, mesh, "8080", "80", "8080",
+			appYaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, mesh, "8080", "80", opts.serviceName,
 				opts.protocol, opts.serviceVersion)
 		default:
-			appYaml = fmt.Sprintf(EchoServerDataplane, mesh, "8080", "80", "8080", opts.protocol, opts.serviceVersion)
+			appYaml = fmt.Sprintf(EchoServerDataplane, mesh, "8080", "80", opts.serviceName, opts.protocol, opts.serviceVersion)
 		}
 		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeEchoServer), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
 		return cluster.DeployApp(fs...)

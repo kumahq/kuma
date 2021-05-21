@@ -56,7 +56,7 @@ func NewCache(
 }
 
 func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error) {
-	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, cluster.Name(), meshHash)
+	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, cluster.Hash(), meshHash)
 	elt, err := c.cache.GetOrRetrieve(ctx, key, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
 		dataplanes, err := topology.GetDataplanes(claCacheLog, ctx, c.rm, c.ipFunc, meshName)
 		if err != nil {

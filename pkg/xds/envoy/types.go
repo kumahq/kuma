@@ -28,6 +28,7 @@ func (c *Cluster) Tags() Tags                                { return c.tags }
 func (c *Cluster) IsExternalService() bool                   { return c.isExternalService }
 func (c *Cluster) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
 func (c *Cluster) Timeout() *mesh_proto.Timeout_Conf         { return c.timeout }
+func (c *Cluster) Hash() string                              { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
 
 type NewClusterOpt interface {
 	apply(cluster *Cluster)
