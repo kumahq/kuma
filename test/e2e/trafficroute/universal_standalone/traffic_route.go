@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/kumahq/kuma/pkg/config/core"
-	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/framework"
 )
 
 func KumaStandalone() {
@@ -182,7 +183,6 @@ conf:
 	})
 
 	It("should route 100 percent of the traffic to the different service", func() {
-
 		const trafficRoute = `
 type: TrafficRoute
 name: route-echo-to-backend
@@ -205,7 +205,6 @@ conf:
 
 		collectResponses("backend.mesh", []string{"backend-v1"}, nil)
 		collectResponses("backend.mesh", []string{"backend-v1"}, []string{"echo-v1", "echo-v2", "echo-v3", "echo-v4"})
-
 	})
 
 	It("should route split traffic between the versions with 20/80 ratio", func() {
