@@ -101,6 +101,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
+			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MinReconnectInterval).To(Equal(44 * time.Second))
 			Expect(cfg.Store.Postgres.MaxReconnectInterval).To(Equal(55 * time.Second))
 
