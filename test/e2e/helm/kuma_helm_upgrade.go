@@ -16,7 +16,6 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-var OlderChart = "0.4.4"
 var OldChart = "0.4.5"
 var UpstreamImageRegistry = "kumahq"
 
@@ -80,9 +79,6 @@ func UpgradingWithHelmChart() {
 			err = k8sCluster.UpgradeKuma(core.Standalone, upgradeOptsFuncs...)
 			Expect(err).ToNot(HaveOccurred())
 		},
-		Entry("should successfully upgrade from chart v"+OlderChart, testCase{
-			initialChartVersion: OlderChart,
-		}),
 		Entry("should successfully upgrade from chart v"+OldChart, testCase{
 			initialChartVersion: OldChart,
 		}),
