@@ -86,7 +86,7 @@ metadata:
 
 	var cluster Cluster
 	var clientPod *v1.Pod
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		clusters, err := NewK8sClusters(
@@ -96,9 +96,8 @@ metadata:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma1)
-		deployOptsFuncs = []DeployOptionsFunc{
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"),
-		}
+		deployOptsFuncs = append(deployOptsFuncs,
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).

@@ -14,7 +14,7 @@ import (
 
 func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 	var globalCluster, remoteCluster Cluster
-	var optsGlobal, optsRemote []DeployOptionsFunc
+	var optsGlobal, optsRemote = KumaK8sDeployOpts, KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters(
@@ -29,7 +29,6 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 
 		// Global
 		globalCluster = k8sClusters.GetCluster(Kuma1)
-		optsGlobal = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
@@ -48,9 +47,8 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 
 		// Remote
 		remoteCluster = universalClusters.GetCluster(Kuma3)
-		optsRemote = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		optsRemote = append(optsRemote,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote...)).

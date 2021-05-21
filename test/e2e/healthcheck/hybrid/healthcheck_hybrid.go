@@ -44,7 +44,7 @@ metadata:
 	}
 
 	var global, remoteK8s, remoteUniversal Cluster
-	var optsRemoteK8s, optsRemoteUniversal []DeployOptionsFunc
+	var optsK8s, optsRemoteK8s, optsRemoteUniversal = KumaK8sDeployOpts, KumaRemoteK8sDeployOpts, KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters([]string{Kuma1, Kuma2}, Silent)
@@ -55,15 +55,15 @@ metadata:
 
 		global = k8sClusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
-			Install(Kuma(core.Global)).
+			Install(Kuma(core.Global, optsK8s...)).
 			Install(YamlK8s(meshMTLSOn("default"))).
 			Setup(global)
 		Expect(err).ToNot(HaveOccurred())
 
-		optsRemoteK8s = []DeployOptionsFunc{
+		optsRemoteK8s = append(optsRemoteK8s,
 			WithIngress(),
-			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
-		}
+			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))
+
 		remoteK8s = k8sClusters.GetCluster(Kuma2)
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemoteK8s...)).
@@ -78,9 +78,9 @@ metadata:
 		ingressToken, err := global.GetKuma().GenerateDpToken("default", "ingress")
 		Expect(err).ToNot(HaveOccurred())
 
-		optsRemoteUniversal = []DeployOptionsFunc{
-			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()),
-		}
+		optsRemoteUniversal = append(optsRemoteUniversal,
+			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))
+
 		remoteUniversal = universalClusters.GetCluster(Kuma3)
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemoteUniversal...)).

@@ -47,7 +47,7 @@ conf:
 
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Verbose)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, deployOptsFuncs...)).
