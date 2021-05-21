@@ -155,7 +155,7 @@ cni:
     # -- CNI image repository
     repository: "lobkovilya/install-cni"
     # -- CNI image tag
-    tag: "0.0.7"
+    tag: "0.0.8-beta1"
 
 dataPlane:
   image:

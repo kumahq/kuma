@@ -87,7 +87,7 @@ func DefaultInstallCpContext() InstallCpContext {
 			Cni_conf_name:                             "kuma-cni.conf",
 			Cni_image_registry:                        "docker.io/lobkovilya",
 			Cni_image_repository:                      "install-cni",
-			Cni_image_tag:                             "0.0.7",
+			Cni_image_tag:                             "0.0.8-beta1",
 			ControlPlane_mode:                         core.Standalone,
 			ControlPlane_zone:                         "",
 			ControlPlane_globalRemoteSyncService_type: "LoadBalancer",
