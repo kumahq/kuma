@@ -27,6 +27,9 @@ type PostgresStoreConfig struct {
 	// Maximum number of open connections to the database
 	// `0` value means number of open connections is unlimited
 	MaxOpenConnections int `yaml:"maxOpenConnections" envconfig:"kuma_store_postgres_max_open_connections"`
+	// Maximum number of connections in the idle connection pool
+	// `-1` value means no idle connections 
+	MaxIdleConnections int `yaml:"maxIdleConnections" envconfig:"kuma_store_postgres_max_idle_connections"`
 	// TLS settings
 	TLS TLSPostgresStoreConfig `yaml:"tls"`
 	// MinReconnectInterval controls the duration to wait before trying to

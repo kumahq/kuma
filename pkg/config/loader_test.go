@@ -251,6 +251,7 @@ store:
     dbName: kuma
     connectionTimeout: 10
     maxOpenConnections: 300
+    maxIdleConnections: 300
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
     tls:
@@ -446,6 +447,7 @@ sdsServer:
 				"KUMA_STORE_POSTGRES_DB_NAME":                                                              "kuma",
 				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":                                                   "10",
 				"KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS":                                                 "300",
+				"KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS"                                                  "300",
 				"KUMA_STORE_POSTGRES_TLS_MODE":                                                             "verifyFull",
 				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                                                        "/path/to/cert",
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                                                         "/path/to/key",

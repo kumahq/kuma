@@ -29,6 +29,9 @@ store:
     # Maximum number of open connections to the database
     # `0` value means number of open connections is unlimited
     maxOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
+    # Maximum number of connections to the idle connection pool
+    # `-1` value means no idle connections
+    maxIdleConnections: -1  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS   
     # TLS settings
     tls:
       # Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
