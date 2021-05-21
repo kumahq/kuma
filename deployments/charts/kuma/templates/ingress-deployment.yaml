@@ -32,6 +32,10 @@ spec:
         app: kuma-ingress
     spec:
       serviceAccountName: {{ include "kuma.name" . }}-ingress
+      {{- with .Values.ingress.nodeSelector }}
+      nodeSelector:
+      {{ toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: ingress
           image: {{ include "kuma.formatImage" (dict "image" .Values.dataPlane.image "root" $) | quote }}
