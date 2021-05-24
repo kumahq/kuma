@@ -66,7 +66,9 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 	if err := d.readOnlyResManager.Get(context.Background(), dataplane, core_store.GetBy(dataplaneId)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			sdsServerLog.V(1).Info("Dataplane not found. Clearing the Snapshot.", "dataplaneId", dataplaneId)
-			d.cache.ClearSnapshot(proxyID)
+			if err := d.Cleanup(dataplaneId); err != nil {
+				return errors.Wrap(err, "could not cleanup snapshot")
+			}
 			return nil
 		}
 		return err
@@ -79,7 +81,9 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 
 	if !mesh.MTLSEnabled() {
 		sdsServerLog.V(1).Info("mTLS for Mesh disabled. Clearing the Snapshot.", "dataplaneId", dataplaneId)
-		d.cache.ClearSnapshot(proxyID)
+		if err := d.Cleanup(dataplaneId); err != nil {
+			return errors.Wrap(err, "could not cleanup snapshot")
+		}
 		return nil
 	}
 
