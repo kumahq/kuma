@@ -67,7 +67,7 @@ func ResilienceMultizoneUniversal() {
 				return err
 			}
 
-			if ! strings.Contains(output, "Online") {
+			if !strings.Contains(output, "Online") {
 				return errors.New("remote zone is not online")
 			}
 
@@ -83,7 +83,7 @@ func ResilienceMultizoneUniversal() {
 				return err
 			}
 
-			if ! strings.Contains(output, "Offline") {
+			if !strings.Contains(output, "Offline") {
 				return errors.New("remote zone is not offline")
 			}
 
