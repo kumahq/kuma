@@ -1,6 +1,8 @@
 package metrics
 
 import (
+	"sync"
+
 	"github.com/prometheus/client_golang/prometheus"
 
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
@@ -13,9 +15,18 @@ type Metrics struct {
 	sdsGenerationsErrors *prometheus.CounterVec
 	certGenerations      *prometheus.CounterVec
 	Callbacks            util_xds.Callbacks
+
+	sync.RWMutex
+	activeWatchdogs        *prometheus.GaugeVec
+	activeWatchdogsCounter uint32
 }
 
 func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
+	activeWatchdogs := prometheus.NewGaugeVec(prometheus.GaugeOpts{
+		Name: "sds_watchdogs",
+		Help: "Number of active watchdogs",
+	}, []string{"apiVersion"})
+
 	sdsGenerations := prometheus.NewSummaryVec(prometheus.SummaryOpts{
 		Name:       "sds_generation",
 		Help:       "Summary of SDS Snapshot generation",
@@ -32,7 +43,7 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 		Name: "sds_cert_generation",
 	}, []string{"apiVersion"})
 
-	if err := metrics.BulkRegister(sdsGenerations, sdsGenerationsErrors, certGenerationsMetric); err != nil {
+	if err := metrics.BulkRegister(activeWatchdogs, sdsGenerations, sdsGenerationsErrors, certGenerationsMetric); err != nil {
 		return nil, err
 	}
 
@@ -42,6 +53,7 @@ func NewMetrics(metrics core_metrics.Metrics) (*Metrics, error) {
 	}
 
 	return &Metrics{
+		activeWatchdogs:      activeWatchdogs,
 		sdsGeneration:        sdsGenerations,
 		sdsGenerationsErrors: sdsGenerationsErrors,
 		certGenerations:      certGenerationsMetric,
@@ -59,4 +71,18 @@ func (s *Metrics) SdsGenerationsErrors(apiVersion envoy_common.APIVersion) prome
 
 func (s *Metrics) CertGenerations(apiVersion envoy_common.APIVersion) prometheus.Counter {
 	return s.certGenerations.WithLabelValues(string(apiVersion))
+}
+
+func (s *Metrics) IncrementActiveWatchdogs(apiVersion envoy_common.APIVersion) {
+	s.Lock()
+	defer s.Unlock()
+	s.activeWatchdogsCounter += 1
+	s.activeWatchdogs.WithLabelValues(string(apiVersion)).Set(float64(s.activeWatchdogsCounter))
+}
+
+func (s *Metrics) DecrementActiveWatchdogs(apiVersion envoy_common.APIVersion) {
+	s.Lock()
+	defer s.Unlock()
+	s.activeWatchdogsCounter -= 1
+	s.activeWatchdogs.WithLabelValues(string(apiVersion)).Set(float64(s.activeWatchdogsCounter))
 }

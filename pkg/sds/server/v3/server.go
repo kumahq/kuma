@@ -76,6 +76,7 @@ func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetr
 	return xds_callbacks.NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
+				sdsMetrics.IncrementActiveWatchdogs(envoy_common.APIV3)
 				return time.NewTicker(refresh)
 			},
 			OnTick: func() error {
@@ -93,6 +94,7 @@ func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetr
 				if err := reconciler.Cleanup(dataplaneId); err != nil {
 					sdsServerLog.Error(err, "could not cleanup sync", "dataplane", dataplaneId)
 				}
+				sdsMetrics.DecrementActiveWatchdogs(envoy_common.APIV3)
 			},
 		}
 	}), nil
