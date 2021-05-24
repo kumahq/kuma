@@ -22,17 +22,38 @@ destinations:
 - match:
     kuma.io/service: backend
 conf:
-  # split: section is no longer allowed when http: section is present
-  http:
-  - match:
+  http: # a new http section which is a list
+  - match: # match is required and need to have at least one sub-element
       method: GET
-      path: # one of either prefix or exact will be allowed
+      path: # one of either prefix, exact or regex will be allowed
         prefix: /users
         exact: /users/user-1
+        regex: 
       headers:
-        some-header: # one of either prefix or exact will be allowed
+        some-header: # one of either prefix, exact or regex will be allowed
           exact: some-value
           prefix: some-
+          regex
+    modify: # optional section
+      path: "/not-offers"
+      host: not-offers
+      requestHeaders:
+        add:
+          - name: x-custom-header
+            value: xyz
+            append: true # if true then if there is x-custom-header already, it will append xyz 
+        remove:
+          - name: x-something
+      responseHeaders:
+        add:
+          - name: x-custom-header
+            value: xyz
+            append: true
+        remove:
+          - name: x-something
+    destination: # required either split or a destination. Destination is a syntax sugar over split to one destination with weight 100 
+      kuma.io/service: usr_svc_6379
+      version: '1.0'
     split:
       - weight: 90
         destination:
@@ -42,6 +63,14 @@ conf:
         destination:
           kuma.io/service: usr_svc_6379
           version: '2.0'
+  destination: # if we have a http section and we don't match anything, then this rule is applied. It's again destination or split
+    kuma.io/service: usr_svc_6379
+    version: '1.0'
+  split:
+    - weight: 100
+      destination:
+        kuma.io/service: usr_svc_6379
+        version: '1.0'
 ```
 
 ### More examples
@@ -68,14 +97,12 @@ conf:
       headers:
         canary:
           exact: "true"
-    split:
-      - destination:
-          kuma.io/service: backend
-          version: '1.1'
-  - split: # notice that we don't have match = which means it always matches
-      - destination:
-          kuma.io/service: backend
-          version: '1.0'
+    destination:
+      kuma.io/service: backend
+      version: '1.1'
+  destination:
+    kuma.io/service: backend
+    version: '1.0'
 ```
 
 2) Redirecting traffic to a different service
@@ -97,12 +124,10 @@ conf:
   - match:
       path:
         prefix: "/offers"
-    split:
-      - destination:
-          kuma.io/service: offers
-  - split:
-      - destination:
-          kuma.io/service: backend
+    destination:
+      kuma.io/service: offers
+  destination:
+    kuma.io/service: backend
 ```
 
 3) Generic canary
@@ -130,12 +155,20 @@ conf:
       - destination:
           kuma.io/service: '*'
           version: canary
-  - split:
-      - destination:
-          kuma.io/service: '*'
+  destination:
+    kuma.io/service: '*'
 ```
+
+## Other notes
+
+* Split will require weight
 
 ## Matching
 
 `TrafficRoute` will preserve same behavior of matching, meaning that we will only take into account `sources` and `destinations`
 for matching and then take `http` section from it.
+
+## Protocol
+
+If we have `http` section, it will be only applied on HTTP traffic.
+If service is marked as TCP, then we won't match and the default `destination` is applied.
