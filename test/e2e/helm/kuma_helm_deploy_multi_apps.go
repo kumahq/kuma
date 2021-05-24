@@ -38,7 +38,7 @@ metadata:
 `
 
 	var cluster Cluster
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		c, err := NewK8sClusterWithTimeout(
@@ -54,13 +54,12 @@ metadata:
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
-		deployOptsFuncs = []DeployOptionsFunc{
+		deployOptsFuncs = append(deployOptsFuncs,
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
 			WithSkipDefaultMesh(true), // it's common case for HELM deployments that Mesh is also managed by HELM therefore it's not created by default
 			WithCPReplicas(3),         // test HA capability
-			WithCNI(),
-		}
+			WithCNI())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).

@@ -1,4 +1,4 @@
-package healthcheck
+package universal
 
 import (
 	. "github.com/onsi/ginkgo"
@@ -8,13 +8,13 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func ApplicationHealthCheckOnUniversal() {
+func ServiceProbes() {
 	var cluster Cluster
 	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).

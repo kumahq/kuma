@@ -405,6 +405,44 @@ func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 	}
 }
 
+func TestServerUniversal(name, mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
+	return func(cluster Cluster) error {
+		opts := newDeployOpt(fs...)
+		if len(opts.protocol) == 0 {
+			opts.protocol = "http"
+		}
+		args := []string{"test-server", "health-check", opts.protocol, "--port", "8080"}
+		appYaml := fmt.Sprintf(`
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address:  {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    tags:
+      kuma.io/service: test-server
+      kuma.io/protocol: %s
+      team: server-owners
+  transparentProxying:
+    redirectPortInbound: %s
+    redirectPortInboundV6: %s
+    redirectPortOutbound: %s
+`, mesh, "80", "8080", opts.protocol, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+
+		fs = append(fs,
+			WithName(name),
+			WithMesh(mesh),
+			WithAppname("test-server"),
+			WithToken(token),
+			WithArgs(args),
+			WithYaml(appYaml),
+			WithIPv6(IsIPv6()))
+		return cluster.DeployApp(fs...)
+	}
+}
+
 func Combine(fs ...InstallFunc) InstallFunc {
 	return func(cluster Cluster) error {
 		for _, f := range fs {

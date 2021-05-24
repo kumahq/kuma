@@ -41,7 +41,7 @@ name: %s
 	const nonDefaultMesh = "non-default"
 
 	var global, remote_1, remote_2 Cluster
-	var optsGlobal, optsRemote1, optsRemote2 []DeployOptionsFunc
+	var optsGlobal, optsRemote1, optsRemote2 = KumaUniversalDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -51,7 +51,6 @@ name: %s
 
 		// Global
 		global = clusters.GetCluster(Kuma5)
-		optsGlobal = []DeployOptionsFunc{}
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
 			Install(YamlUniversal(meshMTLSOn(nonDefaultMesh, "false"))).
@@ -76,10 +75,9 @@ name: %s
 
 		// Cluster 1
 		remote_1 = clusters.GetCluster(Kuma3)
-		optsRemote1 = []DeployOptionsFunc{
+		optsRemote1 = append(optsRemote1,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithHDS(false),
-		}
+			WithHDS(false))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote1...)).
@@ -93,10 +91,9 @@ name: %s
 
 		// Cluster 2
 		remote_2 = clusters.GetCluster(Kuma4)
-		optsRemote2 = []DeployOptionsFunc{
+		optsRemote2 = append(optsRemote2,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithHDS(false),
-		}
+			WithHDS(false))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote2...)).

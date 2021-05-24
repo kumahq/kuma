@@ -18,7 +18,7 @@ func UniversalTransparentProxyDeployment() {
 
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).

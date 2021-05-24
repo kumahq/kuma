@@ -657,7 +657,7 @@ rules:
       - dataplanes/finalizers
     verbs:
       - "*"
-  # validate k8s token before issueing mTLS cert
+  # validate k8s token before issuing mTLS cert
   - apiGroups:
       - authentication.k8s.io
     resources:

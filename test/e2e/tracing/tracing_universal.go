@@ -42,8 +42,8 @@ selectors:
 	var deployOptsFuncs []DeployOptionsFunc
 
 	BeforeEach(func() {
-		cluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Silent)
+		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).

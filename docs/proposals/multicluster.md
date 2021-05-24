@@ -59,7 +59,7 @@ follows the standard procedure.
 
 ### Consuming services
 
-Let's look at an exmaple where a service `web` is accessing a service `backend` at port `9000`, and look at the different scenarios
+Let's look at an example where a service `web` is accessing a service `backend` at port `9000`, and look at the different scenarios
 
 1. Both services are in the same namespace `dev-1` in the same Kubernetes cluster `dev-cluster-1`. No changes or additional configurations
 needed, `web` can refer to `http://backend:9000`.
@@ -120,7 +120,7 @@ request URLs to use the `.kuma` DNS zone, and ensure smooth cross-cluster experi
 
 The model decouples managing dataplanes in a clusters and managing policies for the whole mesh, with a top-level Kuma Global Control Plane that will handle
 the user-facing API and GUI requests. Each Cluster (Kubernetes or Universal) runs Kuma Remote. The described solution
-leverages the Universal configuraton model to the whole multi-cluster deployment, regardless of the actual type of
+leverages the Universal configuration model to the whole multi-cluster deployment, regardless of the actual type of
 the clusters managed with the Global Contol Plane.
 
 The high-level architecture is depicted at the picture below.
@@ -185,7 +185,7 @@ The Remote CP is the termination point of the API requests to the Global. Its fu
 
 ## Networking
 
-The cross-cluster networking model relies on the ability for each cluster to expose its services at a routable IP adress,
+The cross-cluster networking model relies on the ability for each cluster to expose its services at a routable IP address,
 which is reachable by the other clusters in the Kuma Multicluster deployment.
 
 ```
@@ -249,8 +249,8 @@ Listeners are bound to an address which will be then used in a load balancer, so
 ### Name resolving
 
 The global service naming in Kuma Multicluster is unified under the `.kuma` zone. These will always resolve to virtual,
-non-routable IPs (e.g. 240.0.0.0/4). This an alterantive to Kubernetes' ClusterIP, for the purposes of creating outbound
-listeneres in Envoy's side-car.
+non-routable IPs (e.g. 240.0.0.0/4). This an alternative to Kubernetes' ClusterIP, for the purposes of creating outbound
+listeners in Envoy's side-car.
 
 
 #### Kubernetes
@@ -288,7 +288,7 @@ data:
 ```
 
 #### Universal
-There is no DNS name resolving from the Application side on Universal. It always uses `localhost` in conjuction with the port 
+There is no DNS name resolving from the Application side on Universal. It always uses `localhost` in conjunction with the port
 of the outbound section that was configured in the Dataplane entity.
 In the future, the Kuma Remote CP Resolver can be used to allow for the workloads run in Universal to take advantage of the
 `.kuma` DNS zone for globally accessing the named services.

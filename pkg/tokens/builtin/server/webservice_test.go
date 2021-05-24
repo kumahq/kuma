@@ -57,7 +57,7 @@ var _ = Describe("Dataplane Token Webservice", func() {
 	It("should respond with generated token", func() {
 		// given
 		idReq := types.DataplaneTokenRequest{
-			Mesh: "defualt",
+			Mesh: "default",
 			Name: "dp-1",
 		}
 		reqBytes, err := json.Marshal(idReq)
