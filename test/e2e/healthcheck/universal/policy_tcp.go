@@ -62,8 +62,7 @@ conf:
 		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken,
-			WithTransparentProxy(true), WithBuiltinDNS(true))(cluster)
+		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken, WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = TestServerUniversal("test-server", "default", testServerToken,
 			WithTransparentProxy(true), WithProtocol("tcp"))(cluster)
@@ -101,8 +100,7 @@ conf:
 
 		// check that test-server is unhealthy
 		cmd = []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
-		stdout, _, err = cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-		Expect(err).ToNot(HaveOccurred())
+		stdout, _, _ = cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
 		Expect(stdout).To(BeEmpty())
 	})
 }
