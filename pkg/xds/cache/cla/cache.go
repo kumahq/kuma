@@ -74,18 +74,7 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster e
 		endpointMap := topology.BuildEdsEndpointMap(mesh, c.zone, dataplanes.Items)
 		endpoints := []xds.Endpoint{}
 		for _, endpoint := range endpointMap[cluster.Service()] {
-			add := true
-			for cKey, cValue := range cluster.Tags() {
-				eValue, ok := endpoint.Tags[cKey]
-				if !ok {
-					continue
-				}
-				if cValue != eValue {
-					add = false
-					break
-				}
-			}
-			if add {
+			if endpoint.ContainsTags(cluster.Tags()) {
 				endpoints = append(endpoints, endpoint)
 			}
 		}
