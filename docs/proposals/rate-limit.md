@@ -27,8 +27,8 @@ conf:
     period: 1s
     max: 1000 # if 'max' is not specified we can take it 10 times more than 'connections'
   http:
-	  requests: 100 # how many connections are allowed per 'period'
-	  period: 1s	
+    requests: 100 # how many connections are allowed per 'period'
+    period: 1s
     max: 1000 # if 'max' is not specified we can take it 10 times more than 'requests'
     status: 401
     headers:
