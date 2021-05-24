@@ -169,10 +169,15 @@ var _ = Describe("SDS Server", func() {
 	})
 
 	BeforeEach(func() {
+		// make sure no insight is present
 		err := resManager.Delete(context.Background(), mesh_core.NewDataplaneInsightResource(), core_store.DeleteByKey("backend-01", "default"))
 		if !core_store.IsResourceNotFound(err) {
 			Expect(err).ToNot(HaveOccurred())
 		}
+		// and no watchdog is running
+		Eventually(func() float64 {
+			return test_metrics.FindMetric(metrics, "sds_watchdogs").GetGauge().GetValue()
+		}, "30s").Should(Equal(0.0))
 	})
 
 	newRequestForSecrets := func() envoy_api.DiscoveryRequest {
@@ -231,6 +236,9 @@ var _ = Describe("SDS Server", func() {
 		Eventually(func() *prometheus_client.Metric {
 			return test_metrics.FindMetric(metrics, "sds_generation")
 		}, "5s").ShouldNot(BeNil())
+		Eventually(func() float64 {
+			return test_metrics.FindMetric(metrics, "sds_watchdogs").GetGauge().GetValue()
+		}, "5s").Should(Equal(1.0))
 
 		close(done)
 	}, 60)
@@ -258,6 +266,11 @@ var _ = Describe("SDS Server", func() {
 			Expect(resp).ToNot(BeNil())
 			Expect(resp.Resources).To(HaveLen(2))
 			firstExchangeResponse = resp
+
+			// and wait for the insight
+			Eventually(func() error {
+				return resManager.Get(context.Background(), mesh_core.NewDataplaneInsightResource(), core_store.GetByKey("backend-01", "default"))
+			}, "30s", "1s").ShouldNot(HaveOccurred())
 			close(done)
 		}, 60)
 
