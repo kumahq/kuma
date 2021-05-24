@@ -244,4 +244,35 @@ spec:
 		// then
 		trafficAllowed()
 	})
+
+	It("should allow the traffic with tags added dynamically on Kubernetes", func() {
+		// given
+		removeDefaultTrafficPermission()
+		trafficBlocked()
+
+		// when
+		yaml := `
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  name: example-on-service
+spec:
+  sources:
+    - match:
+        newtag: client
+  destinations:
+    - match:
+        kuma.io/service: echo-server_kuma-test_svc_8080
+`
+		err := YamlK8s(yaml)(globalCluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// and when Kubernetes pod is labeled
+		err = k8s.RunKubectlE(remoteKube.GetTesting(), remoteKube.GetKubectlOptions(TestNamespace), "label", "pod", clientPodName, "newtag=client")
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		trafficAllowed()
+	})
 }
