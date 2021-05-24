@@ -957,7 +957,9 @@ jobs:
             DOCKER_REGISTRY="<< parameters.docker_registry >>"
     - run:
         name: Save Docker images into TAR archives
-        command: make docker/save
+        command: |
+          make docker/save \
+            DOCKER_REGISTRY="<< parameters.docker_registry >>"
     # Persist the specified paths into the workspace for use in downstream jobs
     - persist_to_workspace:
         root: build
