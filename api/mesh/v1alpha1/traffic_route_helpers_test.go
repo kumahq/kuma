@@ -1,6 +1,7 @@
 package v1alpha1
 
 import (
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -10,39 +11,51 @@ var _ = Describe("TrafficRouteHelper", func() {
 		It("should return splits in consistent order", func() {
 			tr1 := &TrafficRoute{Conf: &TrafficRoute_Conf{Split: []*TrafficRoute_Split{
 				{
-					Weight: 10,
+					Weight: &wrappers.UInt32Value{
+						Value: 10,
+					},
 					Destination: map[string]string{
 						"key1": "value1",
 					},
 				},
 				{
-					Weight: 20,
+					Weight: &wrappers.UInt32Value{
+						Value: 20,
+					},
 					Destination: map[string]string{
 						"key2": "value1",
 					},
 				},
 				{
-					Weight: 1,
+					Weight: &wrappers.UInt32Value{
+						Value: 1,
+					},
 					Destination: map[string]string{
 						"key1": "value2",
 						"key2": "value1",
 					},
 				},
 				{
-					Weight: 1,
+					Weight: &wrappers.UInt32Value{
+						Value: 1,
+					},
 					Destination: map[string]string{
 						"key1": "value1",
 						"key2": "value2",
 					},
 				},
 				{
-					Weight: 10,
+					Weight: &wrappers.UInt32Value{
+						Value: 10,
+					},
 					Destination: map[string]string{
 						"key1": "value2",
 					},
 				},
 				{
-					Weight: 20,
+					Weight: &wrappers.UInt32Value{
+						Value: 20,
+					},
 					Destination: map[string]string{
 						"key2": "value1",
 					},
@@ -51,39 +64,51 @@ var _ = Describe("TrafficRouteHelper", func() {
 
 			tr2 := &TrafficRoute{Conf: &TrafficRoute_Conf{Split: []*TrafficRoute_Split{
 				{
-					Weight: 20,
+					Weight: &wrappers.UInt32Value{
+						Value: 20,
+					},
 					Destination: map[string]string{
 						"key2": "value1",
 					},
 				},
 				{
-					Weight: 20,
+					Weight: &wrappers.UInt32Value{
+						Value: 20,
+					},
 					Destination: map[string]string{
 						"key2": "value1",
 					},
 				},
 				{
-					Weight: 10,
+					Weight: &wrappers.UInt32Value{
+						Value: 10,
+					},
 					Destination: map[string]string{
 						"key1": "value1",
 					},
 				},
 				{
-					Weight: 1,
+					Weight: &wrappers.UInt32Value{
+						Value: 1,
+					},
 					Destination: map[string]string{
 						"key1": "value1",
 						"key2": "value2",
 					},
 				},
 				{
-					Weight: 1,
+					Weight: &wrappers.UInt32Value{
+						Value: 1,
+					},
 					Destination: map[string]string{
 						"key1": "value2",
 						"key2": "value1",
 					},
 				},
 				{
-					Weight: 10,
+					Weight: &wrappers.UInt32Value{
+						Value: 10,
+					},
 					Destination: map[string]string{
 						"key1": "value2",
 					},

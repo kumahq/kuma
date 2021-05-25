@@ -192,9 +192,8 @@ conf:
   loadBalancer:
     roundRobin: {}
   split:
-    - weight: 100
-      destination:
-        kuma.io/service: backend
+    destination:
+      kuma.io/service: backend
 `
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
