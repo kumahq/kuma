@@ -15,6 +15,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	common_postgres "github.com/kumahq/kuma/pkg/plugins/common/postgres"
 	leader_postgres "github.com/kumahq/kuma/pkg/plugins/leader/postgres"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("postgresLeaderElector", func() {
@@ -64,7 +65,7 @@ var _ = Describe("postgresLeaderElector", func() {
 		}
 	})
 
-	It("should elect only one leader", func(done Done) {
+	It("should elect only one leader", test.Within(30*time.Second, func() {
 		// given
 		acquiredLeaderCh := make(chan string)
 		lostLeaderCh := make(chan string)
@@ -109,7 +110,5 @@ var _ = Describe("postgresLeaderElector", func() {
 		newLead := <-acquiredLeaderCh
 		Expect(newLead).ToNot(Equal(lead))
 		Expect(electors[newLead].IsLeader()).To(BeTrue())
-
-		close(done)
-	}, 30)
+	}))
 })

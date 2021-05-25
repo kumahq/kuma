@@ -9,6 +9,8 @@ import (
 	kube_core "k8s.io/api/core/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 
+	"github.com/kumahq/kuma/pkg/test"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -25,7 +27,7 @@ var _ = XDescribe("K8S CMD test", func() {
 	var k8sClient client.Client
 	var testEnv *envtest.Environment
 
-	BeforeEach(func(done Done) {
+	BeforeEach(test.Within(time.Minute, func() {
 		By("bootstrapping test environment")
 		testEnv = &envtest.Environment{
 			CRDDirectoryPaths:        []string{filepath.Join("..", "..", "..", "pkg", "plugins", "resources", "k8s", "native", "config", "crd", "bases")},
@@ -47,9 +49,7 @@ var _ = XDescribe("K8S CMD test", func() {
 		ctrl.GetConfigOrDie = func() *rest.Config {
 			return testEnv.Config
 		}
-
-		close(done)
-	}, 60)
+	}))
 
 	AfterEach(func() {
 		By("tearing down the test environment")

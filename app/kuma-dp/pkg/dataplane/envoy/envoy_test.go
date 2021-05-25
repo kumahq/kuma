@@ -16,6 +16,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/pkg/test"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
@@ -57,7 +58,7 @@ var _ = Describe("Envoy", func() {
 	})
 
 	Describe("Run(..)", func() {
-		It("should generate bootstrap config file and start Envoy", func(done Done) {
+		It("should generate bootstrap config file and start Envoy", test.Within(10*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				Dataplane: kuma_dp.Dataplane{
@@ -124,11 +125,9 @@ var _ = Describe("Envoy", func() {
             node:
               id: example
 `))
-			// complete
-			close(done)
-		}, 10)
+		}))
 
-		It("should return an error if Envoy crashes", func(done Done) {
+		It("should return an error if Envoy crashes", test.Within(10*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
@@ -165,12 +164,9 @@ var _ = Describe("Envoy", func() {
 			exitError := err.(*exec.ExitError)
 			// then
 			Expect(exitError.ProcessState.ExitCode()).To(Equal(1))
+		}))
 
-			// complete
-			close(done)
-		}, 10)
-
-		It("should return an error if Envoy binay path is not found", func(done Done) {
+		It("should return an error if Envoy binary path is not found", test.Within(10*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				DataplaneRuntime: kuma_dp.DataplaneRuntime{
@@ -194,10 +190,7 @@ var _ = Describe("Envoy", func() {
 			Expect(dataplane).To(BeNil())
 			// and
 			Expect(err.Error()).To(ContainSubstring(("could not find binary in any of the following paths")))
-
-			// complete
-			close(done)
-		}, 10)
+		}))
 	})
 
 	Describe("Parse version", func() {

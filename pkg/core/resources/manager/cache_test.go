@@ -12,6 +12,7 @@ import (
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	core_metrics "github.com/kumahq/kuma/pkg/metrics"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	"github.com/kumahq/kuma/pkg/test"
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	test_metrics "github.com/kumahq/kuma/pkg/test/metrics"
 
@@ -166,7 +167,7 @@ var _ = Describe("Cached Resource Manager", func() {
 		Expect(hits + hitWaits).To(Equal(100.0))
 	})
 
-	It("should let concurrent List() queries for different types and meshes", func(done Done) {
+	It("should let concurrent List() queries for different types and meshes", test.Within(5*time.Second, func() {
 		// given ongoing TrafficLog from mesh slow that takes a lot of time to complete
 		go func() {
 			fetched := core_mesh.TrafficLogResourceList{}
@@ -187,7 +188,5 @@ var _ = Describe("Cached Resource Manager", func() {
 
 		// then first request does not block request for other type
 		Expect(err).ToNot(HaveOccurred())
-
-		close(done)
-	}, 5)
+	}))
 })
