@@ -99,10 +99,11 @@ func (i IngressGenerator) generateLDS(
 			inboundListenerBuilder = inboundListenerBuilder.
 				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion).
 					Configure(envoy_listeners.FilterChainMatch("tls", sni)).
-					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
-						ClusterName: service,
-						Tags:        meshDestination.WithoutTags(mesh_proto.ServiceTag),
-					}))))
+					Configure(envoy_listeners.TcpProxyWithMetadata(service, envoy_common.NewCluster(
+						envoy_common.WithService(service),
+						envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
+					))),
+				))
 		}
 	}
 

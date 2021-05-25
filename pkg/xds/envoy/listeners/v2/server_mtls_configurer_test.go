@@ -25,7 +25,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 		listenerAddress  string
 		listenerPort     uint32
 		statsName        string
-		clusters         []envoy_common.ClusterSubset
+		clusters         []envoy_common.Cluster
 		ctx              xds_context.Context
 		metadata         core_xds.DataplaneMetadata
 		expected         string
@@ -54,7 +54,12 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithService("localhost:8080"),
+					envoy_common.WithWeight(200),
+				),
+			},
 			ctx: xds_context.Context{
 				ConnectionInfo: xds_context.ConnectionInfo{
 					Authority: "kuma-control-plane:5677",
@@ -132,7 +137,12 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "localhost:8080", Weight: 200}},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithService("localhost:8080"),
+					envoy_common.WithWeight(200),
+				),
+			},
 			ctx: xds_context.Context{
 				ConnectionInfo: xds_context.ConnectionInfo{
 					Authority: "kuma-control-plane:5677",

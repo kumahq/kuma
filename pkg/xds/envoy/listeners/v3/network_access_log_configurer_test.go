@@ -23,7 +23,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 		listenerPort     uint32
 		listenerProtocol core_xds.SocketAddressProtocol
 		statsName        string
-		clusters         []envoy_common.ClusterSubset
+		clusters         []envoy_common.Cluster
 		backend          *mesh_proto.LoggingBackend
 		expected         string
 	}
@@ -80,8 +80,11 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
-			backend:         nil,
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("db"),
+				envoy_common.WithWeight(200),
+			)},
+			backend: nil,
 			expected: `
             name: outbound:127.0.0.1:5432
             trafficDirection: OUTBOUND
@@ -103,7 +106,10 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("db"),
+				envoy_common.WithWeight(200),
+			)},
 			backend: &mesh_proto.LoggingBackend{
 				Name: "file",
 				Type: mesh_proto.LoggingFileType,
@@ -140,7 +146,10 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("db"),
+				envoy_common.WithWeight(200),
+			)},
 			backend: &mesh_proto.LoggingBackend{
 				Name: "tcp",
 				Format: `[%START_TIME%] "%REQ(X-REQUEST-ID)%" "%REQ(:AUTHORITY)%" "%REQ(ORIGIN)%" "%REQ(CONTENT-TYPE)%" "%KUMA_SOURCE_SERVICE%" "%KUMA_DESTINATION_SERVICE%" "%KUMA_SOURCE_ADDRESS%" "%KUMA_SOURCE_ADDRESS_WITHOUT_PORT%" "%UPSTREAM_HOST%

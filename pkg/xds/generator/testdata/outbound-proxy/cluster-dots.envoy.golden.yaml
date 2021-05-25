@@ -36,12 +36,6 @@ resources:
         ads: {}
         resourceApiVersion: V3
     http2ProtocolOptions: {}
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - version
     name: db
     type: EDS
 - name: outbound:127.0.0.1:18080
@@ -73,10 +67,6 @@ resources:
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
           cluster: db
-          metadataMatch:
-            filterMetadata:
-              envoy.lb:
-                version: 3.2.0
           statPrefix: db_kuma-system
     name: outbound:127.0.0.1:54321
     trafficDirection: OUTBOUND
