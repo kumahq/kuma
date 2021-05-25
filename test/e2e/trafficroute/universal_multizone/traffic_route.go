@@ -2,14 +2,12 @@ package universal_multizone
 
 import (
 	"fmt"
-	"strings"
-
-	. "github.com/onsi/ginkgo"
-	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
+	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
+	. "github.com/onsi/ginkgo"
+	. "github.com/onsi/gomega"
 )
 
 func KumaMultizone() {
@@ -135,73 +133,6 @@ routing:
 		Expect(global.DismissCluster()).To(Succeed())
 	})
 
-	collectResponses := func(url string, expected, notExpected []string) {
-		instances := map[string]bool{}
-		Eventually(func() bool {
-			stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", url)
-			if err != nil {
-				return false
-			}
-
-			for _, ne := range notExpected {
-				Expect(stdout).ToNot(ContainSubstring(ne))
-			}
-
-			for _, e := range expected {
-				if strings.Contains(stdout, e) {
-					instances[e] = true
-				}
-			}
-
-			return len(instances) == len(expected)
-		}, "30s", "500ms").Should(BeTrue())
-	}
-
-	within := func(n float64, l, r int) bool {
-		return float64(l) <= n && n <= float64(r)
-	}
-
-	waitRatio := func(url string, v1Weight, v2Weight int, echo1, echo2 string) error {
-		minAttempts := 100
-		maxAttempts := 1000
-		errorPercent := 3
-
-		Eventually(func() bool {
-			_, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-				"curl", "-v", "-m", "3", "--fail", url)
-			return err == nil
-		}, "30s", "500ms").Should(BeTrue())
-
-		echo1Resp := float64(0)
-		echo2Resp := float64(0)
-		for i := 0; i < maxAttempts; i++ {
-			stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
-				"curl", "-m", "3", "--fail", url)
-			Expect(err).ToNot(HaveOccurred())
-
-			if strings.Contains(stdout, echo1) {
-				echo1Resp++
-			}
-			if strings.Contains(stdout, echo2) {
-				echo2Resp++
-			}
-
-			if i < minAttempts {
-				continue
-			}
-
-			currentPercent1 := echo1Resp / float64(i+1) * 100
-			currentPercent2 := echo2Resp / float64(i+1) * 100
-
-			if within(currentPercent1, v1Weight-errorPercent, v1Weight+errorPercent) && within(currentPercent2, v2Weight-errorPercent, v2Weight+errorPercent) {
-				return nil
-			}
-		}
-		return errors.Errorf("resulted split values %v and %v aren't within original values %v and %v",
-			echo1Resp/float64(maxAttempts)*100, echo2Resp/float64(maxAttempts)*100, v1Weight, v2Weight)
-	}
-
 	It("should access all instances of the service", func() {
 		const trafficRoute = `
 type: TrafficRoute
@@ -230,9 +161,19 @@ conf:
         kuma.io/service: echo-server_kuma-test_svc_8080
         version: v4
 `
-		Expect(NewClusterSetup().Install(YamlUniversal(trafficRoute)).Setup(global)).To(Succeed())
+		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
-		collectResponses("echo-server_kuma-test_svc_8080.mesh", []string{"echo-v1", "echo-v2", "echo-v4"}, []string{"echo-v3"})
+		Eventually(func() (map[string]int, error) {
+			return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(3),
+				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
+				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), Not(BeNil())),
+				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil()))),
+				HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil())),
+			),
+		)
 	})
 
 	It("should route 100 percent of the traffic to the different service", func() {
@@ -254,10 +195,20 @@ conf:
       destination:
         kuma.io/service: backend
 `
-		Expect(NewClusterSetup().Install(YamlUniversal(trafficRoute)).Setup(global)).To(Succeed())
+		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
-		collectResponses("backend.mesh", []string{"backend-v1"}, nil)
-		collectResponses("backend.mesh", []string{"backend-v1"}, []string{"echo-v1", "echo-v2", "echo-v3", "echo-v4"})
+		Eventually(func() (map[string]int, error) {
+			return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(1),
+				HaveKeyWithValue(MatchRegexp(`.*backend-v1*`), Not(BeNil())),
+				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil()))),
+				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), Not(BeNil()))),
+				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil()))),
+				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil()))),
+			),
+		)
 	})
 
 	It("should route split traffic between the versions with 20/80 ratio", func() {
@@ -287,9 +238,16 @@ conf:
         kuma.io/service: echo-server_kuma-test_svc_8080
         version: v2
 `, v1Weight, v2Weight)
-		Expect(NewClusterSetup().Install(YamlUniversal(trafficRoute)).Setup(global)).To(Succeed())
+		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
-		err := waitRatio("echo-server_kuma-test_svc_8080.mesh", v1Weight, v2Weight, "echo-v1", "echo-v2")
-		Expect(err).ToNot(HaveOccurred())
+		Eventually(func() (map[string]int, error) {
+			return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh", 100)
+		}, "30s", "500ms").Should(
+			And(
+				HaveLen(2),
+				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(v1Weight, 10)),
+				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(v2Weight, 10)),
+			),
+		)
 	})
 }
