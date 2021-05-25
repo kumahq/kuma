@@ -1,9 +1,10 @@
 package testutil_test
 
 import (
-	"github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 )
 
 var _ = Describe("ApproximatelyEqual Matcher", func() {
