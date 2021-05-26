@@ -27,5 +27,5 @@ func ApiServerClient(coordinates *config_proto.ControlPlaneCoordinates_ApiServer
 	if err := util_http.ConfigureMTLS(client, coordinates.CaCertFile, coordinates.ClientCertFile, coordinates.ClientKeyFile); err != nil {
 		return nil, errors.Wrap(err, "could not configure HTTP client with TLS")
 	}
-	return util_http.ClientWithBaseURL(client, baseURL), nil
+	return util_http.ClientWithBaseURL(client, baseURL, coordinates), nil
 }

@@ -26,6 +26,9 @@ func ValidateCpCoordinates(cp *kumactl_config.ControlPlane) error {
 		Timeout:   DefaultApiServerTimeout,
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	}
+	for _, header := range cp.Coordinates.ApiServer.AddHeaders {
+		req.Header.Add(header.Key, header.Value)
+	}
 	resp, err := client.Do(req)
 	if err != nil {
 		return errors.Wrap(err, "could not connect to the Control Plane API Server")
