@@ -7,7 +7,7 @@ import (
 	"syscall"
 )
 
-func buildCommand(
+func BuildCommand(
 	ctx context.Context,
 	stdout io.Writer,
 	stderr io.Writer,
