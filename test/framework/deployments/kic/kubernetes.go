@@ -6,9 +6,10 @@ import (
 	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
-	"github.com/kumahq/kuma/test/framework"
 	"github.com/pkg/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/test/framework"
 )
 
 type k8sDeployment struct {

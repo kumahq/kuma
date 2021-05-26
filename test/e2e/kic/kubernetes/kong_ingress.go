@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -27,7 +26,7 @@ func testEchoServer(port int) error {
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode > 299 {
-		return errors.New(fmt.Sprintf("Ingress returned status code %d", resp.StatusCode))
+		return fmt.Errorf("Ingress returned status code %d", resp.StatusCode)
 	}
 	_, err = io.ReadAll(resp.Body)
 	if err != nil {
