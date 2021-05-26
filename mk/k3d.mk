@@ -4,9 +4,9 @@ KIND_KUBECONFIG ?= $(KIND_KUBECONFIG_DIR)/kind-kuma-config
 KIND_CLUSTER_NAME ?= kuma
 
 ifdef IPV6
-KIND_CONFIG=$(TOP)/test/kind/cluster-ipv6.yaml
+KIND_CONFIG ?= $(TOP)/test/kind/cluster-ipv6.yaml
 else
-KIND_CONFIG=$(TOP)/test/kind/cluster.yaml
+KIND_CONFIG ?= $(TOP)/test/kind/cluster.yaml
 endif
 
 ifeq ($(KUMACTL_INSTALL_USE_LOCAL_IMAGES),true)
