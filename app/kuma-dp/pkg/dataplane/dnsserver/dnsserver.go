@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"syscall"
 	"text/template"
 
 	"github.com/pkg/errors"
@@ -149,6 +150,9 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 	command := exec.CommandContext(ctx, resolvedPath, args...)
 	command.Stdout = s.opts.Stdout
 	command.Stderr = s.opts.Stderr
+	command.SysProcAttr = &syscall.SysProcAttr{
+		Pdeathsig: syscall.SIGKILL,
+	}
 
 	runLog.Info("starting DNS Server (coredns)", "args", args)
 
