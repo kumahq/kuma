@@ -106,6 +106,9 @@ conf:
 		// check that test-server is unhealthy
 		cmd = []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
 		stdout, _, _ = cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-		Expect(stdout).To(BeEmpty())
+
+		// there is no real attempt to setup a connection with test-server, but Envoy may return either
+		// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
+		Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
 	})
 }
