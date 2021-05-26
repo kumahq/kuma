@@ -183,6 +183,27 @@ func WaitPodsNotAvailable(namespace, app string) InstallFunc {
 	}
 }
 
+func EchoServerK8sIngress() InstallFunc {
+	ingress := `
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: kuma-test
+  name: k8s-ingress
+  annotations:
+    kubernetes.io/ingress.class: kong
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        backend:
+          serviceName: echo-server
+          servicePort: 80
+`
+	return YamlK8s(ingress)
+}
+
 func EchoServerK8s(mesh string) InstallFunc {
 	const name = "echo-server"
 	service := `
@@ -241,7 +262,7 @@ spec:
             - -p
             - "80"
             - --sh-exec
-            - '/usr/bin/printf "HTTP/1.1 200 OK\n\n Echo\n"'
+            - '/usr/bin/printf "HTTP/1.1 200 OK\nContent-Length: 5\n\n Echo\n"'
           resources:
             limits:
               cpu: 50m

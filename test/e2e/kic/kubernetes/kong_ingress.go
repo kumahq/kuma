@@ -1,16 +1,41 @@
 package kubernetes
 
 import (
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
+	"time"
 
-	"github.com/gruntwork-io/terratest/modules/k8s"
+	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	config_core "github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/framework/deployments/kic"
 )
+
+func testEchoServer(port int) error {
+	var netClient = &http.Client{
+		Timeout: time.Second * 10,
+	}
+
+	resp, err := netClient.Get(fmt.Sprintf("http://127.0.0.1:%d/", port))
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		return errors.New(fmt.Sprintf("Ingress returned status code %d", resp.StatusCode))
+	}
+	_, err = io.ReadAll(resp.Body)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
 
 func KICKubernetes() {
 	namespaceWithSidecarInjection := func(namespace string) string {
@@ -24,9 +49,7 @@ metadata:
 `, namespace)
 	}
 	var ingressNamespace string
-	var defaultIngressNamespace = "kuma-gateway"
 	var altIngressNamespace = "kuma-yawetag"
-	var ingressApp = "ingress-kong"
 	var kubernetes Cluster
 	var kubernetesOps []DeployOptionsFunc
 	E2EBeforeSuite(func() {
@@ -41,6 +64,7 @@ metadata:
 			Install(Kuma(config_core.Standalone, kubernetesOps...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(EchoServerK8s("default")).
+			Install(EchoServerK8sIngress()).
 			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
 		err = kubernetes.VerifyKuma()
@@ -55,63 +79,45 @@ metadata:
 		Expect(kubernetes.DismissCluster()).To(Succeed())
 	})
 	It("should install kong ingress into default namespace", func() {
-		ingressNamespace = defaultIngressNamespace
+		ingressNamespace = kic.DefaultIngressNamespace
 		// given kong ingress
-		output, err := kubernetes.GetKumactlOptions().RunKumactlAndGetOutputV(Verbose, "install", "gateway", "kong")
-		Expect(err).ToNot(HaveOccurred())
-		err = NewClusterSetup().Install(YamlK8s(output)).Setup(kubernetes)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Wait for ingress
-		err = NewClusterSetup().Install(Combine(
-			WaitNumPodsNamespace(ingressNamespace, 1, ingressApp),
-			WaitPodsAvailable(ingressNamespace, ingressApp))).Setup(kubernetes)
+		err := NewClusterSetup().
+			Install(kic.KongIngressController()).
+			Install(kic.KongIngressNodePort()).
+			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Test connection to echo server through ingress "proxy" pod
-		pods, err := k8s.ListPodsE(
-			kubernetes.GetTesting(),
-			kubernetes.GetKubectlOptions(ingressNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", ingressApp),
-			},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-		clientPod := &pods[0]
+		retry.DoWithRetry(kubernetes.GetTesting(), "connect to echo server via KIC",
+			DefaultRetries, DefaultTimeout,
+			func() (string, error) {
+				err = testEchoServer(kic.NodePortHTTP())
+				if err != nil {
+					return "", err
+				}
+				return "ok", nil
+			})
 
-		_, _, err = kubernetes.ExecWithRetries(ingressNamespace, clientPod.GetName(), "proxy",
-			"wget", "-O-", "echo-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 	})
 	It("should install kong ingress into non-default namespace", func() {
 		ingressNamespace = altIngressNamespace
 		// given kong ingress
-		output, err := kubernetes.GetKumactlOptions().RunKumactlAndGetOutputV(Verbose, "install", "gateway", "kong", "--namespace", ingressNamespace)
-		Expect(err).ToNot(HaveOccurred())
-		err = NewClusterSetup().Install(YamlK8s(output)).Setup(kubernetes)
-		Expect(err).ToNot(HaveOccurred())
-
-		// Wait for ingress
-		err = NewClusterSetup().Install(Combine(
-			WaitNumPodsNamespace(ingressNamespace, 1, ingressApp),
-			WaitPodsAvailable(ingressNamespace, ingressApp))).Setup(kubernetes)
+		err := NewClusterSetup().
+			Install(kic.KongIngressController(kic.WithNamespace(ingressNamespace))).
+			Install(kic.KongIngressNodePort(kic.WithNamespace(ingressNamespace))).
+			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Test connection to echo server through ingress "proxy" pod
-		pods, err := k8s.ListPodsE(
-			kubernetes.GetTesting(),
-			kubernetes.GetKubectlOptions(ingressNamespace),
-			metav1.ListOptions{
-				LabelSelector: fmt.Sprintf("app=%s", ingressApp),
-			},
-		)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(pods).To(HaveLen(1))
-		clientPod := &pods[0]
+		retry.DoWithRetry(kubernetes.GetTesting(), "connect to echo server via KIC",
+			DefaultRetries, DefaultTimeout,
+			func() (string, error) {
+				err = testEchoServer(kic.NodePortHTTP())
+				if err != nil {
+					return "", err
+				}
+				return "ok", nil
+			})
 
-		_, _, err = kubernetes.ExecWithRetries(ingressNamespace, clientPod.GetName(), "proxy",
-			"wget", "-O-", "echo-server_kuma-test_svc_80.mesh")
 		Expect(err).ToNot(HaveOccurred())
 	})
 }
