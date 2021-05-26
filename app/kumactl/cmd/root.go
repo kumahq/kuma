@@ -54,6 +54,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			cmd.SilenceUsage = true
 
 			if args.noConfig {
+				root.Runtime.Config = kumactl_config.DefaultConfiguration()
 				return nil
 			}
 
