@@ -12,6 +12,10 @@ import (
 )
 
 func PolicyHTTP() {
+	if IsApiV2() {
+		fmt.Println("Test not supported on API v2")
+		return
+	}
 	healthCheck := func(method, status string) string {
 		return fmt.Sprintf(`
 type: HealthCheck
@@ -58,7 +62,8 @@ conf:
 		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken, WithTransparentProxy(true))(cluster)
+		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken,
+			WithTransparentProxy(true), WithBuiltinDNS(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = TestServerUniversal("test-server", "default", testServerToken,
 			WithTransparentProxy(true), WithProtocol("http"))(cluster)
