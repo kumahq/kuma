@@ -11,7 +11,7 @@ resources:
               address: 192.168.0.1
               portValue: 8082
         loadBalancingWeight: 1
-- name: db
+- name: db-_0_
   resource:
     '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
     clusterName: db
@@ -27,7 +27,7 @@ resources:
     http2ProtocolOptions: {}
     name: backend.kuma-system
     type: EDS
-- name: db
+- name: db-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
@@ -36,7 +36,7 @@ resources:
         ads: {}
         resourceApiVersion: V3
     http2ProtocolOptions: {}
-    name: db
+    name: db-_0_
     type: EDS
 - name: outbound:127.0.0.1:18080
   resource:
@@ -66,7 +66,7 @@ resources:
       - name: envoy.filters.network.tcp_proxy
         typedConfig:
           '@type': type.googleapis.com/envoy.extensions.filters.network.tcp_proxy.v3.TcpProxy
-          cluster: db
+          cluster: db-_0_
           statPrefix: db_kuma-system
     name: outbound:127.0.0.1:54321
     trafficDirection: OUTBOUND

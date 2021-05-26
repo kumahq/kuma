@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/golang/protobuf/proto"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/policy"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -63,24 +65,26 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		if exists {
-			route := policy.(*mesh_core.TrafficRouteResource)
-			split := []*mesh_proto.TrafficRoute_Split{}
-			for _, destination := range route.Spec.GetConf().GetSplitWithDestination() {
-				split = append(split, &mesh_proto.TrafficRoute_Split{
-					Weight:      destination.Weight,
-					Destination: handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), destination.Destination),
-				})
+			routeRes := policy.(*mesh_core.TrafficRouteResource)
+			route := proto.Clone(routeRes.Spec).(*mesh_proto.TrafficRoute)
+			if len(route.Conf.Destination) > 0 {
+				route.Conf.Destination = handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), route.Conf.Destination)
+			}
+			for _, split := range route.Conf.Split {
+				split.Destination = handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), split.Destination)
+			}
+			for _, http := range route.Conf.Http {
+				if len(http.Destination) > 0 {
+					http.Destination = handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), http.Destination)
+				}
+				for _, split := range http.Split {
+					split.Destination = handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), split.Destination)
+				}
 			}
 
 			routeMap[outbound] = &mesh_core.TrafficRouteResource{
-				Meta: route.GetMeta(),
-				Spec: &mesh_proto.TrafficRoute{
-					Sources:      route.Spec.GetSources(),
-					Destinations: route.Spec.GetDestinations(),
-					Conf: &mesh_proto.TrafficRoute_Conf{
-						Split: split,
-					},
-				},
+				Meta: routeRes.GetMeta(),
+				Spec: route,
 			}
 		}
 	}

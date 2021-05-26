@@ -216,7 +216,11 @@ var _ = Describe("TrafficRoute", func() {
 				// when
 				routes := BuildRouteMap(given.dataplane, given.routes)
 				// expect
-				Expect(routes).Should(Equal(expectedRoutes))
+				Expect(routes).To(HaveLen(len(expectedRoutes)))
+				for outbound, trafficRouteRes := range expectedRoutes {
+					Expect(routes[outbound].Meta).To(Equal(trafficRouteRes.Meta))
+					Expect(routes[outbound].Spec).To(MatchProto(trafficRouteRes.Spec))
+				}
 			},
 			Entry("Dataplane without outbound interfaces and no routes", testCase{
 				dataplane: mesh_core.NewDataplaneResource(),

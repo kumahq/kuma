@@ -240,7 +240,7 @@ conf:
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh", 100)
+			return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(100))
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
