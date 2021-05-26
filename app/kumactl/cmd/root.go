@@ -36,6 +36,7 @@ var (
 func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	args := struct {
 		logLevel string
+		noConfig bool
 	}{}
 	cmd := &cobra.Command{
 		Use:   "kumactl",
@@ -51,6 +52,12 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			// once command line flags have been parsed,
 			// avoid printing usage instructions
 			cmd.SilenceUsage = true
+
+			if args.noConfig {
+				root.Runtime.Config = kumactl_config.DefaultConfiguration()
+				return nil
+			}
+
 			if root.IsFirstTimeUsage() {
 				root.Runtime.Config = kumactl_config.DefaultConfiguration()
 				if err := root.SaveConfig(); err != nil {
@@ -79,6 +86,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&root.Args.ConfigFile, "config-file", "", "path to the configuration file to use")
 	cmd.PersistentFlags().StringVarP(&root.Args.Mesh, "mesh", "m", "default", "mesh to use")
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.OffLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
+	cmd.PersistentFlags().BoolVar(&args.noConfig, "no-config", false, "if set no config file and config directory will be created")
 	// sub-commands
 	cmd.AddCommand(apply.NewApplyCmd(root))
 	cmd.AddCommand(completion.NewCompletionCommand(root))
