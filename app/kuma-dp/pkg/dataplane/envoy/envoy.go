@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"syscall"
 	"time"
 
+	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	pkg_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
@@ -169,12 +169,7 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 		args = append(args, "--bootstrap-version", string(version))
 	}
 
-	command := exec.CommandContext(ctx, resolvedPath, args...)
-	command.Stdout = e.opts.Stdout
-	command.Stderr = e.opts.Stderr
-	command.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGKILL,
-	}
+	command := command_utils.BuildCommand(ctx, e.opts.Stdout, e.opts.Stderr, resolvedPath, args...)
 
 	runLog.Info("starting Envoy", "args", args)
 	if err := command.Start(); err != nil {
