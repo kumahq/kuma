@@ -7,10 +7,11 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"syscall"
 	"text/template"
 
 	"github.com/pkg/errors"
+
+	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
@@ -147,12 +148,7 @@ func (s *DNSServer) Start(stop <-chan struct{}) error {
 		"-quiet",
 	}
 
-	command := exec.CommandContext(ctx, resolvedPath, args...)
-	command.Stdout = s.opts.Stdout
-	command.Stderr = s.opts.Stderr
-	command.SysProcAttr = &syscall.SysProcAttr{
-		Pdeathsig: syscall.SIGKILL,
-	}
+	command := command_utils.BuildCommand(ctx, s.opts.Stdout, s.opts.Stderr, resolvedPath, args...)
 
 	runLog.Info("starting DNS Server (coredns)", "args", args)
 
