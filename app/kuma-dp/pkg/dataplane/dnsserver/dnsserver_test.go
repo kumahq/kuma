@@ -10,11 +10,13 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var _ = Describe("DNS Server", func() {
@@ -55,7 +57,7 @@ var _ = Describe("DNS Server", func() {
 	})
 
 	Describe("Run(..)", func() {
-		It("should generate bootstrap config file and start Envoy", func(done Done) {
+		It("should generate bootstrap config file and start Envoy", test.Within(10*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				DNS: kuma_dp.DNS{
@@ -129,11 +131,9 @@ var _ = Describe("DNS Server", func() {
       rcode NXDOMAIN
     }
 }`))
-			// complete
-			close(done)
-		}, 10)
+		}))
 
-		It("should return an error if DNS Server crashes", func(done Done) {
+		It("should return an error if DNS Server crashes", test.Within(10*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				DNS: kuma_dp.DNS{
@@ -167,12 +167,9 @@ var _ = Describe("DNS Server", func() {
 			exitError := err.(*exec.ExitError)
 			// then
 			Expect(exitError.ProcessState.ExitCode()).To(Equal(1))
+		}))
 
-			// complete
-			close(done)
-		}, 10)
-
-		It("should return an error if DNS Server binary path is not found", func(done Done) {
+		It("should return an error if DNS Server binary path is not found", test.Within(10*time.Second, func() {
 			// given
 			cfg := kuma_dp.Config{
 				DNS: kuma_dp.DNS{
@@ -193,9 +190,6 @@ var _ = Describe("DNS Server", func() {
 			Expect(dnsServer).To(BeNil())
 			// and
 			Expect(err.Error()).To(ContainSubstring("could not find binary in any of the following paths"))
-
-			// complete
-			close(done)
-		}, 10)
+		}))
 	})
 })

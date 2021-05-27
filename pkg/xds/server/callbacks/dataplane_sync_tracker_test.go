@@ -3,11 +3,13 @@ package callbacks_test
 import (
 	"context"
 	"sync/atomic"
+	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/test"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
 	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
 
@@ -73,7 +75,7 @@ var _ = Describe("Sync", func() {
 			// expect no panic
 		})
 
-		It("should create a Watchdog when Envoy presents a valid Node ID", func(done Done) {
+		It("should create a Watchdog when Envoy presents a valid Node ID", test.Within(5*time.Second, func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
@@ -129,9 +131,7 @@ var _ = Describe("Sync", func() {
 			_, watchdogIsRunning := <-watchdogCh
 			// then
 			Expect(watchdogIsRunning).To(BeFalse())
-
-			close(done)
-		}, 5)
+		}))
 
 		It("should start only one watchdog per dataplane", func() {
 			// setup

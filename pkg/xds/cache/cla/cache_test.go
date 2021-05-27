@@ -95,7 +95,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 	It("should cache Get() queries", func() {
 		By("getting CLA for the first time")
-		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
+		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
 		Expect(countingManager.listQueries).To(Equal(1))
@@ -108,7 +108,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		Expect(js).To(MatchJSON(string(expected)))
 
 		By("getting cached CLA")
-		_, err = claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
+		_, err = claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
 		Expect(countingManager.listQueries).To(Equal(1))
@@ -123,7 +123,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 
 		<-time.After(2 * time.Second)
 
-		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
+		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(2))
 		Expect(countingManager.listQueries).To(Equal(2))
@@ -140,7 +140,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		for i := 0; i < 100; i++ {
 			wg.Add(1)
 			go func() {
-				cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", "backend", envoy_common.APIV3)
+				cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 				Expect(err).ToNot(HaveOccurred())
 
 				marshalled, err := json.Marshal(cla) // to imitate Read access to 'cla'
@@ -162,5 +162,62 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 			hits = h.Gauge.GetValue()
 		}
 		Expect(hitWaits + hits + 1).To(Equal(100.0))
+	})
+
+	It("should support clusters with the same names but different tags", func() {
+		err := s.Create(context.Background(), &core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.168.0.3",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+					Port: 1011, ServicePort: 2021,
+					Tags: map[string]string{
+						"kuma.io/service": "backend",
+						"version":         "v1",
+					},
+				}},
+			}},
+		}, core_store.CreateByKey("dp3", "mesh-0"))
+		Expect(err).ToNot(HaveOccurred())
+
+		err = s.Create(context.Background(), &core_mesh.DataplaneResource{
+			Spec: &mesh_proto.Dataplane{Networking: &mesh_proto.Dataplane_Networking{
+				Address: "192.168.0.4",
+				Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+					Port: 1011, ServicePort: 2021,
+					Tags: map[string]string{
+						"kuma.io/service": "backend",
+						"version":         "v2",
+					},
+				}},
+			}},
+		}, core_store.CreateByKey("dp4", "mesh-0"))
+		Expect(err).ToNot(HaveOccurred())
+
+		clusterV1 := envoy_common.NewCluster(
+			envoy_common.WithService("backend"),
+			envoy_common.WithName("backend-_0_"),
+			envoy_common.WithTags(map[string]string{
+				"kuma.io/service": "backend",
+				"version":         "v1",
+			}),
+		)
+
+		clusterV2 := envoy_common.NewCluster(
+			envoy_common.WithService("backend"),
+			envoy_common.WithName("backend-_0_"),
+			envoy_common.WithTags(map[string]string{
+				"kuma.io/service": "backend",
+				"version":         "v2",
+			}),
+		)
+
+		cla1, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterV1, envoy_common.APIV3)
+		Expect(err).ToNot(HaveOccurred())
+
+		cla2, err := claCache.GetCLA(context.Background(), "mesh-0", "", clusterV2, envoy_common.APIV3)
+		Expect(err).ToNot(HaveOccurred())
+
+		Expect(cla1).ToNot(Equal(cla2))
+
 	})
 })

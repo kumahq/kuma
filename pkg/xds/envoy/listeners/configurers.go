@@ -199,15 +199,32 @@ func NoBindToPort() ListenerBuilderOpt {
 	})
 }
 
-func TcpProxy(statsName string, clusters ...envoy_common.ClusterSubset) FilterChainBuilderOpt {
+func TcpProxy(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV2(&v2.TcpProxyConfigurer{
-			StatsName: statsName,
-			Clusters:  clusters,
+			StatsName:   statsName,
+			Clusters:    clusters,
+			UseMetadata: false,
 		})
 		config.AddV3(&v3.TcpProxyConfigurer{
-			StatsName: statsName,
-			Clusters:  clusters,
+			StatsName:   statsName,
+			Clusters:    clusters,
+			UseMetadata: false,
+		})
+	})
+}
+
+func TcpProxyWithMetadata(statsName string, clusters ...envoy_common.Cluster) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+		config.AddV2(&v2.TcpProxyConfigurer{
+			StatsName:   statsName,
+			Clusters:    clusters,
+			UseMetadata: true,
+		})
+		config.AddV3(&v3.TcpProxyConfigurer{
+			StatsName:   statsName,
+			Clusters:    clusters,
+			UseMetadata: true,
 		})
 	})
 }
@@ -288,7 +305,7 @@ func HttpStaticRoute(builder *envoy_routes.RouteConfigurationBuilder) FilterChai
 	})
 }
 
-func HttpInboundRoute(service string, cluster envoy_common.ClusterSubset) FilterChainBuilderOpt {
+func HttpInboundRoute(service string, cluster envoy_common.Cluster) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV2(&v2.HttpInboundRouteConfigurer{
 			Service: service,
@@ -301,17 +318,17 @@ func HttpInboundRoute(service string, cluster envoy_common.ClusterSubset) Filter
 	})
 }
 
-func HttpOutboundRoute(service string, subsets []envoy_common.ClusterSubset, dpTags mesh_proto.MultiValueTagSet) FilterChainBuilderOpt {
+func HttpOutboundRoute(service string, clusters []envoy_common.Cluster, dpTags mesh_proto.MultiValueTagSet) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV2(&v2.HttpOutboundRouteConfigurer{
-			Service: service,
-			Subsets: subsets,
-			DpTags:  dpTags,
+			Service:  service,
+			Clusters: clusters,
+			DpTags:   dpTags,
 		})
 		config.AddV3(&v3.HttpOutboundRouteConfigurer{
-			Service: service,
-			Subsets: subsets,
-			DpTags:  dpTags,
+			Service:  service,
+			Clusters: clusters,
+			DpTags:   dpTags,
 		})
 	})
 }
