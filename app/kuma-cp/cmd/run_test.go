@@ -5,6 +5,9 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
+
+	"github.com/kumahq/kuma/pkg/test"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -60,7 +63,7 @@ func RunSmokeTest(factory ConfigFactory, workdir string) {
 			}
 		})
 
-		It("should be possible to run `kuma-cp run with default mode`", func(done Done) {
+		It("should be possible to run `kuma-cp run with default mode`", test.Within(time.Minute, func() {
 			// given
 			config := fmt.Sprintf(factory.GenerateConfig(), diagnosticsPort)
 			_, err := configFile.WriteString(config)
@@ -108,9 +111,6 @@ func RunSmokeTest(factory ConfigFactory, workdir string) {
 			// then
 			err = <-errCh
 			Expect(err).ToNot(HaveOccurred())
-
-			// complete
-			close(done)
-		}, 60)
+		}))
 	})
 }
