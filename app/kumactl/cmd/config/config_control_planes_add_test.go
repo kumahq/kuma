@@ -159,23 +159,6 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
-
-		It("should fail to add header with wrong format", func() {
-			// given
-			rootCmd.SetArgs([]string{"--config-file", configFile.Name(),
-				"config", "control-planes", "add",
-				"--name", "example",
-				"--address", "http://localhost:1234", "--add-header", "abc:def"})
-			// when
-			err := rootCmd.Execute()
-			// then
-			Expect(err).To(MatchError(`Header is not in the correct format. Format = "key: value"`))
-			// and
-			Expect(outbuf.String()).To(Equal(`Error: Header is not in the correct format. Format = "key: value"
-`))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
-		})
 	})
 
 	Describe("happy path", func() {
@@ -276,7 +259,7 @@ added Control Plane "example"
 switched active Control Plane to "example"
 `,
 				overwrite: true,
-				extraArgs: []string{"--add-header", "abc: xyz", "--add-header", "def: pqr"},
+				extraArgs: []string{"--headers", "abc=xyz", "--headers", "def=pqr"},
 			}),
 			Entry("should replace the example Control Plane with headers", testCase{
 				configFile: "config-control-planes-add.05.initial.yaml",
@@ -286,7 +269,7 @@ added Control Plane "example"
 switched active Control Plane to "example"
 `,
 				overwrite: true,
-				extraArgs: []string{"--add-header", "abc: xyz"},
+				extraArgs: []string{"--headers", "abc=xyz"},
 			}),
 		)
 	})

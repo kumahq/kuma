@@ -12,7 +12,7 @@ controlPlanes:
     name: test1
   - coordinates:
       apiServer:
-        addHeaders:
+        headers:
           - key: abc
             value: xyz
         caCertFile: /tmp/ca-cert.pem

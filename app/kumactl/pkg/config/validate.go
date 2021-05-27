@@ -26,8 +26,8 @@ func ValidateCpCoordinates(cp *kumactl_config.ControlPlane) error {
 		Timeout:   DefaultApiServerTimeout,
 		Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 	}
-	for _, header := range cp.Coordinates.ApiServer.AddHeaders {
-		req.Header.Add(header.Key, header.Value)
+	for _, h := range cp.Coordinates.ApiServer.Headers {
+		req.Header.Add(h.Key, h.Value)
 	}
 	resp, err := client.Do(req)
 	if err != nil {

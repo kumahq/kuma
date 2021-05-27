@@ -32,7 +32,7 @@ message ControlPlane {
 
 // ControlPlaneCoordinates defines coordinates of a Control Plane.
 message ControlPlaneCoordinates {
-  message AddHeader {
+  message Headers {
     string key = 1;
     string value = 2;
   }
@@ -54,7 +54,7 @@ message ControlPlaneCoordinates {
     string client_key_file = 4;
 
     // Headers to be added for communication with Kuma control plane
-    repeated AddHeader add_headers = 5;
+    repeated Headers headers = 5;
   }
 
   ApiServer api_server = 1 [ (validate.rules).message.required = true ];
