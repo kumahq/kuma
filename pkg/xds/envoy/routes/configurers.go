@@ -18,13 +18,13 @@ func CommonVirtualHost(name string) VirtualHostBuilderOpt {
 	})
 }
 
-func DefaultRoute(subsets ...envoy_common.ClusterSubset) VirtualHostBuilderOpt {
+func DefaultRoute(clusters ...envoy_common.Cluster) VirtualHostBuilderOpt {
 	return VirtualHostBuilderOptFunc(func(config *VirtualHostBuilderConfig) {
 		config.AddV2(&v2.DefaultRouteConfigurer{
-			Subsets: subsets,
+			Clusters: clusters,
 		})
 		config.AddV3(&v3.DefaultRouteConfigurer{
-			Subsets: subsets,
+			Clusters: clusters,
 		})
 	})
 }

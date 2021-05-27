@@ -1,4 +1,4 @@
-package healthcheck_test
+package k8s_api_bypass_test
 
 import (
 	"testing"
@@ -15,10 +15,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestE2EHealthCheck(t *testing.T) {
+func TestE2EExternalServices(t *testing.T) {
 	if framework.IsK8sClustersStarted() {
 		RegisterFailHandler(Fail)
-		RunSpecs(t, "E2E Health Check Suite")
+		RunSpecs(t, "Kubernetes API Bypass")
 	} else {
 		t.SkipNow()
 	}

@@ -14,7 +14,7 @@ import (
 var _ = Describe("DefaultRouteConfigurer", func() {
 
 	type testCase struct {
-		clusters []envoy_common.ClusterSubset
+		clusters []envoy_common.Cluster
 		expected string
 	}
 
@@ -35,9 +35,11 @@ var _ = Describe("DefaultRouteConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic VirtualHost with a single destination cluster", testCase{
-			clusters: []envoy_common.ClusterSubset{
-				{ClusterName: "backend", Weight: 200},
-			},
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("backend"),
+				envoy_common.WithWeight(200),
+			)},
+
 			expected: `
             routes:
             - match:
@@ -48,9 +50,17 @@ var _ = Describe("DefaultRouteConfigurer", func() {
 `,
 		}),
 		Entry("basic VirtualHost with weighted destination clusters", testCase{
-			clusters: []envoy_common.ClusterSubset{
-				{ClusterName: "backend", Weight: 30, Tags: map[string]string{"version": "v1"}},
-				{ClusterName: "backend", Weight: 70, Tags: map[string]string{"version": "v2"}},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithName("backend-0"),
+					envoy_common.WithWeight(30),
+					envoy_common.WithTags(map[string]string{"version": "v1"}),
+				),
+				envoy_common.NewCluster(
+					envoy_common.WithName("backend-1"),
+					envoy_common.WithWeight(70),
+					envoy_common.WithTags(map[string]string{"version": "v2"}),
+				),
 			},
 			expected: `
             routes:
@@ -59,26 +69,26 @@ var _ = Describe("DefaultRouteConfigurer", func() {
               route:
                 weightedClusters:
                   clusters:
-                  - metadataMatch:
-                      filterMetadata:
-                        envoy.lb:
-                          version: v1
-                    name: backend
+                  - name: backend-0
                     weight: 30
-                  - metadataMatch:
-                      filterMetadata:
-                        envoy.lb:
-                          version: v2
-                    name: backend
+                  - name: backend-1
                     weight: 70
                   totalWeight: 100
                 timeout: 0s
 `,
 		}),
 		Entry("basic VirtualHost with weighted destination clusters with totalWeight less than 100", testCase{
-			clusters: []envoy_common.ClusterSubset{
-				{ClusterName: "backend", Weight: 30, Tags: map[string]string{"version": "v1"}},
-				{ClusterName: "backend", Weight: 60, Tags: map[string]string{"version": "v2"}},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithName("backend-0"),
+					envoy_common.WithWeight(30),
+					envoy_common.WithTags(map[string]string{"version": "v1"}),
+				),
+				envoy_common.NewCluster(
+					envoy_common.WithName("backend-1"),
+					envoy_common.WithWeight(60),
+					envoy_common.WithTags(map[string]string{"version": "v2"}),
+				),
 			},
 			expected: `
             routes:
@@ -87,26 +97,27 @@ var _ = Describe("DefaultRouteConfigurer", func() {
               route:
                 weightedClusters:
                   clusters:
-                  - metadataMatch:
-                      filterMetadata:
-                        envoy.lb:
-                          version: v1
-                    name: backend
+                  - name: backend-0
                     weight: 30
-                  - metadataMatch:
-                      filterMetadata:
-                        envoy.lb:
-                          version: v2
-                    name: backend
+                  - name: backend-1
                     weight: 60
                   totalWeight: 90
                 timeout: 0s
 `,
 		}),
 		Entry("subset with external service", testCase{
-			clusters: []envoy_common.ClusterSubset{
-				{ClusterName: "backend", Weight: 30, Tags: map[string]string{"version": "v1"}},
-				{ClusterName: "backend", Weight: 60, Tags: map[string]string{"version": "v2"}, IsExternalService: true},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithName("backend-0"),
+					envoy_common.WithWeight(30),
+					envoy_common.WithTags(map[string]string{"version": "v1"}),
+				),
+				envoy_common.NewCluster(
+					envoy_common.WithName("backend-1"),
+					envoy_common.WithWeight(60),
+					envoy_common.WithTags(map[string]string{"version": "v2"}),
+					envoy_common.WithExternalService(true),
+				),
 			},
 			expected: `
             routes:
@@ -117,17 +128,9 @@ var _ = Describe("DefaultRouteConfigurer", func() {
                 timeout: 0s
                 weightedClusters:
                   clusters:
-                  - metadataMatch:
-                      filterMetadata:
-                        envoy.lb:
-                          version: v1
-                    name: backend
+                  - name: backend-0
                     weight: 30
-                  - metadataMatch:
-                      filterMetadata:
-                        envoy.lb:
-                          version: v2
-                    name: backend
+                  - name: backend-1
                     weight: 60
                   totalWeight: 90
 `,

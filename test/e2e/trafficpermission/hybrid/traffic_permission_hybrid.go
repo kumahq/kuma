@@ -15,7 +15,7 @@ import (
 
 func TrafficPermissionHybrid() {
 	var globalCluster, remoteUniversal, remoteKube Cluster
-	var optsGlobal, optsRemoteUniversal, optsRemoteKube []DeployOptionsFunc
+	var optsGlobal, optsRemoteUniversal, optsRemoteKube = KumaK8sDeployOpts, KumaUniversalDeployOpts, KumaRemoteK8sDeployOpts
 	var clientPodName string
 
 	namespaceWithSidecarInjection := func(namespace string) string {
@@ -57,7 +57,6 @@ spec:
 
 		// Global
 		globalCluster = k8sClusters.GetCluster(Kuma1)
-		optsGlobal = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Global, optsGlobal...)).
@@ -75,9 +74,8 @@ spec:
 
 		// Remote universal
 		remoteUniversal = universalClusters.GetCluster(Kuma3)
-		optsRemoteUniversal = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		optsRemoteUniversal = append(optsRemoteUniversal,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Remote, optsRemoteUniversal...)).
@@ -90,9 +88,8 @@ spec:
 
 		// Remote kubernetes
 		remoteKube = k8sClusters.GetCluster(Kuma2)
-		optsRemoteKube = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		optsRemoteKube = append(optsRemoteKube,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Remote, optsRemoteKube...)).
@@ -239,6 +236,37 @@ spec:
         kuma.io/service: echo-server_kuma-test_svc_8080
 `
 		err := YamlK8s(yaml)(globalCluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// then
+		trafficAllowed()
+	})
+
+	It("should allow the traffic with tags added dynamically on Kubernetes", func() {
+		// given
+		removeDefaultTrafficPermission()
+		trafficBlocked()
+
+		// when
+		yaml := `
+apiVersion: kuma.io/v1alpha1
+kind: TrafficPermission
+mesh: default
+metadata:
+  name: example-on-service
+spec:
+  sources:
+    - match:
+        newtag: client
+  destinations:
+    - match:
+        kuma.io/service: echo-server_kuma-test_svc_8080
+`
+		err := YamlK8s(yaml)(globalCluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		// and when Kubernetes pod is labeled
+		err = k8s.RunKubectlE(remoteKube.GetTesting(), remoteKube.GetKubectlOptions(TestNamespace), "label", "pod", clientPodName, "newtag=client")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

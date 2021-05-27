@@ -22,7 +22,7 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 		listenerPort       uint32
 		listenerProtocol   core_xds.SocketAddressProtocol
 		statsName          string
-		clusters           []envoy_common.ClusterSubset
+		clusters           []envoy_common.Cluster
 		maxConnectAttempts uint32
 		expected           string
 	}
@@ -60,11 +60,14 @@ var _ = Describe("MaxConnectAttemptsConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic tcp_proxy", testCase{
-			listenerName:       "outbound:127.0.0.1:5432",
-			listenerAddress:    "127.0.0.1",
-			listenerPort:       5432,
-			statsName:          "db",
-			clusters:           []envoy_common.ClusterSubset{{ClusterName: "db", Weight: 200}},
+			listenerName:    "outbound:127.0.0.1:5432",
+			listenerAddress: "127.0.0.1",
+			listenerPort:    5432,
+			statsName:       "db",
+			clusters: []envoy_common.Cluster{envoy_common.NewCluster(
+				envoy_common.WithService("db"),
+				envoy_common.WithWeight(200),
+			)},
 			maxConnectAttempts: 5,
 			expected: `
             name: outbound:127.0.0.1:5432

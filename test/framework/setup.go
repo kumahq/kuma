@@ -286,13 +286,21 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 		if opts.protocol == "" {
 			opts.protocol = "http"
 		}
+		if opts.serviceName == "" {
+			opts.serviceName = "echo-server_kuma-test_svc_8080"
+		}
+		if opts.serviceVersion == "" {
+			opts.serviceVersion = "v1"
+		}
 		switch {
 		case opts.transparent:
-			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", "8080", redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", opts.serviceName,
+				opts.protocol, opts.serviceVersion, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 		case opts.serviceProbe:
-			appYaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, mesh, "8080", "80", "8080", opts.protocol)
+			appYaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, mesh, "8080", "80", opts.serviceName,
+				opts.protocol, opts.serviceVersion)
 		default:
-			appYaml = fmt.Sprintf(EchoServerDataplane, mesh, "8080", "80", "8080", opts.protocol)
+			appYaml = fmt.Sprintf(EchoServerDataplane, mesh, "8080", "80", opts.serviceName, opts.protocol, opts.serviceVersion)
 		}
 		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeEchoServer), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
 		return cluster.DeployApp(fs...)
@@ -424,6 +432,44 @@ func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 			}
 		}
 		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
+		return cluster.DeployApp(fs...)
+	}
+}
+
+func TestServerUniversal(name, mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
+	return func(cluster Cluster) error {
+		opts := newDeployOpt(fs...)
+		if len(opts.protocol) == 0 {
+			opts.protocol = "http"
+		}
+		args := []string{"test-server", "health-check", opts.protocol, "--port", "8080"}
+		appYaml := fmt.Sprintf(`
+type: Dataplane
+mesh: %s
+name: {{ name }}
+networking:
+  address:  {{ address }}
+  inbound:
+  - port: %s
+    servicePort: %s
+    tags:
+      kuma.io/service: test-server
+      kuma.io/protocol: %s
+      team: server-owners
+  transparentProxying:
+    redirectPortInbound: %s
+    redirectPortInboundV6: %s
+    redirectPortOutbound: %s
+`, mesh, "80", "8080", opts.protocol, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+
+		fs = append(fs,
+			WithName(name),
+			WithMesh(mesh),
+			WithAppname("test-server"),
+			WithToken(token),
+			WithArgs(args),
+			WithYaml(appYaml),
+			WithIPv6(IsIPv6()))
 		return cluster.DeployApp(fs...)
 	}
 }

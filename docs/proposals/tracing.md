@@ -157,6 +157,6 @@ This enables user to segment the destinations of traces.
 
 ## Summary
 
-We decided to start with Zipkin backend, and add more backends gradualy.
+We decided to start with Zipkin backend, and add more backends gradually.
 First implementation will require users to restart Envoy to reload configuration, but we want to make contribution
 to Envoy and improve it to have dynamic configuration like the rest of the configurations in Kuma.

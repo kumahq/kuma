@@ -1,4 +1,4 @@
-package k8s_api_bybass_test
+package resilience_test
 
 import (
 	"testing"
@@ -15,10 +15,10 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestE2EExternalServices(t *testing.T) {
+func TestE2EResilience(t *testing.T) {
 	if framework.IsK8sClustersStarted() {
 		RegisterFailHandler(Fail)
-		RunSpecs(t, "Kubernetes API Bypass")
+		RunSpecs(t, "Resilience tests")
 	} else {
 		t.SkipNow()
 	}

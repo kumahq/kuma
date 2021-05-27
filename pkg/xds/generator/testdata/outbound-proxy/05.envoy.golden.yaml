@@ -6,12 +6,6 @@ resources:
       idleTimeout: 0s
     connectTimeout: 10s
     dnsLookupFamily: V4_ONLY
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - kuma.io/protocol
     loadAssignment:
       clusterName: es
       endpoints:
@@ -62,10 +56,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: es
-                  metadataMatch:
-                    filterMetadata:
-                      envoy.lb:
-                        kuma.io/protocol: http
                   timeout: 0s
           statPrefix: es
     name: outbound:127.0.0.1:18081

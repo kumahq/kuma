@@ -63,4 +63,25 @@ currentContext: local
 		Expect(err).ToNot(HaveOccurred())
 		Expect(bytes).To(MatchYAML(expected))
 	})
+
+	It("shouldn't create config file when --no-config flag is set", func() {
+		// given
+		rootCtx := &kumactl_cmd.RootContext{
+			Runtime: kumactl_cmd.RootRuntime{
+				NewAPIServerClient: kumactl_resources.NewAPIServerClient,
+			},
+		}
+		rootCmd := cmd.NewRootCmd(rootCtx)
+
+		// when
+		rootCmd.SetArgs([]string{"version", "--no-config"})
+		err := rootCmd.Execute()
+
+		// then
+		Expect(err).ToNot(HaveOccurred())
+
+		_, err = os.Stat(config.DefaultConfigFile)
+		Expect(err).To(HaveOccurred())
+		Expect(os.IsNotExist(err)).To(BeTrue())
+	})
 })

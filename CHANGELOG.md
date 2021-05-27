@@ -283,7 +283,7 @@ Changes:
 ⚠️ warning: breaking change
 * feat: locality aware load balancing [#1111](https://github.com//kumahq/kuma/pull/1111) 
 * feat: add ExternalService  [#1025](https://github.com//kumahq/kuma/pull/1025) [#1058](https://github.com//kumahq/kuma/pull/1058) [#1062](https://github.com//kumahq/kuma/pull/1062) [#1080](https://github.com//kumahq/kuma/pull/1080) [#1094](https://github.com//kumahq/kuma/pull/1094) 
-* feat: add kafka protocol suport [#1121](https://github.com//kumahq/kuma/pull/1121)
+* feat: add kafka protocol support [#1121](https://github.com//kumahq/kuma/pull/1121)
 * feat: exclude injection from pods that match labels [#1072](https://github.com//kumahq/kuma/pull/1072)
 * feat: create default resources for Mesh [#1141](https://github.com//kumahq/kuma/pull/1141) [#1149](https://github.com/kumahq/kuma/pull/1149) [#1154](https://github.com//kumahq/kuma/pull/1154) [#1155](https://github.com//kumahq/kuma/pull/1155) 
 ⚠️ warning: breaking change
@@ -457,7 +457,7 @@ Changes:
 * feat: added total weight for route configurer [#905](https://github.com//kumahq/kuma/pull/905) 
  👍contributed by @tharun208
 
-* fix: suport dry run [#906](https://github.com//kumahq/kuma/pull/906) 
+* fix: support dry run [#906](https://github.com//kumahq/kuma/pull/906)
 
 * fix: reduce size of access log address [#894](https://github.com//kumahq/kuma/pull/894) 
  👍contributed by @xbauquet 

@@ -29,8 +29,8 @@ define KIND_EXAMPLE_DATAPLANE_NAME
 $(shell KUBECONFIG=$(KIND_KUBECONFIG) kubectl -n $(EXAMPLE_NAMESPACE) exec $$(kubectl -n $(EXAMPLE_NAMESPACE) get pods -l app=example-app -o=jsonpath='{.items[0].metadata.name}') -c kuma-sidecar printenv KUMA_DATAPLANE_NAME)
 endef
 
-CI_KIND_VERSION ?= v0.10.0
-CI_KUBERNETES_VERSION ?= v1.20.2@sha256:8f7ea6e7642c0da54f04a7ee10431549c0257315b3a634f6ef2fecaaedb19bab
+CI_KIND_VERSION ?= v0.11.0
+CI_KUBERNETES_VERSION ?= v1.20.7@sha256:e645428988191fc824529fd0bb5c94244c12401cf5f5ea3bd875eb0a787f0fe9
 
 KIND_PATH := $(CI_TOOLS_DIR)/kind
 
@@ -95,10 +95,22 @@ kind/load/kuma-universal:
 	@kind load docker-image kuma-universal:latest --name=$(KIND_CLUSTER_NAME)
 
 .PHONY: kind/load/images
-kind/load/images: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl kind/load/kuma-universal
+kind/load/images: kind/load/images/release kind/load/images/test
+
+.PHONY: kind/load/images/release
+kind/load/images/release: kind/load/control-plane kind/load/kuma-dp kind/load/kuma-init kind/load/kuma-prometheus-sd kind/load/kumactl
+
+.PHONY: kind/load/images/test
+kind/load/images/test: kind/load/kuma-universal
 
 .PHONY: kind/load
-kind/load: image/kuma-cp image/kuma-dp image/kuma-init image/kuma-prometheus-sd image/kumactl docker/build/kuma-universal kind/load/images
+kind/load: kind/load/release kind/load/test
+
+.PHONY: kind/load/release
+kind/load/release: images/release kind/load/images/release
+
+.PHONY: kind/load/test
+kind/load/test: images/test kind/load/images/test
 
 .PHONY: kind/deploy/kuma
 kind/deploy/kuma: build/kumactl kind/load
