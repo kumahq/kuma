@@ -961,7 +961,6 @@ function _kumactl_install_gateway {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -990,8 +989,7 @@ function _kumactl_install_gateway_kong {
     '--namespace[namespace to install gateway to]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
 }
 
 function _kumactl_install_gateway_kong-enterprise {
