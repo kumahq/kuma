@@ -381,5 +381,65 @@ conf:
 				),
 			)
 		})
+
+		It("should same splits with a different weights", func() {
+			const trafficRoute = `
+type: TrafficRoute
+name: two-splits
+mesh: default
+sources:
+  - match:
+      kuma.io/service: demo-client
+destinations:
+  - match:
+      kuma.io/service: echo-server_kuma-test_svc_8080
+conf:
+  http:
+  - match:
+      path:
+        prefix: /split
+    split:
+    - weight: 50
+      destination:
+        kuma.io/service: echo-server_kuma-test_svc_8080
+        version: v1
+    - weight: 50
+      destination:
+        kuma.io/service: echo-server_kuma-test_svc_8080
+        version: v2
+  loadBalancer:
+    roundRobin: {}
+  split:
+  - weight: 20
+    destination:
+      kuma.io/service: echo-server_kuma-test_svc_8080
+      version: v1
+  - weight: 80
+    destination:
+      kuma.io/service: echo-server_kuma-test_svc_8080
+      version: v2
+`
+			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+
+			Eventually(func() (map[string]int, error) {
+				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh/split", WithNumberOfRequests(10))
+			}, "30s", "500ms").Should(
+				And(
+					HaveLen(2),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(5, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(5, 1)),
+				),
+			)
+
+			Eventually(func() (map[string]int, error) {
+				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(10))
+			}, "30s", "500ms").Should(
+				And(
+					HaveLen(2),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(2, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(8, 1)),
+				),
+			)
+		})
 	})
 }

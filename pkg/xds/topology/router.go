@@ -61,34 +61,35 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 	routeMap := core_xds.RouteMap{}
 	for _, oface := range dataplane.Spec.Networking.GetOutbound() {
 		serviceName := oface.GetTagsIncludingLegacy()[mesh_proto.ServiceTag]
-		policy, exists := policyMap[serviceName]
-
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
-		if exists {
-			routeRes := policy.(*mesh_core.TrafficRouteResource)
-			route := proto.Clone(routeRes.Spec).(*mesh_proto.TrafficRoute)
-			if len(route.Conf.Destination) > 0 {
-				route.Conf.Destination = handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), route.Conf.Destination)
-			}
-			for _, split := range route.Conf.Split {
-				split.Destination = handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), split.Destination)
-			}
-			for _, http := range route.Conf.Http {
-				if len(http.Destination) > 0 {
-					http.Destination = handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), http.Destination)
-				}
-				for _, split := range http.Split {
-					split.Destination = handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), split.Destination)
-				}
-			}
-
-			routeMap[outbound] = &mesh_core.TrafficRouteResource{
-				Meta: routeRes.GetMeta(),
-				Spec: route,
-			}
+		if policy, exists := policyMap[serviceName]; exists {
+			routeMap[outbound] = resolveTrafficRouteWildcards(policy.(*mesh_core.TrafficRouteResource), oface.GetTagsIncludingLegacy())
 		}
 	}
 	return routeMap
+}
+
+func resolveTrafficRouteWildcards(routeRes *mesh_core.TrafficRouteResource, outboundTags map[string]string) *mesh_core.TrafficRouteResource {
+	route := proto.Clone(routeRes.Spec).(*mesh_proto.TrafficRoute) // we need to clone the Spec so we don't override the resource in Cache.
+	if len(route.Conf.Destination) > 0 {
+		route.Conf.Destination = handleWildcardTagsFor(outboundTags, route.Conf.Destination)
+	}
+	for _, split := range route.Conf.Split {
+		split.Destination = handleWildcardTagsFor(outboundTags, split.Destination)
+	}
+	for _, http := range route.Conf.Http {
+		if len(http.Destination) > 0 {
+			http.Destination = handleWildcardTagsFor(outboundTags, http.Destination)
+		}
+		for _, split := range http.Split {
+			split.Destination = handleWildcardTagsFor(outboundTags, split.Destination)
+		}
+	}
+
+	return &mesh_core.TrafficRouteResource{
+		Meta: routeRes.GetMeta(),
+		Spec: route,
+	}
 }
 
 func handleWildcardTagsFor(outboundTags, routeTags map[string]string) map[string]string {

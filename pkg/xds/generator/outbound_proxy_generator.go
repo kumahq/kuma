@@ -26,6 +26,19 @@ const OriginOutbound = "outbound"
 type OutboundProxyGenerator struct {
 }
 
+// Whenever `split` is specified in the TrafficRoute which has more than kuma.io/service tag
+// We generate a separate Envoy cluster with _X_ suffix. SplitCounter ensures that we have different X for every split in one Dataplane
+// Each split is distinct for the whole Dataplane so we can avoid accidental cluster overrides.
+type splitCounter struct {
+	counter int
+}
+
+func (s *splitCounter) getAndIncrement() int {
+	counter := s.counter
+	s.counter++
+	return counter
+}
+
 func (g OutboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Proxy) (*model.ResourceSet, error) {
 	outbounds := proxy.Dataplane.Spec.Networking.GetOutbound()
 	resources := model.NewResourceSet()
@@ -236,16 +249,6 @@ func (_ OutboundProxyGenerator) inferProtocol(proxy *model.Proxy, clusters []env
 	return InferServiceProtocol(allEndpoints)
 }
 
-type splitCounter struct {
-	counter int
-}
-
-func (s *splitCounter) getAndIncrement() int {
-	counter := s.counter
-	s.counter++
-	return counter
-}
-
 func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *kuma_mesh.Dataplane_Networking_Outbound, splitCounter *splitCounter) (routes envoy_common.Routes, err error) {
 	oface := proxy.Dataplane.Spec.Networking.ToOutboundInterface(outbound)
 
@@ -259,6 +262,11 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 	if timeout := proxy.Policies.Timeouts[oface]; timeout != nil {
 		timeoutConf = timeout.Spec.GetConf()
 	}
+
+	// ClusterCache (cluster hash -> cluster name) protects us from creating excessive amount of caches.
+	// For one outbound we pick one traffic route so LB and Timeout are the same.
+	// If we have same split in many HTTP matches we can use the same cluster with different weight
+	clusterCache := map[string]string{}
 
 	clustersFromSplit := func(splits []*kuma_mesh.TrafficRoute_Split) []envoy_common.Cluster {
 		var clusters []envoy_common.Cluster
@@ -293,6 +301,13 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 				envoy_common.WithLB(route.Spec.GetConf().GetLoadBalancer()),
 				envoy_common.WithExternalService(isExternalService),
 			)
+
+			if name, ok := clusterCache[cluster.Hash()]; ok {
+				cluster.SetName(name)
+			} else {
+				clusterCache[cluster.Hash()] = cluster.Name()
+			}
+
 			clusters = append(clusters, cluster)
 		}
 		return clusters
@@ -306,8 +321,7 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 		routes = append(routes, route)
 	}
 
-	defaultDestination := route.Spec.GetConf().GetSplitWithDestination()
-	if len(defaultDestination) > 0 {
+	if defaultDestination := route.Spec.GetConf().GetSplitWithDestination(); len(defaultDestination) > 0 {
 		cfs := clustersFromSplit(defaultDestination)
 		route := envoy_common.Route{
 			Match:    nil,
