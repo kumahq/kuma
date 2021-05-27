@@ -3,10 +3,11 @@ package universal_standalone
 import (
 	"fmt"
 
-	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
 	. "github.com/kumahq/kuma/test/framework"
@@ -205,11 +206,10 @@ conf:
 	})
 
 	Context("HTTP routing", func() {
-
 		HaveOnlyResponseFrom := func(response string) types.GomegaMatcher {
 			return And(
 				HaveLen(1),
-				HaveKeyWithValue(MatchRegexp(`.*` + response + `.*`), Not(BeNil())),
+				HaveKeyWithValue(MatchRegexp(`.*`+response+`.*`), Not(BeNil())),
 			)
 		}
 
@@ -264,7 +264,7 @@ conf:
 			Eventually(func() (map[string]int, error) {
 				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
-	})
+		})
 
 		It("should route matching by header", func() {
 			const trafficRoute = `

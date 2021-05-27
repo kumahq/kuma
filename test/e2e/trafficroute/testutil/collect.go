@@ -3,6 +3,7 @@ package testutil
 import (
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/kumahq/kuma/test/framework"
 )
@@ -47,18 +48,33 @@ func CollectResponses(cluster framework.Cluster, source, destination string, fn 
 		f(&opts)
 	}
 
+	mut := sync.Mutex{}
 	responses := map[string]int{}
+
+	var wg sync.WaitGroup
+	var err error
 	for i := 0; i < opts.NumberOfRequests; i++ {
-		cmd := []string{"curl", "-X" + opts.Method}
-		for key, value := range opts.Headers {
-			cmd = append(cmd, fmt.Sprintf("-H'%s: %s'", key, value))
-		}
-		cmd = append(cmd, "-m", "3", "--fail", destination)
-		stdout, _, err := cluster.ExecWithRetries("", "", source, cmd...)
-		if err != nil {
-			return nil, err
-		}
-		responses[strings.TrimSpace(stdout)]++
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			cmd := []string{"curl", "-X" + opts.Method}
+			for key, value := range opts.Headers {
+				cmd = append(cmd, fmt.Sprintf("-H'%s: %s'", key, value))
+			}
+			cmd = append(cmd, "-m", "3", "--fail", destination)
+			stdout, _, localErr := cluster.ExecWithRetries("", "", source, cmd...)
+			mut.Lock()
+			defer mut.Unlock()
+			if localErr != nil {
+				err = localErr
+				return
+			}
+			responses[strings.TrimSpace(stdout)]++
+		}()
+	}
+	wg.Wait()
+	if err != nil {
+		return nil, err
 	}
 	return responses, nil
 }
