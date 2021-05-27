@@ -67,6 +67,7 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 		Entry("mesh", "mesh"),
 		Entry("healthcheck", "healthcheck"),
 		Entry("proxytemplate", "proxytemplate"),
+		Entry("rate-limit", "rate-limit"),
 		Entry("traffic-log", "traffic-log"),
 		Entry("traffic-permission", "traffic-permission"),
 		Entry("traffic-route", "traffic-route"),

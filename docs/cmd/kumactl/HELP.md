@@ -435,6 +435,8 @@ Available Commands:
   meshes              Show Mesh
   proxytemplate       Show a single ProxyTemplate resource
   proxytemplates      Show ProxyTemplate
+  rate-limit          Show a single RateLimit resource
+  rate-limits         Show RateLimit
   retries             Show Retry
   retry               Show a single Retry resource
   secret              Show a single Secret resource

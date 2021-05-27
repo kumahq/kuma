@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "mesh/v1alpha1/selector.proto";
+
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+import "validate/validate.proto";
+import "config.proto";
+
+message RateLimit {
+  // List of selectors to match dataplanes that rate limit will be applied for
+  repeated Selector sources = 1 [ (validate.rules).repeated .min_items = 1 ];
+
+  // List of selectors to match services that need to be rate limited.
+  repeated Selector destinations = 2
+      [ (validate.rules).repeated .min_items = 1 ];
+
+  message Conf {
+    message Http {
+      //  +optional
+      google.protobuf.UInt32Value connections = 1;
+
+      //  +optional
+      google.protobuf.Duration interval = 2;
+
+      message OnError {
+        //  +optional
+        google.protobuf.UInt32Value status = 1;
+
+        message HeaderValue {
+          // Header name
+          //  +required
+          string key = 1;
+          // Header value
+          //  +optional
+          string value = 2;
+
+          // +optional
+          google.protobuf.BoolValue append = 3;
+        }
+
+        // +optional
+        repeated HeaderValue headers = 3;
+      }
+
+      OnError onError = 3;
+    }
+
+    message Tcp {
+      //  +optional
+      google.protobuf.UInt32Value connections = 1;
+
+      //  +optional
+      google.protobuf.Duration interval = 2;
+    }
+
+    // +optional
+    Http http = 1;
+
+    // +optional
+    Tcp tcp = 2;
+  }
+
+  //  +required
+  Conf conf = 3;
+}

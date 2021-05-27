@@ -1,57 +1,61 @@
 items:
-  - creationTime: "0001-01-01T00:00:00Z"
-    dataplanes:
-      offline: 10
-      online: 90
+- creationTime: "0001-01-01T00:00:00Z"
+  dataplanes:
+    offline: 10
+    online: 90
+    total: 100
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: default
+  policies:
+    CircuitBreaker:
+      total: 5
+    ExternalService:
+      total: 9
+    FaultInjection:
+      total: 6
+    HealthCheck:
+      total: 4
+    ProxyTemplate:
+      total: 8
+    RateLimit:
+      total: 10
+    TrafficLog:
+      total: 3
+    TrafficPermission:
+      total: 7
+    TrafficRoute:
+      total: 2
+    TrafficTrace:
+      total: 1
+  type: MeshInsight
+- creationTime: "0001-01-01T00:00:00Z"
+  dataplanes:
+    offline: 10
+    online: 90
+    total: 100
+  modificationTime: "0001-01-01T00:00:00Z"
+  name: mesh-1
+  policies:
+    CircuitBreaker:
+      total: 50
+    ExternalService:
+      total: 90
+    FaultInjection:
+      total: 60
+    HealthCheck:
+      total: 40
+    ProxyTemplate:
+      total: 80
+    RateLimit:
       total: 100
-    modificationTime: "0001-01-01T00:00:00Z"
-    name: default
-    policies:
-      CircuitBreaker:
-        total: 5
-      ExternalService:
-        total: 9
-      FaultInjection:
-        total: 6
-      HealthCheck:
-        total: 4
-      ProxyTemplate:
-        total: 8
-      TrafficLog:
-        total: 3
-      TrafficPermission:
-        total: 7
-      TrafficRoute:
-        total: 2
-      TrafficTrace:
-        total: 1
-    type: MeshInsight
-  - creationTime: "0001-01-01T00:00:00Z"
-    dataplanes:
-      offline: 10
-      online: 90
-      total: 100
-    modificationTime: "0001-01-01T00:00:00Z"
-    name: mesh-1
-    policies:
-      CircuitBreaker:
-        total: 50
-      ExternalService:
-        total: 90
-      FaultInjection:
-        total: 60
-      HealthCheck:
-        total: 40
-      ProxyTemplate:
-        total: 80
-      TrafficLog:
-        total: 30
-      TrafficPermission:
-        total: 70
-      TrafficRoute:
-        total: 20
-      TrafficTrace:
-        total: 10
-    type: MeshInsight
+    TrafficLog:
+      total: 30
+    TrafficPermission:
+      total: 70
+    TrafficRoute:
+      total: 20
+    TrafficTrace:
+      total: 10
+  type: MeshInsight
 next: null
 total: 2

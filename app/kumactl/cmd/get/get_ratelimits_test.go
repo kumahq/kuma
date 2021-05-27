@@ -1,13 +1,12 @@
-package inspect_test
+package get_test
 
 import (
 	"bytes"
 	"context"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
-
-	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -17,7 +16,7 @@ import (
 
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -25,67 +24,71 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
-	"github.com/kumahq/kuma/pkg/test/resources/model"
+	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 )
 
-var _ = Describe("kumactl inspect meshes", func() {
+var _ = Describe("kumactl get rate-limits", func() {
 
-	meshInsightResources := []*mesh.MeshInsightResource{
+	rateLimitResources := []*mesh.RateLimitResource{
 		{
-			Meta: &model.ResourceMeta{Name: "default"},
-			Spec: &mesh_proto.MeshInsight{
-				Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{
-					Total:   100,
-					Online:  90,
-					Offline: 10,
+			Spec: &v1alpha1.RateLimit{
+				Sources: []*v1alpha1.Selector{
+					{
+						Match: map[string]string{
+							"service": "web1",
+							"version": "1.0",
+						},
+					},
 				},
-				Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{
-					string(mesh.TrafficTraceType):      {Total: 1},
-					string(mesh.TrafficRouteType):      {Total: 2},
-					string(mesh.TrafficLogType):        {Total: 3},
-					string(mesh.HealthCheckType):       {Total: 4},
-					string(mesh.CircuitBreakerType):    {Total: 5},
-					string(mesh.FaultInjectionType):    {Total: 6},
-					string(mesh.TrafficPermissionType): {Total: 7},
-					string(mesh.ProxyTemplateType):     {Total: 8},
-					string(mesh.ExternalServiceType):   {Total: 9},
-					string(mesh.RateLimitType):         {Total: 10},
+				Destinations: []*v1alpha1.Selector{
+					{
+						Match: map[string]string{
+							"service": "backend1",
+							"env":     "dev",
+						},
+					},
 				},
+			},
+			Meta: &test_model.ResourceMeta{
+				Mesh: "default",
+				Name: "web1-to-backend1",
 			},
 		},
 		{
-			Meta: &model.ResourceMeta{Name: "mesh-1"},
-			Spec: &mesh_proto.MeshInsight{
-				Dataplanes: &mesh_proto.MeshInsight_DataplaneStat{
-					Total:   100,
-					Online:  90,
-					Offline: 10,
+			Spec: &v1alpha1.RateLimit{
+				Sources: []*v1alpha1.Selector{
+					{
+						Match: map[string]string{
+							"service": "web2",
+							"version": "1.0",
+						},
+					},
 				},
-				Policies: map[string]*mesh_proto.MeshInsight_PolicyStat{
-					string(mesh.TrafficTraceType):      {Total: 10},
-					string(mesh.TrafficRouteType):      {Total: 20},
-					string(mesh.TrafficLogType):        {Total: 30},
-					string(mesh.HealthCheckType):       {Total: 40},
-					string(mesh.CircuitBreakerType):    {Total: 50},
-					string(mesh.FaultInjectionType):    {Total: 60},
-					string(mesh.TrafficPermissionType): {Total: 70},
-					string(mesh.ProxyTemplateType):     {Total: 80},
-					string(mesh.ExternalServiceType):   {Total: 90},
-					string(mesh.RateLimitType):         {Total: 100},
+				Destinations: []*v1alpha1.Selector{
+					{
+						Match: map[string]string{
+							"service": "backend2",
+							"env":     "dev",
+						},
+					},
 				},
+			},
+			Meta: &test_model.ResourceMeta{
+				Mesh: "default",
+				Name: "web2-to-backend2",
 			},
 		},
 	}
 
-	Describe("InspectMeshesCmd", func() {
+	Describe("GetRateLimitsCmd", func() {
 
 		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
 		var buf *bytes.Buffer
 		var store core_store.ResourceStore
 		rootTime, _ := time.Parse(time.RFC3339, "2008-04-27T16:05:36.995Z")
-
 		BeforeEach(func() {
+			// setup
 			rootCtx = &kumactl_cmd.RootContext{
 				Runtime: kumactl_cmd.RootRuntime{
 					Now: func() time.Time { return rootTime },
@@ -96,9 +99,10 @@ var _ = Describe("kumactl inspect meshes", func() {
 				},
 			}
 
-			store = memory_resources.NewStore()
-			for _, cb := range meshInsightResources {
-				err := store.Create(context.Background(), cb, core_store.CreateBy(core_model.MetaToResourceKey(cb.GetMeta())))
+			store = core_store.NewPaginationStore(memory_resources.NewStore())
+
+			for _, ds := range rateLimitResources {
+				err := store.Create(context.Background(), ds, core_store.CreateBy(core_model.MetaToResourceKey(ds.GetMeta())))
 				Expect(err).ToNot(HaveOccurred())
 			}
 
@@ -109,47 +113,63 @@ var _ = Describe("kumactl inspect meshes", func() {
 
 		type testCase struct {
 			outputFormat string
+			pagination   string
 			goldenFile   string
 			matcher      func(interface{}) gomega_types.GomegaMatcher
 		}
 
-		DescribeTable("kumactl inspect meshes -o table|json|yaml",
+		DescribeTable("kumactl get rate-limits -o table|json|yaml",
 			func(given testCase) {
 				// given
 				rootCmd.SetArgs(append([]string{
 					"--config-file", filepath.Join("..", "testdata", "sample-kumactl.config.yaml"),
-					"inspect", "meshes"}, given.outputFormat))
+					"get", "rate-limits"}, given.outputFormat, given.pagination))
 
 				// when
 				err := rootCmd.Execute()
 				// then
 				Expect(err).ToNot(HaveOccurred())
-				Expect(buf.String()).To(matchers.MatchGoldenEqual(filepath.Join("testdata", given.goldenFile)))
+
+				// when
+				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
+				// then
+				Expect(err).ToNot(HaveOccurred())
+				// and
+				Expect(buf.String()).To(given.matcher(expected))
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
-				goldenFile:   "inspect-meshes.golden.txt",
+				goldenFile:   "get-rate-limits.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support Table output explicitly", testCase{
 				outputFormat: "-otable",
-				goldenFile:   "inspect-meshes.golden.txt",
+				goldenFile:   "get-rate-limits.golden.txt",
+				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
+					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
+				},
+			}),
+			Entry("should support pagination", testCase{
+				outputFormat: "-otable",
+				pagination:   "--size=1",
+				goldenFile:   "get-rate-limits.pagination.golden.txt",
 				matcher: func(expected interface{}) gomega_types.GomegaMatcher {
 					return WithTransform(strings.TrimSpace, Equal(strings.TrimSpace(string(expected.([]byte)))))
 				},
 			}),
 			Entry("should support JSON output", testCase{
 				outputFormat: "-ojson",
-				goldenFile:   "inspect-meshes.golden.json",
+				goldenFile:   "get-rate-limits.golden.json",
 				matcher:      MatchJSON,
 			}),
 			Entry("should support YAML output", testCase{
 				outputFormat: "-oyaml",
-				goldenFile:   "inspect-meshes.golden.yaml",
+				goldenFile:   "get-rate-limits.golden.yaml",
 				matcher:      MatchYAML,
 			}),
 		)
 	})
+
 })
