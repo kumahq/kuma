@@ -1014,10 +1014,51 @@ function _kumactl_install_dns {
     '--no-config[if set no config file and config directory will be created]'
 }
 
+
 function _kumactl_install_gateway {
+  local -a commands
+
+  _arguments -C \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "kong:Install Kong ingress gateway on Kubernetes"
+      "kong-enterprise:Install Kong ingress gateway on Kubernetes"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  kong)
+    _kumactl_install_gateway_kong
+    ;;
+  kong-enterprise)
+    _kumactl_install_gateway_kong-enterprise
+    ;;
+  esac
+}
+
+function _kumactl_install_gateway_kong {
   _arguments \
     '--namespace[namespace to install gateway to]:' \
-    '--type[type of gateway to install. Available types: "kong"]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
+}
+
+function _kumactl_install_gateway_kong-enterprise {
+  _arguments \
+    '--license-path[path to license file]:' \
+    '--namespace[namespace to install gateway to]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \

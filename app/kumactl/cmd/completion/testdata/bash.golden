@@ -2349,9 +2349,9 @@ _kumactl_install_dns()
     noun_aliases=()
 }
 
-_kumactl_install_gateway()
+_kumactl_install_gateway_kong()
 {
-    last_command="kumactl_install_gateway"
+    last_command="kumactl_install_gateway_kong"
 
     command_aliases=()
 
@@ -2366,9 +2366,6 @@ _kumactl_install_gateway()
     flags+=("--namespace=")
     two_word_flags+=("--namespace")
     local_nonpersistent_flags+=("--namespace=")
-    flags+=("--type=")
-    two_word_flags+=("--type")
-    local_nonpersistent_flags+=("--type=")
     flags+=("--config-file=")
     two_word_flags+=("--config-file")
     flags+=("--log-level=")
@@ -2379,7 +2376,71 @@ _kumactl_install_gateway()
     flags+=("--no-config")
 
     must_have_one_flag=()
-    must_have_one_flag+=("--type=")
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_install_gateway_kong-enterprise()
+{
+    last_command="kumactl_install_gateway_kong-enterprise"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--license-path=")
+    two_word_flags+=("--license-path")
+    local_nonpersistent_flags+=("--license-path=")
+    flags+=("--namespace=")
+    two_word_flags+=("--namespace")
+    local_nonpersistent_flags+=("--namespace=")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--no-config")
+
+    must_have_one_flag=()
+    must_have_one_flag+=("--license-path=")
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
+_kumactl_install_gateway()
+{
+    last_command="kumactl_install_gateway"
+
+    command_aliases=()
+
+    commands=()
+    commands+=("kong")
+    commands+=("kong-enterprise")
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--no-config")
+
+    must_have_one_flag=()
     must_have_one_noun=()
     noun_aliases=()
 }

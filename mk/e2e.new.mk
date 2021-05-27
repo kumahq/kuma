@@ -71,9 +71,14 @@ else
 K8S_CLUSTER_TOOL=kind
 endif
 
+ifdef IPV6
+KIND_CONFIG_IPV6=-ipv6
+endif
+
 define gen-k8sclusters
 .PHONY: test/e2e/k8s/start/cluster/$1
 test/e2e/k8s/start/cluster/$1:
+	KIND_CONFIG=$(TOP)/test/kind/cluster$(KIND_CONFIG_IPV6)-$1.yaml \
 	KIND_CLUSTER_NAME=$1 \
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
 		$(MAKE) $(K8S_CLUSTER_TOOL)/start
