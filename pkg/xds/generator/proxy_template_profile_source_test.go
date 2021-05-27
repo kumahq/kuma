@@ -29,8 +29,8 @@ type dummyCLACache struct {
 	outboundTargets model.EndpointMap
 }
 
-func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash, service string, version envoy_common.APIVersion) (proto.Message, error) {
-	return endpoints.CreateClusterLoadAssignment(service, d.outboundTargets[service]), nil
+func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, version envoy_common.APIVersion) (proto.Message, error) {
+	return endpoints.CreateClusterLoadAssignment(cluster.Service(), d.outboundTargets[cluster.Service()]), nil
 }
 
 var _ model.CLACache = &dummyCLACache{}

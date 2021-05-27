@@ -77,7 +77,7 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 	outboundListener, err = envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 		Configure(envoy_listeners.OutboundListener(outboundName, allIP, redirectPortOutbound, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.TcpProxy(outboundName, envoy_common.ClusterSubset{ClusterName: outboundName})).
+			Configure(envoy_listeners.TcpProxy(outboundName, envoy_common.NewCluster(envoy_common.WithService(outboundName)))).
 			Configure(envoy_listeners.NetworkAccessLog(meshName, envoy_common.TrafficDirectionUnspecified, sourceService, "external", proxy.Policies.Logs[mesh_core.PassThroughService], proxy)))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
@@ -96,7 +96,7 @@ func (_ TransparentProxyGenerator) generate(ctx xds_context.Context, proxy *mode
 	inboundListener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
 		Configure(envoy_listeners.InboundListener(inboundName, allIP, redirectPortInbound, model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.TcpProxy(inboundName, envoy_common.ClusterSubset{ClusterName: inboundName})))).
+			Configure(envoy_listeners.TcpProxy(inboundName, envoy_common.NewCluster(envoy_common.WithService(inboundName)))))).
 		Configure(envoy_listeners.OriginalDstForwarder()).
 		Build()
 	if err != nil {

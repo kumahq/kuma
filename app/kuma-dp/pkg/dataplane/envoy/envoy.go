@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	command_utils "github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/command"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	pkg_log "github.com/kumahq/kuma/pkg/log"
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
@@ -167,9 +168,9 @@ func (e *Envoy) Start(stop <-chan struct{}) error {
 	if version != "" { // version is always send by Kuma CP, but we check empty for backwards compatibility reasons (new Kuma DP connects to old Kuma CP)
 		args = append(args, "--bootstrap-version", string(version))
 	}
-	command := exec.CommandContext(ctx, resolvedPath, args...)
-	command.Stdout = e.opts.Stdout
-	command.Stderr = e.opts.Stderr
+
+	command := command_utils.BuildCommand(ctx, e.opts.Stdout, e.opts.Stderr, resolvedPath, args...)
+
 	runLog.Info("starting Envoy", "args", args)
 	if err := command.Start(); err != nil {
 		runLog.Error(err, "the envoy executable was found at "+resolvedPath+" but an error occurred when executing it")

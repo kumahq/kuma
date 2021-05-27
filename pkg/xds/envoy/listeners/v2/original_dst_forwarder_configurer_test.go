@@ -21,7 +21,7 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 		listenerPort     uint32
 		statsName        string
 		listenerProtocol core_xds.SocketAddressProtocol
-		clusters         []envoy_common.ClusterSubset
+		clusters         []envoy_common.Cluster
 		expected         string
 	}
 
@@ -48,7 +48,12 @@ var _ = Describe("OriginalDstForwarderConfigurer", func() {
 			listenerAddress: "0.0.0.0",
 			listenerPort:    12345,
 			statsName:       "pass_through",
-			clusters:        []envoy_common.ClusterSubset{{ClusterName: "pass_through", Weight: 200}},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithService("pass_through"),
+					envoy_common.WithWeight(200),
+				),
+			},
 			expected: `
             name: catch_all
             trafficDirection: OUTBOUND

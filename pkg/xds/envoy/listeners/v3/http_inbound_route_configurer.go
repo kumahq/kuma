@@ -13,7 +13,7 @@ import (
 type HttpInboundRouteConfigurer struct {
 	Service string
 	// Cluster to forward traffic to.
-	Cluster envoy_common.ClusterSubset
+	Cluster envoy_common.Cluster
 }
 
 func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
