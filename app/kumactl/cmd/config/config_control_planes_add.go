@@ -54,7 +54,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 					}
 					cp.Coordinates.ApiServer.AddHeaders = append(cp.Coordinates.ApiServer.AddHeaders, addHeader)
 				} else {
-					return errors.Errorf("Header is not in the correct format. Format = key: value")
+					return errors.Errorf("Header is not in the correct format. Format = \"key: value\"")
 				}
 			}
 			cfg := pctx.Config()

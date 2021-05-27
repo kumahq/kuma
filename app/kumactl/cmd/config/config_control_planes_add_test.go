@@ -169,9 +169,9 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// when
 			err := rootCmd.Execute()
 			// then
-			Expect(err).To(MatchError(`Header is not in the correct format. Format = key: value`))
+			Expect(err).To(MatchError(`Header is not in the correct format. Format = "key: value"`))
 			// and
-			Expect(outbuf.String()).To(Equal(`Error: Header is not in the correct format. Format = key: value
+			Expect(outbuf.String()).To(Equal(`Error: Header is not in the correct format. Format = "key: value"
 `))
 			// and
 			Expect(errbuf.Bytes()).To(BeEmpty())
