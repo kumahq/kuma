@@ -8,9 +8,9 @@ package config
 
 import (
 	proto "github.com/golang/protobuf/proto"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -83,7 +83,7 @@ type BuiltinCertificateAuthorityConfig_CaCert struct {
 	unknownFields protoimpl.UnknownFields
 
 	// RSAbits of the certificate
-	RSAbits *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=RSAbits,proto3" json:"RSAbits,omitempty"`
+	RSAbits *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=RSAbits,proto3" json:"RSAbits,omitempty"`
 	// Expiration time of the certificate
 	Expiration string `protobuf:"bytes,2,opt,name=expiration,proto3" json:"expiration,omitempty"`
 }
@@ -120,7 +120,7 @@ func (*BuiltinCertificateAuthorityConfig_CaCert) Descriptor() ([]byte, []int) {
 	return file_pkg_plugins_ca_builtin_config_builtin_ca_config_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *BuiltinCertificateAuthorityConfig_CaCert) GetRSAbits() *wrappers.UInt32Value {
+func (x *BuiltinCertificateAuthorityConfig_CaCert) GetRSAbits() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.RSAbits
 	}
@@ -179,7 +179,7 @@ var file_pkg_plugins_ca_builtin_config_builtin_ca_config_proto_msgTypes = make([
 var file_pkg_plugins_ca_builtin_config_builtin_ca_config_proto_goTypes = []interface{}{
 	(*BuiltinCertificateAuthorityConfig)(nil),        // 0: kuma.plugins.ca.BuiltinCertificateAuthorityConfig
 	(*BuiltinCertificateAuthorityConfig_CaCert)(nil), // 1: kuma.plugins.ca.BuiltinCertificateAuthorityConfig.CaCert
-	(*wrappers.UInt32Value)(nil),                     // 2: google.protobuf.UInt32Value
+	(*wrapperspb.UInt32Value)(nil),                   // 2: google.protobuf.UInt32Value
 }
 var file_pkg_plugins_ca_builtin_config_builtin_ca_config_proto_depIdxs = []int32{
 	1, // 0: kuma.plugins.ca.BuiltinCertificateAuthorityConfig.caCert:type_name -> kuma.plugins.ca.BuiltinCertificateAuthorityConfig.CaCert
