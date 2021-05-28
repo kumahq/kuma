@@ -385,7 +385,7 @@ conf:
 		It("should same splits with a different weights", func() {
 			const trafficRoute = `
 type: TrafficRoute
-name: two-splits
+name: same-splits
 mesh: default
 sources:
   - match:
