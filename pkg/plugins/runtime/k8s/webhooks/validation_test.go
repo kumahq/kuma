@@ -294,7 +294,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "spec.sources: must have at least one element; spec.destinations: must have at least one element; spec.conf: must have split; spec.conf.split: must have at least one element",
+						Message: "spec.sources: must have at least one element; spec.destinations: must have at least one element; spec.conf: cannot be empty",
 						Reason:  "Invalid",
 						Details: &kube_meta.StatusDetails{
 							Name: "empty",
@@ -312,13 +312,8 @@ var _ = Describe("Validation", func() {
 								},
 								{
 									Type:    "FieldValueInvalid",
-									Message: "must have split",
+									Message: "cannot be empty",
 									Field:   "spec.conf",
-								},
-								{
-									Type:    "FieldValueInvalid",
-									Message: "must have at least one element",
-									Field:   "spec.conf.split",
 								},
 							},
 						},

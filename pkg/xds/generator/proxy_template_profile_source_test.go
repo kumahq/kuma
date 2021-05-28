@@ -117,12 +117,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{
-										{
-											Weight:      100,
-											Destination: mesh_proto.MatchService("db"),
-										},
-									},
+									Destination: mesh_proto.MatchService("db"),
 								},
 							},
 						},
@@ -132,12 +127,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{
-										{
-											Weight:      100,
-											Destination: mesh_proto.MatchService("elastic"),
-										},
-									},
+									Destination: mesh_proto.MatchService("elastic"),
 								},
 							},
 						},

@@ -3,6 +3,7 @@ package generator_test
 import (
 	"path/filepath"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -122,10 +123,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},
@@ -153,10 +151,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},
@@ -220,10 +215,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},
@@ -238,14 +230,18 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: 10,
+										Weight: &wrappers.UInt32Value{
+											Value: 10,
+										},
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"version":             "v2",
 										},
 									},
 									{
-										Weight: 90,
+										Weight: &wrappers.UInt32Value{
+											Value: 90,
+										},
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"region":              "eu",
@@ -375,10 +371,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},
@@ -391,13 +384,10 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight: 100,
-									Destination: map[string]string{
-										mesh_proto.ServiceTag: "*",
-										"version":             "v2",
-									},
-								}},
+								Destination: map[string]string{
+									mesh_proto.ServiceTag: "*",
+									"version":             "v2",
+								},
 							},
 						},
 					},
@@ -412,14 +402,18 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: 10,
+										Weight: &wrappers.UInt32Value{
+											Value: 10,
+										},
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"version":             "v2",
 										},
 									},
 									{
-										Weight: 90,
+										Weight: &wrappers.UInt32Value{
+											Value: 90,
+										},
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "backend",
 											"region":              "eu",
@@ -440,7 +434,9 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: 10,
+										Weight: &wrappers.UInt32Value{
+											Value: 10,
+										},
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "frontend",
 											"region":              "eu",
@@ -448,7 +444,9 @@ var _ = Describe("IngressGenerator", func() {
 										},
 									},
 									{
-										Weight: 90,
+										Weight: &wrappers.UInt32Value{
+											Value: 90,
+										},
 										Destination: map[string]string{
 											mesh_proto.ServiceTag: "frontend",
 											"cloud":               "aks",
@@ -495,10 +493,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},
@@ -511,10 +506,7 @@ var _ = Describe("IngressGenerator", func() {
 								Match: mesh_proto.MatchAnyService(),
 							}},
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchAnyService(),
-								}},
+								Destination: mesh_proto.MatchAnyService(),
 							},
 						},
 					},

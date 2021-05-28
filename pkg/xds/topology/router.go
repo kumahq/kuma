@@ -65,7 +65,7 @@ func BuildRouteMap(dataplane *mesh_core.DataplaneResource, routes []*mesh_core.T
 		if exists {
 			route := policy.(*mesh_core.TrafficRouteResource)
 			split := []*mesh_proto.TrafficRoute_Split{}
-			for _, destination := range route.Spec.GetConf().GetSplit() {
+			for _, destination := range route.Spec.GetConf().GetSplitWithDestination() {
 				split = append(split, &mesh_proto.TrafficRoute_Split{
 					Weight:      destination.Weight,
 					Destination: handleWildcardTagsFor(oface.GetTagsIncludingLegacy(), destination.Destination),
@@ -114,7 +114,7 @@ func BuildDestinationMap(dataplane *mesh_core.DataplaneResource, routes core_xds
 		outbound := dataplane.Spec.Networking.ToOutboundInterface(oface)
 		route, ok := routes[outbound]
 		if ok {
-			for _, destination := range route.Spec.GetConf().GetSplit() {
+			for _, destination := range route.Spec.GetConf().GetSplitWithDestination() {
 				service, ok := destination.Destination[mesh_proto.ServiceTag]
 				if !ok {
 					// ignore destinations without a `service` tag
