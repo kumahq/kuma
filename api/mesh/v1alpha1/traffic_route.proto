@@ -137,15 +137,83 @@ message TrafficRoute {
       map<string, StringMatcher> headers = 3;
     }
 
+    // Modify defines modifications of matched HTTP messages
+    message Modify {
+
+      // RegexReplace defines a way to match string using regex and build a new
+      // one using subsitution section
+      message RegexReplace {
+        // Pattern of the regex using RE2 syntax
+        // https://github.com/google/re2/wiki/Syntax
+        string pattern = 1;
+        // Substitution using regex groups. E.g. use \\1 as a first matched
+        // group
+        string substitution = 2;
+      }
+
+      // Path defines modification of path of the HTTP request
+      message Path {
+        oneof type {
+          // rewritePrefix rewrites previously matched prefix in match section
+          string rewritePrefix = 1;
+          // regex rewrites prefix using regex with substitution
+          RegexReplace regex = 2;
+        }
+      }
+
+      // Host defines modification of the HTTP Host header
+      message Host {
+        oneof type {
+          // value replaces the host header with given value
+          string value = 1;
+          // fromPath replaces the host header from path using regex
+          RegexReplace fromPath = 2;
+        }
+      }
+
+      // Headers defines modification of HTTP headers
+      message Headers {
+        // Add defines operation of adding new HTTP header
+        message Add {
+          // Name of the header
+          string name = 1;
+          // Value of the header
+          string value = 2;
+          // If true, it appends the value if there is already a value
+          bool append = 3;
+        }
+        // Remove defines operation of removing an HTTP header
+        message Remove {
+          // Name of the header to remove
+          string name = 1;
+        }
+        // List of add header operations
+        repeated Add add = 1;
+        // List of remove header operations
+        repeated Remove remove = 2;
+      }
+
+      // Path modifications
+      Path path = 1;
+      // Host modifications
+      Host host = 2;
+      // Request headers modifications
+      Headers requestHeaders = 3;
+      // Response headers modifications.
+      Headers responseHeaders = 4;
+    }
+
     // If request matches against defined criteria then "split" or "destination"
     // is executed
     Match match = 1;
+    // Modifications to the traffic matched by the match section.
+    Modify modify = 2;
     // List of destinations with weights assigned to them.
     // When used, "destination" is not allowed.
-    repeated Split split = 2;
+    repeated Split split = 3;
     // One destination that the traffic will be redirected to.
     // When used, "split" is not allowed.
-    map<string, string> destination = 3;
+    map<string, string> destination = 4;
   }
 
   // Configuration for the route

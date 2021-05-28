@@ -171,7 +171,7 @@ conf:
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
+			return CollectResponsesByInstance(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(3),
@@ -203,7 +203,7 @@ conf:
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
+			return CollectResponsesByInstance(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(1),
@@ -246,7 +246,7 @@ conf:
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(100))
+			return CollectResponsesByInstance(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(100))
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
@@ -304,16 +304,16 @@ conf:
 			Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version1")
+				return CollectResponsesByInstance(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version1")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version2")
+				return CollectResponsesByInstance(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version2")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version3")
+				return CollectResponsesByInstance(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version3")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
+				return CollectResponsesByInstance(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
@@ -357,7 +357,7 @@ conf:
 			Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/split", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/split", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -367,7 +367,7 @@ conf:
 			)
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
