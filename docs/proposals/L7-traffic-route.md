@@ -35,8 +35,16 @@ conf:
           prefix: some-
           regex
     modify: # optional section
-      path: "/not-offers"
-      host: not-offers
+      path: # either rewritePrefix or regex
+        rewritePrefix: /not-users # validation that it can be used only if there is prefix in match
+        regex: # (example to change the path from "/service/foo/v1/api" to "/v1/api/instance/foo")
+          pattern: "^/service/([^/]+)(/.*)$"
+          substitution: "\2/instance/\1"
+      host: # either value or fromPath
+        value: "XYZ"
+        fromPath: # (example to extract "envoyproxy.io" host header from "/envoyproxy.io/some/path" path)
+          pattern: "^/(.+)/.+$"
+          substitution: "\1"
       requestHeaders:
         add:
           - name: x-custom-header
