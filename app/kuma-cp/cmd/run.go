@@ -25,6 +25,7 @@ import (
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
 	metrics "github.com/kumahq/kuma/pkg/metrics/components"
 	sds_server "github.com/kumahq/kuma/pkg/sds/server"
+	"github.com/kumahq/kuma/pkg/util/os"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 	"github.com/kumahq/kuma/pkg/xds"
 )
@@ -34,6 +35,10 @@ var (
 )
 
 const gracefullyShutdownDuration = 3 * time.Second
+
+// This is the open file limit below which the control plane may not
+// reasonably have enough descriptors to accept all its clients.
+const minOpenFileLimit = 4096
 
 func newRunCmd() *cobra.Command {
 	return newRunCmdWithOpts(runCmdOpts{
@@ -78,6 +83,16 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 			}
 			runLog.Info(fmt.Sprintf("Current config %s", cfgBytes))
 			runLog.Info(fmt.Sprintf("Running in mode `%s`", cfg.Mode))
+
+			if err := os.RaiseFileLimit(); err != nil {
+				runLog.Error(err, "unable to raise the open file limit")
+			}
+
+			if limit, _ := os.CurrentFileLimit(); limit < minOpenFileLimit {
+				runLog.Info("for better performance, raise the open file limit",
+					"minimim-open-files", minOpenFileLimit)
+			}
+
 			switch cfg.Mode {
 			case config_core.Standalone:
 				if err := mads_server.SetupServer(rt); err != nil {
