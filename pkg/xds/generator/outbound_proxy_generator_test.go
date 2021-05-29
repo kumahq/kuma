@@ -3,6 +3,7 @@ package generator_test
 import (
 	"path/filepath"
 
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -176,10 +177,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("api-http"),
-									}},
+									Destination: mesh_proto.MatchService("api-http"),
 									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
 									},
@@ -192,10 +190,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("api-tcp"),
-									}},
+									Destination: mesh_proto.MatchService("api-tcp"),
 									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 										LbType: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest_{
 											LeastRequest: &mesh_proto.TrafficRoute_LoadBalancer_LeastRequest{
@@ -212,10 +207,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("api-http2"),
-									}},
+									Destination: mesh_proto.MatchService("api-http2"),
 									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 										LbType: &mesh_proto.TrafficRoute_LoadBalancer_RingHash_{
 											RingHash: &mesh_proto.TrafficRoute_LoadBalancer_RingHash{
@@ -234,10 +226,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("api-grpc"),
-									}},
+									Destination: mesh_proto.MatchService("api-grpc"),
 									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 										LbType: &mesh_proto.TrafficRoute_LoadBalancer_Random_{},
 									},
@@ -250,10 +239,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      100,
-										Destination: mesh_proto.MatchService("backend"),
-									}},
+									Destination: mesh_proto.MatchService("backend"),
 									LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 										LbType: &mesh_proto.TrafficRoute_LoadBalancer_Maglev_{},
 									},
@@ -267,13 +253,19 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      10,
+										Weight: &wrappers.UInt32Value{
+											Value: 10,
+										},
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "master"},
 									}, {
-										Weight:      90,
+										Weight: &wrappers.UInt32Value{
+											Value: 90,
+										},
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "replica"},
 									}, {
-										Weight:      0, // should be excluded from Envoy configuration
+										Weight: &wrappers.UInt32Value{
+											Value: 0,
+										}, // should be excluded from Envoy configuration
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "canary"},
 									}},
 								},
@@ -285,10 +277,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      1,
-										Destination: mesh_proto.TagSelector{"kuma.io/service": "es", "kuma.io/protocol": "http"},
-									}},
+									Destination: mesh_proto.TagSelector{"kuma.io/service": "es", "kuma.io/protocol": "http"},
 								},
 							},
 						},
@@ -298,10 +287,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight:      1,
-										Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
-									}},
+									Destination: mesh_proto.TagSelector{"kuma.io/service": "es2", "kuma.io/protocol": "http2"},
 								},
 							},
 						},
@@ -530,10 +516,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					}: &mesh_core.TrafficRouteResource{
 						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.MatchService("backend.kuma-system"),
-								}},
+								Destination: mesh_proto.MatchService("backend.kuma-system"),
 							},
 						},
 					},
@@ -543,10 +526,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 					}: &mesh_core.TrafficRouteResource{
 						Spec: &mesh_proto.TrafficRoute{
 							Conf: &mesh_proto.TrafficRoute_Conf{
-								Split: []*mesh_proto.TrafficRoute_Split{{
-									Weight:      100,
-									Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},
-								}},
+								Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "version": "3.2.0"},
 							}},
 					},
 				},
