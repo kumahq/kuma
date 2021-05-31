@@ -254,13 +254,13 @@ func (_ OutboundProxyGenerator) determineClusters(proxy *model.Proxy, outbound *
 		if !ok { // should not happen since we validate traffic route
 			return nil, errors.Errorf("trafficroute{name=%q}.%s: mandatory tag %q is missing: %v", route.GetMeta().GetName(), validators.RootedAt("conf").Index(j).Field("destination"), kuma_mesh.ServiceTag, destination.Destination)
 		}
-		if destination.Weight == 0 {
+		if destination.GetWeight().GetValue() == 0 {
 			// 0 assumes no traffic is passed there. Envoy doesn't support 0 weight, so instead of passing it to Envoy we just skip such cluster.
 			continue
 		}
 
 		name := ""
-		if len(route.Spec.GetConf().GetSplit()) == 1 {
+		if len(route.Spec.GetConf().GetSplitWithDestination()) == 1 {
 			name = service
 		} else {
 			name = envoy_names.GetSplitClusterName(service, j)
@@ -279,7 +279,7 @@ func (_ OutboundProxyGenerator) determineClusters(proxy *model.Proxy, outbound *
 		c := envoy_common.NewCluster(
 			envoy_common.WithService(service),
 			envoy_common.WithName(name),
-			envoy_common.WithWeight(destination.Weight),
+			envoy_common.WithWeight(destination.GetWeight().GetValue()),
 			envoy_common.WithTags(destination.Destination),
 			envoy_common.WithTimeout(timeoutConf),
 			envoy_common.WithLB(route.Spec.GetConf().GetLoadBalancer()),

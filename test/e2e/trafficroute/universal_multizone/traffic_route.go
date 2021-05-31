@@ -137,7 +137,7 @@ routing:
 	It("should access all instances of the service", func() {
 		const trafficRoute = `
 type: TrafficRoute
-name: route-dc-to-echo
+name: three-way-route
 mesh: default
 sources:
   - match:
@@ -180,7 +180,7 @@ conf:
 	It("should route 100 percent of the traffic to the different service", func() {
 		const trafficRoute = `
 type: TrafficRoute
-name: route-dc-to-echo
+name: route-echo-to-backend
 mesh: default
 sources:
   - match:
@@ -191,10 +191,8 @@ destinations:
 conf:
   loadBalancer:
     roundRobin: {}
-  split:
-    - weight: 100
-      destination:
-        kuma.io/service: backend
+  destination:
+    kuma.io/service: backend
 `
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
@@ -218,7 +216,7 @@ conf:
 
 		trafficRoute := fmt.Sprintf(`
 type: TrafficRoute
-name: route-dc-to-echo
+name: route-20-80-split
 mesh: default
 sources:
   - match:
