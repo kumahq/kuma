@@ -2,7 +2,6 @@ package os
 
 import (
 	"fmt"
-	"log"
 
 	"golang.org/x/sys/unix"
 )
@@ -13,7 +12,6 @@ func setFileLimit(n uint64) error {
 		Max: n,
 	}
 
-	log.Printf("setting limit to %d", n)
 	if err := unix.Setrlimit(unix.RLIMIT_NOFILE, &limit); err != nil {
 		return fmt.Errorf("failed to set open file limit to %d: %w", limit.Cur, err)
 	}

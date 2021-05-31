@@ -3,6 +3,7 @@ package os
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"golang.org/x/sys/unix"
 )
 
 var _ = Describe("File limits", func() {
@@ -11,18 +12,19 @@ var _ = Describe("File limits", func() {
 	})
 
 	It("should raise the open file limit", func() {
-		current, err := CurrentFileLimit()
-		Expect(err).Should(Succeed())
+		initialLimits := unix.Rlimit{}
+		Expect(unix.Getrlimit(unix.RLIMIT_NOFILE, &initialLimits)).Should(Succeed())
+
+		Expect(CurrentFileLimit()).Should(BeNumerically("==", initialLimits.Cur))
 
 		Expect(RaiseFileLimit()).Should(Succeed())
 
-		raised, err := CurrentFileLimit()
-		Expect(err).Should(Succeed())
-
-		Expect(raised).Should(BeNumerically(">", current))
+		// After raising, the current limit should be the max.
+		Expect(CurrentFileLimit()).Should(BeNumerically("==", initialLimits.Max))
 
 		// Restore the original limit.
-		Expect(setFileLimit(current)).Should(Succeed())
+		Expect(setFileLimit(initialLimits.Cur)).Should(Succeed())
+		Expect(CurrentFileLimit()).Should(BeNumerically("==", initialLimits.Cur))
 	})
 
 	It("should fail to exceed the hard file limit", func() {
