@@ -7,12 +7,6 @@ resources:
     connectTimeout: 10s
     dnsLookupFamily: V4_ONLY
     http2ProtocolOptions: {}
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - kuma.io/protocol
     loadAssignment:
       clusterName: es2
       endpoints:
@@ -63,10 +57,6 @@ resources:
                 route:
                   autoHostRewrite: true
                   cluster: es2
-                  metadataMatch:
-                    filterMetadata:
-                      envoy.lb:
-                        kuma.io/protocol: http2
                   timeout: 0s
           statPrefix: es2
     name: outbound:127.0.0.1:18082

@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/test"
 	. "github.com/kumahq/kuma/pkg/util/watchdog"
 )
 
@@ -29,7 +30,7 @@ var _ = Describe("SimpleWatchdog", func() {
 		doneCh = make(chan struct{})
 	})
 
-	It("should call OnTick() on timer ticks", func(done Done) {
+	It("should call OnTick() on timer ticks", test.Within(5*time.Second, func() {
 		// given
 		watchdog := SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
@@ -70,11 +71,9 @@ var _ = Describe("SimpleWatchdog", func() {
 
 		// then
 		<-doneCh
+	}))
 
-		close(done)
-	}, 5)
-
-	It("should call OnError() when OnTick() returns an error", func(done Done) {
+	It("should call OnError() when OnTick() returns an error", test.Within(5*time.Second, func() {
 		// given
 		expectedErr := fmt.Errorf("expected error")
 		// and
@@ -113,7 +112,5 @@ var _ = Describe("SimpleWatchdog", func() {
 
 		// then
 		<-doneCh
-
-		close(done)
-	}, 5)
+	}))
 })

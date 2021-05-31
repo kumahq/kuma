@@ -11,13 +11,100 @@ import (
 	"github.com/pkg/errors"
 )
 
-type ClusterSubset struct {
-	ClusterName       string
-	Weight            uint32
-	Tags              Tags
-	IsExternalService bool
-	Lb                *mesh_proto.TrafficRoute_LoadBalancer
-	Timeout           *mesh_proto.Timeout_Conf
+type Cluster struct {
+	service           string
+	name              string
+	weight            uint32
+	tags              Tags
+	isExternalService bool
+	lb                *mesh_proto.TrafficRoute_LoadBalancer
+	timeout           *mesh_proto.Timeout_Conf
+}
+
+func (c *Cluster) Service() string                           { return c.service }
+func (c *Cluster) Name() string                              { return c.name }
+func (c *Cluster) Weight() uint32                            { return c.weight }
+func (c *Cluster) Tags() Tags                                { return c.tags }
+func (c *Cluster) IsExternalService() bool                   { return c.isExternalService }
+func (c *Cluster) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
+func (c *Cluster) Timeout() *mesh_proto.Timeout_Conf         { return c.timeout }
+func (c *Cluster) Hash() string                              { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
+
+type NewClusterOpt interface {
+	apply(cluster *Cluster)
+}
+
+type newClusterOptFunc func(cluster *Cluster)
+
+func (f newClusterOptFunc) apply(cluster *Cluster) {
+	f(cluster)
+}
+
+func NewCluster(opts ...NewClusterOpt) Cluster {
+	c := Cluster{}
+	for _, opt := range opts {
+		opt.apply(&c)
+	}
+	if err := c.validate(); err != nil {
+		panic(err)
+	}
+	return c
+}
+
+func (c *Cluster) validate() error {
+	if c.service == "" || c.name == "" {
+		fmt.Println(c)
+		return errors.New("either WithService() or WithName() should be called")
+	}
+	return nil
+}
+
+func WithService(service string) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.service = service
+		if len(cluster.name) == 0 {
+			cluster.name = service
+		}
+	})
+}
+
+func WithName(name string) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.name = name
+		if len(cluster.service) == 0 {
+			cluster.service = name
+		}
+	})
+}
+
+func WithWeight(weight uint32) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.weight = weight
+	})
+}
+
+func WithTags(tags Tags) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.tags = tags
+	})
+}
+
+func WithTimeout(timeout *mesh_proto.Timeout_Conf) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.timeout = timeout
+	})
+}
+
+func WithLB(lb *mesh_proto.TrafficRoute_LoadBalancer) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.lb = lb
+	})
+}
+
+func WithExternalService(isExternalService bool) NewClusterOpt {
+	return newClusterOptFunc(func(cluster *Cluster) {
+		cluster.isExternalService = isExternalService
+	})
 }
 
 type Tags map[string]string
@@ -189,45 +276,39 @@ func TagKeySlice(tags []Tags) TagKeysSlice {
 	return r
 }
 
-type Cluster struct {
-	subsets            []ClusterSubset
+type Service struct {
+	name               string
+	clusters           []Cluster
 	hasExternalService bool
-	lb                 *mesh_proto.TrafficRoute_LoadBalancer
-	timeout            *mesh_proto.Timeout_Conf
 }
 
-func (c *Cluster) Add(subset ClusterSubset) {
-	c.subsets = append(c.subsets, subset)
-	if subset.IsExternalService {
+func (c *Service) Add(cluster Cluster) {
+	c.clusters = append(c.clusters, cluster)
+	if cluster.IsExternalService() {
 		c.hasExternalService = true
 	}
-	c.lb = subset.Lb
-	c.timeout = subset.Timeout
+	c.name = cluster.Service()
 }
 
-func (c *Cluster) Tags() []Tags {
+func (c *Service) Tags() []Tags {
 	var result []Tags
-	for _, info := range c.subsets {
-		result = append(result, info.Tags)
+	for _, cluster := range c.clusters {
+		result = append(result, cluster.Tags())
 	}
 	return result
 }
 
-func (c *Cluster) HasExternalService() bool {
+func (c *Service) HasExternalService() bool {
 	return c.hasExternalService
 }
 
-func (c *Cluster) Subsets() []ClusterSubset {
-	return c.subsets
+func (c *Service) Clusters() []Cluster {
+	return c.clusters
 }
 
-func (c *Cluster) Timeout() *mesh_proto.Timeout_Conf {
-	return c.timeout
-}
+type Services map[string]*Service
 
-type Clusters map[string]*Cluster
-
-func (c Clusters) ClusterNames() []string {
+func (c Services) Names() []string {
 	var keys []string
 	for key := range c {
 		keys = append(keys, key)
@@ -236,25 +317,13 @@ func (c Clusters) ClusterNames() []string {
 	return keys
 }
 
-func (c Clusters) Add(infos ...ClusterSubset) {
-	for _, info := range infos {
-		if c[info.ClusterName] == nil {
-			c[info.ClusterName] = &Cluster{}
+func (c Services) Add(clusters ...Cluster) {
+	for _, cluster := range clusters {
+		if c[cluster.Service()] == nil {
+			c[cluster.Service()] = &Service{}
 		}
-		c[info.ClusterName].Add(info)
+		c[cluster.Service()].Add(cluster)
 	}
-}
-
-func (c Clusters) Get(name string) *Cluster {
-	return c[name]
-}
-
-func (c Clusters) Tags(name string) []Tags {
-	return c[name].Tags()
-}
-
-func (c Clusters) Lb(name string) *mesh_proto.TrafficRoute_LoadBalancer {
-	return c[name].lb
 }
 
 type NamedResource interface {

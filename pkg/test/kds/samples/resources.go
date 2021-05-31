@@ -177,7 +177,9 @@ var (
 		}},
 		Conf: &mesh_proto.TrafficRoute_Conf{
 			Split: []*mesh_proto.TrafficRoute_Split{{
-				Weight: 10,
+				Weight: &wrappers.UInt32Value{
+					Value: 10,
+				},
 				Destination: map[string]string{
 					"version": "v2",
 				},

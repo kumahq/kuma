@@ -7,6 +7,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"github.com/kumahq/kuma/pkg/core/xds"
+
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/metrics"
 
@@ -53,8 +55,8 @@ func NewCache(
 	}, nil
 }
 
-func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string, apiVersion envoy_common.APIVersion) (proto.Message, error) {
-	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, service, meshHash)
+func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error) {
+	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, cluster.Hash(), meshHash)
 	elt, err := c.cache.GetOrRetrieve(ctx, key, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
 		dataplanes, err := topology.GetDataplanes(claCacheLog, ctx, c.rm, c.ipFunc, meshName)
 		if err != nil {
@@ -70,7 +72,13 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash, service string, 
 		// OutboundProxyGenerate treats this as EDS cluster and tries to get endpoints via GetCLA
 		// Since GetCLA is consistent for a mesh, it would return an endpoint with address which is not valid for EDS.
 		endpointMap := topology.BuildEdsEndpointMap(mesh, c.zone, dataplanes.Items)
-		return envoy_endpoints.CreateClusterLoadAssignment(service, endpointMap[service], apiVersion)
+		endpoints := []xds.Endpoint{}
+		for _, endpoint := range endpointMap[cluster.Service()] {
+			if endpoint.ContainsTags(cluster.Tags()) {
+				endpoints = append(endpoints, endpoint)
+			}
+		}
+		return envoy_endpoints.CreateClusterLoadAssignment(cluster.Name(), endpoints, apiVersion)
 	}))
 	if err != nil {
 		return nil, err

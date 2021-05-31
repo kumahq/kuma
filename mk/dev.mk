@@ -1,10 +1,11 @@
-PROTOC_VERSION := 3.14.0
-PROTOC_PGV_VERSION := v0.4.1
-GOLANG_PROTOBUF_VERSION := v1.4.3
-GOLANGCI_LINT_VERSION := v1.37.1
 GINKGO_VERSION := v1.14.2
-HELM_DOCS_VERSION := 1.4.0
 GOIMPORTS_VERSION := v0.1.0
+GOLANGCI_LINT_VERSION := v1.37.1
+GOLANG_PROTOBUF_VERSION := v1.4.3
+HELM_DOCS_VERSION := 1.4.0
+KUSTOMIZE_VERSION := v4.1.3
+PROTOC_PGV_VERSION := v0.4.1
+PROTOC_VERSION := 3.14.0
 
 CI_KUBEBUILDER_VERSION ?= 2.3.2
 CI_MINIKUBE_VERSION ?= v1.18.1
@@ -49,6 +50,9 @@ ifeq ($(UNAME_ARCH), aarch64)
 	HELM_DOCS_ARCH=arm64
 endif
 
+CURL_PATH ?= curl
+CURL_DOWNLOAD := $(CURL_PATH) --location --fail --progress-bar
+
 .PHONY: dev/tools
 dev/tools: dev/tools/all ## Bootstrap: Install all development tools
 
@@ -72,7 +76,7 @@ dev/install/protoc: ## Bootstrap: Install Protoc (protobuf compiler)
 		echo "Installing Protoc $(PROTOC_VERSION) ..." \
 		&& set -x \
 		&& mkdir -p /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
-		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
+		&& $(CURL_DOWNLOAD) -o /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
 		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip bin/protoc -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& cp /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH)/bin/protoc $(PROTOC_PATH) \
@@ -88,7 +92,7 @@ dev/install/protobuf-wellknown-types:: ## Bootstrap: Install Protobuf well-known
 		echo "Installing Protobuf well-known types $(PROTOC_VERSION) ..." \
 		&& set -x \
 		&& mkdir -p /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
-		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
+		&& $(CURL_DOWNLOAD) -o /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
 		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip 'include/*' -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& mkdir -p $(PROTOBUF_WKT_DIR) \
 		&& cp -r /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH)/include $(PROTOBUF_WKT_DIR) \
@@ -120,7 +124,7 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and k
 	@if [ ! -e $(KUBEBUILDER_PATH) ]; then \
 		echo "Installing Kubebuilder $(CI_KUBEBUILDER_VERSION) ..." \
 		&& set -x \
-		&& curl -L https://go.kubebuilder.io/dl/$(CI_KUBEBUILDER_VERSION)/$(GOOS)/$(GOARCH) | tar -xz -C /tmp/ \
+		&& $(CURL_DOWNLOAD) https://go.kubebuilder.io/dl/$(CI_KUBEBUILDER_VERSION)/$(GOOS)/$(GOARCH) | tar -xz -C /tmp/ \
 		&& mkdir -p $(KUBEBUILDER_DIR) \
 		&& cp -r /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH)/* $(KUBEBUILDER_DIR) \
 		&& rm -rf /tmp/kubebuilder_$(CI_KUBEBUILDER_VERSION)_$(GOOS)_$(GOARCH) \
@@ -130,15 +134,14 @@ dev/install/kubebuilder: ## Bootstrap: Install Kubebuilder (including etcd and k
 
 .PHONY: dev/install/kustomize
 dev/install/kustomize: ## Bootstrap: Install Kustomize
-	# see https://book.kubebuilder.io/quick-start.html#installation
+	# see https://kubectl.docs.kubernetes.io/installation/kustomize/binaries/
 	@if [ -e $(KUSTOMIZE_PATH) ]; then echo "Kustomize $$( $(KUSTOMIZE_PATH) version ) is already installed at $(KUSTOMIZE_PATH)" ; fi
 	@if [ ! -e $(KUSTOMIZE_PATH) ]; then \
-		echo "Installing Kustomize latest ..." \
+		echo "Installing Kustomize $(KUSTOMIZE_VERSION) ..." \
 		&& set -x \
-		&& curl -Lo kustomize https://go.kubebuilder.io/kustomize/$(GOOS)/$(GOARCH) \
-		&& chmod +x kustomize \
 		&& mkdir -p $(KUBEBUILDER_DIR)/bin \
-		&& mv kustomize $(KUBEBUILDER_DIR)/bin/ \
+		&& $(CURL_DOWNLOAD) https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize%2F$(KUSTOMIZE_VERSION)/kustomize_$(KUSTOMIZE_VERSION)_$(GOOS)_$(GOARCH).tar.gz | tar -xz -C $(KUBEBUILDER_DIR)/bin \
+		&& chmod +x $(KUBEBUILDER_DIR)/bin/kustomize \
 		&& ln -s $(KUBEBUILDER_DIR)/bin/kustomize $(KUSTOMIZE_PATH) \
 		&& set +x \
 		&& echo "Kustomize latest has been installed at $(KUSTOMIZE_PATH)" ; fi
@@ -150,7 +153,7 @@ dev/install/kubectl: ## Bootstrap: Install kubectl
 	@if [ ! -e $(KUBECTL_PATH) ]; then \
 		echo "Installing Kubectl $(CI_KUBECTL_VERSION) ..." \
 		&& set -x \
-		&& curl -LO https://storage.googleapis.com/kubernetes-release/release/$(CI_KUBECTL_VERSION)/bin/$(GOOS)/$(GOARCH)/kubectl \
+		&& $(CURL_DOWNLOAD) -O https://storage.googleapis.com/kubernetes-release/release/$(CI_KUBECTL_VERSION)/bin/$(GOOS)/$(GOARCH)/kubectl \
 		&& chmod +x kubectl \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv kubectl $(KUBECTL_PATH) \
@@ -164,7 +167,7 @@ dev/install/kind: ## Bootstrap: Install KIND (Kubernetes in Docker)
 	@if [ ! -e $(KIND_PATH) ]; then \
 		echo "Installing Kind $(CI_KIND_VERSION) ..." \
 		&& set -x \
-		&& curl -Lo kind https://github.com/kubernetes-sigs/kind/releases/download/$(CI_KIND_VERSION)/kind-$(GOOS)-$(GOARCH) \
+		&& $(CURL_DOWNLOAD) -o kind https://github.com/kubernetes-sigs/kind/releases/download/$(CI_KIND_VERSION)/kind-$(GOOS)-$(GOARCH) \
 		&& chmod +x kind \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv kind $(KIND_PATH) \
@@ -179,7 +182,7 @@ dev/install/k3d: ## Bootstrap: Install K3D (K3s in Docker)
 		echo "Installing Kind $(CI_K3D_VERSION) ..." \
 		&& set -x \
 		&& mkdir -p $(CI_TOOLS_DIR) \
-		&& curl -s https://raw.githubusercontent.com/rancher/k3d/main/install.sh | \
+		&& $(CURL_DOWNLOAD) https://raw.githubusercontent.com/rancher/k3d/main/install.sh | \
 		        TAG=$(CI_K3D_VERSION) USE_SUDO="false" K3D_INSTALL_DIR="$(CI_TOOLS_DIR)" bash \
 		&& set +x \
 		&& echo "K3d $(CI_K3D_VERSION) has been installed at $(K3D_PATH)" ; fi
@@ -192,7 +195,7 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 	@if [ ! -e $(MINIKUBE_PATH) ]; then \
 		echo "Installing Minikube $(CI_MINIKUBE_VERSION) ..." \
 		&& set -x \
-		&& curl -Lo minikube https://storage.googleapis.com/minikube/releases/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
+		&& $(CURL_DOWNLOAD) -o minikube https://storage.googleapis.com/minikube/releases/$(CI_MINIKUBE_VERSION)/minikube-$(GOOS)-$(GOARCH) \
 		&& chmod +x minikube \
 		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& mv minikube $(MINIKUBE_PATH) \
@@ -201,7 +204,7 @@ dev/install/minikube: ## Bootstrap: Install Minikube
 
 .PHONY: dev/install/golangci-lint
 dev/install/golangci-lint: ## Bootstrap: Install golangci-lint
-	curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
+	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
 
 .PHONY: dev/install/goimports
 dev/install/goimports: ## Bootstrap: Install goimports
@@ -209,7 +212,8 @@ dev/install/goimports: ## Bootstrap: Install goimports
 
 .PHONY: dev/install/helm3
 dev/install/helm3: ## Bootstrap: Install Helm 3
-	curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+	$(CURL_DOWNLOAD) https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | \
+		env HELM_INSTALL_DIR=$(CI_TOOLS_DIR) USE_SUDO=false bash
 
 .PHONY: dev/install/helm-docs
 dev/install/helm-docs: ## Bootstrap: Install helm-docs
@@ -217,7 +221,7 @@ dev/install/helm-docs: ## Bootstrap: Install helm-docs
 	@if [ ! -e $(HELM_DOCS_PATH) ]; then \
 		echo "Installing helm-docs ...." \
 		&& set -x \
-		&& curl -Lo helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz https://github.com/norwoodj/helm-docs/releases/download/v$(HELM_DOCS_VERSION)/helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
+		&& $(CURL_DOWNLOAD) -o helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz https://github.com/norwoodj/helm-docs/releases/download/v$(HELM_DOCS_VERSION)/helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
 		&& tar -xf helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz helm-docs \
 		&& rm helm-docs_$(HELM_DOCS_VERSION)_$(UNAME_S)_$(HELM_DOCS_ARCH).tar.gz \
 		&& chmod +x helm-docs \

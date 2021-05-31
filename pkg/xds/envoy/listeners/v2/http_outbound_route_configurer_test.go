@@ -23,7 +23,7 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 		listenerProtocol core_xds.SocketAddressProtocol
 		statsName        string
 		service          string
-		subsets          []envoy_common.ClusterSubset
+		clusters         []envoy_common.Cluster
 		dpTags           mesh_proto.MultiValueTagSet
 		expected         string
 	}
@@ -35,7 +35,7 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 				Configure(OutboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(HttpConnectionManager(given.statsName, false)).
-					Configure(HttpOutboundRoute(given.service, given.subsets, given.dpTags)))).
+					Configure(HttpOutboundRoute(given.service, given.clusters, given.dpTags)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -52,21 +52,21 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 			listenerPort:    18080,
 			statsName:       "127.0.0.1:18080",
 			service:         "backend",
-			subsets: []envoy_common.ClusterSubset{
-				{
-					ClusterName: "backend",
-					Weight:      20,
-					Tags: map[string]string{
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithName("backend-0"),
+					envoy_common.WithWeight(20),
+					envoy_common.WithTags(map[string]string{
 						"version": "v1",
-					},
-				},
-				{
-					ClusterName: "backend",
-					Weight:      80,
-					Tags: map[string]string{
+					}),
+				),
+				envoy_common.NewCluster(
+					envoy_common.WithName("backend-1"),
+					envoy_common.WithWeight(80),
+					envoy_common.WithTags(map[string]string{
 						"version": "v2",
-					},
-				},
+					}),
+				),
 			},
 			dpTags: map[string]map[string]bool{
 				"kuma.io/service": {
@@ -102,17 +102,9 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                         route:
                           weightedClusters:
                             clusters:
-                            - metadataMatch:
-                                filterMetadata:
-                                  envoy.lb:
-                                    version: v1
-                              name: backend
+                            - name: backend-0
                               weight: 20
-                            - metadataMatch:
-                                filterMetadata:
-                                  envoy.lb:
-                                    version: v2
-                              name: backend
+                            - name: backend-1
                               weight: 80
                             totalWeight: 100
                           timeout: 0s
