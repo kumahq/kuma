@@ -302,10 +302,10 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 				envoy_common.WithExternalService(isExternalService),
 			)
 
-			if name, ok := clusterCache[cluster.Hash()]; ok {
+			if name, ok := clusterCache[cluster.Tags().String()]; ok {
 				cluster.SetName(name)
 			} else {
-				clusterCache[cluster.Hash()] = cluster.Name()
+				clusterCache[cluster.Tags().String()] = cluster.Name()
 			}
 
 			clusters = append(clusters, cluster)
