@@ -20,6 +20,7 @@ func ConnectToDb(cfg config.PostgresStoreConfig) (*sql.DB, error) {
 	}
 
 	db.SetMaxOpenConns(cfg.MaxOpenConnections)
+	db.SetMaxIdleConns(cfg.MaxIdleConnections)
 
 	// check connection to DB, Open() does not check it.
 	if err := db.Ping(); err != nil {

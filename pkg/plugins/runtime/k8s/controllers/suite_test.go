@@ -3,6 +3,7 @@ package controllers_test
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 
@@ -18,6 +19,7 @@ import (
 
 	meshv1alpha1 "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/api/v1alpha1"
 	k8scnicncfio "github.com/kumahq/kuma/pkg/plugins/runtime/k8s/apis/k8s.cni.cncf.io"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 var k8sClient client.Client
@@ -32,7 +34,7 @@ func TestAPIs(t *testing.T) {
 		[]Reporter{printer.NewlineReporter{}})
 }
 
-var _ = BeforeSuite(func(done Done) {
+var _ = BeforeSuite(test.Within(time.Minute, func() {
 	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
 
 	By("bootstrapping test environment")
@@ -58,9 +60,7 @@ var _ = BeforeSuite(func(done Done) {
 	k8sClient, err = client.New(cfg, client.Options{Scheme: k8sClientScheme})
 	Expect(err).ToNot(HaveOccurred())
 	Expect(k8sClient).ToNot(BeNil())
-
-	close(done)
-}, 60)
+}))
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")

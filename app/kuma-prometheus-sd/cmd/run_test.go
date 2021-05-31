@@ -1,6 +1,10 @@
 package cmd
 
 import (
+	"time"
+
+	"github.com/kumahq/kuma/pkg/test"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -27,7 +31,7 @@ var _ = Describe("run", func() {
 		}
 	})
 
-	XIt("should be possible to run `kuma-prometheus-sd run`", func(done Done) {
+	XIt("should be possible to run `kuma-prometheus-sd run`", test.Within(15*time.Second, func() {
 		// given
 		cmd := NewRootCmd()
 		cmd.SetArgs([]string{"run"})
@@ -50,8 +54,5 @@ var _ = Describe("run", func() {
 		// then
 		err := <-errCh
 		Expect(err).ToNot(HaveOccurred())
-
-		// complete
-		close(done)
-	}, 15)
+	}))
 })
