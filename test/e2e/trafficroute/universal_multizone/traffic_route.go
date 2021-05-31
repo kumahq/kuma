@@ -5,6 +5,7 @@ import (
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/onsi/gomega/types"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/e2e/trafficroute/testutil"
@@ -84,23 +85,28 @@ routing:
 			Install(Kuma(core.Remote, optsRemote2...)).
 			Install(EchoServerUniversal("dp-echo-1", defaultMesh, "echo-v1", echoServerToken,
 				WithTransparentProxy(true),
+				WithProtocol("http"),
 				WithServiceVersion("v1"),
 			)).
 			Install(EchoServerUniversal("dp-echo-2", defaultMesh, "echo-v2", echoServerToken,
 				WithTransparentProxy(true),
+				WithProtocol("http"),
 				WithServiceVersion("v2"),
 			)).
 			Install(EchoServerUniversal("dp-echo-3", defaultMesh, "echo-v3", echoServerToken,
 				WithTransparentProxy(true),
+				WithProtocol("http"),
 				WithServiceVersion("v3"),
 			)).
 			Install(EchoServerUniversal("dp-echo-4", defaultMesh, "echo-v4", echoServerToken,
 				WithTransparentProxy(true),
+				WithProtocol("http"),
 				WithServiceVersion("v4"),
 			)).
 			Install(EchoServerUniversal("dp-backend-1", defaultMesh, "backend-v1", backendToken,
 				WithServiceName("backend"),
 				WithServiceVersion("v1"),
+				WithProtocol("http"),
 				WithTransparentProxy(true),
 			)).
 			Install(IngressUniversal(defaultMesh, ingressToken)).
@@ -240,7 +246,7 @@ conf:
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh", 100)
+			return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(100))
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
@@ -248,5 +254,127 @@ conf:
 				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(v2Weight, 10)),
 			),
 		)
+	})
+
+	Context("HTTP routing", func() {
+		HaveOnlyResponseFrom := func(response string) types.GomegaMatcher {
+			return And(
+				HaveLen(1),
+				HaveKeyWithValue(MatchRegexp(`.*`+response+`.*`), Not(BeNil())),
+			)
+		}
+
+		It("should route matching by path", func() {
+			const trafficRoute = `
+type: TrafficRoute
+name: route-by-path
+mesh: default
+sources:
+  - match:
+      kuma.io/service: demo-client
+destinations:
+  - match:
+      kuma.io/service: echo-server_kuma-test_svc_8080
+conf:
+  http:
+  - match:
+      path:
+        prefix: /version1
+    destination:
+      kuma.io/service: echo-server_kuma-test_svc_8080
+      version: v1
+  - match:
+      path:
+        exact: /version2
+    destination:
+      kuma.io/service: echo-server_kuma-test_svc_8080
+      version: v2
+  - match:
+      path:
+        regex: "^/version3$"
+    destination:
+      kuma.io/service: echo-server_kuma-test_svc_8080
+      version: v3
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: echo-server_kuma-test_svc_8080
+    version: v4
+`
+			Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
+
+			Eventually(func() (map[string]int, error) {
+				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version1")
+			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
+			Eventually(func() (map[string]int, error) {
+				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version2")
+			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
+			Eventually(func() (map[string]int, error) {
+				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version3")
+			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
+			Eventually(func() (map[string]int, error) {
+				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
+			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
+		})
+
+		It("should same splits with a different weights", func() {
+			const trafficRoute = `
+type: TrafficRoute
+name: two-splits
+mesh: default
+sources:
+  - match:
+      kuma.io/service: demo-client
+destinations:
+  - match:
+      kuma.io/service: echo-server_kuma-test_svc_8080
+conf:
+  http:
+  - match:
+      path:
+        prefix: /split
+    split:
+    - weight: 50
+      destination:
+        kuma.io/service: echo-server_kuma-test_svc_8080
+        version: v1
+    - weight: 50
+      destination:
+        kuma.io/service: echo-server_kuma-test_svc_8080
+        version: v2
+  loadBalancer:
+    roundRobin: {}
+  split:
+  - weight: 20
+    destination:
+      kuma.io/service: echo-server_kuma-test_svc_8080
+      version: v1
+  - weight: 80
+    destination:
+      kuma.io/service: echo-server_kuma-test_svc_8080
+      version: v2
+`
+			Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
+
+			Eventually(func() (map[string]int, error) {
+				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh/split", WithNumberOfRequests(10))
+			}, "30s", "500ms").Should(
+				And(
+					HaveLen(2),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(5, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(5, 1)),
+				),
+			)
+
+			Eventually(func() (map[string]int, error) {
+				return CollectResponses(remote_1, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(10))
+			}, "30s", "500ms").Should(
+				And(
+					HaveLen(2),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(2, 1)),
+					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(8, 1)),
+				),
+			)
+		})
 	})
 }

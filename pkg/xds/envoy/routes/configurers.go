@@ -18,13 +18,13 @@ func CommonVirtualHost(name string) VirtualHostBuilderOpt {
 	})
 }
 
-func DefaultRoute(clusters ...envoy_common.Cluster) VirtualHostBuilderOpt {
+func Routes(routes envoy_common.Routes) VirtualHostBuilderOpt {
 	return VirtualHostBuilderOptFunc(func(config *VirtualHostBuilderConfig) {
-		config.AddV2(&v2.DefaultRouteConfigurer{
-			Clusters: clusters,
+		config.AddV2(&v2.RoutesConfigurer{
+			Routes: routes,
 		})
-		config.AddV3(&v3.DefaultRouteConfigurer{
-			Clusters: clusters,
+		config.AddV3(&v3.RoutesConfigurer{
+			Routes: routes,
 		})
 	})
 }
@@ -69,13 +69,13 @@ func TagsHeader(tags mesh_proto.MultiValueTagSet) RouteConfigurationBuilderOpt {
 
 func Route(matchPath, newPath, cluster string, allowGetOnly bool) VirtualHostBuilderOpt {
 	return VirtualHostBuilderOptFunc(func(config *VirtualHostBuilderConfig) {
-		config.AddV2(&v2.RoutesConfigurer{
+		config.AddV2(&v2.RouteConfigurer{
 			MatchPath:    matchPath,
 			NewPath:      newPath,
 			Cluster:      cluster,
 			AllowGetOnly: allowGetOnly,
 		})
-		config.AddV3(&v3.RoutesConfigurer{
+		config.AddV3(&v3.RouteConfigurer{
 			MatchPath:    matchPath,
 			NewPath:      newPath,
 			Cluster:      cluster,

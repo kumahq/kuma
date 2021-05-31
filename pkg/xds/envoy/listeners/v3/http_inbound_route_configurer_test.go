@@ -22,7 +22,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 		listenerPort     uint32
 		statsName        string
 		service          string
-		cluster          envoy_common.Cluster
+		route            envoy_common.Route
 		expected         string
 	}
 
@@ -33,7 +33,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
 					Configure(HttpConnectionManager(given.statsName, true)).
-					Configure(HttpInboundRoute(given.service, given.cluster)))).
+					Configure(HttpInboundRoute(given.service, given.route)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -50,10 +50,10 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
 			service:         "backend",
-			cluster: envoy_common.NewCluster(
+			route: envoy_common.NewRouteFromCluster(envoy_common.NewCluster(
 				envoy_common.WithService("localhost:8080"),
 				envoy_common.WithWeight(200),
-			),
+			)),
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND

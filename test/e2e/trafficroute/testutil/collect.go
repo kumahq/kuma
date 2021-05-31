@@ -1,25 +1,80 @@
 package testutil
 
 import (
+	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/kumahq/kuma/test/framework"
 )
 
-const numberOrRequests = 10
+type CollectResponsesOpts struct {
+	NumberOfRequests int
+	Method           string
+	Headers          map[string]string
+}
 
-func CollectResponses(cluster framework.Cluster, source, destination string, args ...int) (map[string]int, error) {
-	responses := map[string]int{}
-	attempts := numberOrRequests
-	if len(args) > 0 {
-		attempts = args[0]
+func DefaultCollectResponsesOpts() CollectResponsesOpts {
+	return CollectResponsesOpts{
+		NumberOfRequests: 10,
+		Method:           "GET",
+		Headers:          map[string]string{},
 	}
-	for i := 0; i < attempts; i++ {
-		stdout, _, err := cluster.ExecWithRetries("", "", source, "curl", "-m", "3", "--fail", destination)
-		if err != nil {
-			return nil, err
-		}
-		responses[strings.TrimSpace(stdout)]++
+}
+
+type CollectResponsesOptsFn func(opts *CollectResponsesOpts)
+
+func WithNumberOfRequests(numberOfRequests int) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.NumberOfRequests = numberOfRequests
+	}
+}
+
+func WithMethod(method string) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.Method = method
+	}
+}
+
+func WithHeader(key, value string) CollectResponsesOptsFn {
+	return func(opts *CollectResponsesOpts) {
+		opts.Headers[key] = value
+	}
+}
+
+func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (map[string]int, error) {
+	opts := DefaultCollectResponsesOpts()
+	for _, f := range fn {
+		f(&opts)
+	}
+
+	mut := sync.Mutex{}
+	responses := map[string]int{}
+
+	var wg sync.WaitGroup
+	var err error
+	for i := 0; i < opts.NumberOfRequests; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			cmd := []string{"curl", "-X" + opts.Method}
+			for key, value := range opts.Headers {
+				cmd = append(cmd, fmt.Sprintf("-H'%s: %s'", key, value))
+			}
+			cmd = append(cmd, "-m", "3", "--fail", destination)
+			stdout, _, localErr := cluster.ExecWithRetries("", "", source, cmd...)
+			mut.Lock()
+			defer mut.Unlock()
+			if localErr != nil {
+				err = localErr
+				return
+			}
+			responses[strings.TrimSpace(stdout)]++
+		}()
+	}
+	wg.Wait()
+	if err != nil {
+		return nil, err
 	}
 	return responses, nil
 }

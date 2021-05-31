@@ -24,6 +24,20 @@ func (x *TrafficRoute_Conf) GetSplitWithDestination() []*TrafficRoute_Split {
 	return x.GetSplit()
 }
 
+func (x *TrafficRoute_Http) GetSplitWithDestination() []*TrafficRoute_Split {
+	if len(x.GetDestination()) > 0 {
+		return []*TrafficRoute_Split{
+			{
+				Weight: &wrappers.UInt32Value{
+					Value: 1,
+				},
+				Destination: x.GetDestination(),
+			},
+		}
+	}
+	return x.GetSplit()
+}
+
 func (x *TrafficRoute_Conf) GetSplitOrdered() []*TrafficRoute_Split {
 	c := make([]*TrafficRoute_Split, len(x.GetSplitWithDestination()))
 	copy(c, x.GetSplitWithDestination())

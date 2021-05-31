@@ -117,6 +117,12 @@ func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList) 
 			service := split.Destination[mesh_proto.ServiceTag]
 			destinations[service] = append(destinations[service], split.Destination)
 		}
+		for _, http := range tr.Spec.Conf.Http {
+			for _, split := range http.GetSplitWithDestination() {
+				service := split.Destination[mesh_proto.ServiceTag]
+				destinations[service] = append(destinations[service], split.Destination)
+			}
+		}
 	}
 	return destinations
 }

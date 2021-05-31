@@ -1,5 +1,5 @@
 resources:
-- name: es
+- name: es-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     commonHttpProtocolOptions:
@@ -7,7 +7,7 @@ resources:
     connectTimeout: 10s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
-      clusterName: es
+      clusterName: es-_0_
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -22,7 +22,7 @@ resources:
                 kuma.io/protocol: http
               envoy.transport_socket_match:
                 kuma.io/protocol: http
-    name: es
+    name: es-_0_
     type: STRICT_DNS
 - name: outbound:127.0.0.1:18081
   resource:
@@ -55,7 +55,7 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  cluster: es
+                  cluster: es-_0_
                   timeout: 0s
           statPrefix: es
     name: outbound:127.0.0.1:18081
