@@ -302,8 +302,9 @@ type TrafficRoute_Conf struct {
 	// One destination that the traffic will be redirected to.
 	// When used, "split" is not allowed.
 	Destination map[string]string `protobuf:"bytes,3,rep,name=destination,proto3" json:"destination,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// Configuration of HTTP traffic. Traffic is matched one by one with the order defined in the list.
-	// If the request does not match any criteria then "split" or "destination" outside of "http" section is executed.
+	// Configuration of HTTP traffic. Traffic is matched one by one with the
+	// order defined in the list. If the request does not match any criteria
+	// then "split" or "destination" outside of "http" section is executed.
 	Http []*TrafficRoute_Http `protobuf:"bytes,4,rep,name=http,proto3" json:"http,omitempty"`
 }
 
@@ -373,7 +374,8 @@ type TrafficRoute_Http struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// If request matches against defined criteria then "split" or "destination" is executed
+	// If request matches against defined criteria then "split" or "destination"
+	// is executed
 	Match *TrafficRoute_Http_Match `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
 	// List of destinations with weights assigned to them.
 	// When used, "destination" is not allowed.
@@ -674,7 +676,8 @@ func (*TrafficRoute_LoadBalancer_Maglev) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_traffic_route_proto_rawDescGZIP(), []int{0, 1, 4}
 }
 
-// Match defines a series of matching criteria to apply modification and reroute the traffic
+// Match defines a series of matching criteria to apply modification and
+// reroute the traffic
 type TrafficRoute_Http_Match struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -829,7 +832,8 @@ type TrafficRoute_Http_Match_StringMatcher_Exact struct {
 }
 
 type TrafficRoute_Http_Match_StringMatcher_Regex struct {
-	// Regex checks the string using RE2 syntax https://github.com/google/re2/wiki/Syntax
+	// Regex checks the string using RE2 syntax
+	// https://github.com/google/re2/wiki/Syntax
 	Regex string `protobuf:"bytes,3,opt,name=regex,proto3,oneof"`
 }
 
