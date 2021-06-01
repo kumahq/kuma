@@ -310,9 +310,11 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 func IngressUniversal(mesh, token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
-		isipv6 := IsIPv6()
-		verbose := false
-		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, isipv6, verbose, []string{})
+		app, err := NewUniversalAppOpts().
+			WithTestingT(cluster.GetTesting()).
+			WithName(uniCluster.name + "_" + AppIngress).
+			WithIsIPv6(IsIPv6()).
+			Build()
 		if err != nil {
 			return err
 		}

@@ -38,6 +38,7 @@ type deployOptions struct {
 	hdsDisabled      bool
 	serviceProbe     bool
 	isipv6           bool
+	storeType        string
 
 	// app specific
 	namespace      string
@@ -246,6 +247,87 @@ func WithCtlOpt(name, value string) DeployOptionsFunc {
 			o.ctlOpts = map[string]string{}
 		}
 		o.ctlOpts[name] = value
+	}
+}
+
+type DeployPostgresOptionFunc func(map[string]string)
+
+func WithPostgresHost(host string) DeployPostgresOptionFunc {
+	return func(env map[string]string) {
+		env[EnvStorePostgresHost] = host
+	}
+}
+
+func WithPostgresPort(port string) DeployPostgresOptionFunc {
+	return func(env map[string]string) {
+		env[EnvStorePostgresPort] = port
+	}
+}
+
+func WithPostgresUser(user string) DeployPostgresOptionFunc {
+	return func(env map[string]string) {
+		env[EnvStorePostgresUser] = user
+	}
+}
+
+func WithPostgresPassword(password string) DeployPostgresOptionFunc {
+	return func(env map[string]string) {
+		env[EnvStorePostgresPassword] = password
+	}
+}
+
+func WithPostgresDBName(dbName string) DeployPostgresOptionFunc {
+	return func(env map[string]string) {
+		env[EnvStorePostgresDBName] = dbName
+	}
+}
+
+func WithPostgresTLSMode(mode string) DeployPostgresOptionFunc {
+	return func(env map[string]string) {
+		env[EnvStorePostgresTLSMode] = mode
+	}
+}
+
+func WithPostgresTLSCertPath(path string) DeployPostgresOptionFunc {
+	return func(env map[string]string) {
+		env[EnvStorePostgresTLSCertPath] = path
+	}
+}
+
+func WithPostgresTLSKeyPath(path string) DeployPostgresOptionFunc {
+	return func(env map[string]string) {
+		env[EnvStorePostgresTLSKeyPath] = path
+	}
+}
+
+func WithPostgresTLSCAPath(path string) DeployPostgresOptionFunc {
+	return func(env map[string]string) {
+		env[EnvStorePostgresTLSCAPath] = path
+	}
+}
+
+func WithPostgres(fs ...DeployPostgresOptionFunc) DeployOptionsFunc {
+	return func(o *deployOptions) {
+		o.storeType = StoreTypePostgres
+
+		if o.env == nil {
+			o.env = map[string]string{}
+		}
+
+		o.env[EnvStoreType] = StoreTypePostgres
+		o.env[EnvStorePostgresHost] = DefaultPostgresHost
+		o.env[EnvStorePostgresPort] = DefaultPostgresPort
+		o.env[EnvStorePostgresUser] = DefaultPostgresUser
+		o.env[EnvStorePostgresPassword] = DefaultPostgresPassword
+		o.env[EnvStorePostgresDBName] = DefaultPostgresDBName
+		o.env[EnvStorePostgresTLSMode] = DefaultPostgresTLSMode
+		o.env[EnvStorePostgresTLSCertPath] = DefaultPostgresTLSCertPath
+		o.env[EnvStorePostgresTLSKeyPath] = DefaultPostgresTLSKeyPath
+		o.env[EnvStorePostgresTLSCAPath] = DefaultPostgresTLSCAPath
+
+		for _, f := range fs {
+			f(o.env)
+		}
 	}
 }
 

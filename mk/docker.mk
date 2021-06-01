@@ -22,6 +22,7 @@ export KUMACTL_DOCKER_IMAGE ?= $(KUMACTL_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION
 export KUMA_INIT_DOCKER_IMAGE ?= $(KUMA_INIT_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_PROMETHEUS_SD_DOCKER_IMAGE ?= $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_UNIVERSAL_DOCKER_IMAGE ?= $(DOCKER_REGISTRY)/kuma-universal:$(BUILD_INFO_VERSION)
+export POSTGRES_DOCKER_IMAGE ?= $(DOCKER_REGISTRY)/postgres:$(BUILD_INFO_VERSION)
 
 .PHONY: docker/build
 docker/build: docker/build/release docker/build/test
@@ -64,6 +65,12 @@ docker/build/kuma-universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/a
 	docker build -t kuma-universal -f test/dockerfiles/Dockerfile.universal .
 	docker tag kuma-universal $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
+.PHONY: docker/build/postgres
+docker/build/postgres:
+	DOCKER_BUILDKIT=1 \
+	docker build -t postgres -f test/dockerfiles/Dockerfile.postgres .
+	docker tag postgres $(POSTGRES_DOCKER_IMAGE)
+
 .PHONY: image/kuma-cp
 image/kuma-cp: build/kuma-cp/linux-amd64 docker/build/kuma-cp ## Dev: Rebuild `kuma-cp` Docker image
 
@@ -89,7 +96,7 @@ images: images/release images/test
 images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd ## Dev: Rebuild all Docker images
 
 .PHONY: images/test
-images/test: image/kuma-universal
+images/test: image/kuma-universal docker/build/postgres
 
 ${BUILD_DOCKER_IMAGES_DIR}:
 	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}
@@ -101,7 +108,7 @@ docker/save: docker/save/release docker/save/test
 docker/save/release: docker/save/kuma-cp docker/save/kuma-dp docker/save/kumactl docker/save/kuma-init docker/save/kuma-prometheus-sd
 
 .PHONY: docker/save/test
-docker/save/test: docker/save/kuma-universal
+docker/save/test: docker/save/kuma-universal docker/save/postgres
 
 .PHONY: docker/save/kuma-cp
 docker/save/kuma-cp: ${BUILD_DOCKER_IMAGES_DIR}
@@ -127,6 +134,10 @@ docker/save/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}
 docker/save/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}
 	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
+.PHONY: docker/save/postgres
+docker/save/postgres: ${BUILD_DOCKER_IMAGES_DIR}
+	docker save --output ${BUILD_DOCKER_IMAGES_DIR}/postgres.tar $(POSTGRES_DOCKER_IMAGE)
+
 .PHONY: docker/load
 docker/load: docker/load/release docker/load/test
 
@@ -134,7 +145,7 @@ docker/load: docker/load/release docker/load/test
 docker/load/release: docker/load/kuma-cp docker/load/kuma-dp docker/load/kumactl docker/load/kuma-init docker/load/kuma-prometheus-sd
 
 .PHONY: docker/load/test
-docker/load/test: docker/load/kuma-universal
+docker/load/test: docker/load/kuma-universal docker/load/postgres
 
 .PHONY: docker/load/kuma-cp
 docker/load/kuma-cp: ${BUILD_DOCKER_IMAGES_DIR}/kuma-cp.tar
@@ -160,6 +171,10 @@ docker/load/kuma-prometheus-sd: ${BUILD_DOCKER_IMAGES_DIR}/kuma-prometheus-sd.ta
 docker/load/kuma-universal: ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar
 	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/kuma-universal.tar
 
+.PHONY: docker/load/postgres
+docker/load/postgres: ${BUILD_DOCKER_IMAGES_DIR}/postgres.tar
+	docker load --input ${BUILD_DOCKER_IMAGES_DIR}/postgres.tar
+
 .PHONY: docker/tag/kuma-cp
 docker/tag/kuma-cp:
 	docker tag $(KUMA_CP_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-cp:$(KUMA_VERSION)
@@ -179,6 +194,10 @@ docker/tag/kuma-init:
 .PHONY: docker/tag/kuma-universal
 docker/tag/kuma-universal:
 	docker tag $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-universal:$(KUMA_VERSION)
+
+.PHONY: docker/tag/postgres
+docker/tag/postgres:
+	docker tag $(POSTGRES_DOCKER_IMAGE) $(DOCKER_REGISTRY)/postgres:$(KUMA_VERSION)
 
 .PHONY: image/kuma-cp/push
 image/kuma-cp/push: image/kuma-cp

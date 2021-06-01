@@ -77,6 +77,22 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		return errors.Errorf("universal clusters only support the '%s' installation mode but got '%s'", KumactlInstallationMode, opts.installationMode)
 	}
 
+	if opts.storeType == StoreTypePostgres {
+		postgres, err := NewPostgresApp().
+			WithTestingT(c.t).
+			WithName(c.name + "_" + AppModePostgres).
+			WithIsIPv6(opts.isipv6).
+			WithVerbose(true).
+			Build()
+		if err != nil {
+			return err
+		}
+
+		c.apps[AppPostgres] = postgres
+
+		opts.env[EnvStorePostgresHost] = postgres.ip
+	}
+
 	cmd := []string{"kuma-cp", "run"}
 	env := []string{"KUMA_MODE=" + mode, "KUMA_DNS_SERVER_PORT=53"}
 	caps := []string{}
@@ -105,12 +121,24 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		cmd = append(cmd, "--config-file", confPath)
 	}
 
-	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, opts.isipv6, true, caps)
+	app, err := NewKumaCPApp().
+		WithTestingT(c.t).
+		WithName(c.name + "_" + AppModeCP).
+		WithIsIPv6(opts.isipv6).
+		WithVerbose(true).
+		WithCaps(caps...).
+		Build()
 	if err != nil {
 		return err
 	}
 
 	app.CreateMainApp(env, cmd)
+
+	if opts.storeType == StoreTypePostgres {
+		if err := app.RunDBMigration(); err != nil {
+			return err
+		}
+	}
 
 	err = app.mainApp.Start()
 	if err != nil {
@@ -137,10 +165,22 @@ func (c *UniversalCluster) VerifyKuma() error {
 }
 
 func (c *UniversalCluster) DeleteKuma(opts ...DeployOptionsFunc) error {
-	err := c.apps[AppModeCP].Stop()
+	if err := c.apps[AppModeCP].Stop(); err != nil {
+		return err
+	}
+
 	delete(c.apps, AppModeCP)
 	c.controlplane = nil
-	return err
+
+	if c.apps[AppPostgres] != nil {
+		if err := c.apps[AppPostgres].Stop(); err != nil {
+			return err
+		}
+
+		delete(c.apps, AppPostgres)
+	}
+
+	return nil
 }
 
 func (c *UniversalCluster) InjectDNS(namespace ...string) error {
@@ -189,7 +229,24 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	}
 
 	fmt.Printf("IPV6 is %v\n", opts.isipv6)
-	app, err := NewUniversalApp(c.t, c.name, opts.name, AppMode(appname), opts.isipv6, c.verbose, caps)
+	var appOpts *UniversalAppOpts
+
+	switch AppMode(appname) {
+	case AppModeCP:
+		appOpts = NewKumaCPApp()
+	case AppModePostgres:
+		appOpts = NewPostgresApp()
+	default:
+		appOpts = NewUniversalAppOpts()
+	}
+
+	app, err := appOpts.
+		WithTestingT(c.t).
+		WithName(c.name + "_" + opts.name).
+		WithIsIPv6(opts.isipv6).
+		WithVerbose(c.verbose).
+		WithCaps(caps...).
+		Build()
 	if err != nil {
 		return err
 	}

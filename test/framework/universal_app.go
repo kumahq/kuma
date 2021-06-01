@@ -24,6 +24,7 @@ type AppMode string
 
 const (
 	AppModeCP              = "kuma-cp"
+	AppModePostgres        = "postgres"
 	AppIngress             = "ingress"
 	AppModeEchoServer      = "echo-server"
 	AppModeHttpsEchoServer = "https-echo-server"
@@ -166,20 +167,22 @@ networking:
 `
 )
 
-var defaultDockerOptions = docker.RunOptions{
-	Command: nil,
-	Detach:  true,
-	//Entrypoint:           "",
-	EnvironmentVariables: nil,
-	Init:                 false,
-	//Name:                 "",
-	Privileged: false,
-	Remove:     true,
-	Tty:        false,
-	//User:                 "",
-	Volumes:      nil,
-	OtherOptions: []string{},
-	Logger:       nil,
+func getDefaultDockerOptions() *docker.RunOptions {
+	return &docker.RunOptions{
+		Command: nil,
+		Detach:  true,
+		// Entrypoint:           "",
+		EnvironmentVariables: nil,
+		Init:                 false,
+		// Name:                 "",
+		Privileged: false,
+		Remove:     true,
+		Tty:        false,
+		// User:                 "",
+		Volumes:      nil,
+		OtherOptions: []string{},
+		Logger:       nil,
+	}
 }
 
 type UniversalApp struct {
@@ -193,36 +196,196 @@ type UniversalApp struct {
 	container    string
 	ip           string
 	verbose      bool
+	dockerOpts   *docker.RunOptions
 }
 
-func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMode, isipv6, verbose bool, caps []string) (*UniversalApp, error) {
-	app := &UniversalApp{
-		t:            t,
-		ports:        map[string]string{},
+type UniversalAppOpts struct {
+	t            testing.TestingT
+	ports        map[string]string
+	lastUsedPort uint32
+	verbose      bool
+	image        string
+	otherOptions map[string][]string
+	envVars      map[string]string
+}
+
+func NewUniversalAppOpts() *UniversalAppOpts {
+	opts := &UniversalAppOpts{
+		t:            NewTestingT(),
 		lastUsedPort: 10204,
-		verbose:      verbose,
+		ports:        map[string]string{},
+		verbose:      false,
+		image:        KumaUniversalImage,
+		otherOptions: map[string][]string{
+			"--network": {"kind"},
+		},
+		envVars: map[string]string{},
 	}
 
-	app.allocatePublicPortsFor("22")
+	return opts.WithPortsAllocation("22")
+}
 
-	if mode == AppModeCP {
-		app.allocatePublicPortsFor("5678", "5680", "5681", "5682", "5685")
+func (o *UniversalAppOpts) WithTestingT(t testing.TestingT) *UniversalAppOpts {
+	o.t = t
+
+	return o
+}
+
+func (o *UniversalAppOpts) WithVerbose(verbose bool) *UniversalAppOpts {
+	o.verbose = verbose
+
+	return o
+}
+
+func (o *UniversalAppOpts) WithEnvVar(name string, value string) *UniversalAppOpts {
+	o.envVars[name] = value
+
+	return o
+}
+
+func (o *UniversalAppOpts) buildEnvVars() []string {
+	var envVars []string
+
+	for name, value := range o.envVars {
+		envVars = append(envVars, name+"="+value)
 	}
 
-	opts := defaultDockerOptions
-	opts.OtherOptions = append(opts.OtherOptions, "--name", clusterName+"_"+dpName)
-	for _, cap := range caps {
-		opts.OtherOptions = append(opts.OtherOptions, "--cap-add", cap)
-	}
-	opts.OtherOptions = append(opts.OtherOptions, "--network", "kind")
-	if !isipv6 {
+	return envVars
+}
+
+func (o *UniversalAppOpts) WithIsIPv6(isIPv6 bool) *UniversalAppOpts {
+	if !isIPv6 {
 		// For now supporting mixed environments with IPv4 and IPv6 addresses is challenging, specifically with
 		// builtin DNS. This is due to our mix of CoreDNS and Envoy DNS architecture.
 		// Here we make sure the IPv6 address is not allocated to the container unless explicitly requested.
-		opts.OtherOptions = append(opts.OtherOptions, "--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
+		o.applyOtherOptions("--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
+	} else {
+		o.removeOtherOption("--sysctl", "net.ipv6.conf.all.disable_ipv6=1")
 	}
-	opts.OtherOptions = append(opts.OtherOptions, app.publishPortsForDocker()...)
-	container, err := docker.RunAndGetIDE(t, KumaUniversalImage, &opts)
+
+	return o
+}
+
+func (o *UniversalAppOpts) WithPortsAllocation(ports ...string) *UniversalAppOpts {
+	for _, port := range ports {
+		pubPortUInt32, err := util_net.PickTCPPort("", o.lastUsedPort+1, 11204)
+		if err != nil {
+			panic(err)
+		}
+
+		o.ports[port] = strconv.Itoa(int(pubPortUInt32))
+		o.lastUsedPort = pubPortUInt32
+	}
+
+	return o
+}
+
+func (o *UniversalAppOpts) WithNetwork(network string) *UniversalAppOpts {
+	o.otherOptions["--network"] = []string{network}
+
+	return o
+}
+
+func (o *UniversalAppOpts) WithImage(image string) *UniversalAppOpts {
+	o.image = image
+
+	return o
+}
+
+func (o *UniversalAppOpts) WithCaps(caps ...string) *UniversalAppOpts {
+	return o.applyOtherOptions("--cap-add", caps...)
+}
+
+func (o *UniversalAppOpts) applyOtherOptions(name string, values ...string) *UniversalAppOpts {
+	if o.otherOptions[name] == nil {
+		o.otherOptions[name] = []string{}
+	}
+
+	finalValues := map[string]struct{}{}
+	for _, value := range o.otherOptions[name] {
+		finalValues[value] = struct{}{}
+	}
+
+	for _, value := range values {
+		finalValues[value] = struct{}{}
+	}
+
+	for value := range finalValues {
+		o.otherOptions[name] = append(o.otherOptions[name], value)
+	}
+
+	return o
+}
+
+func (o *UniversalAppOpts) removeOtherOption(name string, values ...string) *UniversalAppOpts {
+	if len(values) == 0 {
+		delete(o.otherOptions, name)
+
+		return o
+	}
+
+	valuesToRemove := map[string]struct{}{}
+	for _, value := range values {
+		valuesToRemove[value] = struct{}{}
+	}
+
+	var newValues []string
+	for _, value := range o.otherOptions[name] {
+		if _, ok := valuesToRemove[value]; !ok {
+			newValues = append(newValues, value)
+		}
+	}
+
+	o.otherOptions[name] = newValues
+
+	return o
+}
+
+func (o *UniversalAppOpts) buildOtherOptions() []string {
+	var opts []string
+
+	for key, values := range o.otherOptions {
+		for _, value := range values {
+			opts = append(opts, key, value)
+		}
+	}
+
+	for port, pubPort := range o.ports {
+		opts = append(opts, "--publish="+pubPort+":"+port)
+	}
+
+	return opts
+}
+
+func (o *UniversalAppOpts) WithName(name string) *UniversalAppOpts {
+	return o.applyOtherOptions("--name", name)
+}
+
+func (o *UniversalAppOpts) WithPostgresUser(user string) *UniversalAppOpts {
+	return o.WithEnvVar(PostgresEnvVarUser, user)
+}
+
+func (o *UniversalAppOpts) WithPostgresPassword(password string) *UniversalAppOpts {
+	return o.WithEnvVar(PostgresEnvVarPassword, password)
+}
+
+func (o *UniversalAppOpts) WithPostgresDB(db string) *UniversalAppOpts {
+	return o.WithEnvVar(PostgresEnvVarDB, db)
+}
+
+func (o *UniversalAppOpts) Build() (*UniversalApp, error) {
+	app := &UniversalApp{
+		t:            o.t,
+		ports:        o.ports,
+		lastUsedPort: o.lastUsedPort,
+		verbose:      o.verbose,
+		dockerOpts:   getDefaultDockerOptions(),
+	}
+
+	app.dockerOpts.OtherOptions = append(app.dockerOpts.OtherOptions, o.buildOtherOptions()...)
+	app.dockerOpts.EnvironmentVariables = append(app.dockerOpts.EnvironmentVariables, o.buildEnvVars()...)
+
+	container, err := docker.RunAndGetIDE(o.t, o.image, app.dockerOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -243,22 +406,18 @@ func NewUniversalApp(t testing.TestingT, clusterName, dpName string, mode AppMod
 	return app, nil
 }
 
-func (s *UniversalApp) allocatePublicPortsFor(ports ...string) {
-	for _, port := range ports {
-		pubPortUInt32, err := util_net.PickTCPPort("", s.lastUsedPort+1, 11204)
-		if err != nil {
-			panic(err)
-		}
-		s.ports[port] = strconv.Itoa(int(pubPortUInt32))
-		s.lastUsedPort = pubPortUInt32
-	}
+func NewKumaCPApp() *UniversalAppOpts {
+	return NewUniversalAppOpts().
+		WithPortsAllocation("5678", "5680", "5681", "5682", "5685")
 }
 
-func (s *UniversalApp) publishPortsForDocker() (args []string) {
-	for port, pubPort := range s.ports {
-		args = append(args, "--publish="+pubPort+":"+port)
-	}
-	return
+func NewPostgresApp() *UniversalAppOpts {
+	return NewUniversalAppOpts().
+		WithPortsAllocation("5432").
+		WithImage(PostgresImage).
+		WithPostgresUser(DefaultPostgresUser).
+		WithPostgresPassword(DefaultPostgresPassword).
+		WithPostgresDB(DefaultPostgresDBName)
 }
 
 func (s *UniversalApp) Stop() error {
@@ -428,6 +587,19 @@ func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 		errString = "No IPv6 address found"
 	}
 	return "", errors.Errorf(errString)
+}
+
+func (s *UniversalApp) RunDBMigration() error {
+	args := []string{
+		"/usr/bin/kuma-cp", "migrate", "up",
+	}
+
+	app := NewSshApp(s.verbose, s.ports[sshPort], s.mainAppEnv, args)
+	if err := app.Run(); err != nil {
+		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
+	}
+
+	return nil
 }
 
 type SshApp struct {

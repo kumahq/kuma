@@ -1,0 +1,24 @@
+FROM postgres:13.3
+
+RUN apt update \
+  && DEBIAN_FRONTEND=noninteractive apt install -y openssh-server sudo \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN ssh-keygen -A \
+  && sed -i s/#PermitRootLogin.*/PermitRootLogin\ yes/ /etc/ssh/sshd_config \
+  && sed -i s/#PermitEmptyPasswords.*/PermitEmptyPasswords\ yes/ /etc/ssh/sshd_config \
+  && sed -i s/.*pam_unix.so.*/auth\ \ \ \ \[success=1\ default=ignore\]\ \ \ \ \ \ pam_unix\.so\ nullok/ /etc/pam.d/common-auth \
+  && mkdir /var/run/sshd \
+  && passwd -d root \
+  && chmod a+rwx /root
+
+RUN usermod -a -G sudo postgres \
+  && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+COPY $KUMA_ROOT/test/dockerfiles/scripts/postgres-up.sh postgres-up.sh
+
+RUN chmod +x postgres-up.sh
+
+USER postgres
+
+CMD ["./postgres-up.sh"]

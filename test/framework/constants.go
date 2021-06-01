@@ -46,6 +46,39 @@ const (
 	cidrIPv6              = "fd00:fd00::/64"
 )
 
+const (
+	EnvStoreType                = "KUMA_STORE_TYPE"
+	EnvStorePostgresHost        = "KUMA_STORE_POSTGRES_HOST"
+	EnvStorePostgresPort        = "KUMA_STORE_POSTGRES_PORT"
+	EnvStorePostgresUser        = "KUMA_STORE_POSTGRES_USER"
+	EnvStorePostgresPassword    = "KUMA_STORE_POSTGRES_PASSWORD"
+	EnvStorePostgresDBName      = "KUMA_STORE_POSTGRES_DB_NAME"
+	EnvStorePostgresTLSMode     = "KUMA_STORE_POSTGRES_TLS_MODE"
+	EnvStorePostgresTLSCertPath = "KUMA_STORE_POSTGRES_TLS_CERT_PATH"
+	EnvStorePostgresTLSKeyPath  = "KUMA_STORE_POSTGRES_TLS_KEY_PATH"
+	EnvStorePostgresTLSCAPath   = "KUMA_STORE_POSTGRES_TLS_CA_PATH"
+
+	DefaultPostgresHost        = "localhost"
+	DefaultPostgresPort        = "5432"
+	DefaultPostgresUser        = "kuma"
+	DefaultPostgresPassword    = "kuma"
+	DefaultPostgresDBName      = "kuma"
+	DefaultPostgresTLSMode     = "disable"
+	DefaultPostgresTLSCertPath = "../../../tools/postgres/ssl/certs/postgres.client.crt"
+	DefaultPostgresTLSKeyPath  = "../../../tools/postgres/ssl/certs/postgres.client.key"
+	DefaultPostgresTLSCAPath   = "../../../tools/postgres/ssl/certs/rootCA.crt"
+
+	PostgresImage = "postgres"
+
+	StoreTypePostgres = "postgres"
+
+	PostgresEnvVarUser     = "POSTGRES_USER"
+	PostgresEnvVarPassword = "POSTGRES_PASSWORD"
+	PostgresEnvVarDB       = "POSTGRES_DB"
+
+	AppPostgres = "postgres"
+)
+
 var HelmRepo = "kuma/kuma"
 var HelmChartPath = "../../../deployments/charts/kuma"
 var HelmSubChartPrefix = ""
