@@ -37,8 +37,8 @@ func testEchoServer(port int) error {
 }
 
 func KICKubernetes() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
+	if IsApiV2() || IsIPv6() {
+		fmt.Println("Test not supported on API v2 or IPv6")
 		return
 	}
 
