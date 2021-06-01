@@ -93,6 +93,9 @@ type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjectio
 // TrafficPermissionMap holds the most specific TrafficPermissionResource for each InboundInterface
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResource
 
+// RateLimitMap holds the most specific RateLimitResource for each InboundInterface
+type RateLimitMap map[mesh_proto.InboundInterface]*mesh_proto.RateLimit
+
 type CLACache interface {
 	GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error)
 }
@@ -133,6 +136,7 @@ type MatchedPolicies struct {
 	TracingBackend     *mesh_proto.TracingBackend
 	FaultInjections    FaultInjectionMap
 	Timeouts           TimeoutMap
+	RateLimits         RateLimitMap
 }
 
 type CaSecret struct {

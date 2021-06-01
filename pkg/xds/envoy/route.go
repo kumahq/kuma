@@ -1,12 +1,15 @@
 package envoy
 
 import (
+	"github.com/golang/protobuf/ptypes/any"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 )
 
 type Route struct {
-	Match    *mesh_proto.TrafficRoute_Http_Match
-	Clusters []Cluster
+	Match                *mesh_proto.TrafficRoute_Http_Match
+	Clusters             []Cluster
+	TypedPerFilterConfig map[string]*any.Any
 }
 
 func NewRouteFromCluster(cluster Cluster) Route {

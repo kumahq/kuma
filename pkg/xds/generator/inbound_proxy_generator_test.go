@@ -134,6 +134,53 @@ var _ = Describe("InboundProxyGenerator", func() {
 							},
 						},
 					},
+					RateLimits: model.RateLimitMap{
+						mesh_proto.InboundInterface{
+							DataplaneIP:   "192.168.0.1",
+							DataplanePort: 80,
+							WorkloadIP:    "127.0.0.1",
+							WorkloadPort:  8080,
+						}: &mesh_proto.RateLimit{
+							Sources: []*mesh_proto.Selector{
+								{
+									Match: map[string]string{
+										"kuma.io/service": "frontend",
+									},
+								},
+							},
+							Destinations: []*mesh_proto.Selector{
+								{
+									Match: map[string]string{
+										"kuma.io/service": "backend1",
+									},
+								},
+							},
+							Conf: &mesh_proto.RateLimit_Conf{
+								Http: &mesh_proto.RateLimit_Conf_Http{
+									Connections: &wrappers.UInt32Value{
+										Value: 100,
+									},
+									Interval:    &duration.Duration{
+										Seconds: 2,
+									},
+									OnError:     &mesh_proto.RateLimit_Conf_Http_OnError{
+										Status:  &wrappers.UInt32Value{
+											Value: 404,
+										},
+										Headers: []*mesh_proto.RateLimit_Conf_Http_OnError_HeaderValue{
+											{
+												Key:    "x-rate-limited",
+												Value:  "true",
+												Append: &wrappers.BoolValue{
+													Value: false,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 				Metadata: &model.DataplaneMetadata{},
 			}

@@ -305,15 +305,17 @@ func HttpStaticRoute(builder *envoy_routes.RouteConfigurationBuilder) FilterChai
 	})
 }
 
-func HttpInboundRoute(service string, route envoy_common.Route) FilterChainBuilderOpt {
+func HttpInboundRoute(service string, route envoy_common.Route, rate_limit *mesh_proto.RateLimit) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV2(&v2.HttpInboundRouteConfigurer{
-			Service: service,
-			Route:   route,
+			Service:   service,
+			Route:     route,
+			RateLimit: rate_limit,
 		})
 		config.AddV3(&v3.HttpInboundRouteConfigurer{
-			Service: service,
-			Route:   route,
+			Service:   service,
+			Route:     route,
+			RateLimit: rate_limit,
 		})
 	})
 }

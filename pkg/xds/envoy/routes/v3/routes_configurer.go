@@ -23,6 +23,7 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 			Action: &envoy_route.Route_Route{
 				Route: c.routeAction(route.Clusters),
 			},
+			TypedPerFilterConfig: route.TypedPerFilterConfig,
 		}
 		virtualHost.Routes = append(virtualHost.Routes, envoyRoute)
 	}

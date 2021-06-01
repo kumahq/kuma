@@ -138,10 +138,30 @@ resources:
               name: backend1
               routes:
               - match:
+                  headers:
+                  - name: x-kuma-tags
+                    safeRegexMatch:
+                      googleRe2: {}
+                      regex: .*&kuma.io/service=[^&]*frontend[,&].*
                   prefix: /
                 route:
                   cluster: localhost:8080
                   timeout: 0s
+                typedPerFilterConfig:
+                  envoy.filters.http.local_ratelimit:
+                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    responseHeadersToAdd:
+                    - append: false
+                      header:
+                        key: x-rate-limited
+                        value: "true"
+                    statPrefix: rate_limit
+                    status:
+                      code: NotFound
+                    tokenBucket:
+                      fillInterval: 2s
+                      maxTokens: 100
+                      tokensPerFill: 100
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080
