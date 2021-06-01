@@ -32,6 +32,10 @@ message ControlPlane {
 
 // ControlPlaneCoordinates defines coordinates of a Control Plane.
 message ControlPlaneCoordinates {
+  message Headers {
+    string key = 1;
+    string value = 2;
+  }
   message ApiServer {
 
     // URL defines URL of the Control Plane API Server.
@@ -48,6 +52,9 @@ message ControlPlaneCoordinates {
     // ClientKey defines the key of the authorized client of the control plane
     // API server
     string client_key_file = 4;
+
+    // Headers to be added for communication with Kuma control plane
+    repeated Headers headers = 5;
   }
 
   ApiServer api_server = 1 [ (validate.rules).message.required = true ];
