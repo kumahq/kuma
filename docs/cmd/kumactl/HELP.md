@@ -24,6 +24,7 @@ Flags:
   -h, --help                 help for kumactl
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 
 Use "kumactl [command] --help" for more information about a command.
 ```
@@ -61,6 +62,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 ## kumactl config
@@ -82,6 +84,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 
 Use "kumactl config [command] --help" for more information about a command.
 ```
@@ -101,6 +104,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 ### kumactl config control-planes
@@ -124,6 +128,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 
 Use "kumactl config control-planes [command] --help" for more information about a command.
 ```
@@ -143,6 +148,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 #### kumactl config control-planes add
@@ -158,6 +164,7 @@ Flags:
       --ca-cert-file string       path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)
       --client-cert-file string   path to the certificate of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)
       --client-key-file string    path to the certificate key of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)
+      --headers stringToString    add these headers while communicating to control plane, format key=value (default [])
   -h, --help                      help for add
       --name string               reference name for the Control Plane (required)
       --overwrite                 overwrite existing Control Plane with the same reference name
@@ -167,6 +174,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 #### kumactl config control-planes remove
@@ -185,6 +193,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 #### kumactl config control-planes switch
@@ -203,6 +212,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 ## kumactl install
@@ -231,6 +241,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 
 Use "kumactl install [command] --help" for more information about a command.
 ```
@@ -252,7 +263,7 @@ Flags:
       --cni-net-dir string                          set the CNI install directory (default "/etc/cni/multus/net.d")
       --cni-registry string                         registry for the image of the Kuma CNI component (default "docker.io/lobkovilya")
       --cni-repository string                       repository for the image of the Kuma CNI component (default "install-cni")
-      --cni-version string                          version of the image of the Kuma CNI component (default "0.0.7")
+      --cni-version string                          version of the image of the Kuma CNI component (default "0.0.8")
       --control-plane-registry string               registry for the image of the Kuma Control Plane component (default "docker.io/kumahq")
       --control-plane-repository string             repository for the image of the Kuma Control Plane component (default "kuma-cp")
       --control-plane-service-name string           Service name of the Kuma Control Plane (default "kuma-control-plane")
@@ -287,6 +298,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 ### kumactl install metrics
@@ -310,6 +322,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 ### kumactl install tracing
@@ -328,6 +341,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 ### kumactl generate tls-certificate
@@ -357,6 +371,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 ### kumactl generate dataplane-token
@@ -392,6 +407,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 ## kumactl get
@@ -446,6 +462,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 
 Use "kumactl get [command] --help" for more information about a command.
 ```
@@ -467,6 +484,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -487,6 +505,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -507,6 +526,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -527,6 +547,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -547,6 +568,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -567,6 +589,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -587,6 +610,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -607,6 +631,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -627,6 +652,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -647,6 +673,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -665,6 +692,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -683,6 +711,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -703,6 +732,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -721,6 +751,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 
 ## kumactl inspect
@@ -745,6 +776,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 
 Use "kumactl inspect [command] --help" for more information about a command.
 ```
@@ -767,6 +799,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -785,6 +818,7 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
@@ -804,5 +838,6 @@ Global Flags:
       --config-file string   path to the configuration file to use
       --log-level string     log level: one of off|info|debug (default "off")
   -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
 ```
 

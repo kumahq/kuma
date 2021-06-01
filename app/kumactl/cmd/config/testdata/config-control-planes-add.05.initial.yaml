@@ -1,0 +1,25 @@
+contexts:
+- controlPlane: test1
+  defaults:
+    mesh: demo
+  name: test1
+- controlPlane: example
+  name: example
+controlPlanes:
+  - coordinates:
+      apiServer:
+        url: https://test1.internal:5681
+    name: test1
+  - coordinates:
+      apiServer:
+        addHeaders:
+          - key: abc
+            value: xyz
+          - key: def
+            value: pqr
+        caCertFile: /tmp/ca-cert.pem
+        clientCertFile: /tmp/client.cert.pem
+        clientKeyFile: /tmp/client.key.pem
+        url: https://test2.internal:5681
+    name: example
+currentContext: example

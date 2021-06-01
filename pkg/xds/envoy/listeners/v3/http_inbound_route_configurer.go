@@ -12,8 +12,7 @@ import (
 
 type HttpInboundRouteConfigurer struct {
 	Service string
-	// Cluster to forward traffic to.
-	Cluster envoy_common.ClusterSubset
+	Route   envoy_common.Route
 }
 
 func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -23,7 +22,7 @@ func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.Filte
 		Configure(envoy_routes.ResetTagsHeader()).
 		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder(envoy_common.APIV3).
 			Configure(envoy_routes.CommonVirtualHost(c.Service)).
-			Configure(envoy_routes.DefaultRoute(c.Cluster)))).
+			Configure(envoy_routes.Routes(envoy_common.Routes{c.Route})))).
 		Build()
 	if err != nil {
 		return err

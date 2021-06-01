@@ -71,9 +71,14 @@ else
 K8S_CLUSTER_TOOL=kind
 endif
 
+ifdef IPV6
+KIND_CONFIG_IPV6=-ipv6
+endif
+
 define gen-k8sclusters
 .PHONY: test/e2e/k8s/start/cluster/$1
 test/e2e/k8s/start/cluster/$1:
+	KIND_CONFIG=$(TOP)/test/kind/cluster$(KIND_CONFIG_IPV6)-$1.yaml \
 	KIND_CLUSTER_NAME=$1 \
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
 		$(MAKE) $(K8S_CLUSTER_TOOL)/start
@@ -105,7 +110,7 @@ test/e2e/test:
 		K8SCLUSTERS="$(K8SCLUSTERS)" \
 		KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 		$(ENV_VARS) \
-		$(GO_TEST) -v -timeout=45m $$t || exit; \
+		$(GO_TEST_E2E) -v -timeout=45m $$t || exit; \
 	done
 
 # test/e2e/debug is used for quicker feedback of E2E tests (ex. debugging flaky tests)
@@ -114,7 +119,7 @@ test/e2e/test:
 # GINKGO_EDITOR_INTEGRATION is required to work with focused test. Normally they exit with non 0 code which prevents clusters to be cleaned up.
 # We run ginkgo instead of "go test" to fail fast (builtin "go test" fail fast does not seem to work with individual ginkgo tests)
 .PHONY: test/e2e/debug
-test/e2e/debug: build/kumactl images docker/build/kuma-universal test/e2e/k8s/start
+test/e2e/debug: build/kumactl images test/e2e/k8s/start
 	K8SCLUSTERS="$(K8SCLUSTERS)" \
 	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
 	API_VERSION="$(API_VERSION)" \
@@ -122,8 +127,18 @@ test/e2e/debug: build/kumactl images docker/build/kuma-universal test/e2e/k8s/st
 		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
 	$(MAKE) test/e2e/k8s/stop
 
+# test/e2e/debug-universal is the same target as 'test/e2e/debug' but builds only 'kuma-universal' image
+# and doesn't start Kind clusters
+.PHONY: test/e2e/debug-universal
+test/e2e/debug-universal: build/kumactl images/test
+	K8SCLUSTERS="$(K8SCLUSTERS)" \
+	KUMACTLBIN=${BUILD_ARTIFACTS_DIR}/kumactl/kumactl \
+	API_VERSION="$(API_VERSION)" \
+	GINKGO_EDITOR_INTEGRATION=true \
+		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
+
 .PHONY: test/e2e
-test/e2e: build/kumactl images docker/build/kuma-universal test/e2e/k8s/start
+test/e2e: build/kumactl images test/e2e/k8s/start
 	$(MAKE) test/e2e/test || \
 	(ret=$$?; \
 	$(MAKE) test/e2e/k8s/stop && \

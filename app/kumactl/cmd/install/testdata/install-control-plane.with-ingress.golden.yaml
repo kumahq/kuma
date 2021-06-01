@@ -621,7 +621,7 @@ rules:
       - dataplanes/finalizers
     verbs:
       - "*"
-  # validate k8s token before issuing mTLS cert
+  # validate k8s token before issueing mTLS cert
   - apiGroups:
       - authentication.k8s.io
     resources:
@@ -887,6 +887,10 @@ spec:
         app: kuma-ingress
     spec:
       serviceAccountName: kuma-ingress
+      nodeSelector:
+      
+        kubernetes.io/arch: amd64
+        kubernetes.io/os: linux
       containers:
         - name: ingress
           image: "docker.io/kumahq/kuma-dp:0.0.1"

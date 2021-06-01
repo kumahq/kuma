@@ -33,7 +33,7 @@ var _ = Describe("Http Util", func() {
 				})
 
 				// when
-				client := util_http.ClientWithBaseURL(delegate, baseURL)
+				client := util_http.ClientWithBaseURL(delegate, baseURL, nil)
 				// then
 				Expect(client).ToNot(BeIdenticalTo(delegate))
 
@@ -90,7 +90,7 @@ var _ = Describe("Http Util", func() {
 			})
 
 			// when
-			client := util_http.ClientWithBaseURL(delegate, baseURL)
+			client := util_http.ClientWithBaseURL(delegate, baseURL, nil)
 			// then
 			Expect(client).ToNot(BeIdenticalTo(delegate))
 

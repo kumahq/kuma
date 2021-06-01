@@ -1,5 +1,5 @@
 resources:
-- name: es2
+- name: es2-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     commonHttpProtocolOptions:
@@ -7,14 +7,8 @@ resources:
     connectTimeout: 10s
     dnsLookupFamily: V4_ONLY
     http2ProtocolOptions: {}
-    lbSubsetConfig:
-      fallbackPolicy: ANY_ENDPOINT
-      subsetSelectors:
-      - fallbackPolicy: NO_FALLBACK
-        keys:
-        - kuma.io/protocol
     loadAssignment:
-      clusterName: es2
+      clusterName: es2-_0_
       endpoints:
       - lbEndpoints:
         - endpoint:
@@ -29,7 +23,7 @@ resources:
                 kuma.io/protocol: http2
               envoy.transport_socket_match:
                 kuma.io/protocol: http2
-    name: es2
+    name: es2-_0_
     type: STRICT_DNS
 - name: outbound:127.0.0.1:18082
   resource:
@@ -62,11 +56,7 @@ resources:
                   prefix: /
                 route:
                   autoHostRewrite: true
-                  cluster: es2
-                  metadataMatch:
-                    filterMetadata:
-                      envoy.lb:
-                        kuma.io/protocol: http2
+                  cluster: es2-_0_
                   timeout: 0s
           statPrefix: es2
     name: outbound:127.0.0.1:18082

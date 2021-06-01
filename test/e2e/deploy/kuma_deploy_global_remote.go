@@ -36,7 +36,7 @@ metadata:
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, remote ControlPlane
-	var optsGlobal, optsRemote []DeployOptionsFunc
+	var optsGlobal, optsRemote = KumaK8sDeployOpts, KumaRemoteK8sDeployOpts
 	var originalKumaNamespace = KumaNamespace
 
 	BeforeEach(func() {
@@ -59,10 +59,9 @@ metadata:
 		Expect(global).ToNot(BeNil())
 
 		c2 = clusters.GetCluster(Kuma2)
-		optsRemote = []DeployOptionsFunc{
+		optsRemote = append(optsRemote,
 			WithIngress(),
-			WithGlobalAddress(global.GetKDSServerAddress()),
-		}
+			WithGlobalAddress(global.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote...)).

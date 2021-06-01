@@ -2,6 +2,8 @@ package mux_test
 
 import (
 	"context"
+	"sync"
+	"time"
 
 	envoy_api_v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	. "github.com/onsi/ginkgo"
@@ -9,6 +11,7 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/kds/mux"
+	"github.com/kumahq/kuma/pkg/test"
 )
 
 type testMultiplexStream struct {
@@ -84,13 +87,17 @@ var _ = Describe("Multiplex Session", func() {
 		})
 
 		Context("Recv", func() {
-			It("should block while proper Send called", func(done Done) {
+			It("should block while proper Send called", test.Within(time.Second, func() {
+				wg := sync.WaitGroup{}
+				wg.Add(1)
+
 				go func() {
 					request, err := serverSession.ServerStream().Recv()
 					Expect(err).ToNot(HaveOccurred())
 					Expect(request.VersionInfo).To(Equal("1"))
-					close(done)
+					wg.Done()
 				}()
+
 				err := clientSession.ServerStream().Send(&envoy_api_v2.DiscoveryResponse{VersionInfo: "2"})
 				Expect(err).ToNot(HaveOccurred())
 				err = clientSession.ClientStream().Send(&envoy_api_v2.DiscoveryRequest{VersionInfo: "1"})
@@ -99,7 +106,9 @@ var _ = Describe("Multiplex Session", func() {
 				resp, err := serverSession.ClientStream().Recv()
 				Expect(err).ToNot(HaveOccurred())
 				Expect(resp.VersionInfo).To(Equal("2"))
-			}, 1)
+
+				wg.Wait()
+			}))
 		})
 	})
 })

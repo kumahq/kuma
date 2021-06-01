@@ -43,7 +43,7 @@ metadata:
 	}
 
 	var global, remote_1, remote_2, remote_3, remote_4 Cluster
-	var optsGlobal, optsRemote1, optsRemote2, optsRemote3, optsRemote4 []DeployOptionsFunc
+	var optsGlobal, optsRemote1, optsRemote2, optsRemote3, optsRemote4 = KumaUniversalDeployOpts, KumaRemoteK8sDeployOpts, KumaRemoteK8sDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
 	const nonDefaultMesh = "non-default"
 	const defaultMesh = "default"
@@ -61,7 +61,6 @@ metadata:
 
 		// Global
 		global = universalClusters.GetCluster(Kuma5)
-		optsGlobal = []DeployOptionsFunc{}
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
@@ -83,12 +82,11 @@ metadata:
 
 		// K8s Cluster 1
 		remote_1 = k8sClusters.GetCluster(Kuma1)
-		optsRemote1 = []DeployOptionsFunc{
+		optsRemote1 = append(optsRemote1,
 			WithIngress(),
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithCNI(),
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"),
-		}
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote1...)).
@@ -102,10 +100,9 @@ metadata:
 
 		// K8s Cluster 2
 		remote_2 = k8sClusters.GetCluster(Kuma2)
-		optsRemote2 = []DeployOptionsFunc{
+		optsRemote2 = append(optsRemote2,
 			WithIngress(),
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote2...)).
@@ -120,9 +117,8 @@ metadata:
 
 		// Universal Cluster 3
 		remote_3 = universalClusters.GetCluster(Kuma3)
-		optsRemote3 = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		optsRemote3 = append(optsRemote3,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote3...)).
@@ -136,9 +132,8 @@ metadata:
 
 		// Universal Cluster 4
 		remote_4 = universalClusters.GetCluster(Kuma4)
-		optsRemote4 = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		optsRemote4 = append(optsRemote4,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote4...)).

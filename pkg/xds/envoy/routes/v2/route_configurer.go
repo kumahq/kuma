@@ -5,14 +5,14 @@ import (
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 )
 
-type RoutesConfigurer struct {
+type RouteConfigurer struct {
 	MatchPath    string
 	NewPath      string
 	Cluster      string
 	AllowGetOnly bool
 }
 
-func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
+func (c RouteConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error {
 	var headersMatcher []*envoy_route.HeaderMatcher
 	if c.AllowGetOnly {
 		headersMatcher = []*envoy_route.HeaderMatcher{

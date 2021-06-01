@@ -29,8 +29,8 @@ type dummyCLACache struct {
 	outboundTargets model.EndpointMap
 }
 
-func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash, service string, version envoy_common.APIVersion) (proto.Message, error) {
-	return endpoints.CreateClusterLoadAssignment(service, d.outboundTargets[service]), nil
+func (d *dummyCLACache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, version envoy_common.APIVersion) (proto.Message, error) {
+	return endpoints.CreateClusterLoadAssignment(cluster.Service(), d.outboundTargets[cluster.Service()]), nil
 }
 
 var _ model.CLACache = &dummyCLACache{}
@@ -117,12 +117,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{
-										{
-											Weight:      100,
-											Destination: mesh_proto.MatchService("db"),
-										},
-									},
+									Destination: mesh_proto.MatchService("db"),
 								},
 							},
 						},
@@ -132,12 +127,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 						}: &mesh_core.TrafficRouteResource{
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
-									Split: []*mesh_proto.TrafficRoute_Split{
-										{
-											Weight:      100,
-											Destination: mesh_proto.MatchService("elastic"),
-										},
-									},
+									Destination: mesh_proto.MatchService("elastic"),
 								},
 							},
 						},

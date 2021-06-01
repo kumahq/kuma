@@ -27,6 +27,7 @@ ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-cp/kuma-cp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/coredns/coredns /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
+ADD $KUMA_ROOT/build/artifacts-linux-amd64/test-server/test-server /usr/bin
 
 # do not detach (-D), log to stderr (-e)
 CMD ["/usr/sbin/sshd", "-D", "-e"]

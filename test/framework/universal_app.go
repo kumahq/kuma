@@ -53,9 +53,10 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/service: %s
       kuma.io/protocol: %s
       team: server-owners
+      version: %s
 `
 
 	EchoServerDataplaneWithServiceProbe = `
@@ -70,9 +71,10 @@ networking:
     serviceProbe:
       tcp: {}
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
+      kuma.io/service: %s
       kuma.io/protocol: %s
       team: server-owners
+      version: %s
 `
 
 	EchoServerDataplaneTransparentProxy = `
@@ -85,9 +87,10 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: echo-server_kuma-test_svc_%s
-      kuma.io/protocol: http
+      kuma.io/service: %s
+      kuma.io/protocol: %s
       team: server-owners
+      version: %s
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s

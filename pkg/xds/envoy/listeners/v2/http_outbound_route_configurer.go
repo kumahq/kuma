@@ -13,7 +13,7 @@ import (
 
 type HttpOutboundRouteConfigurer struct {
 	Service string
-	Subsets []envoy_common.ClusterSubset
+	Routes  envoy_common.Routes
 	DpTags  mesh_proto.MultiValueTagSet
 }
 
@@ -23,7 +23,7 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 		Configure(envoy_routes.TagsHeader(c.DpTags)).
 		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder(envoy_common.APIV2).
 			Configure(envoy_routes.CommonVirtualHost(c.Service)).
-			Configure(envoy_routes.DefaultRoute(c.Subsets...)))).
+			Configure(envoy_routes.Routes(c.Routes)))).
 		Build()
 	if err != nil {
 		return err

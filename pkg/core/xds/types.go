@@ -94,7 +94,7 @@ type FaultInjectionMap map[mesh_proto.InboundInterface]*mesh_proto.FaultInjectio
 type TrafficPermissionMap map[mesh_proto.InboundInterface]*mesh_core.TrafficPermissionResource
 
 type CLACache interface {
-	GetCLA(ctx context.Context, meshName, meshHash, service string, apiVersion envoy_common.APIVersion) (proto.Message, error)
+	GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error)
 }
 
 // SocketAddressProtocol is the L4 protocol the listener should bind to
@@ -175,6 +175,21 @@ func (e Endpoint) LocalityString() string {
 
 func (e Endpoint) HasLocality() bool {
 	return e.Locality != nil
+}
+
+// ContainsTags returns 'true' if for every key presented both in 'tags' and 'Endpoint#Tags'
+// values are equal
+func (e Endpoint) ContainsTags(tags map[string]string) bool {
+	for otherKey, otherValue := range tags {
+		endpointValue, ok := e.Tags[otherKey]
+		if !ok {
+			continue
+		}
+		if otherValue != endpointValue {
+			return false
+		}
+	}
+	return true
 }
 
 func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {

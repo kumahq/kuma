@@ -169,10 +169,15 @@ var _ = Describe("SDS Server", func() {
 	})
 
 	BeforeEach(func() {
+		// make sure no insight is present
 		err := resManager.Delete(context.Background(), mesh_core.NewDataplaneInsightResource(), core_store.DeleteByKey("backend-01", "default"))
 		if !core_store.IsResourceNotFound(err) {
 			Expect(err).ToNot(HaveOccurred())
 		}
+		// and no watchdog is running
+		Eventually(func() float64 {
+			return test_metrics.FindMetric(metrics, "sds_watchdogs").GetGauge().GetValue()
+		}, "30s").Should(Equal(0.0))
 	})
 
 	newRequestForSecrets := func() envoy_api.DiscoveryRequest {
@@ -185,7 +190,7 @@ var _ = Describe("SDS Server", func() {
 		}
 	}
 
-	It("should return CA and Identity cert when DP is authorized", func(done Done) {
+	It("should return CA and Identity cert when DP is authorized", test.Within(time.Minute, func() {
 		// given
 		ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", dpCredential)
 		stream, err := client.StreamSecrets(ctx)
@@ -231,16 +236,17 @@ var _ = Describe("SDS Server", func() {
 		Eventually(func() *prometheus_client.Metric {
 			return test_metrics.FindMetric(metrics, "sds_generation")
 		}, "5s").ShouldNot(BeNil())
-
-		close(done)
-	}, 60)
+		Eventually(func() float64 {
+			return test_metrics.FindMetric(metrics, "sds_watchdogs").GetGauge().GetValue()
+		}, "5s").Should(Equal(1.0))
+	}))
 
 	Context("should return new pair of + key", func() { // we cannot use DescribeTable because it does not support timeouts
 
 		var firstExchangeResponse *envoy_api.DiscoveryResponse
 		var stream envoy_discovery.SecretDiscoveryService_StreamSecretsClient
 
-		BeforeEach(func(done Done) {
+		BeforeEach(test.Within(time.Minute, func() {
 			// given
 			ctx := metadata.AppendToOutgoingContext(context.Background(), "authorization", dpCredential)
 			s, err := client.StreamSecrets(ctx)
@@ -258,14 +264,18 @@ var _ = Describe("SDS Server", func() {
 			Expect(resp).ToNot(BeNil())
 			Expect(resp.Resources).To(HaveLen(2))
 			firstExchangeResponse = resp
-			close(done)
-		}, 60)
+
+			// and wait for the insight
+			Eventually(func() error {
+				return resManager.Get(context.Background(), mesh_core.NewDataplaneInsightResource(), core_store.GetByKey("backend-01", "default"))
+			}, "30s", "1s").ShouldNot(HaveOccurred())
+		}))
 
 		AfterEach(func() {
 			Expect(stream.CloseSend()).To(Succeed())
 		})
 
-		It("should return pair when CA is changed", func(done Done) {
+		It("should return pair when CA is changed", test.Within(time.Minute, func() {
 			// when
 			meshRes := mesh_core.NewMeshResource()
 			Expect(resManager.Get(context.Background(), meshRes, core_store.GetByKey(model.DefaultMesh, model.NoMesh))).To(Succeed())
@@ -299,11 +309,9 @@ var _ = Describe("SDS Server", func() {
 				}
 				return nil
 			}, "30s", "1s").ShouldNot(HaveOccurred())
+		}))
 
-			close(done)
-		}, 60)
-
-		It("should return a new pair when cert expired", func(done Done) {
+		It("should return a new pair when cert expired", test.Within(time.Minute, func() {
 			// when time is moved 1s after 4/5 of 60s cert expiration
 			shiftedTime := now.Load().(time.Time).Add(49 * time.Second)
 			now.Store(shiftedTime)
@@ -320,11 +328,9 @@ var _ = Describe("SDS Server", func() {
 			// then certs are different
 			Expect(resp).ToNot(BeNil())
 			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
+		}))
 
-			close(done)
-		}, 60)
-
-		It("should return a new pair when dataplane has changed", func(done Done) {
+		It("should return a new pair when dataplane has changed", test.Within(time.Minute, func() {
 			// when
 			dpRes := mesh_core.NewDataplaneResource()
 			Expect(resManager.Get(context.Background(), dpRes, core_store.GetByKey("backend-01", "default"))).To(Succeed())
@@ -345,12 +351,10 @@ var _ = Describe("SDS Server", func() {
 			// then certs are different
 			Expect(resp).ToNot(BeNil())
 			Expect(firstExchangeResponse.Resources).ToNot(Equal(resp.Resources))
-
-			close(done)
-		}, 60)
+		}))
 	})
 
-	It("should not return certs when DP is not authorized", func(done Done) {
+	It("should not return certs when DP is not authorized", test.Within(time.Minute, func() {
 		// given
 		stream, err := client.StreamSecrets(context.Background())
 		defer func() {
@@ -368,7 +372,5 @@ var _ = Describe("SDS Server", func() {
 
 		// then
 		Expect(err).To(MatchError("rpc error: code = Unknown desc = authentication failed: could not parse token: token contains an invalid number of segments"))
-
-		close(done)
-	}, 60)
+	}))
 })
