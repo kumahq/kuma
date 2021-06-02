@@ -43,7 +43,7 @@ type TrafficRoute struct {
 	// the destination is a service that could be either within or outside
 	// of a mesh.
 	Destinations []*Selector `protobuf:"bytes,2,rep,name=destinations,proto3" json:"destinations,omitempty"`
-	// Configuration for the route
+	// Configuration for the route.
 	Conf *TrafficRoute_Conf `protobuf:"bytes,3,opt,name=conf,proto3" json:"conf,omitempty"`
 }
 
@@ -109,7 +109,7 @@ type TrafficRoute_Split struct {
 	// Weight assigned to that destination.
 	// Weights are not percentages. For example two destinations with
 	// weights the same weight "1" will receive both same amount of the traffic.
-	// 0 means that the destination will be ignored
+	// 0 means that the destination will be ignored.
 	Weight *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=weight,proto3" json:"weight,omitempty"`
 	// Selector to match individual endpoints that comprise that destination.
 	//
@@ -165,7 +165,7 @@ func (x *TrafficRoute_Split) GetDestination() map[string]string {
 	return nil
 }
 
-// LoadBalancer defines the load balancing policy and configuration
+// LoadBalancer defines the load balancing policy and configuration.
 type TrafficRoute_LoadBalancer struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -288,7 +288,7 @@ func (*TrafficRoute_LoadBalancer_Random_) isTrafficRoute_LoadBalancer_LbType() {
 
 func (*TrafficRoute_LoadBalancer_Maglev_) isTrafficRoute_LoadBalancer_LbType() {}
 
-// Conf defines the destination configuration
+// Conf defines the destination configuration.
 type TrafficRoute_Conf struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -368,14 +368,14 @@ func (x *TrafficRoute_Conf) GetHttp() []*TrafficRoute_Http {
 	return nil
 }
 
-// Http defines configuration for HTTP traffic
+// Http defines configuration for HTTP traffic.
 type TrafficRoute_Http struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	// If request matches against defined criteria then "split" or "destination"
-	// is executed
+	// is executed.
 	Match *TrafficRoute_Http_Match `protobuf:"bytes,1,opt,name=match,proto3" json:"match,omitempty"`
 	// Modifications to the traffic matched by the match section.
 	Modify *TrafficRoute_Http_Modify `protobuf:"bytes,2,opt,name=modify,proto3" json:"modify,omitempty"`
@@ -448,7 +448,7 @@ func (x *TrafficRoute_Http) GetDestination() map[string]string {
 }
 
 // RoundRobin is a simple policy in which each available upstream host is
-// selected in round robin order
+// selected in round robin order.
 type TrafficRoute_LoadBalancer_RoundRobin struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -488,7 +488,7 @@ func (*TrafficRoute_LoadBalancer_RoundRobin) Descriptor() ([]byte, []int) {
 }
 
 // LeastRequest uses different algorithms depending on whether hosts have
-// the same or different weights
+// the same or different weights.
 type TrafficRoute_LoadBalancer_LeastRequest struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -539,16 +539,16 @@ func (x *TrafficRoute_LoadBalancer_LeastRequest) GetChoiceCount() uint32 {
 	return 0
 }
 
-// RingHash implements consistent hashing to upstream hosts
+// RingHash implements consistent hashing to upstream hosts.
 type TrafficRoute_LoadBalancer_RingHash struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
 	// The hash function used to hash hosts onto the ketama ring. The value
-	// defaults to 'XX_HASH'
+	// defaults to 'XX_HASH'.
 	HashFunction string `protobuf:"bytes,1,opt,name=hash_function,json=hashFunction,proto3" json:"hash_function,omitempty"`
-	// Minimum hash ring size
+	// Minimum hash ring size.
 	MinRingSize uint64 `protobuf:"varint,2,opt,name=min_ring_size,json=minRingSize,proto3" json:"min_ring_size,omitempty"`
 	// Maximum hash ring size.
 	MaxRingSize uint64 `protobuf:"varint,3,opt,name=max_ring_size,json=maxRingSize,proto3" json:"max_ring_size,omitempty"`
@@ -607,7 +607,7 @@ func (x *TrafficRoute_LoadBalancer_RingHash) GetMaxRingSize() uint64 {
 	return 0
 }
 
-// Random selects a random available host
+// Random selects a random available host.
 type TrafficRoute_LoadBalancer_Random struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -646,7 +646,7 @@ func (*TrafficRoute_LoadBalancer_Random) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_traffic_route_proto_rawDescGZIP(), []int{0, 1, 3}
 }
 
-// Maglev implements consistent hashing to upstream hosts
+// Maglev implements consistent hashing to upstream hosts.
 type TrafficRoute_LoadBalancer_Maglev struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -686,17 +686,17 @@ func (*TrafficRoute_LoadBalancer_Maglev) Descriptor() ([]byte, []int) {
 }
 
 // Match defines a series of matching criteria to apply modification and
-// reroute the traffic
+// reroute the traffic.
 type TrafficRoute_Http_Match struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Method matches method of HTTP request
+	// Method matches method of HTTP request.
 	Method *TrafficRoute_Http_Match_StringMatcher `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
-	// Path matches HTTP path
+	// Path matches HTTP path.
 	Path *TrafficRoute_Http_Match_StringMatcher `protobuf:"bytes,2,opt,name=path,proto3" json:"path,omitempty"`
-	// Headers match HTTP request headers
+	// Headers match HTTP request headers.
 	Headers map[string]*TrafficRoute_Http_Match_StringMatcher `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -753,17 +753,17 @@ func (x *TrafficRoute_Http_Match) GetHeaders() map[string]*TrafficRoute_Http_Mat
 	return nil
 }
 
-// Modify defines modifications of matched HTTP messages
+// Modify defines modifications of matched HTTP messages.
 type TrafficRoute_Http_Modify struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Path modifications
+	// Path modifications.
 	Path *TrafficRoute_Http_Modify_Path `protobuf:"bytes,1,opt,name=path,proto3" json:"path,omitempty"`
-	// Host modifications
+	// Host modifications.
 	Host *TrafficRoute_Http_Modify_Host `protobuf:"bytes,2,opt,name=host,proto3" json:"host,omitempty"`
-	// Request headers modifications
+	// Request headers modifications.
 	RequestHeaders *TrafficRoute_Http_Modify_Headers `protobuf:"bytes,3,opt,name=requestHeaders,proto3" json:"requestHeaders,omitempty"`
 	// Response headers modifications.
 	ResponseHeaders *TrafficRoute_Http_Modify_Headers `protobuf:"bytes,4,opt,name=responseHeaders,proto3" json:"responseHeaders,omitempty"`
@@ -829,7 +829,7 @@ func (x *TrafficRoute_Http_Modify) GetResponseHeaders() *TrafficRoute_Http_Modif
 	return nil
 }
 
-// StringMatcher matches the string value
+// StringMatcher matches the string value.
 type TrafficRoute_Http_Match_StringMatcher struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -917,7 +917,7 @@ type TrafficRoute_Http_Match_StringMatcher_Exact struct {
 }
 
 type TrafficRoute_Http_Match_StringMatcher_Regex struct {
-	// Regex checks the string using RE2 syntax
+	// Regex checks the string using RE2 syntax.
 	// https://github.com/google/re2/wiki/Syntax
 	Regex string `protobuf:"bytes,3,opt,name=regex,proto3,oneof"`
 }
@@ -931,15 +931,18 @@ func (*TrafficRoute_Http_Match_StringMatcher_Exact) isTrafficRoute_Http_Match_St
 func (*TrafficRoute_Http_Match_StringMatcher_Regex) isTrafficRoute_Http_Match_StringMatcher_MatcherType() {
 }
 
-// RegexReplace defines a way to match string using regex and build a new one using subsitution section
+// RegexReplace defines a way to match string using regex and build a new
+// one using substitution section.
 type TrafficRoute_Http_Modify_RegexReplace struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Pattern of the regex using RE2 syntax https://github.com/google/re2/wiki/Syntax
+	// Pattern of the regex using RE2 syntax.
+	// https://github.com/google/re2/wiki/Syntax
 	Pattern string `protobuf:"bytes,1,opt,name=pattern,proto3" json:"pattern,omitempty"`
-	// Substitution using regex groups. E.g. use \\1 as a first matched group
+	// Substitution using regex groups. E.g. use \\1 as a first matched
+	// group.
 	Substitution string `protobuf:"bytes,2,opt,name=substitution,proto3" json:"substitution,omitempty"`
 }
 
@@ -989,7 +992,7 @@ func (x *TrafficRoute_Http_Modify_RegexReplace) GetSubstitution() string {
 	return ""
 }
 
-// Path defines modification of path of the HTTP request
+// Path defines modification of path of the HTTP request.
 type TrafficRoute_Http_Modify_Path struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -1059,12 +1062,12 @@ type isTrafficRoute_Http_Modify_Path_Type interface {
 }
 
 type TrafficRoute_Http_Modify_Path_RewritePrefix struct {
-	// rewritePrefix rewrites previously matched prefix in match section
+	// RewritePrefix rewrites previously matched prefix in match section.
 	RewritePrefix string `protobuf:"bytes,1,opt,name=rewritePrefix,proto3,oneof"`
 }
 
 type TrafficRoute_Http_Modify_Path_Regex struct {
-	// regex rewrites prefix using regex with substitution
+	// Regex rewrites prefix using regex with substitution.
 	Regex *TrafficRoute_Http_Modify_RegexReplace `protobuf:"bytes,2,opt,name=regex,proto3,oneof"`
 }
 
@@ -1142,12 +1145,12 @@ type isTrafficRoute_Http_Modify_Host_Type interface {
 }
 
 type TrafficRoute_Http_Modify_Host_Value struct {
-	// value replaces the host header with given value
+	// Value replaces the host header with given value.
 	Value string `protobuf:"bytes,1,opt,name=value,proto3,oneof"`
 }
 
 type TrafficRoute_Http_Modify_Host_FromPath struct {
-	// fromPath replaces the host header from path using regex
+	// FromPath replaces the host header from path using regex.
 	FromPath *TrafficRoute_Http_Modify_RegexReplace `protobuf:"bytes,2,opt,name=fromPath,proto3,oneof"`
 }
 
@@ -1155,15 +1158,15 @@ func (*TrafficRoute_Http_Modify_Host_Value) isTrafficRoute_Http_Modify_Host_Type
 
 func (*TrafficRoute_Http_Modify_Host_FromPath) isTrafficRoute_Http_Modify_Host_Type() {}
 
-// Headers defines modification of HTTP headers
+// Headers defines modification of HTTP headers.
 type TrafficRoute_Http_Modify_Headers struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// List of add header operations
+	// List of add header operations.
 	Add []*TrafficRoute_Http_Modify_Headers_Add `protobuf:"bytes,1,rep,name=add,proto3" json:"add,omitempty"`
-	// List of remove header operations
+	// List of remove header operations.
 	Remove []*TrafficRoute_Http_Modify_Headers_Remove `protobuf:"bytes,2,rep,name=remove,proto3" json:"remove,omitempty"`
 }
 
@@ -1213,17 +1216,17 @@ func (x *TrafficRoute_Http_Modify_Headers) GetRemove() []*TrafficRoute_Http_Modi
 	return nil
 }
 
-// Add defines operation of adding new HTTP header
+// Add defines operation of adding new HTTP header.
 type TrafficRoute_Http_Modify_Headers_Add struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Name of the header
+	// Name of the header.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Value of the header
+	// Value of the header.
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
-	// If true, it appends the value if there is already a value
+	// If true, it appends the value if there is already a value.
 	Append bool `protobuf:"varint,3,opt,name=append,proto3" json:"append,omitempty"`
 }
 
@@ -1280,13 +1283,13 @@ func (x *TrafficRoute_Http_Modify_Headers_Add) GetAppend() bool {
 	return false
 }
 
-// Remove defines operation of removing an HTTP header
+// Remove defines operation of removing an HTTP header.
 type TrafficRoute_Http_Modify_Headers_Remove struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Name of the header to remove
+	// Name of the header to remove.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 }
 
