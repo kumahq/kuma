@@ -47,7 +47,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 				},
 			}
 
-			for _, k := range maps.SortedKeys(args.headers) {
+			for _, k := range maps.SortedKeys(args.headers) { // sort for stable test outputs
 				header := &config_proto.ControlPlaneCoordinates_Headers{
 					Key:   k,
 					Value: args.headers[k],
