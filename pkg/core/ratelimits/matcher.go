@@ -2,6 +2,7 @@ package ratelimits
 
 import (
 	"context"
+
 	"github.com/pkg/errors"
 
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -12,11 +13,11 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 )
 
-type RateLimitsMatcher struct {
+type RateLimitMatcher struct {
 	ResourceManager manager.ReadOnlyResourceManager
 }
 
-func (m *RateLimitsMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (core_xds.RateLimitMap, error) {
+func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (core_xds.RateLimitMap, error) {
 	permissions := &mesh_core.RateLimitResourceList{}
 	if err := m.ResourceManager.List(ctx, permissions, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve traffic permissions")
@@ -49,7 +50,7 @@ func BuildRateLimitMap(
 	return result, nil
 }
 
-func (m *RateLimitsMatcher) MatchExternalServices(ctx context.Context, dataplane *mesh_core.DataplaneResource, externalServices *mesh_core.ExternalServiceResourceList) ([]*mesh_core.ExternalServiceResource, error) {
+func (m *RateLimitMatcher) MatchExternalServices(ctx context.Context, dataplane *mesh_core.DataplaneResource, externalServices *mesh_core.ExternalServiceResourceList) ([]*mesh_core.ExternalServiceResource, error) {
 	permissions := &mesh_core.RateLimitResourceList{}
 	if err := m.ResourceManager.List(ctx, permissions, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve traffic permissions")
@@ -78,7 +79,7 @@ func (m *RateLimitsMatcher) MatchExternalServices(ctx context.Context, dataplane
 
 type ExternalServicePermissions map[string]*mesh_core.RateLimitResource
 
-func (m *RateLimitsMatcher) BuildExternalServicesPermissionsMap(externalServices *mesh_core.ExternalServiceResourceList, rateLimits []*mesh_core.RateLimitResource) ExternalServicePermissions {
+func (m *RateLimitMatcher) BuildExternalServicesPermissionsMap(externalServices *mesh_core.ExternalServiceResourceList, rateLimits []*mesh_core.RateLimitResource) ExternalServicePermissions {
 	policies := make([]policy.ConnectionPolicy, len(rateLimits))
 	for i, permission := range rateLimits {
 		policies[i] = permission

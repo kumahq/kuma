@@ -33,7 +33,7 @@ type DataplaneProxyBuilder struct {
 	PermissionMatcher     permissions.TrafficPermissionsMatcher
 	LogsMatcher           logs.TrafficLogsMatcher
 	FaultInjectionMatcher faultinjections.FaultInjectionMatcher
-	RateLimitMatcher      ratelimits.RateLimitsMatcher
+	RateLimitMatcher      ratelimits.RateLimitMatcher
 
 	Zone       string
 	apiVersion envoy.APIVersion
@@ -179,7 +179,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		FaultInjections:    faultInjection,
 		Retries:            retries,
 		Timeouts:           timeouts,
-		RateLimits:          ratelimits,
+		RateLimits:         ratelimits,
 	}
 	return matchedPolicies, nil
 }

@@ -2,37 +2,85 @@ package ratelimits_test
 
 import (
 	"context"
+	"time"
 
+	"github.com/golang/protobuf/ptypes/duration"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core/ratelimits"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	. "github.com/kumahq/kuma/pkg/core/ratelimits"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_manager "github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 	"github.com/kumahq/kuma/pkg/test/resources/model"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 var _ = Describe("Match", func() {
+	dataplaneWithInboundsFunc := func(inbounds []*mesh_proto.Dataplane_Networking_Inbound) *mesh.DataplaneResource {
+		return &mesh.DataplaneResource{
+			Meta: &model.ResourceMeta{
+				Mesh: "default",
+				Name: "dp1",
+			},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Inbound: inbounds,
+				},
+			},
+		}
+	}
+
+	policyWithDestinationsFunc := func(name string, creationTime time.Time, destinations []*mesh_proto.Selector) *mesh.RateLimitResource {
+		return &mesh.RateLimitResource{
+			Meta: &model.ResourceMeta{
+				Name:         name,
+				CreationTime: creationTime,
+			},
+			Spec: &mesh_proto.RateLimit{
+				Sources: []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service":          "*",
+							"kuma.io/protocol": "http",
+						},
+					},
+				},
+				Destinations: destinations,
+				Conf: &mesh_proto.RateLimit_Conf{
+					Http: &mesh_proto.RateLimit_Conf_Http{
+						Connections: &wrappers.UInt32Value{
+							Value: 100,
+						},
+						Interval: &duration.Duration{
+							Seconds: 3,
+						},
+					},
+				},
+			},
+		}
+	}
 
 	type testCase struct {
-		dataplane *core_mesh.DataplaneResource
-		mesh      *core_mesh.MeshResource
-		policies  []*core_mesh.RateLimitResource
-		expected  map[mesh_proto.InboundInterface]string
+		dataplane *mesh.DataplaneResource
+		policies  []*mesh.RateLimitResource
+		expected  core_xds.RateLimitMap
 	}
 
 	DescribeTable("should find best matched policy",
 		func(given testCase) {
 			manager := core_manager.NewResourceManager(memory.NewStore())
-			matcher := ratelimits.RateLimitsMatcher{ResourceManager: manager}
+			matcher := RateLimitMatcher{ResourceManager: manager}
 
-			err := manager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
+			mesh := mesh.NewMeshResource()
+			err := manager.Create(context.Background(), mesh, store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 
 			for _, p := range given.policies {
@@ -40,353 +88,100 @@ var _ = Describe("Match", func() {
 				Expect(err).ToNot(HaveOccurred())
 			}
 
-			bestMatched, err := matcher.Match(context.Background(), given.dataplane, given.mesh)
+			bestMatched, err := matcher.Match(context.Background(), given.dataplane, mesh)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(bestMatched).To(HaveLen(len(given.expected)))
-			for iface, policy := range bestMatched {
-				Expect(given.expected[iface]).To(Equal(policy.GetMeta().GetName()))
+			Expect(len(bestMatched)).To(Equal(len(given.expected)))
+			for key := range bestMatched {
+				Expect(bestMatched[key]).To(MatchProto(given.expected[key]))
 			}
 		},
-		Entry("2 inbounds dataplane with additional service, 2 policies", testCase{
-			mesh: &core_mesh.MeshResource{
-				Meta: &model.ResourceMeta{
-					Name: "default",
-				},
-				Spec: &mesh_proto.Mesh{
-					Metrics: &mesh_proto.Metrics{
-						EnabledBackend: "prometheus-1",
-						Backends: []*mesh_proto.MetricsBackend{
-							{
-								Name: "prometheus-1",
-								Type: mesh_proto.MetricsPrometheusType,
-								Conf: util_proto.MustToStruct(&mesh_proto.PrometheusMetricsBackendConfig{
-									Port: 1234,
-									Path: "/non-standard-path",
-									Tags: map[string]string{
-										"kuma.io/service": "dataplane-metrics",
-									},
-								}),
-							},
-						},
-					},
-				},
-			},
-			dataplane: &core_mesh.DataplaneResource{
-				Meta: &model.ResourceMeta{
-					Mesh: "default",
-					Name: "dp1",
-				},
-				Spec: &mesh_proto.Dataplane{
-					Networking: &mesh_proto.Dataplane_Networking{
-						Address: "192.168.0.1",
-						Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-							{
-								Port:        8080,
-								ServicePort: 8081,
-								Tags: map[string]string{
-									"kuma.io/service":  "web",
-									"version":          "0.1",
-									"region":           "eu",
-									"kuma.io/protocol": "http",
-								},
-							},
-							{
-								Port:        8081,
-								ServicePort: 8082,
-								Tags: map[string]string{
-									"kuma.io/service":  "web-api",
-									"version":          "0.1.2",
-									"region":           "us",
-									"kuma.io/protocol": "http",
-								},
-							},
-						},
-					},
-				},
-			},
-			policies: []*core_mesh.RateLimitResource{
+		Entry("1 inbound dataplane, 2 policies", testCase{
+			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
 				{
-					Meta: &model.ResourceMeta{
-						Mesh: "default",
-						Name: "more-specific-kong-to-web",
+					ServicePort: 8080,
+					Tags: map[string]string{
+						"service":          "web",
+						"version":          "0.1",
+						"region":           "eu",
+						"kuma.io/protocol": "http",
 					},
-					Spec: &mesh_proto.RateLimit{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service": "kong",
-								},
-							},
+				},
+			}),
+			policies: []*mesh.RateLimitResource{
+				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"region":           "us",
+							"kuma.io/protocol": "http",
 						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service": "web",
-									"version":         "0.1",
-								},
-							},
+					},
+				}),
+				policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service":          "*",
+							"kuma.io/protocol": "http",
 						},
+					},
+				}),
+			},
+			expected: core_xds.RateLimitMap{
+				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
+					WorkloadPort: 8080,
+				}: policyWithDestinationsFunc("fi2", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service":          "*",
+							"kuma.io/protocol": "http",
+						},
+					},
+				}).Spec,
+			}}),
+		Entry("should apply policy only to the first inbound", testCase{
+			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
+				{
+					ServicePort: 8080,
+					Tags: map[string]string{
+						"service":          "web",
+						"version":          "0.1",
+						"region":           "eu",
+						"kuma.io/protocol": "http",
 					},
 				},
 				{
-					Meta: &model.ResourceMeta{
-						Mesh: "default",
-						Name: "less-specific-kong-to-web",
-					},
-					Spec: &mesh_proto.RateLimit{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service": "kong",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service": "web",
-								},
-							},
-						},
+					ServicePort: 8081,
+					Tags: map[string]string{
+						"service":          "web-api",
+						"version":          "0.1.2",
+						"region":           "us",
+						"kuma.io/protocol": "http",
 					},
 				},
-				{
-					Meta: &model.ResourceMeta{
-						Mesh: "default",
-						Name: "metrics",
-					},
-					Spec: &mesh_proto.RateLimit{
-						Sources: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service": "prometheus",
-								},
-							},
-						},
-						Destinations: []*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service": "dataplane-metrics",
-								},
-							},
+			}),
+			policies: []*mesh.RateLimitResource{
+				policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service":          "web-api",
+							"kuma.io/protocol": "http",
 						},
 					},
-				},
+				}),
 			},
-			expected: map[mesh_proto.InboundInterface]string{
-				mesh_proto.InboundInterface{DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 8081, DataplanePort: 8080}: "more-specific-kong-to-web",
-				mesh_proto.InboundInterface{DataplaneIP: "192.168.0.1", WorkloadIP: "127.0.0.1", WorkloadPort: 1234, DataplanePort: 1234}: "metrics",
+			expected: core_xds.RateLimitMap{
+				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
+					WorkloadPort: 8081,
+				}: policyWithDestinationsFunc("fi1", time.Unix(1, 0), []*mesh_proto.Selector{
+					{
+						Match: map[string]string{
+							"service":          "web-api",
+							"kuma.io/protocol": "http",
+						},
+					},
+				}).Spec,
 			},
 		}),
 	)
-
-	Context("MatchExternalServices", func() {
-		type testCase struct {
-			dataplane        *core_mesh.DataplaneResource
-			policies         []*core_mesh.RateLimitResource
-			externalServices []*core_mesh.ExternalServiceResource
-			expected         map[string]bool
-		}
-
-		DescribeTable("should find the policy",
-			func(given testCase) {
-				manager := core_manager.NewResourceManager(memory.NewStore())
-				matcher := ratelimits.RateLimitsMatcher{ResourceManager: manager}
-
-				err := manager.Create(context.Background(), core_mesh.NewMeshResource(), store.CreateByKey(core_model.DefaultMesh, core_model.NoMesh))
-				Expect(err).ToNot(HaveOccurred())
-
-				for _, p := range given.policies {
-					err := manager.Create(context.Background(), p, store.CreateByKey(p.Meta.GetName(), "default"))
-					Expect(err).ToNot(HaveOccurred())
-				}
-
-				es := &core_mesh.ExternalServiceResourceList{
-					Items: given.externalServices,
-				}
-				matchedEs, err := matcher.MatchExternalServices(context.Background(), given.dataplane, es)
-				Expect(err).ToNot(HaveOccurred())
-
-				Expect(given.expected).To(HaveLen(len(matchedEs)))
-				for _, externalService := range matchedEs {
-					Expect(given.expected[externalService.GetMeta().GetName()]).To(BeTrue())
-				}
-			},
-			Entry("should match external services that matches traffic permission", testCase{
-				dataplane: &core_mesh.DataplaneResource{
-					Meta: &model.ResourceMeta{
-						Mesh: "default",
-						Name: "dp1",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Address: "192.168.0.1",
-							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{
-									Port:        8080,
-									ServicePort: 8081,
-									Tags: map[string]string{
-										"kuma.io/service": "web",
-									},
-								},
-							},
-							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{
-									Port: 8080,
-									Tags: map[string]string{
-										"kuma.io/service": "httpbin",
-									},
-								},
-							},
-						},
-					},
-				},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &model.ResourceMeta{
-							Mesh: "default",
-							Name: "httpbin",
-						},
-						Spec: &mesh_proto.ExternalService{
-							Tags: map[string]string{
-								"kuma.io/service": "httpbin",
-							},
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "httpbin.org",
-							},
-						},
-					},
-					{ // this won't be matched since there is no traffic permission for it
-						Meta: &model.ResourceMeta{
-							Mesh: "default",
-							Name: "google",
-						},
-						Spec: &mesh_proto.ExternalService{
-							Tags: map[string]string{
-								"kuma.io/service": "google",
-							},
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "google.com",
-							},
-						},
-					},
-				},
-				policies: []*core_mesh.RateLimitResource{
-					{
-						Meta: &model.ResourceMeta{
-							Mesh: "default",
-							Name: "web-to-httpbin",
-						},
-						Spec: &mesh_proto.RateLimit{
-							Sources: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "web",
-									},
-								},
-							},
-							Destinations: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "httpbin",
-									},
-								},
-							},
-						},
-					},
-				},
-				expected: map[string]bool{
-					"httpbin": true,
-				},
-			}),
-			Entry("should match all external services because of the traffic permission that matches all", testCase{
-				dataplane: &core_mesh.DataplaneResource{
-					Meta: &model.ResourceMeta{
-						Mesh: "default",
-						Name: "dp1",
-					},
-					Spec: &mesh_proto.Dataplane{
-						Networking: &mesh_proto.Dataplane_Networking{
-							Address: "192.168.0.1",
-							Inbound: []*mesh_proto.Dataplane_Networking_Inbound{
-								{
-									Port:        8080,
-									ServicePort: 8081,
-									Tags: map[string]string{
-										"kuma.io/service": "web",
-									},
-								},
-							},
-							Outbound: []*mesh_proto.Dataplane_Networking_Outbound{
-								{
-									Port: 8080,
-									Tags: map[string]string{
-										"kuma.io/service": "httpbin",
-									},
-								},
-							},
-						},
-					},
-				},
-				externalServices: []*core_mesh.ExternalServiceResource{
-					{
-						Meta: &model.ResourceMeta{
-							Mesh: "default",
-							Name: "httpbin",
-						},
-						Spec: &mesh_proto.ExternalService{
-							Tags: map[string]string{
-								"kuma.io/service": "httpbin",
-							},
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "httpbin.org",
-							},
-						},
-					},
-					{ // this won't be matched since there is no traffic permission for it
-						Meta: &model.ResourceMeta{
-							Mesh: "default",
-							Name: "google",
-						},
-						Spec: &mesh_proto.ExternalService{
-							Tags: map[string]string{
-								"kuma.io/service": "google",
-							},
-							Networking: &mesh_proto.ExternalService_Networking{
-								Address: "google.com",
-							},
-						},
-					},
-				},
-				policies: []*core_mesh.RateLimitResource{
-					{
-						Meta: &model.ResourceMeta{
-							Mesh: "default",
-							Name: "all",
-						},
-						Spec: &mesh_proto.RateLimit{
-							Sources: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "*",
-									},
-								},
-							},
-							Destinations: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "*",
-									},
-								},
-							},
-						},
-					},
-				},
-				expected: map[string]bool{
-					"httpbin": true,
-					"google":  true,
-				},
-			}),
-		)
-	})
 })

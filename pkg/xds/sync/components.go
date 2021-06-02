@@ -27,7 +27,7 @@ func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker Datap
 		PermissionMatcher:     permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		LogsMatcher:           logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		FaultInjectionMatcher: faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
-		RateLimitMatcher:      ratelimits.RateLimitsMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
+		RateLimitMatcher:      ratelimits.RateLimitMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		Zone:                  rt.Config().Multizone.Remote.Zone,
 		apiVersion:            apiVersion,
 	}

@@ -160,17 +160,17 @@ var _ = Describe("InboundProxyGenerator", func() {
 									Connections: &wrappers.UInt32Value{
 										Value: 100,
 									},
-									Interval:    &duration.Duration{
+									Interval: &duration.Duration{
 										Seconds: 2,
 									},
-									OnError:     &mesh_proto.RateLimit_Conf_Http_OnError{
-										Status:  &wrappers.UInt32Value{
+									OnError: &mesh_proto.RateLimit_Conf_Http_OnError{
+										Status: &wrappers.UInt32Value{
 											Value: 404,
 										},
 										Headers: []*mesh_proto.RateLimit_Conf_Http_OnError_HeaderValue{
 											{
-												Key:    "x-rate-limited",
-												Value:  "true",
+												Key:   "x-rate-limited",
+												Value: "true",
 												Append: &wrappers.BoolValue{
 													Value: false,
 												},
