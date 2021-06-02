@@ -180,6 +180,7 @@ message TrafficRoute {
           // Value of the header.
           string value = 2;
           // If true, it appends the value if there is already a value.
+          // Otherwise, value of existing header will be replaced.
           bool append = 3;
         }
         // Remove defines operation of removing an HTTP header.

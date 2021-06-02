@@ -1227,6 +1227,7 @@ type TrafficRoute_Http_Modify_Headers_Add struct {
 	// Value of the header.
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	// If true, it appends the value if there is already a value.
+	// Otherwise, value of existing header will be replaced.
 	Append bool `protobuf:"varint,3,opt,name=append,proto3" json:"append,omitempty"`
 }
 

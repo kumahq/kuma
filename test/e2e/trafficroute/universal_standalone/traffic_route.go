@@ -523,6 +523,10 @@ conf:
     modify:
       host:
         value: "modified-host"
+      requestHeaders:
+        add:
+        - name: "host" # host section takes precedence
+          value: xyz
     destination:
       kuma.io/service: test-server
   - match:
@@ -590,6 +594,9 @@ conf:
         add:
         - name: x-custom-header
           value: xyz
+        - name: x-multiple-values
+          value: xyz
+          append: true
         remove:
         - name: header-to-remove
     destination:
@@ -602,7 +609,10 @@ conf:
 			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
 
 			Eventually(func() error {
-				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/modified-headers", WithHeader("header-to-remove", "abc"))
+				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/modified-headers",
+					WithHeader("header-to-remove", "abc"),
+					WithHeader("x-multiple-values", "abc"),
+				)
 				if err != nil {
 					return err
 				}
@@ -612,6 +622,23 @@ conf:
 				}
 				if len(resp.Received.Headers["Header-To-Remove"]) > 0 {
 					return errors.New("expected 'Header-To-Remove' to not be present")
+				}
+				header = resp.Received.Headers["X-Multiple-Values"]
+				if len(header) < 2 || header[0] != "abc" || header[1] != "xyz" {
+					return errors.Errorf("expected %s, got %s", "abc,xyz", header)
+				}
+				return nil
+			}, "30s", "500ms").Should(Succeed())
+
+			// "add" should replace existing headers
+			Eventually(func() error {
+				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/modified-headers", WithHeader("x-custom-header", "abc"))
+				if err != nil {
+					return err
+				}
+				header := resp.Received.Headers["X-Custom-Header"]
+				if len(header) < 1 || header[0] != "xyz" {
+					return errors.Errorf("expected %s, got %s", "xyz", header)
 				}
 				return nil
 			}, "30s", "500ms").Should(Succeed())
