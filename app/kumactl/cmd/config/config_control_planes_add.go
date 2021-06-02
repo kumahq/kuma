@@ -6,6 +6,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/pkg/util/maps"
+
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -45,10 +47,10 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 				},
 			}
 
-			for k, v := range args.headers {
+			for _, k := range maps.SortedKeys(args.headers) { // sort for stable test outputs
 				header := &config_proto.ControlPlaneCoordinates_Headers{
 					Key:   k,
-					Value: v,
+					Value: args.headers[k],
 				}
 				cp.Coordinates.ApiServer.Headers = append(cp.Coordinates.ApiServer.Headers, header)
 			}
