@@ -19,6 +19,8 @@ var (
 	KumactlInstallationMode = InstallationMode("kumactl")
 )
 
+type DeploymentStoreType string
+
 type deployOptions struct {
 	// cp specific
 	globalAddress    string
@@ -265,6 +267,10 @@ type Deployment interface {
 	Delete(cluster Cluster) error
 }
 
+type HookType string
+
+type HookFn func(cluster Cluster) (Cluster, error)
+
 type Cluster interface {
 	// Cluster
 	Name() string
@@ -280,6 +286,8 @@ type Cluster interface {
 	Deploy(deployment Deployment) error
 	WithTimeout(timeout time.Duration) Cluster
 	WithRetries(retries int) Cluster
+	WithEnvVar(appName, envName, envValue string) Cluster
+	WithHookFn(appName string, hookType HookType, hook HookFn) Cluster
 
 	// K8s
 	GetKubectlOptions(namespace ...string) *k8s.KubectlOptions
