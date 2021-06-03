@@ -261,6 +261,10 @@ func (s *UniversalApp) publishPortsForDocker() (args []string) {
 	return
 }
 
+func (s *UniversalApp) GetPublicPort(port string) string {
+	return s.ports[port]
+}
+
 func (s *UniversalApp) Stop() error {
 	out, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1})
 	if err != nil {

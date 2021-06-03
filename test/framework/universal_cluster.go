@@ -24,6 +24,8 @@ type UniversalCluster struct {
 	deployments    map[string]Deployment
 	defaultTimeout time.Duration
 	defaultRetries int
+	envVars        map[string]map[string]string
+	hooks          map[string]map[HookType][]HookFn
 }
 
 func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalCluster {
@@ -35,6 +37,10 @@ func NewUniversalCluster(t *TestingT, name string, verbose bool) *UniversalClust
 		deployments:    map[string]Deployment{},
 		defaultRetries: GetDefaultRetries(),
 		defaultTimeout: GetDefaultTimeout(),
+		envVars:        map[string]map[string]string{},
+		hooks: map[string]map[HookType][]HookFn{
+			AppKumaCP: {},
+		},
 	}
 }
 
@@ -46,6 +52,26 @@ func (c *UniversalCluster) WithTimeout(timeout time.Duration) Cluster {
 
 func (c *UniversalCluster) WithRetries(retries int) Cluster {
 	c.defaultRetries = retries
+
+	return c
+}
+
+func (c *UniversalCluster) WithEnvVar(appName, envName, envValue string) Cluster {
+	if c.envVars[appName] == nil {
+		c.envVars[appName] = map[string]string{}
+	}
+
+	c.envVars[appName][envName] = envValue
+
+	return c
+}
+
+func (c *UniversalCluster) WithHookFn(appName string, hookType HookType, hook HookFn) Cluster {
+	if c.hooks[appName] == nil {
+		c.hooks[appName] = map[HookType][]HookFn{}
+	}
+
+	c.hooks[appName][hookType] = append(c.hooks[appName][hookType], hook)
 
 	return c
 }
@@ -78,32 +104,36 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	}
 
 	cmd := []string{"kuma-cp", "run"}
-	env := []string{"KUMA_MODE=" + mode, "KUMA_DNS_SERVER_PORT=53"}
+
+	c.WithEnvVar(AppKumaCP, "KUMA_MODE", mode).WithEnvVar(AppKumaCP, "KUMA_DNS_SERVER_PORT", "53")
+
 	caps := []string{}
 	for k, v := range opts.env {
-		env = append(env, fmt.Sprintf("%s=%s", k, v))
+		c.WithEnvVar(AppKumaCP, k, v)
 	}
 	if opts.globalAddress != "" {
-		env = append(env, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
+		c.WithEnvVar(AppKumaCP, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS", opts.globalAddress)
 	}
 	if opts.hdsDisabled {
-		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
+		c.WithEnvVar(AppKumaCP, "KUMA_DP_SERVER_HDS_ENABLED", "false")
 	}
 
 	if HasApiVersion() {
-		env = append(env, "KUMA_BOOTSTRAP_SERVER_API_VERSION="+GetApiVersion())
+		c.WithEnvVar(AppKumaCP, "KUMA_BOOTSTRAP_SERVER_API_VERSION", GetApiVersion())
 	}
 
 	if opts.isipv6 {
-		env = append(env, fmt.Sprintf("KUMA_DNS_SERVER_CIDR=\"%s\"", cidrIPv6))
+		c.WithEnvVar(AppKumaCP, "KUMA_DNS_SERVER_CIDR", fmt.Sprintf("%q", cidrIPv6))
 	}
 
 	switch mode {
 	case core.Remote:
-		env = append(env, "KUMA_MULTIZONE_REMOTE_ZONE="+c.name)
+		c.WithEnvVar(AppKumaCP, "KUMA_MULTIZONE_REMOTE_ZONE", c.name)
 	case core.Global:
 		cmd = append(cmd, "--config-file", confPath)
 	}
+
+	env := c.GetEnvVars(AppKumaCP)
 
 	app, err := NewUniversalApp(c.t, c.name, AppModeCP, AppModeCP, opts.isipv6, true, caps)
 	if err != nil {
@@ -111,6 +141,13 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	}
 
 	app.CreateMainApp(env, cmd)
+	c.apps[AppKumaCP] = app
+
+	for _, fn := range c.hooks[AppKumaCP][AfterCreateMainApp] {
+		if _, err := fn(c); err != nil {
+			return err
+		}
+	}
 
 	err = app.mainApp.Start()
 	if err != nil {
@@ -123,13 +160,25 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		return err
 	}
 
-	c.apps[AppModeCP] = app
-
 	return nil
 }
 
 func (c *UniversalCluster) GetKuma() ControlPlane {
 	return c.controlplane
+}
+
+func (c *UniversalCluster) GetApp(appName string) *UniversalApp {
+	return c.apps[appName]
+}
+
+func (c *UniversalCluster) GetEnvVars(appName string) []string {
+	var envVars []string
+
+	for name, value := range c.envVars[appName] {
+		envVars = append(envVars, name+"="+value)
+	}
+
+	return envVars
 }
 
 func (c *UniversalCluster) VerifyKuma() error {
