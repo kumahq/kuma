@@ -82,7 +82,6 @@ define gen-k8sclusters
 test/e2e/k8s/start/cluster/$1:
 	KIND_CONFIG=$(TOP)/test/kind/cluster$(KIND_CONFIG_IPV6)-$1.yaml \
 	KIND_CLUSTER_NAME=$1 \
-	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
 		$(MAKE) $(K8S_CLUSTER_TOOL)/start
 	KIND_CLUSTER_NAME=$1 \
 		$(MAKE) $(K8S_CLUSTER_TOOL)/load/images
@@ -90,7 +89,6 @@ test/e2e/k8s/start/cluster/$1:
 .PHONY: test/e2e/k8s/stop/cluster/$1
 test/e2e/k8s/stop/cluster/$1:
 	KIND_CLUSTER_NAME=$1 \
-	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
 		$(MAKE) $(K8S_CLUSTER_TOOL)/stop
 endef
 
@@ -100,10 +98,10 @@ $(foreach cluster, $(K8SCLUSTERS), $(eval $(call gen-k8sclusters,$(cluster))))
 test/e2e/list:
 	@echo $(ALL_TESTS)
 
-.PHONY: test/e2e/kind/start
+.PHONY: test/e2e/k8s/start
 test/e2e/k8s/start: $(K8SCLUSTERS_START_TARGETS)
 
-.PHONY: test/e2e/kind/stop
+.PHONY: test/e2e/k8s/stop
 test/e2e/k8s/stop: $(K8SCLUSTERS_STOP_TARGETS)
 
 .PHONY: test/e2e/test
@@ -127,7 +125,6 @@ test/e2e/debug: build/kumactl images test/e2e/k8s/start
 	API_VERSION="$(API_VERSION)" \
 	GINKGO_EDITOR_INTEGRATION=true \
 		ginkgo --failFast $(GOFLAGS) $(LD_FLAGS) $(E2E_PKG_LIST)
-	$(MAKE) test/e2e/k8s/stop
 
 # test/e2e/debug-universal is the same target as 'test/e2e/debug' but builds only 'kuma-universal' image
 # and doesn't start Kind clusters
