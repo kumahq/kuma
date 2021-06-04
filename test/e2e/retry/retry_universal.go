@@ -20,13 +20,13 @@ func RetryOnUniversal() {
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
-			[]string{Kuma1},
+			[]string{Kuma3},
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
 		// Global
-		cluster = clusters.GetCluster(Kuma1)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		cluster = clusters.GetCluster(Kuma3)
+		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).

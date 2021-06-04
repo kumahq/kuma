@@ -47,7 +47,7 @@ func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
 		EnvironmentVariables: []string{},
 		OtherOptions:         append([]string{"--name", cluster.Name() + "_" + u.Name(), "--network", "kind"}, u.publishPortsForDocker()...),
 	}
-	container, err := docker.RunAndGetIDE(cluster.GetTesting(), framework.KumaUniversalImage, &dockerOpts)
+	container, err := docker.RunAndGetIDE(cluster.GetTesting(), framework.GetUniversalImage(), &dockerOpts)
 	if err != nil {
 		return err
 	}

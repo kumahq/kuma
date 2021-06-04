@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"net"
 	"os"
+	"os/exec"
 	"os/user"
 	"strconv"
 	"strings"
@@ -122,11 +123,11 @@ func constructConfig() *config.Config {
 	}
 
 	// Kuma modification start
-	hasIPv6, err := hasLocalIPv6()
+	enableIPv6, err := shouldEnableIPv6()
 	if err != nil {
 		panic(err)
 	}
-	cfg.EnableInboundIPv6 = hasIPv6
+	cfg.EnableInboundIPv6 = enableIPv6
 	// Kuma modification end
 
 	// Lookup DNS nameservers. We only do this if DNS is enabled in case of some obscure theoretical
@@ -173,6 +174,22 @@ func hasLocalIPv6() (bool, error) {
 		}
 	}
 	return false, nil
+}
+
+func shouldEnableIPv6() (bool, error) {
+	hasIPv6Address, err := hasLocalIPv6()
+	if !hasIPv6Address || err != nil {
+		return false, err
+	}
+
+	// We are executing this command to work around the problem with COS_CONTAINERD
+	// image which is being used on GKE nodes. This image is missing "ip6tables_nat`
+	// kernel module which is adding `nat` table, so we are checking if this table
+	// exists and if so, we are assuming we can safely proceed with ip6tables
+	// ref. https://github.com/kumahq/kuma/issues/2046
+	err = exec.Command(constants.IP6TABLES, "-t", constants.NAT, "-L").Run()
+
+	return err == nil, nil
 }
 
 // Kuma modification end

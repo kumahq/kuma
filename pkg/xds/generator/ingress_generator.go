@@ -99,10 +99,11 @@ func (i IngressGenerator) generateLDS(
 			inboundListenerBuilder = inboundListenerBuilder.
 				Configure(envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(apiVersion).
 					Configure(envoy_listeners.FilterChainMatch("tls", sni)).
-					Configure(envoy_listeners.TcpProxy(service, envoy_common.ClusterSubset{
-						ClusterName: service,
-						Tags:        meshDestination.WithoutTags(mesh_proto.ServiceTag),
-					}))))
+					Configure(envoy_listeners.TcpProxyWithMetadata(service, envoy_common.NewCluster(
+						envoy_common.WithService(service),
+						envoy_common.WithTags(meshDestination.WithoutTags(mesh_proto.ServiceTag)),
+					))),
+				))
 		}
 	}
 
@@ -112,9 +113,15 @@ func (i IngressGenerator) generateLDS(
 func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList) map[string][]envoy_common.Tags {
 	destinations := map[string][]envoy_common.Tags{}
 	for _, tr := range trs.Items {
-		for _, split := range tr.Spec.Conf.Split {
+		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
 			service := split.Destination[mesh_proto.ServiceTag]
 			destinations[service] = append(destinations[service], split.Destination)
+		}
+		for _, http := range tr.Spec.Conf.Http {
+			for _, split := range http.GetSplitWithDestination() {
+				service := split.Destination[mesh_proto.ServiceTag]
+				destinations[service] = append(destinations[service], split.Destination)
+			}
 		}
 	}
 	return destinations

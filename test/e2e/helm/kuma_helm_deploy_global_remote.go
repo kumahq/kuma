@@ -39,7 +39,7 @@ metadata:
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, remote ControlPlane
-	var optsGlobal, optsRemote []DeployOptionsFunc
+	var optsGlobal, optsRemote = KumaK8sDeployOpts, KumaRemoteK8sDeployOpts
 
 	BeforeEach(func() {
 		var err error
@@ -59,10 +59,9 @@ metadata:
 			"kuma-%s",
 			strings.ToLower(random.UniqueId()),
 		)
-		optsGlobal = []DeployOptionsFunc{
+		optsGlobal = append(optsGlobal,
 			WithInstallationMode(HelmInstallationMode),
-			WithHelmReleaseName(releaseName),
-		}
+			WithHelmReleaseName(releaseName))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
@@ -72,12 +71,11 @@ metadata:
 		global = c1.GetKuma()
 		Expect(global).ToNot(BeNil())
 
-		optsRemote = []DeployOptionsFunc{
+		optsRemote = append(optsRemote,
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
 			WithGlobalAddress(global.GetKDSServerAddress()),
-			WithHelmOpt("ingress.enabled", "true"),
-		}
+			WithHelmOpt("ingress.enabled", "true"))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote...)).

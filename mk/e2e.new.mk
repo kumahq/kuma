@@ -61,6 +61,8 @@ ifdef KUMA_DEFAULT_TIMEOUT
 	ENV_VARS += KUMA_DEFAULT_TIMEOUT=$(KUMA_DEFAULT_TIMEOUT)
 endif
 
+# We don't use `go list` here because Ginkgo requires disk path names,
+# not Go packages names.
 TEST_NAMES = $(shell ls -1 ./test/e2e)
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)
@@ -71,9 +73,14 @@ else
 K8S_CLUSTER_TOOL=kind
 endif
 
+ifdef IPV6
+KIND_CONFIG_IPV6=-ipv6
+endif
+
 define gen-k8sclusters
 .PHONY: test/e2e/k8s/start/cluster/$1
 test/e2e/k8s/start/cluster/$1:
+	KIND_CONFIG=$(TOP)/test/kind/cluster$(KIND_CONFIG_IPV6)-$1.yaml \
 	KIND_CLUSTER_NAME=$1 \
 	KIND_KUBECONFIG=$(KIND_KUBECONFIG_DIR)/kind-$1-config \
 		$(MAKE) $(K8S_CLUSTER_TOOL)/start

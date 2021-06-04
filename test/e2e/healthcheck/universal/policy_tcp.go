@@ -13,6 +13,10 @@ import (
 )
 
 func PolicyTCP() {
+	if IsApiV2() {
+		fmt.Println("Test not supported on API v2")
+		return
+	}
 	healthCheck := func(send, recv string) string {
 		sendBase64 := base64.StdEncoding.EncodeToString([]byte(send))
 		recvBase64 := base64.StdEncoding.EncodeToString([]byte(recv))
@@ -47,7 +51,7 @@ conf:
 
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Verbose)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, deployOptsFuncs...)).
@@ -101,8 +105,10 @@ conf:
 
 		// check that test-server is unhealthy
 		cmd = []string{"/bin/bash", "-c", "\"echo request | nc test-server.mesh 80\""}
-		stdout, _, err = cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
-		Expect(err).ToNot(HaveOccurred())
-		Expect(stdout).To(BeEmpty())
+		stdout, _, _ = cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
+
+		// there is no real attempt to setup a connection with test-server, but Envoy may return either
+		// empty response with EXIT_CODE = 0, or  'Ncat: Connection reset by peer.' with EXIT_CODE = 1
+		Expect(stdout).To(Or(BeEmpty(), ContainSubstring("Ncat: Connection reset by peer.")))
 	})
 }

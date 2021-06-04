@@ -168,6 +168,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 			goldenFile  string
 			expectedOut string
 			overwrite   bool
+			extraArgs   []string
 		}
 
 		DescribeTable("should add a new Control Plane by name and address",
@@ -193,6 +194,7 @@ var _ = Describe("kumactl config control-planes add", func() {
 				if given.overwrite {
 					args = append(args, "--overwrite")
 				}
+				args = append(args, given.extraArgs...)
 
 				// given
 				rootCmd.SetArgs(args)
@@ -227,6 +229,7 @@ added Control Plane "example"
 switched active Control Plane to "example"
 `,
 				overwrite: false,
+				extraArgs: nil,
 			}),
 			Entry("should add a second Control Plane", testCase{
 				configFile: "config-control-planes-add.02.initial.yaml",
@@ -236,6 +239,7 @@ added Control Plane "example"
 switched active Control Plane to "example"
 `,
 				overwrite: false,
+				extraArgs: nil,
 			}),
 			Entry("should replace the example Control Plane", testCase{
 				configFile: "config-control-planes-add.03.initial.yaml",
@@ -245,6 +249,27 @@ added Control Plane "example"
 switched active Control Plane to "example"
 `,
 				overwrite: true,
+				extraArgs: nil,
+			}),
+			Entry("should add the example Control Plane with headers", testCase{
+				configFile: "config-control-planes-add.04.initial.yaml",
+				goldenFile: "config-control-planes-add.04.golden.yaml",
+				expectedOut: `
+added Control Plane "example"
+switched active Control Plane to "example"
+`,
+				overwrite: true,
+				extraArgs: []string{"--headers", "abc=xyz", "--headers", "def=pqr"},
+			}),
+			Entry("should replace the example Control Plane with headers", testCase{
+				configFile: "config-control-planes-add.05.initial.yaml",
+				goldenFile: "config-control-planes-add.05.golden.yaml",
+				expectedOut: `
+added Control Plane "example"
+switched active Control Plane to "example"
+`,
+				overwrite: true,
+				extraArgs: []string{"--headers", "abc=xyz"},
 			}),
 		)
 	})

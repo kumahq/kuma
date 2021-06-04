@@ -46,6 +46,7 @@ const (
 	cidrIPv6              = "fd00:fd00::/64"
 )
 
+var HelmRepo = "kuma/kuma"
 var HelmChartPath = "../../../deployments/charts/kuma"
 var HelmSubChartPrefix = ""
 
@@ -60,3 +61,7 @@ var KumaImageRegistry = "kumahq"
 var KumaCPImageRepo = "kuma-cp"
 var KumaDPImageRepo = "kuma-dp"
 var KumaInitImageRepo = "kuma-init"
+
+var KumaUniversalDeployOpts = []DeployOptionsFunc{}
+var KumaK8sDeployOpts = []DeployOptionsFunc{}
+var KumaRemoteK8sDeployOpts = []DeployOptionsFunc{}

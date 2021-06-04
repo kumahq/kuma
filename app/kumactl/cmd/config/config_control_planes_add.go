@@ -6,6 +6,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 
+	"github.com/kumahq/kuma/pkg/util/maps"
+
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/config"
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
@@ -19,6 +21,7 @@ type controlPlaneAddArgs struct {
 	clientKeyFile  string
 	caCertFile     string
 	skipVerify     bool
+	headers        map[string]string
 }
 
 func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
@@ -42,6 +45,14 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 						ClientKeyFile:  args.clientKeyFile,
 					},
 				},
+			}
+
+			for _, k := range maps.SortedKeys(args.headers) { // sort for stable test outputs
+				header := &config_proto.ControlPlaneCoordinates_Headers{
+					Key:   k,
+					Value: args.headers[k],
+				}
+				cp.Coordinates.ApiServer.Headers = append(cp.Coordinates.ApiServer.Headers, header)
 			}
 			cfg := pctx.Config()
 			if err := config.ValidateCpCoordinates(cp); err != nil {
@@ -76,6 +87,7 @@ func newConfigControlPlanesAddCmd(pctx *kumactl_cmd.RootContext) *cobra.Command 
 	cmd.Flags().StringVar(&args.clientKeyFile, "client-key-file", "", "path to the certificate key of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)")
 	cmd.Flags().StringVar(&args.caCertFile, "ca-cert-file", "", "path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)")
 	cmd.Flags().BoolVar(&args.skipVerify, "skip-verify", false, "skip CA verification")
+	cmd.Flags().StringToStringVar(&args.headers, "headers", args.headers, "add these headers while communicating to control plane, format key=value")
 	return cmd
 }
 

@@ -79,22 +79,20 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, request *http.Request) {
+func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
 	resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/stats/prometheus", s.envoyAdminPort))
 	if err != nil {
-		if _, err := writer.Write([]byte(err.Error())); err != nil {
-			logger.Error(err, "error while writing the response")
-		}
+		http.Error(writer, err.Error(), 500)
 		return
 	}
 	defer resp.Body.Close()
+
 	buf := new(bytes.Buffer)
-	if _, err := buf.ReadFrom(resp.Body); err != nil {
-		if _, err := writer.Write([]byte(err.Error())); err != nil {
-			logger.Error(err, "error while writing the response")
-		}
+	if err := MergeClusters(resp.Body, buf); err != nil {
+		http.Error(writer, err.Error(), 500)
 		return
 	}
+
 	if _, err := writer.Write(buf.Bytes()); err != nil {
 		logger.Error(err, "error while writing the response")
 	}

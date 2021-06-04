@@ -8,6 +8,7 @@ function _kumactl {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -74,7 +75,8 @@ function _kumactl_apply {
     '(-v --var)'{-v,--var}'[Variable to replace in configuration]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 
@@ -85,6 +87,7 @@ function _kumactl_completion {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -116,14 +119,16 @@ function _kumactl_completion_bash {
   _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_completion_fish {
   _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_completion_zsh {
@@ -131,7 +136,8 @@ function _kumactl_completion_zsh {
     '(-h --help)'{-h,--help}'[help for zsh]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 
@@ -142,6 +148,7 @@ function _kumactl_config {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -173,6 +180,7 @@ function _kumactl_config_control-planes {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -210,19 +218,22 @@ function _kumactl_config_control-planes_add {
     '--ca-cert-file[path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)]:' \
     '--client-cert-file[path to the certificate of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)]:' \
     '--client-key-file[path to the certificate key of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)]:' \
+    '--headers[add these headers while communicating to control plane, format key=value]:' \
     '--name[reference name for the Control Plane (required)]:' \
     '--overwrite[overwrite existing Control Plane with the same reference name]' \
     '--skip-verify[skip CA verification]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_config_control-planes_list {
   _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_config_control-planes_remove {
@@ -230,7 +241,8 @@ function _kumactl_config_control-planes_remove {
     '--name[reference name for the Control Plane (required)]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_config_control-planes_switch {
@@ -238,21 +250,24 @@ function _kumactl_config_control-planes_switch {
     '--name[reference name for the Control Plane (required)]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_config_view {
   _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_delete {
   _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 
@@ -263,6 +278,7 @@ function _kumactl_generate {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -293,7 +309,8 @@ function _kumactl_generate_dataplane-token {
     '--type[type of the Dataplane ("dataplane", "ingress")]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_generate_tls-certificate {
@@ -304,7 +321,8 @@ function _kumactl_generate_tls-certificate {
     '--type[type of the certificate: one of client|server]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 
@@ -316,6 +334,7 @@ function _kumactl_get {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -464,6 +483,7 @@ function _kumactl_get_circuit-breaker {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -474,6 +494,7 @@ function _kumactl_get_circuit-breakers {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -482,6 +503,7 @@ function _kumactl_get_dataplane {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -492,6 +514,7 @@ function _kumactl_get_dataplanes {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -500,6 +523,7 @@ function _kumactl_get_external-service {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -510,6 +534,7 @@ function _kumactl_get_external-services {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -518,6 +543,7 @@ function _kumactl_get_fault-injection {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -528,6 +554,7 @@ function _kumactl_get_fault-injections {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -536,6 +563,7 @@ function _kumactl_get_global-secret {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -544,6 +572,7 @@ function _kumactl_get_global-secrets {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -552,6 +581,7 @@ function _kumactl_get_healthcheck {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -562,6 +592,7 @@ function _kumactl_get_healthchecks {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -570,6 +601,7 @@ function _kumactl_get_mesh {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -580,6 +612,7 @@ function _kumactl_get_meshes {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -588,6 +621,7 @@ function _kumactl_get_proxytemplate {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -598,6 +632,7 @@ function _kumactl_get_proxytemplates {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -608,6 +643,7 @@ function _kumactl_get_retries {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -616,6 +652,7 @@ function _kumactl_get_retry {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -624,6 +661,7 @@ function _kumactl_get_secret {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -632,6 +670,7 @@ function _kumactl_get_secrets {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -640,6 +679,7 @@ function _kumactl_get_timeout {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -650,6 +690,7 @@ function _kumactl_get_timeouts {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -658,6 +699,7 @@ function _kumactl_get_traffic-log {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -668,6 +710,7 @@ function _kumactl_get_traffic-logs {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -676,6 +719,7 @@ function _kumactl_get_traffic-permission {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -686,6 +730,7 @@ function _kumactl_get_traffic-permissions {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -694,6 +739,7 @@ function _kumactl_get_traffic-route {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -704,6 +750,7 @@ function _kumactl_get_traffic-routes {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -712,6 +759,7 @@ function _kumactl_get_traffic-trace {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -722,6 +770,7 @@ function _kumactl_get_traffic-traces {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -730,6 +779,7 @@ function _kumactl_get_zone {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -740,6 +790,7 @@ function _kumactl_get_zones {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -747,7 +798,8 @@ function _kumactl_help {
   _arguments \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 
@@ -759,6 +811,7 @@ function _kumactl_inspect {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -798,6 +851,7 @@ function _kumactl_inspect_dataplanes {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -806,6 +860,7 @@ function _kumactl_inspect_meshes {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -814,6 +869,7 @@ function _kumactl_inspect_services {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -822,6 +878,7 @@ function _kumactl_inspect_zones {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
 }
 
@@ -833,6 +890,7 @@ function _kumactl_install {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -924,7 +982,8 @@ function _kumactl_install_control-plane {
     '--zone[set the Kuma zone name]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_install_crds {
@@ -932,7 +991,8 @@ function _kumactl_install_crds {
     '--only-missing[install only resources which are not already present in a cluster]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_install_demo {
@@ -941,7 +1001,8 @@ function _kumactl_install_demo {
     '--zone[Zone in which to install demo]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_install_dns {
@@ -950,16 +1011,59 @@ function _kumactl_install_dns {
     '--port[port of the Kuma DNS server]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
+
 function _kumactl_install_gateway {
-  _arguments \
-    '--namespace[namespace to install gateway to]:' \
-    '--type[type of gateway to install. Available types: "kong"]:' \
+  local -a commands
+
+  _arguments -C \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
+    "1: :->cmnds" \
+    "*::arg:->args"
+
+  case $state in
+  cmnds)
+    commands=(
+      "kong:Install Kong ingress gateway on Kubernetes"
+      "kong-enterprise:Install Kong ingress gateway on Kubernetes"
+    )
+    _describe "command" commands
+    ;;
+  esac
+
+  case "$words[1]" in
+  kong)
+    _kumactl_install_gateway_kong
+    ;;
+  kong-enterprise)
+    _kumactl_install_gateway_kong-enterprise
+    ;;
+  esac
+}
+
+function _kumactl_install_gateway_kong {
+  _arguments \
+    '--namespace[namespace to install gateway to]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
+}
+
+function _kumactl_install_gateway_kong-enterprise {
+  _arguments \
+    '--license-path[path to license file]:' \
+    '--namespace[namespace to install gateway to]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_install_logging {
@@ -967,7 +1071,8 @@ function _kumactl_install_logging {
     '--namespace[namespace to install logging to]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_install_metrics {
@@ -980,7 +1085,8 @@ function _kumactl_install_metrics {
     '--without-prometheus[disable Prometheus resources generation]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_install_tracing {
@@ -988,7 +1094,8 @@ function _kumactl_install_tracing {
     '--namespace[namespace to install tracing to]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_install_transparent-proxy {
@@ -1013,7 +1120,8 @@ function _kumactl_install_transparent-proxy {
     '--verbose[verbose]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 
@@ -1024,6 +1132,7 @@ function _kumactl_uninstall {
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
     "1: :->cmnds" \
     "*::arg:->args"
 
@@ -1049,7 +1158,8 @@ function _kumactl_uninstall_transparent-proxy {
     '--verbose[verbose]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 
 function _kumactl_version {
@@ -1057,6 +1167,7 @@ function _kumactl_version {
     '(-a --detailed)'{-a,--detailed}'[Print detailed version]' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:'
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
 }
 

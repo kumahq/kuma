@@ -31,7 +31,7 @@ mtls:
 		logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
 
 		universalCluster = NewUniversalCluster(NewTestingT(), Kuma1, Silent)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, deployOptsFuncs...)).

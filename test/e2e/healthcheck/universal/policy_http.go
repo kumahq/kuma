@@ -12,6 +12,10 @@ import (
 )
 
 func PolicyHTTP() {
+	if IsApiV2() {
+		fmt.Println("Test not supported on API v2")
+		return
+	}
 	healthCheck := func(method, status string) string {
 		return fmt.Sprintf(`
 type: HealthCheck
@@ -43,7 +47,7 @@ conf:
 
 	BeforeEach(func() {
 		cluster = NewUniversalCluster(NewTestingT(), Kuma3, Verbose)
-		deployOptsFuncs = []DeployOptionsFunc{}
+		deployOptsFuncs = KumaUniversalDeployOpts
 
 		err := NewClusterSetup().
 			Install(Kuma(config_core.Standalone, deployOptsFuncs...)).

@@ -1,4 +1,4 @@
-package k8s_api_bybass_test
+package k8s_api_bypass_test
 
 import (
 	"testing"

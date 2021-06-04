@@ -21,7 +21,7 @@ var _ = Describe("TcpProxyConfigurer", func() {
 		listenerAddress  string
 		listenerPort     uint32
 		statsName        string
-		clusters         []envoy_common.ClusterSubset
+		clusters         []envoy_common.Cluster
 		expected         string
 	}
 
@@ -47,8 +47,11 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerAddress: "192.168.0.1",
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
-			clusters: []envoy_common.ClusterSubset{
-				{ClusterName: "localhost:8080", Weight: 200},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithService("localhost:8080"),
+					envoy_common.WithWeight(200),
+				),
 			},
 			expected: `
         name: inbound:192.168.0.1:8080
@@ -71,15 +74,18 @@ var _ = Describe("TcpProxyConfigurer", func() {
 			listenerAddress: "127.0.0.1",
 			listenerPort:    5432,
 			statsName:       "db",
-			clusters: []envoy_common.ClusterSubset{{
-				ClusterName: "db",
-				Weight:      10,
-				Tags:        map[string]string{"kuma.io/service": "db", "version": "v1"},
-			}, {
-				ClusterName: "db",
-				Weight:      90,
-				Tags:        map[string]string{"kuma.io/service": "db", "version": "v2"},
-			}},
+			clusters: []envoy_common.Cluster{
+				envoy_common.NewCluster(
+					envoy_common.WithName("db-0"),
+					envoy_common.WithWeight(10),
+					envoy_common.WithTags(map[string]string{"kuma.io/service": "db", "version": "v1"}),
+				),
+				envoy_common.NewCluster(
+					envoy_common.WithName("db-1"),
+					envoy_common.WithWeight(90),
+					envoy_common.WithTags(map[string]string{"kuma.io/service": "db", "version": "v2"}),
+				),
+			},
 			expected: `
             address:
               socketAddress:
@@ -93,17 +99,9 @@ var _ = Describe("TcpProxyConfigurer", func() {
                   statPrefix: db
                   weightedClusters:
                     clusters:
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            version: v1
-                      name: db
+                    - name: db-0
                       weight: 10
-                    - metadataMatch:
-                        filterMetadata:
-                          envoy.lb:
-                            version: v2
-                      name: db
+                    - name: db-1
                       weight: 90
             name: inbound:127.0.0.1:5432
             trafficDirection: INBOUND`,

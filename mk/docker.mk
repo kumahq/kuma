@@ -23,6 +23,10 @@ export KUMA_INIT_DOCKER_IMAGE ?= $(KUMA_INIT_DOCKER_IMAGE_NAME):$(BUILD_INFO_VER
 export KUMA_PROMETHEUS_SD_DOCKER_IMAGE ?= $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE_NAME):$(BUILD_INFO_VERSION)
 export KUMA_UNIVERSAL_DOCKER_IMAGE ?= $(DOCKER_REGISTRY)/kuma-universal:$(BUILD_INFO_VERSION)
 
+# Always use Docker BuildKit, see
+# https://docs.docker.com/develop/develop-images/build_enhancements/
+export DOCKER_BUILDKIT := 1
+
 .PHONY: docker/build
 docker/build: docker/build/release docker/build/test
 
@@ -34,33 +38,27 @@ docker/build/test: docker/build/kuma-universal
 
 .PHONY: docker/build/kuma-cp
 docker/build/kuma-cp: build/artifacts-linux-amd64/kuma-cp/kuma-cp ## Dev: Build `kuma-cp` Docker image using existing artifact
-	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_CP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-cp .
 
 .PHONY: docker/build/kuma-dp
 docker/build/kuma-dp: build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/coredns/coredns ## Dev: Build `kuma-dp` Docker image using existing artifact
-	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_DP_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-dp .
 
 .PHONY: docker/build/kumactl
 docker/build/kumactl: build/artifacts-linux-amd64/kumactl/kumactl ## Dev: Build `kumactl` Docker image using existing artifact
-	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMACTL_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kumactl .
 
 .PHONY: docker/build/kuma-init
 docker/build/kuma-init: ## Dev: Build `kuma-init` Docker image using existing artifact
-	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_INIT_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-init .
 
 .PHONY: docker/build/kuma-prometheus-sd
 docker/build/kuma-prometheus-sd: build/artifacts-linux-amd64/kuma-prometheus-sd/kuma-prometheus-sd ## Dev: Build `kuma-prometheus-sd` Docker image using existing artifact
-	DOCKER_BUILDKIT=1 \
 	docker build -t $(KUMA_PROMETHEUS_SD_DOCKER_IMAGE) -f tools/releases/dockerfiles/Dockerfile.kuma-prometheus-sd .
 
-## Dev: Build `kuma-universal` Docker image using existing artifact
 .PHONY: docker/build/kuma-universal
+docker/build/kuma-universal: ## Dev: Build `kuma-universal` Docker image using existing artifact
 docker/build/kuma-universal: build/artifacts-linux-amd64/kuma-cp/kuma-cp build/artifacts-linux-amd64/kuma-dp/kuma-dp build/artifacts-linux-amd64/kumactl/kumactl build/artifacts-linux-amd64/test-server/test-server
-	DOCKER_BUILDKIT=1 \
 	docker build -t kuma-universal -f test/dockerfiles/Dockerfile.universal .
 	docker tag kuma-universal $(KUMA_UNIVERSAL_DOCKER_IMAGE)
 
@@ -83,13 +81,13 @@ image/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-amd64 docker/build/kuma
 image/kuma-universal: build/linux-amd64 docker/build/kuma-universal
 
 .PHONY: images
-images: images/release images/test
+images: images/release images/test ## Dev: Rebuild release and tesst Docker images
 
 .PHONY: images/release
-images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd ## Dev: Rebuild all Docker images
+images/release: image/kuma-cp image/kuma-dp image/kumactl image/kuma-init image/kuma-prometheus-sd ## Dev: Rebuild release Docker images
 
 .PHONY: images/test
-images/test: image/kuma-universal
+images/test: image/kuma-universal ## Dev: Rebuild test Docker images
 
 ${BUILD_DOCKER_IMAGES_DIR}:
 	mkdir -p ${BUILD_DOCKER_IMAGES_DIR}
@@ -179,6 +177,11 @@ docker/tag/kuma-init:
 .PHONY: docker/tag/kuma-universal
 docker/tag/kuma-universal:
 	docker tag $(KUMA_UNIVERSAL_DOCKER_IMAGE) $(DOCKER_REGISTRY)/kuma-universal:$(KUMA_VERSION)
+
+.PHONY: docker/docker
+docker/purge: ## Dev: Remove all Docker containers, images, networks and volumes
+	for c in `docker ps -q`; do docker kill $$c; done
+	docker system prune --all --volumes --force
 
 .PHONY: image/kuma-cp/push
 image/kuma-cp/push: image/kuma-cp

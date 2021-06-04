@@ -1,4 +1,4 @@
-package k8s_api_bybass
+package k8s_api_bypass
 
 import (
 	"fmt"
@@ -45,7 +45,7 @@ metadata:
 
 	var cluster *K8sCluster
 	var clientPod *v1.Pod
-	var deployOptsFuncs []DeployOptionsFunc
+	var deployOptsFuncs = KumaK8sDeployOpts
 
 	BeforeEach(func() {
 		c, err := NewK8SCluster(NewTestingT(), Kuma1, Silent)
