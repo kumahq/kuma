@@ -182,10 +182,7 @@ func (e Endpoint) HasLocality() bool {
 func (e Endpoint) ContainsTags(tags map[string]string) bool {
 	for otherKey, otherValue := range tags {
 		endpointValue, ok := e.Tags[otherKey]
-		if !ok {
-			continue
-		}
-		if otherValue != endpointValue {
+		if !ok || otherValue != endpointValue {
 			return false
 		}
 	}
