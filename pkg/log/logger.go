@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 	kube_log_zap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
@@ -51,12 +52,23 @@ func NewLogger(level LogLevel) logr.Logger {
 	return NewLoggerTo(os.Stderr, level)
 }
 
+// empty outputPath means no rotation
+// default values: maxSize=100 ie 100 megabytes maxBackups=1000 maxAge=30 ie 30 days
+func NewLoggerWithRotation(level LogLevel, outputPath string, maxSize int, maxBackups int, maxAge int) logr.Logger {
+	return NewLoggerTo(&lumberjack.Logger{
+		Filename:   outputPath,
+		MaxSize:    maxSize,
+		MaxBackups: maxBackups,
+		MaxAge:     maxAge}, level)
+}
+
 func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {
 	return zapr.NewLogger(newZapLoggerTo(destWriter, level))
 }
 
 func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *zap.Logger {
 	var lvl zap.AtomicLevel
+
 	switch level {
 	case OffLevel:
 		return zap.NewNop()

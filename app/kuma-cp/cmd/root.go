@@ -19,7 +19,11 @@ var (
 // newRootCmd represents the base command when called without any subcommands.
 func newRootCmd() *cobra.Command {
 	args := struct {
-		logLevel string
+		logLevel   string
+		outputPath string
+		maxSize    int
+		maxBackups int
+		maxAge     int
 	}{}
 	cmd := &cobra.Command{
 		Use:   "kuma-cp",
@@ -30,7 +34,12 @@ func newRootCmd() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			core.SetLogger(core.NewLogger(level))
+
+			if args.outputPath != "" {
+				core.SetLogger(core.NewLoggerWithRotation(level, args.outputPath, args.maxSize, args.maxBackups, args.maxAge))
+			} else {
+				core.SetLogger(core.NewLogger(level))
+			}
 
 			// once command line flags have been parsed,
 			// avoid printing usage instructions
@@ -41,6 +50,10 @@ func newRootCmd() *cobra.Command {
 	}
 	// root flags
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.InfoLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
+	cmd.PersistentFlags().StringVar(&args.outputPath, "output-path", args.outputPath, "path of output rotating file")
+	cmd.PersistentFlags().IntVar(&args.maxBackups, "max-backups", 1000, "maximum number of old log files to retain")
+	cmd.PersistentFlags().IntVar(&args.maxSize, "max-size", 100, "maximum size in megabytes of a log file before it gets rotated")
+	cmd.PersistentFlags().IntVar(&args.maxBackups, "max-age", 30, "maximum number of days to retain old log files based on the timestamp encoded in their filename")
 	// sub-commands
 	cmd.AddCommand(newRunCmd())
 	cmd.AddCommand(newMigrateCmd())
