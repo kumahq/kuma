@@ -7,7 +7,7 @@ import (
 
 var RateLimitWsDefinition = ResourceWsDefinition{
 	Name: "Rate Limit",
-	Path: "rate-limit",
+	Path: "rate-limits",
 	ResourceFactory: func() model.Resource {
 		return mesh.NewRateLimitResource()
 	},
