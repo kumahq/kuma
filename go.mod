@@ -32,9 +32,9 @@ require (
 	github.com/onsi/gomega v1.11.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/pkg/errors v0.9.1
-	github.com/prometheus/client_golang v1.9.0
+	github.com/prometheus/client_golang v1.10.0
 	github.com/prometheus/client_model v0.2.0
-	github.com/prometheus/common v0.23.0
+	github.com/prometheus/common v0.27.0
 	github.com/prometheus/prometheus v0.0.0-00010101000000-000000000000
 	github.com/sethvargo/go-retry v0.1.0
 	github.com/slok/go-http-metrics v0.9.0
