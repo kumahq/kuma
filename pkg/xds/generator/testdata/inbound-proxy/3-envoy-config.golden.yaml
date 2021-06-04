@@ -114,6 +114,10 @@ resources:
           '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
           forwardClientCertDetails: SANITIZE_SET
           httpFilters:
+          - name: envoy.filters.http.local_ratelimit
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+              statPrefix: rate_limit
           - name: envoy.filters.http.fault
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.filters.http.fault.v3.HTTPFault
@@ -150,6 +154,14 @@ resources:
                 typedPerFilterConfig:
                   envoy.filters.http.local_ratelimit:
                     '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                    filterEnabled:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enabled
+                    filterEnforced:
+                      defaultValue:
+                        numerator: 100
+                      runtimeKey: local_rate_limit_enforced
                     responseHeadersToAdd:
                     - append: false
                       header:
@@ -161,7 +173,7 @@ resources:
                     tokenBucket:
                       fillInterval: 2s
                       maxTokens: 100
-                      tokensPerFill: 100
+                      tokensPerFill: 1
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080

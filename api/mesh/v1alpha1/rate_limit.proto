@@ -50,19 +50,8 @@ message RateLimit {
       OnError onError = 3;
     }
 
-    message Tcp {
-      //  +optional
-      google.protobuf.UInt32Value connections = 1;
-
-      //  +optional
-      google.protobuf.Duration interval = 2;
-    }
-
     // +optional
     Http http = 1;
-
-    // +optional
-    Tcp tcp = 2;
   }
 
   //  +required
