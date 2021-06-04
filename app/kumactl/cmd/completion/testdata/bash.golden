@@ -850,6 +850,38 @@ _kumactl_generate()
     noun_aliases=()
 }
 
+_kumactl_genman()
+{
+    last_command="kumactl_genman"
+
+    command_aliases=()
+
+    commands=()
+
+    flags=()
+    two_word_flags=()
+    local_nonpersistent_flags=()
+    flags_with_completion=()
+    flags_completion=()
+
+    flags+=("--output-dir=")
+    two_word_flags+=("--output-dir")
+    two_word_flags+=("-o")
+    local_nonpersistent_flags+=("--output-dir=")
+    flags+=("--config-file=")
+    two_word_flags+=("--config-file")
+    flags+=("--log-level=")
+    two_word_flags+=("--log-level")
+    flags+=("--mesh=")
+    two_word_flags+=("--mesh")
+    two_word_flags+=("-m")
+    flags+=("--no-config")
+
+    must_have_one_flag=()
+    must_have_one_noun=()
+    noun_aliases=()
+}
+
 _kumactl_get_circuit-breaker()
 {
     last_command="kumactl_get_circuit-breaker"
@@ -2768,6 +2800,7 @@ _kumactl_root_command()
     commands+=("config")
     commands+=("delete")
     commands+=("generate")
+    commands+=("genman")
     commands+=("get")
     commands+=("inspect")
     commands+=("install")

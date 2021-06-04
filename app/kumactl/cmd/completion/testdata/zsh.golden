@@ -20,6 +20,7 @@ function _kumactl {
       "config:Manage kumactl config"
       "delete:Delete Kuma resources"
       "generate:Generate resources, tokens, etc"
+      "genman:Generate man pages for the kuma CLI"
       "get:Show Kuma resources"
       "help:Help about any command"
       "inspect:Inspect Kuma resources"
@@ -46,6 +47,9 @@ function _kumactl {
     ;;
   generate)
     _kumactl_generate
+    ;;
+  genman)
+    _kumactl_genman
     ;;
   get)
     _kumactl_get
@@ -319,6 +323,15 @@ function _kumactl_generate_tls-certificate {
     '*--cp-hostname[DNS name of the control plane]:' \
     '--key-file[path to a file with a generated private key]:' \
     '--type[type of the certificate: one of client|server]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
+}
+
+function _kumactl_genman {
+  _arguments \
+    '(-o --output-dir)'{-o,--output-dir}'[directory to populate with documentation]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \

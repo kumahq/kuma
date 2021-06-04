@@ -12,6 +12,7 @@ Available Commands:
   config      Manage kumactl config
   delete      Delete Kuma resources
   generate    Generate resources, tokens, etc
+  genman      Generate man pages for the kuma CLI
   get         Show Kuma resources
   help        Help about any command
   inspect     Inspect Kuma resources
