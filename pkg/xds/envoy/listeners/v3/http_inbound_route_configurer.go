@@ -8,11 +8,12 @@ import (
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/wrappers"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/util/proto"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -47,6 +48,27 @@ func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.Filte
 	return UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
 		hcm.RouteSpecifier = &envoy_hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: routeConfig.(*envoy_route.RouteConfiguration),
+		}
+
+		// Enable the Local Rate Limit at the HttpConnectionManager level
+		if c.hasHttpRateLimit() {
+			config := &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{
+				StatPrefix: "rate_limit",
+			}
+
+			pbst, err := proto.MarshalAnyDeterministic(config)
+			if err != nil {
+				return err
+			}
+
+			hcm.HttpFilters = append([]*envoy_hcm.HttpFilter{
+				{
+					Name: "envoy.filters.http.local_ratelimit",
+					ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+						TypedConfig: pbst,
+					},
+				},
+			}, hcm.HttpFilters...)
 		}
 		return nil
 	})
@@ -117,16 +139,34 @@ func (c *HttpInboundRouteConfigurer) createRateLimit() (*any.Any, error) {
 
 	config := &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{
 		StatPrefix: "rate_limit",
+		Status:     status,
 		TokenBucket: &envoy_type_v3.TokenBucket{
-			MaxTokens:     rlHttp.Connections.GetValue(),
-			TokensPerFill: rlHttp.Connections,
-			FillInterval:  rlHttp.GetInterval(),
+			MaxTokens: rlHttp.Connections.GetValue(),
+			TokensPerFill: &wrappers.UInt32Value{
+				Value: 1,
+			},
+			FillInterval: rlHttp.GetInterval(),
 		},
-		Status:               status,
+		FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
+			DefaultValue: &envoy_type_v3.FractionalPercent{
+				Numerator:   100,
+				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+			},
+			RuntimeKey: "local_rate_limit_enabled",
+		},
+		FilterEnforced: &envoy_config_core_v3.RuntimeFractionalPercent{
+			DefaultValue: &envoy_type_v3.FractionalPercent{
+				Numerator:   100,
+				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+			},
+			RuntimeKey: "local_rate_limit_enforced",
+		},
 		ResponseHeadersToAdd: responseHeaders,
-		Descriptors:          nil,
-		Stage:                0,
 	}
 
 	return proto.MarshalAnyDeterministic(config)
+}
+
+func (c *HttpInboundRouteConfigurer) hasHttpRateLimit() bool {
+	return c.RateLimit != nil && c.RateLimit.GetConf().GetHttp() != nil
 }

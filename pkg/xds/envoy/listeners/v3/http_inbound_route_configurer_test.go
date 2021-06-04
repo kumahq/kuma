@@ -148,6 +148,10 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                   setCurrentClientCertDetails:
                     uri: true
                   httpFilters:
+                  - name: envoy.filters.http.local_ratelimit
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      statPrefix: rate_limit
                   - name: envoy.filters.http.router
                   routeConfig:
                     name: inbound:backend
@@ -167,6 +171,14 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                         typedPerFilterConfig:
                           envoy.filters.http.local_ratelimit:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                            filterEnabled:
+                              defaultValue:
+                                numerator: 100
+                              runtimeKey: local_rate_limit_enabled
+                            filterEnforced:
+                              defaultValue:
+                                numerator: 100
+                              runtimeKey: local_rate_limit_enforced
                             responseHeadersToAdd:
                             - append: false
                               header:
@@ -178,7 +190,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                             tokenBucket:
                               fillInterval: 3s
                               maxTokens: 100
-                              tokensPerFill: 100
+                              tokensPerFill: 1
                   statPrefix: localhost_8080
 `,
 		}),
@@ -243,6 +255,10 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                   setCurrentClientCertDetails:
                     uri: true
                   httpFilters:
+                  - name: envoy.filters.http.local_ratelimit
+                    typedConfig:
+                      '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                      statPrefix: rate_limit
                   - name: envoy.filters.http.router
                   routeConfig:
                     name: inbound:backend
@@ -267,6 +283,14 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                         typedPerFilterConfig:
                           envoy.filters.http.local_ratelimit:
                             '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
+                            filterEnabled:
+                              defaultValue:
+                                numerator: 100
+                              runtimeKey: local_rate_limit_enabled
+                            filterEnforced:
+                              defaultValue:
+                                numerator: 100
+                              runtimeKey: local_rate_limit_enforced
                             responseHeadersToAdd:
                             - append: false
                               header:
@@ -278,7 +302,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                             tokenBucket:
                               fillInterval: 3s
                               maxTokens: 100
-                              tokensPerFill: 100
+                              tokensPerFill: 1
                   statPrefix: localhost_8080
 `,
 		}),

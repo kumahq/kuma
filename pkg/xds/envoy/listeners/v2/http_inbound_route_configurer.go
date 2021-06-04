@@ -7,6 +7,7 @@ import (
 	envoy_config_filter_network_local_rate_limit_v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/local_rate_limit/v2alpha"
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
 	"github.com/golang/protobuf/ptypes/any"
+	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -47,6 +48,27 @@ func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.Filte
 	return UpdateHTTPConnectionManager(filterChain, func(hcm *envoy_hcm.HttpConnectionManager) error {
 		hcm.RouteSpecifier = &envoy_hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: routeConfig.(*envoy_api.RouteConfiguration),
+		}
+
+		// Enable the Local Rate Limit at the HttpConnectionManager level
+		if c.hasHttpRateLimit() {
+			config := &envoy_config_filter_network_local_rate_limit_v2alpha.LocalRateLimit{
+				StatPrefix: "rate_limit",
+			}
+
+			pbst, err := proto.MarshalAnyDeterministic(config)
+			if err != nil {
+				return err
+			}
+
+			hcm.HttpFilters = append([]*envoy_hcm.HttpFilter{
+				{
+					Name: "envoy.filters.http.local_ratelimit",
+					ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
+						TypedConfig: pbst,
+					},
+				},
+			}, hcm.HttpFilters...)
 		}
 		return nil
 	})
@@ -104,12 +126,17 @@ func (c *HttpInboundRouteConfigurer) createRateLimit() (*any.Any, error) {
 	config := &envoy_config_filter_network_local_rate_limit_v2alpha.LocalRateLimit{
 		StatPrefix: "rate_limit",
 		TokenBucket: &envoy_type.TokenBucket{
-			MaxTokens:     rlHttp.Connections.GetValue(),
-			TokensPerFill: rlHttp.Connections,
-			FillInterval:  rlHttp.GetInterval(),
+			MaxTokens: rlHttp.Connections.GetValue(),
+			TokensPerFill: &wrappers.UInt32Value{
+				Value: 1,
+			},
+			FillInterval: rlHttp.GetInterval(),
 		},
-		RuntimeEnabled: nil,
 	}
 
 	return proto.MarshalAnyDeterministic(config)
+}
+
+func (c *HttpInboundRouteConfigurer) hasHttpRateLimit() bool {
+	return c.RateLimit != nil && c.RateLimit.GetConf().GetHttp() != nil
 }
