@@ -3,13 +3,13 @@
 		install/protobuf-wellknown-types install/data-plane-api \
 		protoc protoc/mesh/v1alpha1 protoc/observability/v1alpha1 protoc/system/v1alpha1
 
-TOOLS_DIR ?= $(HOME)/bin
+CI_TOOLS_DIR ?= $(HOME)/bin
 GOPATH_DIR := $(shell go env GOPATH | awk -F: '{print $$1}')
 GOPATH_BIN_DIR := $(GOPATH_DIR)/bin
-export PATH := $(TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
+export PATH := $(CI_TOOLS_DIR):$(GOPATH_BIN_DIR):$(PATH)
 
-PROTOC_PATH := $(TOOLS_DIR)/protoc
-PROTOBUF_WKT_DIR := $(TOOLS_DIR)/protobuf.d
+PROTOC_PATH := $(CI_TOOLS_DIR)/protoc
+PROTOBUF_WKT_DIR := $(CI_TOOLS_DIR)/protobuf.d
 
 #
 # Re-usable snippets
@@ -103,7 +103,7 @@ install/protoc:
 		&& set -x \
 		&& curl -Lo /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTOC_VERSION)/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
 		&& unzip /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip bin/protoc -d /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
-		&& mkdir -p $(TOOLS_DIR) \
+		&& mkdir -p $(CI_TOOLS_DIR) \
 		&& cp /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH)/bin/protoc $(PROTOC_PATH) \
 		&& rm -rf /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH) \
 		&& rm /tmp/protoc-$(PROTOC_VERSION)-$(PROTOC_OS)-$(PROTOC_ARCH).zip \
