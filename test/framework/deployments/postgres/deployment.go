@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments"
 )
 
 type Deployment interface {
@@ -16,9 +15,7 @@ func Install() framework.InstallFunc {
 		var deployment Deployment
 		switch cluster.(type) {
 		case *framework.UniversalCluster:
-			deployment = &universalDeployment{
-				DockerDeployment: deployments.NewDockerDeployment(),
-			}
+			deployment = NewUniversalDeployment(cluster)
 		case *framework.K8sCluster:
 			return errors.New("kubernetes cluster not supported for postgres deployment")
 		default:

@@ -2,15 +2,17 @@ package postgres
 
 import (
 	"bytes"
+	"fmt"
 	"os/exec"
 	"regexp"
+	"strconv"
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/test/framework"
-	"github.com/kumahq/kuma/test/framework/deployments"
+	. "github.com/kumahq/kuma/test/framework/deployments"
 )
 
 const (
@@ -35,61 +37,76 @@ const (
 )
 
 type universalDeployment struct {
-	*deployments.DockerDeployment
+	container *DockerContainer
 }
 
 var _ Deployment = &universalDeployment{}
+
+func NewUniversalDeployment(cluster framework.Cluster) *universalDeployment {
+	name := cluster.Name() + "_" + AppPostgres
+
+	container, err := NewDockerContainer(
+		AllocatePublicPortsFor(DefaultPostgresPort),
+		Name(name),
+		TestingT(cluster.GetTesting()),
+		Network("kind"),
+		Image(PostgresImage),
+		EnvVar(PostgresEnvVarUser, DefaultPostgresUser),
+		EnvVar(PostgresEnvVarPassword, DefaultPostgresPassword),
+		EnvVar(PostgresEnvVarDB, DefaultPostgresDBName),
+	)
+	if err != nil {
+		panic(err)
+	}
+
+	return &universalDeployment{
+		container: container,
+	}
+}
 
 func (u *universalDeployment) Name() string {
 	return AppPostgres
 }
 
 func (u *universalDeployment) Deploy(cluster framework.Cluster) error {
-	if err := u.AllocatePublicPortsFor("5432"); err != nil {
+	if err := u.container.Run(); err != nil {
 		return err
 	}
 
-	err := u.
-		WithName(cluster.Name()+"_"+u.Name()).
-		WithTestingT(cluster.GetTesting()).
-		WithNetwork("kind").
-		WithImage(PostgresImage).
-		WithEnvVar(PostgresEnvVarUser, DefaultPostgresUser).
-		WithEnvVar(PostgresEnvVarPassword, DefaultPostgresPassword).
-		WithEnvVar(PostgresEnvVarDB, DefaultPostgresDBName).
-		RunContainer()
+	ip, err := u.container.GetIP()
 	if err != nil {
 		return err
 	}
 
-	ip, err := u.GetIP()
-	if err != nil {
-		return err
-	}
+	port := strconv.Itoa(int(DefaultPostgresPort))
 
 	cluster.
 		WithEnvVar(AppKumaCP, EnvStoreType, string(StoreTypePostgres)).
 		WithEnvVar(AppKumaCP, EnvStorePostgresUser, DefaultPostgresUser).
 		WithEnvVar(AppKumaCP, EnvStorePostgresPassword, DefaultPostgresPassword).
 		WithEnvVar(AppKumaCP, EnvStorePostgresDBName, DefaultPostgresDBName).
-		WithEnvVar(AppKumaCP, EnvStorePostgresPort, DefaultPostgresPort).
+		WithEnvVar(AppKumaCP, EnvStorePostgresPort, port).
 		WithEnvVar(AppKumaCP, EnvStorePostgresHost, ip).
 		WithHookFn(AppKumaCP, AfterCreateMainApp, RunDBMigration)
 
 	return u.waitTillReady(cluster.GetTesting())
 }
 
-func (u *universalDeployment) Delete(cluster framework.Cluster) error {
-	return u.StopContainer()
+func (u *universalDeployment) Delete(framework.Cluster) error {
+	return u.container.Stop()
 }
 
 func (u *universalDeployment) waitTillReady(t testing.TestingT) error {
-	retry.DoWithRetry(t, "logs "+u.GetContainerID(), framework.DefaultRetries, framework.DefaultTimeout,
+	containerID := u.container.GetID()
+
+	r := regexp.MustCompile("database system is ready to accept connections")
+
+	retry.DoWithRetry(t, "logs "+containerID, framework.DefaultRetries, framework.DefaultTimeout,
 		func() (string, error) {
 			var stdout bytes.Buffer
 			var stderr bytes.Buffer
 
-			cmd := exec.Command("docker", "logs", u.GetContainerID())
+			cmd := exec.Command("docker", "logs", containerID)
 			cmd.Stdout = &stdout
 			cmd.Stderr = &stderr
 
@@ -101,12 +118,11 @@ func (u *universalDeployment) waitTillReady(t testing.TestingT) error {
 				return "command returned stderr", errors.New(stderr.String())
 			}
 
-			matched, err := regexp.Match("database system is ready to accept connections", stdout.Bytes())
-			if matched {
-				return "Postgres is ready", nil
-			} else {
-				return "Postgres is not ready yet", err
+			if !r.Match(stdout.Bytes()) {
+				return "Postgres is not ready yet", fmt.Errorf("failed to match against %q", stdout.String())
 			}
+
+			return "Postgres is ready", nil
 		})
 
 	return nil
