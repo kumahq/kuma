@@ -45,7 +45,7 @@ func NewUniversalDeployment(cluster Cluster, name string) *universalDeployment {
 		name:      name,
 		container: container,
 		envVars: map[string]string{
-			EnvStoreType:             string(StoreTypePostgres),
+			EnvStoreType:             "postgres",
 			EnvStorePostgresUser:     DefaultPostgresUser,
 			EnvStorePostgresPassword: DefaultPostgresPassword,
 			EnvStorePostgresDBName:   DefaultPostgresDBName,

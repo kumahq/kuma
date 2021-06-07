@@ -19,8 +19,6 @@ var (
 	KumactlInstallationMode = InstallationMode("kumactl")
 )
 
-type DeploymentStoreType string
-
 type deployOptions struct {
 	// cp specific
 	globalAddress        string
