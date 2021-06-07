@@ -76,7 +76,7 @@ func GetUniversalImage() string {
 		return os.Getenv("KUMA_UNIVERSAL_IMAGE")
 	}
 
-	return "kuma-universal"
+	return KumaUniversalImage
 }
 
 func GetApiVersion() string {

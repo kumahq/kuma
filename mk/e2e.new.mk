@@ -61,6 +61,8 @@ ifdef KUMA_DEFAULT_TIMEOUT
 	ENV_VARS += KUMA_DEFAULT_TIMEOUT=$(KUMA_DEFAULT_TIMEOUT)
 endif
 
+# We don't use `go list` here because Ginkgo requires disk path names,
+# not Go packages names.
 TEST_NAMES = $(shell ls -1 ./test/e2e)
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)

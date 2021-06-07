@@ -66,6 +66,7 @@ conf:
 			WithTransparentProxy(true), WithBuiltinDNS(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = TestServerUniversal("test-server", "default", testServerToken,
+			WithArgs([]string{"health-check", "http"}),
 			WithTransparentProxy(true), WithProtocol("http"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

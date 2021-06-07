@@ -316,6 +316,7 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 	for _, http := range route.Spec.GetConf().GetHttp() {
 		route := envoy_common.Route{
 			Match:    http.Match,
+			Modify:   http.Modify,
 			Clusters: clustersFromSplit(http.GetSplitWithDestination()),
 		}
 		routes = append(routes, route)

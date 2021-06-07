@@ -3,6 +3,7 @@ package v2
 import (
 	"sort"
 
+	envoy_api "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	"github.com/golang/protobuf/ptypes"
@@ -21,12 +22,45 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 		envoyRoute := &envoy_route.Route{
 			Match: c.routeMatch(route.Match),
 			Action: &envoy_route.Route_Route{
-				Route: c.routeAction(route.Clusters),
+				Route: c.routeAction(route.Clusters, route.Modify),
 			},
 		}
+		c.setHeadersModifications(envoyRoute, route.Modify)
 		virtualHost.Routes = append(virtualHost.Routes, envoyRoute)
 	}
 	return nil
+}
+
+func (c RoutesConfigurer) setHeadersModifications(route *envoy_route.Route, modify *mesh_proto.TrafficRoute_Http_Modify) {
+	for _, add := range modify.GetRequestHeaders().GetAdd() {
+		route.RequestHeadersToAdd = append(route.RequestHeadersToAdd, &envoy_api.HeaderValueOption{
+			Header: &envoy_api.HeaderValue{
+				Key:   add.Name,
+				Value: add.Value,
+			},
+			Append: &wrappers.BoolValue{
+				Value: add.Append,
+			},
+		})
+	}
+	for _, remove := range modify.GetRequestHeaders().GetRemove() {
+		route.RequestHeadersToRemove = append(route.RequestHeadersToRemove, remove.Name)
+	}
+
+	for _, add := range modify.GetResponseHeaders().GetAdd() {
+		route.ResponseHeadersToAdd = append(route.ResponseHeadersToAdd, &envoy_api.HeaderValueOption{
+			Header: &envoy_api.HeaderValue{
+				Key:   add.Name,
+				Value: add.Value,
+			},
+			Append: &wrappers.BoolValue{
+				Value: add.Append,
+			},
+		})
+	}
+	for _, remove := range modify.GetResponseHeaders().GetRemove() {
+		route.ResponseHeadersToRemove = append(route.ResponseHeadersToRemove, remove.Name)
+	}
 }
 
 func (c RoutesConfigurer) routeMatch(match *mesh_proto.TrafficRoute_Http_Match) *envoy_route.RouteMatch {
@@ -117,8 +151,8 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 	return false
 }
 
-func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster) *envoy_route.RouteAction {
-	routeAction := envoy_route.RouteAction{}
+func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *mesh_proto.TrafficRoute_Http_Modify) *envoy_route.RouteAction {
+	routeAction := &envoy_route.RouteAction{}
 	if len(clusters) != 0 {
 		routeAction.Timeout = ptypes.DurationProto(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
 	}
@@ -148,5 +182,34 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster) *envoy_ro
 			AutoHostRewrite: &wrappers.BoolValue{Value: true},
 		}
 	}
-	return &routeAction
+	c.setModifications(routeAction, modify)
+	return routeAction
+}
+
+func (c RoutesConfigurer) setModifications(routeAction *envoy_route.RouteAction, modify *mesh_proto.TrafficRoute_Http_Modify) {
+	if modify.GetPath() != nil {
+		switch modify.GetPath().Type.(type) {
+		case *mesh_proto.TrafficRoute_Http_Modify_Path_RewritePrefix:
+			routeAction.PrefixRewrite = modify.GetPath().GetRewritePrefix()
+		case *mesh_proto.TrafficRoute_Http_Modify_Path_Regex:
+			routeAction.RegexRewrite = &envoy_type_matcher.RegexMatchAndSubstitute{
+				Pattern: &envoy_type_matcher.RegexMatcher{
+					EngineType: &envoy_type_matcher.RegexMatcher_GoogleRe2{
+						GoogleRe2: &envoy_type_matcher.RegexMatcher_GoogleRE2{},
+					},
+					Regex: modify.GetPath().GetRegex().GetPattern(),
+				},
+				Substitution: modify.GetPath().GetRegex().GetSubstitution(),
+			}
+		}
+	}
+
+	if modify.GetHost() != nil {
+		switch modify.GetHost().Type.(type) {
+		case *mesh_proto.TrafficRoute_Http_Modify_Host_Value:
+			routeAction.HostRewriteSpecifier = &envoy_route.RouteAction_HostRewrite{
+				HostRewrite: modify.GetHost().GetValue(),
+			}
+		}
+	}
 }
