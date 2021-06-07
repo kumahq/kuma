@@ -109,7 +109,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Destinations: nil,
 				Conf: &v1alpha1.RateLimit_Conf{
 					Http: &v1alpha1.RateLimit_Conf_Http{
-						Connections: &wrappers.UInt32Value{
+						Requests: &wrappers.UInt32Value{
 							Value: 100,
 						},
 						Interval: &duration.Duration{
@@ -187,7 +187,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Destinations: nil,
 				Conf: &v1alpha1.RateLimit_Conf{
 					Http: &v1alpha1.RateLimit_Conf_Http{
-						Connections: &wrappers.UInt32Value{
+						Requests: &wrappers.UInt32Value{
 							Value: 100,
 						},
 						Interval: &duration.Duration{

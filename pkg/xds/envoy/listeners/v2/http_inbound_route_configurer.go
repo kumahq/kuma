@@ -119,14 +119,14 @@ func (c *HttpInboundRouteConfigurer) createRoutes() (envoy_common.Routes, error)
 func (c *HttpInboundRouteConfigurer) createRateLimit() (*any.Any, error) {
 	rlHttp := c.RateLimit.GetConf().GetHttp()
 
-	if rlHttp.GetOnError() != nil {
+	if rlHttp.GetOnRateLimit() != nil {
 		return nil, errors.Errorf("APIv2 does not support the `onError` field")
 	}
 
 	config := &envoy_config_filter_network_local_rate_limit_v2alpha.LocalRateLimit{
 		StatPrefix: "rate_limit",
 		TokenBucket: &envoy_type.TokenBucket{
-			MaxTokens: rlHttp.Connections.GetValue(),
+			MaxTokens: rlHttp.Requests.GetValue(),
 			TokensPerFill: &wrappers.UInt32Value{
 				Value: 1,
 			},

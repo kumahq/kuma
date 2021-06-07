@@ -18,12 +18,12 @@ type RateLimitMatcher struct {
 }
 
 func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (core_xds.RateLimitMap, error) {
-	permissions := &mesh_core.RateLimitResourceList{}
-	if err := m.ResourceManager.List(ctx, permissions, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
-		return nil, errors.Wrap(err, "could not retrieve traffic permissions")
+	ratelimits := &mesh_core.RateLimitResourceList{}
+	if err := m.ResourceManager.List(ctx, ratelimits, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
+		return nil, errors.Wrap(err, "could not retrieve ratelimits")
 	}
 
-	return BuildRateLimitMap(dataplane, mesh, permissions.Items)
+	return BuildRateLimitMap(dataplane, mesh, ratelimits.Items)
 }
 
 func BuildRateLimitMap(
@@ -32,8 +32,8 @@ func BuildRateLimitMap(
 	rateLimits []*mesh_core.RateLimitResource,
 ) (core_xds.RateLimitMap, error) {
 	policies := make([]policy.ConnectionPolicy, len(rateLimits))
-	for i, permission := range rateLimits {
-		policies[i] = permission
+	for i, ratelimit := range rateLimits {
+		policies[i] = ratelimit
 	}
 
 	additionalInbounds, err := manager_dataplane.AdditionalInbounds(dataplane, mesh)
@@ -48,49 +48,4 @@ func BuildRateLimitMap(
 		result[inbound] = connectionPolicy.(*mesh_core.RateLimitResource).Spec
 	}
 	return result, nil
-}
-
-func (m *RateLimitMatcher) MatchExternalServices(ctx context.Context, dataplane *mesh_core.DataplaneResource, externalServices *mesh_core.ExternalServiceResourceList) ([]*mesh_core.ExternalServiceResource, error) {
-	permissions := &mesh_core.RateLimitResourceList{}
-	if err := m.ResourceManager.List(ctx, permissions, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
-		return nil, errors.Wrap(err, "could not retrieve traffic permissions")
-	}
-
-	var matchedExternalServices []*mesh_core.ExternalServiceResource
-
-	externalServicePermissions := m.BuildExternalServicesPermissionsMap(externalServices, permissions.Items)
-	for _, externalService := range externalServices.Items {
-		permission := externalServicePermissions[externalService.GetMeta().GetName()]
-		if permission == nil {
-			continue
-		}
-		matched := false
-		for _, selector := range permission.Spec.Sources {
-			if dataplane.Spec.MatchTags(selector.Match) {
-				matched = true
-			}
-		}
-		if matched {
-			matchedExternalServices = append(matchedExternalServices, externalService)
-		}
-	}
-	return matchedExternalServices, nil
-}
-
-type ExternalServicePermissions map[string]*mesh_core.RateLimitResource
-
-func (m *RateLimitMatcher) BuildExternalServicesPermissionsMap(externalServices *mesh_core.ExternalServiceResourceList, rateLimits []*mesh_core.RateLimitResource) ExternalServicePermissions {
-	policies := make([]policy.ConnectionPolicy, len(rateLimits))
-	for i, permission := range rateLimits {
-		policies[i] = permission
-	}
-
-	result := ExternalServicePermissions{}
-	for _, externalService := range externalServices.Items {
-		matchedPolicy := policy.SelectInboundConnectionPolicy(externalService.Spec.Tags, policies)
-		if matchedPolicy != nil {
-			result[externalService.GetMeta().GetName()] = matchedPolicy.(*mesh_core.RateLimitResource)
-		}
-	}
-	return result
 }

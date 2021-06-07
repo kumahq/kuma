@@ -121,12 +121,12 @@ func (c *HttpInboundRouteConfigurer) createRateLimit() (*any.Any, error) {
 
 	var status *envoy_type_v3.HttpStatus
 	var responseHeaders []*envoy_config_core_v3.HeaderValueOption
-	if rlHttp.GetOnError() != nil {
+	if rlHttp.GetOnRateLimit() != nil {
 		status = &envoy_type_v3.HttpStatus{
-			Code: envoy_type_v3.StatusCode(rlHttp.GetOnError().GetStatus().GetValue()),
+			Code: envoy_type_v3.StatusCode(rlHttp.GetOnRateLimit().GetStatus().GetValue()),
 		}
 		responseHeaders = []*envoy_config_core_v3.HeaderValueOption{}
-		for _, h := range rlHttp.GetOnError().GetHeaders() {
+		for _, h := range rlHttp.GetOnRateLimit().GetHeaders() {
 			responseHeaders = append(responseHeaders, &envoy_config_core_v3.HeaderValueOption{
 				Header: &envoy_config_core_v3.HeaderValue{
 					Key:   h.GetKey(),
@@ -141,7 +141,7 @@ func (c *HttpInboundRouteConfigurer) createRateLimit() (*any.Any, error) {
 		StatPrefix: "rate_limit",
 		Status:     status,
 		TokenBucket: &envoy_type_v3.TokenBucket{
-			MaxTokens: rlHttp.Connections.GetValue(),
+			MaxTokens: rlHttp.GetRequests().GetValue(),
 			TokensPerFill: &wrappers.UInt32Value{
 				Value: 1,
 			},

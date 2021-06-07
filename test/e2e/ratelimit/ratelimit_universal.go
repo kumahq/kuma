@@ -27,7 +27,7 @@ conf:
  http:
    connections: 5
    interval: 10s
-   onError:
+   onRateLimit:
      status: 423
      headers:
        - key: "x-kuma-rate-limited"

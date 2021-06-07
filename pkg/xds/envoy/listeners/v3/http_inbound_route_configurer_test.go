@@ -109,17 +109,17 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Destinations: nil,
 				Conf: &v1alpha1.RateLimit_Conf{
 					Http: &v1alpha1.RateLimit_Conf_Http{
-						Connections: &wrappers.UInt32Value{
+						Requests: &wrappers.UInt32Value{
 							Value: 100,
 						},
 						Interval: &duration.Duration{
 							Seconds: 3,
 						},
-						OnError: &v1alpha1.RateLimit_Conf_Http_OnError{
+						OnRateLimit: &v1alpha1.RateLimit_Conf_Http_OnRateLimit{
 							Status: &wrappers.UInt32Value{
 								Value: 404,
 							},
-							Headers: []*v1alpha1.RateLimit_Conf_Http_OnError_HeaderValue{
+							Headers: []*v1alpha1.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
 								{
 									Key:   "x-local-rate-limit",
 									Value: "true",
@@ -216,17 +216,17 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Destinations: nil,
 				Conf: &v1alpha1.RateLimit_Conf{
 					Http: &v1alpha1.RateLimit_Conf_Http{
-						Connections: &wrappers.UInt32Value{
+						Requests: &wrappers.UInt32Value{
 							Value: 100,
 						},
 						Interval: &duration.Duration{
 							Seconds: 3,
 						},
-						OnError: &v1alpha1.RateLimit_Conf_Http_OnError{
+						OnRateLimit: &v1alpha1.RateLimit_Conf_Http_OnRateLimit{
 							Status: &wrappers.UInt32Value{
 								Value: 404,
 							},
-							Headers: []*v1alpha1.RateLimit_Conf_Http_OnError_HeaderValue{
+							Headers: []*v1alpha1.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
 								{
 									Key:   "x-local-rate-limit",
 									Value: "true",

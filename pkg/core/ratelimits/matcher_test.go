@@ -56,7 +56,7 @@ var _ = Describe("Match", func() {
 				Destinations: destinations,
 				Conf: &mesh_proto.RateLimit_Conf{
 					Http: &mesh_proto.RateLimit_Conf_Http{
-						Connections: &wrappers.UInt32Value{
+						Requests: &wrappers.UInt32Value{
 							Value: 100,
 						},
 						Interval: &duration.Duration{
