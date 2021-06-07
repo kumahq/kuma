@@ -54,7 +54,7 @@ const (
 	EnvStorePostgresPassword = "KUMA_STORE_POSTGRES_PASSWORD"
 	EnvStorePostgresDBName   = "KUMA_STORE_POSTGRES_DB_NAME"
 
-	DefaultPostgresPort     = "5432"
+	DefaultPostgresPort     = uint32(5432)
 	DefaultPostgresUser     = "kuma"
 	DefaultPostgresPassword = "kuma"
 	DefaultPostgresDBName   = "kuma"

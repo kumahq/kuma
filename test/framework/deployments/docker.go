@@ -15,20 +15,22 @@ import (
 	"github.com/gruntwork-io/terratest/modules/testing"
 )
 
-type DockerDeployment struct {
+type DockerContainer struct {
 	t          testing.TestingT
 	name       string
-	container  string
-	ports      map[string]string
+	id         string
+	ports      map[uint32]uint32
 	envVars    map[string]string
 	image      string
 	args       map[string][]string
 	dockerOpts *docker.RunOptions
 }
 
-func NewDockerDeployment() *DockerDeployment {
-	return &DockerDeployment{
-		ports:   map[string]string{},
+type DockerContainerOptFn func(d *DockerContainer) error
+
+func NewDockerContainer(fs ...DockerContainerOptFn) (*DockerContainer, error) {
+	d := &DockerContainer{
+		ports:   map[uint32]uint32{},
 		envVars: map[string]string{},
 		args:    map[string][]string{},
 		dockerOpts: &docker.RunOptions{
@@ -36,9 +38,21 @@ func NewDockerDeployment() *DockerDeployment {
 			Remove: true,
 		},
 	}
+
+	for _, f := range fs {
+		if err := f(d); err != nil {
+			return nil, errors.Errorf("couldn't create docker containter: %s", err)
+		}
+	}
+
+	d.dockerOpts.Name = d.name
+	d.dockerOpts.EnvironmentVariables = envVarsForDocker(d.envVars)
+	d.dockerOpts.OtherOptions = buildArgsForDocker(d.args, d.ports)
+
+	return d, nil
 }
 
-func (d *DockerDeployment) applyArgs(name string, values ...string) *DockerDeployment {
+func (d *DockerContainer) applyArgs(name string, values ...string) *DockerContainer {
 	if d.args[name] == nil {
 		d.args[name] = []string{}
 	}
@@ -69,7 +83,7 @@ func envVarsForDocker(envVars map[string]string) []string {
 	return finalEnvVars
 }
 
-func buildArgsForDocker(args map[string][]string, ports map[string]string) []string {
+func buildArgsForDocker(args map[string][]string, ports map[uint32]uint32) []string {
 	var opts []string
 
 	for key, values := range args {
@@ -79,57 +93,72 @@ func buildArgsForDocker(args map[string][]string, ports map[string]string) []str
 	}
 
 	for port, pubPort := range ports {
+		port := strconv.Itoa(int(port))
+		pubPort := strconv.Itoa(int(pubPort))
+
 		opts = append(opts, "--publish="+pubPort+":"+port)
 	}
 
 	return opts
 }
 
-func (d *DockerDeployment) WithTestingT(t testing.TestingT) *DockerDeployment {
-	d.t = t
+func TestingT(t testing.TestingT) DockerContainerOptFn {
+	return func(d *DockerContainer) error {
+		d.t = t
+
+		return nil
+	}
+}
+
+func EnvVar(name, value string) DockerContainerOptFn {
+	return func(d *DockerContainer) error {
+		d.envVars[name] = value
+
+		return nil
+	}
+}
+
+func Name(name string) DockerContainerOptFn {
+	return func(d *DockerContainer) error {
+		d.name = name
+
+		return nil
+	}
+}
+
+func Image(image string) DockerContainerOptFn {
+	return func(d *DockerContainer) error {
+		d.image = image
+
+		return nil
+	}
+}
+
+func Network(network string) DockerContainerOptFn {
+	return func(d *DockerContainer) error {
+		d.applyArgs("--network", network)
+
+		return nil
+	}
+}
+
+func (d *DockerContainer) withID(id string) *DockerContainer {
+	d.id = id
 
 	return d
 }
 
-func (d *DockerDeployment) WithContainer(container string) *DockerDeployment {
-	d.container = container
-
-	return d
+func (d *DockerContainer) GetID() string {
+	return d.id
 }
 
-func (d *DockerDeployment) WithEnvVar(name, value string) *DockerDeployment {
-	d.envVars[name] = value
-
-	return d
-}
-
-func (d *DockerDeployment) WithName(name string) *DockerDeployment {
-	d.name = name
-
-	return d
-}
-
-func (d *DockerDeployment) WithImage(image string) *DockerDeployment {
-	d.image = image
-
-	return d
-}
-
-func (d *DockerDeployment) WithNetwork(network string) *DockerDeployment {
-	return d.applyArgs("--network", network)
-}
-
-func (d *DockerDeployment) GetContainerID() string {
-	return d.container
-}
-
-func (d *DockerDeployment) GetIP() (string, error) {
+func (d *DockerContainer) GetIP() (string, error) {
 	args := []string{
 		"container",
 		"inspect",
 		"-f",
 		"{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}",
-		d.container,
+		d.id,
 	}
 
 	cmd := shell.Command{
@@ -141,13 +170,13 @@ func (d *DockerDeployment) GetIP() (string, error) {
 	return shell.RunCommandAndGetStdOutE(d.t, cmd)
 }
 
-func (d *DockerDeployment) GetContainerName() (string, error) {
+func (d *DockerContainer) GetName() (string, error) {
 	args := []string{
 		"container",
 		"inspect",
 		"-f",
 		"{{.Name}}",
-		d.container,
+		d.id,
 	}
 
 	cmd := shell.Command{
@@ -164,41 +193,40 @@ func (d *DockerDeployment) GetContainerName() (string, error) {
 	return out[1:], nil
 }
 
-func (d *DockerDeployment) AllocatePublicPortsFor(ports ...string) error {
-	for i, port := range ports {
-		pubPortUInt32, err := util_net.PickTCPPort("", uint32(33204+i), uint32(34204+i))
-		if err != nil {
-			return err
+func AllocatePublicPortsFor(ports ...uint32) DockerContainerOptFn {
+	return func(d *DockerContainer) error {
+		for i, port := range ports {
+			pubPortUInt32, err := util_net.PickTCPPort("", uint32(33204+i), uint32(34204+i))
+			if err != nil {
+				return err
+			}
+
+			d.ports[port] = pubPortUInt32
 		}
 
-		d.ports[port] = strconv.Itoa(int(pubPortUInt32))
+		return nil
 	}
-
-	return nil
 }
 
-func (d *DockerDeployment) RunContainer() error {
-	d.dockerOpts.Name = d.name
-	d.dockerOpts.EnvironmentVariables = envVarsForDocker(d.envVars)
-	d.dockerOpts.OtherOptions = buildArgsForDocker(d.args, d.ports)
-
+func (d *DockerContainer) Run() error {
 	container, err := docker.RunAndGetIDE(d.t, d.image, d.dockerOpts)
 	if err != nil {
 		return err
 	}
 
-	d.WithContainer(container)
+	d.withID(container)
 
 	return nil
 }
 
-func (d *DockerDeployment) StopContainer() error {
-	retry.DoWithRetry(d.t, "stop "+d.container, 30, 3*time.Second,
+func (d *DockerContainer) Stop() error {
+	retry.DoWithRetry(d.t, "stop "+d.id, 30, 3*time.Second,
 		func() (string, error) {
-			_, err := docker.StopE(d.t, []string{d.container}, &docker.StopOptions{Time: 1})
+			_, err := docker.StopE(d.t, []string{d.id}, &docker.StopOptions{Time: 1})
 			if err == nil {
-				return "Container still running", errors.Errorf("Container still running")
+				return "Container still running", err
 			}
+
 			return "Container stopped", nil
 		})
 
