@@ -2,7 +2,6 @@ package ratelimit
 
 import (
 	"fmt"
-	"time"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -50,9 +49,6 @@ conf:
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = cluster.VerifyKuma()
-		Expect(err).ToNot(HaveOccurred())
-
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
@@ -66,6 +62,9 @@ conf:
 			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
 			Setup(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -81,8 +80,12 @@ conf:
 	})
 
 	It("should limit to 5 requests per 10 sec", func() {
-		time.Sleep(5 * time.Second)
-		for i := 0; i < 5; i++ {
+		Eventually(func() bool {
+			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+			return err == nil
+		}, "30s", "3s").Should(BeTrue())
+
+		for i := 0; i < 4; i++ {
 			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed at %d request, \n-------\n %s  \n-------\n %s", i, stdout, stderr))
 			Expect(stderr).To(BeEmpty(), fmt.Sprintf("failed at %d request", i))
@@ -117,9 +120,12 @@ conf:
 		err := YamlUniversal(specificRateLimitPolicy)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		time.Sleep(15 * time.Second)
+		Eventually(func() bool {
+			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+			return err == nil
+		}, "30s", "3s").Should(BeTrue())
 
-		for i := 0; i < 8; i++ {
+		for i := 0; i < 7; i++ {
 			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed at %d request, \n-------\n %s  \n-------\n %s", i, stdout, stderr))
 			Expect(stderr).To(BeEmpty(), fmt.Sprintf("failed at %d request", i))
