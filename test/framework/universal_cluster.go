@@ -129,7 +129,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		return err
 	}
 
-	c.apps[AppKumaCP] = app
+	c.apps[AppModeCP] = app
 
 	return nil
 }
