@@ -79,25 +79,18 @@ func (u *universalDeployment) Delete(Cluster) error {
 
 func (u *universalDeployment) waitTillReady(t testing.TestingT) error {
 	containerID := u.container.GetID()
-
 	r := regexp.MustCompile("database system is ready to accept connections")
 
 	retry.DoWithRetry(t, "logs "+containerID, DefaultRetries, DefaultTimeout,
 		func() (string, error) {
 			var stdout bytes.Buffer
-			var stderr bytes.Buffer
 
 			cmd := exec.Command("docker", "logs", containerID)
 			cmd.Stdout = &stdout
-			cmd.Stderr = &stderr
 
 			if err := cmd.Run(); err != nil {
 				return "docker logs command failed", err
 			}
-
-			// if stderr.Len() != 0 {
-			// 	return "command returned stderr", errors.New("aaa")
-			// }
 
 			if !r.Match(stdout.Bytes()) {
 				return "Postgres is not ready yet", fmt.Errorf("failed to match against %q", stdout.String())
