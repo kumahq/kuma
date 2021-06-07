@@ -9,7 +9,6 @@ import (
 
 	"github.com/gruntwork-io/terratest/modules/retry"
 	"github.com/gruntwork-io/terratest/modules/testing"
-	"github.com/pkg/errors"
 
 	. "github.com/kumahq/kuma/test/framework"
 	. "github.com/kumahq/kuma/test/framework/deployments"
@@ -96,9 +95,9 @@ func (u *universalDeployment) waitTillReady(t testing.TestingT) error {
 				return "docker logs command failed", err
 			}
 
-			if stderr.Len() != 0 {
-				return "command returned stderr", errors.New(stderr.String())
-			}
+			// if stderr.Len() != 0 {
+			// 	return "command returned stderr", errors.New("aaa")
+			// }
 
 			if !r.Match(stdout.Bytes()) {
 				return "Postgres is not ready yet", fmt.Errorf("failed to match against %q", stdout.String())

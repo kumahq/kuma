@@ -64,6 +64,10 @@ func WithPostgres(envVars map[string]string) DeployOptionsFunc {
 	return func(o *deployOptions) {
 		o.runPostgresMigration = true
 
+		if o.env == nil {
+			o.env = map[string]string{}
+		}
+
 		for key, value := range envVars {
 			o.env[key] = value
 		}
