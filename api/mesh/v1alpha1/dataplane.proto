@@ -46,7 +46,8 @@ message Dataplane {
     // Public IP on which the dataplane is accessible in the network.
     string address = 5;
 
-    // AdvertiseAddress is the public routable address for the DP in cased when address is not accessable but envoy binds to address
+    // AdvertiseAddress is the public routable address for the DP in case
+    // address is not routable; envoy binds to address
     string advertiseAddress = 7;
 
     // Inbound describes a service implemented by the dataplane.
