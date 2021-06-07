@@ -113,8 +113,13 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 
 	app.CreateMainApp(env, cmd)
 
-	err = app.mainApp.Start()
-	if err != nil {
+	if opts.runPostgresMigration {
+		if err := runPostgresMigration(app, env); err != nil {
+			return err
+		}
+	}
+
+	if err := app.mainApp.Start(); err != nil {
 		return err
 	}
 
@@ -222,15 +227,6 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 
 	c.apps[opts.name] = app
 
-	if opts.runPostgresMigration {
-		var envVars []string
-		for key, value := range opts.env {
-			envVars = append(envVars, key+"="+value)
-		}
-
-		return runPostgresMigration(app, envVars)
-	}
-
 	return nil
 }
 
@@ -250,6 +246,10 @@ func runPostgresMigration(kumaCP *UniversalApp, envVars []string) error {
 	}
 
 	return nil
+}
+
+func (c *UniversalCluster) GetApp(appName string) *UniversalApp {
+	return c.apps[appName]
 }
 
 func (c *UniversalCluster) DeleteApp(namespace, appname string) error {
