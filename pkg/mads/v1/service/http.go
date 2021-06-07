@@ -59,7 +59,7 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 
 	discoveryReq.TypeUrl = mads_v1.MonitoringAssignmentType
 
-	timeout := s.config.FetchTimeout
+	timeout := s.config.DefaultFetchTimeout
 
 	ctx, cancelFunc := context.WithTimeout(req.Request.Context(), timeout)
 	defer cancelFunc()

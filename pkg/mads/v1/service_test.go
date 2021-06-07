@@ -54,7 +54,7 @@ var _ = Describe("MADS http service", func() {
 
 		cfg := mads_config.DefaultMonitoringAssignmentServerConfig()
 		cfg.AssignmentRefreshInterval = refreshInterval
-		cfg.FetchTimeout = defaultFetchTimeout
+		cfg.DefaultFetchTimeout = defaultFetchTimeout
 
 		svc := service.NewService(cfg, resManager, testing.NullLogger{})
 
