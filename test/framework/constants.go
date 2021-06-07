@@ -71,10 +71,6 @@ const (
 	AppKumaCP   = "kuma-cp"
 )
 
-const (
-	AfterCreateMainApp HookType = "AfterCreateMainApp"
-)
-
 var HelmRepo = "kuma/kuma"
 var HelmChartPath = "../../../deployments/charts/kuma"
 var HelmSubChartPrefix = ""

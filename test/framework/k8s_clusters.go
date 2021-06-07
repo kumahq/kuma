@@ -70,22 +70,6 @@ func (cs *K8sClusters) WithRetries(retries int) Cluster {
 	return cs
 }
 
-func (cs *K8sClusters) WithEnvVar(appName, envName, envValue string) Cluster {
-	for _, c := range cs.clusters {
-		c.WithEnvVar(appName, envName, envValue)
-	}
-
-	return cs
-}
-
-func (cs *K8sClusters) WithHookFn(appName string, hookType HookType, hook HookFn) Cluster {
-	for _, c := range cs.clusters {
-		c.WithHookFn(appName, hookType, hook)
-	}
-
-	return cs
-}
-
 func (cs *K8sClusters) Name() string {
 	panic("not implemented")
 }
