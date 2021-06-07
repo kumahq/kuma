@@ -37,8 +37,10 @@ func testEchoServer(port int) error {
 }
 
 func KICKubernetes() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
+	// IPv6 curently not supported by Kong Ingress Controller
+	// https://github.com/Kong/kubernetes-ingress-controller/issues/1017
+	if IsApiV2() || IsIPv6() {
+		fmt.Println("Test not supported on API v2 or IPv6")
 		return
 	}
 

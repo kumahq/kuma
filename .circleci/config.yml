@@ -431,7 +431,7 @@ jobs:
         command: |
           for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
             make docker/tag/${image} \
-              BINTRAY_REGISTRY="${AZURE_ACR_REGISTRY_FULLNAME}" \
+              DOCKER_REGISTRY="${AZURE_ACR_REGISTRY_FULLNAME}" \
               KUMA_VERSION="${TAG}" &
           done
 
