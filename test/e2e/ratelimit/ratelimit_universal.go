@@ -2,7 +2,6 @@ package ratelimit
 
 import (
 	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -25,7 +24,7 @@ destinations:
    kuma.io/service: echo-server_kuma-test_svc_8080
 conf:
  http:
-   connections: 5
+   requests: 5
    interval: 10s
    onRateLimit:
      status: 423
@@ -113,7 +112,7 @@ destinations:
     kuma.io/service: echo-server_kuma-test_svc_8080
 conf:
   http:
-    connections: 8
+    requests: 8
     interval: 10s
 `
 

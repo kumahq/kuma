@@ -64,6 +64,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
+					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
 					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.NewRouteFromCluster(envoy_common.NewCluster(envoy_common.WithService(localClusterName))), proxy.Policies.RateLimits[endpoint]))
 			case mesh_core.ProtocolGRPC:
@@ -71,6 +72,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
 					Configure(envoy_listeners.GrpcStats()).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
+					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
 					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.NewRouteFromCluster(envoy_common.NewCluster(envoy_common.WithService(localClusterName))), nil))
 			case mesh_core.ProtocolKafka:

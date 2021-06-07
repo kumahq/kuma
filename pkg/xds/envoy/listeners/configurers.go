@@ -240,6 +240,17 @@ func FaultInjection(faultInjection *mesh_proto.FaultInjection) FilterChainBuilde
 	})
 }
 
+func RateLimit(rateLimit *mesh_proto.RateLimit) FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+		config.AddV2(&v2.RateLimitConfigurer{
+			RateLimit: rateLimit,
+		})
+		config.AddV3(&v3.RateLimitConfigurer{
+			RateLimit: rateLimit,
+		})
+	})
+}
+
 func NetworkAccessLog(mesh string, trafficDirection envoy_common.TrafficDirection, sourceService string, destinationService string, backend *mesh_proto.LoggingBackend, proxy *core_xds.Proxy) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		if backend != nil {

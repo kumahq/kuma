@@ -49,27 +49,6 @@ func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.Filte
 		hcm.RouteSpecifier = &envoy_hcm.HttpConnectionManager_RouteConfig{
 			RouteConfig: routeConfig.(*envoy_route.RouteConfiguration),
 		}
-
-		// Enable the Local Rate Limit at the HttpConnectionManager level
-		if c.hasHttpRateLimit() {
-			config := &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{
-				StatPrefix: "rate_limit",
-			}
-
-			pbst, err := proto.MarshalAnyDeterministic(config)
-			if err != nil {
-				return err
-			}
-
-			hcm.HttpFilters = append([]*envoy_hcm.HttpFilter{
-				{
-					Name: "envoy.filters.http.local_ratelimit",
-					ConfigType: &envoy_hcm.HttpFilter_TypedConfig{
-						TypedConfig: pbst,
-					},
-				},
-			}, hcm.HttpFilters...)
-		}
 		return nil
 	})
 }
@@ -165,8 +144,4 @@ func (c *HttpInboundRouteConfigurer) createRateLimit() (*any.Any, error) {
 	}
 
 	return proto.MarshalAnyDeterministic(config)
-}
-
-func (c *HttpInboundRouteConfigurer) hasHttpRateLimit() bool {
-	return c.RateLimit != nil && c.RateLimit.GetConf().GetHttp() != nil
 }
