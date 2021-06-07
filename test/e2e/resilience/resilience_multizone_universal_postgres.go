@@ -1,15 +1,12 @@
 package resilience
 
 import (
-	"strings"
-
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/postgres"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/pkg/errors"
 )
 
 func ResilienceMultizoneUniversalPostgres() {
@@ -79,18 +76,10 @@ func ResilienceMultizoneUniversalPostgres() {
 	})
 
 	It("should mark zone as offline after remote control-plane is killed forcefully when global control-plane is down", func() {
-		Eventually(func() error {
-			output, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-			if err != nil {
-				return err
-			}
-
-			if !strings.Contains(output, "Online") {
-				return errors.New("remote zone is not online")
-			}
-
-			return nil
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+		// given zone connected to global
+		Eventually(func() (string, error) {
+			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+		}, "30s", "1s").Should(ContainElement("Online"))
 
 		g, ok := global.(*UniversalCluster)
 		Expect(ok).To(BeTrue())
@@ -98,34 +87,22 @@ func ResilienceMultizoneUniversalPostgres() {
 		kumaCP := g.GetApp(AppModeCP)
 		Expect(kumaCP).ToNot(BeNil())
 
+		// when global is killed
 		_, _, err := global.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
 		Expect(err).ToNot(HaveOccurred())
 
+		// and zone is killed while global is down
 		_, _, err = remote_1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = kumaCP.ReStart()
-		Expect(err).ToNot(HaveOccurred())
+		// and global is restarted
+		Expect(kumaCP.ReStart()).Should(Succeed())
 
-		Eventually(func() error {
-			if err := global.VerifyKuma(); err != nil {
-				return err
-			}
+		Eventually(global.VerifyKuma, "30s", "1s").ShouldNot(HaveOccurred())
 
-			return nil
-		}, "30s", "1s").ShouldNot(HaveOccurred())
-
-		Eventually(func() error {
-			output, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-			if err != nil {
-				return err
-			}
-
-			if !strings.Contains(output, "Offline") {
-				return errors.New("remote zone is not offline")
-			}
-
-			return nil
-		}, "30s", "1s").ShouldNot(HaveOccurred())
+		// then zone is offline
+		Eventually(func() (string, error) {
+			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+		}, "30s", "1s").Should(ContainElement("Offline"))
 	})
 }
