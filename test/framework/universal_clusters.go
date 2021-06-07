@@ -51,22 +51,6 @@ func (cs *UniversalClusters) WithRetries(retries int) Cluster {
 	return cs
 }
 
-func (cs *UniversalClusters) WithEnvVar(appName, envName, envValue string) Cluster {
-	for _, c := range cs.clusters {
-		c.WithEnvVar(appName, envName, envValue)
-	}
-
-	return cs
-}
-
-func (cs *UniversalClusters) WithHookFn(appName string, hookType HookType, hook HookFn) Cluster {
-	for _, c := range cs.clusters {
-		c.WithHookFn(appName, hookType, hook)
-	}
-
-	return cs
-}
-
 func (cs *UniversalClusters) Name() string {
 	panic("not implemented")
 }

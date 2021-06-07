@@ -94,16 +94,8 @@ func (c *K8sCluster) WithRetries(retries int) Cluster {
 	return c
 }
 
-func (c *K8sCluster) WithEnvVar(appName, envName, envValue string) Cluster {
-	panic("implement me")
-}
-
 func (c *K8sCluster) Name() string {
 	return c.name
-}
-
-func (c *K8sCluster) WithHookFn(appName string, hookType HookType, hook HookFn) Cluster {
-	panic("implement me")
 }
 
 func (c *K8sCluster) Apply(namespace string, yamlPath string) error {
