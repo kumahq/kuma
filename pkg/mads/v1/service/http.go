@@ -5,11 +5,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/golang/protobuf/jsonpb"
-
 	"github.com/emicklei/go-restful"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	cache_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
+	"github.com/golang/protobuf/jsonpb"
 
 	rest_errors "github.com/kumahq/kuma/pkg/core/rest/errors"
 	rest_error_types "github.com/kumahq/kuma/pkg/core/rest/errors/types"
@@ -60,8 +59,10 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 
 	discoveryReq.TypeUrl = mads_v1.MonitoringAssignmentType
 
-	ctx, cancel := context.WithTimeout(context.Background(), s.config.FetchTimeout)
-	defer cancel()
+	timeout := s.config.FetchTimeout
+
+	ctx, cancelFunc := context.WithTimeout(req.Request.Context(), timeout)
+	defer cancelFunc()
 
 	discoveryRes, err := s.server.FetchMonitoringAssignments(ctx, discoveryReq)
 	if err != nil {
