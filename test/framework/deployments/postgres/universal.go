@@ -29,13 +29,13 @@ var _ Deployment = &universalDeployment{}
 func NewUniversalDeployment(cluster Cluster, name string) *universalDeployment {
 	container, err := NewDockerContainer(
 		AllocatePublicPortsFor(DefaultPostgresPort),
-		Name(cluster.Name()+"_"+AppPostgres),
+		WithContainerName(cluster.Name()+"_"+AppPostgres),
 		WithTestingT(cluster.GetTesting()),
-		Network("kind"),
-		Image(PostgresImage),
-		EnvVar(PostgresEnvVarUser, DefaultPostgresUser),
-		EnvVar(PostgresEnvVarPassword, DefaultPostgresPassword),
-		EnvVar(PostgresEnvVarDB, DefaultPostgresDBName),
+		WithNetwork("kind"),
+		WithImage(PostgresImage),
+		WithEnvVar(PostgresEnvVarUser, DefaultPostgresUser),
+		WithEnvVar(PostgresEnvVarPassword, DefaultPostgresPassword),
+		WithEnvVar(PostgresEnvVarDB, DefaultPostgresDBName),
 	)
 	if err != nil {
 		panic(err)

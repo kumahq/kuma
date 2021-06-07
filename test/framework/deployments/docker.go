@@ -110,7 +110,7 @@ func WithTestingT(t testing.TestingT) DockerContainerOptFn {
 	}
 }
 
-func EnvVar(name, value string) DockerContainerOptFn {
+func WithEnvVar(name, value string) DockerContainerOptFn {
 	return func(d *DockerContainer) error {
 		d.envVars[name] = value
 
@@ -118,7 +118,7 @@ func EnvVar(name, value string) DockerContainerOptFn {
 	}
 }
 
-func Name(name string) DockerContainerOptFn {
+func WithContainerName(name string) DockerContainerOptFn {
 	return func(d *DockerContainer) error {
 		d.name = name
 
@@ -126,7 +126,7 @@ func Name(name string) DockerContainerOptFn {
 	}
 }
 
-func Image(image string) DockerContainerOptFn {
+func WithImage(image string) DockerContainerOptFn {
 	return func(d *DockerContainer) error {
 		d.image = image
 
@@ -134,7 +134,7 @@ func Image(image string) DockerContainerOptFn {
 	}
 }
 
-func Network(network string) DockerContainerOptFn {
+func WithNetwork(network string) DockerContainerOptFn {
 	return func(d *DockerContainer) error {
 		d.applyArgs("--network", network)
 
@@ -142,10 +142,8 @@ func Network(network string) DockerContainerOptFn {
 	}
 }
 
-func (d *DockerContainer) withID(id string) *DockerContainer {
+func (d *DockerContainer) addID(id string) {
 	d.id = id
-
-	return d
 }
 
 func (d *DockerContainer) GetID() string {
@@ -214,7 +212,7 @@ func (d *DockerContainer) Run() error {
 		return err
 	}
 
-	d.withID(container)
+	d.addID(container)
 
 	return nil
 }
