@@ -79,7 +79,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		// given zone connected to global
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainElement("Online"))
+		}, "30s", "1s").Should(ContainSubstring("Online"))
 
 		g, ok := global.(*UniversalCluster)
 		Expect(ok).To(BeTrue())
@@ -103,6 +103,6 @@ func ResilienceMultizoneUniversalPostgres() {
 		// then zone is offline
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainElement("Offline"))
+		}, "30s", "1s").Should(ContainSubstring("Offline"))
 	})
 }
