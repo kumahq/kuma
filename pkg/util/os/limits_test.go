@@ -1,6 +1,8 @@
 package os
 
 import (
+	"runtime"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"golang.org/x/sys/unix"
@@ -19,8 +21,12 @@ var _ = Describe("File limits", func() {
 
 		Expect(RaiseFileLimit()).Should(Succeed())
 
-		// After raising, the current limit should be the max.
-		Expect(CurrentFileLimit()).Should(BeNumerically("==", initialLimits.Max))
+		// After raising, the current limit should be the 4096 on Darwin and max elsewhere.
+		if runtime.GOOS == "darwin" {
+			Expect(CurrentFileLimit()).Should(BeNumerically("==", 10240))
+		} else {
+			Expect(CurrentFileLimit()).Should(BeNumerically("==", initialLimits.Max))
+		}
 
 		// Restore the original limit.
 		Expect(setFileLimit(initialLimits.Cur)).Should(Succeed())
