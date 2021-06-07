@@ -32,6 +32,7 @@ func NewRootCmd() *cobra.Command {
 	cmd.PersistentFlags().StringVar(&args.logLevel, "log-level", kuma_log.InfoLevel.String(), kuma_cmd.UsageOptions("log level", kuma_log.OffLevel, kuma_log.InfoLevel, kuma_log.DebugLevel))
 
 	cmd.AddCommand(newHealthCheckCmd())
+	cmd.AddCommand(newEchoHTTPCmd())
 	return cmd
 }
 

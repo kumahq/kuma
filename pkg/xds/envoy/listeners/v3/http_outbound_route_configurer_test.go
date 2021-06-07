@@ -150,6 +150,46 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
 							},
 						},
 					},
+					Modify: &mesh_proto.TrafficRoute_Http_Modify{
+						Path: &mesh_proto.TrafficRoute_Http_Modify_Path{
+							Type: &mesh_proto.TrafficRoute_Http_Modify_Path_RewritePrefix{
+								RewritePrefix: "/another",
+							},
+						},
+						Host: &mesh_proto.TrafficRoute_Http_Modify_Host{
+							Type: &mesh_proto.TrafficRoute_Http_Modify_Host_Value{
+								Value: "test",
+							},
+						},
+						RequestHeaders: &mesh_proto.TrafficRoute_Http_Modify_Headers{
+							Add: []*mesh_proto.TrafficRoute_Http_Modify_Headers_Add{
+								{
+									Name:   "test-add",
+									Value:  "abc",
+									Append: false,
+								},
+							},
+							Remove: []*mesh_proto.TrafficRoute_Http_Modify_Headers_Remove{
+								{
+									Name: "test-remove",
+								},
+							},
+						},
+						ResponseHeaders: &mesh_proto.TrafficRoute_Http_Modify_Headers{
+							Add: []*mesh_proto.TrafficRoute_Http_Modify_Headers_Add{
+								{
+									Name:   "test-add",
+									Value:  "abc",
+									Append: false,
+								},
+							},
+							Remove: []*mesh_proto.TrafficRoute_Http_Modify_Headers_Remove{
+								{
+									Name: "test-remove",
+								},
+							},
+						},
+					},
 					Clusters: []envoy_common.Cluster{
 						envoy_common.NewCluster(
 							envoy_common.WithName("backend-0"),
@@ -202,8 +242,24 @@ var _ = Describe("HttpOutboundRouteConfigurer", func() {
                           - exactMatch: GET
                             name: :method
                           prefix: /asd
+                        requestHeadersToAdd:
+                        - append: false
+                          header:
+                            key: test-add
+                            value: abc
+                        requestHeadersToRemove:
+                        - test-remove
+                        responseHeadersToAdd:
+                        - append: false
+                          header:
+                            key: test-add
+                            value: abc
+                        responseHeadersToRemove:
+                        - test-remove
                         route:
                           cluster: backend-0
+                          hostRewriteLiteral: test
+                          prefixRewrite: /another
                           timeout: 0s
                   statPrefix: "127_0_0_1_18080"
             name: outbound:127.0.0.1:18080
