@@ -16,17 +16,21 @@ import (
 )
 
 type universalDeployment struct {
+	name      string
 	container *DockerContainer
+	envVars   map[string]string
+}
+
+func (u *universalDeployment) GetEnvVars() map[string]string {
+	return u.envVars
 }
 
 var _ Deployment = &universalDeployment{}
 
-func NewUniversalDeployment(cluster Cluster) *universalDeployment {
-	name := cluster.Name() + "_" + AppPostgres
-
+func NewUniversalDeployment(cluster Cluster, name string) *universalDeployment {
 	container, err := NewDockerContainer(
 		AllocatePublicPortsFor(DefaultPostgresPort),
-		Name(name),
+		Name(cluster.Name()+"_"+AppPostgres),
 		WithTestingT(cluster.GetTesting()),
 		Network("kind"),
 		Image(PostgresImage),
@@ -39,12 +43,19 @@ func NewUniversalDeployment(cluster Cluster) *universalDeployment {
 	}
 
 	return &universalDeployment{
+		name:      name,
 		container: container,
+		envVars: map[string]string{
+			EnvStoreType:             string(StoreTypePostgres),
+			EnvStorePostgresUser:     DefaultPostgresUser,
+			EnvStorePostgresPassword: DefaultPostgresPassword,
+			EnvStorePostgresDBName:   DefaultPostgresDBName,
+		},
 	}
 }
 
 func (u *universalDeployment) Name() string {
-	return AppPostgres
+	return AppPostgres + u.name
 }
 
 func (u *universalDeployment) Deploy(cluster Cluster) error {
@@ -57,16 +68,8 @@ func (u *universalDeployment) Deploy(cluster Cluster) error {
 		return err
 	}
 
-	port := strconv.Itoa(int(DefaultPostgresPort))
-
-	cluster.
-		WithEnvVar(AppKumaCP, EnvStoreType, string(StoreTypePostgres)).
-		WithEnvVar(AppKumaCP, EnvStorePostgresUser, DefaultPostgresUser).
-		WithEnvVar(AppKumaCP, EnvStorePostgresPassword, DefaultPostgresPassword).
-		WithEnvVar(AppKumaCP, EnvStorePostgresDBName, DefaultPostgresDBName).
-		WithEnvVar(AppKumaCP, EnvStorePostgresPort, port).
-		WithEnvVar(AppKumaCP, EnvStorePostgresHost, ip).
-		WithHookFn(AppKumaCP, AfterCreateMainApp, RunDBMigration)
+	u.envVars[EnvStorePostgresHost] = ip
+	u.envVars[EnvStorePostgresPort] = strconv.Itoa(int(DefaultPostgresPort))
 
 	return u.waitTillReady(cluster.GetTesting())
 }
@@ -106,31 +109,3 @@ func (u *universalDeployment) waitTillReady(t testing.TestingT) error {
 
 	return nil
 }
-
-var RunDBMigration = HookFn(func(cluster Cluster) (Cluster, error) {
-	args := []string{
-		"/usr/bin/kuma-cp", "migrate", "up",
-	}
-
-	c, ok := cluster.(*UniversalCluster)
-	if !ok {
-		return nil, errors.New("unsupported cluster type")
-	}
-
-	kumaCP := c.GetApp(AppKumaCP)
-	if kumaCP == nil {
-		return nil, errors.New("missing kuma-cp deployment in the cluster")
-	}
-
-	sshPort := kumaCP.GetPublicPort("22")
-	if sshPort == "" {
-		return nil, errors.New("missing public port: 22")
-	}
-
-	app := NewSshApp(true, sshPort, c.GetEnvVars(AppKumaCP), args)
-	if err := app.Run(); err != nil {
-		return nil, errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
-	}
-
-	return cluster, nil
-})

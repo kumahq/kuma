@@ -222,6 +222,33 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 
 	c.apps[opts.name] = app
 
+	if opts.runPostgresMigration {
+		var envVars []string
+		for key, value := range opts.env {
+			envVars = append(envVars, key+"="+value)
+		}
+
+		return runPostgresMigration(app, envVars)
+	}
+
+	return nil
+}
+
+func runPostgresMigration(kumaCP *UniversalApp, envVars []string) error {
+	args := []string{
+		"/usr/bin/kuma-cp", "migrate", "up",
+	}
+
+	sshPort := kumaCP.GetPublicPort("22")
+	if sshPort == "" {
+		return errors.New("missing public port: 22")
+	}
+
+	app := NewSshApp(true, sshPort, envVars, args)
+	if err := app.Run(); err != nil {
+		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
+	}
+
 	return nil
 }
 
