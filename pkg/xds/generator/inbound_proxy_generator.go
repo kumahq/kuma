@@ -3,6 +3,10 @@ package generator
 import (
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	model "github.com/kumahq/kuma/pkg/core/xds"
@@ -53,6 +57,13 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			Origin:   OriginInbound,
 		})
 
+		routes, err := g.BuildInboundRoutes(
+			envoy_common.NewCluster(envoy_common.WithService(localClusterName)),
+			proxy.Policies.RateLimits[endpoint])
+		if err != nil {
+			return nil, err
+		}
+
 		// generate LDS resource
 		service := iface.GetService()
 		inboundListenerName := envoy_names.GetInboundListenerName(endpoint.DataplaneIP, endpoint.DataplanePort)
@@ -66,7 +77,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
-					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.NewRouteFromCluster(envoy_common.NewCluster(envoy_common.WithService(localClusterName))), proxy.Policies.RateLimits[endpoint]))
+					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
 			case mesh_core.ProtocolGRPC:
 				filterChainBuilder.
 					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
@@ -74,7 +85,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
-					Configure(envoy_listeners.HttpInboundRoute(service, envoy_common.NewRouteFromCluster(envoy_common.NewCluster(envoy_common.WithService(localClusterName))), nil))
+					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
 			case mesh_core.ProtocolKafka:
 				filterChainBuilder.
 					Configure(envoy_listeners.Kafka(localClusterName)).
@@ -104,4 +115,37 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 		})
 	}
 	return resources, nil
+}
+
+func (g *InboundProxyGenerator) BuildInboundRoutes(cluster envoy_common.Cluster, rateLimit *mesh_proto.RateLimit) (envoy_common.Routes, error) {
+	route := envoy_common.NewRouteFromCluster(cluster)
+
+	if rateLimit != nil && rateLimit.GetConf().GetHttp() != nil {
+		// Source
+		if len(rateLimit.GetSources()) > 0 {
+			if route.Match == nil {
+				route.Match = &mesh_proto.TrafficRoute_Http_Match{}
+			}
+
+			if route.Match.Headers == nil {
+				route.Match.Headers = make(map[string]*mesh_proto.TrafficRoute_Http_Match_StringMatcher)
+			}
+
+			var selectorRegexs []string
+			for _, selector := range rateLimit.SourceTags() {
+				selectorRegexs = append(selectorRegexs, tags.MatchingRegex(selector))
+			}
+			regexOR := tags.RegexOR(selectorRegexs...)
+
+			route.Match.Headers[v3.TagsHeaderName] = &mesh_proto.TrafficRoute_Http_Match_StringMatcher{
+				MatcherType: &mesh_proto.TrafficRoute_Http_Match_StringMatcher_Regex{
+					Regex: regexOR,
+				},
+			}
+		}
+
+		route.RateLimit = rateLimit
+	}
+
+	return envoy_common.Routes{route}, nil
 }

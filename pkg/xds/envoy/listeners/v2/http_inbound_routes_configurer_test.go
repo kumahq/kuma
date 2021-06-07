@@ -7,6 +7,9 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	v2 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v2"
+	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
+
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
@@ -19,6 +22,34 @@ import (
 
 var _ = Describe("HttpInboundRouteConfigurer", func() {
 
+	routeWithRateLimiter := func(rateLimit *v1alpha1.RateLimit) envoy_common.Route {
+		route := envoy_common.NewRouteFromCluster(envoy_common.NewCluster(
+			envoy_common.WithService("localhost:8080"),
+			envoy_common.WithWeight(200),
+		))
+		route.RateLimit = rateLimit
+
+		if len(rateLimit.GetSources()) > 0 {
+			route.Match = &v1alpha1.TrafficRoute_Http_Match{
+				Headers: make(map[string]*v1alpha1.TrafficRoute_Http_Match_StringMatcher),
+			}
+
+			var selectorRegexs []string
+			for _, selector := range rateLimit.SourceTags() {
+				selectorRegexs = append(selectorRegexs, tags.MatchingRegex(selector))
+			}
+			regexOR := tags.RegexOR(selectorRegexs...)
+
+			route.Match.Headers[v2.TagsHeaderName] = &v1alpha1.TrafficRoute_Http_Match_StringMatcher{
+				MatcherType: &v1alpha1.TrafficRoute_Http_Match_StringMatcher_Regex{
+					Regex: regexOR,
+				},
+			}
+		}
+
+		return route
+	}
+
 	type testCase struct {
 		listenerName     string
 		listenerProtocol xds.SocketAddressProtocol
@@ -26,8 +57,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 		listenerPort     uint32
 		statsName        string
 		service          string
-		route            envoy_common.Route
-		ratelimit        *v1alpha1.RateLimit
+		routes           envoy_common.Routes
 		expected         string
 	}
 
@@ -38,7 +68,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV2).
 					Configure(HttpConnectionManager(given.statsName, true)).
-					Configure(HttpInboundRoute(given.service, given.route, given.ratelimit)))).
+					Configure(HttpInboundRoutes(given.service, given.routes)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -55,10 +85,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
 			service:         "backend",
-			route: envoy_common.NewRouteFromCluster(envoy_common.NewCluster(
-				envoy_common.WithService("localhost:8080"),
-				envoy_common.WithWeight(200),
-			)),
+			routes:          envoy_common.Routes{routeWithRateLimiter(nil)},
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
@@ -100,11 +127,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
 			service:         "backend",
-			route: envoy_common.NewRouteFromCluster(envoy_common.NewCluster(
-				envoy_common.WithService("localhost:8080"),
-				envoy_common.WithWeight(200),
-			)),
-			ratelimit: &v1alpha1.RateLimit{
+			routes: envoy_common.Routes{routeWithRateLimiter(&v1alpha1.RateLimit{
 				Sources:      nil,
 				Destinations: nil,
 				Conf: &v1alpha1.RateLimit_Conf{
@@ -117,7 +140,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 						},
 					},
 				},
-			},
+			})},
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
@@ -167,11 +190,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listenerPort:    8080,
 			statsName:       "localhost:8080",
 			service:         "backend",
-			route: envoy_common.NewRouteFromCluster(envoy_common.NewCluster(
-				envoy_common.WithService("localhost:8080"),
-				envoy_common.WithWeight(200),
-			)),
-			ratelimit: &v1alpha1.RateLimit{
+			routes: envoy_common.Routes{routeWithRateLimiter(&v1alpha1.RateLimit{
 				Sources: []*v1alpha1.Selector{
 					{
 						Match: map[string]string{
@@ -191,7 +210,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 						},
 					},
 				},
-			},
+			})},
 			expected: `
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND
