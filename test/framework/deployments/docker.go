@@ -223,7 +223,7 @@ func (d *DockerContainer) Stop() error {
 	retry.DoWithRetry(d.t, "stop "+d.id, 30, 3*time.Second,
 		func() (string, error) {
 			_, err := docker.StopE(d.t, []string{d.id}, &docker.StopOptions{Time: 1})
-			if err == nil {
+			if err != nil {
 				return "Container still running", err
 			}
 
