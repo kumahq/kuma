@@ -3,6 +3,13 @@ package v2
 import (
 	"sort"
 
+	envoy_config_filter_network_local_rate_limit_v2alpha "github.com/envoyproxy/go-control-plane/envoy/config/filter/network/local_rate_limit/v2alpha"
+	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type"
+	"github.com/golang/protobuf/ptypes/any"
+	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/util/proto"
+
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/api/v2/route"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher"
 	"github.com/golang/protobuf/ptypes"
@@ -25,6 +32,14 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 			},
 			TypedPerFilterConfig: route.TypedPerFilterConfig,
 		}
+
+		typedPerFilterConfig, err := c.typedPerFilterConfig(&route)
+		if err != nil {
+			return err
+		}
+
+		envoyRoute.TypedPerFilterConfig = typedPerFilterConfig
+
 		virtualHost.Routes = append(virtualHost.Routes, envoyRoute)
 	}
 	return nil
@@ -150,4 +165,43 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster) *envoy_ro
 		}
 	}
 	return &routeAction
+}
+
+func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[string]*any.Any, error) {
+	typedPerFilterConfig := route.TypedPerFilterConfig
+
+	if typedPerFilterConfig == nil {
+		typedPerFilterConfig = map[string]*any.Any{}
+	}
+
+	if route.RateLimit != nil {
+		rateLimit, err := c.createRateLimit(route)
+		if err != nil {
+			return nil, err
+		}
+		typedPerFilterConfig["envoy.filters.http.local_ratelimit"] = rateLimit
+	}
+
+	return typedPerFilterConfig, nil
+}
+
+func (c *RoutesConfigurer) createRateLimit(route *envoy_common.Route) (*any.Any, error) {
+	rlHttp := route.RateLimit.GetConf().GetHttp()
+
+	if rlHttp.GetOnRateLimit() != nil {
+		return nil, errors.Errorf("APIv2 does not support the `onError` field")
+	}
+
+	config := &envoy_config_filter_network_local_rate_limit_v2alpha.LocalRateLimit{
+		StatPrefix: "rate_limit",
+		TokenBucket: &envoy_type.TokenBucket{
+			MaxTokens: rlHttp.Requests.GetValue(),
+			TokensPerFill: &wrappers.UInt32Value{
+				Value: 1,
+			},
+			FillInterval: rlHttp.GetInterval(),
+		},
+	}
+
+	return proto.MarshalAnyDeterministic(config)
 }

@@ -134,10 +134,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                   setCurrentClientCertDetails:
                     uri: true
                   httpFilters:
-                  - name: envoy.filters.http.local_ratelimit
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.local_rate_limit.v2alpha.LocalRateLimit
-                      statPrefix: rate_limit
                   - name: envoy.filters.http.router
                   routeConfig:
                     name: inbound:backend
@@ -212,10 +208,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                   setCurrentClientCertDetails:
                     uri: true
                   httpFilters:
-                  - name: envoy.filters.http.local_ratelimit
-                    typedConfig:
-                      '@type': type.googleapis.com/envoy.config.filter.network.local_rate_limit.v2alpha.LocalRateLimit
-                      statPrefix: rate_limit
                   - name: envoy.filters.http.router
                   routeConfig:
                     name: inbound:backend

@@ -3,6 +3,13 @@ package v3
 import (
 	"sort"
 
+	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
+	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
+	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
+	"github.com/golang/protobuf/ptypes/any"
+
+	"github.com/kumahq/kuma/pkg/util/proto"
+
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
 	"github.com/golang/protobuf/ptypes"
@@ -23,8 +30,14 @@ func (c RoutesConfigurer) Configure(virtualHost *envoy_route.VirtualHost) error 
 			Action: &envoy_route.Route_Route{
 				Route: c.routeAction(route.Clusters),
 			},
-			TypedPerFilterConfig: route.TypedPerFilterConfig,
 		}
+
+		typedPerFilterConfig, err := c.typedPerFilterConfig(&route)
+		if err != nil {
+			return err
+		}
+		envoyRoute.TypedPerFilterConfig = typedPerFilterConfig
+
 		virtualHost.Routes = append(virtualHost.Routes, envoyRoute)
 	}
 	return nil
@@ -150,4 +163,73 @@ func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster) *envoy_ro
 		}
 	}
 	return &routeAction
+}
+
+func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[string]*any.Any, error) {
+	typedPerFilterConfig := route.TypedPerFilterConfig
+
+	if typedPerFilterConfig == nil {
+		typedPerFilterConfig = map[string]*any.Any{}
+	}
+
+	if route.RateLimit != nil {
+		rateLimit, err := c.createRateLimit(route)
+		if err != nil {
+			return nil, err
+		}
+		typedPerFilterConfig["envoy.filters.http.local_ratelimit"] = rateLimit
+	}
+
+	return typedPerFilterConfig, nil
+}
+
+func (c *RoutesConfigurer) createRateLimit(route *envoy_common.Route) (*any.Any, error) {
+	rlHttp := route.RateLimit.GetConf().GetHttp()
+
+	var status *envoy_type_v3.HttpStatus
+	var responseHeaders []*envoy_config_core_v3.HeaderValueOption
+	if rlHttp.GetOnRateLimit() != nil {
+		status = &envoy_type_v3.HttpStatus{
+			Code: envoy_type_v3.StatusCode(rlHttp.GetOnRateLimit().GetStatus().GetValue()),
+		}
+		responseHeaders = []*envoy_config_core_v3.HeaderValueOption{}
+		for _, h := range rlHttp.GetOnRateLimit().GetHeaders() {
+			responseHeaders = append(responseHeaders, &envoy_config_core_v3.HeaderValueOption{
+				Header: &envoy_config_core_v3.HeaderValue{
+					Key:   h.GetKey(),
+					Value: h.GetValue(),
+				},
+				Append: h.GetAppend(),
+			})
+		}
+	}
+
+	config := &envoy_extensions_filters_http_local_ratelimit_v3.LocalRateLimit{
+		StatPrefix: "rate_limit",
+		Status:     status,
+		TokenBucket: &envoy_type_v3.TokenBucket{
+			MaxTokens: rlHttp.GetRequests().GetValue(),
+			TokensPerFill: &wrappers.UInt32Value{
+				Value: 1,
+			},
+			FillInterval: rlHttp.GetInterval(),
+		},
+		FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
+			DefaultValue: &envoy_type_v3.FractionalPercent{
+				Numerator:   100,
+				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+			},
+			RuntimeKey: "local_rate_limit_enabled",
+		},
+		FilterEnforced: &envoy_config_core_v3.RuntimeFractionalPercent{
+			DefaultValue: &envoy_type_v3.FractionalPercent{
+				Numerator:   100,
+				Denominator: envoy_type_v3.FractionalPercent_HUNDRED,
+			},
+			RuntimeKey: "local_rate_limit_enforced",
+		},
+		ResponseHeadersToAdd: responseHeaders,
+	}
+
+	return proto.MarshalAnyDeterministic(config)
 }
