@@ -28,9 +28,9 @@ func (b *BootstrapServerConfig) Validate() error {
 		return errors.Wrap(err, "Params validation failed")
 	}
 	switch b.APIVersion {
-	case envoy_common.APIV2, envoy_common.APIV3:
+	case envoy_common.APIV3:
 	default:
-		return errors.Errorf("APIVersion has invalid value. Available values: %q, %q", envoy_common.APIV2, envoy_common.APIV3)
+		return errors.Errorf("APIVersion has invalid value. Available values: %q", envoy_common.APIV3)
 	}
 	return nil
 }

@@ -17,11 +17,6 @@ import (
 )
 
 func ExternalServicesOnKubernetes() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
-
 	meshDefaulMtlsOn := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh

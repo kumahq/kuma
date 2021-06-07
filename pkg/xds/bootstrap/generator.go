@@ -21,7 +21,6 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
-	envoy_bootstrap_v2 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v2"
 	envoy_bootstrap_v3 "github.com/envoyproxy/go-control-plane/envoy/config/bootstrap/v3"
 	"github.com/golang/protobuf/proto"
 	"github.com/pkg/errors"
@@ -93,7 +92,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 var DpTokenRequired = errors.New("Dataplane Token is required. Generate token using 'kumactl generate dataplane-token > /path/file' and provide it via --dataplane-token-file=/path/file argument to Kuma DP")
 
-var InvalidBootstrapVersion = errors.New(`Invalid BootstrapVersion. Available values are: "2", "3"`)
+var InvalidBootstrapVersion = errors.New(`Invalid BootstrapVersion. Available values are: "3"`)
 
 var NotCA = errors.New("A data plane proxy is trying to verify the control plane using the certificate which is not a certificate authority (basic constraint 'CA' is set to 'false').\n" +
 	"Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE")
@@ -305,8 +304,6 @@ func (b *bootstrapGenerator) bootstrapVersion(reqVersion types.BootstrapVersion)
 	}
 	// if client did not overridden bootstrap version, provide bootstrap based on Kuma CP config
 	switch b.config.APIVersion {
-	case envoy_common.APIV2:
-		return types.BootstrapV2
 	case envoy_common.APIV3:
 		return types.BootstrapV3
 	default:
@@ -317,12 +314,6 @@ func (b *bootstrapGenerator) bootstrapVersion(reqVersion types.BootstrapVersion)
 func (b *bootstrapGenerator) configForParameters(params configParameters, reqVersion types.BootstrapVersion) (proto.Message, types.BootstrapVersion, error) {
 	version := b.bootstrapVersion(reqVersion)
 	switch {
-	case version == types.BootstrapV2:
-		cfg, err := b.configForParametersV2(params)
-		if err != nil {
-			return nil, "", err
-		}
-		return cfg, types.BootstrapV2, nil
 	case version == types.BootstrapV3:
 		cfg, err := b.configForParametersV3(params)
 		if err != nil {
@@ -332,25 +323,6 @@ func (b *bootstrapGenerator) configForParameters(params configParameters, reqVer
 	default:
 		return nil, "", InvalidBootstrapVersion
 	}
-}
-
-func (b *bootstrapGenerator) configForParametersV2(params configParameters) (proto.Message, error) {
-	tmpl, err := template.New("bootstrap").Parse(configTemplateV2)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse config template")
-	}
-	var buf bytes.Buffer
-	if err := tmpl.Execute(&buf, params); err != nil {
-		return nil, errors.Wrap(err, "failed to render config template")
-	}
-	config := &envoy_bootstrap_v2.Bootstrap{}
-	if err := util_proto.FromYAML(buf.Bytes(), config); err != nil {
-		return nil, errors.Wrap(err, "failed to parse bootstrap config")
-	}
-	if err := config.Validate(); err != nil {
-		return nil, errors.Wrap(err, "Envoy bootstrap config is not valid")
-	}
-	return config, nil
 }
 
 func (b *bootstrapGenerator) configForParametersV3(params configParameters) (proto.Message, error) {

@@ -1404,14 +1404,6 @@ workflows:
             - check
       - e2e:
           <<: *master_workflow_filters
-          name: test/e2e V2
-          requires:
-            - images
-            - check
-          # custom parameters
-          api: v2
-      - e2e:
-          <<: *master_workflow_filters
           name: test/e2e-ipv6
           requires:
             - images

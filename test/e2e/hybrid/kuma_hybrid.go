@@ -14,11 +14,6 @@ import (
 )
 
 func KubernetesUniversalDeployment() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
-
 	meshMTLSOn := func(mesh string) string {
 		return fmt.Sprintf(`
 type: Mesh
