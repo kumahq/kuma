@@ -102,7 +102,7 @@ func buildArgsForDocker(args map[string][]string, ports map[uint32]uint32) []str
 	return opts
 }
 
-func TestingT(t testing.TestingT) DockerContainerOptFn {
+func WithTestingT(t testing.TestingT) DockerContainerOptFn {
 	return func(d *DockerContainer) error {
 		d.t = t
 
