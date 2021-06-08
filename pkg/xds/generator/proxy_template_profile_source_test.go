@@ -21,7 +21,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
+	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 

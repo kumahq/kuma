@@ -87,10 +87,6 @@ func HasApiVersion() bool {
 	return envIsPresent(envAPIVersion)
 }
 
-func IsApiV2() bool {
-	return GetApiVersion() == "v2"
-}
-
 func GetHelmChartPath() string {
 	return os.Getenv("HELM_CHART_PATH")
 }
