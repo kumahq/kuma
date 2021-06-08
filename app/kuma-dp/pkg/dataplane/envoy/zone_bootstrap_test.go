@@ -23,7 +23,7 @@ import (
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
 
-var _ = Describe("Remote Bootstrap", func() {
+var _ = Describe("Zone Bootstrap", func() {
 
 	type testCase struct {
 		config                   kuma_dp.Config
@@ -54,7 +54,7 @@ var _ = Describe("Remote Bootstrap", func() {
 			Expect(body).To(MatchJSON(given.expectedBootstrapRequest))
 
 			writer.Header().Set(types.BootstrapVersionHeader, string(given.bootstrapVersion))
-			response, err := ioutil.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
+			response, err := ioutil.ReadFile(filepath.Join("testdata", "zone-bootstrap-config.golden.yaml"))
 			Expect(err).ToNot(HaveOccurred())
 			_, err = writer.Write(response)
 			Expect(err).ToNot(HaveOccurred())
@@ -63,7 +63,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
+		generator := NewZoneBootstrapGenerator(http.DefaultClient)
 
 		// when
 		params := BootstrapParams{
@@ -229,7 +229,7 @@ var _ = Describe("Remote Bootstrap", func() {
 				writer.WriteHeader(404)
 				i++
 			} else {
-				response, err := ioutil.ReadFile(filepath.Join("testdata", "remote-bootstrap-config.golden.yaml"))
+				response, err := ioutil.ReadFile(filepath.Join("testdata", "zone-bootstrap-config.golden.yaml"))
 				Expect(err).ToNot(HaveOccurred())
 				_, err = writer.Write(response)
 				Expect(err).ToNot(HaveOccurred())
@@ -239,7 +239,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
+		generator := NewZoneBootstrapGenerator(http.DefaultClient)
 
 		// when
 		cfg := kuma_dp.DefaultConfig()
@@ -273,7 +273,7 @@ var _ = Describe("Remote Bootstrap", func() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and
-		generator := NewRemoteBootstrapGenerator(http.DefaultClient)
+		generator := NewZoneBootstrapGenerator(http.DefaultClient)
 
 		// when
 		config := kuma_dp.DefaultConfig()

@@ -237,9 +237,9 @@ func (c *Config) Validate() error {
 		if err := c.Metrics.Validate(); err != nil {
 			return errors.Wrap(err, "Metrics validation failed")
 		}
-	case core.Remote:
-		if err := c.Multizone.Remote.Validate(); err != nil {
-			return errors.Wrap(err, "Multizone Remote validation failed")
+	case core.Zone:
+		if err := c.Multizone.Zone.Validate(); err != nil {
+			return errors.Wrap(err, "Multizone Zone validation failed")
 		}
 		if err := c.XdsServer.Validate(); err != nil {
 			return errors.Wrap(err, "Xds Server validation failed")

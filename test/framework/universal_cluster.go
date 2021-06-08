@@ -85,7 +85,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 	if opts.globalAddress != "" {
-		env = append(env, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
+		env = append(env, "KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS="+opts.globalAddress)
 	}
 	if opts.hdsDisabled {
 		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
@@ -100,8 +100,8 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	}
 
 	switch mode {
-	case core.Remote:
-		env = append(env, "KUMA_MULTIZONE_REMOTE_ZONE="+c.name)
+	case core.Zone:
+		env = append(env, "KUMA_MULTIZONE_ZONE_NAME="+c.name)
 	case core.Global:
 		cmd = append(cmd, "--config-file", confPath)
 	}

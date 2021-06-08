@@ -109,7 +109,7 @@ spec:
               mountPath: /var/run/secrets/kuma.io/kds-server-tls-cert
               readOnly: true
           {{- end }}
-          {{- if .Values.controlPlane.tls.kdsRemoteClient.secretName }}
+          {{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
             - name: kds-client-tls-cert
               mountPath: /var/run/secrets/kuma.io/kds-client-tls-cert
               readOnly: true
@@ -139,10 +139,10 @@ spec:
           secret:
             secretName: {{ .Values.controlPlane.tls.kdsGlobalServer.secretName }}
         {{- end }}
-        {{- if .Values.controlPlane.tls.kdsRemoteClient.secretName }}
+        {{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
         - name: kds-client-tls-cert
           secret:
-            secretName: {{ .Values.controlPlane.tls.kdsRemoteClient.secretName }}
+            secretName: {{ .Values.controlPlane.tls.kdsZoneClient.secretName }}
         {{- end }}
         - name: {{ include "kuma.name" . }}-control-plane-config
           configMap:

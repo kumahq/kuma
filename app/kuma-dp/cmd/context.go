@@ -26,7 +26,7 @@ func DefaultRootContext() *RootContext {
 	config := kumadp.DefaultConfig()
 	return &RootContext{
 		ComponentManager: component.NewManager(leader_memory.NewNeverLeaderElector()),
-		BootstrapGenerator: envoy.NewRemoteBootstrapGenerator(&http.Client{
+		BootstrapGenerator: envoy.NewZoneBootstrapGenerator(&http.Client{
 			Timeout:   10 * time.Second,
 			Transport: &http.Transport{TLSClientConfig: &tls.Config{InsecureSkipVerify: true}},
 		}),

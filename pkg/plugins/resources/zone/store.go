@@ -1,4 +1,4 @@
-package remote
+package zone
 
 import (
 	"bytes"
@@ -18,20 +18,20 @@ import (
 )
 
 func NewStore(client util_http.Client, api rest.Api) store.ResourceStore {
-	return &remoteStore{
+	return &zoneStore{
 		client: client,
 		api:    api,
 	}
 }
 
-var _ store.ResourceStore = &remoteStore{}
+var _ store.ResourceStore = &zoneStore{}
 
-type remoteStore struct {
+type zoneStore struct {
 	client util_http.Client
 	api    rest.Api
 }
 
-func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...store.CreateOptionsFunc) error {
+func (s *zoneStore) Create(ctx context.Context, res model.Resource, fs ...store.CreateOptionsFunc) error {
 	opts := store.NewCreateOptions(fs...)
 	meta := rest.ResourceMeta{
 		Type: string(res.GetType()),
@@ -43,7 +43,8 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 	}
 	return nil
 }
-func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
+
+func (s *zoneStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
 	meta := rest.ResourceMeta{
 		Type: string(res.GetType()),
 		Name: res.GetMeta().GetName(),
@@ -55,7 +56,7 @@ func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...stor
 	return nil
 }
 
-func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.ResourceMeta) error {
+func (s *zoneStore) upsert(ctx context.Context, res model.Resource, meta rest.ResourceMeta) error {
 	resourceApi, err := s.api.GetResourceApi(res.GetType())
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct URI to update a %q", res.GetType())
@@ -84,14 +85,15 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 			return errors.Errorf("(%d): %s", statusCode, string(b))
 		}
 	}
-	res.SetMeta(remoteMeta{
+	res.SetMeta(zoneMeta{
 		Name:    meta.Name,
 		Mesh:    meta.Mesh,
 		Version: "",
 	})
 	return nil
 }
-func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...store.DeleteOptionsFunc) error {
+
+func (s *zoneStore) Delete(ctx context.Context, res model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 	resourceApi, err := s.api.GetResourceApi(res.GetType())
 	if err != nil {
@@ -117,7 +119,8 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 	}
 	return nil
 }
-func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
+
+func (s *zoneStore) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
 	resourceApi, err := s.api.GetResourceApi(res.GetType())
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct URI to fetch a %q", res.GetType())
@@ -140,7 +143,7 @@ func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.G
 	return Unmarshal(b, res)
 }
 
-func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
+func (s *zoneStore) List(ctx context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
 	resourceApi, err := s.api.GetResourceApi(rs.GetItemType())
 	if err != nil {
 		return errors.Wrapf(err, "failed to construct URI to fetch a list of %q", rs.GetItemType())
@@ -170,7 +173,7 @@ func (s *remoteStore) List(ctx context.Context, rs model.ResourceList, fs ...sto
 }
 
 // execute a request. Returns status code, body, error
-func (s *remoteStore) doRequest(ctx context.Context, req *http.Request) (int, []byte, error) {
+func (s *zoneStore) doRequest(ctx context.Context, req *http.Request) (int, []byte, error) {
 	req.Header.Set("Accept", "application/json")
 	resp, err := s.client.Do(req.WithContext(ctx))
 	if err != nil {

@@ -18,13 +18,13 @@ controlPlane:
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
 
-  # -- Kuma CP modes: one of standalone,remote,global
+  # -- Kuma CP modes: one of standalone,zone,global
   mode: "standalone"
 
   # -- (string) Kuma CP zone, if running multizone
   zone:
 
-  # -- Only used in `remote` mode
+  # -- Only used in `zone` mode
   kdsGlobalAddress: ""
 
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
@@ -70,12 +70,12 @@ controlPlane:
     annotations: {}
 
   # -- URL of Global Kuma CP
-  globalRemoteSyncService:
-    # -- Service type of the Global-Remote sync
+  globalZoneSyncService:
+    # -- Service type of the Global-zone sync
     type: LoadBalancer
-    # -- Additional annotations to put on the Global Remote Sync Service
+    # -- Additional annotations to put on the Global Zone Sync Service
     annotations: {}
-    # -- Port on which Global Remote Sync Service is exposed
+    # -- Port on which Global Zone Sync Service is exposed
     port: 5685
 
   defaults:
@@ -104,7 +104,7 @@ controlPlane:
     kdsGlobalServer:
       # -- Secret that contains tls.crt, key.crt for protecting cross cluster communication
       secretName: ""
-    kdsRemoteClient:
+    kdsZoneClient:
       # -- Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
       secretName: ""
 

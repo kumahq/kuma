@@ -1,4 +1,4 @@
-package remote_test
+package zone_test
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/gomega"
 )
 
-func TestRemote(t *testing.T) {
+func TestZoneSync(t *testing.T) {
 	RegisterFailHandler(Fail)
-	RunSpecs(t, "Remote Suite")
+	RunSpecs(t, "Zone Sync Suite")
 }

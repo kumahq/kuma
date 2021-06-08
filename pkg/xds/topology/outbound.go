@@ -97,7 +97,7 @@ func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core
 		if !dataplane.Spec.IsIngress() {
 			continue
 		}
-		if !dataplane.Spec.IsRemoteIngress(zone) {
+		if !dataplane.Spec.IsZoneIngress(zone) {
 			continue // we only need Ingress for other zones, we don't want to direct request to the same zone through Ingress
 		}
 		if !mesh.MTLSEnabled() {

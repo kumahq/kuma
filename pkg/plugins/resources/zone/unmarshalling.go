@@ -1,4 +1,4 @@
-package remote
+package zone
 
 import (
 	"encoding/json"
@@ -11,7 +11,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 )
 
-type remoteMeta struct {
+type zoneMeta struct {
 	Name             string
 	Mesh             string
 	Version          string
@@ -19,22 +19,27 @@ type remoteMeta struct {
 	ModificationTime time.Time
 }
 
-func (m remoteMeta) GetName() string {
+func (m zoneMeta) GetName() string {
 	return m.Name
 }
-func (m remoteMeta) GetNameExtensions() model.ResourceNameExtensions {
+
+func (m zoneMeta) GetNameExtensions() model.ResourceNameExtensions {
 	return model.ResourceNameExtensionsUnsupported
 }
-func (m remoteMeta) GetMesh() string {
+
+func (m zoneMeta) GetMesh() string {
 	return m.Mesh
 }
-func (m remoteMeta) GetVersion() string {
+
+func (m zoneMeta) GetVersion() string {
 	return m.Version
 }
-func (m remoteMeta) GetCreationTime() time.Time {
+
+func (m zoneMeta) GetCreationTime() time.Time {
 	return m.CreationTime
 }
-func (m remoteMeta) GetModificationTime() time.Time {
+
+func (m zoneMeta) GetModificationTime() time.Time {
 	return m.ModificationTime
 }
 
@@ -45,7 +50,7 @@ func Unmarshal(b []byte, res model.Resource) error {
 	if err := json.Unmarshal(b, &restResource); err != nil {
 		return err
 	}
-	res.SetMeta(remoteMeta{
+	res.SetMeta(zoneMeta{
 		Name:             restResource.Meta.Name,
 		Mesh:             restResource.Meta.Mesh,
 		Version:          "",
@@ -67,7 +72,7 @@ func UnmarshalList(b []byte, rs model.ResourceList) error {
 		if err := r.SetSpec(ri.Spec); err != nil {
 			return err
 		}
-		r.SetMeta(&remoteMeta{
+		r.SetMeta(&zoneMeta{
 			Name:             ri.Meta.Name,
 			Mesh:             ri.Meta.Mesh,
 			Version:          "",

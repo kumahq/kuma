@@ -1,4 +1,4 @@
-package remote_test
+package zone_test
 
 import (
 	"context"
@@ -28,8 +28,8 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	kds_client "github.com/kumahq/kuma/pkg/kds/client"
-	"github.com/kumahq/kuma/pkg/kds/remote"
 	sync_store "github.com/kumahq/kuma/pkg/kds/store"
+	"github.com/kumahq/kuma/pkg/kds/zone"
 	"github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	"github.com/kumahq/kuma/pkg/test/grpc"
 	"github.com/kumahq/kuma/pkg/test/kds/samples"
@@ -45,12 +45,12 @@ func (t *testRuntimeContext) KDSContext() *kds_context.Context {
 	return t.kds
 }
 
-var _ = Describe("Remote Sync", func() {
+var _ = Describe("Zone Sync", func() {
 
-	remoteZone := "zone-1"
+	zoneName := "zone-1"
 
-	newPolicySink := func(zone string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) component.Component {
-		return kds_client.NewKDSSink(core.Log, remote.ConsumedTypes, kds_client.NewKDSStream(cs, remoteZone), remote.Callbacks(rt, resourceSyncer, false, zone, nil))
+	newPolicySink := func(zoneName string, resourceSyncer sync_store.ResourceSyncer, cs *grpc.MockClientStream, rt core_runtime.Runtime) component.Component {
+		return kds_client.NewKDSSink(core.Log, zone.ConsumedTypes, kds_client.NewKDSStream(cs, zoneName), zone.Callbacks(rt, resourceSyncer, false, zoneName, nil))
 	}
 	start := func(comp component.Component, stop chan struct{}) {
 		go func() {
@@ -80,8 +80,8 @@ var _ = Describe("Remote Sync", func() {
 		}
 	}
 
-	var remoteStore store.ResourceStore
-	var remoteSyncer sync_store.ResourceSyncer
+	var zoneStore store.ResourceStore
+	var zoneSyncer sync_store.ResourceSyncer
 	var globalStore store.ResourceStore
 	var closeFunc func()
 
@@ -91,15 +91,15 @@ var _ = Describe("Remote Sync", func() {
 		wg.Add(1)
 
 		kdsCtx := kds_context.DefaultContext(manager.NewResourceManager(globalStore), "global")
-		serverStream := setup.StartServer(globalStore, wg, "global", remote.ConsumedTypes, kdsCtx.GlobalProvidedFilter)
+		serverStream := setup.StartServer(globalStore, wg, "global", zone.ConsumedTypes, kdsCtx.GlobalProvidedFilter)
 
 		stop := make(chan struct{})
 		clientStream := serverStream.ClientStream(stop)
 
-		remoteStore = memory.NewStore()
-		remoteSyncer = sync_store.NewResourceSyncer(core.Log, remoteStore)
+		zoneStore = memory.NewStore()
+		zoneSyncer = sync_store.NewResourceSyncer(core.Log, zoneStore)
 
-		start(newPolicySink(remoteZone, remoteSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}), stop)
+		start(newPolicySink(zoneName, zoneSyncer, clientStream, &testRuntimeContext{kds: kdsCtx}), stop)
 		closeFunc = func() {
 			close(stop)
 		}
@@ -111,13 +111,13 @@ var _ = Describe("Remote Sync", func() {
 
 		Eventually(func() int {
 			actual := mesh.MeshResourceList{}
-			err := remoteStore.List(context.Background(), &actual)
+			err := zoneStore.List(context.Background(), &actual)
 			Expect(err).ToNot(HaveOccurred())
 			return len(actual.Items)
 		}, "5s", "100ms").Should(Equal(1))
 
 		actual := mesh.MeshResourceList{}
-		err = remoteStore.List(context.Background(), &actual)
+		err = zoneStore.List(context.Background(), &actual)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(actual.Items[0].Spec).To(Equal(samples.Mesh1))
@@ -126,8 +126,8 @@ var _ = Describe("Remote Sync", func() {
 	})
 
 	It("should sync ingresses", func() {
-		// create Ingress for current remote zone, shouldn't be synced
-		err := globalStore.Create(context.Background(), &mesh.DataplaneResource{Spec: ingressFunc(remoteZone)}, store.CreateByKey("dp-1", "mesh-1"))
+		// create Ingress for current zone, shouldn't be synced
+		err := globalStore.Create(context.Background(), &mesh.DataplaneResource{Spec: ingressFunc(zoneName)}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 		err = globalStore.Create(context.Background(), &mesh.DataplaneResource{Spec: ingressFunc("another-zone-1")}, store.CreateByKey("dp-2", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
@@ -136,13 +136,13 @@ var _ = Describe("Remote Sync", func() {
 
 		Eventually(func() int {
 			actual := mesh.DataplaneResourceList{}
-			err := remoteStore.List(context.Background(), &actual)
+			err := zoneStore.List(context.Background(), &actual)
 			Expect(err).ToNot(HaveOccurred())
 			return len(actual.Items)
 		}, "5s", "100ms").Should(Equal(2))
 
 		actual := mesh.DataplaneResourceList{}
-		err = remoteStore.List(context.Background(), &actual)
+		err = zoneStore.List(context.Background(), &actual)
 		Expect(err).ToNot(HaveOccurred())
 		closeFunc()
 	})
@@ -173,35 +173,35 @@ var _ = Describe("Remote Sync", func() {
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
-		Expect(actualConsumedTypes).To(HaveLen(len(remote.ConsumedTypes)))
-		Expect(actualConsumedTypes).To(ConsistOf(remote.ConsumedTypes))
+		Expect(actualConsumedTypes).To(HaveLen(len(zone.ConsumedTypes)))
+		Expect(actualConsumedTypes).To(ConsistOf(zone.ConsumedTypes))
 	})
 
-	It("should not delete predefined ConfigMaps in the Remote cluster", func() {
+	It("should not delete predefined ConfigMaps in the Zone cluster", func() {
 		// create kuma-cluster-id ConfigMap in Global
 		err := globalStore.Create(context.Background(), &system.ConfigResource{Spec: &v1alpha1.Config{Config: "cluster-id"}},
 			store.CreateByKey(config_manager.ClusterIdConfigKey, model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		// create kuma-cp-leader ConfigMap in Remote
-		err = remoteStore.Create(context.Background(), &system.ConfigResource{Spec: &v1alpha1.Config{Config: "leader"}},
+		// create kuma-cp-leader ConfigMap in Zone
+		err = zoneStore.Create(context.Background(), &system.ConfigResource{Spec: &v1alpha1.Config{Config: "leader"}},
 			store.CreateByKey("kuma-cp-leader", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
-		// create kuma-control-plane-config ConfigMap in Remote
-		err = remoteStore.Create(context.Background(), &system.ConfigResource{Spec: &v1alpha1.Config{Config: "kuma-cp config"}},
+		// create kuma-control-plane-config ConfigMap in Zone
+		err = zoneStore.Create(context.Background(), &system.ConfigResource{Spec: &v1alpha1.Config{Config: "kuma-cp config"}},
 			store.CreateByKey("kuma-control-plane-config", model.NoMesh))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {
 			actual := system.ConfigResourceList{}
-			err := remoteStore.List(context.Background(), &actual)
+			err := zoneStore.List(context.Background(), &actual)
 			Expect(err).ToNot(HaveOccurred())
 			return len(actual.Items)
 		}, "5s", "100ms").Should(Equal(3))
 
 		actual := system.ConfigResourceList{}
-		err = remoteStore.List(context.Background(), &actual)
+		err = zoneStore.List(context.Background(), &actual)
 		Expect(err).ToNot(HaveOccurred())
 
 		actualNames := []string{}

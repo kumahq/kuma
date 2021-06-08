@@ -21,7 +21,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func RemoteAndGLobal() {
+func ZoneAndGlobal() {
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -35,8 +35,8 @@ metadata:
 
 	var clusters Clusters
 	var c1, c2 Cluster
-	var global, remote ControlPlane
-	var optsGlobal, optsRemote = KumaK8sDeployOpts, KumaRemoteK8sDeployOpts
+	var global, zone ControlPlane
+	var optsGlobal, optsZone = KumaK8sDeployOpts, KumaZoneK8sDeployOpts
 	var originalKumaNamespace = KumaNamespace
 
 	BeforeEach(func() {
@@ -59,12 +59,12 @@ metadata:
 		Expect(global).ToNot(BeNil())
 
 		c2 = clusters.GetCluster(Kuma2)
-		optsRemote = append(optsRemote,
+		optsZone = append(optsZone,
 			WithIngress(),
 			WithGlobalAddress(global.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote...)).
+			Install(Kuma(core.Zone, optsZone...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
@@ -72,8 +72,8 @@ metadata:
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 
-		remote = c2.GetKuma()
-		Expect(remote).ToNot(BeNil())
+		zone = c2.GetKuma()
+		Expect(zone).ToNot(BeNil())
 
 		// when
 		err = c1.VerifyKuma()
@@ -91,9 +91,9 @@ metadata:
 		Expect(logs1).To(ContainSubstring("\"mode\":\"global\""))
 
 		// and
-		logs2, err := remote.GetKumaCPLogs()
+		logs2, err := zone.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(logs2).To(ContainSubstring("\"mode\":\"remote\""))
+		Expect(logs2).To(ContainSubstring("\"mode\":\"zone\""))
 	})
 
 	AfterEach(func() {
@@ -112,14 +112,14 @@ metadata:
 		err = c1.DeleteKuma(optsGlobal...)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = c2.DeleteKuma(optsRemote...)
+		err = c2.DeleteKuma(optsZone...)
 		Expect(err).ToNot(HaveOccurred())
 
 		Expect(clusters.DismissCluster()).To(Succeed())
 	})
 
-	It("should deploy Remote and Global on 2 clusters", func() {
-		// when check if remote is online
+	It("should deploy Zone and Global on 2 clusters", func() {
+		// when check if zone is online
 		clustersStatus := api_server.Zones{}
 		Eventually(func() (bool, error) {
 			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
@@ -136,7 +136,7 @@ metadata:
 			return clustersStatus[0].Active, nil
 		}, time.Minute, DefaultTimeout).Should(BeTrue())
 
-		// then remote is online
+		// then zone is online
 		active := true
 		for _, cluster := range clustersStatus {
 			if !cluster.Active {
@@ -150,6 +150,6 @@ metadata:
 			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2-remote.demo-client"))
+		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
 	})
 }

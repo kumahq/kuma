@@ -407,7 +407,7 @@ func (d *Dataplane) HasAvailableServices() bool {
 	return len(d.Networking.Ingress.AvailableServices) != 0
 }
 
-func (d *Dataplane) IsRemoteIngress(localZone string) bool {
+func (d *Dataplane) IsZoneIngress(localZone string) bool {
 	if !d.IsIngress() {
 		return false
 	}

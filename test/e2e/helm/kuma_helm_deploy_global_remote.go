@@ -24,7 +24,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func RemoteAndGlobalWithHelmChart() {
+func ZoneAndGlobalWithHelmChart() {
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -38,8 +38,8 @@ metadata:
 
 	var clusters Clusters
 	var c1, c2 Cluster
-	var global, remote ControlPlane
-	var optsGlobal, optsRemote = KumaK8sDeployOpts, KumaRemoteK8sDeployOpts
+	var global, zone ControlPlane
+	var optsGlobal, optsZone = KumaK8sDeployOpts, KumaZoneK8sDeployOpts
 
 	BeforeEach(func() {
 		var err error
@@ -71,14 +71,14 @@ metadata:
 		global = c1.GetKuma()
 		Expect(global).ToNot(BeNil())
 
-		optsRemote = append(optsRemote,
+		optsZone = append(optsZone,
 			WithInstallationMode(HelmInstallationMode),
 			WithHelmReleaseName(releaseName),
 			WithGlobalAddress(global.GetKDSServerAddress()),
 			WithHelmOpt("ingress.enabled", "true"))
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote...)).
+			Install(Kuma(core.Zone, optsZone...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
@@ -86,8 +86,8 @@ metadata:
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 
-		remote = c2.GetKuma()
-		Expect(remote).ToNot(BeNil())
+		zone = c2.GetKuma()
+		Expect(zone).ToNot(BeNil())
 
 		// when
 		err = c1.VerifyKuma()
@@ -105,9 +105,9 @@ metadata:
 		Expect(logs1).To(ContainSubstring("\"mode\":\"global\""))
 
 		// and
-		logs2, err := remote.GetKumaCPLogs()
+		logs2, err := zone.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(logs2).To(ContainSubstring("\"mode\":\"remote\""))
+		Expect(logs2).To(ContainSubstring("\"mode\":\"zone\""))
 	})
 
 	AfterEach(func() {
@@ -118,12 +118,12 @@ metadata:
 		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
 		// tear down Kuma
 		Expect(c1.DeleteKuma(optsGlobal...)).To(Succeed())
-		Expect(c2.DeleteKuma(optsRemote...)).To(Succeed())
+		Expect(c2.DeleteKuma(optsZone...)).To(Succeed())
 		// tear down clusters
 		Expect(clusters.DismissCluster()).To(Succeed())
 	})
 
-	It("Should deploy Remote and Global on 2 clusters", func() {
+	It("Should deploy Zone and Global on 2 clusters", func() {
 		clustersStatus := api_server.Zones{}
 		Eventually(func() (bool, error) {
 			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
@@ -154,6 +154,6 @@ metadata:
 			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2-remote.demo-client"))
+		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
 	})
 }

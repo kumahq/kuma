@@ -14,7 +14,7 @@ import (
 	config_proto "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/rest/errors/types"
-	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
+	"github.com/kumahq/kuma/pkg/plugins/resources/zone"
 	kuma_http "github.com/kumahq/kuma/pkg/util/http"
 )
 
@@ -53,7 +53,7 @@ func (d *httpDataplaneOverviewClient) List(ctx context.Context, meshName string,
 		return nil, errors.Errorf("(%d): %s", statusCode, string(b))
 	}
 	overviews := mesh.DataplaneOverviewResourceList{}
-	if err := remote.UnmarshalList(b, &overviews); err != nil {
+	if err := zone.UnmarshalList(b, &overviews); err != nil {
 		return nil, err
 	}
 	return &overviews, nil
