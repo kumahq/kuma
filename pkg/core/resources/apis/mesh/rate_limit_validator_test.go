@@ -12,6 +12,68 @@ import (
 
 var _ = Describe("RateLimit", func() {
 	Describe("Validate()", func() {
+		DescribeTable("should pass validation",
+			func(rateLimitYAML string) {
+				// setup
+				rateLimit := NewRateLimitResource()
+
+				// when
+				err := util_proto.FromYAML([]byte(rateLimitYAML), rateLimit.Spec)
+				// then
+				Expect(err).ToNot(HaveOccurred())
+
+				// when
+				verr := rateLimit.Validate()
+				// then
+				Expect(verr).ToNot(HaveOccurred())
+			},
+			Entry("full example", `
+                sources:
+                - match:
+                    service: frontend
+                    kuma.io/protocol: http
+                destinations:
+                - match:
+                    service: backend
+                    kuma.io/protocol: http
+                    region: eu
+                    kuma.io/valid: abcd.123-456.under_score_.:80
+                conf:
+                  http:
+                    requests: 10
+                    interval: 10s
+                    onRateLimit:
+                      status: 423
+                      headers:
+                        - key: "x-mesh-rate-limit"
+                          value: "true"
+                          append: false
+                        - key: "x-kuma-rate-limit"
+                          value: "true"
+                          append: true`),
+			Entry("match any", `
+                sources:
+                - match:
+                    service: frontend
+                    kuma.io/protocol: http
+                destinations:
+                - match:
+                    service: backend
+                    kuma.io/protocol: grpc
+                    region: "*"
+                conf:
+                  http:
+                    requests: 10
+                    interval: 10s
+                    onRateLimit:
+                      status: 423
+                      headers:
+                        - key: "x-kuma-rate-limit"
+                          value: "true"
+                          append: true`),
+		)
+
+
 		type testCase struct {
 			ratelimit string
 			expected  string
@@ -44,6 +106,8 @@ var _ = Describe("RateLimit", func() {
                   message: must have at least one element
                 - field: destinations
                   message: must have at least one element
+                - field: conf
+                  message: must have conf
 `,
 			}),
 			Entry("selectors without tags", testCase{
@@ -52,6 +116,9 @@ var _ = Describe("RateLimit", func() {
                 - match: {}
                 destinations:
                 - match: {}
+                conf:
+                  http:
+                    requests: 10
 `,
 				expected: `
                 violations:
@@ -71,6 +138,9 @@ var _ = Describe("RateLimit", func() {
                 - match:
                     kuma.io/service:
                     region:
+                conf:
+                  http:
+                    requests: 10
 `,
 				expected: `
                 violations:
@@ -96,6 +166,9 @@ var _ = Describe("RateLimit", func() {
                     kuma.io/service:
                     region:
                 - match: {}
+                conf:
+                  http:
+                    requests: 10
 `,
 				expected: `
                 violations:
@@ -111,6 +184,31 @@ var _ = Describe("RateLimit", func() {
                   message: tag value must be non-empty
                 - field: destinations[1].match
                   message: must have at least one tag
+`,
+			}),
+			Entry("http", testCase{
+				ratelimit: `
+                sources:
+                - match:
+                    kuma.io/service: '*' 
+                destinations:
+                - match:
+                    kuma.io/service: '*'
+                conf:
+                  http:
+                    onRateLimit:
+                      headers:
+                        - key: ""
+                          value: ""
+`,
+				expected: `
+                violations:
+                - field: conf.http.requests
+                  message: requests must be set
+                - field: conf.http.onRateLimit.header["0"]
+                  message: key must be set
+                - field: conf.http.onRateLimit.header["0"]
+                  message: value must be set
 `,
 			}),
 		)
