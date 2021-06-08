@@ -3,6 +3,7 @@ package ratelimit
 import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"time"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -22,14 +23,14 @@ destinations:
 - match:
    kuma.io/service: echo-server_kuma-test_svc_8080
 conf:
- http:
-   requests: 2
-   interval: 5s
-   onRateLimit:
-     status: 423
-     headers:
-       - key: "x-kuma-rate-limited"
-         value: "true"
+  http:
+    requests: 2
+    interval: 5s
+    onRateLimit:
+      status: 423
+      headers:
+        - key: "x-kuma-rate-limited"
+          value: "true"
 `
 
 	E2EBeforeSuite(func() {
@@ -77,24 +78,30 @@ conf:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should limit to 2 requests per 5 sec", func() {
-		Eventually(func() bool {
-			for i := 0; i < 2; i++ {
-				_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+	verifyRateLimit := func(client string, succeed, fail int) func() bool {
+		return func() bool {
+			for i := 0; i < succeed; i++ {
+				_, _, err := cluster.Exec("", "", client, "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 
 				if err != nil {
 					return false
 				}
 			}
 
-			for i := 0; i < 3; i++ {
-				_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+			for i := 0; i < fail; i++ {
+				_, _, err := cluster.Exec("", "", client, "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 				if err == nil {
 					return false
 				}
 			}
 			return true
-		}, "60s", "5s").Should(BeTrue())
+		}
+	}
+
+	It("should limit to 2 requests per 5 sec", func() {
+		Eventually(verifyRateLimit("demo-client", 2, 3), "60s", "5s").Should(BeTrue())
+		time.Sleep(6 * time.Second)
+		Expect(verifyRateLimit("demo-client", 2, 3)()).To(BeTrue())
 	})
 
 	It("should limit to 4 requests per 5 sec", func() {
@@ -113,26 +120,11 @@ conf:
     requests: 4
     interval: 5s
 `
-
 		err := YamlUniversal(specificRateLimitPolicy)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		Eventually(func() bool {
-			for i := 0; i < 4; i++ {
-				_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-
-				if err != nil {
-					return false
-				}
-			}
-
-			for i := 0; i < 1; i++ {
-				_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-				if err == nil {
-					return false
-				}
-			}
-			return true
-		}, "60s", "5s").Should(BeTrue())
+		Eventually(verifyRateLimit("demo-client", 4, 1), "60s", "5s").Should(BeTrue())
+		time.Sleep(6 * time.Second)
+		Expect(verifyRateLimit("demo-client", 4, 1)()).To(BeTrue())
 	})
 }

@@ -530,6 +530,27 @@ Global Flags:
   -o, --output string        output format: one of table|yaml|json (default "table")
 ```
 
+### kumactl get rate-limits
+
+```
+Show RateLimit entities.
+
+Usage:
+  kumactl get rate-limits [flags]
+
+Flags:
+  -h, --help            help for rate-limits
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
 ### kumactl get retries
 
 ```

@@ -64,42 +64,5 @@ var _ = Describe("RateLimitConfigurer", func() {
                 - name: envoy.filters.http.router
                 statPrefix: stats`,
 		}),
-		Entry("2 policy selectors", testCase{
-			input: &mesh_proto.RateLimit{
-				Sources: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"tag1": "value1m1",
-							"tag2": "value2m1",
-						},
-					},
-					{
-						Match: map[string]string{
-							"tag1": "value1m2",
-							"tag2": "value2m2",
-						},
-					},
-				},
-				Conf: &mesh_proto.RateLimit_Conf{
-					Http: &mesh_proto.RateLimit_Conf_Http{
-						Requests: &wrappers.UInt32Value{
-							Value: 100,
-						},
-					},
-				},
-			},
-			expected: `
-            filters:
-            - name: envoy.filters.network.http_connection_manager
-              typedConfig:
-                '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                httpFilters:
-                - name: envoy.filters.http.local_ratelimit
-                  typedConfig:
-                    '@type': type.googleapis.com/envoy.extensions.filters.http.local_ratelimit.v3.LocalRateLimit
-                    statPrefix: rate_limit
-                - name: envoy.filters.http.router
-                statPrefix: stats`,
-		}),
 	)
 })

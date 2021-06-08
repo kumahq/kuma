@@ -246,7 +246,7 @@ func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[
 	typedPerFilterConfig := map[string]*any.Any{}
 
 	if route.RateLimit != nil {
-		rateLimit, err := c.createRateLimit(route)
+		rateLimit, err := c.createRateLimit(route.RateLimit.GetConf().GetHttp())
 		if err != nil {
 			return nil, err
 		}
@@ -256,9 +256,7 @@ func (c *RoutesConfigurer) typedPerFilterConfig(route *envoy_common.Route) (map[
 	return typedPerFilterConfig, nil
 }
 
-func (c *RoutesConfigurer) createRateLimit(route *envoy_common.Route) (*any.Any, error) {
-	rlHttp := route.RateLimit.GetConf().GetHttp()
-
+func (c *RoutesConfigurer) createRateLimit(rlHttp *mesh_proto.RateLimit_Conf_Http) (*any.Any, error) {
 	var status *envoy_type_v3.HttpStatus
 	var responseHeaders []*envoy_config_core_v3.HeaderValueOption
 	if rlHttp.GetOnRateLimit() != nil {
@@ -281,11 +279,9 @@ func (c *RoutesConfigurer) createRateLimit(route *envoy_common.Route) (*any.Any,
 		StatPrefix: "rate_limit",
 		Status:     status,
 		TokenBucket: &envoy_type_v3.TokenBucket{
-			MaxTokens: rlHttp.GetRequests().GetValue(),
-			TokensPerFill: &wrappers.UInt32Value{
-				Value: 1,
-			},
-			FillInterval: rlHttp.GetInterval(),
+			MaxTokens:     rlHttp.GetRequests().GetValue(),
+			TokensPerFill: rlHttp.GetRequests(),
+			FillInterval:  rlHttp.GetInterval(),
 		},
 		FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{

@@ -209,7 +209,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                             tokenBucket:
                               fillInterval: 3s
                               maxTokens: 100
-                              tokensPerFill: 1
+                              tokensPerFill: 100
                   statPrefix: localhost_8080
 `,
 		}),
@@ -313,7 +313,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
                             tokenBucket:
                               fillInterval: 3s
                               maxTokens: 100
-                              tokensPerFill: 1
+                              tokensPerFill: 100
                   statPrefix: localhost_8080
 `,
 		}),

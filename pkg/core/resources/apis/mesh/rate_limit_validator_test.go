@@ -73,7 +73,6 @@ var _ = Describe("RateLimit", func() {
                           append: true`),
 		)
 
-
 		type testCase struct {
 			ratelimit string
 			expected  string

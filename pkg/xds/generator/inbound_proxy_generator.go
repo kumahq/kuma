@@ -118,9 +118,12 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 }
 
 func (g *InboundProxyGenerator) BuildInboundRoutes(cluster envoy_common.Cluster, rateLimit *mesh_proto.RateLimit) (envoy_common.Routes, error) {
-	route := envoy_common.NewRouteFromCluster(cluster)
+	routes := envoy_common.Routes{
+		envoy_common.NewRouteFromCluster(cluster),
+	}
 
 	if rateLimit != nil && rateLimit.GetConf().GetHttp() != nil {
+		route := envoy_common.NewRouteFromCluster(cluster)
 		// Source
 		if len(rateLimit.GetSources()) > 0 {
 			if route.Match == nil {
@@ -145,7 +148,9 @@ func (g *InboundProxyGenerator) BuildInboundRoutes(cluster envoy_common.Cluster,
 		}
 
 		route.RateLimit = rateLimit
+
+		routes = append(envoy_common.Routes{route}, routes...)
 	}
 
-	return envoy_common.Routes{route}, nil
+	return routes, nil
 }

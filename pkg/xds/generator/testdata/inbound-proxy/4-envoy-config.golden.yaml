@@ -175,7 +175,12 @@ resources:
                     tokenBucket:
                       fillInterval: 2s
                       maxTokens: 100
-                      tokensPerFill: 1
+                      tokensPerFill: 100
+              - match:
+                  prefix: /
+                route:
+                  cluster: localhost:8080
+                  timeout: 0s
           setCurrentClientCertDetails:
             uri: true
           statPrefix: localhost_8080

@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"fmt"
+
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
