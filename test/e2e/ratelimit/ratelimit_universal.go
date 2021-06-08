@@ -1,8 +1,6 @@
 package ratelimit
 
 import (
-	"fmt"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -25,8 +23,8 @@ destinations:
    kuma.io/service: echo-server_kuma-test_svc_8080
 conf:
  http:
-   requests: 5
-   interval: 10s
+   requests: 2
+   interval: 5s
    onRateLimit:
      status: 423
      headers:
@@ -34,7 +32,7 @@ conf:
          value: "true"
 `
 
-	BeforeEach(func() {
+	E2EBeforeSuite(func() {
 		clusters, err := NewUniversalClusters(
 			[]string{Kuma3},
 			Silent)
@@ -68,7 +66,7 @@ conf:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	AfterEach(func() {
+	E2EAfterSuite(func() {
 		if ShouldSkipCleanup() {
 			return
 		}
@@ -79,28 +77,27 @@ conf:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should limit to 5 requests per 10 sec", func() {
+	It("should limit to 2 requests per 5 sec", func() {
 		Eventually(func() bool {
-			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			return err == nil
-		}, "30s", "3s").Should(BeTrue())
+			for i := 0; i < 2; i++ {
+				_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 
-		for i := 0; i < 4; i++ {
-			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed at %d request, \n-------\n %s  \n-------\n %s", i, stdout, stderr))
-			Expect(stderr).To(BeEmpty(), fmt.Sprintf("failed at %d request", i))
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"), fmt.Sprintf("failed at %d request", i))
-		}
+				if err != nil {
+					return false
+				}
+			}
 
-		for i := 0; i < 5; i++ {
-			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			Expect(err).To(HaveOccurred(), fmt.Sprintf("failed at %d request, \n-------\n %s  \n-------\n %s", i, stdout, stderr))
-			Expect(stderr).To(BeEmpty(), fmt.Sprintf("failed at %d request", i))
-			Expect(stdout).To(ContainSubstring("423 Locked"), fmt.Sprintf("failed at %d request", i))
-		}
+			for i := 0; i < 3; i++ {
+				_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+				if err == nil {
+					return false
+				}
+			}
+			return true
+		}, "60s", "5s").Should(BeTrue())
 	})
 
-	It("should limit to 8 requests per 10 sec", func() {
+	It("should limit to 4 requests per 5 sec", func() {
 		specificRateLimitPolicy := `
 type: RateLimit
 mesh: default
@@ -113,30 +110,29 @@ destinations:
     kuma.io/service: echo-server_kuma-test_svc_8080
 conf:
   http:
-    requests: 8
-    interval: 10s
+    requests: 4
+    interval: 5s
 `
 
 		err := YamlUniversal(specificRateLimitPolicy)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() bool {
-			_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			return err == nil
-		}, "30s", "3s").Should(BeTrue())
+			for i := 0; i < 4; i++ {
+				_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 
-		for i := 0; i < 7; i++ {
-			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			Expect(err).ToNot(HaveOccurred(), fmt.Sprintf("failed at %d request, \n-------\n %s  \n-------\n %s", i, stdout, stderr))
-			Expect(stderr).To(BeEmpty(), fmt.Sprintf("failed at %d request", i))
-			Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"), fmt.Sprintf("failed at %d request", i))
-		}
+				if err != nil {
+					return false
+				}
+			}
 
-		for i := 0; i < 2; i++ {
-			stdout, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-			Expect(err).To(HaveOccurred(), fmt.Sprintf("failed at %d request, \n-------\n %s  \n-------\n %s", i, stdout, stderr))
-			Expect(stderr).To(BeEmpty(), fmt.Sprintf("failed at %d request", i))
-			Expect(stdout).To(ContainSubstring("429 Too Many Requests"), fmt.Sprintf("failed at %d request", i))
-		}
+			for i := 0; i < 1; i++ {
+				_, _, err := cluster.Exec("", "", "demo-client", "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
+				if err == nil {
+					return false
+				}
+			}
+			return true
+		}, "60s", "5s").Should(BeTrue())
 	})
 }
