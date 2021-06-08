@@ -505,9 +505,6 @@ conf:
 		})
 
 		It("should modify host", func() {
-			if IsApiV2() {
-				return // host.fromPath is not available in API V2
-			}
 			const trafficRoute = `
 type: TrafficRoute
 name: modify-host

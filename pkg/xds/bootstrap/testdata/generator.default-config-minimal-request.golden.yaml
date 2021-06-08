@@ -4,11 +4,13 @@ dynamicResources:
     grpcServices:
     - envoyGrpc:
         clusterName: ads_cluster
-    transportApiVersion: V2
+    transportApiVersion: V3
   cdsConfig:
     ads: {}
+    resourceApiVersion: V3
   ldsConfig:
     ads: {}
+    resourceApiVersion: V3
 hdsConfig:
   apiType: GRPC
   grpcServices:
@@ -65,7 +67,7 @@ staticResources:
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
-        '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
           tlsParams:
             tlsMinimumProtocolVersion: TLSv1_2
