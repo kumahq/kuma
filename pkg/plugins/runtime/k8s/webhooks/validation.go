@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"k8s.io/api/admission/v1beta1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
@@ -64,7 +66,7 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 	if err := h.decoder.Decode(req, obj); err != nil {
 		return admission.Errored(http.StatusBadRequest, err)
 	}
-	if resp := h.validateSync(resType, obj); !resp.Allowed {
+	if resp := h.validateSync(resType, obj, req.UserInfo); !resp.Allowed {
 		return resp
 	}
 	if resp := h.validateResourceLocation(resType, obj); !resp.Allowed {
@@ -91,18 +93,24 @@ func (h *validatingHandler) Handle(ctx context.Context, req admission.Request) a
 }
 
 // Note that this func does not validate ConfigMap and Secret since this webhook does not support those
-func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8s_model.KubernetesObject) admission.Response {
+func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8s_model.KubernetesObject, userInfo authenticationv1.UserInfo) admission.Response {
 	if isDefaultMesh(resType, obj) { // skip validation for the default mesh
 		return admission.Allowed("")
 	}
+
+	if isKumaServiceAccount(userInfo) {
+		// Assume this means sync from another zone. Not security; protecting user from self.
+		return admission.Allowed("")
+	}
+
 	switch h.mode {
 	case core.Remote:
 		// Although Remote CP consumes Dataplane (Ingress) we also apply Dataplane on Remote
-		if resType != core_mesh.DataplaneType && kds_remote.ConsumesType(resType) && obj.GetAnnotations()[k8s_common.K8sSynced] != "true" {
+		if resType != core_mesh.DataplaneType && kds_remote.ConsumesType(resType) {
 			return syncErrorResponse(resType, core.Remote)
 		}
 	case core.Global:
-		if kds_global.ConsumesType(resType) && obj.GetAnnotations()[k8s_common.K8sSynced] != "true" {
+		if kds_global.ConsumesType(resType) {
 			return syncErrorResponse(resType, core.Global)
 		}
 	}
@@ -136,6 +144,15 @@ func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admi
 			},
 		},
 	}
+}
+
+func isKumaServiceAccount(userInfo authenticationv1.UserInfo) bool {
+	elms := strings.Split(userInfo.Username, ":")
+	// system:serviceaccount:<namespace>:kuma-control-plane
+	if len(elms) == 4 && elms[3] == "kuma-control-plane" {
+		return true
+	}
+	return false
 }
 
 func isDefaultMesh(resType core_model.ResourceType, obj k8s_model.KubernetesObject) bool {
