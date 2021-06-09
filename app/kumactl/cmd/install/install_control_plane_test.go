@@ -105,8 +105,8 @@ var _ = Describe("kumactl install control-plane", func() {
 				"--tls-api-server-secret", "api-server-secret",
 				"--tls-api-server-client-certs-secret", "api-server-client-secret",
 				"--tls-kds-global-server-secret", "kds-global-secret",
-				"--tls-kds-remote-client-secret", "kds-ca-secret",
-				"--mode", "remote",
+				"--tls-kds-zone-client-secret", "kds-ca-secret",
+				"--mode", "zone",
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--zone", "zone-1",
 				"--use-node-port",
@@ -128,14 +128,14 @@ var _ = Describe("kumactl install control-plane", func() {
 			},
 			goldenFile: "install-control-plane.global.golden.yaml",
 		}),
-		Entry("should generate Kubernetes resources for Remote", testCase{
+		Entry("should generate Kubernetes resources for Zone", testCase{
 			extraArgs: []string{
-				"--mode", "remote",
+				"--mode", "zone",
 				"--zone", "zone-1",
 				"--kds-global-address", "grpcs://192.168.0.1:5685",
 				"--without-kubernetes-connection",
 			},
-			goldenFile: "install-control-plane.remote.golden.yaml",
+			goldenFile: "install-control-plane.zone.golden.yaml",
 		}),
 		Entry("should generate Kubernetes resources with Ingress enabled", testCase{
 			extraArgs: []string{
@@ -169,23 +169,23 @@ var _ = Describe("kumactl install control-plane", func() {
 		},
 		Entry("--mode is unknown", errTestCase{
 			extraArgs: []string{"--mode", "test"},
-			errorMsg:  "invalid mode. Available modes: standalone, remote, global",
+			errorMsg:  "invalid mode. Available modes: standalone, zone, global",
 		}),
-		Entry("--kds-global-address is missing when installing remote", errTestCase{
-			extraArgs: []string{"--mode", "remote", "--zone", "zone-1"},
-			errorMsg:  "--kds-global-address is mandatory with `remote` mode",
+		Entry("--kds-global-address is missing when installing zone", errTestCase{
+			extraArgs: []string{"--mode", "zone", "--zone", "zone-1"},
+			errorMsg:  "--kds-global-address is mandatory with `zone` mode",
 		}),
 		Entry("--kds-global-address is not valid URL", errTestCase{
-			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "remote", "--zone", "zone-1"},
+			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},
 			errorMsg:  "--kds-global-address is not valid URL. The allowed format is grpcs://hostname:port",
 		}),
 		Entry("--kds-global-address has no grpcs scheme", errTestCase{
-			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234", "--mode", "remote", "--zone", "zone-1"},
+			extraArgs: []string{"--kds-global-address", "http://192.168.0.1:1234", "--mode", "zone", "--zone", "zone-1"},
 			errorMsg:  "--kds-global-address should start with grpcs://",
 		}),
 		Entry("--kds-global-address is used with standalone", errTestCase{
 			extraArgs: []string{"--kds-global-address", "192.168.0.1:1234", "--mode", "standalone"},
-			errorMsg:  "--kds-global-address can only be used when --mode=remote",
+			errorMsg:  "--kds-global-address can only be used when --mode=zone",
 		}),
 		Entry("--tls-general-secret without --tls-general-ca-bundle", errTestCase{
 			extraArgs: []string{"--tls-general-secret", "sec"},

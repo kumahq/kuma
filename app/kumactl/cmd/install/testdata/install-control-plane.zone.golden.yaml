@@ -86,32 +86,6 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: retries.kuma.io
-spec:
-  group: kuma.io
-  names:
-    kind: Retry
-    plural: retries
-  scope: Cluster
-  versions:
-    - name: v1alpha1
-      served: true
-      storage: true
-      schema:
-        openAPIV3Schema:
-          description: Retry is the Schema for the retries API
-          properties:
-            mesh:
-              type: string
-            spec:
-              x-kubernetes-preserve-unknown-fields: true
-              type: object
-          type: object
----
-apiVersion: apiextensions.k8s.io/v1
-kind: CustomResourceDefinition
-metadata:
-  creationTimestamp: null
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -499,12 +473,12 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: ratelimits.kuma.io
+  name: retries.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: RateLimit
-    plural: ratelimits
+    kind: Retry
+    plural: retries
   scope: Cluster
   versions:
     - name: v1alpha1
@@ -512,7 +486,7 @@ spec:
       storage: true
       schema:
         openAPIV3Schema:
-          description: RateLimit is the Schema for the ratelimits API
+          description: Retry is the Schema for the retries API
           properties:
             mesh:
               type: string
@@ -569,7 +543,6 @@ rules:
       - meshinsights
       - serviceinsights
       - proxytemplates
-      - ratelimits
       - trafficpermissions
       - trafficroutes
       - timeouts
@@ -746,7 +719,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 737d1358e24137cdf1b4c543251d5cf58dcec1cb9b8e796fcbf73aa46e3bc857
-        checksum/tls-secrets: 044c1b83f7caa353976a6e3e81a069cf3a430b54d2df45bdecd432382b98b6ff
+        checksum/tls-secrets: 5de3940366642eda53958a0fdd16a8e6a08d9e2b6909ce60008c4b1f13e6bdef
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -777,10 +750,10 @@ spec:
             - name: KUMA_INJECTOR_INIT_CONTAINER_IMAGE
               value: "docker.io/kumahq/kuma-init:0.0.1"
             - name: KUMA_MODE
-              value: "remote"
-            - name: KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
+              value: "zone"
+            - name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
               value: "grpcs://192.168.0.1:5685"
-            - name: KUMA_MULTIZONE_REMOTE_ZONE
+            - name: KUMA_MULTIZONE_ZONE_NAME
               value: "zone-1"
             - name: KUMA_RUNTIME_KUBERNETES_ADMISSION_SERVER_CERT_DIR
               value: "/var/run/secrets/kuma.io/tls-cert"
@@ -887,7 +860,6 @@ webhooks:
           - healthchecks
           - retries
           - proxytemplates
-          - ratelimits
           - trafficlogs
           - trafficpermissions
           - trafficroutes
@@ -950,7 +922,6 @@ webhooks:
           - retries
           - meshes
           - proxytemplates
-          - ratelimits
           - trafficlogs
           - trafficpermissions
           - trafficroutes

@@ -76,9 +76,11 @@ func (l *ServiceOverviewResourceList) GetItems() []model.Resource {
 func (l *ServiceOverviewResourceList) GetItemType() model.ResourceType {
 	return ServiceOverviewType
 }
+
 func (l *ServiceOverviewResourceList) NewItem() model.Resource {
 	return NewServiceOverviewResource()
 }
+
 func (l *ServiceOverviewResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ServiceOverviewResource); ok {
 		l.Items = append(l.Items, trr)

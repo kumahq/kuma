@@ -6,4 +6,4 @@ import (
 	"github.com/kumahq/kuma/test/e2e/helm"
 )
 
-var _ = Describe("Test Remote and Global with Helm chart", helm.RemoteAndGlobalWithHelmChart)
+var _ = Describe("Test Zone and Global with Helm chart", helm.ZoneAndGlobalWithHelmChart)

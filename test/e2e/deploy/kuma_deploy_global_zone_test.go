@@ -6,4 +6,4 @@ import (
 	"github.com/kumahq/kuma/test/e2e/deploy"
 )
 
-var _ = Describe("Test Remote and Global", deploy.RemoteAndGLobal)
+var _ = Describe("Test Zone and Global", deploy.ZoneAndGlobal)

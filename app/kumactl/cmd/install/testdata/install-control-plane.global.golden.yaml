@@ -688,14 +688,14 @@ subjects:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kuma-global-remote-sync
+  name: kuma-global-zone-sync
   namespace: kuma-system
   annotations:
 spec:
   type: LoadBalancer
   ports:
     - port: 5685
-      name: global-remote-sync
+      name: global-zone-sync
   selector:
   
     app.kubernetes.io/name: kuma

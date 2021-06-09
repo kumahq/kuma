@@ -29,15 +29,19 @@ func NewTrafficRouteResource() *TrafficRouteResource {
 func (t *TrafficRouteResource) GetType() model.ResourceType {
 	return TrafficRouteType
 }
+
 func (t *TrafficRouteResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
+
 func (t *TrafficRouteResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
+
 func (t *TrafficRouteResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
+
 func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 	route, ok := spec.(*proto.TrafficRoute)
 	if !ok {
@@ -47,6 +51,7 @@ func (t *TrafficRouteResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+
 func (t *TrafficRouteResource) Validate() error {
 	err := validators.ValidationError{}
 	if t.Spec.Path == "" {
@@ -81,6 +86,7 @@ func (l *TrafficRouteResourceList) GetItemType() model.ResourceType {
 func (l *TrafficRouteResourceList) NewItem() model.Resource {
 	return NewTrafficRouteResource()
 }
+
 func (l *TrafficRouteResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*TrafficRouteResource); ok {
 		l.Items = append(l.Items, trr)
@@ -89,6 +95,7 @@ func (l *TrafficRouteResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*TrafficRouteResource)(nil), r)
 	}
 }
+
 func (l *TrafficRouteResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }

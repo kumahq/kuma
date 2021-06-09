@@ -28,15 +28,19 @@ func NewZoneResource() *ZoneResource {
 func (t *ZoneResource) GetType() model.ResourceType {
 	return ZoneType
 }
+
 func (t *ZoneResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
+
 func (t *ZoneResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
+
 func (t *ZoneResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
+
 func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
 	value, ok := spec.(*system_proto.Zone)
 	if !ok {
@@ -46,6 +50,7 @@ func (t *ZoneResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+
 func (t *ZoneResource) Scope() model.ResourceScope {
 	return model.ScopeGlobal
 }
@@ -64,12 +69,15 @@ func (l *ZoneResourceList) GetItems() []model.Resource {
 	}
 	return res
 }
+
 func (l *ZoneResourceList) GetItemType() model.ResourceType {
 	return ZoneType
 }
+
 func (l *ZoneResourceList) NewItem() model.Resource {
 	return NewZoneResource()
 }
+
 func (l *ZoneResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ZoneResource); ok {
 		l.Items = append(l.Items, trr)
@@ -78,6 +86,7 @@ func (l *ZoneResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*ZoneResource)(nil), r)
 	}
 }
+
 func (l *ZoneResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }

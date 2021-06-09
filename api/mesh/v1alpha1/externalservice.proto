@@ -5,6 +5,7 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "validate/validate.proto";
+import "google/protobuf/wrappers.proto";
 
 import "system/v1alpha1/datasource.proto";
 import "config.proto";
@@ -36,6 +37,12 @@ message ExternalService {
 
       // Data source for the authentication
       kuma.system.v1alpha1.DataSource client_key = 4;
+
+      // If true then TLS session will allow renegotiation.
+      // It's not recommended to set this to true because of security reasons.
+      // However, some servers requires this setting, especially when using
+      // mTLS.
+      google.protobuf.BoolValue allowRenegotiation = 5;
     }
 
     TLS tls = 2;

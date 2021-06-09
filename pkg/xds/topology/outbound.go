@@ -97,7 +97,7 @@ func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core
 		if !dataplane.Spec.IsIngress() {
 			continue
 		}
-		if !dataplane.Spec.IsRemoteIngress(zone) {
+		if !dataplane.Spec.IsZoneIngress(zone) {
 			continue // we only need Ingress for other zones, we don't want to direct request to the same zone through Ingress
 		}
 		if !mesh.MTLSEnabled() {
@@ -156,6 +156,7 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 		ClientKey: convertToEnvoy(
 			externalService.Spec.GetNetworking().GetTls().GetClientKey(),
 			mesh.GetMeta().GetName(), loader),
+		AllowRenegotiation: externalService.Spec.GetNetworking().GetTls().GetAllowRenegotiation().GetValue(),
 	}
 
 	tags := externalService.Spec.GetTags()

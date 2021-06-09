@@ -113,13 +113,13 @@ var _ = Describe("Match", func() {
 						},
 					},
 					[]*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"region":           "us",
-							"kuma.io/protocol": "http",
+						{
+							Match: map[string]string{
+								"region":           "us",
+								"kuma.io/protocol": "http",
+							},
 						},
-					},
-				}),
+					}),
 				policyWithDestinationsFunc("fi2", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
 						{
@@ -130,13 +130,13 @@ var _ = Describe("Match", func() {
 						},
 					},
 					[]*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"kuma.io/service":  "*",
-							"kuma.io/protocol": "http",
+						{
+							Match: map[string]string{
+								"kuma.io/service":  "*",
+								"kuma.io/protocol": "http",
+							},
 						},
-					},
-				}),
+					}),
 			},
 			expected: core_xds.RateLimitsMap{
 				mesh_proto.InboundInterface{
@@ -178,34 +178,34 @@ var _ = Describe("Match", func() {
 					[]*mesh_proto.Selector{
 						{
 							Match: map[string]string{
-								"kuma.io/service":  "*",
+								"kuma.io/service": "*",
 							},
 						},
 					},
 					[]*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"kuma.io/service":  "backend",
-							"kuma.io/protocol": "http",
+						{
+							Match: map[string]string{
+								"kuma.io/service":  "backend",
+								"kuma.io/protocol": "http",
+							},
 						},
-					},
-				}),
+					}),
 				policyWithDestinationsFunc("fi1", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
 						{
 							Match: map[string]string{
-								"kuma.io/service":  "frontend",
+								"kuma.io/service": "frontend",
 							},
 						},
 					},
 					[]*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"kuma.io/service":  "backend",
-							"kuma.io/protocol": "http",
+						{
+							Match: map[string]string{
+								"kuma.io/service":  "backend",
+								"kuma.io/protocol": "http",
+							},
 						},
-					},
-				}),
+					}),
 			},
 			expected: core_xds.RateLimitsMap{
 				mesh_proto.InboundInterface{
@@ -216,7 +216,7 @@ var _ = Describe("Match", func() {
 						[]*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"kuma.io/service":  "frontend",
+									"kuma.io/service": "frontend",
 								},
 							},
 						},
@@ -232,7 +232,7 @@ var _ = Describe("Match", func() {
 						[]*mesh_proto.Selector{
 							{
 								Match: map[string]string{
-									"kuma.io/service":  "*",
+									"kuma.io/service": "*",
 								},
 							},
 						},
@@ -277,13 +277,13 @@ var _ = Describe("Match", func() {
 						},
 					},
 					[]*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"kuma.io/service":  "web-api",
-							"kuma.io/protocol": "http",
+						{
+							Match: map[string]string{
+								"kuma.io/service":  "web-api",
+								"kuma.io/protocol": "http",
+							},
 						},
-					},
-				}),
+					}),
 			},
 			expected: core_xds.RateLimitsMap{
 				mesh_proto.InboundInterface{
@@ -299,13 +299,13 @@ var _ = Describe("Match", func() {
 						},
 					},
 					[]*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"kuma.io/service":  "web-api",
-							"kuma.io/protocol": "http",
+						{
+							Match: map[string]string{
+								"kuma.io/service":  "web-api",
+								"kuma.io/protocol": "http",
+							},
 						},
-					},
-				}).Spec,
+					}).Spec,
 				},
 			},
 		}),
