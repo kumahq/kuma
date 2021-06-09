@@ -267,4 +267,7 @@ dev/envrc: $(KUBECONFIG_DIR)/kind-kuma-current ## Generate .envrc
 		echo "path_add KUBECONFIG $$c" ; \
 	done >> .envrc
 	@echo 'export KUBECONFIG' >> .envrc
+	@for prog in $(BUILD_RELEASE_BINARIES) ; do \
+		echo "PATH_add $(BUILD_ARTIFACTS_DIR)/$$prog" ; \
+	done >> .envrc
 	@direnv allow
