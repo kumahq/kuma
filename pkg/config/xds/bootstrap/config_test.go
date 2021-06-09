@@ -54,7 +54,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 		It("should be loadable from environment variables", func() {
 			// setup
 			env := map[string]string{
-				"KUMA_BOOTSTRAP_SERVER_API_VERSION":                  "v2",
+				"KUMA_BOOTSTRAP_SERVER_API_VERSION":                  "v3",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ADDRESS":         "192.168.0.1",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_PORT":            "4321",
 				"KUMA_BOOTSTRAP_SERVER_PARAMS_ADMIN_ACCESS_LOG_PATH": "/var/log",
@@ -76,7 +76,7 @@ var _ = Describe("BootstrappServerConfig", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// and
-			Expect(cfg.APIVersion).To(Equal(envoy.APIV2))
+			Expect(cfg.APIVersion).To(Equal(envoy.APIV3))
 			Expect(cfg.Params.AdminAddress).To(Equal("192.168.0.1"))
 			Expect(cfg.Params.AdminPort).To(Equal(uint32(4321)))
 			Expect(cfg.Params.AdminAccessLogPath).To(Equal("/var/log"))

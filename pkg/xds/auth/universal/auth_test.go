@@ -243,6 +243,6 @@ var _ = Describe("Authentication flow", func() {
 		})
 
 		// then
-		Expect(err).To(MatchError(`there is no Signing Key in the Control Plane for Mesh "demo". Make sure the Mesh exist. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens.`))
+		Expect(err).To(MatchError(`there is no Signing Key in the Control Plane for Mesh "demo". Make sure the Mesh exist. If you run multi-zone setup, make sure Zone CP is connected to the Global before generating tokens.`))
 	})
 })

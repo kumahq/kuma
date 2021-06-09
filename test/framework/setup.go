@@ -442,7 +442,17 @@ func TestServerUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 		if len(opts.protocol) == 0 {
 			opts.protocol = "http"
 		}
-		args := []string{"test-server", "health-check", opts.protocol, "--port", "8080"}
+		if opts.serviceVersion == "" {
+			opts.serviceVersion = "v1"
+		}
+		args := []string{"test-server"}
+		if len(opts.appArgs) > 0 {
+			args = append(args, opts.appArgs...)
+		}
+		if opts.serviceName == "" {
+			opts.serviceName = "test-server"
+		}
+		args = append(args, "--port", "8080")
 		appYaml := fmt.Sprintf(`
 type: Dataplane
 mesh: %s
@@ -453,14 +463,15 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: test-server
+      kuma.io/service: %s
       kuma.io/protocol: %s
+      version: %s
       team: server-owners
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
     redirectPortOutbound: %s
-`, mesh, "80", "8080", opts.protocol, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 
 		fs = append(fs,
 			WithName(name),

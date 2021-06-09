@@ -27,13 +27,13 @@ const (
 // of the legacy proto package is being used.
 const _ = proto.ProtoPackageIsVersion4
 
-// ZoneInsight defines the observed state of a Remote Kuma CP.
+// ZoneInsight defines the observed state of a Zone Kuma CP.
 type ZoneInsight struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// List of KDS subscriptions created by a given Remote Kuma CP.
+	// List of KDS subscriptions created by a given Zone Kuma CP.
 	Subscriptions []*KDSSubscription `protobuf:"bytes,1,rep,name=subscriptions,proto3" json:"subscriptions,omitempty"`
 }
 
@@ -77,13 +77,13 @@ func (x *ZoneInsight) GetSubscriptions() []*KDSSubscription {
 }
 
 // KDSSubscription describes a single KDS subscription
-// created by a Remote to the Global.
-// Ideally, there should be only one such subscription per Remote lifecycle.
+// created by a Zone to the Global.
+// Ideally, there should be only one such subscription per Zone lifecycle.
 // Presence of multiple subscriptions might indicate one of the following
 // events:
-// - transient loss of network connection between Remote and Global Control
+// - transient loss of network connection between Zone and Global Control
 // Planes
-// - Remote Kuma CP restarts (i.e. hot restart or crash)
+// - Zone Kuma CP restarts (i.e. hot restart or crash)
 // - Global Kuma CP restarts (i.e. rolling update or crash)
 // - etc
 type KDSSubscription struct {
@@ -95,13 +95,13 @@ type KDSSubscription struct {
 	Id string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	// Global CP instance that handled given subscription.
 	GlobalInstanceId string `protobuf:"bytes,2,opt,name=global_instance_id,json=globalInstanceId,proto3" json:"global_instance_id,omitempty"`
-	// Time when a given Remote connected to the Global.
+	// Time when a given Zone connected to the Global.
 	ConnectTime *timestamp.Timestamp `protobuf:"bytes,3,opt,name=connect_time,json=connectTime,proto3" json:"connect_time,omitempty"`
-	// Time when a given Remote disconnected from the Global.
+	// Time when a given Zone disconnected from the Global.
 	DisconnectTime *timestamp.Timestamp `protobuf:"bytes,4,opt,name=disconnect_time,json=disconnectTime,proto3" json:"disconnect_time,omitempty"`
 	// Status of the KDS subscription.
 	Status *KDSSubscriptionStatus `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
-	// Version of Remote Kuma CP.
+	// Version of Zone Kuma CP.
 	Version *Version `protobuf:"bytes,6,opt,name=version,proto3" json:"version,omitempty"`
 }
 
@@ -318,7 +318,7 @@ type Version struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	// Version of Remote Kuma CP
+	// Version of Zone Kuma CP
 	KumaCp *KumaCpVersion `protobuf:"bytes,1,opt,name=kumaCp,proto3" json:"kumaCp,omitempty"`
 }
 

@@ -13,10 +13,6 @@ import (
 )
 
 func PolicyTCP() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
 	healthCheck := func(send, recv string) string {
 		sendBase64 := base64.StdEncoding.EncodeToString([]byte(send))
 		recvBase64 := base64.StdEncoding.EncodeToString([]byte(recv))
@@ -70,6 +66,7 @@ conf:
 			WithTransparentProxy(true), WithBuiltinDNS(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = TestServerUniversal("test-server", "default", testServerToken,
+			WithArgs([]string{"health-check", "tcp"}),
 			WithTransparentProxy(true), WithProtocol("tcp"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

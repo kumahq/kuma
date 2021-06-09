@@ -51,7 +51,7 @@ func newInspectZonesCmd(ctx *cmd.RootContext) *cobra.Command {
 
 func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourceList, out io.Writer) error {
 	data := printers.Table{
-		Headers: []string{"NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "REMOTE-CP VERSION"},
+		Headers: []string{"NAME", "STATUS", "LAST CONNECTED AGO", "LAST UPDATED AGO", "TOTAL UPDATES", "TOTAL ERRORS", "ZONE-CP VERSION"},
 		NextRow: func() func() []string {
 			i := 0
 			return func() []string {
@@ -76,10 +76,10 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 				}
 				lastUpdated := util_proto.MustTimestampFromProto(lastSubscription.GetStatus().GetLastUpdateTime())
 
-				var remoteCpVersion string
+				var zoneCPVersion string
 				if lastSubscription.GetVersion() != nil {
 					if lastSubscription.Version.KumaCp != nil {
-						remoteCpVersion = lastSubscription.Version.KumaCp.Version
+						zoneCPVersion = lastSubscription.Version.KumaCp.Version
 					}
 				}
 
@@ -90,7 +90,7 @@ func printZoneOverviews(now time.Time, zoneOverviews *system.ZoneOverviewResourc
 					table.Ago(lastUpdated, now),          // LAST UPDATED AGO
 					table.Number(totalResponsesSent),     // TOTAL UPDATES
 					table.Number(totalResponsesRejected), // TOTAL ERRORS
-					remoteCpVersion,                      // REMOTE-CP VERSION
+					zoneCPVersion,                        // ZONE-CP VERSION
 				}
 			}
 		}(),

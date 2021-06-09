@@ -52,7 +52,7 @@ var HelmSubChartPrefix = ""
 
 var KumaNamespace = "kuma-system"
 var KumaServiceName = "kuma-control-plane"
-var KumaGlobalRemoteSyncServiceName = "kuma-global-remote-sync"
+var KumaGlobalZoneSyncServiceName = "kuma-global-zone-sync"
 
 var CNIApp = "kuma-cni"
 var CNINamespace = "kube-system"
@@ -62,6 +62,6 @@ var KumaCPImageRepo = "kuma-cp"
 var KumaDPImageRepo = "kuma-dp"
 var KumaInitImageRepo = "kuma-init"
 
-var KumaUniversalDeployOpts = []DeployOptionsFunc{}
-var KumaK8sDeployOpts = []DeployOptionsFunc{}
-var KumaRemoteK8sDeployOpts = []DeployOptionsFunc{}
+var KumaUniversalDeployOpts []DeployOptionsFunc
+var KumaK8sDeployOpts []DeployOptionsFunc
+var KumaZoneK8sDeployOpts []DeployOptionsFunc

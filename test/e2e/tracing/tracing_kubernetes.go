@@ -17,11 +17,6 @@ import (
 )
 
 func TracingK8S() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
-
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1

@@ -18,36 +18,6 @@ var _ = Describe("RouteConfigurationVirtualHostConfigurer", func() {
 		expected        string
 	}
 
-	Context("V2", func() {
-		DescribeTable("should generate proper Envoy config",
-			func(given testCase) {
-				// when
-				routeConfiguration, err := NewRouteConfigurationBuilder(envoy.APIV2).
-					Configure(VirtualHost(NewVirtualHostBuilder(envoy.APIV2).
-						Configure(CommonVirtualHost(given.virtualHostName)))).
-					Build()
-				// then
-				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				actual, err := util_proto.ToYAML(routeConfiguration)
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(actual).To(MatchYAML(given.expected))
-			},
-			Entry("basic virtual host", testCase{
-				virtualHostName: "backend",
-				expected: `
-            virtualHosts:
-            - domains:
-              - '*'
-              name: backend
-`,
-			}),
-		)
-	})
-
 	Context("V3", func() {
 		DescribeTable("should generate proper Envoy config",
 			func(given testCase) {

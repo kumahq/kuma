@@ -28,15 +28,19 @@ func NewProxyTemplateResource() *ProxyTemplateResource {
 func (t *ProxyTemplateResource) GetType() model.ResourceType {
 	return ProxyTemplateType
 }
+
 func (t *ProxyTemplateResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
+
 func (t *ProxyTemplateResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
+
 func (t *ProxyTemplateResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
+
 func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 	template, ok := spec.(*mesh_proto.ProxyTemplate)
 	if !ok {
@@ -46,6 +50,7 @@ func (t *ProxyTemplateResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+
 func (t *ProxyTemplateResource) Scope() model.ResourceScope {
 	return model.ScopeMesh
 }
@@ -64,12 +69,15 @@ func (l *ProxyTemplateResourceList) GetItems() []model.Resource {
 	}
 	return res
 }
+
 func (l *ProxyTemplateResourceList) GetItemType() model.ResourceType {
 	return ProxyTemplateType
 }
+
 func (l *ProxyTemplateResourceList) NewItem() model.Resource {
 	return NewProxyTemplateResource()
 }
+
 func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ProxyTemplateResource); ok {
 		l.Items = append(l.Items, trr)
@@ -78,6 +86,7 @@ func (l *ProxyTemplateResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*ProxyTemplateResource)(nil), r)
 	}
 }
+
 func (l *ProxyTemplateResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }

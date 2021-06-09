@@ -115,7 +115,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				cfg := bootstrap_config.DefaultBootstrapServerConfig()
 				cfg.Params.XdsHost = "localhost"
 				cfg.Params.XdsPort = 5678
-				cfg.APIVersion = envoy_common.APIV2
+				cfg.APIVersion = envoy_common.APIV3
 				return cfg
 			},
 			request: types.BootstrapRequest{
@@ -124,7 +124,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Version: defaultVersion,
 			},
 			expectedConfigFile:       "generator.default-config-minimal-request.golden.yaml",
-			expectedBootstrapVersion: types.BootstrapV2,
+			expectedBootstrapVersion: types.BootstrapV3,
 			hdsEnabled:               true,
 		}),
 		Entry("default config", testCase{
@@ -168,10 +168,10 @@ var _ = Describe("bootstrapGenerator", func() {
 				Mesh:             "mesh",
 				Name:             "name.namespace",
 				Version:          defaultVersion,
-				BootstrapVersion: types.BootstrapV2,
+				BootstrapVersion: types.BootstrapV3,
 			},
 			expectedConfigFile:       "generator.custom-config-minimal-request.golden.yaml",
-			expectedBootstrapVersion: types.BootstrapV2,
+			expectedBootstrapVersion: types.BootstrapV3,
 			hdsEnabled:               true,
 		}),
 		Entry("custom config", testCase{
@@ -186,7 +186,7 @@ var _ = Describe("bootstrapGenerator", func() {
 						XdsPort:            15678,
 						XdsConnectTimeout:  2 * time.Second,
 					},
-					APIVersion: envoy_common.APIV2,
+					APIVersion: envoy_common.APIV3,
 				}
 			},
 			request: types.BootstrapRequest{
@@ -221,7 +221,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				Version: defaultVersion,
 			},
 			expectedConfigFile:       "generator.custom-config.golden.yaml",
-			expectedBootstrapVersion: types.BootstrapV2,
+			expectedBootstrapVersion: types.BootstrapV3,
 			hdsEnabled:               true,
 		}),
 		Entry("default config, kubernetes", testCase{
@@ -429,7 +429,7 @@ var _ = Describe("bootstrapGenerator", func() {
 				AdminPort:        9901,
 				BootstrapVersion: "5",
 			},
-			expected: `Invalid BootstrapVersion. Available values are: "2", "3"`,
+			expected: `Invalid BootstrapVersion. Available values are: "3"`,
 		}),
 		Entry("when both dataplane and dataplane token path are defined", errTestCase{
 			request: types.BootstrapRequest{
@@ -475,17 +475,6 @@ w/vjIriD0mGwwccxbojmEHq4rO4ZrjQNmwvOgxoL2dTm/L9Smr6RXmIgu/0Pnrlq
 			},
 			expected: `A data plane proxy is trying to verify the control plane using the certificate which is not a certificate authority (basic constraint 'CA' is set to 'false').
 Provide CA that was used to sign a certificate used in the control plane by using 'kuma-dp run --ca-cert-file=file' or via KUMA_CONTROL_PLANE_CA_CERT_FILE`,
-		}),
-		Entry("when DNS is used in API V2", errTestCase{
-			request: types.BootstrapRequest{
-				Host:             "localhost",
-				Mesh:             "mesh",
-				Name:             "name.namespace",
-				AdminPort:        9901,
-				BootstrapVersion: "2",
-				DNSPort:          1234,
-			},
-			expected: `dnsPort: DNS cannot be used in API V2. Upgrade Kuma DP to API V3`,
 		}),
 	)
 })

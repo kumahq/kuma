@@ -42,7 +42,7 @@ var _ = Describe("Multiplex Session", func() {
 			input := make(chan *mesh_proto.Message, 1)
 			output := make(chan *mesh_proto.Message, 1)
 			clientSession = mux.NewSession("global", &testMultiplexStream{input: input, output: output}, nil)
-			serverSession = mux.NewSession("remote-1", &testMultiplexStream{input: output, output: input}, nil)
+			serverSession = mux.NewSession("zone-1", &testMultiplexStream{input: output, output: input}, nil)
 		})
 
 		It("should Send to clientSession's ClientStream and Recv from serverSession's ServerStream", func() {
@@ -83,7 +83,7 @@ var _ = Describe("Multiplex Session", func() {
 			input := make(chan *mesh_proto.Message, 1)
 			output := make(chan *mesh_proto.Message, 1)
 			clientSession = mux.NewSession("global", &testMultiplexStream{input: input, output: output}, nil)
-			serverSession = mux.NewSession("remote-1", &testMultiplexStream{input: output, output: input}, nil)
+			serverSession = mux.NewSession("zone-1", &testMultiplexStream{input: output, output: input}, nil)
 		})
 
 		Context("Recv", func() {
