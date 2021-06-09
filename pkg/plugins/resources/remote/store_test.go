@@ -1,4 +1,4 @@
-package zone_test
+package remote_test
 
 import (
 	"bufio"
@@ -23,12 +23,12 @@ import (
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_rest "github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/plugins/resources/zone"
+	"github.com/kumahq/kuma/pkg/plugins/resources/remote"
 
 	sample_core "github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 )
 
-var _ = Describe("ZoneStore", func() {
+var _ = Describe("RemoteStore", func() {
 
 	creationTime, _ := time.Parse(time.RFC3339, "2018-07-17T16:05:36.995Z")
 	modificationTime, _ := time.Parse(time.RFC3339, "2019-07-17T16:05:36.995Z")
@@ -54,7 +54,7 @@ var _ = Describe("ZoneStore", func() {
 				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
 			},
 		}
-		return zone.NewStore(client, apis)
+		return remote.NewStore(client, apis)
 	}
 
 	setupErrorStore := func(code int, errorMsg string) core_store.ResourceStore {
@@ -72,7 +72,7 @@ var _ = Describe("ZoneStore", func() {
 				mesh.MeshType:                core_rest.NewResourceApi(mesh.MeshType, "meshes"),
 			},
 		}
-		return zone.NewStore(client, apis)
+		return remote.NewStore(client, apis)
 	}
 	Describe("Get()", func() {
 		It("should get resource", func() {

@@ -20,12 +20,12 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/bootstrap/types"
 )
 
-type zoneBootstrap struct {
+type remoteBootstrap struct {
 	client *http.Client
 }
 
-func NewZoneBootstrapGenerator(client *http.Client) BootstrapConfigFactoryFunc {
-	rb := zoneBootstrap{client: client}
+func NewRemoteBootstrapGenerator(client *http.Client) BootstrapConfigFactoryFunc {
+	rb := remoteBootstrap{client: client}
 	return rb.Generate
 }
 
@@ -42,7 +42,7 @@ func IsInvalidRequestErr(err error) bool {
 	return strings.HasPrefix(err.Error(), "Invalid request: ")
 }
 
-func (b *zoneBootstrap) Generate(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+func (b *remoteBootstrap) Generate(url string, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error) {
 	bootstrapUrl, err := net_url.Parse(url)
 	if err != nil {
 		return nil, "", err
@@ -95,7 +95,7 @@ func (b *zoneBootstrap) Generate(url string, cfg kuma_dp.Config, params Bootstra
 	return respBytes, version, nil
 }
 
-func (b *zoneBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error) {
+func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Config, params BootstrapParams) ([]byte, types.BootstrapVersion, error) {
 	url.Path = "/bootstrap"
 	var dataplaneResource string
 	if params.Dataplane != nil {
