@@ -46,7 +46,7 @@ var _ = Describe("Validation", func() {
 		func(given testCase) {
 			// given
 			webhook := &admission.Webhook{
-				Handler: webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode),
+				Handler: webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, "kuma-system"),
 			}
 			Expect(webhook.InjectScheme(scheme)).To(Succeed())
 
@@ -153,7 +153,7 @@ var _ = Describe("Validation", func() {
 		Entry("should pass validation for synced policy from Global to Remote", testCase{
 			mode:        core.Remote,
 			objTemplate: &mesh_proto.TrafficRoute{},
-			username:    "system:serviceaccount:ns:kuma-control-plane",
+			username:    "system:serviceaccount:kuma-system:mesh",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -206,7 +206,7 @@ var _ = Describe("Validation", func() {
 		Entry("should pass validation for synced policy from Remote to Global", testCase{
 			mode:        core.Remote,
 			objTemplate: &mesh_proto.Dataplane{},
-			username:    "system:serviceaccount:ns:kuma-control-plane",
+			username:    "system:serviceaccount:kuma-system:kuma-control-plane",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -507,7 +507,7 @@ var _ = Describe("Validation", func() {
 		Entry("should fail validation on missing mesh object", testCase{
 			mode:        core.Remote,
 			objTemplate: &mesh_proto.TrafficRoute{},
-			username:    "system:serviceaccount:ns:kuma-control-plane",
+			username:    "system:serviceaccount:kuma-system:mesh",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",

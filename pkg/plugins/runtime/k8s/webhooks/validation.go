@@ -25,21 +25,23 @@ import (
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
 )
 
-func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode) k8s_common.AdmissionValidator {
+func NewValidatingWebhook(converter k8s_common.Converter, coreRegistry core_registry.TypeRegistry, k8sRegistry k8s_registry.TypeRegistry, mode core.CpMode, systemNamespace string) k8s_common.AdmissionValidator {
 	return &validatingHandler{
-		coreRegistry: coreRegistry,
-		k8sRegistry:  k8sRegistry,
-		converter:    converter,
-		mode:         mode,
+		coreRegistry:    coreRegistry,
+		k8sRegistry:     k8sRegistry,
+		converter:       converter,
+		mode:            mode,
+		systemNamespace: systemNamespace,
 	}
 }
 
 type validatingHandler struct {
-	coreRegistry core_registry.TypeRegistry
-	k8sRegistry  k8s_registry.TypeRegistry
-	converter    k8s_common.Converter
-	decoder      *admission.Decoder
-	mode         core.CpMode
+	coreRegistry    core_registry.TypeRegistry
+	k8sRegistry     k8s_registry.TypeRegistry
+	converter       k8s_common.Converter
+	decoder         *admission.Decoder
+	mode            core.CpMode
+	systemNamespace string
 }
 
 func (h *validatingHandler) InjectDecoder(d *admission.Decoder) error {
@@ -98,7 +100,7 @@ func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8
 		return admission.Allowed("")
 	}
 
-	if isKumaServiceAccount(userInfo) {
+	if isKumaServiceAccount(userInfo, h.systemNamespace) {
 		// Assume this means sync from another zone. Not security; protecting user from self.
 		return admission.Allowed("")
 	}
@@ -146,10 +148,10 @@ func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admi
 	}
 }
 
-func isKumaServiceAccount(userInfo authenticationv1.UserInfo) bool {
+func isKumaServiceAccount(userInfo authenticationv1.UserInfo, systemNamespace string) bool {
 	elms := strings.Split(userInfo.Username, ":")
 	// system:serviceaccount:<namespace>:kuma-control-plane
-	if len(elms) == 4 && elms[3] == "kuma-control-plane" {
+	if len(elms) == 4 && elms[2] == systemNamespace {
 		return true
 	}
 	return false
