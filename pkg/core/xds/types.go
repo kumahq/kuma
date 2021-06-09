@@ -46,10 +46,11 @@ type TagSelectorSet []mesh_proto.TagSelector
 type DestinationMap map[ServiceName]TagSelectorSet
 
 type ExternalService struct {
-	TLSEnabled bool
-	CaCert     []byte
-	ClientCert []byte
-	ClientKey  []byte
+	TLSEnabled         bool
+	CaCert             []byte
+	ClientCert         []byte
+	ClientKey          []byte
+	AllowRenegotiation bool
 }
 
 type Locality struct {
