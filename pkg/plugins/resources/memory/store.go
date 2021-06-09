@@ -43,18 +43,23 @@ type memoryMeta struct {
 func (m memoryMeta) GetName() string {
 	return m.Name
 }
+
 func (m memoryMeta) GetNameExtensions() model.ResourceNameExtensions {
 	return model.ResourceNameExtensionsUnsupported
 }
+
 func (m memoryMeta) GetMesh() string {
 	return m.Mesh
 }
+
 func (m memoryMeta) GetVersion() string {
 	return m.Version.String()
 }
+
 func (m memoryMeta) GetCreationTime() time.Time {
 	return m.CreationTime
 }
+
 func (m memoryMeta) GetModificationTime() time.Time {
 	return m.ModificationTime
 }
@@ -142,6 +147,7 @@ func (c *memoryStore) Create(_ context.Context, r model.Resource, fs ...store.Cr
 	}
 	return nil
 }
+
 func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.UpdateOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -185,6 +191,7 @@ func (c *memoryStore) Update(_ context.Context, r model.Resource, fs ...store.Up
 	}
 	return nil
 }
+
 func (c *memoryStore) Delete(ctx context.Context, r model.Resource, fs ...store.DeleteOptionsFunc) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -251,6 +258,7 @@ func (c *memoryStore) Get(_ context.Context, r model.Resource, fs ...store.GetOp
 	}
 	return c.unmarshalRecord(record, r)
 }
+
 func (c *memoryStore) List(_ context.Context, rs model.ResourceList, fs ...store.ListOptionsFunc) error {
 	c.mu.RLock()
 	defer c.mu.RUnlock()

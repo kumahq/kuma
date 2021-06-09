@@ -17,7 +17,7 @@ import (
 	core_registry "github.com/kumahq/kuma/pkg/core/resources/registry"
 	"github.com/kumahq/kuma/pkg/core/validators"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
-	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
+	kds_zone "github.com/kumahq/kuma/pkg/kds/zone"
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 	k8s_model "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 	k8s_registry "github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/registry"
@@ -96,10 +96,10 @@ func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8
 		return admission.Allowed("")
 	}
 	switch h.mode {
-	case core.Remote:
-		// Although Remote CP consumes Dataplane (Ingress) we also apply Dataplane on Remote
-		if resType != core_mesh.DataplaneType && kds_remote.ConsumesType(resType) && obj.GetAnnotations()[k8s_common.K8sSynced] != "true" {
-			return syncErrorResponse(resType, core.Remote)
+	case core.Zone:
+		// Although Zone CP consumes Dataplane (Ingress) we also apply Dataplane on Zone
+		if resType != core_mesh.DataplaneType && kds_zone.ConsumesType(resType) && obj.GetAnnotations()[k8s_common.K8sSynced] != "true" {
+			return syncErrorResponse(resType, core.Zone)
 		}
 	case core.Global:
 		if kds_global.ConsumesType(resType) && obj.GetAnnotations()[k8s_common.K8sSynced] != "true" {
@@ -111,10 +111,10 @@ func (h *validatingHandler) validateSync(resType core_model.ResourceType, obj k8
 
 func syncErrorResponse(resType core_model.ResourceType, cpMode core.CpMode) admission.Response {
 	otherCpMode := ""
-	if cpMode == core.Remote {
+	if cpMode == core.Zone {
 		otherCpMode = core.Global
 	} else if cpMode == core.Global {
-		otherCpMode = core.Remote
+		otherCpMode = core.Zone
 	}
 	return admission.Response{
 		AdmissionResponse: v1beta1.AdmissionResponse{

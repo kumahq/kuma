@@ -119,7 +119,7 @@ func (s *server) StreamMessage(stream mesh_proto.MultiplexService_StreamMessageS
 	}
 	clientID := md["client-id"][0]
 	log := muxServerLog.WithValues("client-id", clientID)
-	log.Info("initializing Kuma Discovery Service (KDS) stream for global-remote sync of resources")
+	log.Info("initializing Kuma Discovery Service (KDS) stream for global-zone sync of resources")
 	stop := make(chan struct{})
 	session := NewSession(clientID, stream, stop)
 	defer close(stop)

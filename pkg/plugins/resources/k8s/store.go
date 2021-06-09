@@ -111,6 +111,7 @@ func (s *KubernetesStore) Update(ctx context.Context, r core_model.Resource, fs 
 	}
 	return nil
 }
+
 func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 
@@ -137,6 +138,7 @@ func (s *KubernetesStore) Delete(ctx context.Context, r core_model.Resource, fs 
 	}
 	return nil
 }
+
 func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...store.GetOptionsFunc) error {
 	opts := store.NewGetOptions(fs...)
 	obj, err := s.Converter.ToKubernetesObject(r)
@@ -164,6 +166,7 @@ func (s *KubernetesStore) Get(ctx context.Context, r core_model.Resource, fs ...
 	}
 	return nil
 }
+
 func (s *KubernetesStore) List(ctx context.Context, rs core_model.ResourceList, fs ...store.ListOptionsFunc) error {
 	opts := store.NewListOptions(fs...)
 	obj, err := s.Converter.ToKubernetesList(rs)

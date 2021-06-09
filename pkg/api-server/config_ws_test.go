@@ -161,7 +161,7 @@ var _ = Describe("Config WS", func() {
 			  },
 			  "pollTimeout": "500ms"
 			},
-			"remote": {
+			"zone": {
 			  "kds": {
 				"refreshInterval": "1s",
 				"rootCaFile": ""
