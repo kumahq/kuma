@@ -1,4 +1,4 @@
-package metrics_test
+package metrics
 
 import (
 	"bufio"
@@ -9,8 +9,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
-
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 )
 
 func toLines(r io.Reader) (lines []string) {
@@ -34,7 +32,7 @@ var _ = Describe("Merge", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			actual := new(bytes.Buffer)
-			err = metrics.MergeClusters(input, actual)
+			err = MergeClusters(input, actual)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(toLines(actual)).To(ConsistOf(toLines(expected)))
 		},
