@@ -6,10 +6,11 @@ RUN apt-get update && \
 
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kumactl/kumactl /usr/bin
 
-RUN mkdir /kuma
-COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
+COPY $KUMA_ROOT/tools/releases/templates/LICENSE \
+    $KUMA_ROOT/tools/releases/templates/README \
+    /kuma/
+
 COPY $KUMA_ROOT/tools/releases/templates/NOTICE-kumactl /kuma/NOTICE
-COPY $KUMA_ROOT/tools/releases/templates/README /kuma
 
 RUN adduser --system --disabled-password --group kumactl --uid 5678
 
