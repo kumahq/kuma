@@ -73,12 +73,15 @@ func (l *ServiceInsightResourceList) GetItems() []model.Resource {
 	}
 	return res
 }
+
 func (l *ServiceInsightResourceList) GetItemType() model.ResourceType {
 	return ServiceInsightType
 }
+
 func (l *ServiceInsightResourceList) NewItem() model.Resource {
 	return NewServiceInsightResource()
 }
+
 func (l *ServiceInsightResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ServiceInsightResource); ok {
 		l.Items = append(l.Items, trr)
@@ -87,6 +90,7 @@ func (l *ServiceInsightResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*ServiceInsightResource)(nil), r)
 	}
 }
+
 func (l *ServiceInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }

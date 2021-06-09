@@ -54,6 +54,7 @@ func (s SortedSplit) Less(i, j int) bool {
 	}
 	return less(s[i].Destination, s[j].Destination)
 }
+
 func (s SortedSplit) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
 func less(m1, m2 map[string]string) bool {
