@@ -175,10 +175,10 @@ func FaultInjection(faultInjection *mesh_proto.FaultInjection) FilterChainBuilde
 	})
 }
 
-func RateLimit(rateLimit *mesh_proto.RateLimit) FilterChainBuilderOpt {
+func RateLimit(rateLimits []*mesh_proto.RateLimit) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV3(&v3.RateLimitConfigurer{
-			RateLimit: rateLimit,
+			RateLimits: rateLimits,
 		})
 	})
 }

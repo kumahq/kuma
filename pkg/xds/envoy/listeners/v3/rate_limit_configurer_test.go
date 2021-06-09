@@ -14,7 +14,7 @@ import (
 
 var _ = Describe("RateLimitConfigurer", func() {
 	type testCase struct {
-		input    *mesh_proto.RateLimit
+		input    []*mesh_proto.RateLimit
 		expected string
 	}
 	DescribeTable("should generate proper Envoy config",
@@ -33,19 +33,21 @@ var _ = Describe("RateLimitConfigurer", func() {
 			Expect(actual).To(MatchYAML(given.expected))
 		},
 		Entry("basic input", testCase{
-			input: &mesh_proto.RateLimit{
-				Sources: []*mesh_proto.Selector{
-					{
-						Match: map[string]string{
-							"tag1": "value1",
-							"tag2": "value2",
+			input: []*mesh_proto.RateLimit{
+				{
+					Sources: []*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"tag1": "value1",
+								"tag2": "value2",
+							},
 						},
 					},
-				},
-				Conf: &mesh_proto.RateLimit_Conf{
-					Http: &mesh_proto.RateLimit_Conf_Http{
-						Requests: &wrappers.UInt32Value{
-							Value: 100,
+					Conf: &mesh_proto.RateLimit_Conf{
+						Http: &mesh_proto.RateLimit_Conf_Http{
+							Requests: &wrappers.UInt32Value{
+								Value: 100,
+							},
 						},
 					},
 				},

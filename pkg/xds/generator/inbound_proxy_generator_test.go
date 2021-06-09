@@ -134,45 +134,73 @@ var _ = Describe("InboundProxyGenerator", func() {
 							},
 						},
 					},
-					RateLimits: model.RateLimitMap{
+					RateLimits: model.RateLimitsMap{
 						mesh_proto.InboundInterface{
 							DataplaneIP:   "192.168.0.1",
 							DataplanePort: 80,
 							WorkloadIP:    "127.0.0.1",
 							WorkloadPort:  8080,
-						}: &mesh_proto.RateLimit{
-							Sources: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "frontend",
-									},
-								},
-							},
-							Destinations: []*mesh_proto.Selector{
-								{
-									Match: map[string]string{
-										"kuma.io/service": "backend1",
-									},
-								},
-							},
-							Conf: &mesh_proto.RateLimit_Conf{
-								Http: &mesh_proto.RateLimit_Conf_Http{
-									Requests: &wrappers.UInt32Value{
-										Value: 100,
-									},
-									Interval: &duration.Duration{
-										Seconds: 2,
-									},
-									OnRateLimit: &mesh_proto.RateLimit_Conf_Http_OnRateLimit{
-										Status: &wrappers.UInt32Value{
-											Value: 404,
+						}: []*mesh_proto.RateLimit{
+							{
+								Sources: []*mesh_proto.Selector{
+									{
+										Match: map[string]string{
+											"kuma.io/service": "frontend",
 										},
-										Headers: []*mesh_proto.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
-											{
-												Key:   "x-rate-limited",
-												Value: "true",
-												Append: &wrappers.BoolValue{
-													Value: false,
+									},
+								},
+								Destinations: []*mesh_proto.Selector{
+									{
+										Match: map[string]string{
+											"kuma.io/service": "backend1",
+										},
+									},
+								},
+								Conf: &mesh_proto.RateLimit_Conf{
+									Http: &mesh_proto.RateLimit_Conf_Http{
+										Requests: &wrappers.UInt32Value{
+											Value: 200,
+										},
+										Interval: &duration.Duration{
+											Seconds: 10,
+										},
+									},
+								},
+							},
+							{
+								Sources: []*mesh_proto.Selector{
+									{
+										Match: map[string]string{
+											"kuma.io/service": "*",
+										},
+									},
+								},
+								Destinations: []*mesh_proto.Selector{
+									{
+										Match: map[string]string{
+											"kuma.io/service": "backend1",
+										},
+									},
+								},
+								Conf: &mesh_proto.RateLimit_Conf{
+									Http: &mesh_proto.RateLimit_Conf_Http{
+										Requests: &wrappers.UInt32Value{
+											Value: 100,
+										},
+										Interval: &duration.Duration{
+											Seconds: 2,
+										},
+										OnRateLimit: &mesh_proto.RateLimit_Conf_Http_OnRateLimit{
+											Status: &wrappers.UInt32Value{
+												Value: 404,
+											},
+											Headers: []*mesh_proto.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
+												{
+													Key:   "x-rate-limited",
+													Value: "true",
+													Append: &wrappers.BoolValue{
+														Value: false,
+													},
 												},
 											},
 										},

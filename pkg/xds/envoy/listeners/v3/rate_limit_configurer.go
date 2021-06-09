@@ -10,7 +10,7 @@ import (
 )
 
 type RateLimitConfigurer struct {
-	RateLimit *mesh_proto.RateLimit
+	RateLimits []*mesh_proto.RateLimit
 }
 
 func (r *RateLimitConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -41,5 +41,5 @@ func (r *RateLimitConfigurer) Configure(filterChain *envoy_listener.FilterChain)
 }
 
 func (r *RateLimitConfigurer) hasHttpRateLimit() bool {
-	return r.RateLimit != nil && r.RateLimit.GetConf().GetHttp() != nil
+	return len(r.RateLimits) > 0
 }

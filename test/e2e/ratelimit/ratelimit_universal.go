@@ -1,9 +1,10 @@
 package ratelimit
 
 import (
+	"time"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"time"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -54,12 +55,16 @@ conf:
 		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
 
+		webToken, err := cluster.GetKuma().GenerateDpToken("default", "web")
+		Expect(err).ToNot(HaveOccurred())
+
 		err = YamlUniversal(rateLimitPolicy)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithTransparentProxy(true))).
+			Install(DemoClientUniversal("web", "default", webToken, WithTransparentProxy(true))).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -78,33 +83,27 @@ conf:
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	verifyRateLimit := func(client string, succeed, fail int) func() bool {
-		return func() bool {
-			for i := 0; i < succeed; i++ {
-				_, _, err := cluster.Exec("", "", client, "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
-
-				if err != nil {
-					return false
-				}
-			}
-
-			for i := 0; i < fail; i++ {
+	verifyRateLimit := func(client string, total int) func() int {
+		return func() int {
+			succeeded := 0
+			for i := 0; i < total; i++ {
 				_, _, err := cluster.Exec("", "", client, "curl", "-v", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 				if err == nil {
-					return false
+					succeeded++
 				}
 			}
-			return true
+
+			return succeeded
 		}
 	}
 
 	It("should limit to 2 requests per 5 sec", func() {
-		Eventually(verifyRateLimit("demo-client", 2, 3), "60s", "5s").Should(BeTrue())
-		time.Sleep(6 * time.Second)
-		Expect(verifyRateLimit("demo-client", 2, 3)()).To(BeTrue())
+		Eventually(verifyRateLimit("demo-client", 5), "60s", "5s").Should(Equal(2))
+		time.Sleep(8 * time.Second)
+		Expect(verifyRateLimit("demo-client", 5)()).To(Equal(2))
 	})
 
-	It("should limit to 4 requests per 5 sec", func() {
+	It("should limit per source", func() {
 		specificRateLimitPolicy := `
 type: RateLimit
 mesh: default
@@ -123,8 +122,56 @@ conf:
 		err := YamlUniversal(specificRateLimitPolicy)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		Eventually(verifyRateLimit("demo-client", 4, 1), "60s", "5s").Should(BeTrue())
+		Eventually(verifyRateLimit("demo-client", 5), "60s", "5s").Should(Equal(4))
 		time.Sleep(6 * time.Second)
-		Expect(verifyRateLimit("demo-client", 4, 1)()).To(BeTrue())
+		Expect(verifyRateLimit("demo-client", 5)()).To(Equal(4))
+
+		// catch-all RateLimit still works
+		Eventually(verifyRateLimit("web", 5), "60s", "5s").Should(Equal(2))
+		time.Sleep(6 * time.Second)
+		Expect(verifyRateLimit("web", 5)()).To(Equal(2))
+	})
+
+	It("should limit multiple source", func() {
+		specificRateLimitPolicy := `
+type: RateLimit
+mesh: default
+name: rate-limit-demo-client
+sources:
+- match:
+    kuma.io/service: "demo-client"
+destinations:
+- match:
+    kuma.io/service: echo-server_kuma-test_svc_8080
+conf:
+  http:
+    requests: 4
+    interval: 5s
+---
+type: RateLimit
+mesh: default
+name: rate-limit-web
+sources:
+- match:
+    kuma.io/service: "webs"
+destinations:
+- match:
+    kuma.io/service: echo-server_kuma-test_svc_8080
+conf:
+  http:
+    requests: 1
+    interval: 5s
+`
+		err := YamlUniversal(specificRateLimitPolicy)(cluster)
+		Expect(err).ToNot(HaveOccurred())
+
+		Eventually(verifyRateLimit("demo-client", 5), "60s", "5s").Should(Equal(4))
+		time.Sleep(6 * time.Second)
+		Expect(verifyRateLimit("demo-client", 5)()).To(Equal(4))
+
+		// catch-all RateLimit still works
+		Eventually(verifyRateLimit("web", 5), "60s", "5s").Should(Equal(1))
+		time.Sleep(6 * time.Second)
+		Expect(verifyRateLimit("web", 5)()).To(Equal(1))
 	})
 }

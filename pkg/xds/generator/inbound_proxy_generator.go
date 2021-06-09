@@ -117,40 +117,43 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	return resources, nil
 }
 
-func (g *InboundProxyGenerator) BuildInboundRoutes(cluster envoy_common.Cluster, rateLimit *mesh_proto.RateLimit) (envoy_common.Routes, error) {
-	routes := envoy_common.Routes{
-		envoy_common.NewRouteFromCluster(cluster),
-	}
+func (g *InboundProxyGenerator) BuildInboundRoutes(cluster envoy_common.Cluster, rateLimits []*mesh_proto.RateLimit) (envoy_common.Routes, error) {
+	routes := envoy_common.Routes{}
 
-	if rateLimit != nil && rateLimit.GetConf().GetHttp() != nil {
-		route := envoy_common.NewRouteFromCluster(cluster)
-		// Source
-		if len(rateLimit.GetSources()) > 0 {
-			if route.Match == nil {
-				route.Match = &mesh_proto.TrafficRoute_Http_Match{}
+	for _, rateLimit := range rateLimits {
+		if rateLimit.GetConf().GetHttp() != nil {
+			route := envoy_common.NewRouteFromCluster(cluster)
+			// Source
+			if len(rateLimit.GetSources()) > 0 {
+				if route.Match == nil {
+					route.Match = &mesh_proto.TrafficRoute_Http_Match{}
+				}
+
+				if route.Match.Headers == nil {
+					route.Match.Headers = make(map[string]*mesh_proto.TrafficRoute_Http_Match_StringMatcher)
+				}
+
+				var selectorRegexs []string
+				for _, selector := range rateLimit.SourceTags() {
+					selectorRegexs = append(selectorRegexs, tags.MatchingRegex(selector))
+				}
+				regexOR := tags.RegexOR(selectorRegexs...)
+
+				route.Match.Headers[v3.TagsHeaderName] = &mesh_proto.TrafficRoute_Http_Match_StringMatcher{
+					MatcherType: &mesh_proto.TrafficRoute_Http_Match_StringMatcher_Regex{
+						Regex: regexOR,
+					},
+				}
 			}
 
-			if route.Match.Headers == nil {
-				route.Match.Headers = make(map[string]*mesh_proto.TrafficRoute_Http_Match_StringMatcher)
-			}
+			route.RateLimit = rateLimit
 
-			var selectorRegexs []string
-			for _, selector := range rateLimit.SourceTags() {
-				selectorRegexs = append(selectorRegexs, tags.MatchingRegex(selector))
-			}
-			regexOR := tags.RegexOR(selectorRegexs...)
-
-			route.Match.Headers[v3.TagsHeaderName] = &mesh_proto.TrafficRoute_Http_Match_StringMatcher{
-				MatcherType: &mesh_proto.TrafficRoute_Http_Match_StringMatcher_Regex{
-					Regex: regexOR,
-				},
-			}
+			routes = append(routes, route)
 		}
-
-		route.RateLimit = rateLimit
-
-		routes = append(envoy_common.Routes{route}, routes...)
 	}
+
+	// Add the defaul fall-back route
+	routes = append(routes, envoy_common.NewRouteFromCluster(cluster))
 
 	return routes, nil
 }

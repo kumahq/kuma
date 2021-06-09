@@ -3,6 +3,8 @@ package ratelimits
 import (
 	"context"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	"github.com/pkg/errors"
 
 	manager_dataplane "github.com/kumahq/kuma/pkg/core/managers/apis/dataplane"
@@ -17,7 +19,7 @@ type RateLimitMatcher struct {
 	ResourceManager manager.ReadOnlyResourceManager
 }
 
-func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (core_xds.RateLimitMap, error) {
+func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *mesh_core.DataplaneResource, mesh *mesh_core.MeshResource) (core_xds.RateLimitsMap, error) {
 	ratelimits := &mesh_core.RateLimitResourceList{}
 	if err := m.ResourceManager.List(ctx, ratelimits, store.ListByMesh(dataplane.GetMeta().GetMesh())); err != nil {
 		return nil, errors.Wrap(err, "could not retrieve ratelimits")
@@ -30,7 +32,7 @@ func BuildRateLimitMap(
 	dataplane *mesh_core.DataplaneResource,
 	mesh *mesh_core.MeshResource,
 	rateLimits []*mesh_core.RateLimitResource,
-) (core_xds.RateLimitMap, error) {
+) (core_xds.RateLimitsMap, error) {
 	policies := make([]policy.ConnectionPolicy, len(rateLimits))
 	for i, ratelimit := range rateLimits {
 		policies[i] = ratelimit
@@ -41,11 +43,14 @@ func BuildRateLimitMap(
 		return nil, errors.Wrap(err, "could not fetch additional inbounds")
 	}
 	inbounds := append(dataplane.Spec.GetNetworking().GetInbound(), additionalInbounds...)
-	policyMap := policy.SelectInboundConnectionPolicies(dataplane, inbounds, policies)
+	policyMap := policy.SelectInboundConnectionMatchingPolicies(dataplane, inbounds, policies)
 
-	result := core_xds.RateLimitMap{}
-	for inbound, connectionPolicy := range policyMap {
-		result[inbound] = connectionPolicy.(*mesh_core.RateLimitResource).Spec
+	result := core_xds.RateLimitsMap{}
+	for inbound, connectionPolicies := range policyMap {
+		result[inbound] = []*mesh_proto.RateLimit{}
+		for _, policy := range connectionPolicies {
+			result[inbound] = append(result[inbound], policy.(*mesh_core.RateLimitResource).Spec)
+		}
 	}
 	return result, nil
 }
