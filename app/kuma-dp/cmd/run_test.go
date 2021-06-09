@@ -346,6 +346,6 @@ var _ = Describe("run", func() {
 
 		// then
 		Expect(err).To(HaveOccurred())
-		Expect(err.Error()).To(Equal("--name and --mesh cannot be specified when dataplane definition is provided. Mesh and name will be read from the dataplane definition."))
+		Expect(err.Error()).To(ContainSubstring("--name and --mesh cannot be specified when dataplane definition is provided"))
 	})
 })

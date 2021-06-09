@@ -12,10 +12,6 @@ import (
 )
 
 func PolicyHTTP() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
 	healthCheck := func(method, status string) string {
 		return fmt.Sprintf(`
 type: HealthCheck
@@ -66,6 +62,7 @@ conf:
 			WithTransparentProxy(true), WithBuiltinDNS(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = TestServerUniversal("test-server", "default", testServerToken,
+			WithArgs([]string{"health-check", "http"}),
 			WithTransparentProxy(true), WithProtocol("http"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})

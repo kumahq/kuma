@@ -76,7 +76,7 @@ func GetUniversalImage() string {
 		return os.Getenv("KUMA_UNIVERSAL_IMAGE")
 	}
 
-	return "kuma-universal"
+	return KumaUniversalImage
 }
 
 func GetApiVersion() string {
@@ -85,10 +85,6 @@ func GetApiVersion() string {
 
 func HasApiVersion() bool {
 	return envIsPresent(envAPIVersion)
-}
-
-func IsApiV2() bool {
-	return GetApiVersion() == "v2"
 }
 
 func GetHelmChartPath() string {

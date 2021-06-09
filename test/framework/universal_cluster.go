@@ -79,6 +79,7 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 
 	cmd := []string{"kuma-cp", "run"}
 	env := []string{"KUMA_MODE=" + mode, "KUMA_DNS_SERVER_PORT=53"}
+
 	caps := []string{}
 	for k, v := range opts.env {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
@@ -112,8 +113,13 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 
 	app.CreateMainApp(env, cmd)
 
-	err = app.mainApp.Start()
-	if err != nil {
+	if opts.runPostgresMigration {
+		if err := runPostgresMigration(app, env); err != nil {
+			return err
+		}
+	}
+
+	if err := app.mainApp.Start(); err != nil {
 		return err
 	}
 
@@ -222,6 +228,28 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	c.apps[opts.name] = app
 
 	return nil
+}
+
+func runPostgresMigration(kumaCP *UniversalApp, envVars []string) error {
+	args := []string{
+		"/usr/bin/kuma-cp", "migrate", "up",
+	}
+
+	sshPort := kumaCP.GetPublicPort("22")
+	if sshPort == "" {
+		return errors.New("missing public port: 22")
+	}
+
+	app := NewSshApp(true, sshPort, envVars, args)
+	if err := app.Run(); err != nil {
+		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
+	}
+
+	return nil
+}
+
+func (c *UniversalCluster) GetApp(appName string) *UniversalApp {
+	return c.apps[appName]
 }
 
 func (c *UniversalCluster) DeleteApp(namespace, appname string) error {

@@ -272,4 +272,56 @@ var _ = Describe("xDS", func() {
 			)
 		})
 	})
+
+	Describe("ContainsTags", func() {
+		// given
+		endpoint := core_xds.Endpoint{
+			Tags: map[string]string{
+				"kuma.io/service": "backend",
+				"version":         "v1",
+			},
+		}
+
+		It("should match single tag", func() {
+			// when
+			contains := endpoint.ContainsTags(map[string]string{
+				"kuma.io/service": "backend",
+			})
+
+			// then
+			Expect(contains).To(BeTrue())
+		})
+
+		It("should match all the tags", func() {
+			// when
+			contains := endpoint.ContainsTags(map[string]string{
+				"kuma.io/service": "backend",
+				"version":         "v1",
+			})
+
+			// then
+			Expect(contains).To(BeTrue())
+		})
+
+		It("should not match when value of a tag is different", func() {
+			// when
+			contains := endpoint.ContainsTags(map[string]string{
+				"kuma.io/service": "backend",
+				"version":         "v2",
+			})
+
+			// then
+			Expect(contains).To(BeFalse())
+		})
+
+		It("should not match when endpoint has no such tag", func() {
+			// when
+			contains := endpoint.ContainsTags(map[string]string{
+				"team": "xyz",
+			})
+
+			// then
+			Expect(contains).To(BeFalse())
+		})
+	})
 })
