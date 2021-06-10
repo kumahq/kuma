@@ -13,8 +13,8 @@ import (
 )
 
 func ResilienceMultizoneUniversal() {
-	var global, remote_1 Cluster
-	var optsGlobal, optsRemote1 []DeployOptionsFunc
+	var global, zone1 Cluster
+	var optsGlobal, optsZone1 []DeployOptionsFunc
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -35,23 +35,23 @@ func ResilienceMultizoneUniversal() {
 		globalCP := global.GetKuma()
 
 		// Cluster 1
-		remote_1 = clusters.GetCluster(Kuma2)
-		optsRemote1 = []DeployOptionsFunc{
+		zone1 = clusters.GetCluster(Kuma2)
+		optsZone1 = []DeployOptionsFunc{
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote1...)).
-			Setup(remote_1)
+			Install(Kuma(core.Zone, optsZone1...)).
+			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_1.VerifyKuma()
+		err = zone1.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
-		err := remote_1.DeleteKuma(optsRemote1...)
+		err := zone1.DeleteKuma(optsZone1...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_1.DismissCluster()
+		err = zone1.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.DeleteKuma(optsGlobal...)
@@ -60,7 +60,7 @@ func ResilienceMultizoneUniversal() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should mark zone as offline after remote control-plane is killed forcefully", func() {
+	It("should mark zone as offline after zone control-plane is killed forcefully", func() {
 		Eventually(func() error {
 			output, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
 			if err != nil {
@@ -68,13 +68,13 @@ func ResilienceMultizoneUniversal() {
 			}
 
 			if !strings.Contains(output, "Online") {
-				return errors.New("remote zone is not online")
+				return errors.New("zone is not online")
 			}
 
 			return nil
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
-		_, _, err := remote_1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
+		_, _, err := zone1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() error {
@@ -84,7 +84,7 @@ func ResilienceMultizoneUniversal() {
 			}
 
 			if !strings.Contains(output, "Offline") {
-				return errors.New("remote zone is not offline")
+				return errors.New("zone is not offline")
 			}
 
 			return nil

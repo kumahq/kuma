@@ -1,10 +1,13 @@
-package deploy
+package helm
 
 import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
+
+	"github.com/gruntwork-io/terratest/modules/random"
 
 	api_server "github.com/kumahq/kuma/pkg/api-server"
 
@@ -21,7 +24,7 @@ import (
 	. "github.com/kumahq/kuma/test/framework"
 )
 
-func RemoteAndGLobal() {
+func ZoneAndGlobalWithHelmChart() {
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -35,20 +38,30 @@ metadata:
 
 	var clusters Clusters
 	var c1, c2 Cluster
-	var global, remote ControlPlane
-	var optsGlobal, optsRemote = KumaK8sDeployOpts, KumaRemoteK8sDeployOpts
-	var originalKumaNamespace = KumaNamespace
+	var global, zone ControlPlane
+	var optsGlobal, optsZone = KumaK8sDeployOpts, KumaZoneK8sDeployOpts
 
 	BeforeEach(func() {
-		// set the new namespace
-		KumaNamespace = "other-kuma-system"
 		var err error
 		clusters, err = NewK8sClusters(
 			[]string{Kuma1, Kuma2},
 			Silent)
 		Expect(err).ToNot(HaveOccurred())
 
-		c1 = clusters.GetCluster(Kuma1)
+		c1 = clusters.GetCluster(Kuma1).
+			WithTimeout(6 * time.Second).
+			WithRetries(60)
+		c2 = clusters.GetCluster(Kuma2).
+			WithTimeout(6 * time.Second).
+			WithRetries(60)
+
+		releaseName := fmt.Sprintf(
+			"kuma-%s",
+			strings.ToLower(random.UniqueId()),
+		)
+		optsGlobal = append(optsGlobal,
+			WithInstallationMode(HelmInstallationMode),
+			WithHelmReleaseName(releaseName))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
@@ -58,13 +71,14 @@ metadata:
 		global = c1.GetKuma()
 		Expect(global).ToNot(BeNil())
 
-		c2 = clusters.GetCluster(Kuma2)
-		optsRemote = append(optsRemote,
-			WithIngress(),
-			WithGlobalAddress(global.GetKDSServerAddress()))
+		optsZone = append(optsZone,
+			WithInstallationMode(HelmInstallationMode),
+			WithHelmReleaseName(releaseName),
+			WithGlobalAddress(global.GetKDSServerAddress()),
+			WithHelmOpt("ingress.enabled", "true"))
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote...)).
+			Install(Kuma(core.Zone, optsZone...)).
 			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
@@ -72,8 +86,8 @@ metadata:
 			Setup(c2)
 		Expect(err).ToNot(HaveOccurred())
 
-		remote = c2.GetKuma()
-		Expect(remote).ToNot(BeNil())
+		zone = c2.GetKuma()
+		Expect(zone).ToNot(BeNil())
 
 		// when
 		err = c1.VerifyKuma()
@@ -91,35 +105,25 @@ metadata:
 		Expect(logs1).To(ContainSubstring("\"mode\":\"global\""))
 
 		// and
-		logs2, err := remote.GetKumaCPLogs()
+		logs2, err := zone.GetKumaCPLogs()
 		Expect(err).ToNot(HaveOccurred())
-		Expect(logs2).To(ContainSubstring("\"mode\":\"remote\""))
+		Expect(logs2).To(ContainSubstring("\"mode\":\"zone\""))
 	})
 
 	AfterEach(func() {
 		if ShouldSkipCleanup() {
 			return
 		}
-
-		defer func() {
-			// restore the original namespace
-			KumaNamespace = originalKumaNamespace
-		}()
-
-		err := c2.DeleteNamespace(TestNamespace)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = c1.DeleteKuma(optsGlobal...)
-		Expect(err).ToNot(HaveOccurred())
-
-		err = c2.DeleteKuma(optsRemote...)
-		Expect(err).ToNot(HaveOccurred())
-
+		// tear down apps
+		Expect(c2.DeleteNamespace(TestNamespace)).To(Succeed())
+		// tear down Kuma
+		Expect(c1.DeleteKuma(optsGlobal...)).To(Succeed())
+		Expect(c2.DeleteKuma(optsZone...)).To(Succeed())
+		// tear down clusters
 		Expect(clusters.DismissCluster()).To(Succeed())
 	})
 
-	It("should deploy Remote and Global on 2 clusters", func() {
-		// when check if remote is online
+	It("Should deploy Zone and Global on 2 clusters", func() {
 		clustersStatus := api_server.Zones{}
 		Eventually(func() (bool, error) {
 			status, response := http_helper.HttpGet(c1.GetTesting(), global.GetGlobaStatusAPI(), nil)
@@ -136,7 +140,7 @@ metadata:
 			return clustersStatus[0].Active, nil
 		}, time.Minute, DefaultTimeout).Should(BeTrue())
 
-		// then remote is online
+		// then
 		active := true
 		for _, cluster := range clustersStatus {
 			if !cluster.Active {
@@ -150,6 +154,6 @@ metadata:
 			output, err := k8s.RunKubectlAndGetOutputE(c1.GetTesting(), c1.GetKubectlOptions("default"), "get", "dataplanes")
 			Expect(err).ToNot(HaveOccurred())
 			return output
-		}, "5s", "500ms").Should(ContainSubstring("kuma-2-remote.demo-client"))
+		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
 	})
 }

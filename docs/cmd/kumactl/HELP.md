@@ -263,7 +263,7 @@ Flags:
       --cni-net-dir string                          set the CNI install directory (default "/etc/cni/multus/net.d")
       --cni-registry string                         registry for the image of the Kuma CNI component (default "docker.io/lobkovilya")
       --cni-repository string                       repository for the image of the Kuma CNI component (default "install-cni")
-      --cni-version string                          version of the image of the Kuma CNI component (default "0.0.8")
+      --cni-version string                          version of the image of the Kuma CNI component (default "0.0.9")
       --control-plane-registry string               registry for the image of the Kuma Control Plane component (default "docker.io/kumahq")
       --control-plane-repository string             repository for the image of the Kuma Control Plane component (default "kuma-cp")
       --control-plane-service-name string           Service name of the Kuma Control Plane (default "kuma-control-plane")
@@ -282,14 +282,14 @@ Flags:
       --ingress-use-node-port                       use NodePort instead of LoadBalancer for the Ingress Service
       --injector-failure-policy string              failue policy of the mutating web hook implemented by the Kuma Injector component (default "Ignore")
       --kds-global-address string                   URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)
-      --mode string                                 kuma cp modes: one of standalone|remote|global (default "standalone")
+      --mode string                                 kuma cp modes: one of standalone|zone|global (default "standalone")
       --namespace string                            namespace to install Kuma Control Plane to (default "kuma-system")
       --tls-api-server-client-certs-secret string   Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS
       --tls-api-server-secret string                Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS
       --tls-general-ca-bundle string                Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)
       --tls-general-secret string                   Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication
       --tls-kds-global-server-secret string         Secret that contains tls.crt, key.crt for protecting cross cluster communication
-      --tls-kds-remote-client-secret string         Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
+      --tls-kds-zone-client-secret string           Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
       --use-node-port                               use NodePort instead of LoadBalancer
       --without-kubernetes-connection               install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades
       --zone string                                 set the Kuma zone name

@@ -74,7 +74,7 @@ func Setup(rt runtime.Runtime) (err error) {
 		kdsStream := client.NewKDSStream(session.ClientStream(), session.PeerID())
 		if err := createZoneIfAbsent(session.PeerID(), rt.ResourceManager()); err != nil {
 			log.Error(err, "Global CP could not create a zone")
-			return errors.New("Global CP could not create a zone") // send back message without details. Remote CP will retry
+			return errors.New("Global CP could not create a zone") // send back message without details. Zone CP will retry
 		}
 		sink := client.NewKDSSink(log, ConsumedTypes, kdsStream, Callbacks(resourceSyncer, rt.Config().Store.Type == store_config.KubernetesStore, kubeFactory))
 		go func() {
