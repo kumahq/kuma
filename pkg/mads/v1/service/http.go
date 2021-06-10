@@ -33,43 +33,31 @@ func (s *service) RegisterRoutes(ws *restful.WebService) {
 func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 	body, err := ioutil.ReadAll(req.Request.Body)
 	if err != nil {
-		readErr := rest_error_types.Error{
+		writeBadRequestError(res, rest_error_types.Error{
 			Title:   "Can not read request body",
 			Details: err.Error(),
-		}
-
-		if err := res.WriteHeaderAndJson(http.StatusBadRequest, readErr, restful.MIME_JSON); err != nil {
-			rest_errors.HandleError(res, err, "Could encode error")
-			return
-		}
+		})
+		return
 	}
 
 	discoveryReq := &v3.DiscoveryRequest{}
 	err = jsonpb.UnmarshalString(string(body), discoveryReq)
 	if err != nil {
-		readErr := rest_error_types.Error{
-			Title:   "Can not decode request body",
+		writeBadRequestError(res, rest_error_types.Error{
+			Title:   "Can not parse request body",
 			Details: err.Error(),
-		}
-
-		if err := res.WriteHeaderAndJson(http.StatusBadRequest, readErr, restful.MIME_JSON); err != nil {
-			rest_errors.HandleError(res, err, "Could encode error")
-			return
-		}
+		})
+		return
 	}
 
 	discoveryReq.TypeUrl = mads_v1.MonitoringAssignmentType
 
 	timeout, err := s.parseFetchTimeout(req.QueryParameter("fetch-timeout"))
 	if err != nil {
-		parseError := rest_error_types.Error{
+		writeBadRequestError(res, rest_error_types.Error{
 			Title:   "Can not parse fetch-timeout",
 			Details: err.Error(),
-		}
-
-		if err := res.WriteHeaderAndJson(http.StatusBadRequest, parseError, restful.MIME_JSON); err != nil {
-			rest_errors.HandleError(res, err, "Could encode error")
-		}
+		})
 		return
 	}
 
@@ -105,6 +93,15 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 
 	if _, err = res.Write([]byte(resStr)); err != nil {
 		rest_errors.HandleError(res, err, "Could write DiscoveryResponse")
+		return
+	}
+}
+
+// writeBadRequestError writes the given error as a a 400 Bad Request, encoded as JSON.
+// Any errors during that process are handled by errors.HandleError
+func writeBadRequestError(res *restful.Response, err rest_error_types.Error) {
+	if writeErr := res.WriteHeaderAndJson(http.StatusBadRequest, err, restful.MIME_JSON); writeErr != nil {
+		rest_errors.HandleError(res, writeErr, "Could encode error")
 		return
 	}
 }
