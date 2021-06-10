@@ -1175,6 +1175,10 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - go_cache
+    - api_check:
+        <<: *commit_workflow_filters
+        requires:
+        - go_cache
     - build:
         <<: *commit_workflow_filters
         requires:
