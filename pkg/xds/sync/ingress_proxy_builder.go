@@ -32,6 +32,10 @@ func (p *IngressProxyBuilder) build(proxyType mesh_proto.DpType, key core_model.
 	if err != nil {
 		return nil, err
 	}
+	zoneIngress, err = xds_topology.ResolveZoneIngressPublicAddress(p.LookupIP, zoneIngress)
+	if err != nil {
+		return nil, err
+	}
 
 	allMeshDataplanes := &core_mesh.DataplaneResourceList{}
 	if err := p.ReadOnlyResManager.List(ctx, allMeshDataplanes); err != nil {

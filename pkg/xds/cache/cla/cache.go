@@ -62,10 +62,11 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster e
 		if err != nil {
 			return nil, err
 		}
-		zoneIngresses := &core_mesh.ZoneIngressResourceList{}
-		if err := c.rm.List(ctx, zoneIngresses); err != nil {
+		zoneIngresses, err := topology.GetZoneIngresses(claCacheLog, ctx, c.rm, c.ipFunc)
+		if err != nil {
 			return nil, err
 		}
+
 		mesh := core_mesh.NewMeshResource()
 		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, model.NoMesh)); err != nil {
 			return nil, err

@@ -92,8 +92,8 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		return nil, nil, err
 	}
 
-	zoneIngresses := &core_mesh.ZoneIngressResourceList{}
-	if err := p.CachingResManager.List(ctx, zoneIngresses); err != nil {
+	zoneIngresses, err := xds_topology.GetZoneIngresses(syncLog, ctx, p.CachingResManager, p.LookupIP)
+	if err != nil {
 		return nil, nil, err
 	}
 

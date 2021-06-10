@@ -126,6 +126,15 @@ func (m *meshSnapshot) hashResource(r core_model.Resource) string {
 				m.hashResolvedIPs(v.Spec.GetNetworking().GetAddress()),
 				m.hashResolvedIPs(v.Spec.GetNetworking().GetIngress().GetPublicAddress()),
 			}, ":")
+	case *core_mesh.ZoneIngressResource:
+		return strings.Join(
+			[]string{string(v.GetType()),
+				v.GetMeta().GetMesh(),
+				v.GetMeta().GetName(),
+				v.GetMeta().GetVersion(),
+				m.hashResolvedIPs(v.Spec.GetAddress()),
+				m.hashResolvedIPs(v.Spec.GetAdvertisedAddress()),
+			}, ":")
 	default:
 		return strings.Join(
 			[]string{string(v.GetType()),
