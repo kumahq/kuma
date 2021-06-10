@@ -254,15 +254,6 @@ func (s TagSelector) Equal(other TagSelector) bool {
 	return len(s) == 0 && len(other) == 0 || len(s) == len(other) && reflect.DeepEqual(s, other)
 }
 
-func (s TagSelector) IsAnyService() bool {
-	value, ok := s[ServiceTag]
-	if !ok {
-		return true
-	}
-
-	return value == MatchAllTag
-}
-
 func MatchAll() TagSelector {
 	return nil
 }

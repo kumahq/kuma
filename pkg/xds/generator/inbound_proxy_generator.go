@@ -57,7 +57,7 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			Origin:   OriginInbound,
 		})
 
-		routes, err := g.BuildInboundRoutes(
+		routes, err := g.buildInboundRoutes(
 			envoy_common.NewCluster(envoy_common.WithService(localClusterName)),
 			proxy.Policies.RateLimits[endpoint])
 		if err != nil {
@@ -117,13 +117,15 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 	return resources, nil
 }
 
-func (g *InboundProxyGenerator) BuildInboundRoutes(cluster envoy_common.Cluster, rateLimits []*mesh_proto.RateLimit) (envoy_common.Routes, error) {
+func (g *InboundProxyGenerator) buildInboundRoutes(cluster envoy_common.Cluster, rateLimits []*mesh_proto.RateLimit) (envoy_common.Routes, error) {
 	routes := envoy_common.Routes{}
 
+	// Iterate over that RateLimits and generate the relevant Routes.
+	// We do assume that the rateLimits resource is sorted, so the most
+	// specific source matches come first.
 	for _, rateLimit := range rateLimits {
 		if rateLimit.GetConf().GetHttp() != nil {
 			route := envoy_common.NewRouteFromCluster(cluster)
-			// Source
 			if len(rateLimit.GetSources()) > 0 {
 				if route.Match == nil {
 					route.Match = &mesh_proto.TrafficRoute_Http_Match{}

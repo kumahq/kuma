@@ -57,6 +57,10 @@ func buildRateLimitMap(
 	return result, nil
 }
 
+// We want the rateLimits slice to be split into separate policies by source
+// I.e. if a RateLimit has two matches it its source, it will be cloned into two
+// RateLimit resources, each of them having only a single Source Match.
+// We rely on this later to sort the rateLimits using ConnectionPolicyBySourceService.
 func splitPoliciesBySourceMatch(rateLimits []*mesh_core.RateLimitResource) []*mesh_core.RateLimitResource {
 	result := []*mesh_core.RateLimitResource{}
 

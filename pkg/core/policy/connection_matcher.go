@@ -225,5 +225,11 @@ func (a ConnectionPolicyBySourceService) Less(i, j int) bool {
 	tagSelectorI := mesh_proto.TagSelector(a[i].Sources()[0].Match)
 	tagSelectorJ := mesh_proto.TagSelector(a[j].Sources()[0].Match)
 
-	return tagSelectorI.Rank().CompareTo(tagSelectorJ.Rank()) > 0
+	tagComparison := tagSelectorI.Rank().CompareTo(tagSelectorJ.Rank())
+
+	if tagComparison == 0 {
+		return a[i].GetMeta().GetCreationTime().After(a[j].GetMeta().GetCreationTime())
+	}
+
+	return tagComparison > 0
 }
