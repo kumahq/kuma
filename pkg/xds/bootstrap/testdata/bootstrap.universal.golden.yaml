@@ -49,6 +49,8 @@ layeredRuntime:
   - name: kuma
     staticLayer:
       envoy.restart_features.use_apple_api_for_dns_lookups: false
+      re2.max_program_size.error_level: 4294967295
+      re2.max_program_size.warn_level: 1000
 node:
   cluster: backend
   id: default.dp-1

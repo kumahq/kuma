@@ -1,7 +1,7 @@
 resources:
 - name: api-grpc
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-grpc
     endpoints:
     - lbEndpoints:
@@ -19,7 +19,7 @@ resources:
               kuma.io/protocol: grpc
 - name: api-http
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-http
     endpoints:
     - lbEndpoints:
@@ -53,7 +53,7 @@ resources:
               region: eu
 - name: api-http2
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-http2
     endpoints:
     - lbEndpoints:
@@ -71,7 +71,7 @@ resources:
               kuma.io/protocol: http2
 - name: api-tcp
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-tcp
     endpoints:
     - lbEndpoints:
@@ -103,7 +103,7 @@ resources:
               region: eu
 - name: backend
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: backend
     endpoints:
     - lbEndpoints:
@@ -125,9 +125,9 @@ resources:
               address: 192.168.0.2
               portValue: 8082
         loadBalancingWeight: 1
-- name: db-_1_
+- name: db-_0_
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: db
     endpoints:
     - lbEndpoints:
@@ -143,9 +143,9 @@ resources:
               role: master
             envoy.transport_socket_match:
               role: master
-- name: db-_2_
+- name: db-_1_
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: db
     endpoints:
     - lbEndpoints:
@@ -236,6 +236,17 @@ resources:
     lbPolicy: MAGLEV
     name: backend
     type: EDS
+- name: db-_0_
+  resource:
+    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
+    connectTimeout: 10s
+    edsClusterConfig:
+      edsConfig:
+        ads: {}
+        resourceApiVersion: V3
+    http2ProtocolOptions: {}
+    name: db-_0_
+    type: EDS
 - name: db-_1_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -246,17 +257,6 @@ resources:
         resourceApiVersion: V3
     http2ProtocolOptions: {}
     name: db-_1_
-    type: EDS
-- name: db-_2_
-  resource:
-    '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    connectTimeout: 10s
-    edsClusterConfig:
-      edsConfig:
-        ads: {}
-        resourceApiVersion: V3
-    http2ProtocolOptions: {}
-    name: db-_2_
     type: EDS
 - name: outbound:127.0.0.1:18080
   resource:
@@ -432,9 +432,9 @@ resources:
           statPrefix: db
           weightedClusters:
             clusters:
-            - name: db-_1_
+            - name: db-_0_
               weight: 10
-            - name: db-_2_
+            - name: db-_1_
               weight: 90
     name: outbound:127.0.0.1:54321
     trafficDirection: OUTBOUND

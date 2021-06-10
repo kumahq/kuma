@@ -23,10 +23,7 @@ var (
 			Match: mesh_proto.MatchAnyService(),
 		}},
 		Conf: &mesh_proto.TrafficRoute_Conf{
-			Split: []*mesh_proto.TrafficRoute_Split{{
-				Weight:      100,
-				Destination: mesh_proto.MatchAnyService(),
-			}},
+			Destination: mesh_proto.MatchAnyService(),
 			LoadBalancer: &mesh_proto.TrafficRoute_LoadBalancer{
 				LbType: &mesh_proto.TrafficRoute_LoadBalancer_RoundRobin_{},
 			},

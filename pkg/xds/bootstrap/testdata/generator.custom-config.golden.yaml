@@ -13,7 +13,7 @@ dynamicResources:
         - fromPlugin:
             name: envoy.grpc_credentials.file_based_metadata
             typedConfig:
-              '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+              '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
               secretData:
                 filename: /tmp/token
         channelCredentials:
@@ -23,11 +23,13 @@ dynamicResources:
         credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
         statPrefix: ads
         targetUri: localhost:15678
-    transportApiVersion: V2
+    transportApiVersion: V3
   cdsConfig:
     ads: {}
+    resourceApiVersion: V3
   ldsConfig:
     ads: {}
+    resourceApiVersion: V3
 hdsConfig:
   apiType: GRPC
   grpcServices:
@@ -36,7 +38,7 @@ hdsConfig:
       - fromPlugin:
           name: envoy.grpc_credentials.file_based_metadata
           typedConfig:
-            '@type': type.googleapis.com/envoy.config.grpc_credential.v2alpha.FileBasedMetadataConfig
+            '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
             secretData:
               filename: /tmp/token
       channelCredentials:
@@ -53,6 +55,8 @@ layeredRuntime:
   - name: kuma
     staticLayer:
       envoy.restart_features.use_apple_api_for_dns_lookups: false
+      re2.max_program_size.error_level: 4294967295
+      re2.max_program_size.warn_level: 1000
 node:
   cluster: backend
   id: mesh.name.namespace
@@ -106,7 +110,7 @@ staticResources:
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
-        '@type': type.googleapis.com/envoy.api.v2.auth.UpstreamTlsContext
+        '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
         commonTlsContext:
           tlsParams:
             tlsMinimumProtocolVersion: TLSv1_2

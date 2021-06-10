@@ -71,7 +71,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 
 			if proxyResource != nil {
 				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {
-					return errors.New("--name and --mesh cannot be specified when dataplane definition is provided. Mesh and name will be read from the dataplane definition.")
+					return errors.New("--name and --mesh cannot be specified when dataplane definition is provided, mesh and name will be read from the dataplane definition")
 				}
 				cfg.Dataplane.Mesh = proxyResource.Meta.GetMesh()
 				cfg.Dataplane.Name = proxyResource.Meta.GetName()
@@ -90,7 +90,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			if cfg.DataplaneRuntime.ConfigDir == "" || cfg.DNS.ConfigDir == "" {
 				tmpDir, err = ioutil.TempDir("", "kuma-dp-")
 				if err != nil {
-					runLog.Error(err, "unable to create a temporary directory to store generated config sat")
+					runLog.Error(err, "unable to create a temporary directory to store generated configuration")
 					return err
 				}
 

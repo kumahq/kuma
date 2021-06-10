@@ -29,6 +29,9 @@ store:
     # Maximum number of open connections to the database
     # `0` value means number of open connections is unlimited
     maxOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
+    # Maximum number of connections in the idle connection pool
+    # <0 value means no idle connections and 0 means default max idle connections
+    maxIdleConnections: 0  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS   
     # TLS settings
     tls:
       # Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
@@ -323,16 +326,16 @@ multizone:
       tlsCertFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
       # TTlsKeyFile defines a path to a file with PEM-encoded TLS key.
       tlsKeyFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
-  remote:
-    # Kuma Zone name used to mark the remote dataplane resources
-    zone: "" # ENV: KUMA_MULTIZONE_REMOTE_ZONE
+  zone:
+    # Kuma Zone name used to mark the zone dataplane resources
+    name: "" # ENV: KUMA_MULTIZONE_ZONE_NAME
     # GlobalAddress URL of Global Kuma CP
-    globalAddress: # ENV KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
+    globalAddress: # ENV KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
     kds:
       # Interval for refreshing state of the world
-      refreshInterval: 1s # ENV: KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL
+      refreshInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
-      rootCaFile: # ENV: KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE
+      rootCaFile: # ENV: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
 
 # Diagnostics configuration
 diagnostics:

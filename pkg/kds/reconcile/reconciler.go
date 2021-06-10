@@ -50,8 +50,8 @@ func (r *reconciler) logChanges(new util_xds.Snapshot, old util_xds.Snapshot, no
 	for _, typ := range new.GetSupportedTypes() {
 		if old != nil && old.GetVersion(typ) != new.GetVersion(typ) {
 			client := node.Id
-			if r.mode == config_core.Remote {
-				// we need to override client name because Remote is always a client to Global (on gRPC level)
+			if r.mode == config_core.Zone {
+				// we need to override client name because Zone is always a client to Global (on gRPC level)
 				client = "global"
 			}
 			log.Info("detected changes in the resources. Sending changes to the client.", "resourceType", typ, "client", client)

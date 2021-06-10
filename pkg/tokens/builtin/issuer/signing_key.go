@@ -30,7 +30,7 @@ const (
 )
 
 func SigningKeyNotFound(meshName string) error {
-	return errors.Errorf("there is no Signing Key in the Control Plane for Mesh %q. Make sure the Mesh exist. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens.", meshName)
+	return errors.Errorf("there is no Signing Key in the Control Plane for Mesh %q. Make sure the Mesh exist. If you run multi-zone setup, make sure Zone CP is connected to the Global before generating tokens.", meshName)
 }
 
 func IsSigningKeyNotFoundErr(err error) bool {
@@ -60,6 +60,7 @@ func CreateSigningKey() (*system.SecretResource, error) {
 	}
 	return res, nil
 }
+
 func GetSigningKey(manager manager.ReadOnlyResourceManager, prefix, meshName string) ([]byte, error) {
 	resource := system.NewSecretResource()
 	if err := manager.Get(context.Background(), resource, store.GetBy(SigningKeyResourceKey(prefix, meshName))); err != nil {

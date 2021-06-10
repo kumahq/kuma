@@ -112,9 +112,15 @@ func (i IngressGenerator) generateLDS(
 func (_ IngressGenerator) destinations(trs *core_mesh.TrafficRouteResourceList) map[string][]envoy_common.Tags {
 	destinations := map[string][]envoy_common.Tags{}
 	for _, tr := range trs.Items {
-		for _, split := range tr.Spec.Conf.Split {
+		for _, split := range tr.Spec.Conf.GetSplitWithDestination() {
 			service := split.Destination[mesh_proto.ServiceTag]
 			destinations[service] = append(destinations[service], split.Destination)
+		}
+		for _, http := range tr.Spec.Conf.Http {
+			for _, split := range http.GetSplitWithDestination() {
+				service := split.Destination[mesh_proto.ServiceTag]
+				destinations[service] = append(destinations[service], split.Destination)
+			}
 		}
 	}
 	return destinations

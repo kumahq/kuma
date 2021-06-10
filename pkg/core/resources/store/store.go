@@ -51,6 +51,7 @@ func (s *strictResourceStore) Create(ctx context.Context, r model.Resource, fs .
 	}
 	return s.delegate.Create(ctx, r, fs...)
 }
+
 func (s *strictResourceStore) Update(ctx context.Context, r model.Resource, fs ...UpdateOptionsFunc) error {
 	if r == nil {
 		return fmt.Errorf("ResourceStore.Update() requires a non-nil resource")
@@ -60,6 +61,7 @@ func (s *strictResourceStore) Update(ctx context.Context, r model.Resource, fs .
 	}
 	return s.delegate.Update(ctx, r, fs...)
 }
+
 func (s *strictResourceStore) Delete(ctx context.Context, r model.Resource, fs ...DeleteOptionsFunc) error {
 	if r == nil {
 		return fmt.Errorf("ResourceStore.Delete() requires a non-nil resource")
@@ -81,6 +83,7 @@ func (s *strictResourceStore) Delete(ctx context.Context, r model.Resource, fs .
 	}
 	return s.delegate.Delete(ctx, r, fs...)
 }
+
 func (s *strictResourceStore) Get(ctx context.Context, r model.Resource, fs ...GetOptionsFunc) error {
 	if r == nil {
 		return fmt.Errorf("ResourceStore.Get() requires a non-nil resource")
@@ -97,6 +100,7 @@ func (s *strictResourceStore) Get(ctx context.Context, r model.Resource, fs ...G
 	}
 	return s.delegate.Get(ctx, r, fs...)
 }
+
 func (s *strictResourceStore) List(ctx context.Context, rs model.ResourceList, fs ...ListOptionsFunc) error {
 	if rs == nil {
 		return fmt.Errorf("ResourceStore.List() requires a non-nil resource list")

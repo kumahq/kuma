@@ -161,7 +161,7 @@ var _ = Describe("Config WS", func() {
 			  },
 			  "pollTimeout": "500ms"
 			},
-			"remote": {
+			"zone": {
 			  "kds": {
 				"refreshInterval": "1s",
 				"rootCaFile": ""
@@ -279,6 +279,7 @@ var _ = Describe("Config WS", func() {
               "connectionTimeout": 5,
               "dbName": "kuma",
               "host": "127.0.0.1",
+              "maxIdleConnections": 0,
               "maxOpenConnections": 0,
               "password": "*****",
               "port": 15432,

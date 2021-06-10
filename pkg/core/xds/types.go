@@ -47,10 +47,11 @@ type TagSelectorSet []mesh_proto.TagSelector
 type DestinationMap map[ServiceName]TagSelectorSet
 
 type ExternalService struct {
-	TLSEnabled bool
-	CaCert     []byte
-	ClientCert []byte
-	ClientKey  []byte
+	TLSEnabled         bool
+	CaCert             []byte
+	ClientCert         []byte
+	ClientKey          []byte
+	AllowRenegotiation bool
 }
 
 type Locality struct {
@@ -184,10 +185,7 @@ func (e Endpoint) HasLocality() bool {
 func (e Endpoint) ContainsTags(tags map[string]string) bool {
 	for otherKey, otherValue := range tags {
 		endpointValue, ok := e.Tags[otherKey]
-		if !ok {
-			continue
-		}
-		if otherValue != endpointValue {
+		if !ok || otherValue != endpointValue {
 			return false
 		}
 	}

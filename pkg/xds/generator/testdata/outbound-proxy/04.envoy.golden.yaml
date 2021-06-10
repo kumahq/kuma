@@ -1,7 +1,7 @@
 resources:
 - name: api-http
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-http
     endpoints:
     - lbEndpoints:
@@ -35,7 +35,7 @@ resources:
               region: eu
 - name: api-tcp
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-tcp
     endpoints:
     - lbEndpoints:
@@ -67,7 +67,7 @@ resources:
               region: eu
 - name: backend
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: backend
     endpoints:
     - lbEndpoints:
@@ -89,9 +89,9 @@ resources:
               address: 192.168.0.2
               portValue: 8082
         loadBalancingWeight: 1
-- name: db-_1_
+- name: db-_0_
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: db
     endpoints:
     - lbEndpoints:
@@ -107,9 +107,9 @@ resources:
               role: master
             envoy.transport_socket_match:
               role: master
-- name: db-_2_
+- name: db-_1_
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: db
     endpoints:
     - lbEndpoints:
@@ -260,7 +260,7 @@ resources:
               resourceApiVersion: V3
         sni: backend{mesh=mesh1}
     type: EDS
-- name: db-_1_
+- name: db-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
@@ -269,7 +269,7 @@ resources:
         ads: {}
         resourceApiVersion: V3
     http2ProtocolOptions: {}
-    name: db-_1_
+    name: db-_0_
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -301,7 +301,7 @@ resources:
               resourceApiVersion: V3
         sni: db{mesh=mesh1,role=master}
     type: EDS
-- name: db-_2_
+- name: db-_1_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
     connectTimeout: 10s
@@ -310,7 +310,7 @@ resources:
         ads: {}
         resourceApiVersion: V3
     http2ProtocolOptions: {}
-    name: db-_2_
+    name: db-_1_
     transportSocket:
       name: envoy.transport_sockets.tls
       typedConfig:
@@ -447,9 +447,9 @@ resources:
           statPrefix: db
           weightedClusters:
             clusters:
-            - name: db-_1_
+            - name: db-_0_
               weight: 10
-            - name: db-_2_
+            - name: db-_1_
               weight: 90
     name: outbound:127.0.0.1:54321
     trafficDirection: OUTBOUND

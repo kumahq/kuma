@@ -431,7 +431,7 @@ jobs:
         command: |
           for image in kuma-cp kuma-dp kuma-init kumactl kuma-universal; do
             make docker/tag/${image} \
-              BINTRAY_REGISTRY="${AZURE_ACR_REGISTRY_FULLNAME}" \
+              DOCKER_REGISTRY="${AZURE_ACR_REGISTRY_FULLNAME}" \
               KUMA_VERSION="${TAG}" &
           done
 
@@ -1175,6 +1175,10 @@ workflows:
         <<: *commit_workflow_filters
         requires:
         - go_cache
+    - api_check:
+        <<: *commit_workflow_filters
+        requires:
+        - go_cache
     - build:
         <<: *commit_workflow_filters
         requires:
@@ -1402,14 +1406,6 @@ workflows:
           requires:
             - images
             - check
-      - e2e:
-          <<: *master_workflow_filters
-          name: test/e2e V2
-          requires:
-            - images
-            - check
-          # custom parameters
-          api: v2
       - e2e:
           <<: *master_workflow_filters
           name: test/e2e-ipv6

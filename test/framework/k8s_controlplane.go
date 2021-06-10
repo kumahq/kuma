@@ -114,7 +114,7 @@ func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
 	return k8s.ListServices(c.t,
 		c.GetKubectlOptions(KumaNamespace),
 		metav1.ListOptions{
-			FieldSelector: "metadata.name=" + KumaGlobalRemoteSyncServiceName,
+			FieldSelector: "metadata.name=" + KumaGlobalZoneSyncServiceName,
 		},
 	)
 }
@@ -148,7 +148,7 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
-	if c.mode == core.Remote {
+	if c.mode == core.Zone {
 		return nil
 	}
 
@@ -222,7 +222,7 @@ func (c *K8sControlPlane) InjectDNS(args ...string) error {
 		yaml)
 }
 
-// A naive implementation to find the URL where Remote CP exposes its API
+// A naive implementation to find the URL where Zone CP exposes its API
 func (c *K8sControlPlane) GetKDSServerAddress() string {
 	// As EKS and AWS generally returns dns records of load balancers instead of
 	//  IP addresses, accessing this data (hostname) was only tested there,

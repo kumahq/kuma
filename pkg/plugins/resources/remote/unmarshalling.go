@@ -22,18 +22,23 @@ type remoteMeta struct {
 func (m remoteMeta) GetName() string {
 	return m.Name
 }
+
 func (m remoteMeta) GetNameExtensions() model.ResourceNameExtensions {
 	return model.ResourceNameExtensionsUnsupported
 }
+
 func (m remoteMeta) GetMesh() string {
 	return m.Mesh
 }
+
 func (m remoteMeta) GetVersion() string {
 	return m.Version
 }
+
 func (m remoteMeta) GetCreationTime() time.Time {
 	return m.CreationTime
 }
+
 func (m remoteMeta) GetModificationTime() time.Time {
 	return m.ModificationTime
 }

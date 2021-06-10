@@ -1,4 +1,4 @@
-apiVersion: v2
+apiVersion: v3
 params:
   adminAddress: 192.168.0.1
   adminPort: 4321

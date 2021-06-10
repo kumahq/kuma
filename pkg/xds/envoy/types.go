@@ -30,6 +30,10 @@ func (c *Cluster) LB() *mesh_proto.TrafficRoute_LoadBalancer { return c.lb }
 func (c *Cluster) Timeout() *mesh_proto.Timeout_Conf         { return c.timeout }
 func (c *Cluster) Hash() string                              { return fmt.Sprintf("%s-%s", c.name, c.tags.String()) }
 
+func (c *Cluster) SetName(name string) {
+	c.name = name
+}
+
 type NewClusterOpt interface {
 	apply(cluster *Cluster)
 }

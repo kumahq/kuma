@@ -101,6 +101,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Store.Postgres.DbName).To(Equal("kuma"))
 			Expect(cfg.Store.Postgres.ConnectionTimeout).To(Equal(10))
 			Expect(cfg.Store.Postgres.MaxOpenConnections).To(Equal(300))
+			Expect(cfg.Store.Postgres.MaxIdleConnections).To(Equal(300))
 			Expect(cfg.Store.Postgres.MinReconnectInterval).To(Equal(44 * time.Second))
 			Expect(cfg.Store.Postgres.MaxReconnectInterval).To(Equal(55 * time.Second))
 
@@ -188,8 +189,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
 
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
-			Expect(cfg.Mode).To(Equal(config_core.Remote))
-			Expect(cfg.Multizone.Remote.Zone).To(Equal("zone-1"))
+			Expect(cfg.Mode).To(Equal(config_core.Zone))
+			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 
 			Expect(cfg.Multizone.Global.PollTimeout).To(Equal(750 * time.Millisecond))
 			Expect(cfg.Multizone.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
@@ -197,10 +198,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.ZoneInsightFlushInterval).To(Equal(time.Second * 5))
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
-			Expect(cfg.Multizone.Remote.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
-			Expect(cfg.Multizone.Remote.Zone).To(Equal("zone-1"))
-			Expect(cfg.Multizone.Remote.KDS.RootCAFile).To(Equal("/rootCa"))
-			Expect(cfg.Multizone.Remote.KDS.RefreshInterval).To(Equal(9 * time.Second))
+			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
+			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
+			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
+			Expect(cfg.Multizone.Zone.KDS.RefreshInterval).To(Equal(9 * time.Second))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 
@@ -251,6 +252,7 @@ store:
     dbName: kuma
     connectionTimeout: 10
     maxOpenConnections: 300
+    maxIdleConnections: 300
     minReconnectInterval: 44s
     maxReconnectInterval: 55s
     tls:
@@ -369,7 +371,7 @@ general:
   workDir: /custom/work/dir
 guiServer:
   apiServerUrl: http://localhost:1234
-mode: remote
+mode: zone
 multizone:
   global:
     pollTimeout: 750ms
@@ -379,9 +381,9 @@ multizone:
       zoneInsightFlushInterval: 5s
       tlsCertFile: /cert
       tlsKeyFile: /key
-  remote:
+  zone:
     globalAddress: "grpc://1.1.1.1:5685"
-    zone: "zone-1"
+    name: "zone-1"
     kds:
       refreshInterval: 9s
       rootCaFile: /rootCa
@@ -446,6 +448,7 @@ sdsServer:
 				"KUMA_STORE_POSTGRES_DB_NAME":                                                              "kuma",
 				"KUMA_STORE_POSTGRES_CONNECTION_TIMEOUT":                                                   "10",
 				"KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS":                                                 "300",
+				"KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS":                                                 "300",
 				"KUMA_STORE_POSTGRES_TLS_MODE":                                                             "verifyFull",
 				"KUMA_STORE_POSTGRES_TLS_CERT_PATH":                                                        "/path/to/cert",
 				"KUMA_STORE_POSTGRES_TLS_KEY_PATH":                                                         "/path/to/key",
@@ -521,16 +524,16 @@ sdsServer:
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
 				"KUMA_DNS_SERVER_PORT":                                                                     "15653",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",
-				"KUMA_MODE":                                                                                "remote",
+				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_POLL_TIMEOUT":                                                       "750ms",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
 				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                                               "2s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE":                                                  "/cert",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE":                                                   "/key",
-				"KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS":                                                     "grpc://1.1.1.1:5685",
-				"KUMA_MULTIZONE_REMOTE_ZONE":                                                               "zone-1",
-				"KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE":                                                   "/rootCa",
-				"KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL":                                               "9s",
+				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
+				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
+				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
+				"KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL":                                                 "9s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",

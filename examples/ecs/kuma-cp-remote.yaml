@@ -1,5 +1,5 @@
 AWSTemplateFormatVersion: "2010-09-09"
-Description: Kuma Remote Control Plane on ECS
+Description: Kuma Zone Control Plane on ECS
 Parameters:
   VPCStackName:
     Type: String
@@ -13,7 +13,7 @@ Parameters:
   Zone:
     Type: String
     Default: "zone-1"
-    Description: The name of the remote zone
+    Description: The name of the zone
   KumaCPGlobal:
     Type: String
     Default: "grpcs://global-controlplane.kuma.io:5685"
@@ -219,7 +219,7 @@ Resources:
   TaskDefinitionKumaCP:
     Type: AWS::ECS::TaskDefinition
     Properties:
-      Family: kuma-cp-remote-family
+      Family: kuma-cp-zone-family
       NetworkMode: awsvpc
       RequiresCompatibilities:
         - FARGATE
@@ -233,7 +233,7 @@ Resources:
           PortMappings:
             - ContainerPort: 22
               Protocol: tcp
-        - Name: kuma-cp-remote
+        - Name: kuma-cp-zone
           Essential: true
           Image: !Ref Image
           PortMappings:
@@ -252,10 +252,10 @@ Resources:
           User: root:root # needed for UDP port 53 binding
           Environment:
             - Name: KUMA_MODE
-              Value: remote
-            - Name: KUMA_MULTIZONE_REMOTE_ZONE
+              Value: zone
+            - Name: KUMA_MULTIZONE_ZONE_NAME
               Value: !Ref Zone
-            - Name: KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
+            - Name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
               Value: !Ref KumaCPGlobal
             - Name: KUMA_GENERAL_TLS_CERT_FILE
               Value: /var/cert.pem

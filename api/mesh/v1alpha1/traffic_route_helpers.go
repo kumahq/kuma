@@ -4,11 +4,43 @@ import (
 	"fmt"
 	"sort"
 	"strings"
+
+	"github.com/golang/protobuf/ptypes/wrappers"
 )
 
+// GetSplitWithDestination returns unified list of split regardless if split or destination is used
+// Destination is a syntax sugar over single split with weight of 1.
+func (x *TrafficRoute_Conf) GetSplitWithDestination() []*TrafficRoute_Split {
+	if len(x.GetDestination()) > 0 {
+		return []*TrafficRoute_Split{
+			{
+				Weight: &wrappers.UInt32Value{
+					Value: 1,
+				},
+				Destination: x.GetDestination(),
+			},
+		}
+	}
+	return x.GetSplit()
+}
+
+func (x *TrafficRoute_Http) GetSplitWithDestination() []*TrafficRoute_Split {
+	if len(x.GetDestination()) > 0 {
+		return []*TrafficRoute_Split{
+			{
+				Weight: &wrappers.UInt32Value{
+					Value: 1,
+				},
+				Destination: x.GetDestination(),
+			},
+		}
+	}
+	return x.GetSplit()
+}
+
 func (x *TrafficRoute_Conf) GetSplitOrdered() []*TrafficRoute_Split {
-	c := make([]*TrafficRoute_Split, len(x.GetSplit()))
-	copy(c, x.GetSplit())
+	c := make([]*TrafficRoute_Split, len(x.GetSplitWithDestination()))
+	copy(c, x.GetSplitWithDestination())
 	sort.Stable(SortedSplit(c))
 	return c
 }
@@ -17,11 +49,12 @@ type SortedSplit []*TrafficRoute_Split
 
 func (s SortedSplit) Len() int { return len(s) }
 func (s SortedSplit) Less(i, j int) bool {
-	if s[i].Weight != s[j].Weight {
-		return s[i].Weight < s[j].Weight
+	if s[i].GetWeight().GetValue() != s[j].GetWeight().GetValue() {
+		return s[i].GetWeight().GetValue() < s[j].GetWeight().GetValue()
 	}
 	return less(s[i].Destination, s[j].Destination)
 }
+
 func (s SortedSplit) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
 
 func less(m1, m2 map[string]string) bool {

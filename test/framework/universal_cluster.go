@@ -79,12 +79,13 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 
 	cmd := []string{"kuma-cp", "run"}
 	env := []string{"KUMA_MODE=" + mode, "KUMA_DNS_SERVER_PORT=53"}
+
 	caps := []string{}
 	for k, v := range opts.env {
 		env = append(env, fmt.Sprintf("%s=%s", k, v))
 	}
 	if opts.globalAddress != "" {
-		env = append(env, "KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="+opts.globalAddress)
+		env = append(env, "KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS="+opts.globalAddress)
 	}
 	if opts.hdsDisabled {
 		env = append(env, "KUMA_DP_SERVER_HDS_ENABLED=false")
@@ -99,8 +100,8 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 	}
 
 	switch mode {
-	case core.Remote:
-		env = append(env, "KUMA_MULTIZONE_REMOTE_ZONE="+c.name)
+	case core.Zone:
+		env = append(env, "KUMA_MULTIZONE_ZONE_NAME="+c.name)
 	case core.Global:
 		cmd = append(cmd, "--config-file", confPath)
 	}
@@ -112,8 +113,13 @@ func (c *UniversalCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) erro
 
 	app.CreateMainApp(env, cmd)
 
-	err = app.mainApp.Start()
-	if err != nil {
+	if opts.runPostgresMigration {
+		if err := runPostgresMigration(app, env); err != nil {
+			return err
+		}
+	}
+
+	if err := app.mainApp.Start(); err != nil {
 		return err
 	}
 
@@ -229,6 +235,28 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 	c.apps[opts.name] = app
 
 	return nil
+}
+
+func runPostgresMigration(kumaCP *UniversalApp, envVars []string) error {
+	args := []string{
+		"/usr/bin/kuma-cp", "migrate", "up",
+	}
+
+	sshPort := kumaCP.GetPublicPort("22")
+	if sshPort == "" {
+		return errors.New("missing public port: 22")
+	}
+
+	app := NewSshApp(true, sshPort, envVars, args)
+	if err := app.Run(); err != nil {
+		return errors.Errorf("db migration err: %s\nstderr :%s\nstdout %s", err.Error(), app.Err(), app.Out())
+	}
+
+	return nil
+}
+
+func (c *UniversalCluster) GetApp(appName string) *UniversalApp {
+	return c.apps[appName]
 }
 
 func (c *UniversalCluster) DeleteApp(namespace, appname string) error {

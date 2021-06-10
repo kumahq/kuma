@@ -71,6 +71,16 @@ func WaitService(namespace, service string) InstallFunc {
 	}
 }
 
+func WaitNumPodsNamespace(namespace string, num int, app string) InstallFunc {
+	return func(c Cluster) error {
+		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(namespace),
+			kube_meta.ListOptions{
+				LabelSelector: fmt.Sprintf("app=%s", app),
+			}, num, DefaultRetries, DefaultTimeout)
+		return nil
+	}
+}
+
 func WaitNumPods(num int, app string) InstallFunc {
 	return func(c Cluster) error {
 		k8s.WaitUntilNumPodsCreated(c.GetTesting(), c.GetKubectlOptions(),
@@ -173,6 +183,27 @@ func WaitPodsNotAvailable(namespace, app string) InstallFunc {
 	}
 }
 
+func EchoServerK8sIngress() InstallFunc {
+	ingress := `
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: kuma-test
+  name: k8s-ingress
+  annotations:
+    kubernetes.io/ingress.class: kong
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        backend:
+          serviceName: echo-server
+          servicePort: 80
+`
+	return YamlK8s(ingress)
+}
+
 func EchoServerK8s(mesh string) InstallFunc {
 	const name = "echo-server"
 	service := `
@@ -231,7 +262,7 @@ spec:
             - -p
             - "80"
             - --sh-exec
-            - '/usr/bin/printf "HTTP/1.1 200 OK\n\n Echo\n"'
+            - '/usr/bin/printf "HTTP/1.1 200 OK\nContent-Length: 5\n\n Echo\n"'
           resources:
             limits:
               cpu: 50m
@@ -435,7 +466,17 @@ func TestServerUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 		if len(opts.protocol) == 0 {
 			opts.protocol = "http"
 		}
-		args := []string{"test-server", "health-check", opts.protocol, "--port", "8080"}
+		if opts.serviceVersion == "" {
+			opts.serviceVersion = "v1"
+		}
+		args := []string{"test-server"}
+		if len(opts.appArgs) > 0 {
+			args = append(args, opts.appArgs...)
+		}
+		if opts.serviceName == "" {
+			opts.serviceName = "test-server"
+		}
+		args = append(args, "--port", "8080")
 		appYaml := fmt.Sprintf(`
 type: Dataplane
 mesh: %s
@@ -446,14 +487,15 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: test-server
+      kuma.io/service: %s
       kuma.io/protocol: %s
+      version: %s
       team: server-owners
   transparentProxying:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
     redirectPortOutbound: %s
-`, mesh, "80", "8080", opts.protocol, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 
 		fs = append(fs,
 			WithName(name),

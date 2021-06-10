@@ -28,15 +28,19 @@ func NewTrafficTraceResource() *TrafficTraceResource {
 func (t *TrafficTraceResource) GetType() model.ResourceType {
 	return TrafficTraceType
 }
+
 func (t *TrafficTraceResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
+
 func (t *TrafficTraceResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
+
 func (t *TrafficTraceResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
+
 func (t *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
 	status, ok := spec.(*mesh_proto.TrafficTrace)
 	if !ok {
@@ -46,6 +50,7 @@ func (t *TrafficTraceResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+
 func (t *TrafficTraceResource) Scope() model.ResourceScope {
 	return model.ScopeMesh
 }
@@ -64,12 +69,15 @@ func (l *TrafficTraceResourceList) GetItems() []model.Resource {
 	}
 	return res
 }
+
 func (l *TrafficTraceResourceList) GetItemType() model.ResourceType {
 	return TrafficTraceType
 }
+
 func (l *TrafficTraceResourceList) NewItem() model.Resource {
 	return NewTrafficTraceResource()
 }
+
 func (l *TrafficTraceResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*TrafficTraceResource); ok {
 		l.Items = append(l.Items, trr)
@@ -78,6 +86,7 @@ func (l *TrafficTraceResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*TrafficTraceResource)(nil), r)
 	}
 }
+
 func (l *TrafficTraceResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }

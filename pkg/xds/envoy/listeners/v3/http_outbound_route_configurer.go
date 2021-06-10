@@ -12,9 +12,9 @@ import (
 )
 
 type HttpOutboundRouteConfigurer struct {
-	Service  string
-	Clusters []envoy_common.Cluster
-	DpTags   mesh_proto.MultiValueTagSet
+	Service string
+	Routes  envoy_common.Routes
+	DpTags  mesh_proto.MultiValueTagSet
 }
 
 func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
@@ -23,7 +23,7 @@ func (c *HttpOutboundRouteConfigurer) Configure(filterChain *envoy_listener.Filt
 		Configure(envoy_routes.TagsHeader(c.DpTags)).
 		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder(envoy_common.APIV3).
 			Configure(envoy_routes.CommonVirtualHost(c.Service)).
-			Configure(envoy_routes.DefaultRoute(c.Clusters...)))).
+			Configure(envoy_routes.Routes(c.Routes)))).
 		Build()
 	if err != nil {
 		return err

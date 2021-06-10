@@ -329,7 +329,7 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 		"<!DOCTYPE html><html lang=en>" +
 		"<head>\n<style>\n.center {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  height: 200px;\n  border: 3px solid green; \n}\n</style>\n</head>" +
 		"<body><div class=\"center\"><strong>" +
-		"GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP." +
+		"GUI is disabled. If this is a Zone CP, please check the GUI on the Global CP." +
 		"</strong></div></body>" +
 		"</html>"))
 	if err != nil {
@@ -339,7 +339,7 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	enableGUI := cfg.Mode != config_core.Remote
+	enableGUI := cfg.Mode != config_core.Zone
 	if cfg.Mode != config_core.Standalone {
 		for i, definition := range definitions.All {
 			switch cfg.Mode {
@@ -347,7 +347,7 @@ func SetupServer(rt runtime.Runtime) error {
 				if definition.ResourceFactory().GetType() == mesh.DataplaneType {
 					definitions.All[i].ReadOnly = true
 				}
-			case config_core.Remote:
+			case config_core.Zone:
 				if definition.ResourceFactory().GetType() != mesh.DataplaneType {
 					definitions.All[i].ReadOnly = true
 				}

@@ -294,7 +294,7 @@ func (c *K8sCluster) yamlForKumaViaKubectl(mode string, opts *deployOptions) (st
 	}
 
 	switch mode {
-	case core.Remote:
+	case core.Zone:
 		argsMap["--kds-global-address"] = opts.globalAddress
 	}
 
@@ -401,9 +401,9 @@ func genValues(mode string, opts *deployOptions, kumactlOpts *KumactlOptions) ma
 	switch mode {
 	case core.Global:
 		if !UseLoadBalancer() {
-			values["controlPlane.globalRemoteSyncService.type"] = "NodePort"
+			values["controlPlane.globalZoneSyncService.type"] = "NodePort"
 		}
-	case core.Remote:
+	case core.Zone:
 		values["controlPlane.zone"] = kumactlOpts.CPName
 		values["controlPlane.kdsGlobalAddress"] = opts.globalAddress
 	}
@@ -487,9 +487,9 @@ func (c *K8sCluster) DeployKuma(mode string, fs ...DeployOptionsFunc) error {
 	c.controlplane = NewK8sControlPlane(c.t, mode, c.name, c.kubeconfig, c, c.loPort, c.hiPort, c.verbose, replicas)
 
 	switch mode {
-	case core.Remote:
+	case core.Zone:
 		if opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for remote")
+			return errors.Errorf("GlobalAddress expected for zone")
 		}
 	}
 
@@ -552,9 +552,9 @@ func (c *K8sCluster) UpgradeKuma(mode string, fs ...DeployOptionsFunc) error {
 	}
 
 	switch mode {
-	case core.Remote:
+	case core.Zone:
 		if opts.globalAddress == "" {
-			return errors.Errorf("GlobalAddress expected for remote")
+			return errors.Errorf("GlobalAddress expected for zone")
 		}
 	}
 

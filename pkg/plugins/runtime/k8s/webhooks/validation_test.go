@@ -119,8 +119,8 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should pass default mesh on remote", testCase{
-			mode:        core.Remote,
+		Entry("should pass default mesh on zone", testCase{
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.Mesh{},
 			obj: `
             {
@@ -143,8 +143,8 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should pass validation for synced policy from Global to Remote", testCase{
-			mode:        core.Remote,
+		Entry("should pass validation for synced policy from Global to Zone", testCase{
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.TrafficRoute{},
 			obj: `
             {
@@ -195,8 +195,8 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should pass validation for synced policy from Remote to Global", testCase{
-			mode:        core.Remote,
+		Entry("should pass validation for synced policy from Zone to Global", testCase{
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.Dataplane{},
 			obj: `
             {
@@ -235,8 +235,8 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should pass validation for not synced Dataplane in Remote", testCase{
-			mode:        core.Remote,
+		Entry("should pass validation for not synced Dataplane in Zone", testCase{
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.Dataplane{},
 			obj: `
             {
@@ -294,7 +294,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "spec.sources: must have at least one element; spec.destinations: must have at least one element; spec.conf: must have split; spec.conf.split: must have at least one element",
+						Message: "spec.sources: must have at least one element; spec.destinations: must have at least one element; spec.conf: cannot be empty",
 						Reason:  "Invalid",
 						Details: &kube_meta.StatusDetails{
 							Name: "empty",
@@ -312,13 +312,8 @@ var _ = Describe("Validation", func() {
 								},
 								{
 									Type:    "FieldValueInvalid",
-									Message: "must have split",
+									Message: "cannot be empty",
 									Field:   "spec.conf",
-								},
-								{
-									Type:    "FieldValueInvalid",
-									Message: "must have at least one element",
-									Field:   "spec.conf.split",
 								},
 							},
 						},
@@ -327,8 +322,8 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should fail validation due to applying policy manually on Remote CP", testCase{
-			mode:        core.Remote,
+		Entry("should fail validation due to applying policy manually on Zone CP", testCase{
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.TrafficRoute{},
 			obj: `
 			{
@@ -347,7 +342,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a TrafficRoute on remote CP. In multizone setup, it should be only applied on global CP and synced to remote CP.",
+						Message: "You are trying to apply a TrafficRoute on zone CP. In multizone setup, it should be only applied on global CP and synced to zone CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -384,7 +379,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a Dataplane on global CP. In multizone setup, it should be only applied on remote CP and synced to global CP.",
+						Message: "You are trying to apply a Dataplane on global CP. In multizone setup, it should be only applied on zone CP and synced to global CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -429,8 +424,8 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should fail validation due to applying Zone on Remote CP", testCase{
-			mode:        core.Remote,
+		Entry("should fail validation due to applying Zone on Zone CP", testCase{
+			mode:        core.Zone,
 			objTemplate: &system_proto.Zone{},
 			obj: `
 			{
@@ -494,7 +489,7 @@ var _ = Describe("Validation", func() {
 			},
 		}),
 		Entry("should fail validation on missing mesh object", testCase{
-			mode:        core.Remote,
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.TrafficRoute{},
 			obj: `
             {
