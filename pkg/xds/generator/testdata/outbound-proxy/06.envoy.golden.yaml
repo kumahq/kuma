@@ -25,6 +25,8 @@ resources:
     typedExtensionProtocolOptions:
       envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
         explicitHttpConfig:
           http2ProtocolOptions: {}
 - name: outbound:127.0.0.1:18082

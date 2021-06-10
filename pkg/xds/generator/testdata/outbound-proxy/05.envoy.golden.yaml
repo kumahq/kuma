@@ -27,6 +27,8 @@ resources:
         '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
         commonHttpProtocolOptions:
           idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
 - name: outbound:127.0.0.1:18081
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
