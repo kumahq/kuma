@@ -345,6 +345,11 @@ var _ = Describe("Match", func() {
 								"kuma.io/service": "frontend",
 							},
 						},
+						{
+							Match: map[string]string{
+								"kuma.io/service": "something_else",
+							},
+						},
 					},
 					[]*mesh_proto.Selector{
 						{
@@ -399,6 +404,22 @@ var _ = Describe("Match", func() {
 							{
 								Match: map[string]string{
 									"kuma.io/service": "frontend",
+								},
+							},
+						},
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/protocol": "http",
+								},
+							},
+						}).Spec,
+					policyWithDestinationsFunc("rl2", time.Unix(1, 0),
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service": "something_else",
 								},
 							},
 						},
