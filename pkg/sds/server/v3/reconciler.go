@@ -59,14 +59,14 @@ type snapshotInfo struct {
 	generation time.Time
 }
 
-func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) error {
-	proxyID := core_xds.FromResourceKey(dataplaneId).String()
+func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey, proxyType mesh_proto.DpType) error {
+	proxyID := core_xds.FromResourceKey(proxyType, dataplaneId).String()
 
 	dataplane := mesh_core.NewDataplaneResource()
 	if err := d.readOnlyResManager.Get(context.Background(), dataplane, core_store.GetBy(dataplaneId)); err != nil {
 		if core_store.IsResourceNotFound(err) {
 			sdsServerLog.V(1).Info("Dataplane not found. Clearing the Snapshot.", "dataplaneId", dataplaneId)
-			if err := d.Cleanup(dataplaneId); err != nil {
+			if err := d.Cleanup(dataplaneId, proxyType); err != nil {
 				return errors.Wrap(err, "could not cleanup snapshot")
 			}
 			return nil
@@ -81,7 +81,7 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 
 	if !mesh.MTLSEnabled() {
 		sdsServerLog.V(1).Info("mTLS for Mesh disabled. Clearing the Snapshot.", "dataplaneId", dataplaneId)
-		if err := d.Cleanup(dataplaneId); err != nil {
+		if err := d.Cleanup(dataplaneId, proxyType); err != nil {
 			return errors.Wrap(err, "could not cleanup snapshot")
 		}
 		return nil
@@ -113,8 +113,8 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey) erro
 	return nil
 }
 
-func (d *DataplaneReconciler) Cleanup(dataplaneId core_model.ResourceKey) error {
-	proxyID := core_xds.FromResourceKey(dataplaneId).String()
+func (d *DataplaneReconciler) Cleanup(dataplaneId core_model.ResourceKey, proxyType mesh_proto.DpType) error {
+	proxyID := core_xds.FromResourceKey(proxyType, dataplaneId).String()
 	if err := d.cache.SetSnapshot(proxyID, envoy_cache.Snapshot{}); err != nil {
 		return err
 	}

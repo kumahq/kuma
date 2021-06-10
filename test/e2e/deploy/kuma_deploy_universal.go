@@ -66,7 +66,7 @@ name: %s
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
+		ingressToken, err := globalCP.GenerateZoneIngressToken("ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// TODO: right now these tests are deliberately run WithHDS(false)
@@ -83,7 +83,7 @@ name: %s
 			Install(Kuma(core.Remote, optsRemote1...)).
 			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal1", echoServerToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_1.VerifyKuma()
@@ -99,7 +99,7 @@ name: %s
 			Install(Kuma(core.Remote, optsRemote2...)).
 			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal2", echoServerToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()

@@ -5,14 +5,14 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/pkg/errors"
+	"github.com/spf13/cobra"
+
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
-
-	"github.com/pkg/errors"
-	"github.com/spf13/cobra"
 
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
@@ -31,7 +31,7 @@ var runLog = dataplaneLog.WithName("run")
 // To extend Kuma DP, plug your code in RunE. Use RootContext.Config and add components to RootContext.ComponentManager
 func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cfg := rootCtx.Config
-	var dp *rest.Resource
+	var proxyResource *rest.Resource
 	var tmpDir string
 	var adminPort uint32
 	cmd := &cobra.Command{
@@ -55,17 +55,26 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 
 			var err error
-			dp, err = readDataplaneResource(cmd, cfg)
-			if err != nil {
-				runLog.Error(err, "unable to read provided dataplane")
-				return err
+			if cfg.Dataplane.IsIngress {
+				proxyResource, err = readZoneIngressResource(cmd, cfg)
+				if err != nil {
+					runLog.Error(err, "unable to read provided zone ingress")
+					return err
+				}
+			} else {
+				proxyResource, err = readDataplaneResource(cmd, cfg)
+				if err != nil {
+					runLog.Error(err, "unable to read provided dataplane")
+					return err
+				}
 			}
-			if dp != nil {
+
+			if proxyResource != nil {
 				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {
 					return errors.New("--name and --mesh cannot be specified when dataplane definition is provided. Mesh and name will be read from the dataplane definition.")
 				}
-				cfg.Dataplane.Mesh = dp.Meta.GetMesh()
-				cfg.Dataplane.Name = dp.Meta.GetName()
+				cfg.Dataplane.Mesh = proxyResource.Meta.GetMesh()
+				cfg.Dataplane.Name = proxyResource.Meta.GetName()
 			}
 
 			if !cfg.Dataplane.AdminPort.Empty() {
@@ -137,7 +146,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			opts := envoy.Opts{
 				Config:          *cfg,
 				Generator:       rootCtx.BootstrapGenerator,
-				Dataplane:       dp,
+				Dataplane:       proxyResource,
 				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
 				Stdout:          cmd.OutOrStdout(),
 				Stderr:          cmd.OutOrStderr(),
@@ -191,6 +200,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Name, "name", cfg.Dataplane.Name, "Name of the Dataplane")
 	cmd.PersistentFlags().Var(&cfg.Dataplane.AdminPort, "admin-port", `Port (or range of ports to choose from) for Envoy Admin API to listen on. Empty value indicates that Envoy Admin API should not be exposed over TCP. Format: "9901 | 9901-9999 | 9901- | -9901"`)
 	cmd.PersistentFlags().StringVar(&cfg.Dataplane.Mesh, "mesh", cfg.Dataplane.Mesh, "Mesh that Dataplane belongs to")
+	cmd.PersistentFlags().BoolVar(&cfg.Dataplane.IsIngress, "ingress", false, "If true then kuma-dp will register itself as a ZoneIngress")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.URL, "cp-address", cfg.ControlPlane.URL, "URL of the Control Plane Dataplane Server. Example: https://localhost:5678")
 	cmd.PersistentFlags().StringVar(&cfg.ControlPlane.CaCertFile, "ca-cert-file", cfg.ControlPlane.CaCertFile, "Path to CA cert by which connection to the Control Plane will be verified if HTTPS is used")
 	cmd.PersistentFlags().StringVar(&cfg.DataplaneRuntime.BinaryPath, "binary-path", cfg.DataplaneRuntime.BinaryPath, "Binary path of Envoy executable")

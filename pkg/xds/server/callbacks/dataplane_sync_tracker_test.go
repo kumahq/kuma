@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/test"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
@@ -79,7 +81,7 @@ var _ = Describe("Sync", func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
-			tracker := NewDataplaneSyncTracker(NewDataplaneWatchdogFunc(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(NewDataplaneWatchdogFunc(func(dataplaneId core_model.ResourceKey, streamId int64, proxyType mesh_proto.DpType) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
 					watchdogCh <- dataplaneId
 					<-stop
@@ -136,7 +138,7 @@ var _ = Describe("Sync", func() {
 		It("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
-			tracker := NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64, proxyType mesh_proto.DpType) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-stop

@@ -27,8 +27,10 @@ message ZoneIngress {
   // Kuma clusters.
   uint32 advertisedPort = 4;
 
-  // AvailableService contains tags that represent unique subset of
-  // endpoints
+  // Zone field contains Zone name where ingress is serving, field will be
+  // automatically set by Global Kuma CP
+  string zone = 6;
+
   message AvailableService {
     // tags of the service
     map<string, string> tags = 1;
@@ -37,5 +39,8 @@ message ZoneIngress {
     // mesh of the instances available for given tags
     string mesh = 3;
   }
+
+  // AvailableService contains tags that represent unique subset of
+  // endpoints
   repeated AvailableService availableServices = 5;
 }

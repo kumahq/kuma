@@ -3,6 +3,7 @@ package sync
 import (
 	"time"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
@@ -28,9 +29,9 @@ func NewDataplaneWatchdogFactory(
 	}, nil
 }
 
-func (d *dataplaneWatchdogFactory) New(key core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
+func (d *dataplaneWatchdogFactory) New(key core_model.ResourceKey, streamId int64, proxyType mesh_proto.DpType) util_watchdog.Watchdog {
 	log := xdsServerLog.WithName("dataplane-sync-watchdog").WithValues("dataplaneKey", key)
-	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, key, streamId)
+	dataplaneWatchdog := NewDataplaneWatchdog(d.deps, key, streamId, proxyType)
 	return &util_watchdog.SimpleWatchdog{
 		NewTicker: func() *time.Ticker {
 			return time.NewTicker(d.refreshInterval)

@@ -5,15 +5,18 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
-func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer) auth.Authenticator {
+func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer, zoneIngressIssuer zoneingress.TokenIssuer) auth.Authenticator {
 	return &universalAuthenticator{
-		issuer: issuer,
+		issuer:            issuer,
+		zoneIngressIssuer: zoneIngressIssuer,
 	}
 }
 
@@ -27,7 +30,8 @@ func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer) auth.Authentic
 // with inbounds: 1) kuma.io/service:web 2) kuma.io/service:web-api, you need token for both values kuma.io/service=web,web-api
 // Dataplane also needs to have all tags defined in the token
 type universalAuthenticator struct {
-	issuer builtin_issuer.DataplaneTokenIssuer
+	issuer            builtin_issuer.DataplaneTokenIssuer
+	zoneIngressIssuer zoneingress.TokenIssuer
 }
 
 func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
@@ -48,6 +52,18 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *co
 	if err := validateTags(dpIdentity.Tags, dataplane.Spec.TagSet()); err != nil {
 		return err
 	}
+	return nil
+}
+
+func (u *universalAuthenticator) AuthenticateZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
+	identity, err := u.zoneIngressIssuer.Validate(credential)
+	if err != nil {
+		return err
+	}
+	if zoneIngress.Meta.GetName() != identity.Name {
+		return errors.Errorf("zone ingress name from requestor: %s is different than in token: %s", zoneIngress.Meta.GetName(), identity.Name)
+	}
+
 	return nil
 }
 

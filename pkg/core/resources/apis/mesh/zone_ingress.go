@@ -25,29 +25,29 @@ func NewZoneIngressResource() *ZoneIngressResource {
 	}
 }
 
-func (t *ZoneIngressResource) GetType() model.ResourceType {
+func (r *ZoneIngressResource) GetType() model.ResourceType {
 	return ZoneIngressType
 }
-func (t *ZoneIngressResource) GetMeta() model.ResourceMeta {
-	return t.Meta
+func (r *ZoneIngressResource) GetMeta() model.ResourceMeta {
+	return r.Meta
 }
-func (t *ZoneIngressResource) SetMeta(m model.ResourceMeta) {
-	t.Meta = m
+func (r *ZoneIngressResource) SetMeta(m model.ResourceMeta) {
+	r.Meta = m
 }
-func (t *ZoneIngressResource) GetSpec() model.ResourceSpec {
-	return t.Spec
+func (r *ZoneIngressResource) GetSpec() model.ResourceSpec {
+	return r.Spec
 }
-func (t *ZoneIngressResource) SetSpec(spec model.ResourceSpec) error {
+func (r *ZoneIngressResource) SetSpec(spec model.ResourceSpec) error {
 	zoneIngress, ok := spec.(*mesh_proto.ZoneIngress)
 	if !ok {
 		return errors.New("invalid type of spec")
 	} else {
-		t.Spec = zoneIngress
+		r.Spec = zoneIngress
 		return nil
 	}
 }
 
-func (t *ZoneIngressResource) Scope() model.ResourceScope {
+func (r *ZoneIngressResource) Scope() model.ResourceScope {
 	return model.ScopeGlobal
 }
 

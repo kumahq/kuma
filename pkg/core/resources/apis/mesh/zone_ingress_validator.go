@@ -5,9 +5,9 @@ import (
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
 
-func (d *ZoneIngressResource) Validate() error {
+func (r *ZoneIngressResource) Validate() error {
 	var err validators.ValidationError
-	err.Add(validateZoneIngress(validators.RootedAt("ingress"), d.Spec))
+	err.Add(validateZoneIngress(validators.RootedAt("ingress"), r.Spec))
 	return err.OrNil()
 }
 

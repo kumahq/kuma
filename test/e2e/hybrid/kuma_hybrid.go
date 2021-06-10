@@ -77,7 +77,7 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
+		ingressToken, err := globalCP.GenerateZoneIngressToken("ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// K8s Cluster 1
@@ -124,7 +124,7 @@ metadata:
 			Install(Kuma(core.Remote, optsRemote3...)).
 			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal", echoServerToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remote_3)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_3.VerifyKuma()
@@ -138,7 +138,7 @@ metadata:
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote4...)).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken)).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remote_4)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_4.VerifyKuma()

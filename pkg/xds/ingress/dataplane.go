@@ -38,7 +38,7 @@ func (s tagSets) addInstanceOfTags(mesh string, tags envoy.Tags) {
 	s[serviceKey{tags: strTags, mesh: mesh}]++
 }
 
-func (s tagSets) toAvailableServices() []*mesh_proto.Dataplane_Networking_Ingress_AvailableService {
+func (s tagSets) toAvailableServicesCompat() []*mesh_proto.Dataplane_Networking_Ingress_AvailableService {
 	var result []*mesh_proto.Dataplane_Networking_Ingress_AvailableService
 
 	var keys []serviceKey
@@ -58,9 +58,29 @@ func (s tagSets) toAvailableServices() []*mesh_proto.Dataplane_Networking_Ingres
 	return result
 }
 
-func UpdateAvailableServices(ctx context.Context, rm manager.ResourceManager, ingress *core_mesh.DataplaneResource, others []*core_mesh.DataplaneResource) error {
-	availableServices := GetIngressAvailableServices(others)
-	if availableServicesEqual(availableServices, ingress.Spec.GetNetworking().GetIngress().GetAvailableServices()) {
+func (s tagSets) toAvailableServices() []*mesh_proto.ZoneIngress_AvailableService {
+	var result []*mesh_proto.ZoneIngress_AvailableService
+
+	var keys []serviceKey
+	for key := range s {
+		keys = append(keys, key)
+	}
+	sort.Sort(serviceKeySlice(keys))
+
+	for _, key := range keys {
+		tags, _ := envoy.TagsFromString(key.tags) // ignore error since we control how string looks like
+		result = append(result, &mesh_proto.ZoneIngress_AvailableService{
+			Tags:      tags,
+			Instances: s[key],
+			Mesh:      key.mesh,
+		})
+	}
+	return result
+}
+
+func UpdateAvailableServicesCompat(ctx context.Context, rm manager.ResourceManager, ingress *core_mesh.DataplaneResource, others []*core_mesh.DataplaneResource) error {
+	availableServices := GetIngressAvailableServicesCompat(others)
+	if availableServicesEqualCompat(availableServices, ingress.Spec.GetNetworking().GetIngress().GetAvailableServices()) {
 		return nil
 	}
 	ingress.Spec.Networking.Ingress.AvailableServices = availableServices
@@ -70,7 +90,19 @@ func UpdateAvailableServices(ctx context.Context, rm manager.ResourceManager, in
 	return nil
 }
 
-func availableServicesEqual(services []*mesh_proto.Dataplane_Networking_Ingress_AvailableService, other []*mesh_proto.Dataplane_Networking_Ingress_AvailableService) bool {
+func UpdateAvailableServices(ctx context.Context, rm manager.ResourceManager, ingress *core_mesh.ZoneIngressResource, others []*core_mesh.DataplaneResource) error {
+	availableServices := GetIngressAvailableServices(others)
+	if availableServicesEqual(availableServices, ingress.Spec.GetAvailableServices()) {
+		return nil
+	}
+	ingress.Spec.AvailableServices = availableServices
+	if err := rm.Update(ctx, ingress); err != nil {
+		return err
+	}
+	return nil
+}
+
+func availableServicesEqualCompat(services []*mesh_proto.Dataplane_Networking_Ingress_AvailableService, other []*mesh_proto.Dataplane_Networking_Ingress_AvailableService) bool {
 	if len(services) != len(other) {
 		return false
 	}
@@ -82,7 +114,32 @@ func availableServicesEqual(services []*mesh_proto.Dataplane_Networking_Ingress_
 	return true
 }
 
-func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_proto.Dataplane_Networking_Ingress_AvailableService {
+func availableServicesEqual(services []*mesh_proto.ZoneIngress_AvailableService, other []*mesh_proto.ZoneIngress_AvailableService) bool {
+	if len(services) != len(other) {
+		return false
+	}
+	for i := range services {
+		if !proto.Equal(services[i], other[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+func GetIngressAvailableServicesCompat(others []*core_mesh.DataplaneResource) []*mesh_proto.Dataplane_Networking_Ingress_AvailableService {
+	tagSets := tagSets{}
+	for _, dp := range others {
+		if dp.Spec.IsIngress() {
+			continue
+		}
+		for _, dpInbound := range dp.Spec.GetNetworking().GetHealthyInbounds() {
+			tagSets.addInstanceOfTags(dp.GetMeta().GetMesh(), dpInbound.Tags)
+		}
+	}
+	return tagSets.toAvailableServicesCompat()
+}
+
+func GetIngressAvailableServices(others []*core_mesh.DataplaneResource) []*mesh_proto.ZoneIngress_AvailableService {
 	tagSets := tagSets{}
 	for _, dp := range others {
 		if dp.Spec.IsIngress() {

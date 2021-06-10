@@ -70,8 +70,9 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	}
 	// we add Secret store to unified ResourceStore so global<->remote synchronizer can use unified interface
 	builder.WithResourceStore(core_store.NewCustomizableResourceStore(builder.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
-		system.SecretType: builder.SecretStore(),
-		system.ConfigType: builder.ConfigStore(),
+		system.SecretType:       builder.SecretStore(),
+		system.GlobalSecretType: builder.SecretStore(),
+		system.ConfigType:       builder.ConfigStore(),
 	}))
 
 	if err := initializeConfigManager(cfg, builder); err != nil {

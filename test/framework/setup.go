@@ -276,7 +276,7 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 	}
 }
 
-func IngressUniversal(mesh, token string) InstallFunc {
+func IngressUniversalOldType(mesh, token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
 		isipv6 := IsIPv6()
@@ -295,8 +295,32 @@ func IngressUniversal(mesh, token string) InstallFunc {
 		uniCluster.apps[AppIngress] = app
 
 		publicAddress := uniCluster.apps[AppIngress].ip
-		dpyaml := fmt.Sprintf(IngressDataplane, mesh, publicAddress, kdsPort, kdsPort)
+		dpyaml := fmt.Sprintf(IngressDataplaneOldType, mesh, publicAddress, kdsPort, kdsPort)
 		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token, false)
+	}
+}
+
+func IngressUniversal(token string) InstallFunc {
+	return func(cluster Cluster) error {
+		uniCluster := cluster.(*UniversalCluster)
+		isipv6 := IsIPv6()
+		verbose := false
+		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, isipv6, verbose, []string{})
+		if err != nil {
+			return err
+		}
+
+		app.CreateMainApp([]string{}, []string{})
+
+		err = app.mainApp.Start()
+		if err != nil {
+			return err
+		}
+		uniCluster.apps[AppIngress] = app
+
+		publicAddress := uniCluster.apps[AppIngress].ip
+		dpyaml := fmt.Sprintf(ZoneIngress, publicAddress, kdsPort, kdsPort)
+		return uniCluster.CreateZoneIngress(app, "ingress", app.ip, dpyaml, token, false)
 	}
 }
 

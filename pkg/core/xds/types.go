@@ -20,12 +20,13 @@ import (
 type StreamID = int64
 
 type ProxyId struct {
-	Mesh string
-	Name string
+	Mesh      string
+	Name      string
+	ProxyType mesh_proto.DpType
 }
 
 func (id ProxyId) String() string {
-	return fmt.Sprintf("%s.%s", id.Mesh, id.Name)
+	return fmt.Sprintf("%s.%s:%s", id.Mesh, id.Name, id.ProxyType)
 }
 
 // ServiceName is a convenience type alias to clarify the meaning of string value.
@@ -203,12 +204,44 @@ func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
 	return endpoints
 }
 
-func BuildProxyId(mesh, name string, more ...string) (*ProxyId, error) {
-	id := strings.Join(append([]string{mesh, name}, more...), ".")
-	return ParseProxyIdFromString(id)
+func BuildProxyId(mesh, name string, proxyType mesh_proto.DpType) *ProxyId {
+	return &ProxyId{
+		Name:      name,
+		Mesh:      mesh,
+		ProxyType: proxyType,
+	}
 }
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {
+	if id == "" {
+		return nil, errors.Errorf("Envoy ID must not be nil")
+	}
+	parts := strings.SplitN(id, ":", 2)
+	if len(parts) == 1 {
+		proxyId, err := ParseProxyIdFromStringOldFormat(id)
+		if err != nil {
+			return nil, err
+		}
+		proxyId.ProxyType = mesh_proto.RegularDpType
+		return proxyId, nil
+	}
+	proxyType := mesh_proto.DpType(parts[1])
+	meshAndName := strings.SplitN(parts[0], ".", 2)
+	mesh, name := meshAndName[0], meshAndName[1]
+	if name == "" {
+		return nil, errors.New("name must not be empty")
+	}
+	if mesh == "" && proxyType != mesh_proto.IngressDpType {
+		return nil, errors.New("mesh must not be empty")
+	}
+	return &ProxyId{
+		Mesh:      mesh,
+		Name:      name,
+		ProxyType: proxyType,
+	}, nil
+}
+
+func ParseProxyIdFromStringOldFormat(id string) (*ProxyId, error) {
 	if id == "" {
 		return nil, errors.Errorf("Envoy ID must not be nil")
 	}
@@ -237,9 +270,10 @@ func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
 	}
 }
 
-func FromResourceKey(key core_model.ResourceKey) ProxyId {
+func FromResourceKey(proxyType mesh_proto.DpType, key core_model.ResourceKey) ProxyId {
 	return ProxyId{
-		Mesh: key.Mesh,
-		Name: key.Name,
+		Mesh:      key.Mesh,
+		Name:      key.Name,
+		ProxyType: proxyType,
 	}
 }

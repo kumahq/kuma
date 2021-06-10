@@ -32,13 +32,25 @@ var _ = Describe("xDS", func() {
 				Entry("mesh and name without namespace", testCase{
 					nodeID: "demo.example",
 					expected: core_xds.ProxyId{
-						Mesh: "demo", Name: "example",
+						Mesh: "demo", Name: "example", ProxyType: mesh_proto.RegularDpType,
 					},
 				}),
 				Entry("name with namespace and mesh", testCase{
 					nodeID: "demo.example.sample",
 					expected: core_xds.ProxyId{
-						Mesh: "demo", Name: "example.sample",
+						Mesh: "demo", Name: "example.sample", ProxyType: mesh_proto.RegularDpType,
+					},
+				}),
+				Entry("mesh and name without namespace and proxy type", testCase{
+					nodeID: "demo.example:ingress",
+					expected: core_xds.ProxyId{
+						Mesh: "demo", Name: "example", ProxyType: mesh_proto.IngressDpType,
+					},
+				}),
+				Entry("name with namespace and mesh and proxy type", testCase{
+					nodeID: "demo.example.sample:ingress",
+					expected: core_xds.ProxyId{
+						Mesh: "demo", Name: "example.sample", ProxyType: mesh_proto.IngressDpType,
 					},
 				}),
 			)

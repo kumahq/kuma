@@ -7,6 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -21,6 +23,9 @@ var _ = Describe("Authentication flow", func() {
 	var privateKey = []byte("testPrivateKey")
 
 	issuer := builtin_issuer.NewDataplaneTokenIssuer(func(string) ([]byte, error) {
+		return privateKey, nil
+	})
+	zoneIngressIssuer := zoneingress.NewTokenIssuer(func() ([]byte, error) {
 		return privateKey, nil
 	})
 	var authenticator auth.Authenticator
@@ -79,7 +84,7 @@ var _ = Describe("Authentication flow", func() {
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		authenticator = universal.NewAuthenticator(issuer)
+		authenticator = universal.NewAuthenticator(issuer, zoneIngressIssuer)
 
 		err := resStore.Create(context.Background(), &dpRes, core_store.CreateByKey("dp-1", "default"))
 		Expect(err).ToNot(HaveOccurred())

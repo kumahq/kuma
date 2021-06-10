@@ -15,6 +15,7 @@ const BootstrapVersionHeader = "kuma-bootstrap-version"
 type BootstrapRequest struct {
 	Mesh               string  `json:"mesh"`
 	Name               string  `json:"name"`
+	ProxyType          string  `json:"proxyType"`
 	AdminPort          uint32  `json:"adminPort,omitempty"`
 	DataplaneTokenPath string  `json:"dataplaneTokenPath,omitempty"`
 	DataplaneToken     string  `json:"dataplaneToken,omitempty"`

@@ -62,6 +62,10 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster e
 		if err != nil {
 			return nil, err
 		}
+		zoneIngresses := &core_mesh.ZoneIngressResourceList{}
+		if err := c.rm.List(ctx, zoneIngresses); err != nil {
+			return nil, err
+		}
 		mesh := core_mesh.NewMeshResource()
 		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, model.NoMesh)); err != nil {
 			return nil, err
@@ -71,7 +75,7 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster e
 		// This also solves the problem that if the ExternalService is blocked by TrafficPermission
 		// OutboundProxyGenerate treats this as EDS cluster and tries to get endpoints via GetCLA
 		// Since GetCLA is consistent for a mesh, it would return an endpoint with address which is not valid for EDS.
-		endpointMap := topology.BuildEdsEndpointMap(mesh, c.zone, dataplanes.Items)
+		endpointMap := topology.BuildEdsEndpointMap(mesh, c.zone, dataplanes.Items, zoneIngresses.Items)
 		endpoints := []xds.Endpoint{}
 		for _, endpoint := range endpointMap[cluster.Service()] {
 			if endpoint.ContainsTags(cluster.Tags()) {

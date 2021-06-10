@@ -69,7 +69,7 @@ spec:
 
 		echoServerToken, err := globalCP.GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("default", "ingress")
+		ingressToken, err := globalCP.GenerateZoneIngressToken("ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// Remote universal
@@ -80,7 +80,7 @@ spec:
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Remote, optsRemoteUniversal...)).
 			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
-			Install(IngressUniversal("default", ingressToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remoteUniversal)
 		Expect(err).ToNot(HaveOccurred())
 		err = remoteUniversal.VerifyKuma()

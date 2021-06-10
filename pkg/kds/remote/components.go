@@ -3,6 +3,8 @@ package remote
 import (
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
+
 	"github.com/kumahq/kuma/pkg/config/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	"github.com/kumahq/kuma/pkg/kds/mux"
@@ -24,12 +26,14 @@ import (
 var (
 	kdsRemoteLog  = core.Log.WithName("kds-remote")
 	ProvidedTypes = []model.ResourceType{
+		mesh.ZoneIngressType,
 		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
 	}
 	ConsumedTypes = []model.ResourceType{
 		mesh.CircuitBreakerType,
 		mesh.DataplaneType,
+		mesh.ZoneIngressType,
 		mesh.ExternalServiceType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,
@@ -42,6 +46,7 @@ var (
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
 		system.SecretType,
+		system.GlobalSecretType,
 		system.ConfigType,
 	}
 )
@@ -88,7 +93,7 @@ func Setup(rt core_runtime.Runtime) error {
 func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory) *kds_client.Callbacks {
 	return &kds_client.Callbacks{
 		OnResourcesReceived: func(clusterID string, rs model.ResourceList) error {
-			if k8sStore && rs.GetItemType() != system.ConfigType && rs.GetItemType() != system.SecretType {
+			if k8sStore && rs.GetItemType() != system.ConfigType && rs.GetItemType() != system.SecretType && rs.GetItemType() != system.GlobalSecretType {
 				// if type of Store is Kubernetes then we want to store upstream resources in dedicated Namespace.
 				// KubernetesStore parses Name and considers substring after the last dot as a Namespace's Name.
 				// System resources are not in the kubeFactory therefore we need explicit ifs for them
@@ -105,9 +110,20 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 					return r.(*mesh.DataplaneResource).Spec.IsRemoteIngress(localZone)
 				}))
 			}
+			if rs.GetItemType() == mesh.ZoneIngressType {
+				core.Log.WithName("TEST").Info("OnResourcesReceived ZoneIngress", "resources", rs)
+				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
+					return r.(*mesh.ZoneIngressResource).IsRemoteIngress(localZone)
+				}))
+			}
 			if rs.GetItemType() == system.ConfigType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return rt.KDSContext().Configs[r.GetMeta().GetName()]
+				}))
+			}
+			if rs.GetItemType() == system.GlobalSecretType {
+				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
+					return r.GetMeta().GetName() == zoneingress.SigningKeyResourceKey().Name
 				}))
 			}
 			return syncer.Sync(rs)

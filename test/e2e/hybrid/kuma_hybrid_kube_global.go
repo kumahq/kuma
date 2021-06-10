@@ -42,7 +42,7 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("default", "ingress")
+		ingressToken, err := globalCP.GenerateZoneIngressToken("ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// Remote
@@ -54,7 +54,7 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 			Install(Kuma(core.Remote, optsRemote...)).
 			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)).
-			Install(IngressUniversal("default", ingressToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remoteCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = remoteCluster.VerifyKuma()

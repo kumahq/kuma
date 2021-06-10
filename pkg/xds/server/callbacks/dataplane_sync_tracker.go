@@ -4,6 +4,7 @@ import (
 	"context"
 	stdsync "sync"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -15,7 +16,7 @@ var (
 	dataplaneSyncTrackerLog = core.Log.WithName("xds-server").WithName("dataplane-sync-tracker")
 )
 
-type NewDataplaneWatchdogFunc func(dataplaneId core_model.ResourceKey, streamId core_xds.StreamID) util_watchdog.Watchdog
+type NewDataplaneWatchdogFunc func(dataplaneId core_model.ResourceKey, streamId core_xds.StreamID, proxyType mesh_proto.DpType) util_watchdog.Watchdog
 
 func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) util_xds.Callbacks {
 	return &dataplaneSyncTracker{
@@ -98,7 +99,7 @@ func (t *dataplaneSyncTracker) OnStreamRequest(streamID core_xds.StreamID, req u
 				close(stopCh)
 			}
 			// kick off watchdog for that Dataplane
-			go t.newDataplaneWatchdog(dataplaneKey, streamID).Start(stopCh)
+			go t.newDataplaneWatchdog(dataplaneKey, streamID, id.ProxyType).Start(stopCh)
 			dataplaneSyncTrackerLog.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", id, "dataplaneKey", dataplaneKey)
 		}
 		t.dpStreams[dataplaneKey] = streams

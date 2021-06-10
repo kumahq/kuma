@@ -10,6 +10,8 @@ import (
 	. "github.com/onsi/gomega"
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
+
 	"github.com/kumahq/kuma/app/kumactl/pkg/tokens"
 	config_kumactl "github.com/kumahq/kuma/pkg/config/app/kumactl/v1alpha1"
 	"github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
@@ -29,13 +31,26 @@ func (s *staticTokenIssuer) Validate(token issuer.Token, meshName string) (issue
 	return issuer.DataplaneIdentity{}, errors.New("not implemented")
 }
 
+type zoneIngressStaticTokenIssuer struct {
+}
+
+var _ zoneingress.TokenIssuer = &zoneIngressStaticTokenIssuer{}
+
+func (z *zoneIngressStaticTokenIssuer) Generate(identity zoneingress.Identity) (zoneingress.Token, error) {
+	return fmt.Sprintf("token-for-%s", identity.Name), nil
+}
+
+func (z *zoneIngressStaticTokenIssuer) Validate(token zoneingress.Token) (zoneingress.Identity, error) {
+	return zoneingress.Identity{}, errors.New("not implemented")
+}
+
 var _ = Describe("Tokens Client", func() {
 
 	var server *httptest.Server
 
 	BeforeEach(func() {
 		container := restful.NewContainer()
-		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}))
+		container.Add(tokens_server.NewWebservice(&staticTokenIssuer{}, &zoneIngressStaticTokenIssuer{}))
 		server = httptest.NewServer(container.ServeMux)
 	})
 

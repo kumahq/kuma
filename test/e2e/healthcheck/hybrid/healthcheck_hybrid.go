@@ -75,7 +75,7 @@ metadata:
 
 		echoServerToken, err := global.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := global.GetKuma().GenerateDpToken("default", "ingress")
+		ingressToken, err := global.GetKuma().GenerateZoneIngressToken("ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		optsRemoteUniversal = append(optsRemoteUniversal,
@@ -87,7 +87,7 @@ metadata:
 			Install(EchoServerUniversal("dp-echo-1", "default", "echo-universal-1", echoServerToken, WithProtocol("tcp"))).
 			Install(EchoServerUniversal("dp-echo-2", "default", "echo-universal-2", echoServerToken, WithProtocol("tcp"), ProxyOnly(), ServiceProbe())).
 			Install(EchoServerUniversal("dp-echo-3", "default", "echo-universal-3", echoServerToken, WithProtocol("tcp"))).
-			Install(IngressUniversal("default", ingressToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remoteUniversal)
 		Expect(err).ToNot(HaveOccurred())
 		err = remoteUniversal.VerifyKuma()

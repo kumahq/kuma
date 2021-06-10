@@ -19,6 +19,7 @@ const VIPListenPort = uint32(80)
 func VIPOutbounds(
 	resourceKey model.ResourceKey,
 	dataplanes []*core_mesh.DataplaneResource,
+	zoneIngresses []*core_mesh.ZoneIngressResource,
 	vips vips.List,
 	externalServices []*core_mesh.ExternalServiceResource,
 ) []*mesh_proto.Dataplane_Networking_Outbound {
@@ -29,8 +30,9 @@ func VIPOutbounds(
 	serviceVIPMap := map[string]vipEntry{}
 	services := []string{}
 	for _, dataplane := range dataplanes {
+		// backwards compatibility
 		if dataplane.Spec.IsIngress() {
-			for _, service := range dataplane.Spec.Networking.Ingress.AvailableServices {
+			for _, service := range dataplane.Spec.GetNetworking().GetIngress().GetAvailableServices() {
 				if service.Mesh == resourceKey.Mesh {
 					// Only add outbounds for services in the same mesh
 					inService := service.Tags[mesh_proto.ServiceTag]
@@ -44,8 +46,24 @@ func VIPOutbounds(
 				}
 			}
 		} else {
-			for _, inbound := range dataplane.Spec.Networking.Inbound {
+			for _, inbound := range dataplane.Spec.GetNetworking().GetInbound() {
 				inService := inbound.GetTags()[mesh_proto.ServiceTag]
+				if _, found := serviceVIPMap[inService]; !found {
+					vip, err := ForwardLookup(vips, inService)
+					if err == nil {
+						serviceVIPMap[inService] = vipEntry{vip, VIPListenPort}
+						services = append(services, inService)
+					}
+				}
+			}
+		}
+	}
+
+	for _, zi := range zoneIngresses {
+		for _, service := range zi.Spec.GetAvailableServices() {
+			if service.Mesh == resourceKey.Mesh {
+				// Only add outbounds for services in the same mesh
+				inService := service.Tags[mesh_proto.ServiceTag]
 				if _, found := serviceVIPMap[inService]; !found {
 					vip, err := ForwardLookup(vips, inService)
 					if err == nil {

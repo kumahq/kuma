@@ -122,7 +122,9 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 				statusTrackerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Metadata())
 			}
 			// kick off async Dataplane status flusher
-			go c.createStatusSink(state).Start(state.stop)
+			if id.ProxyType != mesh_proto.IngressDpType {
+				go c.createStatusSink(state).Start(state.stop)
+			}
 		} else {
 			statusTrackerLog.Error(err, "failed to parse Dataplane Id out of DiscoveryRequest", "streamid", streamID, "req", req)
 		}

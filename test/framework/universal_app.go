@@ -29,7 +29,7 @@ const (
 	AppModeHttpsEchoServer = "https-echo-server"
 	sshPort                = "22"
 
-	IngressDataplane = `
+	IngressDataplaneOldType = `
 type: Dataplane
 mesh: %s
 name: dp-ingress
@@ -43,6 +43,15 @@ networking:
     tags:
       kuma.io/service: ingress
 `
+	ZoneIngress = `
+type: ZoneIngress
+name: new-ingress
+address: {{ address }}
+advertisedAddress: %s
+advertisedPort: %d
+port: %d
+`
+
 	EchoServerDataplane = `
 type: Dataplane
 mesh: %s
@@ -354,7 +363,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	return nil
 }
 
-func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, builtindns bool) {
+func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, builtindns, ingress bool) {
 	// create the token file on the app container
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
@@ -379,6 +388,9 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, bu
 	}
 	if builtindns {
 		args = append(args, "--dns-enabled")
+	}
+	if ingress {
+		args = append(args, "--ingress")
 	}
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, args)
 }

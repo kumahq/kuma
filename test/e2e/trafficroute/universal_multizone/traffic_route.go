@@ -56,7 +56,7 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(defaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
+		ingressToken, err := globalCP.GenerateZoneIngressToken("new-ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 1
@@ -68,7 +68,7 @@ routing:
 		err = NewClusterSetup().
 			Install(Kuma(core.Remote, optsRemote1...)).
 			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_1.VerifyKuma()
@@ -103,7 +103,7 @@ routing:
 				WithServiceVersion("v1"),
 				WithTransparentProxy(true),
 			)).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
+			Install(IngressUniversal(ingressToken)).
 			Setup(remote_2)
 		Expect(err).ToNot(HaveOccurred())
 		err = remote_2.VerifyKuma()

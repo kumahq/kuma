@@ -72,7 +72,7 @@ var _ = Describe("VIPOutbounds", func() {
 		}
 
 		// when
-		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, vipList, externalServices.Items)
+		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, nil, vipList, externalServices.Items)
 		// and
 		Expect(outbounds).To(HaveLen(5))
 		// and
@@ -141,7 +141,7 @@ var _ = Describe("VIPOutbounds", func() {
 		}
 
 		// when
-		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, vipList, externalServices.Items)
+		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, nil, vipList, externalServices.Items)
 		// and
 		Expect(outbounds).To(HaveLen(1))
 		// and
@@ -234,7 +234,7 @@ var _ = Describe("VIPOutbounds", func() {
 		vipList["third-external-service"] = "240.0.0.8"
 
 		actual := &mesh_proto.Dataplane_Networking{}
-		actual.Outbound = dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, vipList, externalServices)
+		actual.Outbound = dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, nil, vipList, externalServices)
 
 		expected := `
      outbound:

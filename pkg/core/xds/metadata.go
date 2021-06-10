@@ -40,13 +40,14 @@ const (
 // This way, xDS server will be able to use Envoy node metadata
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
-	DataplaneTokenPath string
-	DataplaneToken     string
-	DataplaneResource  *core_mesh.DataplaneResource
-	AdminPort          uint32
-	DNSPort            uint32
-	EmptyDNSPort       uint32
-	DynamicMetadata    map[string]string
+	DataplaneTokenPath  string
+	DataplaneToken      string
+	DataplaneResource   *core_mesh.DataplaneResource
+	ZoneIngressResource *core_mesh.ZoneIngressResource
+	AdminPort           uint32
+	DNSPort             uint32
+	EmptyDNSPort        uint32
+	DynamicMetadata     map[string]string
 }
 
 func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
@@ -68,6 +69,13 @@ func (m *DataplaneMetadata) GetDataplaneResource() *core_mesh.DataplaneResource 
 		return nil
 	}
 	return m.DataplaneResource
+}
+
+func (m *DataplaneMetadata) GetZoneIngressResource() *core_mesh.ZoneIngressResource {
+	if m == nil {
+		return nil
+	}
+	return m.ZoneIngressResource
 }
 
 func (m *DataplaneMetadata) GetAdminPort() uint32 {
@@ -117,11 +125,14 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 		if err != nil {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
 		}
-		dp, ok := res.(*core_mesh.DataplaneResource)
-		if !ok {
+		switch r := res.(type) {
+		case *core_mesh.DataplaneResource:
+			metadata.DataplaneResource = r
+		case *core_mesh.ZoneIngressResource:
+			metadata.ZoneIngressResource = r
+		default:
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
 		}
-		metadata.DataplaneResource = dp
 	}
 	if value := xdsMetadata.Fields[fieldDynamicMetadata]; value != nil {
 		dynamicMetadata := map[string]string{}
