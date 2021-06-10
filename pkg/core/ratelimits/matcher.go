@@ -57,10 +57,24 @@ func buildRateLimitMap(
 	return result, nil
 }
 
-// We want the rateLimits slice to be split into separate policies by source
-// I.e. if a RateLimit has two matches it its source, it will be cloned into two
-// RateLimit resources, each of them having only a single Source Match.
-// We rely on this later to sort the rateLimits using ConnectionPolicyBySourceService.
+// We need to split policies with many sources into individual policies, because otherwise
+// we would not be able to sort all selectors from all policies in the most specific to the
+// most general order.
+//
+// Example:
+//  sources:
+//    - match:
+//        kuma.io/service: 'web'
+//        version: '1'
+//    - match:
+//        kuma.io/service: 'web-api'
+//---
+//  sources:
+//    - match:
+//        kuma.io/service: 'web'
+//    - match:
+//        kuma.io/service: 'web-api'
+//        version: '1'
 func splitPoliciesBySourceMatch(rateLimits []*mesh_core.RateLimitResource) []*mesh_core.RateLimitResource {
 	result := []*mesh_core.RateLimitResource{}
 

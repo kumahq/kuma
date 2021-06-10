@@ -98,7 +98,7 @@ conf:
 	It("should limit to 2 requests per 5 sec", func() {
 		// demo-client specific RateLimit works
 		Eventually(verifyRateLimit("demo-client", 5), "60s", "1s").Should(Equal(2))
-		// verify determinism by running it once again with sorter timeout
+		// verify determinism by running it once again with shorter timeout
 		Eventually(verifyRateLimit("demo-client", 5), "30s", "1s").Should(Equal(2))
 	})
 
@@ -123,12 +123,12 @@ conf:
 
 		// demo-client specific RateLimit works
 		Eventually(verifyRateLimit("demo-client", 5), "60s", "1s").Should(Equal(4))
-		// verify determinism by running it once again with sorter timeout
+		// verify determinism by running it once again with shorter timeout
 		Eventually(verifyRateLimit("demo-client", 5), "30s", "1s").Should(Equal(4))
 
 		// catch-all RateLimit still works
 		Eventually(verifyRateLimit("web", 5), "60s", "1s").Should(Equal(2))
-		// verify determinism by running it once again with sorter timeout
+		// verify determinism by running it once again with shorter timeout
 		Eventually(verifyRateLimit("web", 5), "30s", "1s").Should(Equal(2))
 	})
 
@@ -167,12 +167,12 @@ conf:
 
 		// demo-client specific RateLimit works
 		Eventually(verifyRateLimit("demo-client", 5), "60s", "1s").Should(Equal(4))
-		// verify determinism by running it once again with sorter timeout
+		// verify determinism by running it once again with shorter timeout
 		Eventually(verifyRateLimit("demo-client", 5), "30s", "1s").Should(Equal(4))
 
 		// web specific RateLimit works
 		Eventually(verifyRateLimit("web", 5), "60s", "1s").Should(Equal(1))
-		// verify determinism by running it once again with sorter timeout
+		// verify determinism by running it once again with shorter timeout
 		Eventually(verifyRateLimit("web", 5), "30s", "1s").Should(Equal(1))
 	})
 }

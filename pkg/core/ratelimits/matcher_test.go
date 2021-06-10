@@ -6,7 +6,6 @@ import (
 
 	"github.com/golang/protobuf/ptypes/duration"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -49,9 +48,7 @@ var _ = Describe("Match", func() {
 				Destinations: destinations,
 				Conf: &mesh_proto.RateLimit_Conf{
 					Http: &mesh_proto.RateLimit_Conf_Http{
-						Requests: &wrappers.UInt32Value{
-							Value: 100,
-						},
+						Requests: 100,
 						Interval: &duration.Duration{
 							Seconds: 3,
 						},

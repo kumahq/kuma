@@ -279,9 +279,11 @@ func (c *RoutesConfigurer) createRateLimit(rlHttp *mesh_proto.RateLimit_Conf_Htt
 		StatPrefix: "rate_limit",
 		Status:     status,
 		TokenBucket: &envoy_type_v3.TokenBucket{
-			MaxTokens:     rlHttp.GetRequests().GetValue(),
-			TokensPerFill: rlHttp.GetRequests(),
-			FillInterval:  rlHttp.GetInterval(),
+			MaxTokens: rlHttp.GetRequests(),
+			TokensPerFill: &wrappers.UInt32Value{
+				Value: rlHttp.GetRequests(),
+			},
+			FillInterval: rlHttp.GetInterval(),
 		},
 		FilterEnabled: &envoy_config_core_v3.RuntimeFractionalPercent{
 			DefaultValue: &envoy_type_v3.FractionalPercent{

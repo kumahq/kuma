@@ -47,8 +47,12 @@ func (d *RateLimitResource) validateConf() (err validators.ValidationError) {
 }
 
 func (d *RateLimitResource) validateHttp(path validators.PathBuilder, http *v1alpha1.RateLimit_Conf_Http) (err validators.ValidationError) {
-	if http.GetRequests() == nil {
+	if http.GetRequests() == 0 {
 		err.AddViolationAt(path.Field("requests"), "requests must be set")
+	}
+
+	if http.GetInterval() == nil {
+		err.AddViolationAt(path.Field("interval"), "interval must be set")
 	}
 
 	if http.GetOnRateLimit() != nil {

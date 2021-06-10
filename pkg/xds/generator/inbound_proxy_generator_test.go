@@ -158,9 +158,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 								},
 								Conf: &mesh_proto.RateLimit_Conf{
 									Http: &mesh_proto.RateLimit_Conf_Http{
-										Requests: &wrappers.UInt32Value{
-											Value: 200,
-										},
+										Requests: 200,
 										Interval: &duration.Duration{
 											Seconds: 10,
 										},
@@ -184,9 +182,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 								},
 								Conf: &mesh_proto.RateLimit_Conf{
 									Http: &mesh_proto.RateLimit_Conf_Http{
-										Requests: &wrappers.UInt32Value{
-											Value: 100,
-										},
+										Requests: 100,
 										Interval: &duration.Duration{
 											Seconds: 2,
 										},

@@ -205,7 +205,7 @@ func SelectInboundConnectionAllPolicies(inboundTags map[string]string, policies 
 	}
 
 	// Make sure more specific policies get top priority
-	sort.Stable(ConnectionPolicyBySourceService(matchingPolicies))
+	sort.Stable(ConnectionPolicyBySourceRank(matchingPolicies))
 	return matchingPolicies
 }
 
@@ -217,11 +217,11 @@ func (a ConnectionPolicyByName) Less(i, j int) bool {
 	return a[i].GetMeta().GetName() < a[j].GetMeta().GetName()
 }
 
-type ConnectionPolicyBySourceService []ConnectionPolicy
+type ConnectionPolicyBySourceRank []ConnectionPolicy
 
-func (a ConnectionPolicyBySourceService) Len() int      { return len(a) }
-func (a ConnectionPolicyBySourceService) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func (a ConnectionPolicyBySourceService) Less(i, j int) bool {
+func (a ConnectionPolicyBySourceRank) Len() int      { return len(a) }
+func (a ConnectionPolicyBySourceRank) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ConnectionPolicyBySourceRank) Less(i, j int) bool {
 	tagSelectorI := mesh_proto.TagSelector(a[i].Sources()[0].Match)
 	tagSelectorJ := mesh_proto.TagSelector(a[j].Sources()[0].Match)
 

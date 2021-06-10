@@ -23,7 +23,7 @@ message RateLimit {
     message Http {
       // The number of HTTP requests this RateLimiter allows
       // +required
-      google.protobuf.UInt32Value requests = 1;
+      uint32 requests = 1;
 
       // The the interval for which `requests` will be accounted.
       // +required

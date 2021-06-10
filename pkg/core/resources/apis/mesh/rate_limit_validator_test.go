@@ -118,6 +118,7 @@ var _ = Describe("RateLimit", func() {
                 conf:
                   http:
                     requests: 10
+                    interval: 10s
 `,
 				expected: `
                 violations:
@@ -140,6 +141,7 @@ var _ = Describe("RateLimit", func() {
                 conf:
                   http:
                     requests: 10
+                    interval: 10s
 `,
 				expected: `
                 violations:
@@ -168,6 +170,7 @@ var _ = Describe("RateLimit", func() {
                 conf:
                   http:
                     requests: 10
+                    interval: 10s
 `,
 				expected: `
                 violations:
@@ -204,6 +207,8 @@ var _ = Describe("RateLimit", func() {
                 violations:
                 - field: conf.http.requests
                   message: requests must be set
+                - field: conf.http.interval
+                  message: interval must be set
                 - field: conf.http.onRateLimit.header["0"]
                   message: key must be set
                 - field: conf.http.onRateLimit.header["0"]
