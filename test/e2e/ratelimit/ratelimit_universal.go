@@ -1,8 +1,6 @@
 package ratelimit
 
 import (
-	"time"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
@@ -26,7 +24,7 @@ destinations:
 conf:
   http:
     requests: 2
-    interval: 5s
+    interval: 10s
     onRateLimit:
       status: 423
       headers:
@@ -99,8 +97,7 @@ conf:
 
 	It("should limit to 2 requests per 5 sec", func() {
 		Eventually(verifyRateLimit("demo-client", 5), "60s", "5s").Should(Equal(2))
-		time.Sleep(8 * time.Second)
-		Expect(verifyRateLimit("demo-client", 5)()).To(Equal(2))
+		Eventually(verifyRateLimit("demo-client", 5), "30s", "1s").Should(Equal(2))
 	})
 
 	It("should limit per source", func() {
@@ -117,19 +114,17 @@ destinations:
 conf:
   http:
     requests: 4
-    interval: 5s
+    interval: 10s
 `
 		err := YamlUniversal(specificRateLimitPolicy)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(verifyRateLimit("demo-client", 5), "60s", "5s").Should(Equal(4))
-		time.Sleep(6 * time.Second)
-		Expect(verifyRateLimit("demo-client", 5)()).To(Equal(4))
+		Eventually(verifyRateLimit("demo-client", 5), "30s", "1s").Should(Equal(4))
 
 		// catch-all RateLimit still works
 		Eventually(verifyRateLimit("web", 5), "60s", "5s").Should(Equal(2))
-		time.Sleep(6 * time.Second)
-		Expect(verifyRateLimit("web", 5)()).To(Equal(2))
+		Eventually(verifyRateLimit("web", 5), "30s", "1s").Should(Equal(2))
 	})
 
 	It("should limit multiple source", func() {
@@ -146,32 +141,30 @@ destinations:
 conf:
   http:
     requests: 4
-    interval: 5s
+    interval: 10s
 ---
 type: RateLimit
 mesh: default
 name: rate-limit-web
 sources:
 - match:
-    kuma.io/service: "webs"
+    kuma.io/service: "web"
 destinations:
 - match:
     kuma.io/service: echo-server_kuma-test_svc_8080
 conf:
   http:
     requests: 1
-    interval: 5s
+    interval: 10s
 `
 		err := YamlUniversal(specificRateLimitPolicy)(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(verifyRateLimit("demo-client", 5), "60s", "5s").Should(Equal(4))
-		time.Sleep(6 * time.Second)
-		Expect(verifyRateLimit("demo-client", 5)()).To(Equal(4))
+		Eventually(verifyRateLimit("demo-client", 5), "30s", "1s").Should(Equal(4))
 
 		// catch-all RateLimit still works
 		Eventually(verifyRateLimit("web", 5), "60s", "5s").Should(Equal(1))
-		time.Sleep(6 * time.Second)
-		Expect(verifyRateLimit("web", 5)()).To(Equal(1))
+		Eventually(verifyRateLimit("web", 5), "30s", "1s").Should(Equal(1))
 	})
 }
