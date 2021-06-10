@@ -59,14 +59,12 @@ type snapshotInfo struct {
 	generation time.Time
 }
 
-func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey, proxyType mesh_proto.DpType) error {
-	proxyID := core_xds.FromResourceKey(proxyType, dataplaneId).String()
-
+func (d *DataplaneReconciler) Reconcile(proxyId *core_xds.ProxyId) error {
 	dataplane := mesh_core.NewDataplaneResource()
-	if err := d.readOnlyResManager.Get(context.Background(), dataplane, core_store.GetBy(dataplaneId)); err != nil {
+	if err := d.readOnlyResManager.Get(context.Background(), dataplane, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
 		if core_store.IsResourceNotFound(err) {
-			sdsServerLog.V(1).Info("Dataplane not found. Clearing the Snapshot.", "dataplaneId", dataplaneId)
-			if err := d.Cleanup(dataplaneId, proxyType); err != nil {
+			sdsServerLog.V(1).Info("Dataplane not found. Clearing the Snapshot.", "dataplaneId", proxyId.ToResourceKey())
+			if err := d.Cleanup(proxyId); err != nil {
 				return errors.Wrap(err, "could not cleanup snapshot")
 			}
 			return nil
@@ -80,46 +78,45 @@ func (d *DataplaneReconciler) Reconcile(dataplaneId core_model.ResourceKey, prox
 	}
 
 	if !mesh.MTLSEnabled() {
-		sdsServerLog.V(1).Info("mTLS for Mesh disabled. Clearing the Snapshot.", "dataplaneId", dataplaneId)
-		if err := d.Cleanup(dataplaneId, proxyType); err != nil {
+		sdsServerLog.V(1).Info("mTLS for Mesh disabled. Clearing the Snapshot.", "dataplaneId", proxyId.ToResourceKey())
+		if err := d.Cleanup(proxyId); err != nil {
 			return errors.Wrap(err, "could not cleanup snapshot")
 		}
 		return nil
 	}
 
-	generateSnapshot, reason, err := d.shouldGenerateSnapshot(proxyID, mesh, dataplane)
+	generateSnapshot, reason, err := d.shouldGenerateSnapshot(proxyId.String(), mesh, dataplane)
 	if err != nil {
 		return err
 	}
 
 	if generateSnapshot {
-		sdsServerLog.Info("Generating the Snapshot.", "dataplaneId", dataplaneId, "reason", reason)
+		sdsServerLog.Info("Generating the Snapshot.", "dataplaneId", proxyId.ToResourceKey(), "reason", reason)
 		snapshot, info, err := d.generateSnapshot(dataplane, mesh)
 		if err != nil {
 			return err
 		}
 
 		d.sdsMetrics.CertGenerations(envoy_common.APIV3).Inc()
-		if err := d.cache.SetSnapshot(proxyID, snapshot); err != nil {
+		if err := d.cache.SetSnapshot(proxyId.String(), snapshot); err != nil {
 			return err
 		}
-		d.setSnapshotInfo(proxyID, info)
+		d.setSnapshotInfo(proxyId.String(), info)
 
-		if err := d.updateInsights(dataplaneId, info); err != nil {
+		if err := d.updateInsights(proxyId.ToResourceKey(), info); err != nil {
 			// do not stop updating Envoy even if insights update fails
-			sdsServerLog.Error(err, "Could not update Dataplane Insights", "dataplaneId", dataplaneId)
+			sdsServerLog.Error(err, "Could not update Dataplane Insights", "dataplaneId", proxyId.ToResourceKey())
 		}
 	}
 	return nil
 }
 
-func (d *DataplaneReconciler) Cleanup(dataplaneId core_model.ResourceKey, proxyType mesh_proto.DpType) error {
-	proxyID := core_xds.FromResourceKey(proxyType, dataplaneId).String()
-	if err := d.cache.SetSnapshot(proxyID, envoy_cache.Snapshot{}); err != nil {
+func (d *DataplaneReconciler) Cleanup(proxyId *core_xds.ProxyId) error {
+	if err := d.cache.SetSnapshot(proxyId.String(), envoy_cache.Snapshot{}); err != nil {
 		return err
 	}
 	d.Lock()
-	delete(d.proxySnapshotInfo, proxyID)
+	delete(d.proxySnapshotInfo, proxyId.String())
 	d.Unlock()
 	return nil
 }

@@ -116,13 +116,13 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 
 	// infer Dataplane id
 	if state.dataplaneId == (core_model.ResourceKey{}) {
-		if id, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
-			state.dataplaneId = core_model.ResourceKey{Mesh: id.Mesh, Name: id.Name}
+		if proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
+			state.dataplaneId = proxyId.ToResourceKey()
 			if err := readVersion(req.Metadata(), state.subscription.Version); err != nil {
 				statusTrackerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Metadata())
 			}
 			// kick off async Dataplane status flusher
-			if id.ProxyType != mesh_proto.IngressDpType {
+			if proxyId.Type() != mesh_proto.IngressDpType {
 				go c.createStatusSink(state).Start(state.stop)
 			}
 		} else {

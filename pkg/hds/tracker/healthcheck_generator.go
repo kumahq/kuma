@@ -12,7 +12,6 @@ import (
 	dp_server "github.com/kumahq/kuma/pkg/config/dp-server"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
-	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/hds/cache"
@@ -33,13 +32,12 @@ func NewSnapshotGenerator(readOnlyResourceManager manager.ReadOnlyResourceManage
 }
 
 func (g *SnapshotGenerator) GenerateSnapshot(node *envoy_core.Node) (util_xds_v3.Snapshot, error) {
-	proxyID, err := xds.ParseProxyIdFromString(node.Id)
+	proxyId, err := xds.ParseProxyIdFromString(node.Id)
 	if err != nil {
 		return nil, err
 	}
-	dpKey := model.ResourceKey{Mesh: proxyID.Mesh, Name: proxyID.Name}
 	dp := mesh.NewDataplaneResource()
-	if err := g.readOnlyResourceManager.Get(context.Background(), dp, store.GetBy(dpKey)); err != nil {
+	if err := g.readOnlyResourceManager.Get(context.Background(), dp, store.GetBy(proxyId.ToResourceKey())); err != nil {
 		return nil, err
 	}
 

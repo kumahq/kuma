@@ -20,13 +20,30 @@ import (
 type StreamID = int64
 
 type ProxyId struct {
-	Mesh      string
-	Name      string
-	ProxyType mesh_proto.DpType
+	mesh      string
+	name      string
+	proxyType mesh_proto.DpType
 }
 
-func (id ProxyId) String() string {
-	return fmt.Sprintf("%s.%s:%s", id.Mesh, id.Name, id.ProxyType)
+func (id *ProxyId) String() string {
+	if id.proxyType == "" {
+		return fmt.Sprintf("%s.%s", id.mesh, id.name)
+	}
+	return fmt.Sprintf("%s.%s:%s", id.mesh, id.name, id.proxyType)
+}
+
+func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
+	return core_model.ResourceKey{
+		Name: id.name,
+		Mesh: id.mesh,
+	}
+}
+
+func (id *ProxyId) Type() mesh_proto.DpType {
+	if id.proxyType == "" {
+		return mesh_proto.RegularDpType
+	}
+	return id.proxyType
 }
 
 // ServiceName is a convenience type alias to clarify the meaning of string value.
@@ -204,9 +221,9 @@ func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
 
 func BuildProxyId(mesh, name string, proxyType mesh_proto.DpType) *ProxyId {
 	return &ProxyId{
-		Name:      name,
-		Mesh:      mesh,
-		ProxyType: proxyType,
+		name:      name,
+		mesh:      mesh,
+		proxyType: proxyType,
 	}
 }
 
@@ -220,7 +237,6 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 		if err != nil {
 			return nil, err
 		}
-		proxyId.ProxyType = mesh_proto.RegularDpType
 		return proxyId, nil
 	}
 	proxyType := mesh_proto.DpType(parts[1])
@@ -233,9 +249,9 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 		return nil, errors.New("mesh must not be empty")
 	}
 	return &ProxyId{
-		Mesh:      mesh,
-		Name:      name,
-		ProxyType: proxyType,
+		mesh:      mesh,
+		name:      name,
+		proxyType: proxyType,
 	}, nil
 }
 
@@ -256,22 +272,15 @@ func ParseProxyIdFromStringOldFormat(id string) (*ProxyId, error) {
 		return nil, errors.New("name must not be empty")
 	}
 	return &ProxyId{
-		Mesh: mesh,
-		Name: name,
+		mesh: mesh,
+		name: name,
 	}, nil
-}
-
-func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
-	return core_model.ResourceKey{
-		Name: id.Name,
-		Mesh: id.Mesh,
-	}
 }
 
 func FromResourceKey(proxyType mesh_proto.DpType, key core_model.ResourceKey) ProxyId {
 	return ProxyId{
-		Mesh:      key.Mesh,
-		Name:      key.Name,
-		ProxyType: proxyType,
+		mesh:      key.Mesh,
+		name:      key.Name,
+		proxyType: proxyType,
 	}
 }

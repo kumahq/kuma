@@ -10,10 +10,7 @@ import (
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 	"github.com/go-logr/logr"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	"github.com/kumahq/kuma/pkg/core"
-	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	sds_ca "github.com/kumahq/kuma/pkg/sds/ca"
@@ -75,7 +72,7 @@ func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *sds_metrics.Metrics) error
 }
 
 func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetrics *sds_metrics.Metrics) (util_xds.Callbacks, error) {
-	return xds_callbacks.NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64, proxyType mesh_proto.DpType) util_watchdog.Watchdog {
+	return xds_callbacks.NewDataplaneSyncTracker(func(proxyId *core_xds.ProxyId, streamId int64) util_watchdog.Watchdog {
 		return &util_watchdog.SimpleWatchdog{
 			NewTicker: func() *time.Ticker {
 				sdsMetrics.IncrementActiveWatchdogs(envoy_common.APIV3)
@@ -86,15 +83,15 @@ func syncTracker(reconciler *DataplaneReconciler, refresh time.Duration, sdsMetr
 				defer func() {
 					sdsMetrics.SdsGeneration(envoy_common.APIV3).Observe(float64(core.Now().Sub(start).Milliseconds()))
 				}()
-				return reconciler.Reconcile(dataplaneId, proxyType)
+				return reconciler.Reconcile(proxyId)
 			},
 			OnError: func(err error) {
 				sdsMetrics.SdsGenerationsErrors(envoy_common.APIV3).Inc()
 				sdsServerLog.Error(err, "OnTick() failed")
 			},
 			OnStop: func() {
-				if err := reconciler.Cleanup(dataplaneId, proxyType); err != nil {
-					sdsServerLog.Error(err, "could not cleanup sync", "dataplane", dataplaneId)
+				if err := reconciler.Cleanup(proxyId); err != nil {
+					sdsServerLog.Error(err, "could not cleanup sync", "dataplane", proxyId.ToResourceKey())
 				}
 				sdsMetrics.DecrementActiveWatchdogs(envoy_common.APIV3)
 			},

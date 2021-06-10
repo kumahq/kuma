@@ -208,7 +208,7 @@ func (b *bootstrapGenerator) zoneIngressFor(ctx context.Context, request types.B
 		return zoneIngress, nil
 	} else {
 		zoneIngress := core_mesh.NewZoneIngressResource()
-		if err := b.resManager.Get(ctx, zoneIngress, core_store.GetByKey(proxyId.Name, core_model.NoMesh)); err != nil {
+		if err := b.resManager.Get(ctx, zoneIngress, core_store.GetBy(proxyId.ToResourceKey())); err != nil {
 			return nil, err
 		}
 		return zoneIngress, nil

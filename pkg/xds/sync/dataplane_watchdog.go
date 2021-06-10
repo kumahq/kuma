@@ -12,7 +12,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	"github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
@@ -38,13 +38,13 @@ type DataplaneWatchdog struct {
 	proxyTypeSettled bool
 }
 
-func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, key core_model.ResourceKey, streamId int64, proxyType mesh_proto.DpType) *DataplaneWatchdog {
+func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, proxyId *core_xds.ProxyId, streamId int64) *DataplaneWatchdog {
 	return &DataplaneWatchdog{
 		DataplaneWatchdogDependencies: deps,
-		key:                           key,
+		key:                           proxyId.ToResourceKey(),
 		streamId:                      streamId,
 		log:                           core.Log.WithValues("key", "key", "streamID", streamId),
-		dpType:                        proxyType,
+		dpType:                        proxyId.Type(),
 		proxyTypeSettled:              false,
 	}
 }
@@ -75,7 +75,7 @@ func (d *DataplaneWatchdog) Sync() error {
 }
 
 func (d *DataplaneWatchdog) Cleanup() error {
-	proxyID := xds.FromResourceKey(d.dpType, d.key)
+	proxyID := core_xds.FromResourceKey(d.dpType, d.key)
 	switch d.dpType {
 	case mesh_proto.RegularDpType, mesh_proto.GatewayDpType:
 		return d.dataplaneReconciler.Clear(&proxyID)
