@@ -4,10 +4,11 @@ FROM envoyproxy/envoy-alpine:v1.17.1
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/kuma-dp/kuma-dp /usr/bin
 ADD $KUMA_ROOT/build/artifacts-linux-amd64/coredns/coredns /usr/bin
 
-RUN mkdir /kuma
-COPY $KUMA_ROOT/tools/releases/templates/LICENSE /kuma
-COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma
-COPY $KUMA_ROOT/tools/releases/templates/README /kuma
+COPY $KUMA_ROOT/tools/releases/templates/LICENSE \
+    $KUMA_ROOT/tools/releases/templates/README \
+    /kuma/
+
+COPY $KUMA_ROOT/tools/releases/templates/NOTICE /kuma/
 
 USER nobody:nobody
 
