@@ -1,3 +1,3 @@
-MESH      DATAPLANES   TRAFFIC PERMISSIONS   TRAFFIC ROUTES   CIRCUIT BREAKERS   HEALTH CHECKS   FAULT INJECTIONS   EXTERNAL SERVICES   TRAFFIC TRACES   TRAFFIC LOGS   PROXY TEMPLATES
-default   90/100       7                     2                5                  4               6                  9                   1                3              8
-mesh-1    90/100       70                    20               50                 40              60                 90                  10               30             80
+MESH      DATAPLANES   TRAFFIC PERMISSIONS   TRAFFIC ROUTES   CIRCUIT BREAKERS   HEALTH CHECKS   FAULT INJECTIONS   EXTERNAL SERVICES   TRAFFIC TRACES   TRAFFIC LOGS   PROXY TEMPLATES   RATE LIMITS
+default   90/100       7                     2                5                  4               6                  9                   1                3              8                 10
+mesh-1    90/100       70                    20               50                 40              60                 90                  10               30             80                100

@@ -45,6 +45,10 @@
                   "responsesSent": "2",
                   "responsesRejected": "1"
                 },
+                "RateLimit": {
+                  "responsesSent": "2",
+                  "responsesRejected": "1"
+                },
                 "Secret": {
                   "responsesSent": "2",
                   "responsesRejected": "1"

@@ -26,7 +26,7 @@ func KumaStandalone() {
 		universal = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
 		err = universal.VerifyKuma()

@@ -22,6 +22,7 @@ var (
 		mesh.HealthCheckType,
 		mesh.MeshType,
 		mesh.ProxyTemplateType,
+		mesh.RateLimitType,
 		mesh.RetryType,
 		mesh.TimeoutType,
 		mesh.TrafficLogType,

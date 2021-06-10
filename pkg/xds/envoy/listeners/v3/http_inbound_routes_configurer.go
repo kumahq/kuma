@@ -10,19 +10,20 @@ import (
 	envoy_routes "github.com/kumahq/kuma/pkg/xds/envoy/routes"
 )
 
-type HttpInboundRouteConfigurer struct {
+type HttpInboundRoutesConfigurer struct {
 	Service string
-	Route   envoy_common.Route
+	Routes  envoy_common.Routes
 }
 
-func (c *HttpInboundRouteConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
+func (c *HttpInboundRoutesConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {
 	routeName := envoy_names.GetInboundRouteName(c.Service)
+
 	routeConfig, err := envoy_routes.NewRouteConfigurationBuilder(envoy_common.APIV3).
 		Configure(envoy_routes.CommonRouteConfiguration(routeName)).
 		Configure(envoy_routes.ResetTagsHeader()).
 		Configure(envoy_routes.VirtualHost(envoy_routes.NewVirtualHostBuilder(envoy_common.APIV3).
 			Configure(envoy_routes.CommonVirtualHost(c.Service)).
-			Configure(envoy_routes.Routes(envoy_common.Routes{c.Route})))).
+			Configure(envoy_routes.Routes(c.Routes)))).
 		Build()
 	if err != nil {
 		return err

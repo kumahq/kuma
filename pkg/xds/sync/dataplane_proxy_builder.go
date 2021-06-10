@@ -3,6 +3,8 @@ package sync
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/core/ratelimits"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -31,6 +33,7 @@ type DataplaneProxyBuilder struct {
 	PermissionMatcher     permissions.TrafficPermissionsMatcher
 	LogsMatcher           logs.TrafficLogsMatcher
 	FaultInjectionMatcher faultinjections.FaultInjectionMatcher
+	RateLimitMatcher      ratelimits.RateLimitMatcher
 
 	Zone       string
 	apiVersion envoy.APIVersion
@@ -161,6 +164,11 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		return nil, err
 	}
 
+	ratelimits, err := p.RateLimitMatcher.Match(ctx, dataplane, meshContext.Resource)
+	if err != nil {
+		return nil, err
+	}
+
 	matchedPolicies := &xds.MatchedPolicies{
 		TrafficPermissions: matchedPermissions,
 		Logs:               matchedLogs,
@@ -171,6 +179,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		FaultInjections:    faultInjection,
 		Retries:            retries,
 		Timeouts:           timeouts,
+		RateLimits:         ratelimits,
 	}
 	return matchedPolicies, nil
 }

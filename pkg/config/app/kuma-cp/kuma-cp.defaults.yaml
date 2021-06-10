@@ -31,7 +31,7 @@ store:
     maxOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
     # Maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
-    maxIdleConnections: 0  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS   
+    maxIdleConnections: 0  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
@@ -100,8 +100,8 @@ monitoringAssignmentServer:
     - v1
   # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
-  # Timeout for a single HTTP fetch-based discovery
-  fetchTimeout: 30s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_FETCH_TIMEOUT
+  # The default timeout for a single fetch-based discovery request, if not specified
+  defaultFetchTimeout: 30s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT
 
 # Envoy XDS server configuration
 xdsServer:

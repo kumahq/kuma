@@ -95,6 +95,32 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: retries.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: Retry
+    plural: retries
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: Retry is the Schema for the retries API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -482,12 +508,12 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: retries.kuma.io
+  name: ratelimits.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: Retry
-    plural: retries
+    kind: RateLimit
+    plural: ratelimits
   scope: Cluster
   versions:
     - name: v1alpha1
@@ -495,7 +521,7 @@ spec:
       storage: true
       schema:
         openAPIV3Schema:
-          description: Retry is the Schema for the retries API
+          description: RateLimit is the Schema for the ratelimits API
           properties:
             mesh:
               type: string
@@ -552,6 +578,7 @@ rules:
       - meshinsights
       - serviceinsights
       - proxytemplates
+      - ratelimits
       - trafficpermissions
       - trafficroutes
       - timeouts
@@ -744,7 +771,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 737d1358e24137cdf1b4c543251d5cf58dcec1cb9b8e796fcbf73aa46e3bc857
-        checksum/tls-secrets: 405abca2dbbf4871cc12bb466a117c6646fb0ef57115a7b6c2de9087368ad920
+        checksum/tls-secrets: b6128110c0171fabe5ce618b2fc3e8fe8b6cdac7e1a8eb256b7a674c714dd874
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -989,6 +1016,7 @@ webhooks:
           - healthchecks
           - retries
           - proxytemplates
+          - ratelimits
           - trafficlogs
           - trafficpermissions
           - trafficroutes
@@ -1054,6 +1082,7 @@ webhooks:
           - retries
           - meshes
           - proxytemplates
+          - ratelimits
           - trafficlogs
           - trafficpermissions
           - trafficroutes

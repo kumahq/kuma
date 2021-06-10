@@ -108,7 +108,7 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: demo-client
+      kuma.io/service: %s
       team: client-owners
   outbound:
   - port: 4000
@@ -134,7 +134,7 @@ networking:
     serviceProbe:
       tcp: {}
     tags:
-      kuma.io/service: demo-client
+      kuma.io/service: %s
       team: client-owners
   outbound:
   - port: 4000
@@ -157,7 +157,7 @@ networking:
   inbound:
   - port: %s
     tags:
-      kuma.io/service: demo-client
+      kuma.io/service: %s
       team: client-owners
   transparentProxying:
     redirectPortInbound: %s

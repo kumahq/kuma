@@ -18,6 +18,8 @@ type OutboundConnectionPolicyMap map[core_xds.ServiceName]ConnectionPolicy
 
 type InboundConnectionPolicyMap map[mesh_proto.InboundInterface]ConnectionPolicy
 
+type InboundConnectionPoliciesMap map[mesh_proto.InboundInterface][]ConnectionPolicy
+
 // DataplanePolicy is a Policy that is applied on a selected Dataplane
 type DataplanePolicy interface {
 	core_model.Resource
