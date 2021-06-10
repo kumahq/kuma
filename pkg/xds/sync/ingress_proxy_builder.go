@@ -4,7 +4,6 @@ import (
 	"context"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -73,7 +72,6 @@ func (p *IngressProxyBuilder) getZoneIngress(key core_model.ResourceKey) (*core_
 		return zoneIngress, nil
 	}
 	if !core_store.IsResourceNotFound(err) {
-		core.Log.WithName("TEST").Error(err, "")
 		return nil, err
 	}
 

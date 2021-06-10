@@ -101,12 +101,9 @@ func fillIngressOutbounds(
 	mesh *mesh_core.MeshResource,
 ) uint32 {
 	ingressInstances := map[string]bool{}
-	core.Log.WithName("TEST").Info("fillIngressOutbounds", "zoneIngresses", zoneIngresses)
 
 	for _, zi := range zoneIngresses {
-		core.Log.WithName("TEST").Info("fillIngressOutbounds", "zi", zi)
 		if !zi.IsRemoteIngress(zone) {
-			core.Log.WithName("TEST").Info("fillIngressOutbounds, not remote")
 			continue
 		}
 		if !mesh.MTLSEnabled() {
@@ -121,9 +118,7 @@ func fillIngressOutbounds(
 		if ingressInstances[ingressCoordinates] {
 			continue // many Ingress instances can be placed in front of one load balancer (all instances can have the same public address and port). In this case we only need one Instance avoiding creating unnecessary duplicated endpoints
 		}
-		core.Log.WithName("TEST").Info("fillIngressOutbounds", "zi", zi, "len", len(zi.Spec.AvailableServices))
 		for _, service := range zi.Spec.GetAvailableServices() {
-			core.Log.WithName("TEST").Info("fillIngressOutbounds", "zi", zi, "availableService", service)
 			if service.Mesh != mesh.GetMeta().GetName() {
 				continue
 			}

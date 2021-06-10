@@ -111,7 +111,6 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 				}))
 			}
 			if rs.GetItemType() == mesh.ZoneIngressType {
-				core.Log.WithName("TEST").Info("OnResourcesReceived ZoneIngress", "resources", rs)
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
 					return r.(*mesh.ZoneIngressResource).IsRemoteIngress(localZone)
 				}))

@@ -10,7 +10,6 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -89,7 +88,6 @@ func (a *authCallbacks) OnStreamRequest(streamID core_xds.StreamID, req util_xds
 		return err
 	}
 	err = a.authenticate(credential, req)
-	core.Log.WithName("TEST").Error(err, "auth.OnStreamRequest")
 	if err != nil {
 		return err
 	}

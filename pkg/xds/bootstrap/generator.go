@@ -17,8 +17,6 @@ import (
 	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/core"
-
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -80,7 +78,12 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		return nil, "", err
 	}
 
-	switch mesh_proto.DpType(request.ProxyType) {
+	proxyType := mesh_proto.DpType(request.ProxyType)
+	if request.ProxyType == "" {
+		proxyType = mesh_proto.RegularDpType
+	}
+
+	switch proxyType {
 	case mesh_proto.IngressDpType:
 		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name, mesh_proto.IngressDpType)
 		zoneIngress, err := b.zoneIngressFor(ctx, request, proxyId)
@@ -106,7 +109,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		}
 		return b.generateFor(*proxyId, request, service, adminPort)
 	default:
-		return nil, "", nil
+		return nil, "", errors.Errorf("unknown proxy type %v", proxyType)
 	}
 }
 
@@ -205,9 +208,7 @@ func (b *bootstrapGenerator) zoneIngressFor(ctx context.Context, request types.B
 		return zoneIngress, nil
 	} else {
 		zoneIngress := core_mesh.NewZoneIngressResource()
-		core.Log.WithName("TEST").Info("zoneIngressFor", "key", proxyId.Name)
 		if err := b.resManager.Get(ctx, zoneIngress, core_store.GetByKey(proxyId.Name, core_model.NoMesh)); err != nil {
-			core.Log.WithName("TEST").Error(err, "zoneIngressFor")
 			return nil, err
 		}
 		return zoneIngress, nil
