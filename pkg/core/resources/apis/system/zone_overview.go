@@ -76,9 +76,11 @@ func (l *ZoneOverviewResourceList) GetItems() []model.Resource {
 func (l *ZoneOverviewResourceList) GetItemType() model.ResourceType {
 	return ZoneOverviewType
 }
+
 func (l *ZoneOverviewResourceList) NewItem() model.Resource {
 	return NewZoneOverviewResource()
 }
+
 func (l *ZoneOverviewResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ZoneOverviewResource); ok {
 		l.Items = append(l.Items, trr)

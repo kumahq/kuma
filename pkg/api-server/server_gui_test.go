@@ -124,11 +124,11 @@ var _ = Describe("GUI Server", func() {
 			},
 				Entry("should not serve index.html without path", testCase{
 					urlPath:  "/gui",
-					expected: "GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP.",
+					expected: "GUI is disabled. If this is a Zone CP, please check the GUI on the Global CP.",
 				}),
 				Entry("should not serve index.html with / path", testCase{
 					urlPath:  "/gui/",
-					expected: "GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP.",
+					expected: "GUI is disabled. If this is a Zone CP, please check the GUI on the Global CP.",
 				}),
 			)
 		})

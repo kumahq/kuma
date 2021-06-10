@@ -144,7 +144,7 @@ func (o *KumactlOptions) KumactlInstallCP(mode string, args ...string) (string, 
 
 	cmd = append(cmd, "--mode", mode)
 	switch mode {
-	case core.Remote:
+	case core.Zone:
 		cmd = append(cmd, "--zone", o.CPName)
 		fallthrough
 	case core.Global:

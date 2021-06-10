@@ -118,7 +118,8 @@ message Dataplane {
 
       // DEPRECATED: use networking.outbound[].tags
       // Service name.
-      string service = 2 [ (validate.rules).string.hostname = true ];
+      string service = 2
+          [ (validate.rules).string.hostname = true, deprecated = true ];
 
       // Tags
       map<string, string> tags = 5;

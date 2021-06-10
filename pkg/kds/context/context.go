@@ -18,11 +18,11 @@ import (
 var log = core.Log.WithName("kds")
 
 type Context struct {
-	RemoteClientCtx       context.Context
+	ZoneClientCtx         context.Context
 	GlobalServerCallbacks []mux.Callbacks
 	GlobalProvidedFilter  reconcile.ResourceFilter
-	RemoteProvidedFilter  reconcile.ResourceFilter
-	// Configs contains the names of system.ConfigResource that will be transferred from Global to Remote
+	ZoneProvidedFilter    reconcile.ResourceFilter
+	// Configs contains the names of system.ConfigResource that will be transferred from Global to Zone
 	Configs map[string]bool
 }
 
@@ -31,9 +31,9 @@ func DefaultContext(manager manager.ResourceManager, zone string) *Context {
 		config_manager.ClusterIdConfigKey: true,
 	}
 	return &Context{
-		RemoteClientCtx:      context.Background(),
+		ZoneClientCtx:        context.Background(),
 		GlobalProvidedFilter: GlobalProvidedFilter(manager, configs),
-		RemoteProvidedFilter: RemoteProvidedFilter(zone),
+		ZoneProvidedFilter:   ZoneProvidedFilter(zone),
 		Configs:              configs,
 	}
 }
@@ -66,8 +66,8 @@ func GlobalProvidedFilter(rm manager.ResourceManager, configs map[string]bool) r
 	}
 }
 
-// RemoteProvidedFilter filter Resources provided by Remote, specifically Ingresses that belongs to another zones
-func RemoteProvidedFilter(clusterName string) reconcile.ResourceFilter {
+// ZoneProvidedFilter filter Resources provided by Zone, specifically Ingresses that belongs to another zones
+func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
 	return func(_ string, r model.Resource) bool {
 		if r.GetType() == mesh.DataplaneType {
 			return clusterName == util.ZoneTag(r)

@@ -16,7 +16,7 @@ func Setup(rt core_runtime.Runtime) error {
 			return err
 		}
 		return nil
-	case config_core.Remote:
+	case config_core.Zone:
 		if err := rt.Add(reader); err != nil {
 			return err
 		}

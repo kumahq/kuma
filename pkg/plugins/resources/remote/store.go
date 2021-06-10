@@ -43,6 +43,7 @@ func (s *remoteStore) Create(ctx context.Context, res model.Resource, fs ...stor
 	}
 	return nil
 }
+
 func (s *remoteStore) Update(ctx context.Context, res model.Resource, fs ...store.UpdateOptionsFunc) error {
 	meta := rest.ResourceMeta{
 		Type: string(res.GetType()),
@@ -91,6 +92,7 @@ func (s *remoteStore) upsert(ctx context.Context, res model.Resource, meta rest.
 	})
 	return nil
 }
+
 func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...store.DeleteOptionsFunc) error {
 	opts := store.NewDeleteOptions(fs...)
 	resourceApi, err := s.api.GetResourceApi(res.GetType())
@@ -117,6 +119,7 @@ func (s *remoteStore) Delete(ctx context.Context, res model.Resource, fs ...stor
 	}
 	return nil
 }
+
 func (s *remoteStore) Get(ctx context.Context, res model.Resource, fs ...store.GetOptionsFunc) error {
 	resourceApi, err := s.api.GetResourceApi(res.GetType())
 	if err != nil {

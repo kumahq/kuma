@@ -1,4 +1,4 @@
-package remote
+package zone
 
 import (
 	"github.com/pkg/errors"
@@ -22,7 +22,7 @@ import (
 )
 
 var (
-	kdsRemoteLog  = core.Log.WithName("kds-remote")
+	kdsZoneLog    = core.Log.WithName("kds-zone")
 	ProvidedTypes = []model.ResourceType{
 		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
@@ -47,17 +47,17 @@ var (
 )
 
 func Setup(rt core_runtime.Runtime) error {
-	zone := rt.Config().Multizone.Remote.Zone
-	kdsServer, err := kds_server.New(kdsRemoteLog, rt, ProvidedTypes,
-		zone, rt.Config().Multizone.Remote.KDS.RefreshInterval,
-		rt.KDSContext().RemoteProvidedFilter, false)
+	zone := rt.Config().Multizone.Zone.Name
+	kdsServer, err := kds_server.New(kdsZoneLog, rt, ProvidedTypes,
+		zone, rt.Config().Multizone.Zone.KDS.RefreshInterval,
+		rt.KDSContext().ZoneProvidedFilter, false)
 	if err != nil {
 		return err
 	}
-	resourceSyncer := sync_store.NewResourceSyncer(kdsRemoteLog, rt.ResourceStore())
+	resourceSyncer := sync_store.NewResourceSyncer(kdsZoneLog, rt.ResourceStore())
 	kubeFactory := resources_k8s.NewSimpleKubeFactory()
 	onSessionStarted := mux.OnSessionStartedFunc(func(session mux.Session) error {
-		log := kdsRemoteLog.WithValues("peer-id", session.PeerID())
+		log := kdsZoneLog.WithValues("peer-id", session.PeerID())
 		log.Info("new session created")
 		go func() {
 			if err := kdsServer.StreamKumaResources(session.ServerStream()); err != nil {
@@ -75,14 +75,14 @@ func Setup(rt core_runtime.Runtime) error {
 		return nil
 	})
 	muxClient := mux.NewClient(
-		rt.Config().Multizone.Remote.GlobalAddress,
+		rt.Config().Multizone.Zone.GlobalAddress,
 		zone,
 		onSessionStarted,
-		*rt.Config().Multizone.Remote.KDS,
+		*rt.Config().Multizone.Zone.KDS,
 		rt.Metrics(),
-		rt.KDSContext().RemoteClientCtx,
+		rt.KDSContext().ZoneClientCtx,
 	)
-	return rt.Add(component.NewResilientComponent(kdsRemoteLog.WithName("mux-client"), muxClient))
+	return rt.Add(component.NewResilientComponent(kdsZoneLog.WithName("mux-client"), muxClient))
 }
 
 func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sStore bool, localZone string, kubeFactory resources_k8s.KubeFactory) *kds_client.Callbacks {
@@ -102,7 +102,7 @@ func Callbacks(rt core_runtime.Runtime, syncer sync_store.ResourceSyncer, k8sSto
 			}
 			if rs.GetItemType() == mesh.DataplaneType {
 				return syncer.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {
-					return r.(*mesh.DataplaneResource).Spec.IsRemoteIngress(localZone)
+					return r.(*mesh.DataplaneResource).Spec.IsZoneIngress(localZone)
 				}))
 			}
 			if rs.GetItemType() == system.ConfigType {
