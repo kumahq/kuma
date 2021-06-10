@@ -435,6 +435,8 @@ Available Commands:
   meshes              Show Mesh
   proxytemplate       Show a single ProxyTemplate resource
   proxytemplates      Show ProxyTemplate
+  rate-limit          Show a single RateLimit resource
+  rate-limits         Show RateLimit
   retries             Show Retry
   retry               Show a single Retry resource
   secret              Show a single Secret resource
@@ -517,6 +519,27 @@ Usage:
 
 Flags:
   -h, --help            help for healthchecks
+      --offset string   the offset that indicates starting element of the resources list to retrieve
+      --size int        maximum number of elements to return
+
+Global Flags:
+      --config-file string   path to the configuration file to use
+      --log-level string     log level: one of off|info|debug (default "off")
+  -m, --mesh string          mesh to use (default "default")
+      --no-config            if set no config file and config directory will be created
+  -o, --output string        output format: one of table|yaml|json (default "table")
+```
+
+### kumactl get rate-limits
+
+```
+Show RateLimit entities.
+
+Usage:
+  kumactl get rate-limits [flags]
+
+Flags:
+  -h, --help            help for rate-limits
       --offset string   the offset that indicates starting element of the resources list to retrieve
       --size int        maximum number of elements to return
 

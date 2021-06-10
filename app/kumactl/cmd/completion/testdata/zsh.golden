@@ -357,6 +357,8 @@ function _kumactl_get {
       "meshes:Show Mesh"
       "proxytemplate:Show a single ProxyTemplate resource"
       "proxytemplates:Show ProxyTemplate"
+      "rate-limit:Show a single RateLimit resource"
+      "rate-limits:Show RateLimit"
       "retries:Show Retry"
       "retry:Show a single Retry resource"
       "secret:Show a single Secret resource"
@@ -426,6 +428,12 @@ function _kumactl_get {
     ;;
   proxytemplates)
     _kumactl_get_proxytemplates
+    ;;
+  rate-limit)
+    _kumactl_get_rate-limit
+    ;;
+  rate-limits)
+    _kumactl_get_rate-limits
     ;;
   retries)
     _kumactl_get_retries
@@ -626,6 +634,26 @@ function _kumactl_get_proxytemplate {
 }
 
 function _kumactl_get_proxytemplates {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_rate-limit {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_rate-limits {
   _arguments \
     '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
     '--size[maximum number of elements to return]:' \

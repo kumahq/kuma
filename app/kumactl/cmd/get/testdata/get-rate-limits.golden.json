@@ -1,0 +1,52 @@
+{
+  "total": 2,
+  "items": [
+    {
+      "mesh": "default",
+      "name": "web1-to-backend1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "sources": [
+        {
+          "match": {
+            "service": "web1",
+            "version": "1.0"
+          }
+        }
+      ],
+      "destinations": [
+        {
+          "match": {
+            "service": "backend1",
+            "env": "dev"
+          }
+        }
+      ],
+      "type": "RateLimit"
+    },
+    {
+      "mesh": "default",
+      "name": "web2-to-backend2",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "sources": [
+        {
+          "match": {
+            "service": "web2",
+            "version": "1.0"
+          }
+        }
+      ],
+      "destinations": [
+        {
+          "match": {
+            "service": "backend2",
+            "env": "dev"
+          }
+        }
+      ],
+      "type": "RateLimit"
+    }
+  ],
+  "next": null
+}

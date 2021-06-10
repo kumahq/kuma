@@ -3,10 +3,11 @@ package inspect_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -98,6 +99,10 @@ var _ = Describe("kumactl inspect zones", func() {
 											ResponsesRejected: 1,
 										},
 										"HealthCheck": {
+											ResponsesSent:     2,
+											ResponsesRejected: 1,
+										},
+										"RateLimit": {
 											ResponsesSent:     2,
 											ResponsesRejected: 1,
 										},
@@ -262,13 +267,7 @@ var _ = Describe("kumactl inspect zones", func() {
 				err := rootCmd.Execute()
 				// then
 				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(buf.String()).To(given.matcher(expected))
+				Expect(buf.String()).To(matchers.MatchGoldenEqual(filepath.Join("testdata", given.goldenFile)))
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",
