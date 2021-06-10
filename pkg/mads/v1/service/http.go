@@ -4,6 +4,7 @@ import (
 	"context"
 	"io/ioutil"
 	"net/http"
+	"time"
 
 	"github.com/emicklei/go-restful"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
@@ -59,10 +60,29 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 
 	discoveryReq.TypeUrl = mads_v1.MonitoringAssignmentType
 
-	timeout := s.config.DefaultFetchTimeout
+	timeout, err := s.parseFetchTimeout(req.QueryParameter("fetch-timeout"))
+	if err != nil {
+		parseError := rest_error_types.Error{
+			Title:   "Can not parse fetch-timeout",
+			Details: err.Error(),
+		}
 
-	ctx, cancelFunc := context.WithTimeout(req.Request.Context(), timeout)
-	defer cancelFunc()
+		if err := res.WriteHeaderAndJson(http.StatusBadRequest, parseError, restful.MIME_JSON); err != nil {
+			rest_errors.HandleError(res, err, "Could encode error")
+		}
+		return
+	}
+
+	// If the timeout is 0 or less, this indicates a synchronous fetch
+	// of the latest snapshot, without polling
+	var ctx context.Context
+	if timeout <= 0 {
+		ctx = req.Request.Context()
+	} else {
+		var cancelFunc context.CancelFunc
+		ctx, cancelFunc = context.WithTimeout(req.Request.Context(), timeout)
+		defer cancelFunc()
+	}
 
 	discoveryRes, err := s.server.FetchMonitoringAssignments(ctx, discoveryReq)
 	if err != nil {
@@ -87,4 +107,14 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 		rest_errors.HandleError(res, err, "Could write DiscoveryResponse")
 		return
 	}
+}
+
+// parseFetchTimeout either parses the provided fetch-timeout string according to time.ParseDuration
+// or, if no timeout value was supplied, returns the configured default
+func (s *service) parseFetchTimeout(timeoutStr string) (time.Duration, error) {
+	if timeoutStr == "" {
+		return s.config.DefaultFetchTimeout, nil
+	}
+
+	return time.ParseDuration(timeoutStr)
 }
