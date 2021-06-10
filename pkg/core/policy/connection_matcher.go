@@ -222,12 +222,8 @@ type ConnectionPolicyBySourceService []ConnectionPolicy
 func (a ConnectionPolicyBySourceService) Len() int      { return len(a) }
 func (a ConnectionPolicyBySourceService) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ConnectionPolicyBySourceService) Less(i, j int) bool {
-	for _, source := range a[j].Sources() {
-		tagSelector := mesh_proto.TagSelector(source.Match)
-		if tagSelector.IsAnyService() {
-			return true
-		}
-	}
+	tagSelectorI := mesh_proto.TagSelector(a[i].Sources()[0].Match)
+	tagSelectorJ := mesh_proto.TagSelector(a[j].Sources()[0].Match)
 
-	return false
+	return tagSelectorI.Rank().CompareTo(tagSelectorJ.Rank()) > 0
 }

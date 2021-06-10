@@ -3,6 +3,8 @@ package ratelimits
 import (
 	"context"
 
+	"github.com/golang/protobuf/proto"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	"github.com/pkg/errors"
@@ -25,10 +27,10 @@ func (m *RateLimitMatcher) Match(ctx context.Context, dataplane *mesh_core.Datap
 		return nil, errors.Wrap(err, "could not retrieve ratelimits")
 	}
 
-	return BuildRateLimitMap(dataplane, mesh, ratelimits.Items)
+	return buildRateLimitMap(dataplane, mesh, splitPoliciesBySourceMatch(ratelimits.Items))
 }
 
-func BuildRateLimitMap(
+func buildRateLimitMap(
 	dataplane *mesh_core.DataplaneResource,
 	mesh *mesh_core.MeshResource,
 	rateLimits []*mesh_core.RateLimitResource,
@@ -53,4 +55,22 @@ func BuildRateLimitMap(
 		}
 	}
 	return result, nil
+}
+
+func splitPoliciesBySourceMatch(rateLimits []*mesh_core.RateLimitResource) []*mesh_core.RateLimitResource {
+	result := []*mesh_core.RateLimitResource{}
+
+	for _, rateLimit := range rateLimits {
+		for i := range rateLimit.Sources() {
+			newRateLimit := &mesh_core.RateLimitResource{
+				Meta: rateLimit.GetMeta(),
+				Spec: proto.Clone(rateLimit.Spec).(*mesh_proto.RateLimit),
+			}
+			newRateLimit.Spec.Sources = []*mesh_proto.Selector{newRateLimit.Spec.Sources[i]}
+
+			result = append(result, newRateLimit)
+		}
+	}
+
+	return result
 }

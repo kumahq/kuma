@@ -103,7 +103,7 @@ var _ = Describe("Match", func() {
 				},
 			}),
 			policies: []*mesh.RateLimitResource{
-				policyWithDestinationsFunc("fi1", time.Unix(1, 0),
+				policyWithDestinationsFunc("rl1", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
 						{
 							Match: map[string]string{
@@ -120,7 +120,7 @@ var _ = Describe("Match", func() {
 							},
 						},
 					}),
-				policyWithDestinationsFunc("fi2", time.Unix(1, 0),
+				policyWithDestinationsFunc("rl2", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
 						{
 							Match: map[string]string{
@@ -143,7 +143,7 @@ var _ = Describe("Match", func() {
 					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8080,
 				}: []*mesh_proto.RateLimit{
-					policyWithDestinationsFunc("fi2", time.Unix(1, 0),
+					policyWithDestinationsFunc("rl2", time.Unix(1, 0),
 						[]*mesh_proto.Selector{
 							{
 								Match: map[string]string{
@@ -156,90 +156,6 @@ var _ = Describe("Match", func() {
 							{
 								Match: map[string]string{
 									"kuma.io/service":  "*",
-									"kuma.io/protocol": "http",
-								},
-							},
-						}).Spec,
-				}}}),
-		Entry("match 2 policies", testCase{
-			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
-				{
-					ServicePort: 8080,
-					Tags: map[string]string{
-						"kuma.io/service":  "backend",
-						"version":          "0.1",
-						"region":           "eu",
-						"kuma.io/protocol": "http",
-					},
-				},
-			}),
-			policies: []*mesh.RateLimitResource{
-				policyWithDestinationsFunc("fi2", time.Unix(1, 0),
-					[]*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"kuma.io/service": "*",
-							},
-						},
-					},
-					[]*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"kuma.io/service":  "backend",
-								"kuma.io/protocol": "http",
-							},
-						},
-					}),
-				policyWithDestinationsFunc("fi1", time.Unix(1, 0),
-					[]*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"kuma.io/service": "frontend",
-							},
-						},
-					},
-					[]*mesh_proto.Selector{
-						{
-							Match: map[string]string{
-								"kuma.io/service":  "backend",
-								"kuma.io/protocol": "http",
-							},
-						},
-					}),
-			},
-			expected: core_xds.RateLimitsMap{
-				mesh_proto.InboundInterface{
-					WorkloadIP:   "127.0.0.1",
-					WorkloadPort: 8080,
-				}: []*mesh_proto.RateLimit{
-					policyWithDestinationsFunc("fi2", time.Unix(1, 0),
-						[]*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service": "frontend",
-								},
-							},
-						},
-						[]*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service":  "backend",
-									"kuma.io/protocol": "http",
-								},
-							},
-						}).Spec,
-					policyWithDestinationsFunc("fi2", time.Unix(1, 0),
-						[]*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service": "*",
-								},
-							},
-						},
-						[]*mesh_proto.Selector{
-							{
-								Match: map[string]string{
-									"kuma.io/service":  "backend",
 									"kuma.io/protocol": "http",
 								},
 							},
@@ -267,7 +183,7 @@ var _ = Describe("Match", func() {
 				},
 			}),
 			policies: []*mesh.RateLimitResource{
-				policyWithDestinationsFunc("fi1", time.Unix(1, 0),
+				policyWithDestinationsFunc("rl1", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
 						{
 							Match: map[string]string{
@@ -289,7 +205,7 @@ var _ = Describe("Match", func() {
 				mesh_proto.InboundInterface{
 					WorkloadIP:   "127.0.0.1",
 					WorkloadPort: 8081,
-				}: []*mesh_proto.RateLimit{policyWithDestinationsFunc("fi1", time.Unix(1, 0),
+				}: []*mesh_proto.RateLimit{policyWithDestinationsFunc("rl1", time.Unix(1, 0),
 					[]*mesh_proto.Selector{
 						{
 							Match: map[string]string{
@@ -309,5 +225,207 @@ var _ = Describe("Match", func() {
 				},
 			},
 		}),
+		Entry("match 2 policies", testCase{
+			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
+				{
+					ServicePort: 8080,
+					Tags: map[string]string{
+						"kuma.io/service":  "backend",
+						"version":          "0.1",
+						"region":           "eu",
+						"kuma.io/protocol": "http",
+					},
+				},
+			}),
+			policies: []*mesh.RateLimitResource{
+				policyWithDestinationsFunc("rl2", time.Unix(1, 0),
+					[]*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"kuma.io/service": "*",
+							},
+						},
+					},
+					[]*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"kuma.io/service":  "backend",
+								"kuma.io/protocol": "http",
+							},
+						},
+					}),
+				policyWithDestinationsFunc("rl1", time.Unix(1, 0),
+					[]*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"kuma.io/service": "frontend",
+							},
+						},
+					},
+					[]*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"kuma.io/service":  "backend",
+								"kuma.io/protocol": "http",
+							},
+						},
+					}),
+			},
+			expected: core_xds.RateLimitsMap{
+				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
+					WorkloadPort: 8080,
+				}: []*mesh_proto.RateLimit{
+					policyWithDestinationsFunc("rl2", time.Unix(1, 0),
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service": "frontend",
+								},
+							},
+						},
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/protocol": "http",
+								},
+							},
+						}).Spec,
+					policyWithDestinationsFunc("rl2", time.Unix(1, 0),
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service": "*",
+								},
+							},
+						},
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/protocol": "http",
+								},
+							},
+						}).Spec,
+				}}}),
+		Entry("match and sort 3 policies", testCase{
+			dataplane: dataplaneWithInboundsFunc([]*mesh_proto.Dataplane_Networking_Inbound{
+				{
+					ServicePort: 8080,
+					Tags: map[string]string{
+						"kuma.io/service":  "backend",
+						"version":          "0.1",
+						"region":           "eu",
+						"kuma.io/protocol": "http",
+					},
+				},
+			}),
+			policies: []*mesh.RateLimitResource{
+				policyWithDestinationsFunc("rl1", time.Unix(1, 0),
+					[]*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"kuma.io/service": "*",
+							},
+						},
+					},
+					[]*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"kuma.io/service":  "backend",
+								"kuma.io/protocol": "http",
+							},
+						},
+					}),
+				policyWithDestinationsFunc("rl2", time.Unix(1, 0),
+					[]*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"kuma.io/service": "frontend",
+							},
+						},
+					},
+					[]*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"kuma.io/service":  "backend",
+								"kuma.io/protocol": "http",
+							},
+						},
+					}),
+				policyWithDestinationsFunc("rl3", time.Unix(1, 0),
+					[]*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"kuma.io/service": "frontend",
+								"kuma.io/zone":    "eu",
+							},
+						},
+					},
+					[]*mesh_proto.Selector{
+						{
+							Match: map[string]string{
+								"kuma.io/service":  "backend",
+								"kuma.io/protocol": "http",
+							},
+						},
+					}),
+			},
+			expected: core_xds.RateLimitsMap{
+				mesh_proto.InboundInterface{
+					WorkloadIP:   "127.0.0.1",
+					WorkloadPort: 8080,
+				}: []*mesh_proto.RateLimit{
+					policyWithDestinationsFunc("rl3", time.Unix(1, 0),
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service": "frontend",
+									"kuma.io/zone":    "eu",
+								},
+							},
+						},
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/protocol": "http",
+								},
+							},
+						}).Spec,
+					policyWithDestinationsFunc("rl2", time.Unix(1, 0),
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service": "frontend",
+								},
+							},
+						},
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/protocol": "http",
+								},
+							},
+						}).Spec,
+					policyWithDestinationsFunc("rl1", time.Unix(1, 0),
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service": "*",
+								},
+							},
+						},
+						[]*mesh_proto.Selector{
+							{
+								Match: map[string]string{
+									"kuma.io/service":  "backend",
+									"kuma.io/protocol": "http",
+								},
+							},
+						}).Spec,
+				}}}),
 	)
 })
