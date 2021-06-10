@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/pkg/errors"
@@ -23,24 +24,24 @@ var _ component.Component = &Hijacker{}
 
 type Hijacker struct {
 	envoyAdminPort uint32
-	address        string
+	socketPath     string
 }
 
 func New(dataplane kumadp.Dataplane, envoyAdminPort uint32) *Hijacker {
 	return &Hijacker{
 		envoyAdminPort: envoyAdminPort,
-		address:        envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
+		socketPath:     envoy.MetricsHijackerSocketName(dataplane.Name, dataplane.Mesh),
 	}
 }
 
 func (s *Hijacker) Start(stop <-chan struct{}) error {
-	_, err := os.Stat(s.address)
+	_, err := os.Stat(s.socketPath)
 	if err == nil {
 		// File is accessible try to rename it to verify it is not open
-		newName := s.address + ".bak"
-		err := os.Rename(s.address, newName)
+		newName := s.socketPath + ".bak"
+		err := os.Rename(s.socketPath, newName)
 		if err != nil {
-			return errors.Errorf("file %s exists and probably opened by another kuma-dp instance", s.address)
+			return errors.Errorf("file %s exists and probably opened by another kuma-dp instance", s.socketPath)
 		}
 		err = os.Remove(newName)
 		if err != nil {
@@ -48,7 +49,7 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		}
 	}
 
-	lis, err := net.Listen("unix", s.address)
+	lis, err := net.Listen("unix", s.socketPath)
 	if err != nil {
 		return err
 	}
@@ -57,7 +58,10 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 		lis.Close()
 	}()
 
-	logger.Info("starting Metrics Hijacker Server", "address", fmt.Sprintf("unix://%s", s.address))
+	logger.Info("starting Metrics Hijacker Server",
+		"socketPath", fmt.Sprintf("unix://%s", s.socketPath),
+		"adminPort", s.envoyAdminPort,
+	)
 
 	server := &http.Server{
 		Handler: s,
@@ -79,8 +83,22 @@ func (s *Hijacker) Start(stop <-chan struct{}) error {
 	}
 }
 
-func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, _ *http.Request) {
-	resp, err := http.Get(fmt.Sprintf("http://127.0.0.1:%d/stats/prometheus", s.envoyAdminPort))
+// The Envoy stats endpoint recognizes the "used_only" and "filter" query
+// parameters. We squash the path to enforce Prometheus metrics format, but
+// forward the query parameters so that the scraper can do partial scrapes.
+func rewriteMetricsURL(port uint32, in *url.URL) string {
+	u := url.URL{
+		Scheme:   "http",
+		Host:     fmt.Sprintf("127.0.0.1:%d", port),
+		Path:     "/stats/prometheus",
+		RawQuery: in.RawQuery,
+	}
+
+	return u.String()
+}
+
+func (s *Hijacker) ServeHTTP(writer http.ResponseWriter, req *http.Request) {
+	resp, err := http.Get(rewriteMetricsURL(s.envoyAdminPort, req.URL))
 	if err != nil {
 		http.Error(writer, err.Error(), 500)
 		return
