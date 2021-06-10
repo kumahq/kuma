@@ -13,7 +13,12 @@ var _ = Describe("Http2Configurer", func() {
 
 	It("should generate proper Envoy config", func() {
 		// given
-		expected := `http2ProtocolOptions: {}`
+		expected := `
+        typedExtensionProtocolOptions:
+          envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+            '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+            explicitHttpConfig:
+              http2ProtocolOptions: {}`
 
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
