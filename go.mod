@@ -51,6 +51,7 @@ require (
 	google.golang.org/genproto v0.0.0-20201030142918-24207fddd1c3
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.25.0
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.3.4
 	k8s.io/api v0.18.14
