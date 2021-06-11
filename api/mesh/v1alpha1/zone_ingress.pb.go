@@ -46,7 +46,8 @@ type ZoneIngress struct {
 	// AdvertisedPort defines port on which ZoneIngress is accessible to other
 	// Kuma clusters.
 	AdvertisedPort uint32 `protobuf:"varint,4,opt,name=advertisedPort,proto3" json:"advertisedPort,omitempty"`
-	// Zone field contains Zone name where ingress is serving, field will be automatically set by Global Kuma CP
+	// Zone field contains Zone name where ingress is serving, field will be
+	// automatically set by Global Kuma CP
 	Zone string `protobuf:"bytes,6,opt,name=zone,proto3" json:"zone,omitempty"`
 	// AvailableService contains tags that represent unique subset of
 	// endpoints
