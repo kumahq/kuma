@@ -866,7 +866,7 @@ jobs:
         description: use IPv6
         type: boolean
         default: false
-    parallelism: 2
+    parallelism: 4
     environment:
       GOPATH: /home/circleci/.go-kuma-go
     steps:
