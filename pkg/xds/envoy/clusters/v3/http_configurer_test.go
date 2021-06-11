@@ -9,7 +9,7 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/envoy/clusters"
 )
 
-var _ = Describe("Http2Configurer", func() {
+var _ = Describe("HttpConfigurer", func() {
 
 	It("should generate proper Envoy config", func() {
 		// given
@@ -18,11 +18,11 @@ var _ = Describe("Http2Configurer", func() {
           envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
             '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
             explicitHttpConfig:
-              http2ProtocolOptions: {}`
+              httpProtocolOptions: {}`
 
 		// when
 		cluster, err := clusters.NewClusterBuilder(envoy.APIV3).
-			Configure(clusters.Http2()).
+			Configure(clusters.Http()).
 			Build()
 
 		// then

@@ -29,9 +29,9 @@ func UniversalCompatibility() {
 		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
-		err = EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken, WithDPVersion("1.0.8"))(cluster)
+		err = EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken, WithDPVersion("1.1.6"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithDPVersion("1.0.8"))(cluster)
+		err = DemoClientUniversal(AppModeDemoClient, "default", demoClientToken, WithDPVersion("1.1.6"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

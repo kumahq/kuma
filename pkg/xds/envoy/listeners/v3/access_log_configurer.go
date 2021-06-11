@@ -109,20 +109,16 @@ func fileAccessLog(format *accesslog.AccessLogFormat, cfgStr *structpb.Struct) (
 	}
 
 	fileAccessLog := &access_loggers_file.FileAccessLog{
-		// AccessLogFormat: &access_loggers_file.FileAccessLog_LogFormat{
-		// 	LogFormat: &envoy_core.SubstitutionFormatString{
-		// 		Format: &envoy_core.SubstitutionFormatString_TextFormatSource{
-		// 			TextFormatSource: &envoy_core.DataSource{
-		// 				Specifier: &envoy_core.DataSource_InlineString{
-		// 					InlineString: format.String(),
-		// 				},
-		// 			},
-		// 		},
-		// 	},
-		// },
-		AccessLogFormat: &access_loggers_file.FileAccessLog_Format{
-			// nolint:staticcheck // keep deprecated options to be compatible with Envoy 1.16.x in Kuma 1.0.x
-			Format: format.String(),
+		AccessLogFormat: &access_loggers_file.FileAccessLog_LogFormat{
+			LogFormat: &envoy_core.SubstitutionFormatString{
+				Format: &envoy_core.SubstitutionFormatString_TextFormatSource{
+					TextFormatSource: &envoy_core.DataSource{
+						Specifier: &envoy_core.DataSource_InlineString{
+							InlineString: format.String(),
+						},
+					},
+				},
+			},
 		},
 		Path: cfg.Path,
 	}
