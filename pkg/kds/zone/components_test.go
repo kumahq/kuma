@@ -169,7 +169,9 @@ var _ = Describe("Zone Sync", func() {
 		// plus 2 global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
+			mesh.ZoneIngressType,
 			system.ConfigType,
+			system.GlobalSecretType,
 		}
 
 		actualConsumedTypes = append(actualConsumedTypes, extraTypes...)
