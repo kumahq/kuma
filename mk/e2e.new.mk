@@ -67,10 +67,10 @@ TEST_NAMES = $(shell ls -1 ./test/e2e)
 ALL_TESTS = $(addprefix ./test/e2e/, $(addsuffix /..., $(TEST_NAMES)))
 E2E_PKG_LIST ?= $(ALL_TESTS)
 
-ifdef K3D
-K8S_CLUSTER_TOOL=k3d
-else
+ifdef KIND
 K8S_CLUSTER_TOOL=kind
+else
+K8S_CLUSTER_TOOL=k3d
 endif
 
 ifdef IPV6
