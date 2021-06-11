@@ -153,5 +153,4 @@ var _ = Describe("Defaults Component", func() {
 			Expect(actual.Spec.GetData().GetValue()).To(Equal([]byte("hello")))
 		})
 	})
-
 })

@@ -190,10 +190,12 @@ var _ = Describe("Global Sync", func() {
 			}
 		}
 
-		// plus 2 global-scope types
+		// plus 4 global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
+			mesh.ZoneIngressType,
 			system.ConfigType,
+			system.GlobalSecretType,
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)

@@ -53,7 +53,7 @@ layeredRuntime:
       re2.max_program_size.warn_level: 1000
 node:
   cluster: backend
-  id: default.dp-1
+  id: default.dp-1:regular
   metadata:
     dataplaneTokenPath: /tmp/token
     version:

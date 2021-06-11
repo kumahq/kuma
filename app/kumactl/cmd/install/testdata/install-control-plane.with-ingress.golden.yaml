@@ -303,6 +303,32 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: zoneingresses.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: ZoneIngress
+    plural: zoneingresses
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: ZoneIngress is the Schema for the zone ingress API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: dataplaneinsights.kuma.io
 spec:
   group: kuma.io
@@ -549,6 +575,7 @@ rules:
       - meshes
       - zones
       - zoneinsights
+      - zoneingresses
       - meshinsights
       - serviceinsights
       - proxytemplates
@@ -882,8 +909,6 @@ spec:
               value: "https://kuma-control-plane.kuma-system:5678"
             - name: KUMA_CONTROL_PLANE_CA_CERT_FILE
               value: /var/run/secrets/kuma.io/tls-cert/ca.crt
-            - name: KUMA_DATAPLANE_MESH
-              value: default
             - name: KUMA_DATAPLANE_NAME
               value: $(POD_NAME).$(POD_NAMESPACE)
             - name: KUMA_DATAPLANE_ADMIN_PORT
@@ -892,6 +917,8 @@ spec:
               value: 60s
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
+            - name: KUMA_DATAPLANE_IS_INGRESS
+              value: "true"
           args:
             - run
             - --log-level=info
