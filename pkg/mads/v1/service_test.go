@@ -476,7 +476,7 @@ var _ = Describe("MADS http service", func() {
 			Expect(err).ToNot(HaveOccurred())
 
 			// when
-			req, err := http.NewRequest("POST", monitoringAssignmentPath+"?fetch-timeout=1ms", strings.NewReader(reqBytes))
+			req, err := http.NewRequest("POST", monitoringAssignmentPath+"?fetch-timeout=1s", strings.NewReader(reqBytes))
 			Expect(err).ToNot(HaveOccurred())
 			req.Header.Add("content-type", "application/json")
 
