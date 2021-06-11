@@ -34,7 +34,7 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 	body, err := ioutil.ReadAll(req.Request.Body)
 	if err != nil {
 		writeBadRequestError(res, rest_error_types.Error{
-			Title:   "Can not read request body",
+			Title:   "Could not read request body",
 			Details: err.Error(),
 		})
 		return
@@ -44,7 +44,7 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 	err = jsonpb.UnmarshalString(string(body), discoveryReq)
 	if err != nil {
 		writeBadRequestError(res, rest_error_types.Error{
-			Title:   "Can not parse request body",
+			Title:   "Could not parse request body",
 			Details: err.Error(),
 		})
 		return
@@ -55,7 +55,7 @@ func (s *service) handleDiscovery(req *restful.Request, res *restful.Response) {
 	timeout, err := s.parseFetchTimeout(req.QueryParameter("fetch-timeout"))
 	if err != nil {
 		writeBadRequestError(res, rest_error_types.Error{
-			Title:   "Can not parse fetch-timeout",
+			Title:   "Could not parse fetch-timeout",
 			Details: err.Error(),
 		})
 		return
