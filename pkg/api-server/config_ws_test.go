@@ -182,6 +182,7 @@ var _ = Describe("Config WS", func() {
 			  "injector": {
 				"caCertFile": "",
 				"builtinDNS": {
+                  "enabled": true,
                   "port": 15053
                 },
                 "cniEnabled": false,

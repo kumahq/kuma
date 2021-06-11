@@ -31,7 +31,7 @@ func DefaultConfig() Config {
 			ConfigDir:  "", // if left empty, a temporary directory will be generated automatically
 		},
 		DNS: DNS{
-			Enabled:                   false,
+			Enabled:                   true,
 			CoreDNSPort:               15053,
 			EnvoyDNSPort:              15054,
 			CoreDNSEmptyPort:          15055,
