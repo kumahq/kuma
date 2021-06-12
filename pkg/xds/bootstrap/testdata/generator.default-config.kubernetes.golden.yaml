@@ -39,7 +39,7 @@ layeredRuntime:
       re2.max_program_size.warn_level: 1000
 node:
   cluster: backend
-  id: mesh.name.namespace:regular
+  id: mesh.name.namespace
   metadata:
     dataplane.admin.port: "1234"
     dataplaneTokenPath: /tmp/token

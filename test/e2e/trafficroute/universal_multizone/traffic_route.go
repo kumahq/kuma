@@ -57,7 +57,7 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(defaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateZoneIngressToken("new-ingress")
+		ingressToken, err := globalCP.GenerateZoneIngressToken("ingress")
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 1
@@ -144,7 +144,7 @@ routing:
 		Expect(global.DismissCluster()).To(Succeed())
 	})
 
-	It("should access all instances of the service", func() {
+	FIt("should access all instances of the service", func() {
 		const trafficRoute = `
 type: TrafficRoute
 name: three-way-route
@@ -173,6 +173,10 @@ conf:
         version: v4
 `
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
+
+		//for {
+		//	time.Sleep(1 * time.Hour)
+		//}
 
 		Eventually(func() (map[string]int, error) {
 			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")

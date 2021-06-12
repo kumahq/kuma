@@ -38,11 +38,11 @@ var _ = Describe("xDS", func() {
 					expected: *core_xds.BuildProxyId("demo", "example.sample"),
 				}),
 				Entry("mesh and name without namespace and proxy type", testCase{
-					nodeID:   "demo.example:ingress",
+					nodeID:   "demo.example",
 					expected: *core_xds.BuildProxyId("demo", "example"),
 				}),
 				Entry("name with namespace and mesh and proxy type", testCase{
-					nodeID:   "demo.example.sample:ingress",
+					nodeID:   "demo.example.sample",
 					expected: *core_xds.BuildProxyId("demo", "example.sample"),
 				}),
 			)
