@@ -174,10 +174,6 @@ conf:
 `
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
-		//for {
-		//	time.Sleep(1 * time.Hour)
-		//}
-
 		Eventually(func() (map[string]int, error) {
 			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
