@@ -192,7 +192,7 @@ spec:
 		err = k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)
 		Expect(err.Error()).To(ContainSubstring("should be only applied on global"))
 
-		// Accept policy UPDATE on zone
+		// Accept policy UPDATE on global
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_update)
 		Expect(err).ToNot(HaveOccurred())
 	})
