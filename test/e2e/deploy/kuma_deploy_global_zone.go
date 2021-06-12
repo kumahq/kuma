@@ -196,5 +196,4 @@ spec:
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_update)
 		Expect(err).ToNot(HaveOccurred())
 	})
-
 }
