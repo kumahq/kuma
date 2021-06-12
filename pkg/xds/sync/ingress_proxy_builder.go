@@ -3,7 +3,6 @@ package sync
 import (
 	"context"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/dns/lookup"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -24,7 +23,7 @@ type IngressProxyBuilder struct {
 	apiVersion envoy.APIVersion
 }
 
-func (p *IngressProxyBuilder) build(proxyType mesh_proto.DpType, key core_model.ResourceKey, streamId int64) (*xds.Proxy, error) {
+func (p *IngressProxyBuilder) build(key core_model.ResourceKey, streamId int64) (*xds.Proxy, error) {
 	ctx := context.Background()
 
 	zoneIngress, err := p.getZoneIngress(key)
@@ -48,7 +47,7 @@ func (p *IngressProxyBuilder) build(proxyType mesh_proto.DpType, key core_model.
 	}
 
 	proxy := &xds.Proxy{
-		Id:          xds.FromResourceKey(proxyType, key),
+		Id:          xds.FromResourceKey(key),
 		APIVersion:  p.apiVersion,
 		ZoneIngress: zoneIngress,
 		Metadata:    p.MetadataTracker.Metadata(streamId),

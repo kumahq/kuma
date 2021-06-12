@@ -114,6 +114,8 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 	state.mu.Lock() // write access to the per Dataplane info
 	defer state.mu.Unlock()
 
+	md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
+
 	// infer Dataplane id
 	if state.dataplaneId == (core_model.ResourceKey{}) {
 		if proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
@@ -122,7 +124,7 @@ func (c *dataplaneStatusTracker) OnStreamRequest(streamID int64, req util_xds.Di
 				statusTrackerLog.Error(err, "failed to extract version out of the Envoy metadata", "streamid", streamID, "metadata", req.Metadata())
 			}
 			// kick off async Dataplane status flusher
-			if proxyId.Type() != mesh_proto.IngressDpType {
+			if md.GetProxyType() != mesh_proto.IngressDpType {
 				go c.createStatusSink(state).Start(state.stop)
 			}
 		} else {

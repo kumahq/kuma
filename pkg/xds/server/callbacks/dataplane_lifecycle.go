@@ -103,12 +103,8 @@ func (d *DataplaneLifecycle) OnStreamRequest(streamID int64, request util_xds.Di
 	defer d.Unlock()
 
 	md := xds.DataplaneMetadataFromXdsMetadata(request.Metadata())
-	proxyId, err := xds.ParseProxyIdFromString(request.NodeId())
-	if err != nil {
-		return nil
-	}
 
-	if proxyId.Type() == mesh_proto.RegularDpType && md.GetDataplaneResource() != nil {
+	if md.GetProxyType() == mesh_proto.RegularDpType && md.GetDataplaneResource() != nil {
 		lifecycleLog.Info("registering dataplane", "dataplane", md.GetDataplaneResource(), "streamID", streamID, "nodeID", request.NodeId())
 		if err := d.registerDataplane(md.GetDataplaneResource()); err != nil {
 			return errors.Wrap(err, "could not register dataplane passed in kuma-dp run")
@@ -119,7 +115,7 @@ func (d *DataplaneLifecycle) OnStreamRequest(streamID int64, request util_xds.Di
 		return nil
 	}
 
-	if proxyId.Type() == mesh_proto.IngressDpType && md.ZoneIngressResource != nil {
+	if md.GetProxyType() == mesh_proto.IngressDpType && md.ZoneIngressResource != nil {
 		lifecycleLog.Info("registering zone ingress", "zoneIngress", md.ZoneIngressResource, "streamID", streamID, "nodeID", request.NodeId())
 		if err := d.registerZoneIngress(md.ZoneIngressResource); err != nil {
 			return errors.Wrap(err, "could not register zone ingress passed in kuma-dp run")

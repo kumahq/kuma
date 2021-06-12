@@ -34,7 +34,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			sourceService := "backend"
 			destinationService := "db"
 			proxy := &core_xds.Proxy{
-				Id: *core_xds.BuildProxyId("example", "backend", ""),
+				Id: *core_xds.BuildProxyId("example", "backend"),
 				Dataplane: &mesh_core.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{

@@ -43,7 +43,7 @@ var _ = Describe("IngressGenerator", func() {
 			})
 			Expect(err).ToNot(HaveOccurred())
 			proxy := &core_xds.Proxy{
-				Id:          *core_xds.BuildProxyId("default", "ingress", ""),
+				Id:          *core_xds.BuildProxyId("default", "ingress"),
 				ZoneIngress: zoneIngress,
 				APIVersion:  envoy_common.APIV3,
 				Routing: core_xds.Routing{

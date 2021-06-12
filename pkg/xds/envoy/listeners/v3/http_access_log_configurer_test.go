@@ -34,7 +34,7 @@ var _ = Describe("HttpAccessLogConfigurer", func() {
 			sourceService := "web"
 			destinationService := "backend"
 			proxy := &core_xds.Proxy{
-				Id: *core_xds.BuildProxyId("web", "example", ""),
+				Id: *core_xds.BuildProxyId("web", "example"),
 				Dataplane: &mesh_core.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{

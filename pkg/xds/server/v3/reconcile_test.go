@@ -115,7 +115,7 @@ var _ = Describe("Reconcile", func() {
 			By("simulating discovery event")
 			// when
 			proxy := &xds_model.Proxy{
-				Id:        *xds_model.BuildProxyId("demo", "example", ""),
+				Id:        *xds_model.BuildProxyId("demo", "example"),
 				Dataplane: dataplane,
 			}
 			err := r.Reconcile(xds_context.Context{}, proxy)

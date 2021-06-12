@@ -118,11 +118,8 @@ func (a *authCallbacks) credential(streamID core_xds.StreamID) (Credential, erro
 }
 
 func (a *authCallbacks) authenticate(credential Credential, req util_xds.DiscoveryRequest) error {
-	proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId())
-	if err != nil {
-		return errors.Wrap(err, "request must have a valid Proxy Id")
-	}
-	switch proxyId.Type() {
+	md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
+	switch md.GetProxyType() {
 	case mesh_proto.IngressDpType:
 		return a.authenticateZoneIngress(credential, req)
 	default:

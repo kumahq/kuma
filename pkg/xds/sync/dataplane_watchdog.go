@@ -24,6 +24,7 @@ type DataplaneWatchdogDependencies struct {
 	ingressReconciler     SnapshotReconciler
 	xdsContextBuilder     *xdsContextBuilder
 	meshCache             *mesh.Cache
+	metadataTracker       DataplaneMetadataTracker
 }
 
 type DataplaneWatchdog struct {
@@ -43,8 +44,7 @@ func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, proxyId *core_xds.
 		DataplaneWatchdogDependencies: deps,
 		key:                           proxyId.ToResourceKey(),
 		streamId:                      streamId,
-		log:                           core.Log.WithValues("key", "key", "streamID", streamId),
-		dpType:                        proxyId.Type(),
+		log:                           core.Log.WithValues("key", proxyId.ToResourceKey(), "streamID", streamId),
 		proxyTypeSettled:              false,
 	}
 }
@@ -52,6 +52,9 @@ func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, proxyId *core_xds.
 func (d *DataplaneWatchdog) Sync() error {
 	ctx := context.Background()
 
+	if d.dpType == "" {
+		d.dpType = d.metadataTracker.Metadata(d.streamId).GetProxyType()
+	}
 	// backwards compatibility
 	if d.dpType == mesh_proto.RegularDpType && !d.proxyTypeSettled {
 		dataplane := mesh_core.NewDataplaneResource()
@@ -75,7 +78,7 @@ func (d *DataplaneWatchdog) Sync() error {
 }
 
 func (d *DataplaneWatchdog) Cleanup() error {
-	proxyID := core_xds.FromResourceKey(d.dpType, d.key)
+	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
 	case mesh_proto.RegularDpType, mesh_proto.GatewayDpType:
 		return d.dataplaneReconciler.Clear(&proxyID)
@@ -117,13 +120,7 @@ func (d *DataplaneWatchdog) syncDataplane() error {
 // syncIngress synces state of Ingress Dataplane. Notice that it does not use Mesh Hash yet because Ingress supports many Meshes.
 func (d *DataplaneWatchdog) syncIngress() error {
 	envoyCtx := d.xdsContextBuilder.buildContext(d.streamId)
-	var proxyType mesh_proto.DpType
-	if d.proxyTypeSettled {
-		proxyType = mesh_proto.RegularDpType
-	} else {
-		proxyType = d.dpType
-	}
-	proxy, err := d.ingressProxyBuilder.build(proxyType, d.key, d.streamId)
+	proxy, err := d.ingressProxyBuilder.build(d.key, d.streamId)
 	if err != nil {
 		return err
 	}

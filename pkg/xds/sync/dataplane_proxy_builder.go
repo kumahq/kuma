@@ -55,7 +55,7 @@ func (p *DataplaneProxyBuilder) build(key core_model.ResourceKey, streamId int64
 	}
 
 	proxy := &xds.Proxy{
-		Id:         xds.FromResourceKey(mesh_proto.RegularDpType, key),
+		Id:         xds.FromResourceKey(key),
 		APIVersion: p.apiVersion,
 		Dataplane:  dp,
 		Metadata:   p.MetadataTracker.Metadata(streamId),

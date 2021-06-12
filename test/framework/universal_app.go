@@ -45,7 +45,7 @@ networking:
 `
 	ZoneIngress = `
 type: ZoneIngress
-name: new-ingress
+name: ingress
 address: {{ address }}
 advertisedAddress: %s
 advertisedPort: %d

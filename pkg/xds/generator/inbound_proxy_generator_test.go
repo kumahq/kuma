@@ -64,7 +64,7 @@ var _ = Describe("InboundProxyGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 			proxy := &model.Proxy{
-				Id: *model.BuildProxyId("", "side-car", ""),
+				Id: *model.BuildProxyId("", "side-car"),
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",

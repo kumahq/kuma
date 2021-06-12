@@ -20,16 +20,12 @@ import (
 type StreamID = int64
 
 type ProxyId struct {
-	mesh      string
-	name      string
-	proxyType mesh_proto.DpType
+	mesh string
+	name string
 }
 
 func (id *ProxyId) String() string {
-	if id.proxyType == "" {
-		return fmt.Sprintf("%s.%s", id.mesh, id.name)
-	}
-	return fmt.Sprintf("%s.%s:%s", id.mesh, id.name, id.proxyType)
+	return fmt.Sprintf("%s.%s", id.mesh, id.name)
 }
 
 func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
@@ -37,13 +33,6 @@ func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
 		Name: id.name,
 		Mesh: id.mesh,
 	}
-}
-
-func (id *ProxyId) Type() mesh_proto.DpType {
-	if id.proxyType == "" {
-		return mesh_proto.RegularDpType
-	}
-	return id.proxyType
 }
 
 // ServiceName is a convenience type alias to clarify the meaning of string value.
@@ -219,11 +208,10 @@ func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
 	return endpoints
 }
 
-func BuildProxyId(mesh, name string, proxyType mesh_proto.DpType) *ProxyId {
+func BuildProxyId(mesh, name string) *ProxyId {
 	return &ProxyId{
-		name:      name,
-		mesh:      mesh,
-		proxyType: proxyType,
+		name: name,
+		mesh: mesh,
 	}
 }
 
@@ -231,39 +219,9 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	if id == "" {
 		return nil, errors.Errorf("Envoy ID must not be nil")
 	}
-	parts := strings.SplitN(id, ":", 2)
-	if len(parts) == 1 {
-		proxyId, err := ParseProxyIdFromStringOldFormat(id)
-		if err != nil {
-			return nil, err
-		}
-		return proxyId, nil
-	}
-	proxyType := mesh_proto.DpType(parts[1])
-	meshAndName := strings.SplitN(parts[0], ".", 2)
-	mesh, name := meshAndName[0], meshAndName[1]
-	if name == "" {
-		return nil, errors.New("name must not be empty")
-	}
-	if mesh == "" && proxyType != mesh_proto.IngressDpType {
-		return nil, errors.New("mesh must not be empty")
-	}
-	return &ProxyId{
-		mesh:      mesh,
-		name:      name,
-		proxyType: proxyType,
-	}, nil
-}
-
-func ParseProxyIdFromStringOldFormat(id string) (*ProxyId, error) {
-	if id == "" {
-		return nil, errors.Errorf("Envoy ID must not be nil")
-	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]
-	if mesh == "" {
-		return nil, errors.New("mesh must not be empty")
-	}
+	// when proxy is an ingress mesh is empty
 	if len(parts) < 2 {
 		return nil, errors.New("the name should be provided after the dot")
 	}
@@ -277,10 +235,9 @@ func ParseProxyIdFromStringOldFormat(id string) (*ProxyId, error) {
 	}, nil
 }
 
-func FromResourceKey(proxyType mesh_proto.DpType, key core_model.ResourceKey) ProxyId {
+func FromResourceKey(key core_model.ResourceKey) ProxyId {
 	return ProxyId{
-		mesh:      key.Mesh,
-		name:      key.Name,
-		proxyType: proxyType,
+		mesh: key.Mesh,
+		name: key.Name,
 	}
 }

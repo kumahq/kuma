@@ -85,7 +85,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 
 	switch proxyType {
 	case mesh_proto.IngressDpType:
-		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name, mesh_proto.IngressDpType)
+		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 		zoneIngress, err := b.zoneIngressFor(ctx, request, proxyId)
 		if err != nil {
 			return nil, "", err
@@ -97,7 +97,7 @@ func (b *bootstrapGenerator) Generate(ctx context.Context, request types.Bootstr
 		b.hdsEnabled = false
 		return b.generateFor(*proxyId, request, "ingress", adminPort)
 	case mesh_proto.RegularDpType, mesh_proto.GatewayDpType:
-		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name, mesh_proto.RegularDpType)
+		proxyId := core_xds.BuildProxyId(request.Mesh, request.Name)
 		dataplane, err := b.dataplaneFor(ctx, request, proxyId)
 		if err != nil {
 			return nil, "", err
@@ -294,6 +294,7 @@ func (b *bootstrapGenerator) generateFor(proxyId core_xds.ProxyId, request types
 		DynamicMetadata:    request.DynamicMetadata,
 		DNSPort:            request.DNSPort,
 		EmptyDNSPort:       request.EmptyDNSPort,
+		ProxyType:          request.ProxyType,
 	}
 	log.WithValues("params", params).Info("Generating bootstrap config")
 	return b.configForParameters(params, request.BootstrapVersion)

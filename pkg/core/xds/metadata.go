@@ -5,6 +5,8 @@ import (
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
@@ -23,6 +25,7 @@ const (
 	fieldDataplaneDNSEmptyPort      = "dataplane.dns.empty.port"
 	fieldDataplaneDataplaneResource = "dataplane.resource"
 	fieldDynamicMetadata            = "dynamicMetadata"
+	fieldDataplaneProxyType         = "dataplane.proxyType"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -48,6 +51,7 @@ type DataplaneMetadata struct {
 	DNSPort             uint32
 	EmptyDNSPort        uint32
 	DynamicMetadata     map[string]string
+	ProxyType           mesh_proto.DpType
 }
 
 func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
@@ -76,6 +80,13 @@ func (m *DataplaneMetadata) GetZoneIngressResource() *core_mesh.ZoneIngressResou
 		return nil
 	}
 	return m.ZoneIngressResource
+}
+
+func (m *DataplaneMetadata) GetProxyType() mesh_proto.DpType {
+	if m == nil || m.ProxyType == "" {
+		return mesh_proto.RegularDpType
+	}
+	return m.ProxyType
 }
 
 func (m *DataplaneMetadata) GetAdminPort() uint32 {
@@ -116,6 +127,9 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 	}
 	if field := xdsMetadata.Fields[fieldDataplaneToken]; field != nil {
 		metadata.DataplaneToken = field.GetStringValue()
+	}
+	if field := xdsMetadata.Fields[fieldDataplaneProxyType]; field != nil {
+		metadata.ProxyType = mesh_proto.DpType(field.GetStringValue())
 	}
 	metadata.AdminPort = uint32Metadata(xdsMetadata, fieldDataplaneAdminPort)
 	metadata.DNSPort = uint32Metadata(xdsMetadata, fieldDataplaneDNSPort)
