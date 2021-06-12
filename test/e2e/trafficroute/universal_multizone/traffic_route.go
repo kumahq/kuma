@@ -144,7 +144,7 @@ routing:
 		Expect(global.DismissCluster()).To(Succeed())
 	})
 
-	FIt("should access all instances of the service", func() {
+	It("should access all instances of the service", func() {
 		const trafficRoute = `
 type: TrafficRoute
 name: three-way-route
