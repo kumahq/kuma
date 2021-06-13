@@ -132,8 +132,8 @@ func (m *meshSnapshot) hashResource(r core_model.Resource) string {
 				v.GetMeta().GetMesh(),
 				v.GetMeta().GetName(),
 				v.GetMeta().GetVersion(),
-				m.hashResolvedIPs(v.Spec.GetAddress()),
-				m.hashResolvedIPs(v.Spec.GetAdvertisedAddress()),
+				m.hashResolvedIPs(v.Spec.GetNetworking().GetAddress()),
+				m.hashResolvedIPs(v.Spec.GetNetworking().GetAdvertisedAddress()),
 			}, ":")
 	default:
 		return strings.Join(

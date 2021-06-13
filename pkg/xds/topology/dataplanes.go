@@ -88,19 +88,19 @@ func ResolveIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *co
 }
 
 func ResolveZoneIngressPublicAddress(lookupIPFunc lookup.LookupIPFunc, zoneIngress *core_mesh.ZoneIngressResource) (*core_mesh.ZoneIngressResource, error) {
-	if zoneIngress.Spec.GetAdvertisedAddress() == "" { // Ingress may not have public address yet.
+	if zoneIngress.Spec.GetNetworking().GetAdvertisedAddress() == "" { // Ingress may not have public address yet.
 		return zoneIngress, nil
 	}
-	ips, err := lookupIPFunc(zoneIngress.Spec.GetAdvertisedAddress())
+	ips, err := lookupIPFunc(zoneIngress.Spec.GetNetworking().GetAdvertisedAddress())
 	if err != nil {
 		return nil, err
 	}
 	if len(ips) == 0 {
-		return nil, errors.Errorf("can't resolve address %v", zoneIngress.Spec.GetAdvertisedAddress())
+		return nil, errors.Errorf("can't resolve address %v", zoneIngress.Spec.GetNetworking().GetAdvertisedAddress())
 	}
-	if zoneIngress.Spec.GetAdvertisedAddress() != ips[0].String() { // only if we resolve any address, in most cases this is IP not a hostname
+	if zoneIngress.Spec.GetNetworking().GetAdvertisedAddress() != ips[0].String() { // only if we resolve any address, in most cases this is IP not a hostname
 		ziSpec := proto.Clone(zoneIngress.Spec).(*mesh_proto.ZoneIngress)
-		ziSpec.AdvertisedAddress = ips[0].String()
+		ziSpec.Networking.AdvertisedAddress = ips[0].String()
 		return &core_mesh.ZoneIngressResource{
 			Meta: zoneIngress.Meta,
 			Spec: ziSpec,

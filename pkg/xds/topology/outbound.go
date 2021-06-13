@@ -114,7 +114,7 @@ func fillIngressOutbounds(
 		if !zi.HasPublicAddress() {
 			continue // Zone Ingress is not reachable yet from other clusters. This may happen when Ingress Service is pending waiting on External IP on Kubernetes.
 		}
-		ingressCoordinates := net.JoinHostPort(zi.Spec.GetAdvertisedAddress(), strconv.FormatUint(uint64(zi.Spec.GetAdvertisedPort()), 10))
+		ingressCoordinates := net.JoinHostPort(zi.Spec.GetNetworking().GetAdvertisedAddress(), strconv.FormatUint(uint64(zi.Spec.GetNetworking().GetAdvertisedPort()), 10))
 		if ingressInstances[ingressCoordinates] {
 			continue // many Ingress instances can be placed in front of one load balancer (all instances can have the same public address and port). In this case we only need one Instance avoiding creating unnecessary duplicated endpoints
 		}
@@ -124,8 +124,8 @@ func fillIngressOutbounds(
 			}
 			serviceName := service.Tags[mesh_proto.ServiceTag]
 			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
-				Target:   zi.Spec.GetAdvertisedAddress(),
-				Port:     zi.Spec.GetAdvertisedPort(),
+				Target:   zi.Spec.GetNetworking().GetAdvertisedAddress(),
+				Port:     zi.Spec.GetNetworking().GetAdvertisedPort(),
 				Tags:     service.Tags,
 				Weight:   service.Instances,
 				Locality: localityFromTags(mesh, priorityRemote, service.Tags),

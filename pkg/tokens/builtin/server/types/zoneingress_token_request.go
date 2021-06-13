@@ -1,5 +1,5 @@
 package types
 
 type ZoneIngressTokenRequest struct {
-	Name string `json:"name"`
+	Zone string `json:"zone"`
 }

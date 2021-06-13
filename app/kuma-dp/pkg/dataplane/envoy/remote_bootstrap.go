@@ -14,8 +14,6 @@ import (
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	kuma_dp "github.com/kumahq/kuma/pkg/config/app/kuma-dp"
 	"github.com/kumahq/kuma/pkg/core"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
@@ -118,14 +116,10 @@ func (b *remoteBootstrap) requestForBootstrap(url *net_url.URL, cfg kuma_dp.Conf
 	if cfg.DataplaneRuntime.Token != "" {
 		token = cfg.DataplaneRuntime.Token
 	}
-	proxyType := mesh_proto.RegularDpType
-	if cfg.Dataplane.IsIngress {
-		proxyType = mesh_proto.IngressDpType
-	}
 	request := types.BootstrapRequest{
 		Mesh:      cfg.Dataplane.Mesh,
 		Name:      cfg.Dataplane.Name,
-		ProxyType: string(proxyType),
+		ProxyType: cfg.Dataplane.ProxyType,
 		// if not set in config, the 0 will be sent which will result in providing default admin port
 		// that is set in the control plane bootstrap params
 		AdminPort:         cfg.Dataplane.AdminPort.Lowest(),

@@ -37,7 +37,7 @@ type zoneIngressStaticTokenIssuer struct {
 var _ zoneingress.TokenIssuer = &zoneIngressStaticTokenIssuer{}
 
 func (z *zoneIngressStaticTokenIssuer) Generate(identity zoneingress.Identity) (zoneingress.Token, error) {
-	return fmt.Sprintf("token-for-%s", identity.Name), nil
+	return fmt.Sprintf("token-for-%s", identity.Zone), nil
 }
 
 func (z *zoneIngressStaticTokenIssuer) Validate(token zoneingress.Token) (zoneingress.Identity, error) {

@@ -107,7 +107,7 @@ var _ = Describe("Remote Bootstrap", func() {
 					{
 					  "mesh": "demo",
 					  "name": "sample",
-					  "proxyType": "regular",
+					  "proxyType": "dataplane",
 					  "adminPort": 4321,
 					  "dataplaneToken": "token",
 					  "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
@@ -154,7 +154,7 @@ var _ = Describe("Remote Bootstrap", func() {
                     {
                       "mesh": "demo",
                       "name": "sample",
-                      "proxyType": "regular",
+                      "proxyType": "dataplane",
                       "adminPort": 4321,
                       "dataplaneToken": "token",
                       "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
@@ -197,7 +197,7 @@ var _ = Describe("Remote Bootstrap", func() {
                     {
                       "mesh": "demo",
                       "name": "sample",
-                      "proxyType": "regular",
+                      "proxyType": "dataplane",
                       "dataplaneToken": "token",
                       "dataplaneResource": "{\"type\":\"Dataplane\",\"mesh\":\"demo\",\"name\":\"sample\",\"creationTime\":\"0001-01-01T00:00:00Z\",\"modificationTime\":\"0001-01-01T00:00:00Z\"}",
                       "version": {

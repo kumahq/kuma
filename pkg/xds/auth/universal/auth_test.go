@@ -84,7 +84,7 @@ var _ = Describe("Authentication flow", func() {
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		authenticator = universal.NewAuthenticator(issuer, zoneIngressIssuer)
+		authenticator = universal.NewAuthenticator(issuer, zoneIngressIssuer, "zone-1")
 
 		err := resStore.Create(context.Background(), &dpRes, core_store.CreateByKey("dp-1", "default"))
 		Expect(err).ToNot(HaveOccurred())
@@ -136,7 +136,7 @@ var _ = Describe("Authentication flow", func() {
 		}),
 		Entry("should auth with ingress token", testCase{
 			id: builtin_issuer.DataplaneIdentity{
-				Type: builtin_issuer.DpTypeIngress,
+				Type: mesh_proto.IngressProxyType,
 			},
 			dpRes: &ingressDp,
 		}),
@@ -209,14 +209,14 @@ var _ = Describe("Authentication flow", func() {
 		}),
 		Entry("regular dataplane and ingress type", testCase{
 			id: builtin_issuer.DataplaneIdentity{
-				Type: builtin_issuer.DpTypeIngress,
+				Type: mesh_proto.IngressProxyType,
 			},
 			dpRes: &dpRes,
 			err:   `dataplane is of type Dataplane but token allows only for the "ingress" type`,
 		}),
 		Entry("ingress dataplane and dataplane type", testCase{
 			id: builtin_issuer.DataplaneIdentity{
-				Type: builtin_issuer.DpTypeDataplane,
+				Type: mesh_proto.DataplaneProxyType,
 			},
 			dpRes: &ingressDp,
 			err:   `dataplane is of type Ingress but token allows only for the "dataplane" type`,

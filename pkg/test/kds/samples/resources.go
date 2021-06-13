@@ -98,10 +98,12 @@ var (
 		},
 	}
 	ZoneIngress = &mesh_proto.ZoneIngress{
-		Address:           "127.0.0.1",
-		Port:              80,
-		AdvertisedAddress: "192.168.0.1",
-		AdvertisedPort:    10001,
+		Networking: &mesh_proto.ZoneIngress_Networking{
+			Address:           "127.0.0.1",
+			Port:              80,
+			AdvertisedAddress: "192.168.0.1",
+			AdvertisedPort:    10001,
+		},
 		AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{{
 			Tags: map[string]string{
 				"service": "backend",

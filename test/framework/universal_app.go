@@ -46,10 +46,11 @@ networking:
 	ZoneIngress = `
 type: ZoneIngress
 name: ingress
-address: {{ address }}
-advertisedAddress: %s
-advertisedPort: %d
-port: %d
+networking:
+  address: {{ address }}
+  advertisedAddress: %s
+  advertisedPort: %d
+  port: %d
 `
 
 	EchoServerDataplane = `
@@ -394,7 +395,7 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, bu
 		args = append(args, "--dns-enabled")
 	}
 	if ingress {
-		args = append(args, "--ingress")
+		args = append(args, "--proxy-type=ingress")
 	}
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, args)
 }

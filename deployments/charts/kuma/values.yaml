@@ -171,8 +171,6 @@ dataPlane:
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
   enabled: false
-  # -- Mesh to which Dataplane Ingress belongs to
-  mesh: default
   # -- Time for which old listener will still be active as draining
   drainTime: 30s
   # -- Number of replicas of the Ingress

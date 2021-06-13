@@ -74,12 +74,12 @@ func (c *UniversalControlPlane) GenerateDpToken(mesh, service string) (string, e
 	})
 }
 
-func (c *UniversalControlPlane) GenerateZoneIngressToken(name string) (string, error) {
+func (c *UniversalControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
 	return retry.DoWithRetryE(c.t, "generating DP token", DefaultRetries, DefaultTimeout, func() (string, error) {
 		sshApp := NewSshApp(c.verbose, c.cluster.apps[AppModeCP].ports["22"], []string{}, []string{"curl",
 			"--fail", "--show-error",
 			"-H", "\"Content-Type: application/json\"",
-			"--data", fmt.Sprintf(`'{"name": "%s"}'`, name),
+			"--data", fmt.Sprintf(`'{"zone": "%s"}'`, zone),
 			"http://localhost:5681/tokens/zone-ingress"})
 		if err := sshApp.Run(); err != nil {
 			return "", err

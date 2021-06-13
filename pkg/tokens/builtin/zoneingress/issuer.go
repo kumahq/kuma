@@ -8,7 +8,7 @@ import (
 type Token = string
 
 type Identity struct {
-	Name string
+	Zone string
 }
 
 // TokenIssuer issues Zone Ingress Tokens used then for proving identity of the zone ingresses.
@@ -20,7 +20,7 @@ type TokenIssuer interface {
 }
 
 type claims struct {
-	Name string
+	Zone string
 	jwt.StandardClaims
 }
 
@@ -54,7 +54,7 @@ func (j *jwtTokenIssuer) Generate(identity Identity) (Token, error) {
 	}
 
 	c := claims{
-		Name:           identity.Name,
+		Zone:           identity.Zone,
 		StandardClaims: jwt.StandardClaims{},
 	}
 
@@ -85,7 +85,7 @@ func (j *jwtTokenIssuer) Validate(rawToken Token) (Identity, error) {
 	}
 
 	id := Identity{
-		Name: c.Name,
+		Zone: c.Zone,
 	}
 	return id, nil
 }

@@ -72,8 +72,6 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateZoneIngressToken("ingress")
-		Expect(err).ToNot(HaveOccurred())
 
 		// K8s Cluster 1
 		zone1 = k8sClusters.GetCluster(Kuma1)
@@ -114,12 +112,14 @@ metadata:
 		zone3 = universalClusters.GetCluster(Kuma3)
 		optsZone3 = append(optsZone3,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone3...)).
 			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal", echoServerToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(ingressToken)).
+			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone3)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone3.VerifyKuma()
@@ -129,11 +129,13 @@ metadata:
 		zone4 = universalClusters.GetCluster(Kuma4)
 		optsZone4 = append(optsZone4,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone4...)).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken)).
-			Install(IngressUniversal(ingressToken)).
+			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone4)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone4.VerifyKuma()

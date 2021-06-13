@@ -16,25 +16,25 @@ func validateZoneIngress(path validators.PathBuilder, ingress *mesh_proto.ZoneIn
 		return validators.ValidationError{}
 	}
 	var err validators.ValidationError
-	if ingress.GetAdvertisedAddress() == "" && ingress.GetAdvertisedPort() != 0 {
+	if ingress.GetNetworking().GetAdvertisedAddress() == "" && ingress.GetNetworking().GetAdvertisedPort() != 0 {
 		err.AddViolationAt(path.Field("advertisedAddress"), `has to be defined with advertisedPort`)
 	}
-	if ingress.GetAdvertisedPort() == 0 && ingress.GetAdvertisedAddress() != "" {
+	if ingress.GetNetworking().GetAdvertisedPort() == 0 && ingress.GetNetworking().GetAdvertisedAddress() != "" {
 		err.AddViolationAt(path.Field("advertisedPort"), `has to be defined with advertisedAddress`)
 	}
-	if ingress.GetAddress() != "" {
-		err.Add(validateAddress(path.Field("address"), ingress.GetAddress()))
+	if ingress.GetNetworking().GetAddress() != "" {
+		err.Add(validateAddress(path.Field("address"), ingress.GetNetworking().GetAddress()))
 	}
-	if ingress.GetAdvertisedAddress() != "" {
-		err.Add(validateAddress(path.Field("advertisedAddress"), ingress.GetAdvertisedAddress()))
+	if ingress.GetNetworking().GetAdvertisedAddress() != "" {
+		err.Add(validateAddress(path.Field("advertisedAddress"), ingress.GetNetworking().GetAdvertisedAddress()))
 	}
-	if ingress.GetPort() == 0 {
+	if ingress.GetNetworking().GetPort() == 0 {
 		err.AddViolationAt(path.Field("port"), `port has to be defined`)
 	}
-	if ingress.GetPort() > 65535 {
+	if ingress.GetNetworking().GetPort() > 65535 {
 		err.AddViolationAt(path.Field("port"), `port has to be in range of [1, 65535]`)
 	}
-	if ingress.GetAdvertisedPort() > 65535 {
+	if ingress.GetNetworking().GetAdvertisedPort() > 65535 {
 		err.AddViolationAt(path.Field("advertisedPort"), `port has to be in range of [1, 65535]`)
 	}
 	for i, ingressInterface := range ingress.GetAvailableServices() {

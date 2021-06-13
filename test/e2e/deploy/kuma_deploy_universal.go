@@ -66,8 +66,6 @@ name: %s
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(nonDefaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateZoneIngressToken("ingress")
-		Expect(err).ToNot(HaveOccurred())
 
 		// TODO: right now these tests are deliberately run WithHDS(false)
 		// even if HDS is enabled without any ServiceProbes it still affects
@@ -78,12 +76,14 @@ name: %s
 		optsZone1 = append(optsZone1,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithHDS(false))
+		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone1...)).
 			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal1", echoServerToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(ingressToken)).
+			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone1.VerifyKuma()
@@ -94,12 +94,14 @@ name: %s
 		optsZone2 = append(optsZone2,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithHDS(false))
+		ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone2...)).
 			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal2", echoServerToken, WithTransparentProxy(true))).
 			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(ingressToken)).
+			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone2.VerifyKuma()

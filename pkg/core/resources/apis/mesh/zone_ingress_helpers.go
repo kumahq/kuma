@@ -12,10 +12,10 @@ func (r *ZoneIngressResource) UsesInboundInterface(address net.IP, port uint32) 
 	if r == nil {
 		return false
 	}
-	if port == r.Spec.Port && overlap(address, net.ParseIP(r.Spec.Address)) {
+	if port == r.Spec.GetNetworking().GetPort() && overlap(address, net.ParseIP(r.Spec.GetNetworking().GetAddress())) {
 		return true
 	}
-	if port == r.Spec.AdvertisedPort && overlap(address, net.ParseIP(r.Spec.AdvertisedAddress)) {
+	if port == r.Spec.GetNetworking().GetAdvertisedPort() && overlap(address, net.ParseIP(r.Spec.GetNetworking().GetAdvertisedAddress())) {
 		return true
 	}
 	return false
@@ -32,7 +32,7 @@ func (r *ZoneIngressResource) HasPublicAddress() bool {
 	if r == nil {
 		return false
 	}
-	return r.Spec.GetAdvertisedAddress() != "" && r.Spec.GetAdvertisedPort() != 0
+	return r.Spec.GetNetworking().GetAdvertisedAddress() != "" && r.Spec.GetNetworking().GetAdvertisedPort() != 0
 }
 
 func NewZoneIngressResourceFromDataplane(dataplane *DataplaneResource) (*ZoneIngressResource, error) {
@@ -62,8 +62,10 @@ func convert(dataplane *mesh_proto.Dataplane) (*mesh_proto.ZoneIngress, error) {
 		})
 	}
 	return &mesh_proto.ZoneIngress{
-		Address:           dataplane.GetNetworking().GetAddress(),
-		Port:              dataplane.GetNetworking().Inbound[0].GetPort(),
+		Networking: &mesh_proto.ZoneIngress_Networking{
+			Address: dataplane.GetNetworking().GetAddress(),
+			Port:    dataplane.GetNetworking().Inbound[0].GetPort(),
+		},
 		AvailableServices: availableServices,
 	}, nil
 }

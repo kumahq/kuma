@@ -30,24 +30,34 @@ const (
 	// External service tag
 	ExternalServiceTag = "kuma.io/external-service-name"
 
-	RegularDpType DpType = "regular"
-	IngressDpType DpType = "ingress"
-	GatewayDpType DpType = "gateway"
-
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
 )
 
-type DpType string
+type ProxyType string
 
-func (d *Dataplane) DpType() DpType {
+const (
+	DataplaneProxyType ProxyType = "dataplane"
+	IngressProxyType   ProxyType = "ingress"
+	GatewayProxyType   ProxyType = "gateway"
+)
+
+func (t ProxyType) IsValid() error {
+	switch t {
+	case DataplaneProxyType, IngressProxyType, GatewayProxyType:
+		return nil
+	}
+	return errors.New("Invalid proxy type")
+}
+
+func (d *Dataplane) ProxyType() ProxyType {
 	if d.IsIngress() {
-		return IngressDpType
+		return IngressProxyType
 	}
 	if d.GetNetworking().GetGateway() != nil {
-		return GatewayDpType
+		return GatewayProxyType
 	}
-	return RegularDpType
+	return DataplaneProxyType
 }
 
 type InboundInterface struct {

@@ -51,7 +51,7 @@ type DataplaneMetadata struct {
 	DNSPort             uint32
 	EmptyDNSPort        uint32
 	DynamicMetadata     map[string]string
-	ProxyType           mesh_proto.DpType
+	ProxyType           mesh_proto.ProxyType
 }
 
 func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
@@ -82,9 +82,9 @@ func (m *DataplaneMetadata) GetZoneIngressResource() *core_mesh.ZoneIngressResou
 	return m.ZoneIngressResource
 }
 
-func (m *DataplaneMetadata) GetProxyType() mesh_proto.DpType {
+func (m *DataplaneMetadata) GetProxyType() mesh_proto.ProxyType {
 	if m == nil || m.ProxyType == "" {
-		return mesh_proto.RegularDpType
+		return mesh_proto.DataplaneProxyType
 	}
 	return m.ProxyType
 }
@@ -129,7 +129,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 		metadata.DataplaneToken = field.GetStringValue()
 	}
 	if field := xdsMetadata.Fields[fieldDataplaneProxyType]; field != nil {
-		metadata.ProxyType = mesh_proto.DpType(field.GetStringValue())
+		metadata.ProxyType = mesh_proto.ProxyType(field.GetStringValue())
 	}
 	metadata.AdminPort = uint32Metadata(xdsMetadata, fieldDataplaneAdminPort)
 	metadata.DNSPort = uint32Metadata(xdsMetadata, fieldDataplaneDNSPort)

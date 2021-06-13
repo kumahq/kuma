@@ -13,10 +13,11 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
-func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer, zoneIngressIssuer zoneingress.TokenIssuer) auth.Authenticator {
+func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer, zoneIngressIssuer zoneingress.TokenIssuer, zone string) auth.Authenticator {
 	return &universalAuthenticator{
 		issuer:            issuer,
 		zoneIngressIssuer: zoneIngressIssuer,
+		zone:              zone,
 	}
 }
 
@@ -32,6 +33,7 @@ func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer, zoneIngressIss
 type universalAuthenticator struct {
 	issuer            builtin_issuer.DataplaneTokenIssuer
 	zoneIngressIssuer zoneingress.TokenIssuer
+	zone              string
 }
 
 func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
@@ -60,22 +62,22 @@ func (u *universalAuthenticator) AuthenticateZoneIngress(ctx context.Context, zo
 	if err != nil {
 		return err
 	}
-	if zoneIngress.Meta.GetName() != identity.Name {
-		return errors.Errorf("zone ingress name from requestor: %s is different than in token: %s", zoneIngress.Meta.GetName(), identity.Name)
+	if u.zone != identity.Zone {
+		return errors.Errorf("zone ingress zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
 	}
 
 	return nil
 }
 
-func validateType(dataplane *core_mesh.DataplaneResource, dpType builtin_issuer.DpType) error {
-	if dpType == "" { // if dp type is not explicitly specified  we assume it's dataplane so we force Ingress token
-		dpType = builtin_issuer.DpTypeDataplane
+func validateType(dataplane *core_mesh.DataplaneResource, proxyType mesh_proto.ProxyType) error {
+	if proxyType == "" { // if dp type is not explicitly specified  we assume it's dataplane so we force Ingress token
+		proxyType = mesh_proto.DataplaneProxyType
 	}
-	if dataplane.Spec.IsIngress() && dpType != builtin_issuer.DpTypeIngress {
-		return errors.Errorf("dataplane is of type Ingress but token allows only for the %q type", dpType)
+	if dataplane.Spec.IsIngress() && proxyType != mesh_proto.IngressProxyType {
+		return errors.Errorf("dataplane is of type Ingress but token allows only for the %q type", proxyType)
 	}
-	if !dataplane.Spec.IsIngress() && dpType == builtin_issuer.DpTypeIngress {
-		return errors.Errorf("dataplane is of type Dataplane but token allows only for the %q type", dpType)
+	if !dataplane.Spec.IsIngress() && proxyType == mesh_proto.IngressProxyType {
+		return errors.Errorf("dataplane is of type Dataplane but token allows only for the %q type", proxyType)
 	}
 	return nil
 }

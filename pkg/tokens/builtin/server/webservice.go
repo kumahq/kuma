@@ -59,7 +59,7 @@ func (d *tokenWebService) handleIdentityRequest(request *restful.Request, respon
 	token, err := d.issuer.Generate(issuer.DataplaneIdentity{
 		Mesh: idReq.Mesh,
 		Name: idReq.Name,
-		Type: idReq.Type,
+		Type: mesh_proto.ProxyType(idReq.Type),
 		Tags: mesh_proto.MultiValueTagSetFrom(idReq.Tags),
 	})
 	if err != nil {
@@ -81,15 +81,8 @@ func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Requ
 		return
 	}
 
-	if idReq.Name == "" {
-		verr := validators.ValidationError{}
-		verr.AddViolation("name", "cannot be empty")
-		errors.HandleError(response, verr.OrNil(), "Invalid request")
-		return
-	}
-
 	token, err := d.zoneIngressIssuer.Generate(zoneingress.Identity{
-		Name: idReq.Name,
+		Zone: idReq.Zone,
 	})
 	if err != nil {
 		errors.HandleError(response, err, "Could not issue a token")

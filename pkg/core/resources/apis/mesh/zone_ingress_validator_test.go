@@ -32,10 +32,11 @@ var _ = Describe("Dataplane", func() {
 		Entry("with advertised address and port", `
             type: ZoneIngress
             name: zi-1
-            address: 192.168.0.1
-            advertisedAddress: 10.0.0.1
-            port: 10001
-            advertisedPort: 1234
+            networking:
+              address: 192.168.0.1
+              advertisedAddress: 10.0.0.1
+              port: 10001
+              advertisedPort: 1234
             availableServices:
               - tags:
                   kuma.io/service: backend
@@ -49,10 +50,11 @@ var _ = Describe("Dataplane", func() {
 		Entry("with advertised ipv6 address and port", `
             type: ZoneIngress
             name: zi-1
-            address: 192.168.0.1
-            advertisedAddress: ::ffff:0a00:0001
-            port: 10001
-            advertisedPort: 1234
+            networking:
+              address: 192.168.0.1
+              advertisedAddress: ::ffff:0a00:0001
+              port: 10001
+              advertisedPort: 1234
             availableServices:
               - tags:
                   kuma.io/service: backend
@@ -67,8 +69,9 @@ var _ = Describe("Dataplane", func() {
 		Entry("without advertised address and port", `
             type: ZoneIngress
             name: zi-1
-            address: 192.168.0.1
-            port: 10001
+            networking:
+              address: 192.168.0.1
+              port: 10001
             availableServices: []`,
 		),
 	)
@@ -101,9 +104,10 @@ var _ = Describe("Dataplane", func() {
 			dataplane: `
             type: ZoneIngress
             name: zi-1
-            address: 192.168.0.1
-            advertisedAddress: 10.0.0.1
-            advertisedPort: 1234
+            networking:
+              address: 192.168.0.1
+              advertisedAddress: 10.0.0.1
+              advertisedPort: 1234
             availableServices:
               - tags:
                   kuma.io/service: backend
@@ -122,10 +126,11 @@ var _ = Describe("Dataplane", func() {
 			dataplane: `
             type: ZoneIngress
             name: zi-1
-            address: 192.168.0.1
-            advertisedAddress: "!@#"
-            port: 10001
-            advertisedPort: 100000
+            networking:
+              address: 192.168.0.1
+              advertisedAddress: "!@#"
+              port: 10001
+              advertisedPort: 100000
             availableServices:
               - tags:
                   kuma.io/service: backend

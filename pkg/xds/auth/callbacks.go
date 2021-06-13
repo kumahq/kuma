@@ -120,10 +120,10 @@ func (a *authCallbacks) credential(streamID core_xds.StreamID) (Credential, erro
 func (a *authCallbacks) authenticate(credential Credential, req util_xds.DiscoveryRequest) error {
 	md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
 	switch md.GetProxyType() {
-	case mesh_proto.IngressDpType:
+	case mesh_proto.IngressProxyType:
 		return a.authenticateZoneIngress(credential, req)
 	default:
-		return a.authenticateRegularDataplane(credential, req)
+		return a.authenticateDataplane(credential, req)
 	}
 }
 
@@ -157,7 +157,7 @@ func (a *authCallbacks) authenticateZoneIngress(credential Credential, req util_
 	return nil
 }
 
-func (a *authCallbacks) authenticateRegularDataplane(credential Credential, req util_xds.DiscoveryRequest) error {
+func (a *authCallbacks) authenticateDataplane(credential Credential, req util_xds.DiscoveryRequest) error {
 	dataplane := core_mesh.NewDataplaneResource()
 	md := core_xds.DataplaneMetadataFromXdsMetadata(req.Metadata())
 	if md.GetDataplaneResource() != nil {

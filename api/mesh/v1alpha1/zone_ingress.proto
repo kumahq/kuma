@@ -13,23 +13,30 @@ import "validate/validate.proto";
 // mode, dataplane has only inbound interfaces. Every inbound interface matches
 // with services that reside in that cluster.
 message ZoneIngress {
-  // Address on which inbound listener will be exposed
-  string address = 1;
-
-  // AdvertisedAddress defines IP or DNS name on which ZoneIngress is accessible
-  // to other Kuma clusters.
-  string advertisedAddress = 2;
-
-  // Port of the inbound interface that will forward requests to the service.
-  uint32 port = 3;
-
-  // AdvertisedPort defines port on which ZoneIngress is accessible to other
-  // Kuma clusters.
-  uint32 advertisedPort = 4;
 
   // Zone field contains Zone name where ingress is serving, field will be
   // automatically set by Global Kuma CP
-  string zone = 6;
+  string zone = 1;
+
+  message Networking {
+    // Address on which inbound listener will be exposed
+    string address = 1;
+
+    // AdvertisedAddress defines IP or DNS name on which ZoneIngress is
+    // accessible to other Kuma clusters.
+    string advertisedAddress = 2;
+
+    // Port of the inbound interface that will forward requests to the service.
+    uint32 port = 3;
+
+    // AdvertisedPort defines port on which ZoneIngress is accessible to other
+    // Kuma clusters.
+    uint32 advertisedPort = 4;
+  }
+
+  // Networking defines the address and port of the Ingress to listen on.
+  // Additionally publicly advertised address and port could be specified.
+  Networking networking = 2;
 
   message AvailableService {
     // tags of the service
@@ -42,5 +49,5 @@ message ZoneIngress {
 
   // AvailableService contains tags that represent unique subset of
   // endpoints
-  repeated AvailableService availableServices = 5;
+  repeated AvailableService availableServices = 3;
 }

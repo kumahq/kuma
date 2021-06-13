@@ -21,7 +21,6 @@ spec:
     metadata:
       annotations:
         kuma.io/ingress: enabled
-        kuma.io/mesh: {{ .Values.ingress.mesh }}
         {{- if .Values.ingress.annotations }}
         {{- range $key, $value := .Values.ingress.annotations }}
         {{ $key }}: {{ $value | quote }}
@@ -61,8 +60,8 @@ spec:
               value: {{ .Values.ingress.drainTime }}
             - name: KUMA_DATAPLANE_RUNTIME_TOKEN_PATH
               value: /var/run/secrets/kubernetes.io/serviceaccount/token
-            - name: KUMA_DATAPLANE_IS_INGRESS
-              value: "true"
+            - name: KUMA_DATAPLANE_PROXY_TYPE
+              value: "ingress"
           args:
             - run
             - --log-level=info

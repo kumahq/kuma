@@ -69,9 +69,9 @@ func (i IngressGenerator) generateLDS(
 	destinationsPerService map[string][]envoy_common.Tags,
 	apiVersion envoy_common.APIVersion,
 ) (envoy_common.NamedResource, error) {
-	inboundListenerName := envoy_names.GetInboundListenerName(proxy.ZoneIngress.Spec.GetAddress(), proxy.ZoneIngress.Spec.GetPort())
+	inboundListenerName := envoy_names.GetInboundListenerName(proxy.ZoneIngress.Spec.GetNetworking().GetAddress(), proxy.ZoneIngress.Spec.GetNetworking().GetPort())
 	inboundListenerBuilder := envoy_listeners.NewListenerBuilder(apiVersion).
-		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetAddress(), ingress.Spec.GetPort(), model.SocketAddressProtocolTCP)).
+		Configure(envoy_listeners.InboundListener(inboundListenerName, ingress.Spec.GetNetworking().GetAddress(), ingress.Spec.GetNetworking().GetPort(), model.SocketAddressProtocolTCP)).
 		Configure(envoy_listeners.TLSInspector())
 
 	if len(proxy.ZoneIngress.Spec.AvailableServices) == 0 {
