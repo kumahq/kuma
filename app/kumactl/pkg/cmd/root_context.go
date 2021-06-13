@@ -32,6 +32,7 @@ type RootRuntime struct {
 	NewZoneOverviewClient      func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ZoneOverviewClient, error)
 	NewServiceOverviewClient   func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ServiceOverviewClient, error)
 	NewDataplaneTokenClient    func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error)
+	NewZoneIngressTokenClient  func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.ZoneIngressTokenClient, error)
 	NewAPIServerClient         func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
 }
 
@@ -66,6 +67,7 @@ func DefaultRootContext() *RootContext {
 			NewZoneOverviewClient:      kumactl_resources.NewZoneOverviewClient,
 			NewServiceOverviewClient:   kumactl_resources.NewServiceOverviewClient,
 			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
+			NewZoneIngressTokenClient:  tokens.NewZoneIngressTokenClient,
 			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
 		},
 		TypeArgs: map[string]core_model.ResourceType{
@@ -195,6 +197,14 @@ func (rc *RootContext) CurrentDataplaneTokenClient() (tokens.DataplaneTokenClien
 		return nil, err
 	}
 	return rc.Runtime.NewDataplaneTokenClient(controlPlane.Coordinates.ApiServer)
+}
+
+func (rc *RootContext) CurrentZoneIngressTokenClient() (tokens.ZoneIngressTokenClient, error) {
+	controlPlane, err := rc.CurrentControlPlane()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewZoneIngressTokenClient(controlPlane.Coordinates.ApiServer)
 }
 
 func (rc *RootContext) IsFirstTimeUsage() bool {

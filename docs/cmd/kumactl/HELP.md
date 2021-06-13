@@ -449,7 +449,9 @@ Available Commands:
   traffic-routes      Show TrafficRoute
   traffic-trace       Show a single TrafficTrace resource
   traffic-traces      Show TrafficTrace
-  zone                Show a single Retry resource
+  zone                Show a single Zone resource
+  zone-ingress        Show a single ZoneIngress resource
+  zone-ingresses      Show ZoneIngress
   zones               Show Zone
 
 Flags:

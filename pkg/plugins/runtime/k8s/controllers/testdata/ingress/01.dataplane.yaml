@@ -1,7 +1,8 @@
 metadata:
   creationTimestamp: null
 spec:
-  address: 192.168.0.1
-  advertisedAddress: kuma-ingress.com
-  advertisedPort: 10001
-  port: 10001
+  networking:
+    address: 192.168.0.1
+    advertisedAddress: kuma-ingress.com
+    advertisedPort: 10001
+    port: 10001

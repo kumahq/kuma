@@ -47,7 +47,7 @@ func (t ProxyType) IsValid() error {
 	case DataplaneProxyType, IngressProxyType, GatewayProxyType:
 		return nil
 	}
-	return errors.New("Invalid proxy type")
+	return errors.Errorf("%s is not a valid proxy type", t)
 }
 
 func (d *Dataplane) ProxyType() ProxyType {

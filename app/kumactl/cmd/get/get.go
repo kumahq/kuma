@@ -36,6 +36,7 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(NewGetResourcesCmd(pctx, "secrets", core_system.SecretType, BasicResourceTablePrinter))
 	cmd.AddCommand(NewGetResourcesCmd(pctx, "global-secrets", core_system.GlobalSecretType, BasicGlobalResourceTablePrinter))
 	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "zones", core_system.ZoneType, printZones), &pctx.ListContext))
+	cmd.AddCommand(WithPaginationArgs(NewGetResourcesCmd(pctx, "zone-ingresses", core_mesh.ZoneIngressType, BasicGlobalResourceTablePrinter), &pctx.ListContext))
 
 	cmd.AddCommand(NewGetResourceCmd(pctx, "mesh", core_mesh.MeshType, printMeshes))
 	cmd.AddCommand(NewGetResourceCmd(pctx, "dataplane", core_mesh.DataplaneType, printDataplanes))
@@ -52,7 +53,8 @@ func NewGetCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	cmd.AddCommand(NewGetResourceCmd(pctx, "timeout", core_mesh.TimeoutType, BasicResourceTablePrinter))
 	cmd.AddCommand(NewGetResourceCmd(pctx, "secret", core_system.SecretType, BasicResourceTablePrinter))
 	cmd.AddCommand(NewGetResourceCmd(pctx, "global-secret", core_system.GlobalSecretType, BasicGlobalResourceTablePrinter))
-	cmd.AddCommand(NewGetResourceCmd(pctx, "zone", core_mesh.RetryType, printZones))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "zone", core_system.ZoneType, printZones))
+	cmd.AddCommand(NewGetResourceCmd(pctx, "zone-ingress", core_mesh.ZoneIngressType, BasicGlobalResourceTablePrinter))
 	return cmd
 }
 

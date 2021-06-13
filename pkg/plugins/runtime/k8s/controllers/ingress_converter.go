@@ -34,6 +34,10 @@ func (p *PodConverter) IngressFor(zoneIngress *mesh_proto.ZoneIngress, pod *kube
 		return errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
 	}
 
+	if zoneIngress.Networking == nil {
+		zoneIngress.Networking = &mesh_proto.ZoneIngress_Networking{}
+	}
+
 	zoneIngress.Networking.Address = pod.Status.PodIP
 	zoneIngress.Networking.Port = ifaces[0].Port
 
