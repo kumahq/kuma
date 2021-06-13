@@ -107,8 +107,8 @@ type ZoneIngress_Networking struct {
 
 	// Address on which inbound listener will be exposed
 	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
-	// AdvertisedAddress defines IP or DNS name on which ZoneIngress is accessible
-	// to other Kuma clusters.
+	// AdvertisedAddress defines IP or DNS name on which ZoneIngress is
+	// accessible to other Kuma clusters.
 	AdvertisedAddress string `protobuf:"bytes,2,opt,name=advertisedAddress,proto3" json:"advertisedAddress,omitempty"`
 	// Port of the inbound interface that will forward requests to the service.
 	Port uint32 `protobuf:"varint,3,opt,name=port,proto3" json:"port,omitempty"`

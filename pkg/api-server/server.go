@@ -160,6 +160,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	zoneOverviewEndpoints.addFindEndpoint(ws)
 	zoneOverviewEndpoints.addListEndpoint(ws)
 
+	zoneIngressOverviewEndpoints := zoneIngressOverviewEndpoints{
+		resManager: resManager,
+	}
+	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
+	zoneIngressOverviewEndpoints.addListEndpoint(ws)
+
 	serviceInsightEndpoints := serviceInsightEndpoints{
 		resourceEndpoints: resourceEndpoints{
 			mode:                 cfg.Mode,
