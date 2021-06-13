@@ -5,9 +5,10 @@ import (
 )
 
 type Route struct {
-	Match    *mesh_proto.TrafficRoute_Http_Match
-	Modify   *mesh_proto.TrafficRoute_Http_Modify
-	Clusters []Cluster
+	Match     *mesh_proto.TrafficRoute_Http_Match
+	Modify    *mesh_proto.TrafficRoute_Http_Modify
+	RateLimit *mesh_proto.RateLimit
+	Clusters  []Cluster
 }
 
 func NewRouteFromCluster(cluster Cluster) Route {

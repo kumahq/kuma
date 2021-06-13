@@ -57,7 +57,7 @@ conf:
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
+		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "dp-demo-client")
 		Expect(err).ToNot(HaveOccurred())
 		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())

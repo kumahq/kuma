@@ -30,7 +30,7 @@ routing:
 	const defaultMesh = "default"
 
 	var global, zone1, zone2 Cluster
-	var optsGlobal, optsZone1, optsZone2 []DeployOptionsFunc
+	var optsGlobal, optsZone1, optsZone2 = KumaUniversalDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
 	E2EBeforeSuite(func() {
 		clusters, err := NewUniversalClusters(
@@ -40,7 +40,6 @@ routing:
 
 		// Global
 		global = clusters.GetCluster(Kuma5)
-		optsGlobal = []DeployOptionsFunc{}
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
 			Install(YamlUniversal(meshMTLSOn(defaultMesh, "false"))).
@@ -60,9 +59,7 @@ routing:
 
 		// Cluster 1
 		zone1 = clusters.GetCluster(Kuma3)
-		optsZone1 = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		optsZone1 = append(optsZone1, WithGlobalAddress(globalCP.GetKDSServerAddress()))
 		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -77,9 +74,7 @@ routing:
 
 		// Cluster 2
 		zone2 = clusters.GetCluster(Kuma4)
-		optsZone2 = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		optsZone2 = append(optsZone2, WithGlobalAddress(globalCP.GetKDSServerAddress()))
 		ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
 		Expect(err).ToNot(HaveOccurred())
 

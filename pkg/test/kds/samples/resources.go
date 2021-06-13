@@ -294,4 +294,16 @@ var (
 	Config = &system_proto.Config{
 		Config: "sample config",
 	}
+	RateLimit = &mesh_proto.RateLimit{
+		Sources: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "*",
+			},
+		}},
+		Destinations: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "*",
+			},
+		}},
+	}
 )

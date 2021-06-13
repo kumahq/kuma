@@ -40,6 +40,7 @@ var (
 		core_mesh.HealthCheckType,
 		core_mesh.MeshType,
 		core_mesh.ProxyTemplateType,
+		core_mesh.RateLimitType,
 		core_mesh.RetryType,
 		core_mesh.TimeoutType,
 		core_mesh.TrafficLogType,

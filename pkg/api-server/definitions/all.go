@@ -13,6 +13,7 @@ var DefaultCRUDLEndpoints = []ResourceWsDefinition{
 	ExternalServiceWsDefinition,
 	HealthCheckWsDefinition,
 	ProxyTemplateWsDefinition,
+	RateLimitWsDefinition,
 	TrafficPermissionWsDefinition,
 	TrafficLogWsDefinition,
 	TrafficRouteWsDefinition,

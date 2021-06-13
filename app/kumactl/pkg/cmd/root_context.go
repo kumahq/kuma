@@ -78,6 +78,7 @@ func DefaultRootContext() *RootContext {
 			"healthcheck":        core_mesh.HealthCheckType,
 			"mesh":               core_mesh.MeshType,
 			"proxytemplate":      core_mesh.ProxyTemplateType,
+			"rate-limit":         core_mesh.RateLimitType,
 			"retry":              core_mesh.RetryType,
 			"timeout":            core_mesh.TimeoutType,
 			"traffic-log":        core_mesh.TrafficLogType,

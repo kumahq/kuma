@@ -180,6 +180,12 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return mesh_core.NewRetryResource() },
 					expectedMessage: "deleted Retry \"web-to-backend\"\n",
 				}),
+				Entry("rate-limits", testCase{
+					typ:             "rate-limit",
+					name:            "100-rps",
+					resource:        func() core_model.Resource { return mesh_core.NewRateLimitResource() },
+					expectedMessage: "deleted RateLimit \"100-rps\"\n",
+				}),
 				Entry("timeouts", testCase{
 					typ:             "timeout",
 					name:            "web",

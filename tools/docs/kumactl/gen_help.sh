@@ -43,6 +43,7 @@ gen_help kumactl get
 gen_help kumactl get meshes
 gen_help kumactl get dataplanes
 gen_help kumactl get healthchecks
+gen_help kumactl get rate-limits
 gen_help kumactl get retries
 gen_help kumactl get proxytemplates
 gen_help kumactl get traffic-logs

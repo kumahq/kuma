@@ -86,6 +86,32 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
+  name: retries.kuma.io
+spec:
+  group: kuma.io
+  names:
+    kind: Retry
+    plural: retries
+  scope: Cluster
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          description: Retry is the Schema for the retries API
+          properties:
+            mesh:
+              type: string
+            spec:
+              x-kubernetes-preserve-unknown-fields: true
+              type: object
+          type: object
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  creationTimestamp: null
   name: serviceinsights.kuma.io
 spec:
   group: kuma.io
@@ -499,12 +525,12 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   creationTimestamp: null
-  name: retries.kuma.io
+  name: ratelimits.kuma.io
 spec:
   group: kuma.io
   names:
-    kind: Retry
-    plural: retries
+    kind: RateLimit
+    plural: ratelimits
   scope: Cluster
   versions:
     - name: v1alpha1
@@ -512,7 +538,7 @@ spec:
       storage: true
       schema:
         openAPIV3Schema:
-          description: Retry is the Schema for the retries API
+          description: RateLimit is the Schema for the ratelimits API
           properties:
             mesh:
               type: string
@@ -570,6 +596,7 @@ rules:
       - meshinsights
       - serviceinsights
       - proxytemplates
+      - ratelimits
       - trafficpermissions
       - trafficroutes
       - timeouts
@@ -746,7 +773,7 @@ spec:
     metadata:
       annotations:
         checksum/config: 1143b9fd6b0dd9591b450c90c4fa2fa109e582b02bf82140764f9980302b3603
-        checksum/tls-secrets: 4bb87694292f07bc73ed7b9f782b86fc715da1daa61e654459e9b12d2d8e07c5
+        checksum/tls-secrets: 47a8c27cf02b8244e9981c1360f00d868381935eccdcbfe44ee3518d4ad8527c
       labels:
         app.kubernetes.io/name: kuma
         app.kubernetes.io/instance: kuma
@@ -872,7 +899,8 @@ spec:
           configMap:
             name: kuma-control-plane-config
 ---
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
+
 kind: MutatingWebhookConfiguration
 metadata:
   name: kuma-admission-mutating-webhook-configuration
@@ -883,6 +911,7 @@ metadata:
     app.kubernetes.io/instance: kuma
 webhooks:
   - name: mesh.defaulter.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
@@ -902,6 +931,7 @@ webhooks:
           - meshes
     sideEffects: None
   - name: owner-reference.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
@@ -923,6 +953,7 @@ webhooks:
           - healthchecks
           - retries
           - proxytemplates
+          - ratelimits
           - trafficlogs
           - trafficpermissions
           - trafficroutes
@@ -931,6 +962,7 @@ webhooks:
       
     sideEffects: None
   - name: kuma-injector.kuma.io
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Crash
     clientConfig:
       caBundle: XYZ
@@ -949,7 +981,8 @@ webhooks:
           - pods
     sideEffects: None
 ---
-apiVersion: admissionregistration.k8s.io/v1beta1
+apiVersion: admissionregistration.k8s.io/v1
+
 kind: ValidatingWebhookConfiguration
 metadata:
   name: kuma-validating-webhook-configuration
@@ -960,6 +993,7 @@ metadata:
     app.kubernetes.io/instance: kuma
 webhooks:
   - name: validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Fail
     clientConfig:
       caBundle: XYZ
@@ -985,6 +1019,7 @@ webhooks:
           - retries
           - meshes
           - proxytemplates
+          - ratelimits
           - trafficlogs
           - trafficpermissions
           - trafficroutes
@@ -994,6 +1029,7 @@ webhooks:
       
     sideEffects: None
   - name: service.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1beta1"]
     failurePolicy: Ignore
     clientConfig:
       caBundle: XYZ
@@ -1013,6 +1049,7 @@ webhooks:
           - services
     sideEffects: None
   - name: secret.validator.kuma-admission.kuma.io
+    admissionReviewVersions: ["v1beta1"]
     namespaceSelector:
       matchLabels:
         kuma.io/system-namespace: "true"
