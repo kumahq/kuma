@@ -73,12 +73,17 @@ func ServerSideMTLS(ctx xds_context.Context, metadata *core_xds.DataplaneMetadat
 	})
 }
 
-func HttpConnectionManager(statsName string, forwardClientCertDetails bool) FilterChainBuilderOpt {
+func HttpConnectionManager(statsName string) FilterChainBuilderOpt {
 	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
 		config.AddV3(&v3.HttpConnectionManagerConfigurer{
-			StatsName:                statsName,
-			ForwardClientCertDetails: forwardClientCertDetails,
+			StatsName: statsName,
 		})
+	})
+}
+
+func ServiceIdentityInjection() FilterChainBuilderOpt {
+	return FilterChainBuilderOptFunc(func(config *FilterChainBuilderConfig) {
+		config.AddV3(&v3.ServiceIdentityInjectionConfigurer{})
 	})
 }
 
