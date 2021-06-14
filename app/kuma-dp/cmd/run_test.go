@@ -3,8 +3,8 @@
 package cmd
 
 import (
-	"bytes"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net"
 	"os"
@@ -110,10 +110,11 @@ var _ = Describe("run", func() {
 				Expect(err).ToNot(HaveOccurred())
 				return respBytes, "", nil
 			}
+			_, writer := io.Pipe()
 			cmd := NewRootCmd(rootCtx)
 			cmd.SetArgs(append([]string{"run"}, given.args...))
-			cmd.SetOut(&bytes.Buffer{})
-			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetOut(writer)
+			cmd.SetErr(writer)
 
 			// when
 			By("starting the dataplane manager")
