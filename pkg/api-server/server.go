@@ -160,6 +160,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	zoneOverviewEndpoints.addFindEndpoint(ws)
 	zoneOverviewEndpoints.addListEndpoint(ws)
 
+	zoneIngressOverviewEndpoints := zoneIngressOverviewEndpoints{
+		resManager: resManager,
+	}
+	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
+	zoneIngressOverviewEndpoints.addListEndpoint(ws)
+
 	serviceInsightEndpoints := serviceInsightEndpoints{
 		resourceEndpoints: resourceEndpoints{
 			mode:                 cfg.Mode,
@@ -205,12 +211,16 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 }
 
 func dataplaneTokenWs(resManager manager.ResourceManager, cfg *kuma_cp.Config) (*restful.WebService, error) {
-	generator, err := builtin.NewDataplaneTokenIssuer(resManager)
+	dpIssuer, err := builtin.NewDataplaneTokenIssuer(resManager)
+	if err != nil {
+		return nil, err
+	}
+	zoneIngressIssuer, err := builtin.NewZoneIngressTokenIssuer(resManager)
 	if err != nil {
 		return nil, err
 	}
 	adminAuth := authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost}
-	return tokens_server.NewWebservice(generator).Filter(adminAuth.Validate), nil
+	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer).Filter(adminAuth.Validate), nil
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {

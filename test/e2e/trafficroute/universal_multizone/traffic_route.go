@@ -56,17 +56,17 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(defaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
-		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 1
 		zone1 = clusters.GetCluster(Kuma3)
 		optsZone1 = append(optsZone1, WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone1...)).
 			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
+			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone1.VerifyKuma()
@@ -75,6 +75,8 @@ routing:
 		// Cluster 2
 		zone2 = clusters.GetCluster(Kuma4)
 		optsZone2 = append(optsZone2, WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone2...)).
@@ -108,7 +110,7 @@ routing:
 				WithServiceName("another-test-server"),
 				WithTransparentProxy(true),
 			)).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
+			Install(IngressUniversal(ingressTokenKuma4)).
 			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone2.VerifyKuma()

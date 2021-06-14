@@ -16,6 +16,7 @@ var (
 	SupportedTypes = []model.ResourceType{
 		mesh.CircuitBreakerType,
 		mesh.DataplaneType,
+		mesh.ZoneIngressType,
 		mesh.DataplaneInsightType,
 		mesh.ExternalServiceType,
 		mesh.FaultInjectionType,
@@ -30,6 +31,7 @@ var (
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
 		system.SecretType,
+		system.GlobalSecretType,
 		system.ConfigType,
 	}
 )

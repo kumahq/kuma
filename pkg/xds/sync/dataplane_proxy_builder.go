@@ -95,6 +95,11 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		return nil, nil, err
 	}
 
+	zoneIngresses, err := xds_topology.GetZoneIngresses(syncLog, ctx, p.CachingResManager, p.LookupIP)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	matchedExternalServices, err := p.PermissionMatcher.MatchExternalServices(ctx, dataplane, externalServices)
 	if err != nil {
 		return nil, nil, err
@@ -110,7 +115,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 	// resolve all endpoints that match given selectors
-	outbound := xds_topology.BuildEndpointMap(meshContext.Resource, p.Zone, meshContext.Dataplanes.Items, matchedExternalServices, p.DataSourceLoader)
+	outbound := xds_topology.BuildEndpointMap(meshContext.Resource, p.Zone, meshContext.Dataplanes.Items, zoneIngresses.Items, matchedExternalServices, p.DataSourceLoader)
 
 	routing := &xds.Routing{
 		TrafficRoutes:   routes,

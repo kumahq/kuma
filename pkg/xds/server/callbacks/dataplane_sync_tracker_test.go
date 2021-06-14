@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
+
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/test"
 	util_watchdog "github.com/kumahq/kuma/pkg/util/watchdog"
@@ -79,13 +81,13 @@ var _ = Describe("Sync", func() {
 			watchdogCh := make(chan core_model.ResourceKey)
 
 			// setup
-			tracker := NewDataplaneSyncTracker(NewDataplaneWatchdogFunc(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(func(proxyId *core_xds.ProxyId, streamId int64) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
-					watchdogCh <- dataplaneId
+					watchdogCh <- proxyId.ToResourceKey()
 					<-stop
 					close(watchdogCh)
 				})
-			}))
+			})
 			callbacks := util_xds_v2.AdaptCallbacks(tracker)
 
 			// given
@@ -136,7 +138,7 @@ var _ = Describe("Sync", func() {
 		It("should start only one watchdog per dataplane", func() {
 			// setup
 			var activeWatchdogs int32
-			tracker := NewDataplaneSyncTracker(func(dataplaneId core_model.ResourceKey, streamId int64) util_watchdog.Watchdog {
+			tracker := NewDataplaneSyncTracker(func(proxyId *core_xds.ProxyId, streamId int64) util_watchdog.Watchdog {
 				return WatchdogFunc(func(stop <-chan struct{}) {
 					atomic.AddInt32(&activeWatchdogs, 1)
 					<-stop

@@ -8,6 +8,7 @@ controlPlane:
 dataplane:
   drainTime: 30s
   bootstrapVersion: ""
+  proxyType: dataplane
 dataplaneRuntime:
   binaryPath: envoy
 dns:

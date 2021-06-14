@@ -61,7 +61,6 @@ A Helm chart for the Kuma Control Plane
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
 | ingress.enabled | bool | `false` | If true, it deploys Ingress for cross cluster communication |
-| ingress.mesh | string | `"default"` | Mesh to which Dataplane Ingress belongs to |
 | ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | ingress.replicas | int | `1` | Number of replicas of the Ingress |
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |

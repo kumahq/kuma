@@ -400,8 +400,8 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 Flags:
   -h, --help                 help for dataplane-token
       --name string          name of the Dataplane
+      --proxy-type string    type of the Dataplane ("dataplane", "ingress")
       --tag stringToString   required tag values for dataplane (split values by comma to provide multiple values) (default [])
-      --type string          type of the Dataplane ("dataplane", "ingress")
 
 Global Flags:
       --config-file string   path to the configuration file to use
@@ -451,7 +451,9 @@ Available Commands:
   traffic-routes      Show TrafficRoute
   traffic-trace       Show a single TrafficTrace resource
   traffic-traces      Show TrafficTrace
-  zone                Show a single Retry resource
+  zone                Show a single Zone resource
+  zone-ingress        Show a single ZoneIngress resource
+  zone-ingresses      Show ZoneIngress
   zones               Show Zone
 
 Flags:

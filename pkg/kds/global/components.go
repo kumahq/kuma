@@ -20,7 +20,7 @@ import (
 	kds_server "github.com/kumahq/kuma/pkg/kds/server"
 
 	"github.com/kumahq/kuma/pkg/core"
-	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/runtime"
@@ -32,26 +32,29 @@ import (
 var (
 	kdsGlobalLog  = core.Log.WithName("kds-global")
 	ProvidedTypes = []model.ResourceType{
-		mesh.CircuitBreakerType,
-		mesh.DataplaneType,
-		mesh.ExternalServiceType,
-		mesh.FaultInjectionType,
-		mesh.HealthCheckType,
-		mesh.MeshType,
-		mesh.ProxyTemplateType,
-		mesh.RateLimitType,
-		mesh.RetryType,
-		mesh.TimeoutType,
-		mesh.TrafficLogType,
-		mesh.TrafficPermissionType,
-		mesh.TrafficRouteType,
-		mesh.TrafficTraceType,
+		core_mesh.CircuitBreakerType,
+		core_mesh.DataplaneType,
+		core_mesh.ZoneIngressType,
+		core_mesh.ExternalServiceType,
+		core_mesh.FaultInjectionType,
+		core_mesh.HealthCheckType,
+		core_mesh.MeshType,
+		core_mesh.ProxyTemplateType,
+		core_mesh.RateLimitType,
+		core_mesh.RetryType,
+		core_mesh.TimeoutType,
+		core_mesh.TrafficLogType,
+		core_mesh.TrafficPermissionType,
+		core_mesh.TrafficRouteType,
+		core_mesh.TrafficTraceType,
 		system.SecretType,
+		system.GlobalSecretType,
 		system.ConfigType,
 	}
 	ConsumedTypes = []model.ResourceType{
-		mesh.DataplaneType,
-		mesh.DataplaneInsightType,
+		core_mesh.DataplaneType,
+		core_mesh.ZoneIngressType,
+		core_mesh.DataplaneInsightType,
 	}
 )
 
@@ -120,6 +123,11 @@ func Callbacks(s sync_store.ResourceSyncer, k8sStore bool, kubeFactory resources
 				}
 				if kubeObject.Scope() == k8s_model.ScopeNamespace {
 					util.AddSuffixToNames(rs.GetItems(), "default")
+				}
+			}
+			if rs.GetItemType() == core_mesh.ZoneIngressType {
+				for _, zi := range rs.(*core_mesh.ZoneIngressResourceList).Items {
+					zi.Spec.Zone = clusterName
 				}
 			}
 			return s.Sync(rs, sync_store.PrefilterBy(func(r model.Resource) bool {

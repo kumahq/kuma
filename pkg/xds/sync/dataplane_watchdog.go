@@ -5,13 +5,14 @@ import (
 
 	"github.com/go-logr/logr"
 
+	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/store"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
-	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
-	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
-	"github.com/kumahq/kuma/pkg/core/xds"
+	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 )
 
@@ -23,6 +24,7 @@ type DataplaneWatchdogDependencies struct {
 	ingressReconciler     SnapshotReconciler
 	xdsContextBuilder     *xdsContextBuilder
 	meshCache             *mesh.Cache
+	metadataTracker       DataplaneMetadataTracker
 }
 
 type DataplaneWatchdog struct {
@@ -32,30 +34,42 @@ type DataplaneWatchdog struct {
 	log      logr.Logger
 
 	// state of watchdog
-	lastHash string // last Mesh hash that was used to **successfully** generate Reconcile Envoy config
-	dpType   mesh_proto.DpType
+	lastHash         string // last Mesh hash that was used to **successfully** generate Reconcile Envoy config
+	dpType           mesh_proto.ProxyType
+	proxyTypeSettled bool
 }
 
-func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, key core_model.ResourceKey, streamId int64) *DataplaneWatchdog {
+func NewDataplaneWatchdog(deps DataplaneWatchdogDependencies, proxyId *core_xds.ProxyId, streamId int64) *DataplaneWatchdog {
 	return &DataplaneWatchdog{
 		DataplaneWatchdogDependencies: deps,
-		key:                           key,
+		key:                           proxyId.ToResourceKey(),
 		streamId:                      streamId,
-		log:                           core.Log.WithValues("key", "key", "streamID", streamId),
+		log:                           core.Log.WithValues("key", proxyId.ToResourceKey(), "streamID", streamId),
+		proxyTypeSettled:              false,
 	}
 }
 
 func (d *DataplaneWatchdog) Sync() error {
+	ctx := context.Background()
+
 	if d.dpType == "" {
-		// Dataplane type does not change over time therefore we need to figure it once per DataplaneWatchdog
-		if err := d.inferDpType(); err != nil {
+		d.dpType = d.metadataTracker.Metadata(d.streamId).GetProxyType()
+	}
+	// backwards compatibility
+	if d.dpType == mesh_proto.DataplaneProxyType && !d.proxyTypeSettled {
+		dataplane := mesh_core.NewDataplaneResource()
+		if err := d.dataplaneProxyBuilder.CachingResManager.Get(ctx, dataplane, store.GetBy(d.key)); err != nil {
 			return err
 		}
+		if dataplane.Spec.IsIngress() {
+			d.dpType = mesh_proto.IngressProxyType
+		}
+		d.proxyTypeSettled = true
 	}
 	switch d.dpType {
-	case mesh_proto.RegularDpType, mesh_proto.GatewayDpType:
+	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
 		return d.syncDataplane()
-	case mesh_proto.IngressDpType:
+	case mesh_proto.IngressProxyType:
 		return d.syncIngress()
 	default:
 		// It might be a case that dp type is not yet inferred because there is no Dataplane definition yet.
@@ -64,27 +78,15 @@ func (d *DataplaneWatchdog) Sync() error {
 }
 
 func (d *DataplaneWatchdog) Cleanup() error {
-	proxyID := xds.FromResourceKey(d.key)
+	proxyID := core_xds.FromResourceKey(d.key)
 	switch d.dpType {
-	case mesh_proto.RegularDpType, mesh_proto.GatewayDpType:
+	case mesh_proto.DataplaneProxyType, mesh_proto.GatewayProxyType:
 		return d.dataplaneReconciler.Clear(&proxyID)
-	case mesh_proto.IngressDpType:
+	case mesh_proto.IngressProxyType:
 		return d.ingressReconciler.Clear(&proxyID)
 	default:
 		return nil
 	}
-}
-
-func (d *DataplaneWatchdog) inferDpType() error {
-	dataplane := core_mesh.NewDataplaneResource()
-	if err := d.resManager.Get(context.Background(), dataplane, core_store.GetBy(d.key)); err != nil {
-		if core_store.IsResourceNotFound(err) {
-			return nil
-		}
-		return err
-	}
-	d.dpType = dataplane.Spec.DpType()
-	return nil
 }
 
 // syncDataplane syncs state of the Dataplane.

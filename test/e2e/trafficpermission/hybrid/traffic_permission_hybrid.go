@@ -69,18 +69,18 @@ spec:
 
 		echoServerToken, err := globalCP.GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("default", "ingress")
-		Expect(err).ToNot(HaveOccurred())
 
 		// Zone universal
 		zoneUniversal = universalClusters.GetCluster(Kuma3)
 		optsZoneUniversal = append(optsZoneUniversal,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Zone, optsZoneUniversal...)).
 			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
-			Install(IngressUniversal("default", ingressToken)).
+			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
 		err = zoneUniversal.VerifyKuma()

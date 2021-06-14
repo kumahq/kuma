@@ -50,6 +50,7 @@ rules:
       - meshes
       - zones
       - zoneinsights
+      - zoneingresses
       - meshinsights
       - serviceinsights
       - proxytemplates

@@ -7,6 +7,8 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
@@ -25,6 +27,7 @@ func DefaultConfig() Config {
 			Name:      "",                                                      // Dataplane name must be set explicitly
 			AdminPort: config_types.MustPortRange(30001, config_types.MaxPort), // by default, automatically choose a free port for Envoy Admin interface
 			DrainTime: 30 * time.Second,
+			ProxyType: "dataplane",
 		},
 		DataplaneRuntime: DataplaneRuntime{
 			BinaryPath: "envoy",
@@ -109,6 +112,8 @@ type Dataplane struct {
 	Mesh string `yaml:"mesh,omitempty" envconfig:"kuma_dataplane_mesh"`
 	// Dataplane name.
 	Name string `yaml:"name,omitempty" envconfig:"kuma_dataplane_name"`
+	// ProxyType defines mode which should be used, supported values: 'dataplane', 'ingress'
+	ProxyType string `yaml:"proxyType,omitempty" envconfig:"kuma_dataplane_proxy_type"`
 	// Port (or range of ports to choose from) for Envoy Admin API to listen on.
 	// Empty value indicates that Envoy Admin API should not be exposed over TCP.
 	// Format: "9901 | 9901-9999 | 9901- | -9901".
@@ -182,7 +187,11 @@ func (d *Dataplane) Sanitize() {
 }
 
 func (d *Dataplane) Validate() (errs error) {
-	if d.Mesh == "" {
+	proxyType := mesh_proto.ProxyType(d.ProxyType)
+	if err := proxyType.IsValid(); err != nil {
+		errs = multierr.Append(errs, errors.Wrap(err, ".ProxyType is not valid"))
+	}
+	if d.Mesh == "" && proxyType != mesh_proto.IngressProxyType {
 		errs = multierr.Append(errs, errors.Errorf(".Mesh must be non-empty"))
 	}
 	if d.Name == "" {

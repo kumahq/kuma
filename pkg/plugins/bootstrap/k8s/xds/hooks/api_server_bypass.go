@@ -32,6 +32,10 @@ func NewApiServerBypass(address string, port uint32) ApiServerBypass {
 }
 
 func (h ApiServerBypass) Modify(resources *core_xds.ResourceSet, ctx xds_context.Context, proxy *core_xds.Proxy) error {
+	if proxy.Dataplane == nil {
+		return nil
+	}
+	// backwards compatibility
 	if proxy.Dataplane.Spec.IsIngress() || ctx.Mesh.Resource.Spec.IsPassthrough() {
 		return nil
 	}

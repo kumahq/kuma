@@ -66,6 +66,7 @@ func DefaultDataplaneWatchdogFactory(
 		ingressReconciler:     ingressReconciler,
 		xdsContextBuilder:     xdsContextBuilder,
 		meshCache:             meshSnapshotCache,
+		metadataTracker:       metadataTracker,
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,

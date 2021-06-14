@@ -20,12 +20,19 @@ import (
 type StreamID = int64
 
 type ProxyId struct {
-	Mesh string
-	Name string
+	mesh string
+	name string
 }
 
-func (id ProxyId) String() string {
-	return fmt.Sprintf("%s.%s", id.Mesh, id.Name)
+func (id *ProxyId) String() string {
+	return fmt.Sprintf("%s.%s", id.mesh, id.name)
+}
+
+func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
+	return core_model.ResourceKey{
+		Name: id.name,
+		Mesh: id.mesh,
+	}
 }
 
 // ServiceName is a convenience type alias to clarify the meaning of string value.
@@ -110,12 +117,13 @@ const (
 )
 
 type Proxy struct {
-	Id         ProxyId
-	APIVersion envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
-	Dataplane  *mesh_core.DataplaneResource
-	Metadata   *DataplaneMetadata
-	Routing    Routing
-	Policies   MatchedPolicies
+	Id          ProxyId
+	APIVersion  envoy_common.APIVersion // todo(jakubdyszkiewicz) consider moving APIVersion here. pkg/core should not depend on pkg/xds. It should be other way around.
+	Dataplane   *mesh_core.DataplaneResource
+	ZoneIngress *mesh_core.ZoneIngressResource
+	Metadata    *DataplaneMetadata
+	Routing     Routing
+	Policies    MatchedPolicies
 }
 
 type Routing struct {
@@ -204,9 +212,11 @@ func (l EndpointList) Filter(selector mesh_proto.TagSelector) EndpointList {
 	return endpoints
 }
 
-func BuildProxyId(mesh, name string, more ...string) (*ProxyId, error) {
-	id := strings.Join(append([]string{mesh, name}, more...), ".")
-	return ParseProxyIdFromString(id)
+func BuildProxyId(mesh, name string) *ProxyId {
+	return &ProxyId{
+		name: name,
+		mesh: mesh,
+	}
 }
 
 func ParseProxyIdFromString(id string) (*ProxyId, error) {
@@ -215,9 +225,7 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 	}
 	parts := strings.SplitN(id, ".", 2)
 	mesh := parts[0]
-	if mesh == "" {
-		return nil, errors.New("mesh must not be empty")
-	}
+	// when proxy is an ingress mesh is empty
 	if len(parts) < 2 {
 		return nil, errors.New("the name should be provided after the dot")
 	}
@@ -226,21 +234,14 @@ func ParseProxyIdFromString(id string) (*ProxyId, error) {
 		return nil, errors.New("name must not be empty")
 	}
 	return &ProxyId{
-		Mesh: mesh,
-		Name: name,
+		mesh: mesh,
+		name: name,
 	}, nil
-}
-
-func (id *ProxyId) ToResourceKey() core_model.ResourceKey {
-	return core_model.ResourceKey{
-		Name: id.Name,
-		Mesh: id.Mesh,
-	}
 }
 
 func FromResourceKey(key core_model.ResourceKey) ProxyId {
 	return ProxyId{
-		Mesh: key.Mesh,
-		Name: key.Name,
+		mesh: key.Mesh,
+		name: key.Name,
 	}
 }

@@ -5,15 +5,19 @@ import (
 
 	"github.com/pkg/errors"
 
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	builtin_issuer "github.com/kumahq/kuma/pkg/tokens/builtin/issuer"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
-func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer) auth.Authenticator {
+func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer, zoneIngressIssuer zoneingress.TokenIssuer, zone string) auth.Authenticator {
 	return &universalAuthenticator{
-		issuer: issuer,
+		issuer:            issuer,
+		zoneIngressIssuer: zoneIngressIssuer,
+		zone:              zone,
 	}
 }
 
@@ -27,7 +31,9 @@ func NewAuthenticator(issuer builtin_issuer.DataplaneTokenIssuer) auth.Authentic
 // with inbounds: 1) kuma.io/service:web 2) kuma.io/service:web-api, you need token for both values kuma.io/service=web,web-api
 // Dataplane also needs to have all tags defined in the token
 type universalAuthenticator struct {
-	issuer builtin_issuer.DataplaneTokenIssuer
+	issuer            builtin_issuer.DataplaneTokenIssuer
+	zoneIngressIssuer zoneingress.TokenIssuer
+	zone              string
 }
 
 func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
@@ -51,15 +57,27 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *co
 	return nil
 }
 
-func validateType(dataplane *core_mesh.DataplaneResource, dpType builtin_issuer.DpType) error {
-	if dpType == "" { // if dp type is not explicitly specified  we assume it's dataplane so we force Ingress token
-		dpType = builtin_issuer.DpTypeDataplane
+func (u *universalAuthenticator) AuthenticateZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
+	identity, err := u.zoneIngressIssuer.Validate(credential)
+	if err != nil {
+		return err
 	}
-	if dataplane.Spec.IsIngress() && dpType != builtin_issuer.DpTypeIngress {
-		return errors.Errorf("dataplane is of type Ingress but token allows only for the %q type", dpType)
+	if u.zone != identity.Zone {
+		return errors.Errorf("zone ingress zone from requestor: %s is different than in token: %s", u.zone, identity.Zone)
 	}
-	if !dataplane.Spec.IsIngress() && dpType == builtin_issuer.DpTypeIngress {
-		return errors.Errorf("dataplane is of type Dataplane but token allows only for the %q type", dpType)
+
+	return nil
+}
+
+func validateType(dataplane *core_mesh.DataplaneResource, proxyType mesh_proto.ProxyType) error {
+	if proxyType == "" { // if dp type is not explicitly specified  we assume it's dataplane so we force Ingress token
+		proxyType = mesh_proto.DataplaneProxyType
+	}
+	if dataplane.Spec.IsIngress() && proxyType != mesh_proto.IngressProxyType {
+		return errors.Errorf("dataplane is of type Ingress but token allows only for the %q type", proxyType)
+	}
+	if !dataplane.Spec.IsIngress() && proxyType == mesh_proto.IngressProxyType {
+		return errors.Errorf("dataplane is of type Dataplane but token allows only for the %q type", proxyType)
 	}
 	return nil
 }

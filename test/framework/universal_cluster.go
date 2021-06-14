@@ -173,7 +173,14 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string, builtindns bool) error {
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns)
+	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns, false)
+	return app.dpApp.Start()
+}
+
+func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, appname, ip, dpyaml, token string, builtindns bool) error {
+	cpIp := c.apps[AppModeCP].ip
+	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
+	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns, true)
 	return app.dpApp.Start()
 }
 

@@ -287,6 +287,7 @@ function _kumactl_generate {
     commands=(
       "dataplane-token:Generate Dataplane Token"
       "tls-certificate:Generate a TLS certificate"
+      "zone-ingress-token:Generate Zone Ingress Token"
     )
     _describe "command" commands
     ;;
@@ -299,14 +300,17 @@ function _kumactl_generate {
   tls-certificate)
     _kumactl_generate_tls-certificate
     ;;
+  zone-ingress-token)
+    _kumactl_generate_zone-ingress-token
+    ;;
   esac
 }
 
 function _kumactl_generate_dataplane-token {
   _arguments \
     '--name[name of the Dataplane]:' \
+    '--proxy-type[type of the Dataplane ("dataplane", "ingress")]:' \
     '--tag[required tag values for dataplane (split values by comma to provide multiple values)]:' \
-    '--type[type of the Dataplane ("dataplane", "ingress")]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
@@ -319,6 +323,15 @@ function _kumactl_generate_tls-certificate {
     '*--cp-hostname[DNS name of the control plane]:' \
     '--key-file[path to a file with a generated private key]:' \
     '--type[type of the certificate: one of client|server]:' \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]'
+}
+
+function _kumactl_generate_zone-ingress-token {
+  _arguments \
+    '--zone[name of the zone where ingress resides]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
@@ -373,7 +386,9 @@ function _kumactl_get {
       "traffic-routes:Show TrafficRoute"
       "traffic-trace:Show a single TrafficTrace resource"
       "traffic-traces:Show TrafficTrace"
-      "zone:Show a single Retry resource"
+      "zone:Show a single Zone resource"
+      "zone-ingress:Show a single ZoneIngress resource"
+      "zone-ingresses:Show ZoneIngress"
       "zones:Show Zone"
     )
     _describe "command" commands
@@ -479,6 +494,12 @@ function _kumactl_get {
     ;;
   zone)
     _kumactl_get_zone
+    ;;
+  zone-ingress)
+    _kumactl_get_zone-ingress
+    ;;
+  zone-ingresses)
+    _kumactl_get_zone-ingresses
     ;;
   zones)
     _kumactl_get_zones
@@ -804,6 +825,26 @@ function _kumactl_get_traffic-traces {
 
 function _kumactl_get_zone {
   _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_zone-ingress {
+  _arguments \
+    '--config-file[path to the configuration file to use]:' \
+    '--log-level[log level: one of off|info|debug]:' \
+    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
+    '--no-config[if set no config file and config directory will be created]' \
+    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
+}
+
+function _kumactl_get_zone-ingresses {
+  _arguments \
+    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
+    '--size[maximum number of elements to return]:' \
     '--config-file[path to the configuration file to use]:' \
     '--log-level[log level: one of off|info|debug]:' \
     '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \

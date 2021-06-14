@@ -2,10 +2,12 @@ package defaults
 
 import (
 	"context"
+	"sync"
 	"time"
 
 	"github.com/pkg/errors"
 	"github.com/sethvargo/go-retry"
+	"go.uber.org/multierr"
 
 	kuma_cp "github.com/kumahq/kuma/pkg/config/app/kuma-cp"
 	config_core "github.com/kumahq/kuma/pkg/config/core"
@@ -48,22 +50,61 @@ func (d *defaultsComponent) NeedLeaderElection() bool {
 	return true
 }
 
-func (d *defaultsComponent) Start(_ <-chan struct{}) error {
+func (d *defaultsComponent) Start(stop <-chan struct{}) error {
 	// todo(jakubdyszkiewicz) once this https://github.com/kumahq/kuma/issues/1001 is done. Wait for all the components to be ready.
+	ctx, cancelFn := context.WithCancel(context.Background())
+	defer cancelFn()
+	wg := &sync.WaitGroup{}
+	errChan := make(chan error)
+
 	if d.config.SkipMeshCreation {
 		log.V(1).Info("skipping default Mesh creation because KUMA_DEFAULTS_SKIP_MESH_CREATION is set to true")
-	} else if err := doWithRetry(d.createMeshIfNotExist); err != nil {
-		// Retry this operation since on Kubernetes Mesh needs to be validated and set default values.
-		// This code can execute before the control plane is ready therefore hooks can fail.
-		return errors.Wrap(err, "could not create the default Mesh")
+	} else {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if err := doWithRetry(ctx, d.createMeshIfNotExist); err != nil {
+				// Retry this operation since on Kubernetes Mesh needs to be validated and set default values.
+				// This code can execute before the control plane is ready therefore hooks can fail.
+				errChan <- errors.Wrap(err, "could not create the default Mesh")
+			}
+		}()
 	}
-	return nil
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := doWithRetry(ctx, d.createZoneIngressSigningKeyIfNotExist); err != nil {
+			// Retry this operation since on Kubernetes Mesh needs to be validated and set default values.
+			// This code can execute before the control plane is ready therefore hooks can fail.
+			errChan <- errors.Wrap(err, "could not create the default Control Plane Token's Signing Key")
+		}
+	}()
+
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+		close(errChan)
+	}()
+
+	var errs error
+	for {
+		select {
+		case <-stop:
+			return errs
+		case err := <-errChan:
+			errs = multierr.Append(errs, err)
+		case <-done:
+			return errs
+		}
+	}
 }
 
-func doWithRetry(fn func() error) error {
+func doWithRetry(ctx context.Context, fn func(context.Context) error) error {
 	backoff, _ := retry.NewConstant(5 * time.Second)
 	backoff = retry.WithMaxDuration(10*time.Minute, backoff) // if after this time we cannot create a resource - something is wrong and we should return an error which will restart CP.
-	return retry.Do(context.Background(), backoff, func(ctx context.Context) error {
-		return retry.RetryableError(fn()) // retry all errors
+	return retry.Do(ctx, backoff, func(ctx context.Context) error {
+		return retry.RetryableError(fn(ctx)) // retry all errors
 	})
 }

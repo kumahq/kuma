@@ -65,6 +65,7 @@ var _ = Describe("KDS Server", func() {
 		Expect([]proto.Message{
 			kds_samples.CircuitBreaker,
 			kds_samples.Ingress, // mesh.DataplaneType
+			kds_samples.ZoneIngress,
 			kds_samples.DataplaneInsight,
 			kds_samples.ExternalService,
 			kds_samples.FaultInjection,
@@ -79,6 +80,7 @@ var _ = Describe("KDS Server", func() {
 			kds_samples.TrafficRoute,
 			kds_samples.TrafficTrace,
 			kds_samples.Secret,
+			kds_samples.GlobalSecret,
 			kds_samples.Config,
 		}).
 			To(HaveLen(len(kds.SupportedTypes)))
