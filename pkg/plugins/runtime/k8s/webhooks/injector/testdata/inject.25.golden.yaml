@@ -149,6 +149,7 @@ spec:
     - ""
     - --exclude-outbound-ports
     - ""
+    - --verbose
     - --skip-resolv-conf
     - --redirect-all-dns-traffic
     - --redirect-dns-port
