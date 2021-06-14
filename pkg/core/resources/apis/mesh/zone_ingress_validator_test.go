@@ -145,6 +145,7 @@ var _ = Describe("Dataplane", func() {
                   region: eu
               - tags:
                   kuma.io/service: ""
+              - tags:
                   version: ""`,
 			expected: `
                 violations:
@@ -156,7 +157,9 @@ var _ = Describe("Dataplane", func() {
                   message: cannot be empty
                 - field: availableService[3].tags.tags["kuma.io/service"]
                   message: tag value cannot be empty
-                - field: availableService[3].tags.tags["version"]
+                - field: availableService[4].tags["kuma.io/service"]
+                  message: cannot be empty
+                - field: availableService[4].tags.tags["version"]
                   message: tag value cannot be empty`,
 		}),
 	)
