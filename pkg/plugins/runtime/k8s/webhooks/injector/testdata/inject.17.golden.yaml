@@ -135,6 +135,7 @@ spec:
     - 1234,1235
     - --exclude-outbound-ports
     - "1236"
+    - --verbose
     - --skip-resolv-conf
     command:
     - /usr/bin/kumactl
