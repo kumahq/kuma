@@ -119,7 +119,7 @@ var _ = Describe("Dataplane", func() {
                   region: eu`,
 			expected: `
                 violations:
-                - field: ingress.port
+                - field: networking.port
                   message: port has to be defined`,
 		}),
 		Entry("invalid advertised address and port", testCase{
@@ -142,9 +142,9 @@ var _ = Describe("Dataplane", func() {
                   region: eu`,
 			expected: `
                 violations:
-                - field: ingress.advertisedAddress.address
+                - field: networking.advertisedAddress.address
                   message: address has to be valid IP address or domain name
-                - field: ingress.advertisedPort
+                - field: networking.advertisedPort
                   message: port has to be in range of [1, 65535]`,
 		}),
 	)

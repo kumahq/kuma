@@ -7,7 +7,7 @@ import (
 
 func (r *ZoneIngressResource) Validate() error {
 	var err validators.ValidationError
-	err.Add(validateZoneIngress(validators.RootedAt("ingress"), r.Spec))
+	err.Add(validateZoneIngress(validators.RootedAt("networking"), r.Spec))
 	return err.OrNil()
 }
 
