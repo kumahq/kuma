@@ -122,7 +122,7 @@ var _ = Describe("Dataplane", func() {
                 - field: networking.port
                   message: port has to be defined`,
 		}),
-		Entry("invalid advertised address and port", testCase{
+		Entry("invalid advertised address, port and available service", testCase{
 			dataplane: `
             type: ZoneIngress
             name: zi-1
@@ -139,13 +139,25 @@ var _ = Describe("Dataplane", func() {
               - tags:
                   kuma.io/service: web
                   version: v2
-                  region: eu`,
+                  region: eu
+              - tags:
+                  version: v2
+                  region: eu
+              - tags:
+                  kuma.io/service: ""
+                  version: ""`,
 			expected: `
                 violations:
                 - field: networking.advertisedAddress.address
                   message: address has to be valid IP address or domain name
                 - field: networking.advertisedPort
-                  message: port has to be in range of [1, 65535]`,
+                  message: port has to be in range of [1, 65535]
+                - field: availableService[2].tags["kuma.io/service"]
+                  message: cannot be empty
+                - field: availableService[3].tags.tags["kuma.io/service"]
+                  message: tag value cannot be empty
+                - field: availableService[3].tags.tags["version"]
+                  message: tag value cannot be empty`,
 		}),
 	)
 
