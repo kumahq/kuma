@@ -188,7 +188,7 @@ spec:
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_create)
 		Expect(err).ToNot(HaveOccurred())
 
-		// TrafficRoute synced to remote
+		// TrafficRoute synced to zone
 		Eventually(func() string {
 			output, err := k8s.RunKubectlAndGetOutputE(c2.GetTesting(), c2.GetKubectlOptions("default"), "get", "TrafficRoute")
 			Expect(err).ToNot(HaveOccurred())
