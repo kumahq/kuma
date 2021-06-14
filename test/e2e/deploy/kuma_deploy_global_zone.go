@@ -188,6 +188,13 @@ spec:
 		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_create)
 		Expect(err).ToNot(HaveOccurred())
 
+		// TrafficRoute synced to remote
+		Eventually(func() string {
+			output, err := k8s.RunKubectlAndGetOutputE(c2.GetTesting(), c2.GetKubectlOptions("default"), "get", "TrafficRoute")
+			Expect(err).ToNot(HaveOccurred())
+			return output
+		}, "5s", "500ms").Should(ContainSubstring("traffic-default"))
+
 		// Deny policy UPDATE on zone
 		err = k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)
 		Expect(err.Error()).To(ContainSubstring("should be only applied on global"))
