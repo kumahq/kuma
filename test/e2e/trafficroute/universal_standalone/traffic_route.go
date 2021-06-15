@@ -523,10 +523,6 @@ conf:
     modify:
       host:
         value: "modified-host"
-      requestHeaders:
-        add:
-        - name: "host" # host section takes precedence
-          value: xyz
     destination:
       kuma.io/service: test-server
   - match:
