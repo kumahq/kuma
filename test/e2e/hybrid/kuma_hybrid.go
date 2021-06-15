@@ -230,7 +230,7 @@ metadata:
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 	})
 
-	It("should support jobs with a sidecar", func() {
+	PIt("should support jobs with a sidecar", func() {
 		// when deploy job that connects to a service on other K8S cluster
 		err := DemoClientJobK8s(nonDefaultMesh, "echo-server_kuma-test_svc_80.mesh")(zone1)
 
