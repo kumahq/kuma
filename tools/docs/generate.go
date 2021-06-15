@@ -32,6 +32,18 @@ func must(err error) {
 	}
 }
 
+func disableAutogen(cmd *cobra.Command) *cobra.Command {
+	// Not that we don't want to advertise cobra, but this is the only way to
+	// suppress the timestamp.
+	cmd.DisableAutoGenTag = true
+
+	for _, c := range cmd.Commands() {
+		disableAutogen(c)
+	}
+
+	return cmd
+}
+
 func markdown(path string, cmd *cobra.Command) {
 	must(os.MkdirAll(path, 0755))
 	must(doc.GenMarkdownTree(cmd, path))
@@ -51,7 +63,7 @@ func main() {
 	switch format {
 	case "markdown":
 		for p, c := range apps {
-			markdown(p, c)
+			markdown(p, disableAutogen(c))
 		}
 	default:
 		log.Fatalf("unsupported reference format %q", format)
