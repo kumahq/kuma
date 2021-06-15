@@ -1,6 +1,8 @@
 .PHONY: docs
-docs: ## Dev: Generate all docs
-docs: docs/install/markdown docs/install/manpages docs/install/protobuf
+docs: ## Dev: Generate local documentation
+docs:
+	@rm -rf docs/cmd
+	@$(MAKE) docs/install/markdown DESTDIR=docs/cmd
 
 .PHONY: docs/install/markdown
 docs/install/markdown: DESTDIR ?= docs/markdown
