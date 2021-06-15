@@ -541,13 +541,13 @@ var _ = Describe("TrafficRoute", func() {
                   message: cannot be empty
                 - field: conf.http[0].modify.requestHeaders.add[0].value
                   message: cannot be empty
-                - field: conf.http[0].modify.requestHeaders.add[0].remove
+                - field: conf.http[0].modify.requestHeaders.remove[0].name
                   message: cannot be empty
                 - field: conf.http[0].modify.responseHeaders.add[0].name
                   message: cannot be empty
                 - field: conf.http[0].modify.responseHeaders.add[0].value
                   message: cannot be empty
-                - field: conf.http[0].modify.responseHeaders.add[0].remove
+                - field: conf.http[0].modify.responseHeaders.remove[0].name
                   message: cannot be empty
                 - field: conf.http[1].modify.path.regex.pattern
                   message: cannot be empty
@@ -586,6 +586,65 @@ var _ = Describe("TrafficRoute", func() {
                 violations:
                 - field: conf.http[0].modify.path.rewritePrefix
                   message: can only be set when .http.match.path.prefix is not empty`,
+			}),
+			Entry("http - not allow some headers to be modified", testCase{
+				route: `
+                sources:
+                - match:
+                    kuma.io/service: web
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  http:
+                  - match:
+                      path:
+                        exact: "/offers"
+                    modify:
+                      requestHeaders:
+                        add:
+                        - name: 'host'
+                          value: xyz
+                        - name: 'Host'
+                          value: xyz
+                        - name: ':path'
+                          value: xyz
+                        remove:
+                        - name: 'host'
+                          value: xyz
+                      responseHeaders:
+                        add:
+                        - name: 'host'
+                          value: xyz
+                        - name: 'Host'
+                          value: xyz
+                        - name: ':path'
+                          value: xyz
+                        remove:
+                        - name: 'host'
+                          value: xyz
+                    destination:
+                      kuma.io/service: offers
+                  destination:
+                    kuma.io/service: backend`,
+				expected: `
+                violations:
+                - field: conf.http[0].modify.requestHeaders.add[0].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.requestHeaders.add[1].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.requestHeaders.add[2].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.requestHeaders.remove[0].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.responseHeaders.add[0].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.responseHeaders.add[1].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.responseHeaders.add[2].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.responseHeaders.remove[0].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified`,
 			}),
 		)
 	})
