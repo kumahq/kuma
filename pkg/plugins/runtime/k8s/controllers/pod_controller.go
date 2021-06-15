@@ -93,7 +93,19 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		if err != nil {
 			return kube_ctrl.Result{}, err
 		}
-		return kube_ctrl.Result{}, r.createOrUpdateIngress(pod, services)
+		err = r.createOrUpdateIngress(pod, services)
+		if err != nil {
+			return kube_ctrl.Result{}, err
+		}
+
+		// backwards compatibility
+		// During the upgrade to Kuma 1.2.0 a new Ingress pod may make a request to the old-versioned PodController.
+		// This will inevitably cause a generation of both Dataplane Ingress resource and Zone Ingress resource.
+		// That's why here we're deleting Dataplane Ingress resource.
+		if err = r.deleteOldTypeIngressIfExists(ctx, req, log); err != nil {
+			return kube_ctrl.Result{}, err
+		}
+		return kube_ctrl.Result{}, nil
 	}
 
 	// only Pods with injected Kuma need a Dataplane descriptor
@@ -137,6 +149,23 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 	}
 
 	return kube_ctrl.Result{}, nil
+}
+
+func (r *PodReconciler) deleteOldTypeIngressIfExists(ctx context.Context, req kube_ctrl.Request, log logr.Logger) error {
+	oldDpIngress := &mesh_k8s.Dataplane{}
+	if err := r.Get(ctx, req.NamespacedName, oldDpIngress); err != nil {
+		if kube_apierrs.IsNotFound(err) {
+			return nil
+		}
+		return err
+	}
+
+	log.Info("deleting dataplane-based Ingress, since new ZoneIngress resource was successfully created")
+	if err := r.Delete(ctx, oldDpIngress); err != nil {
+		log.Error(err, "failed to delete dataplane-based Ingress")
+		return err
+	}
+	return nil
 }
 
 func (r *PodReconciler) findMatchingServices(pod *kube_core.Pod) ([]*kube_core.Service, error) {
