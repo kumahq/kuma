@@ -6,6 +6,38 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `1.2.0`
+
+One of the changes introduced by Kuma 1.2.0 is renaming `Remote Control Planes` to `Zone Control Planes`. We think this change makes the naming more consistent with the rest of the application and also removes some of unnecessary confusion.
+
+As a result of this renaming, some values and arguments in multizone/kubernetes environment changed. You can read below more.
+
+### Upgrading with `kumactl` on Kubernetes
+
+1. Changes in arguments/flags for `kumactl install control-plane`
+
+   * `--mode` accepts now values: `standalone`, `zone` and `global` (`remote` changed to `zone`)
+
+   * `--tls-kds-remote-client-secret` flag was renamed to `--tls-kds-zone-client-secret`
+
+2. Service `kuma-global-remote-sync` changed to `kuma-global-zone-sync` so after upgrading `global` control plane you have to manually remote old service. For example:
+
+   ```sh
+   kubectl delete -n kuma-system service/kuma-global-zone-sync 
+   ```
+
+   Hint: It's worth to remember that often at this point the IP address/hostname which is used as a KDS address when installing Kuma Zone Control Planes will change. It's easy to forget about it and use the old address/hostname which can be tricky to debug.
+
+### Upgrading with `helm` on Kubernetes
+
+Changes in values in Kuma's HELM chart
+
+* `controlPlane.mode` accepts now values: `standalone`, `zone` and `global` (`remote` changed to `zone`)
+
+* `controlPlane.globalRemoteSyncService` was renamed to `controlPlane.globalZoneSyncService`
+
+* `controlPlane.tls.kdsRemoteClient` was renamed to `controlPlane.tls.kdsZoneClient`
+
 ## Upgrade to `1.1.0`
 
 The major change in this release is the migration to XDSv3 for the `kuma-cp` to `envoy` data plane proxy communication. The
