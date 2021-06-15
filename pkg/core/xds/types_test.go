@@ -30,16 +30,20 @@ var _ = Describe("xDS", func() {
 					Expect(*proxyId).To(Equal(given.expected))
 				},
 				Entry("mesh and name without namespace", testCase{
-					nodeID: "demo.example",
-					expected: core_xds.ProxyId{
-						Mesh: "demo", Name: "example",
-					},
+					nodeID:   "demo.example",
+					expected: *core_xds.BuildProxyId("demo", "example"),
 				}),
 				Entry("name with namespace and mesh", testCase{
-					nodeID: "demo.example.sample",
-					expected: core_xds.ProxyId{
-						Mesh: "demo", Name: "example.sample",
-					},
+					nodeID:   "demo.example.sample",
+					expected: *core_xds.BuildProxyId("demo", "example.sample"),
+				}),
+				Entry("mesh and name without namespace and proxy type", testCase{
+					nodeID:   "demo.example",
+					expected: *core_xds.BuildProxyId("demo", "example"),
+				}),
+				Entry("name with namespace and mesh and proxy type", testCase{
+					nodeID:   "demo.example.sample",
+					expected: *core_xds.BuildProxyId("demo", "example.sample"),
 				}),
 			)
 		})
@@ -79,10 +83,7 @@ var _ = Describe("xDS", func() {
 	Describe("ProxyId(...).ToResourceKey()", func() {
 		It("should convert proxy ID to resource key", func() {
 			// given
-			id := core_xds.ProxyId{
-				Mesh: "default",
-				Name: "demo",
-			}
+			id := *core_xds.BuildProxyId("default", "demo")
 
 			// when
 			key := id.ToResourceKey()

@@ -69,7 +69,7 @@ reusable:
         branches:
           ignore: /.*/
         tags:
-          only: /^(\d+)\.(\d+)\.(\d+)$/
+          only: /^v?(\d+)\.(\d+)\.(\d+)$/
 
     # filters for the kuma-commit workflow
     master_workflow_filters: &master_workflow_filters
@@ -1172,6 +1172,10 @@ workflows:
     jobs:
     - go_cache: *commit_workflow_filters
     - check:
+        <<: *commit_workflow_filters
+        requires:
+        - go_cache
+    - api_check:
         <<: *commit_workflow_filters
         requires:
         - go_cache

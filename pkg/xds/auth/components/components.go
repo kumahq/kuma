@@ -29,7 +29,11 @@ func NewUniversalAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, err
 	if err != nil {
 		return nil, err
 	}
-	return universal_auth.NewAuthenticator(issuer), nil
+	zoneIngressIssuer, err := builtin.NewZoneIngressTokenIssuer(rt.ReadOnlyResourceManager())
+	if err != nil {
+		return nil, err
+	}
+	return universal_auth.NewAuthenticator(issuer, zoneIngressIssuer, rt.Config().Multizone.Zone.Name), nil
 }
 
 func DefaultAuthenticator(rt core_runtime.Runtime) (auth.Authenticator, error) {

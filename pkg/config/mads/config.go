@@ -17,7 +17,7 @@ var log = core.Log.WithName("mads-config")
 func DefaultMonitoringAssignmentServerConfig() *MonitoringAssignmentServerConfig {
 	return &MonitoringAssignmentServerConfig{
 		Port:                      5676,
-		FetchTimeout:              30 * time.Second,
+		DefaultFetchTimeout:       30 * time.Second,
 		ApiVersions:               []mads.ApiVersion{mads.API_V1_ALPHA1, mads.API_V1},
 		AssignmentRefreshInterval: 1 * time.Second,
 	}
@@ -32,8 +32,8 @@ type MonitoringAssignmentServerConfig struct {
 	// Port of the server that serves Monitoring Assignment Discovery Service (MADS)
 	// over both grpc and http.
 	Port uint32 `yaml:"port" envconfig:"kuma_monitoring_assignment_server_port"`
-	// The timeout for a single fetch-based discovery request.
-	FetchTimeout time.Duration `yaml:"fetchTimeout" envconfig:"kuma_monitoring_assignment_server_fetch_timeout"`
+	// The default timeout for a single fetch-based discovery request, if not specified.
+	DefaultFetchTimeout time.Duration `yaml:"defaultFetchTimeout" envconfig:"kuma_monitoring_assignment_server_default_fetch_timeout"`
 	// Which observability apiVersions to serve
 	ApiVersions []string `yaml:"apiVersions" envconfig:"kuma_monitoring_assignment_server_api_versions"`
 	// Interval for re-generating monitoring assignments for clients connected to the Control Plane.

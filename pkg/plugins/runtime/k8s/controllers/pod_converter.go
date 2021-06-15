@@ -37,10 +37,11 @@ func (p *PodConverter) PodToDataplane(
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
+	zoneIngresses []*mesh_k8s.ZoneIngress,
 	vips vips.List,
 ) error {
 	dataplane.Mesh = MeshFor(pod)
-	dataplaneProto, err := p.DataplaneFor(pod, services, externalServices, others, vips)
+	dataplaneProto, err := p.DataplaneFor(pod, services, externalServices, others, zoneIngresses, vips)
 	if err != nil {
 		return err
 	}
@@ -52,21 +53,20 @@ func (p *PodConverter) PodToDataplane(
 	return nil
 }
 
-func (p *PodConverter) PodToIngress(dataplane *mesh_k8s.Dataplane, pod *kube_core.Pod, services []*kube_core.Service) error {
-	dataplane.Mesh = MeshFor(pod)
-	dataplaneProto := &mesh_proto.Dataplane{}
-	if err := util_proto.FromMap(dataplane.Spec, dataplaneProto); err != nil {
+func (p *PodConverter) PodToIngress(zoneIngress *mesh_k8s.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
+	zoneIngressProto := &mesh_proto.ZoneIngress{}
+	if err := util_proto.FromMap(zoneIngress.Spec, zoneIngressProto); err != nil {
 		return err
 	}
 	// Pass the current dataplane so we won't override available services in Ingress section
-	if err := p.IngressFor(dataplaneProto, pod, services); err != nil {
+	if err := p.IngressFor(zoneIngressProto, pod, services); err != nil {
 		return err
 	}
-	spec, err := util_proto.ToMap(dataplaneProto)
+	spec, err := util_proto.ToMap(zoneIngressProto)
 	if err != nil {
 		return err
 	}
-	dataplane.Spec = spec
+	zoneIngress.Spec = spec
 	return nil
 }
 
@@ -83,6 +83,7 @@ func (p *PodConverter) DataplaneFor(
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
+	zoneIngresses []*mesh_k8s.ZoneIngress,
 	vips vips.List,
 ) (*mesh_proto.Dataplane, error) {
 	dataplane := &mesh_proto.Dataplane{
@@ -144,7 +145,7 @@ func (p *PodConverter) DataplaneFor(
 		dataplane.Networking.Inbound = ifaces
 	}
 
-	ofaces, err := p.OutboundInterfacesFor(pod, others, externalServices, vips)
+	ofaces, err := p.OutboundInterfacesFor(pod, others, zoneIngresses, externalServices, vips)
 	if err != nil {
 		return nil, err
 	}

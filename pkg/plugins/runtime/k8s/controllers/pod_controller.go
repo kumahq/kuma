@@ -120,6 +120,11 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, err
 	}
 
+	zoneIngresses, err := r.findZoneIngresses(pod)
+	if err != nil {
+		return kube_ctrl.Result{}, err
+	}
+
 	r.Log.WithValues("req", req).V(1).Info("other dataplanes", "others", others)
 
 	vips, err := r.Persistence.GetByMesh(MeshFor(pod))
@@ -127,7 +132,7 @@ func (r *PodReconciler) Reconcile(req kube_ctrl.Request) (kube_ctrl.Result, erro
 		return kube_ctrl.Result{}, err
 	}
 
-	if err := r.createOrUpdateDataplane(pod, services, externalServices, others, vips); err != nil {
+	if err := r.createOrUpdateDataplane(pod, services, externalServices, others, zoneIngresses, vips); err != nil {
 		return kube_ctrl.Result{}, err
 	}
 
@@ -202,11 +207,32 @@ func (r *PodReconciler) findOtherDataplanes(pod *kube_core.Pod) ([]*mesh_k8s.Dat
 	return otherDataplanes, nil
 }
 
+func (r *PodReconciler) findZoneIngresses(pod *kube_core.Pod) ([]*mesh_k8s.ZoneIngress, error) {
+	ctx := context.Background()
+
+	// List all ZoneIngresses
+	zoneIngresses := &mesh_k8s.ZoneIngressList{}
+	if err := r.List(ctx, zoneIngresses); err != nil {
+		log := r.Log.WithValues("pod", kube_types.NamespacedName{Namespace: pod.Namespace, Name: pod.Name})
+		log.Error(err, "unable to list ZoneIngresses")
+		return nil, err
+	}
+
+	rv := []*mesh_k8s.ZoneIngress{}
+	for i := range zoneIngresses.Items {
+		zi := zoneIngresses.Items[i]
+		rv = append(rv, &zi)
+	}
+
+	return rv, nil
+}
+
 func (r *PodReconciler) createOrUpdateDataplane(
 	pod *kube_core.Pod,
 	services []*kube_core.Service,
 	externalServices []*mesh_k8s.ExternalService,
 	others []*mesh_k8s.Dataplane,
+	zoneIngresses []*mesh_k8s.ZoneIngress,
 	vips vips.List,
 ) error {
 	ctx := context.Background()
@@ -218,7 +244,7 @@ func (r *PodReconciler) createOrUpdateDataplane(
 		},
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, dataplane, func() error {
-		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, externalServices, others, vips); err != nil {
+		if err := r.PodConverter.PodToDataplane(dataplane, pod, services, externalServices, others, zoneIngresses, vips); err != nil {
 			return errors.Wrap(err, "unable to translate a Pod into a Dataplane")
 		}
 		if err := kube_controllerutil.SetControllerReference(pod, dataplane, r.Scheme); err != nil {
@@ -244,12 +270,12 @@ func (r *PodReconciler) createOrUpdateDataplane(
 func (r *PodReconciler) createOrUpdateIngress(pod *kube_core.Pod, services []*kube_core.Service) error {
 	ctx := context.Background()
 
-	ingress := &mesh_k8s.Dataplane{
+	ingress := &mesh_k8s.ZoneIngress{
 		ObjectMeta: kube_meta.ObjectMeta{
 			Namespace: pod.Namespace,
 			Name:      pod.Name,
 		},
-		Mesh: model.DefaultMesh,
+		Mesh: model.NoMesh,
 	}
 	operationResult, err := kube_controllerutil.CreateOrUpdate(ctx, r.Client, ingress, func() error {
 		if err := r.PodConverter.PodToIngress(ingress, pod, services); err != nil {

@@ -329,7 +329,13 @@ func createResponse(request *envoy_cache.Request, resources map[string]types.Res
 
 // Fetch implements the envoy_cache fetch function.
 // Fetch is called on multiple streams, so responding to individual names with the same version works.
+// If there is a Deadline set on the context, the call will block until either the context is terminated
+// or there is a new update.
 func (cache *snapshotCache) Fetch(ctx context.Context, request *envoy_cache.Request) (envoy_cache.Response, error) {
+	if _, hasDeadline := ctx.Deadline(); hasDeadline {
+		return cache.blockingFetch(ctx, request)
+	}
+
 	nodeID := cache.hash.ID(request.Node)
 
 	cache.mu.RLock()
@@ -352,6 +358,22 @@ func (cache *snapshotCache) Fetch(ctx context.Context, request *envoy_cache.Requ
 	}
 
 	return nil, fmt.Errorf("missing snapshot for %q", nodeID)
+}
+
+// blockingFetch will wait until either the context is terminated or new resources become available
+func (cache *snapshotCache) blockingFetch(ctx context.Context, request *envoy_cache.Request) (envoy_cache.Response, error) {
+	watchChan, cancelFunc := cache.CreateWatch(request)
+	if cancelFunc != nil {
+		defer cancelFunc()
+	}
+
+	select {
+	case <-ctx.Done():
+		// finished without an update
+		return nil, &types.SkipFetchError{}
+	case resp := <-watchChan:
+		return resp, nil
+	}
 }
 
 // GetStatusInfo retrieves the status info for the node.

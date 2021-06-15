@@ -2,8 +2,6 @@ resources:
 - name: es-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    commonHttpProtocolOptions:
-      idleTimeout: 0s
     connectTimeout: 10s
     dnsLookupFamily: V4_ONLY
     loadAssignment:
@@ -24,6 +22,13 @@ resources:
                 kuma.io/protocol: http
     name: es-_0_
     type: STRICT_DNS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          httpProtocolOptions: {}
 - name: outbound:127.0.0.1:18081
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener

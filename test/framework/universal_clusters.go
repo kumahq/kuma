@@ -25,7 +25,11 @@ func NewUniversalClusters(clusterNames []string, verbose bool) (Clusters, error)
 	clusters := map[string]*UniversalCluster{}
 
 	for _, name := range clusterNames {
-		clusters[name] = NewUniversalCluster(t, name, verbose)
+		if name == Kuma4 {
+			clusters[name] = NewUniversalCluster(t, name, true)
+		} else {
+			clusters[name] = NewUniversalCluster(t, name, false)
+		}
 	}
 
 	return &UniversalClusters{

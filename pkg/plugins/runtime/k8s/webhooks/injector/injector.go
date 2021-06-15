@@ -451,6 +451,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 			excludeInboundPorts,
 			"--exclude-outbound-ports",
 			excludeOutboundPorts,
+			"--verbose",
 		}, dnsArg...),
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  new(int64), // way to get pointer to int64(0)

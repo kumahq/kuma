@@ -94,6 +94,11 @@ var _ = Describe("global TypeRegistry", func() {
 				expectedType: &Retry{},
 				expectedKind: "Retry",
 			}),
+			Entry("RateLimit", testCase{
+				inputType:    &mesh_proto.RateLimit{},
+				expectedType: &RateLimit{},
+				expectedKind: "RateLimit",
+			}),
 		)
 	})
 

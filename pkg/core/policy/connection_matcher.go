@@ -154,6 +154,20 @@ func SelectInboundConnectionPolicies(dataplane *mesh_core.DataplaneResource, inb
 	return policiesMap
 }
 
+// SelectInboundConnectionAllPolicies picks all matching policies for each inbound interface of a given Dataplane.
+func SelectInboundConnectionMatchingPolicies(dataplane *mesh_core.DataplaneResource, inbounds []*mesh_proto.Dataplane_Networking_Inbound, policies []ConnectionPolicy) InboundConnectionPoliciesMap {
+	sort.Stable(ConnectionPolicyByName(policies)) // sort to avoid flakiness
+	policiesMap := make(InboundConnectionPoliciesMap)
+	for _, inbound := range inbounds {
+		if matchnigPolicies := SelectInboundConnectionAllPolicies(inbound.Tags, policies); matchnigPolicies != nil {
+			iface := dataplane.Spec.GetNetworking().ToInboundInterface(inbound)
+			policiesMap[iface] = matchnigPolicies
+		}
+	}
+
+	return policiesMap
+}
+
 // SelectInboundConnectionPolicy picks a single the most specific policy for given inbound tags.
 func SelectInboundConnectionPolicy(inboundTags map[string]string, policies []ConnectionPolicy) ConnectionPolicy {
 	var bestPolicy ConnectionPolicy
@@ -177,10 +191,45 @@ func SelectInboundConnectionPolicy(inboundTags map[string]string, policies []Con
 	return bestPolicy
 }
 
+// SelectInboundConnectionAllPolicies picks polices for given inbound tags.
+func SelectInboundConnectionAllPolicies(inboundTags map[string]string, policies []ConnectionPolicy) []ConnectionPolicy {
+	matchingPolicies := []ConnectionPolicy{}
+
+	for _, policy := range policies {
+		for _, selector := range policy.Destinations() {
+			tagSelector := mesh_proto.TagSelector(selector.Match)
+			if tagSelector.Matches(inboundTags) {
+				matchingPolicies = append(matchingPolicies, policy)
+			}
+		}
+	}
+
+	// Make sure more specific policies get top priority
+	sort.Stable(ConnectionPolicyBySourceRank(matchingPolicies))
+	return matchingPolicies
+}
+
 type ConnectionPolicyByName []ConnectionPolicy
 
 func (a ConnectionPolicyByName) Len() int      { return len(a) }
 func (a ConnectionPolicyByName) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
 func (a ConnectionPolicyByName) Less(i, j int) bool {
 	return a[i].GetMeta().GetName() < a[j].GetMeta().GetName()
+}
+
+type ConnectionPolicyBySourceRank []ConnectionPolicy
+
+func (a ConnectionPolicyBySourceRank) Len() int      { return len(a) }
+func (a ConnectionPolicyBySourceRank) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
+func (a ConnectionPolicyBySourceRank) Less(i, j int) bool {
+	tagSelectorI := mesh_proto.TagSelector(a[i].Sources()[0].Match)
+	tagSelectorJ := mesh_proto.TagSelector(a[j].Sources()[0].Match)
+
+	tagComparison := tagSelectorI.Rank().CompareTo(tagSelectorJ.Rank())
+
+	if tagComparison == 0 {
+		return a[i].GetMeta().GetCreationTime().After(a[j].GetMeta().GetCreationTime())
+	}
+
+	return tagComparison > 0
 }

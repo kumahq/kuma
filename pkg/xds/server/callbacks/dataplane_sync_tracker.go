@@ -15,7 +15,7 @@ var (
 	dataplaneSyncTrackerLog = core.Log.WithName("xds-server").WithName("dataplane-sync-tracker")
 )
 
-type NewDataplaneWatchdogFunc func(dataplaneId core_model.ResourceKey, streamId core_xds.StreamID) util_watchdog.Watchdog
+type NewDataplaneWatchdogFunc func(proxyId *core_xds.ProxyId, streamId core_xds.StreamID) util_watchdog.Watchdog
 
 func NewDataplaneSyncTracker(factoryFunc NewDataplaneWatchdogFunc) util_xds.Callbacks {
 	return &dataplaneSyncTracker{
@@ -83,8 +83,8 @@ func (t *dataplaneSyncTracker) OnStreamRequest(streamID core_xds.StreamID, req u
 		return nil
 	}
 
-	if id, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
-		dataplaneKey := core_model.ResourceKey{Mesh: id.Mesh, Name: id.Name}
+	if proxyId, err := core_xds.ParseProxyIdFromString(req.NodeId()); err == nil {
+		dataplaneKey := proxyId.ToResourceKey()
 		t.Lock()
 		defer t.Unlock()
 		streams := t.dpStreams[dataplaneKey]
@@ -98,8 +98,8 @@ func (t *dataplaneSyncTracker) OnStreamRequest(streamID core_xds.StreamID, req u
 				close(stopCh)
 			}
 			// kick off watchdog for that Dataplane
-			go t.newDataplaneWatchdog(dataplaneKey, streamID).Start(stopCh)
-			dataplaneSyncTrackerLog.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", id, "dataplaneKey", dataplaneKey)
+			go t.newDataplaneWatchdog(proxyId, streamID).Start(stopCh)
+			dataplaneSyncTrackerLog.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
 		}
 		t.dpStreams[dataplaneKey] = streams
 		t.streamsAssociation[streamID] = dataplaneKey

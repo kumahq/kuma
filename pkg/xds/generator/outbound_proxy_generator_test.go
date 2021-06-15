@@ -159,7 +159,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 				},
 			}
 			proxy := &model.Proxy{
-				Id: model.ProxyId{Name: "side-car", Mesh: "default"},
+				Id: *model.BuildProxyId("default", "side-car"),
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name:    "dp-1",
@@ -500,7 +500,7 @@ var _ = Describe("OutboundProxyGenerator", func() {
 			},
 		}
 		proxy := &model.Proxy{
-			Id: model.ProxyId{Name: "side-car", Mesh: "default"},
+			Id: *model.BuildProxyId("default", "side-car"),
 			Dataplane: &mesh_core.DataplaneResource{
 				Meta: &test_model.ResourceMeta{
 					Version: "1",

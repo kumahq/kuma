@@ -17,9 +17,9 @@ type Server interface {
 	observability_v1.MonitoringAssignmentDiscoveryServiceServer
 }
 
-func NewServer(config envoy_cache.Cache, callbacks envoy_server.Callbacks) Server {
-	sotwServer := sotw.NewServer(context.Background(), config, callbacks)
-	restServer := rest.NewServer(config, callbacks)
+func NewServer(cache envoy_cache.Cache, callbacks envoy_server.Callbacks) Server {
+	sotwServer := sotw.NewServer(context.Background(), cache, callbacks)
+	restServer := rest.NewServer(cache, callbacks)
 	return &server{stream: sotwServer, rest: restServer}
 }
 

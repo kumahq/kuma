@@ -189,3 +189,9 @@ func Http2() ClusterBuilderOpt {
 		config.AddV3(&v3.Http2Configurer{})
 	})
 }
+
+func Http() ClusterBuilderOpt {
+	return ClusterBuilderOptFunc(func(config *ClusterBuilderConfig) {
+		config.AddV3(&v3.HttpConfigurer{})
+	})
+}

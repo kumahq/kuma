@@ -307,7 +307,7 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 	}
 }
 
-func IngressUniversal(mesh, token string) InstallFunc {
+func IngressUniversalOldType(mesh, token string) InstallFunc {
 	return func(cluster Cluster) error {
 		uniCluster := cluster.(*UniversalCluster)
 		isipv6 := IsIPv6()
@@ -326,8 +326,32 @@ func IngressUniversal(mesh, token string) InstallFunc {
 		uniCluster.apps[AppIngress] = app
 
 		publicAddress := uniCluster.apps[AppIngress].ip
-		dpyaml := fmt.Sprintf(IngressDataplane, mesh, publicAddress, kdsPort, kdsPort)
+		dpyaml := fmt.Sprintf(IngressDataplaneOldType, mesh, publicAddress, kdsPort, kdsPort)
 		return uniCluster.CreateDP(app, "ingress", app.ip, dpyaml, token, false)
+	}
+}
+
+func IngressUniversal(token string) InstallFunc {
+	return func(cluster Cluster) error {
+		uniCluster := cluster.(*UniversalCluster)
+		isipv6 := IsIPv6()
+		verbose := false
+		app, err := NewUniversalApp(cluster.GetTesting(), uniCluster.name, AppIngress, AppIngress, isipv6, verbose, []string{})
+		if err != nil {
+			return err
+		}
+
+		app.CreateMainApp([]string{}, []string{})
+
+		err = app.mainApp.Start()
+		if err != nil {
+			return err
+		}
+		uniCluster.apps[AppIngress] = app
+
+		publicAddress := uniCluster.apps[AppIngress].ip
+		dpyaml := fmt.Sprintf(ZoneIngress, publicAddress, kdsPort, kdsPort)
+		return uniCluster.CreateZoneIngress(app, "ingress", app.ip, dpyaml, token, false)
 	}
 }
 
@@ -423,12 +447,12 @@ func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) Inst
 		args := []string{"ncat", "-lvk", "-p", "3000"}
 		appYaml := ""
 		if opts.transparent {
-			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
 		} else {
 			if opts.serviceProbe {
-				appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", "80", "8080")
+				appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, "80", "8080")
 			} else {
-				appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", "80", "8080")
+				appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, "80", "8080")
 			}
 		}
 		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
