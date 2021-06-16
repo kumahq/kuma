@@ -156,6 +156,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				},
 				Metadata: &model.DataplaneMetadata{
 					AdminPort: 9902,
+					Version: &mesh_proto.Version{
+						KumaDp: &mesh_proto.KumaDpVersion{
+							Version: "1.2.0",
+						},
+					},
 				},
 			}
 
