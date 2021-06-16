@@ -172,6 +172,22 @@ var _ = Describe("Reconcile", func() {
 			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal("v8"))
 			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal("v9"))
 			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal("v10"))
+
+			By("simulating clear")
+			// when
+			err = r.Clear(&proxy.Id)
+			Expect(err).ToNot(HaveOccurred())
+			snapshot, err = xdsContext.Cache().GetSnapshot("demo.example")
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("no snapshot found"))
+
+			Expect(snapshot.Resources[envoy_types.Listener].Version).To(Equal(""))
+			Expect(snapshot.Resources[envoy_types.Route].Version).To(Equal(""))
+			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal(""))
+			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal(""))
+			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal(""))
 		})
 	})
 })
