@@ -121,6 +121,9 @@ func (m *DataplaneMetadata) GetDynamicMetadata(key string) string {
 }
 
 func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
+	if m == nil {
+		return nil
+	}
 	return m.Version
 }
 
