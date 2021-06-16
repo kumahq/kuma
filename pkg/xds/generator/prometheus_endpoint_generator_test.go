@@ -439,6 +439,11 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 				Metadata: &core_xds.DataplaneMetadata{
 					AdminPort: 9902,
+					Version: &mesh_proto.Version{
+						KumaDp: &mesh_proto.KumaDpVersion{
+							Version: "1.2.0",
+						},
+					},
 				},
 			},
 			expected: "default-mtls.envoy-config.golden.yaml",
