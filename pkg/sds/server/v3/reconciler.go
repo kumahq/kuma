@@ -112,9 +112,7 @@ func (d *DataplaneReconciler) Reconcile(proxyId *core_xds.ProxyId) error {
 }
 
 func (d *DataplaneReconciler) Cleanup(proxyId *core_xds.ProxyId) error {
-	if err := d.cache.SetSnapshot(proxyId.String(), envoy_cache.Snapshot{}); err != nil {
-		return err
-	}
+	d.cache.ClearSnapshot(proxyId.String())
 	d.Lock()
 	delete(d.proxySnapshotInfo, proxyId.String())
 	d.Unlock()
