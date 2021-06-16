@@ -49,21 +49,55 @@ func markdown(path string, cmd *cobra.Command) {
 	must(doc.GenMarkdownTree(cmd, path))
 }
 
+func man(path string, header *doc.GenManHeader, cmd *cobra.Command) {
+	must(os.MkdirAll(path, 0755))
+	must(doc.GenManTree(cmd, header, path))
+}
+
+type commandWithManHeader struct {
+	command *cobra.Command
+	header  *doc.GenManHeader
+}
+
 func main() {
 	prefix := GetenvOr("DESTDIR", ".")
 	format := GetenvOr("FORMAT", "markdown")
 
-	apps := map[string]*cobra.Command{
-		path.Join(prefix, "kuma-cp"):            kuma_cp.DefaultRootCmd(),
-		path.Join(prefix, "kumactl"):            kumactl.DefaultRootCmd(),
-		path.Join(prefix, "kuma-dp"):            kuma_dp.DefaultRootCmd(),
-		path.Join(prefix, "kuma-prometheus-sd"): kuma_prometheus_sd.DefaultRootCmd(),
+	apps := map[string]commandWithManHeader{
+		path.Join(prefix, "kuma-cp"): commandWithManHeader{
+			command: kuma_cp.DefaultRootCmd(),
+			header: &doc.GenManHeader{
+				Title: "kuma-cp manual",
+			},
+		},
+		path.Join(prefix, "kuma-dp"): commandWithManHeader{
+			command: kuma_dp.DefaultRootCmd(),
+			header: &doc.GenManHeader{
+				Title: "kuma-dp manual",
+			},
+		},
+		path.Join(prefix, "kuma-prometheus-sd"): commandWithManHeader{
+			command: kuma_prometheus_sd.DefaultRootCmd(),
+			header: &doc.GenManHeader{
+				Title: "kuma-prometheus-sd manual",
+			},
+		},
+		path.Join(prefix, "kumactl"): commandWithManHeader{
+			command: kumactl.DefaultRootCmd(),
+			header: &doc.GenManHeader{
+				Title: "kumactl manual",
+			},
+		},
 	}
 
 	switch format {
 	case "markdown":
 		for p, c := range apps {
-			markdown(p, disableAutogen(c))
+			markdown(p, disableAutogen(c.command))
+		}
+	case "man":
+		for p, c := range apps {
+			man(p, c.header, disableAutogen(c.command))
 		}
 	default:
 		log.Fatalf("unsupported reference format %q", format)

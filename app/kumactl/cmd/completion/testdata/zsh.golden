@@ -20,7 +20,6 @@ function _kumactl {
       "config:Manage kumactl config"
       "delete:Delete Kuma resources"
       "generate:Generate resources, tokens, etc"
-      "genman:Generate man pages for the kuma CLI"
       "get:Show Kuma resources"
       "help:Help about any command"
       "inspect:Inspect Kuma resources"
@@ -47,9 +46,6 @@ function _kumactl {
     ;;
   generate)
     _kumactl_generate
-    ;;
-  genman)
-    _kumactl_genman
     ;;
   get)
     _kumactl_get

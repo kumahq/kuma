@@ -1,13 +1,9 @@
 package completion
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
-	"github.com/spf13/cobra/doc"
 
 	kumactl_cmd "github.com/kumahq/kuma/app/kumactl/pkg/cmd"
-	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
 
 const completionLong = `
@@ -72,30 +68,5 @@ func newZshCommand(pctx *kumactl_cmd.RootContext) *cobra.Command {
 			return cmd.Parent().Parent().GenZshCompletion(cmd.OutOrStdout())
 		},
 	}
-	return cmd
-}
-
-func NewGenManCommand() *cobra.Command {
-	var path string
-	cmd := &cobra.Command{
-		Use:   "genman",
-		Short: "Generate man pages for the kuma CLI",
-		Long:  `This command automatically generates up-to-date man pages of kuma's command-line interface.`,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			cmd.Root().DisableAutoGenTag = true
-			header := &doc.GenManHeader{
-				Section: "1",
-				Manual:  "Kuma CLI Manual",
-				Source:  fmt.Sprintf("kumactl %s", kuma_version.Build.Version),
-			}
-			err := doc.GenManTree(cmd.Root(), header, path)
-			if err != nil {
-				return err
-			}
-			return nil
-		},
-	}
-
-	cmd.Flags().StringVarP(&path, "output-dir", "o", "/tmp/", "directory to populate with documentation")
 	return cmd
 }
