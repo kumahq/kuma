@@ -26,7 +26,7 @@ As a result of this renaming, some values and arguments in multizone/kubernetes 
    kubectl delete -n kuma-system service/kuma-global-zone-sync 
    ```
 
-   Hint: It's worth to remember that often at this point the IP address/hostname which is used as a KDS address when installing Kuma Zone Control Planes will change. It's easy to forget about it and use the old address/hostname which can be tricky to debug.
+    Hint: It's worth to remember that often at this point the IP address/hostname which is used as a KDS address when installing Kuma Zone Control Planes will change. Make sure that you update the address when upgrading the Remote CPs to the newest version.
 
 ### Upgrading with `helm` on Kubernetes
 
