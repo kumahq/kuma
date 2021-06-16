@@ -29,7 +29,7 @@ const (
 	AppModeHttpsEchoServer = "https-echo-server"
 	sshPort                = "22"
 
-	IngressDataplane = `
+	IngressDataplaneOldType = `
 type: Dataplane
 mesh: %s
 name: dp-ingress
@@ -43,6 +43,16 @@ networking:
     tags:
       kuma.io/service: ingress
 `
+	ZoneIngress = `
+type: ZoneIngress
+name: ingress
+networking:
+  address: {{ address }}
+  advertisedAddress: %s
+  advertisedPort: %d
+  port: %d
+`
+
 	EchoServerDataplane = `
 type: Dataplane
 mesh: %s
@@ -108,7 +118,7 @@ networking:
   - port: %s
     servicePort: %s
     tags:
-      kuma.io/service: demo-client
+      kuma.io/service: %s
       team: client-owners
   outbound:
   - port: 4000
@@ -134,7 +144,7 @@ networking:
     serviceProbe:
       tcp: {}
     tags:
-      kuma.io/service: demo-client
+      kuma.io/service: %s
       team: client-owners
   outbound:
   - port: 4000
@@ -157,7 +167,7 @@ networking:
   inbound:
   - port: %s
     tags:
-      kuma.io/service: demo-client
+      kuma.io/service: %s
       team: client-owners
   transparentProxying:
     redirectPortInbound: %s
@@ -261,6 +271,10 @@ func (s *UniversalApp) publishPortsForDocker() (args []string) {
 	return
 }
 
+func (s *UniversalApp) GetPublicPort(port string) string {
+	return s.ports[port]
+}
+
 func (s *UniversalApp) Stop() error {
 	out, err := docker.StopE(s.t, []string{s.container}, &docker.StopOptions{Time: 1})
 	if err != nil {
@@ -354,7 +368,7 @@ func (s *UniversalApp) OverrideDpVersion(version string) error {
 	return nil
 }
 
-func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, builtindns bool) {
+func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, builtindns, ingress bool) {
 	// create the token file on the app container
 	err := NewSshApp(s.verbose, s.ports[sshPort], []string{}, []string{"printf ", "\"" + token + "\"", ">", "/kuma/token-" + appname}).Run()
 	if err != nil {
@@ -379,6 +393,9 @@ func (s *UniversalApp) CreateDP(token, cpAddress, appname, ip, dpyaml string, bu
 	}
 	if builtindns {
 		args = append(args, "--dns-enabled")
+	}
+	if ingress {
+		args = append(args, "--proxy-type=ingress")
 	}
 	s.dpApp = NewSshApp(s.verbose, s.ports[sshPort], []string{}, args)
 }

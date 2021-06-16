@@ -41,7 +41,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 		},
 		Entry("Mesh has no Tracing configuration", testCase{
 			proxy: &model.Proxy{
-				Id: model.ProxyId{Name: "demo.backend-01"},
+				Id: *model.BuildProxyId("", "demo.backend-01"),
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -74,7 +74,7 @@ var _ = Describe("TracingProxyGenerator", func() {
 		},
 		Entry("should create cluster for Zipkin", testCase{
 			proxy: &model.Proxy{
-				Id: model.ProxyId{Name: "demo.backend-01"},
+				Id: *model.BuildProxyId("", "demo.backend-01"),
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",

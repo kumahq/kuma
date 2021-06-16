@@ -21,7 +21,7 @@ import (
 	"github.com/kumahq/kuma/pkg/hds"
 	"github.com/kumahq/kuma/pkg/insights"
 	kds_global "github.com/kumahq/kuma/pkg/kds/global"
-	kds_remote "github.com/kumahq/kuma/pkg/kds/remote"
+	kds_zone "github.com/kumahq/kuma/pkg/kds/zone"
 	mads_server "github.com/kumahq/kuma/pkg/mads/server"
 	metrics "github.com/kumahq/kuma/pkg/metrics/components"
 	sds_server "github.com/kumahq/kuma/pkg/sds/server"
@@ -131,13 +131,13 @@ func newRunCmdWithOpts(opts runCmdOpts) *cobra.Command {
 					runLog.Error(err, "unable to set up Defaults")
 					return err
 				}
-			case config_core.Remote:
+			case config_core.Zone:
 				if err := mads_server.SetupServer(rt); err != nil {
 					runLog.Error(err, "unable to set up Monitoring Assignment server")
 					return err
 				}
-				if err := kds_remote.Setup(rt); err != nil {
-					runLog.Error(err, "unable to set up KDS Remote")
+				if err := kds_zone.Setup(rt); err != nil {
+					runLog.Error(err, "unable to set up KDS Zone")
 					return err
 				}
 				if err := dns.Setup(rt); err != nil {

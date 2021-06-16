@@ -10,6 +10,7 @@ import (
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
+	"gopkg.in/natefinch/lumberjack.v2"
 	kube_log_zap "sigs.k8s.io/controller-runtime/pkg/log/zap"
 )
 
@@ -49,6 +50,14 @@ func ParseLogLevel(text string) (LogLevel, error) {
 
 func NewLogger(level LogLevel) logr.Logger {
 	return NewLoggerTo(os.Stderr, level)
+}
+
+func NewLoggerWithRotation(level LogLevel, outputPath string, maxSize int, maxBackups int, maxAge int) logr.Logger {
+	return NewLoggerTo(&lumberjack.Logger{
+		Filename:   outputPath,
+		MaxSize:    maxSize,
+		MaxBackups: maxBackups,
+		MaxAge:     maxAge}, level)
 }
 
 func NewLoggerTo(destWriter io.Writer, level LogLevel) logr.Logger {

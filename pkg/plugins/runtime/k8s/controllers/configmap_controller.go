@@ -85,6 +85,13 @@ func (r *ConfigMapReconciler) SetupWithManager(mgr kube_ctrl.Manager) error {
 				ResourceConverter: r.ResourceConverter,
 			},
 		}).
+		Watches(&kube_source.Kind{Type: &mesh_k8s.ZoneIngress{}}, &kube_handler.EnqueueRequestsFromMapFunc{
+			ToRequests: &ZoneIngressToMeshMapper{
+				Log:               r.Log.WithName("zone-ingress-to-configmap-mapper"),
+				SystemNamespace:   r.SystemNamespace,
+				ResourceConverter: r.ResourceConverter,
+			},
+		}).
 		Watches(&kube_source.Kind{Type: &mesh_k8s.ExternalService{}}, &kube_handler.EnqueueRequestsFromMapFunc{
 			ToRequests: &ExternalServiceToConfigMapsMapper{
 				Client:          mgr.GetClient(),
@@ -153,6 +160,7 @@ func (m *DataplaneToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.
 		return nil
 	}
 
+	// backwards compatibility
 	if dp.Spec.IsIngress() {
 		meshSet := map[string]bool{}
 		for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
@@ -171,6 +179,38 @@ func (m *DataplaneToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.
 	return []kube_reconile.Request{{
 		NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(cause.Mesh)},
 	}}
+}
+
+type ZoneIngressToMeshMapper struct {
+	Log               logr.Logger
+	ResourceConverter k8s_common.Converter
+	SystemNamespace   string
+}
+
+func (m *ZoneIngressToMeshMapper) Map(obj kube_handler.MapObject) []kube_reconile.Request {
+	cause, ok := obj.Object.(*mesh_k8s.ZoneIngress)
+	if !ok {
+		m.Log.WithValues("zoneIngress", obj.Meta).Error(errors.Errorf("wrong argument type: expected %T, got %T", cause, obj.Object), "wrong argument type")
+		return nil
+	}
+	zoneIngress := core_mesh.NewZoneIngressResource()
+	if err := m.ResourceConverter.ToCoreResource(cause, zoneIngress); err != nil {
+		converterLog.Error(err, "failed to parse ZoneIngress", "zoneIngress", cause.Spec)
+		return nil
+	}
+
+	meshSet := map[string]bool{}
+	for _, service := range zoneIngress.Spec.GetAvailableServices() {
+		meshSet[service.Mesh] = true
+	}
+
+	var requests []kube_reconile.Request
+	for mesh := range meshSet {
+		requests = append(requests, kube_reconile.Request{
+			NamespacedName: kube_types.NamespacedName{Namespace: m.SystemNamespace, Name: vips.ConfigKey(mesh)},
+		})
+	}
+	return requests
 }
 
 type ExternalServiceToConfigMapsMapper struct {

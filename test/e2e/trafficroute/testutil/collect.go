@@ -1,11 +1,12 @@
 package testutil
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
 	"sync"
 
 	"github.com/kumahq/kuma/test/framework"
+	"github.com/kumahq/kuma/test/server/types"
 )
 
 type CollectResponsesOpts struct {
@@ -42,14 +43,35 @@ func WithHeader(key, value string) CollectResponsesOptsFn {
 	}
 }
 
-func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (map[string]int, error) {
+func CollectResponse(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (types.EchoResponse, error) {
+	opts := DefaultCollectResponsesOpts()
+	for _, f := range fn {
+		f(&opts)
+	}
+	cmd := []string{"curl", "-X" + opts.Method}
+	for key, value := range opts.Headers {
+		cmd = append(cmd, fmt.Sprintf("-H'%s: %s'", key, value))
+	}
+	cmd = append(cmd, "-m", "3", "--fail", destination)
+	stdout, _, err := cluster.ExecWithRetries("", "", source, cmd...)
+	if err != nil {
+		return types.EchoResponse{}, err
+	}
+	response := &types.EchoResponse{}
+	if err := json.Unmarshal([]byte(stdout), response); err != nil {
+		return types.EchoResponse{}, err
+	}
+	return *response, nil
+}
+
+func CollectResponses(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) ([]types.EchoResponse, error) {
 	opts := DefaultCollectResponsesOpts()
 	for _, f := range fn {
 		f(&opts)
 	}
 
 	mut := sync.Mutex{}
-	responses := map[string]int{}
+	var responses []types.EchoResponse
 
 	var wg sync.WaitGroup
 	var err error
@@ -57,19 +79,13 @@ func CollectResponses(cluster framework.Cluster, source, destination string, fn 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			cmd := []string{"curl", "-X" + opts.Method}
-			for key, value := range opts.Headers {
-				cmd = append(cmd, fmt.Sprintf("-H'%s: %s'", key, value))
-			}
-			cmd = append(cmd, "-m", "3", "--fail", destination)
-			stdout, _, localErr := cluster.ExecWithRetries("", "", source, cmd...)
-			mut.Lock()
-			defer mut.Unlock()
+			response, localErr := CollectResponse(cluster, source, destination, fn...)
 			if localErr != nil {
 				err = localErr
-				return
 			}
-			responses[strings.TrimSpace(stdout)]++
+			mut.Lock()
+			responses = append(responses, response)
+			mut.Unlock()
 		}()
 	}
 	wg.Wait()
@@ -77,4 +93,16 @@ func CollectResponses(cluster framework.Cluster, source, destination string, fn 
 		return nil, err
 	}
 	return responses, nil
+}
+
+func CollectResponsesByInstance(cluster framework.Cluster, source, destination string, fn ...CollectResponsesOptsFn) (map[string]int, error) {
+	responses, err := CollectResponses(cluster, source, destination, fn...)
+	if err != nil {
+		return nil, err
+	}
+	counter := map[string]int{}
+	for _, response := range responses {
+		counter[response.Instance]++
+	}
+	return counter, nil
 }

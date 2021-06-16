@@ -38,6 +38,10 @@ func (t *testAuthenticator) Authenticate(ctx context.Context, dataplane *core_me
 	return errors.New("invalid credential")
 }
 
+func (t *testAuthenticator) AuthenticateZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
+	return nil
+}
+
 var _ = Describe("Authn Callbacks", func() {
 
 	var testAuth *testAuthenticator

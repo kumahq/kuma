@@ -16,14 +16,14 @@ import (
 // OriginAdmin is a marker to indicate by which ProxyGenerator resources were generated.
 const OriginAdmin = "admin"
 
-var staticEnpointPaths = []*envoy_common.StaticEndpointPath{
+var staticEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
 		Path:        "/ready",
 		RewritePath: "/ready",
 	},
 }
 
-var staticTlsEnpointPaths = []*envoy_common.StaticEndpointPath{
+var staticTlsEndpointPaths = []*envoy_common.StaticEndpointPath{
 	{
 		Path:        "/",
 		RewritePath: "/",
@@ -59,34 +59,37 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 
 	resources := core_xds.NewResourceSet()
 
-	for _, se := range staticEnpointPaths {
+	for _, se := range staticEndpointPaths {
 		se.ClusterName = envoyAdminClusterName
-	}
-
-	for _, se := range staticTlsEnpointPaths {
-		se.ClusterName = envoyAdminClusterName
-
-		token, err := ctx.EnvoyAdminClient.GenerateAPIToken(proxy.Dataplane)
-		if err != nil {
-			return nil, errors.Wrapf(err, "unable to generate the API token")
-		}
-		se.Header = "Authorization"
-		se.HeaderExactMatch = fmt.Sprintf("Bearer %s", token)
 	}
 
 	// We bind admin to 127.0.0.1 by default, creating another listener with same address and port will result in error.
-	if proxy.Dataplane.Spec.GetNetworking().Address != "127.0.0.1" {
+	if g.getAddress(proxy) != "127.0.0.1" {
+		filterChains := []envoy_listeners.ListenerBuilderOpt{
+			envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+				Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticEndpointPaths)),
+			),
+		}
+		if proxy.Dataplane != nil {
+			for _, se := range staticTlsEndpointPaths {
+				se.ClusterName = envoyAdminClusterName
+
+				token, err := ctx.EnvoyAdminClient.GenerateAPIToken(proxy.Dataplane)
+				if err != nil {
+					return nil, errors.Wrapf(err, "unable to generate the API token")
+				}
+				se.Header = "Authorization"
+				se.HeaderExactMatch = fmt.Sprintf("Bearer %s", token)
+			}
+			filterChains = append(filterChains, envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
+				Configure(envoy_listeners.FilterChainMatch("tls")).
+				Configure(envoy_listeners.StaticTlsEndpoints(envoy_names.GetAdminListenerName(), ctx.ControlPlane.AdminProxyKeyPair, staticTlsEndpointPaths)),
+			))
+		}
 		listener, err := envoy_listeners.NewListenerBuilder(proxy.APIVersion).
-			Configure(envoy_listeners.InboundListener(envoy_names.GetAdminListenerName(), proxy.Dataplane.Spec.GetNetworking().Address, adminPort, core_xds.SocketAddressProtocolTCP)).
+			Configure(envoy_listeners.InboundListener(envoy_names.GetAdminListenerName(), g.getAddress(proxy), adminPort, core_xds.SocketAddressProtocolTCP)).
 			Configure(envoy_listeners.TLSInspector()).
-			Configure(
-				envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-					Configure(envoy_listeners.StaticEndpoints(envoy_names.GetAdminListenerName(), staticEnpointPaths)),
-				),
-				envoy_listeners.FilterChain(envoy_listeners.NewFilterChainBuilder(proxy.APIVersion).
-					Configure(envoy_listeners.FilterChainMatch("tls")).
-					Configure(envoy_listeners.StaticTlsEndpoints(envoy_names.GetAdminListenerName(), ctx.ControlPlane.AdminProxyKeyPair, staticTlsEnpointPaths)),
-				)).
+			Configure(filterChains...).
 			Build()
 		if err != nil {
 			return nil, err
@@ -104,4 +107,11 @@ func (g AdminProxyGenerator) Generate(ctx xds_context.Context, proxy *core_xds.P
 		Resource: cluster,
 	})
 	return resources, nil
+}
+
+func (g AdminProxyGenerator) getAddress(proxy *core_xds.Proxy) string {
+	if proxy.Dataplane != nil {
+		return proxy.Dataplane.Spec.GetNetworking().Address
+	}
+	return proxy.ZoneIngress.Spec.GetNetworking().GetAddress()
 }

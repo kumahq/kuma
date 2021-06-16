@@ -59,6 +59,7 @@ func printMeshInsights(meshInsights *mesh.MeshInsightResourceList, out io.Writer
 			"TRAFFIC TRACES",
 			"TRAFFIC LOGS",
 			"PROXY TEMPLATES",
+			"RATE LIMITS",
 		},
 		NextRow: func() func() []string {
 			i := 0
@@ -115,6 +116,11 @@ func printMeshInsights(meshInsights *mesh.MeshInsightResourceList, out io.Writer
 					pt = stat.Total
 				}
 
+				var rl uint32
+				if stat, ok := meshInsight.Policies[string(mesh.RateLimitType)]; ok {
+					rl = stat.Total
+				}
+
 				return []string{
 					meta.GetName(), // MESH
 					fmt.Sprintf("%d/%d", meshInsight.Dataplanes.Online, meshInsight.Dataplanes.Total), // DATAPLANES
@@ -127,6 +133,7 @@ func printMeshInsights(meshInsights *mesh.MeshInsightResourceList, out io.Writer
 					table.Number(tt), // TRAFFIC TRACES
 					table.Number(tl), // TRAFFIC LOGS
 					table.Number(pt), // PROXY TEMPLATES
+					table.Number(rl), // RATE LIMITS
 				}
 			}
 		}(),

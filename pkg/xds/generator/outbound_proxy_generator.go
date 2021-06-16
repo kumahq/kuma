@@ -191,6 +191,8 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 						proxy.Dataplane.IsIPv6())).
 					Configure(envoy_clusters.ClientSideTLS(proxy.Routing.OutboundTargets[serviceName]))
 				switch protocol {
+				case mesh_core.ProtocolHTTP:
+					edsClusterBuilder.Configure(envoy_clusters.Http())
 				case mesh_core.ProtocolHTTP2, mesh_core.ProtocolGRPC:
 					edsClusterBuilder.Configure(envoy_clusters.Http2())
 				default:
@@ -316,6 +318,7 @@ func (_ OutboundProxyGenerator) determineRoutes(proxy *model.Proxy, outbound *ku
 	for _, http := range route.Spec.GetConf().GetHttp() {
 		route := envoy_common.Route{
 			Match:    http.Match,
+			Modify:   http.Modify,
 			Clusters: clustersFromSplit(http.GetSplitWithDestination()),
 		}
 		routes = append(routes, route)

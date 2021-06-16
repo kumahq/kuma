@@ -7,21 +7,21 @@ option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 import "google/protobuf/timestamp.proto";
 import "validate/validate.proto";
 
-// ZoneInsight defines the observed state of a Remote Kuma CP.
+// ZoneInsight defines the observed state of a Zone Kuma CP.
 message ZoneInsight {
 
-  // List of KDS subscriptions created by a given Remote Kuma CP.
+  // List of KDS subscriptions created by a given Zone Kuma CP.
   repeated KDSSubscription subscriptions = 1;
 }
 
 // KDSSubscription describes a single KDS subscription
-// created by a Remote to the Global.
-// Ideally, there should be only one such subscription per Remote lifecycle.
+// created by a Zone to the Global.
+// Ideally, there should be only one such subscription per Zone lifecycle.
 // Presence of multiple subscriptions might indicate one of the following
 // events:
-// - transient loss of network connection between Remote and Global Control
+// - transient loss of network connection between Zone and Global Control
 // Planes
-// - Remote Kuma CP restarts (i.e. hot restart or crash)
+// - Zone Kuma CP restarts (i.e. hot restart or crash)
 // - Global Kuma CP restarts (i.e. rolling update or crash)
 // - etc
 message KDSSubscription {
@@ -32,17 +32,17 @@ message KDSSubscription {
   // Global CP instance that handled given subscription.
   string global_instance_id = 2 [ (validate.rules).string.min_len = 1 ];
 
-  // Time when a given Remote connected to the Global.
+  // Time when a given Zone connected to the Global.
   google.protobuf.Timestamp connect_time = 3
       [ (validate.rules).timestamp.required = true ];
 
-  // Time when a given Remote disconnected from the Global.
+  // Time when a given Zone disconnected from the Global.
   google.protobuf.Timestamp disconnect_time = 4;
 
   // Status of the KDS subscription.
   KDSSubscriptionStatus status = 5 [ (validate.rules).message.required = true ];
 
-  // Version of Remote Kuma CP.
+  // Version of Zone Kuma CP.
   Version version = 6;
 }
 
@@ -74,7 +74,7 @@ message KDSServiceStats {
 // Version defines version of Kuma ControlPlane
 message Version {
 
-  // Version of Remote Kuma CP
+  // Version of Zone Kuma CP
   KumaCpVersion kumaCp = 1;
 }
 

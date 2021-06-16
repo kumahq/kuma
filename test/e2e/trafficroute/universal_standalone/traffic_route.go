@@ -6,6 +6,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/onsi/gomega/types"
+	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 
@@ -25,46 +26,51 @@ func KumaStandalone() {
 		universal = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
 		err = universal.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "echo-server_kuma-test_svc_8080")
+		testServerToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "test-server")
 		Expect(err).ToNot(HaveOccurred())
-		backendToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "backend")
+		anotherTestServerToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "another-test-server")
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := universal.GetKuma().GenerateDpToken(defaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(EchoServerUniversal("dp-echo-1", defaultMesh, "echo-v1", echoServerToken,
-				WithTransparentProxy(true),
+			Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
+				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithProtocol("http"),
 				WithServiceVersion("v1"),
-			)).
-			Install(EchoServerUniversal("dp-echo-2", defaultMesh, "echo-v2", echoServerToken,
 				WithTransparentProxy(true),
+			)).
+			Install(TestServerUniversal("dp-echo-2", defaultMesh, testServerToken,
+				WithArgs([]string{"echo", "--instance", "echo-v2"}),
 				WithProtocol("http"),
 				WithServiceVersion("v2"),
-			)).
-			Install(EchoServerUniversal("dp-echo-3", defaultMesh, "echo-v3", echoServerToken,
 				WithTransparentProxy(true),
+			)).
+			Install(TestServerUniversal("dp-echo-3", defaultMesh, testServerToken,
+				WithArgs([]string{"echo", "--instance", "echo-v3"}),
 				WithProtocol("http"),
 				WithServiceVersion("v3"),
-			)).
-			Install(EchoServerUniversal("dp-echo-4", defaultMesh, "echo-v4", echoServerToken,
 				WithTransparentProxy(true),
+			)).
+			Install(TestServerUniversal("dp-echo-4", defaultMesh, testServerToken,
+				WithArgs([]string{"echo", "--instance", "echo-v4"}),
 				WithProtocol("http"),
 				WithServiceVersion("v4"),
-			)).
-			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(EchoServerUniversal("dp-backend-1", defaultMesh, "backend-v1", backendToken,
-				WithServiceName("backend"),
-				WithServiceVersion("v1"),
 				WithTransparentProxy(true),
 			)).
+			Install(TestServerUniversal("dp-another-test", defaultMesh, anotherTestServerToken,
+				WithArgs([]string{"echo", "--instance", "another-test-server"}),
+				WithProtocol("http"),
+				WithServiceName("another-test-server"),
+				WithTransparentProxy(true),
+			)).
+			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
 	})
@@ -97,35 +103,34 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 conf:
   loadBalancer:
     roundRobin: {}
   split:
     - weight: 1
       destination:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
         version: v1
     - weight: 1
       destination:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
         version: v2
     - weight: 1
       destination:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
         version: v4
 `
 		Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
+			return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(3),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil())),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), Not(BeNil())),
-				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil()))),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil())),
+				HaveKey(Equal(`echo-v1`)),
+				HaveKey(Equal(`echo-v2`)),
+				HaveKey(Equal(`echo-v4`)),
 			),
 		)
 	})
@@ -140,27 +145,23 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 conf:
   loadBalancer:
     roundRobin: {}
   split:
     - weight: 100
       destination:
-        kuma.io/service: backend
+        kuma.io/service: another-test-server
 `
 		Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
+			return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(1),
-				HaveKeyWithValue(MatchRegexp(`.*backend-v1*`), Not(BeNil())),
-				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), Not(BeNil()))),
-				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), Not(BeNil()))),
-				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v3.*`), Not(BeNil()))),
-				Not(HaveKeyWithValue(MatchRegexp(`.*echo-v4.*`), Not(BeNil()))),
+				HaveKey(Equal("another-test-server")),
 			),
 		)
 	})
@@ -178,29 +179,29 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 conf:
   loadBalancer:
     roundRobin: {}
   split:
     - weight: %d
       destination:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
         version: v1
     - weight: %d
       destination:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
         version: v2
 `, v1Weight, v2Weight)
 		Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(10))
+			return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v1.*`), ApproximatelyEqual(v1Weight, 1)),
-				HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(v2Weight, 1)),
+				HaveKeyWithValue(Equal(`echo-v1`), ApproximatelyEqual(v1Weight, 1)),
+				HaveKeyWithValue(Equal(`echo-v2`), ApproximatelyEqual(v2Weight, 1)),
 			),
 		)
 	})
@@ -209,7 +210,7 @@ conf:
 		HaveOnlyResponseFrom := func(response string) types.GomegaMatcher {
 			return And(
 				HaveLen(1),
-				HaveKeyWithValue(MatchRegexp(`.*`+response+`.*`), Not(BeNil())),
+				HaveKey(Equal(response)),
 			)
 		}
 
@@ -223,46 +224,46 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 conf:
   http:
   - match:
       path:
         prefix: /version1
     destination:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       version: v1
   - match:
       path:
         exact: /version2
     destination:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       version: v2
   - match:
       path:
         regex: "^/version3$"
     destination:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       version: v3
   loadBalancer:
     roundRobin: {}
   destination:
-    kuma.io/service: echo-server_kuma-test_svc_8080
+    kuma.io/service: test-server
     version: v4
 `
 			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version1")
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh/version1")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version2")
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh/version2")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh/version3")
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh/version3")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
@@ -276,7 +277,7 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 conf:
   http:
   - match:
@@ -284,41 +285,41 @@ conf:
         x-version:
           prefix: v1
     destination:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       version: v1
   - match:
       headers:
         x-version:
           exact: v2
     destination:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       version: v2
   - match:
       headers:
         x-version:
           regex: "^v3$"
     destination:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       version: v3
   loadBalancer:
     roundRobin: {}
   destination:
-    kuma.io/service: echo-server_kuma-test_svc_8080
+    kuma.io/service: test-server
     version: v4
 `
 			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithHeader("x-version", "v1"))
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithHeader("x-version", "v1"))
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithHeader("x-version", "v2"))
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithHeader("x-version", "v2"))
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithHeader("x-version", "v3"))
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithHeader("x-version", "v3"))
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh")
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
@@ -332,7 +333,7 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 conf:
   http:
   - match:
@@ -341,28 +342,28 @@ conf:
     split:
     - weight: 50
       destination:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
         version: v1
     - weight: 50
       destination:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
         version: v2
   loadBalancer:
     roundRobin: {}
   split:
   - weight: 50
     destination:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       version: v3
   - weight: 50
     destination:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       version: v4
 `
 			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh/split", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -372,7 +373,7 @@ conf:
 			)
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -392,7 +393,7 @@ sources:
       kuma.io/service: demo-client
 destinations:
   - match:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
 conf:
   http:
   - match:
@@ -401,28 +402,28 @@ conf:
     split:
     - weight: 50
       destination:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
         version: v1
     - weight: 50
       destination:
-        kuma.io/service: echo-server_kuma-test_svc_8080
+        kuma.io/service: test-server
         version: v2
   loadBalancer:
     roundRobin: {}
   split:
   - weight: 20
     destination:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       version: v1
   - weight: 80
     destination:
-      kuma.io/service: echo-server_kuma-test_svc_8080
+      kuma.io/service: test-server
       version: v2
 `
 			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh/split", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -432,7 +433,7 @@ conf:
 			)
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponses(universal, "demo-client", "echo-server_kuma-test_svc_8080.mesh", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(universal, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -440,6 +441,203 @@ conf:
 					HaveKeyWithValue(MatchRegexp(`.*echo-v2.*`), ApproximatelyEqual(8, 1)),
 				),
 			)
+		})
+
+		It("should modify path", func() {
+			const trafficRoute = `
+type: TrafficRoute
+name: modify-path
+mesh: default
+sources:
+  - match:
+      kuma.io/service: demo-client
+destinations:
+  - match:
+      kuma.io/service: test-server
+conf:
+  http:
+  - match:
+      path:
+        prefix: "/test-rewrite-prefix"
+    modify:
+      path:
+        rewritePrefix: "/new-rewrite-prefix"
+    destination:
+      kuma.io/service: test-server
+  - match:
+      path:
+        prefix: "/test-regex"
+    modify:
+      path:
+        regex:
+          pattern: "^/(.*)-(.*)$"
+          substitution: "/\\2-\\1"
+    destination:
+      kuma.io/service: test-server
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: test-server
+`
+			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+
+			Eventually(func() error {
+				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/test-rewrite-prefix")
+				if err != nil {
+					return err
+				}
+				if resp.Received.Path != "/new-rewrite-prefix" {
+					return errors.Errorf("expected %s, got %s", "/new-rewrite-prefix", resp.Received.Path)
+				}
+				return nil
+			}, "30s", "500ms").Should(Succeed())
+
+			Eventually(func() error {
+				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/test-regex")
+				if err != nil {
+					return err
+				}
+				if resp.Received.Path != "/regex-test" {
+					return errors.Errorf("expected %s, got %s", "/regex-test", resp.Received.Path)
+				}
+				return nil
+			}, "30s", "500ms").Should(Succeed())
+		})
+
+		It("should modify host", func() {
+			const trafficRoute = `
+type: TrafficRoute
+name: modify-host
+mesh: default
+sources:
+  - match:
+      kuma.io/service: demo-client
+destinations:
+  - match:
+      kuma.io/service: test-server
+conf:
+  http:
+  - match:
+      path:
+        prefix: "/modified-host"
+    modify:
+      host:
+        value: "modified-host"
+    destination:
+      kuma.io/service: test-server
+  - match:
+      path:
+        prefix: "/from-path"
+    modify:
+      host:
+        fromPath:
+          pattern: "^/from-(.*)$"
+          substitution: "\\1"
+    destination:
+      kuma.io/service: test-server
+    destination:
+      kuma.io/service: test-server
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: test-server
+`
+			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+
+			Eventually(func() error {
+				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/modified-host")
+				if err != nil {
+					return err
+				}
+				host := resp.Received.Headers["Host"]
+				if len(host) < 1 || host[0] != "modified-host" {
+					return errors.Errorf("expected %s, got %s", "modified-host", host)
+				}
+				return nil
+			}, "30s", "500ms").Should(Succeed())
+
+			Eventually(func() error {
+				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/from-path")
+				if err != nil {
+					return err
+				}
+				host := resp.Received.Headers["Host"]
+				if len(host) < 1 || host[0] != "path" {
+					return errors.Errorf("expected %s, got %s", "path", host)
+				}
+				return nil
+			}, "30s", "500ms").Should(Succeed())
+		})
+
+		It("should modify headers", func() {
+			const trafficRoute = `
+type: TrafficRoute
+name: modify-headers
+mesh: default
+sources:
+  - match:
+      kuma.io/service: demo-client
+destinations:
+  - match:
+      kuma.io/service: test-server
+conf:
+  http:
+  - match:
+      path:
+        prefix: "/modified-headers"
+    modify:
+      requestHeaders:
+        add:
+        - name: x-custom-header
+          value: xyz
+        - name: x-multiple-values
+          value: xyz
+          append: true
+        remove:
+        - name: header-to-remove
+    destination:
+      kuma.io/service: test-server
+  loadBalancer:
+    roundRobin: {}
+  destination:
+    kuma.io/service: test-server
+`
+			Expect(YamlUniversal(trafficRoute)(universal)).To(Succeed())
+
+			Eventually(func() error {
+				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/modified-headers",
+					WithHeader("header-to-remove", "abc"),
+					WithHeader("x-multiple-values", "abc"),
+				)
+				if err != nil {
+					return err
+				}
+				header := resp.Received.Headers["X-Custom-Header"]
+				if len(header) < 1 || header[0] != "xyz" {
+					return errors.Errorf("expected %s, got %s", "xyz", header)
+				}
+				if len(resp.Received.Headers["Header-To-Remove"]) > 0 {
+					return errors.New("expected 'Header-To-Remove' to not be present")
+				}
+				header = resp.Received.Headers["X-Multiple-Values"]
+				if len(header) < 2 || header[0] != "abc" || header[1] != "xyz" {
+					return errors.Errorf("expected %s, got %s", "abc,xyz", header)
+				}
+				return nil
+			}, "30s", "500ms").Should(Succeed())
+
+			// "add" should replace existing headers
+			Eventually(func() error {
+				resp, err := CollectResponse(universal, "demo-client", "test-server.mesh/modified-headers", WithHeader("x-custom-header", "abc"))
+				if err != nil {
+					return err
+				}
+				header := resp.Received.Headers["X-Custom-Header"]
+				if len(header) < 1 || header[0] != "xyz" {
+					return errors.Errorf("expected %s, got %s", "xyz", header)
+				}
+				return nil
+			}, "30s", "500ms").Should(Succeed())
 		})
 	})
 }

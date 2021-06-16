@@ -58,15 +58,3 @@ generate/envoy-imports:
 	echo 'import (' >> ${ENVOY_IMPORTS}
 	go list github.com/envoyproxy/go-control-plane/... | grep "github.com/envoyproxy/go-control-plane/envoy/" | awk '{printf "\t_ \"%s\"\n", $$1}' >> ${ENVOY_IMPORTS}
 	echo ')' >> ${ENVOY_IMPORTS}
-
-.PHONY: docs
-docs: ## Dev: Generate all docs
-	# re-build `kumactl` binary with a predictable `version`
-	$(MAKE) _docs_ BUILD_INFO_VERSION=latest
-
-.PHONY: _docs_
-_docs_: docs/kumactl
-
-.PHONY: docs/kumactl
-docs/kumactl: build/kumactl ## Dev: Generate `kumactl` docs
-	tools/docs/kumactl/gen_help.sh ${BUILD_KUMACTL_DIR}/kumactl >docs/cmd/kumactl/HELP.md

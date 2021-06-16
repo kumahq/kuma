@@ -1,7 +1,7 @@
 resources:
 - name: api-grpc
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-grpc
     endpoints:
     - lbEndpoints:
@@ -19,7 +19,7 @@ resources:
               kuma.io/protocol: grpc
 - name: api-http
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-http
     endpoints:
     - lbEndpoints:
@@ -53,7 +53,7 @@ resources:
               region: eu
 - name: api-http2
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-http2
     endpoints:
     - lbEndpoints:
@@ -71,7 +71,7 @@ resources:
               kuma.io/protocol: http2
 - name: api-tcp
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: api-tcp
     endpoints:
     - lbEndpoints:
@@ -103,7 +103,7 @@ resources:
               region: eu
 - name: backend
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: backend
     endpoints:
     - lbEndpoints:
@@ -127,7 +127,7 @@ resources:
         loadBalancingWeight: 1
 - name: db-_0_
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: db
     endpoints:
     - lbEndpoints:
@@ -145,7 +145,7 @@ resources:
               role: master
 - name: db-_1_
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: db
     endpoints:
     - lbEndpoints:
@@ -169,21 +169,22 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    http2ProtocolOptions: {}
     lbPolicy: RANDOM
     name: api-grpc
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: api-http
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    commonHttpProtocolOptions:
-      idleTimeout: 0s
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    http2ProtocolOptions: {}
     name: api-http
     outlierDetection:
       enforcingConsecutive5xx: 100
@@ -192,17 +193,21 @@ resources:
       enforcingFailurePercentage: 0
       enforcingSuccessRate: 0
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: api-http2
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
-    commonHttpProtocolOptions:
-      idleTimeout: 0s
     connectTimeout: 10s
     edsClusterConfig:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    http2ProtocolOptions: {}
     lbPolicy: RING_HASH
     name: api-http2
     ringHashLbConfig:
@@ -210,6 +215,13 @@ resources:
       maximumRingSize: "1024"
       minimumRingSize: "64"
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        commonHttpProtocolOptions:
+          idleTimeout: 0s
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: api-tcp
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -218,12 +230,16 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    http2ProtocolOptions: {}
     lbPolicy: LEAST_REQUEST
     leastRequestLbConfig:
       choiceCount: 4
     name: api-tcp
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: backend
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -232,10 +248,14 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    http2ProtocolOptions: {}
     lbPolicy: MAGLEV
     name: backend
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: db-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -244,9 +264,13 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    http2ProtocolOptions: {}
     name: db-_0_
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: db-_1_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -255,9 +279,13 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    http2ProtocolOptions: {}
     name: db-_1_
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener
@@ -290,8 +318,10 @@ resources:
           - name: envoy.access_loggers.file
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-              format: |+
-                [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "gateway" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
+              logFormat:
+                textFormatSource:
+                  inlineString: |+
+                    [%START_TIME%] mesh1 "%REQ(:method)% %REQ(x-envoy-original-path?:path)% %PROTOCOL%" %RESPONSE_CODE% %RESPONSE_FLAGS% %BYTES_RECEIVED% %BYTES_SENT% %DURATION% %RESP(x-envoy-upstream-service-time)% "%REQ(x-forwarded-for)%" "%REQ(user-agent)%" "%REQ(x-request-id)%" "%REQ(:authority)%" "gateway" "api-http" "10.0.0.1" "%UPSTREAM_HOST%"
 
               path: /var/log
           httpFilters:

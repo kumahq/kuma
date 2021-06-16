@@ -5,6 +5,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/faultinjections"
 	"github.com/kumahq/kuma/pkg/core/logs"
 	"github.com/kumahq/kuma/pkg/core/permissions"
+	"github.com/kumahq/kuma/pkg/core/ratelimits"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
@@ -26,7 +27,8 @@ func defaultDataplaneProxyBuilder(rt core_runtime.Runtime, metadataTracker Datap
 		PermissionMatcher:     permissions.TrafficPermissionsMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		LogsMatcher:           logs.TrafficLogsMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
 		FaultInjectionMatcher: faultinjections.FaultInjectionMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
-		Zone:                  rt.Config().Multizone.Remote.Zone,
+		RateLimitMatcher:      ratelimits.RateLimitMatcher{ResourceManager: rt.ReadOnlyResourceManager()},
+		Zone:                  rt.Config().Multizone.Zone.Name,
 		apiVersion:            apiVersion,
 	}
 }
@@ -64,6 +66,7 @@ func DefaultDataplaneWatchdogFactory(
 		ingressReconciler:     ingressReconciler,
 		xdsContextBuilder:     xdsContextBuilder,
 		meshCache:             meshSnapshotCache,
+		metadataTracker:       metadataTracker,
 	}
 	return NewDataplaneWatchdogFactory(
 		xdsMetrics,

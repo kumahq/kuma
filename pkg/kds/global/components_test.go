@@ -35,25 +35,25 @@ import (
 
 var _ = Describe("Global Sync", func() {
 
-	var remoteStores []store.ResourceStore
+	var zoneStores []store.ResourceStore
 	var globalStore store.ResourceStore
 	var globalSyncer sync_store.ResourceSyncer
 	var closeFunc func()
 
 	BeforeEach(func() {
-		const numOfRemotes = 2
+		const numOfZones = 2
 		const zoneName = "zone-%d"
 
-		// Start `numOfRemotes` Kuma CP Remote
+		// Start `numOfZones` Kuma CP Zone
 		serverStreams := []*grpc.MockServerStream{}
 		wg := &sync.WaitGroup{}
-		remoteStores = []store.ResourceStore{}
-		for i := 0; i < numOfRemotes; i++ {
+		zoneStores = []store.ResourceStore{}
+		for i := 0; i < numOfZones; i++ {
 			wg.Add(1)
-			remoteStore := memory.NewStore()
-			serverStream := kds_setup.StartServer(remoteStore, wg, fmt.Sprintf(zoneName, i), kds.SupportedTypes, reconcile.Any)
+			zoneStore := memory.NewStore()
+			serverStream := kds_setup.StartServer(zoneStore, wg, fmt.Sprintf(zoneName, i), kds.SupportedTypes, reconcile.Any)
 			serverStreams = append(serverStreams, serverStream)
-			remoteStores = append(remoteStores, remoteStore)
+			zoneStores = append(zoneStores, zoneStore)
 		}
 
 		// Start 1 Kuma CP Global
@@ -66,8 +66,8 @@ var _ = Describe("Global Sync", func() {
 		}
 		kds_setup.StartClient(clientStreams, []model.ResourceType{mesh.DataplaneType}, stopCh, global.Callbacks(globalSyncer, false, nil))
 
-		// Create Zone resources for each Kuma CP Remote
-		for i := 0; i < numOfRemotes; i++ {
+		// Create Zone resources for each Kuma CP Zone
+		for i := 0; i < numOfZones; i++ {
 			zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: &wrappers.BoolValue{Value: true}}}
 			err := globalStore.Create(context.Background(), zone, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
@@ -102,10 +102,10 @@ var _ = Describe("Global Sync", func() {
 		}
 	}
 
-	It("should add resource to global store after adding it to remote", func() {
+	It("should add resource to global store after adding it to Zone", func() {
 		for i := 0; i < 10; i++ {
 			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
-			err := remoteStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
+			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
 		Eventually(func() int {
@@ -118,16 +118,16 @@ var _ = Describe("Global Sync", func() {
 		closeFunc()
 	})
 
-	It("should sync resources independently for each Remote", func() {
+	It("should sync resources independently for each Zone", func() {
 		for i := 0; i < 10; i++ {
 			dp := dataplaneFunc("kuma-cluster-1", fmt.Sprintf("service-1-%d", i))
-			err := remoteStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
+			err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-1-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
 
 		for i := 0; i < 10; i++ {
 			dp := dataplaneFunc("kuma-cluster-2", fmt.Sprintf("service-2-%d", i))
-			err := remoteStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-2-%d", i), "mesh-1"))
+			err := zoneStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp}, store.CreateByKey(fmt.Sprintf("dp-2-%d", i), "mesh-1"))
 			Expect(err).ToNot(HaveOccurred())
 		}
 
@@ -138,10 +138,10 @@ var _ = Describe("Global Sync", func() {
 			return len(actual.Items)
 		}, "3s", "100ms").Should(Equal(20))
 
-		err := remoteStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-0", "mesh-1"))
+		err := zoneStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-0", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remoteStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-1", "mesh-1"))
+		err = zoneStores[0].Delete(context.Background(), mesh.NewDataplaneResource(), store.DeleteByKey("dp-1-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {
@@ -156,11 +156,11 @@ var _ = Describe("Global Sync", func() {
 
 	It("should support same dataplane names through clusters", func() {
 		dp1 := dataplaneFunc("kuma-cluster-1", "backend")
-		err := remoteStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp1}, store.CreateByKey("dp-1", "mesh-1"))
+		err := zoneStores[0].Create(context.Background(), &mesh.DataplaneResource{Spec: dp1}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		dp2 := dataplaneFunc("kuma-cluster-2", "web")
-		err = remoteStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp2}, store.CreateByKey("dp-1", "mesh-1"))
+		err = zoneStores[1].Create(context.Background(), &mesh.DataplaneResource{Spec: dp2}, store.CreateByKey("dp-1", "mesh-1"))
 		Expect(err).ToNot(HaveOccurred())
 
 		Eventually(func() int {
@@ -190,10 +190,12 @@ var _ = Describe("Global Sync", func() {
 			}
 		}
 
-		// plus 2 global-scope types
+		// plus 4 global-scope types
 		extraTypes := []model.ResourceType{
 			mesh.MeshType,
+			mesh.ZoneIngressType,
 			system.ConfigType,
+			system.GlobalSecretType,
 		}
 
 		actualProvidedTypes = append(actualProvidedTypes, extraTypes...)

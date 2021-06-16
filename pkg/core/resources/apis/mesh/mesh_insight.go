@@ -73,12 +73,15 @@ func (l *MeshInsightResourceList) GetItems() []model.Resource {
 	}
 	return res
 }
+
 func (l *MeshInsightResourceList) GetItemType() model.ResourceType {
 	return MeshInsightType
 }
+
 func (l *MeshInsightResourceList) NewItem() model.Resource {
 	return NewMeshInsightResource()
 }
+
 func (l *MeshInsightResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*MeshInsightResource); ok {
 		l.Items = append(l.Items, trr)
@@ -87,6 +90,7 @@ func (l *MeshInsightResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*MeshInsightResource)(nil), r)
 	}
 }
+
 func (l *MeshInsightResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }

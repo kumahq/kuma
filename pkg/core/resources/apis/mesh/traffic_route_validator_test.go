@@ -76,6 +76,15 @@ var _ = Describe("TrafficRoute", func() {
                       headers:
                         x-custom-header:
                           regex: "^xyz$"
+                    modify:
+                      path:
+                        regex:
+                          pattern: "^/service/([^/]+)(/.*)$"
+                          substitution: "\\2/instance/\\1"
+                        host:
+                          fromPath:
+                            pattern: "^/(.+)/.+$"
+                            substitution: "\\1"
                     destination:
                       kuma.io/service: offers
                   destination:
@@ -93,6 +102,25 @@ var _ = Describe("TrafficRoute", func() {
                   - match:
                       path:
                         prefix: "/offers"
+                    modify:
+                      path:
+                        rewritePrefix: "/not-offers"
+                      host:
+                        value: xyz
+                      requestHeaders:
+                        add:
+                          - name: x-custom-header
+                            value: xyz
+                            append: true 
+                        remove:
+                          - name: x-something
+                      responseHeaders:
+                        add:
+                          - name: x-custom-header
+                            value: xyz
+                            append: true
+                        remove:
+                          - name: x-something
                     split:
                       - weight: 20
                         destination:
@@ -446,6 +474,177 @@ var _ = Describe("TrafficRoute", func() {
                 violations:
                 - field: conf.split
                   message: there must be at least one split entry with weight above 0`,
+			}),
+			Entry("http - modify empty values", testCase{
+				route: `
+                sources:
+                - match:
+                    kuma.io/service: web
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  http:
+                  - match:
+                      path:
+                        prefix: "/offers"
+                    modify:
+                      path:
+                        rewritePrefix: ""
+                      host:
+                        value: ""
+                      requestHeaders:
+                        add:
+                          - name: ""
+                            value: ""
+                        remove:
+                          - name: ""
+                      responseHeaders:
+                        add:
+                          - name: ""
+                            value: ""
+                        remove:
+                          - name: ""
+                    destination:
+                      kuma.io/service: offers
+                  - match:
+                      path:
+                        prefix: "/offers1"
+                    modify:
+                      path:
+                        regex:
+                          pattern: ""
+                          substitution: ""
+                      host:
+                        fromPath:
+                          pattern: ""
+                          substitution: ""
+                    destination:
+                      kuma.io/service: offers
+                  - match:
+                      path:
+                        prefix: "/offers1"
+                    modify:
+                      path: {}
+                      host: {}
+                    destination:
+                      kuma.io/service: offers
+                  destination:
+                    kuma.io/service: backend`,
+				expected: `
+                violations:
+                - field: conf.http[0].modify.path.rewritePrefix
+                  message: cannot be empty
+                - field: conf.http[0].modify.host.value
+                  message: cannot be empty
+                - field: conf.http[0].modify.requestHeaders.add[0].name
+                  message: cannot be empty
+                - field: conf.http[0].modify.requestHeaders.add[0].value
+                  message: cannot be empty
+                - field: conf.http[0].modify.requestHeaders.remove[0].name
+                  message: cannot be empty
+                - field: conf.http[0].modify.responseHeaders.add[0].name
+                  message: cannot be empty
+                - field: conf.http[0].modify.responseHeaders.add[0].value
+                  message: cannot be empty
+                - field: conf.http[0].modify.responseHeaders.remove[0].name
+                  message: cannot be empty
+                - field: conf.http[1].modify.path.regex.pattern
+                  message: cannot be empty
+                - field: conf.http[1].modify.path.regex.substitution
+                  message: cannot be empty
+                - field: conf.http[1].modify.host.fromPath.pattern
+                  message: cannot be empty
+                - field: conf.http[1].modify.host.fromPath.substitution
+                  message: cannot be empty
+                - field: conf.http[2].modify.path
+                  message: either "rewritePrefix" or "regex" has to be set
+                - field: conf.http[2].modify.host
+                  message: either "value" or "fromPath" has to be set`,
+			}),
+			Entry("http - modify path prefix cannot be used if match path prefix is not used", testCase{
+				route: `
+                sources:
+                - match:
+                    kuma.io/service: web
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  http:
+                  - match:
+                      path:
+                        exact: "/offers"
+                    modify:
+                      path:
+                        rewritePrefix: "/not-offers"
+                    destination:
+                      kuma.io/service: offers
+                  destination:
+                    kuma.io/service: backend`,
+				expected: `
+                violations:
+                - field: conf.http[0].modify.path.rewritePrefix
+                  message: can only be set when .http.match.path.prefix is not empty`,
+			}),
+			Entry("http - not allow some headers to be modified", testCase{
+				route: `
+                sources:
+                - match:
+                    kuma.io/service: web
+                destinations:
+                - match:
+                    kuma.io/service: backend
+                conf:
+                  http:
+                  - match:
+                      path:
+                        exact: "/offers"
+                    modify:
+                      requestHeaders:
+                        add:
+                        - name: 'host'
+                          value: xyz
+                        - name: 'Host'
+                          value: xyz
+                        - name: ':path'
+                          value: xyz
+                        remove:
+                        - name: 'host'
+                          value: xyz
+                      responseHeaders:
+                        add:
+                        - name: 'host'
+                          value: xyz
+                        - name: 'Host'
+                          value: xyz
+                        - name: ':path'
+                          value: xyz
+                        remove:
+                        - name: 'host'
+                          value: xyz
+                    destination:
+                      kuma.io/service: offers
+                  destination:
+                    kuma.io/service: backend`,
+				expected: `
+                violations:
+                - field: conf.http[0].modify.requestHeaders.add[0].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.requestHeaders.add[1].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.requestHeaders.add[2].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.requestHeaders.remove[0].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.responseHeaders.add[0].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.responseHeaders.add[1].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.responseHeaders.add[2].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified
+                - field: conf.http[0].modify.responseHeaders.remove[0].name
+                  message: host header and HTTP/2 pseudo-headers are not allowed to be modified`,
 			}),
 		)
 	})

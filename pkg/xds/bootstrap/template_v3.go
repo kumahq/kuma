@@ -23,6 +23,9 @@ node:
 {{if .EmptyDNSPort }}
     dataplane.dns.empty.port: "{{ .EmptyDNSPort }}"
 {{ end }}
+{{if .ProxyType }}
+    dataplane.proxyType: "{{ .ProxyType }}"
+{{ end }}
     version:
       kumaDp:
         version: "{{ .KumaDpVersion }}"
@@ -54,6 +57,8 @@ layered_runtime:
   - name: kuma
     static_layer:
       envoy.restart_features.use_apple_api_for_dns_lookups: false
+      re2.max_program_size.error_level: 4294967295 # UINT32_MAX
+      re2.max_program_size.warn_level: 1000
 
 stats_config:
   stats_tags:

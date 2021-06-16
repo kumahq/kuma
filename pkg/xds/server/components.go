@@ -12,7 +12,6 @@ import (
 	"github.com/kumahq/kuma/pkg/xds/cache/mesh"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	xds_metrics "github.com/kumahq/kuma/pkg/xds/metrics"
-	v2 "github.com/kumahq/kuma/pkg/xds/server/v2"
 	v3 "github.com/kumahq/kuma/pkg/xds/server/v3"
 
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
@@ -26,7 +25,9 @@ var (
 		core_mesh.ServiceInsightType:    true,
 	}
 	HashMeshIncludedGlobalResources = map[core_model.ResourceType]bool{
-		core_system.ConfigType: true,
+		core_system.ConfigType:       true,
+		core_system.GlobalSecretType: true,
+		core_mesh.ZoneIngressType:    true,
 	}
 )
 
@@ -62,7 +63,7 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 	if err != nil {
 		return err
 	}
-	claCache, err := cla.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Multizone.Remote.Zone, rt.Config().Store.Cache.ExpirationTime, rt.LookupIP(), rt.Metrics())
+	claCache, err := cla.NewCache(rt.ReadOnlyResourceManager(), rt.Config().Multizone.Zone.Name, rt.Config().Store.Cache.ExpirationTime, rt.LookupIP(), rt.Metrics())
 	if err != nil {
 		return err
 	}
@@ -71,9 +72,6 @@ func RegisterXDS(rt core_runtime.Runtime) error {
 		return err
 	}
 
-	if err := v2.RegisterXDS(statsCallbacks, xdsMetrics, meshSnapshotCache, envoyCpCtx, rt); err != nil {
-		return errors.Wrap(err, "could not register V2 XDS")
-	}
 	if err := v3.RegisterXDS(statsCallbacks, xdsMetrics, meshSnapshotCache, envoyCpCtx, rt); err != nil {
 		return errors.Wrap(err, "could not register V3 XDS")
 	}

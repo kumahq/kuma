@@ -13,5 +13,6 @@ dataplane:
   #
   # adminPort: 82345
   drainTime: 0
+  proxyType: not-a-proxy
 dataplaneRuntime:
   binaryPath:

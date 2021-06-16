@@ -160,6 +160,12 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 	zoneOverviewEndpoints.addFindEndpoint(ws)
 	zoneOverviewEndpoints.addListEndpoint(ws)
 
+	zoneIngressOverviewEndpoints := zoneIngressOverviewEndpoints{
+		resManager: resManager,
+	}
+	zoneIngressOverviewEndpoints.addFindEndpoint(ws)
+	zoneIngressOverviewEndpoints.addListEndpoint(ws)
+
 	serviceInsightEndpoints := serviceInsightEndpoints{
 		resourceEndpoints: resourceEndpoints{
 			mode:                 cfg.Mode,
@@ -205,12 +211,16 @@ func addResourcesEndpoints(ws *restful.WebService, defs []definitions.ResourceWs
 }
 
 func dataplaneTokenWs(resManager manager.ResourceManager, cfg *kuma_cp.Config) (*restful.WebService, error) {
-	generator, err := builtin.NewDataplaneTokenIssuer(resManager)
+	dpIssuer, err := builtin.NewDataplaneTokenIssuer(resManager)
+	if err != nil {
+		return nil, err
+	}
+	zoneIngressIssuer, err := builtin.NewZoneIngressTokenIssuer(resManager)
 	if err != nil {
 		return nil, err
 	}
 	adminAuth := authz.AdminAuth{AllowFromLocalhost: cfg.ApiServer.Auth.AllowFromLocalhost}
-	return tokens_server.NewWebservice(generator).Filter(adminAuth.Validate), nil
+	return tokens_server.NewWebservice(dpIssuer, zoneIngressIssuer).Filter(adminAuth.Validate), nil
 }
 
 func (a *ApiServer) Start(stop <-chan struct{}) error {
@@ -325,7 +335,7 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 		"<!DOCTYPE html><html lang=en>" +
 		"<head>\n<style>\n.center {\n  display: flex;\n  justify-content: center;\n  align-items: center;\n  height: 200px;\n  border: 3px solid green; \n}\n</style>\n</head>" +
 		"<body><div class=\"center\"><strong>" +
-		"GUI is disabled. If this is a Remote CP, please check the GUI on the Global CP." +
+		"GUI is disabled. If this is a Zone CP, please check the GUI on the Global CP." +
 		"</strong></div></body>" +
 		"</html>"))
 	if err != nil {
@@ -335,7 +345,7 @@ func (a *ApiServer) notAvailableHandler(writer http.ResponseWriter, request *htt
 
 func SetupServer(rt runtime.Runtime) error {
 	cfg := rt.Config()
-	enableGUI := cfg.Mode != config_core.Remote
+	enableGUI := cfg.Mode != config_core.Zone
 	if cfg.Mode != config_core.Standalone {
 		for i, definition := range definitions.All {
 			switch cfg.Mode {
@@ -343,7 +353,7 @@ func SetupServer(rt runtime.Runtime) error {
 				if definition.ResourceFactory().GetType() == mesh.DataplaneType {
 					definitions.All[i].ReadOnly = true
 				}
-			case config_core.Remote:
+			case config_core.Zone:
 				if definition.ResourceFactory().GetType() != mesh.DataplaneType {
 					definitions.All[i].ReadOnly = true
 				}

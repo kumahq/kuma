@@ -99,13 +99,13 @@ func (t *tracker) OnStreamClosed(streamID xds.StreamID) {
 func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service_health.HealthCheckRequest) error {
 	t.metrics.RequestsReceivedMetric.Inc()
 
-	id, err := xds.ParseProxyIdFromString(req.GetNode().GetId())
+	proxyId, err := xds.ParseProxyIdFromString(req.GetNode().GetId())
 	if err != nil {
 		t.log.Error(err, "failed to parse Dataplane Id out of HealthCheckRequest", "streamid", streamID, "req", req)
 		return nil
 	}
 
-	dataplaneKey := core_model.ResourceKey{Mesh: id.Mesh, Name: id.Name}
+	dataplaneKey := proxyId.ToResourceKey()
 
 	t.Lock()
 	defer t.Unlock()
@@ -123,7 +123,7 @@ func (t *tracker) OnHealthCheckRequest(streamID xds.StreamID, req *envoy_service
 		}
 		// kick off watchdog for that Dataplane
 		go t.newWatchdog(req.Node).Start(stopCh)
-		t.log.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", id, "dataplaneKey", dataplaneKey)
+		t.log.V(1).Info("started Watchdog for a Dataplane", "streamid", streamID, "proxyId", proxyId, "dataplaneKey", dataplaneKey)
 	}
 	t.dpStreams[dataplaneKey] = streams
 	t.streamsAssociation[streamID] = dataplaneKey

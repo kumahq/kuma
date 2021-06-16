@@ -1,7 +1,7 @@
 resources:
 - name: db
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: db
     endpoints:
     - lbEndpoints:
@@ -19,7 +19,7 @@ resources:
               role: master
 - name: elastic
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: elastic
     endpoints:
     - lbEndpoints:
@@ -37,7 +37,6 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    http2ProtocolOptions: {}
     name: db
     transportSocket:
       name: envoy.transport_sockets.tls
@@ -70,6 +69,11 @@ resources:
               resourceApiVersion: V3
         sni: db{mesh=demo}
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: elastic
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -84,7 +88,6 @@ resources:
       tcpHealthCheck: {}
       timeout: 4s
       unhealthyThreshold: 3
-    http2ProtocolOptions: {}
     name: elastic
     transportSocket:
       name: envoy.transport_sockets.tls
@@ -117,6 +120,11 @@ resources:
               resourceApiVersion: V3
         sni: elastic{mesh=demo}
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: kuma:envoy:admin
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster

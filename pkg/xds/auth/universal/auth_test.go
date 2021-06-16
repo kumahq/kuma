@@ -7,6 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
@@ -21,6 +23,9 @@ var _ = Describe("Authentication flow", func() {
 	var privateKey = []byte("testPrivateKey")
 
 	issuer := builtin_issuer.NewDataplaneTokenIssuer(func(string) ([]byte, error) {
+		return privateKey, nil
+	})
+	zoneIngressIssuer := zoneingress.NewTokenIssuer(func() ([]byte, error) {
 		return privateKey, nil
 	})
 	var authenticator auth.Authenticator
@@ -79,7 +84,7 @@ var _ = Describe("Authentication flow", func() {
 
 	BeforeEach(func() {
 		resStore = memory.NewStore()
-		authenticator = universal.NewAuthenticator(issuer)
+		authenticator = universal.NewAuthenticator(issuer, zoneIngressIssuer, "zone-1")
 
 		err := resStore.Create(context.Background(), &dpRes, core_store.CreateByKey("dp-1", "default"))
 		Expect(err).ToNot(HaveOccurred())
@@ -131,7 +136,7 @@ var _ = Describe("Authentication flow", func() {
 		}),
 		Entry("should auth with ingress token", testCase{
 			id: builtin_issuer.DataplaneIdentity{
-				Type: builtin_issuer.DpTypeIngress,
+				Type: mesh_proto.IngressProxyType,
 			},
 			dpRes: &ingressDp,
 		}),
@@ -204,14 +209,14 @@ var _ = Describe("Authentication flow", func() {
 		}),
 		Entry("regular dataplane and ingress type", testCase{
 			id: builtin_issuer.DataplaneIdentity{
-				Type: builtin_issuer.DpTypeIngress,
+				Type: mesh_proto.IngressProxyType,
 			},
 			dpRes: &dpRes,
 			err:   `dataplane is of type Dataplane but token allows only for the "ingress" type`,
 		}),
 		Entry("ingress dataplane and dataplane type", testCase{
 			id: builtin_issuer.DataplaneIdentity{
-				Type: builtin_issuer.DpTypeDataplane,
+				Type: mesh_proto.DataplaneProxyType,
 			},
 			dpRes: &ingressDp,
 			err:   `dataplane is of type Ingress but token allows only for the "dataplane" type`,
@@ -243,6 +248,6 @@ var _ = Describe("Authentication flow", func() {
 		})
 
 		// then
-		Expect(err).To(MatchError(`there is no Signing Key in the Control Plane for Mesh "demo". Make sure the Mesh exist. If you run multi-zone setup, make sure Remote is connected to the Global before generating tokens.`))
+		Expect(err).To(MatchError(`there is no Signing Key in the Control Plane for Mesh "demo". Make sure the Mesh exist. If you run multi-zone setup, make sure Zone CP is connected to the Global before generating tokens.`))
 	})
 })

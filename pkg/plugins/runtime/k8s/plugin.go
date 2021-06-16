@@ -120,7 +120,7 @@ func addServiceReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime) error 
 }
 
 func addMeshReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s_common.Converter) error {
-	if rt.Config().Mode == config_core.Remote {
+	if rt.Config().Mode == config_core.Zone {
 		return nil
 	}
 	reconciler := &k8s_controllers.MeshReconciler{
@@ -154,7 +154,7 @@ func addPodReconciler(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter 
 		PodConverter: controllers.PodConverter{
 			ServiceGetter:     mgr.GetClient(),
 			NodeGetter:        mgr.GetClient(),
-			Zone:              rt.Config().Multizone.Remote.Zone,
+			Zone:              rt.Config().Multizone.Zone.Name,
 			ResourceConverter: converter,
 		},
 		ResourceConverter: converter,
@@ -240,7 +240,7 @@ func addValidators(mgr kube_ctrl.Manager, rt core_runtime.Runtime, converter k8s
 		return errors.Errorf("could not find composite validator in the extensions context")
 	}
 
-	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode)
+	handler := k8s_webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), rt.Config().Mode, rt.Config().Store.Kubernetes.SystemNamespace)
 	composite.AddValidator(handler)
 
 	coreMeshValidator := managers_mesh.MeshValidator{

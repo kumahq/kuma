@@ -4,7 +4,7 @@ import (
 	"github.com/golang/protobuf/proto"
 
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v2"
+	envoy_metadata "github.com/kumahq/kuma/pkg/xds/envoy/metadata/v3"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"

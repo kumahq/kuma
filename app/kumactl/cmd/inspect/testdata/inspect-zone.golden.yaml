@@ -1,102 +1,105 @@
 items:
-  - creationTime: "2018-07-17T16:05:36.995Z"
-    modificationTime: "2019-07-17T18:08:41Z"
-    name: zone-1
-    type: ZoneOverview
-    zone:
-      enabled: true
-    zoneInsight:
-      subscriptions:
-        - connectTime: "2018-07-17T16:05:36.995Z"
-          globalInstanceId: node-001
-          id: "1"
-          status:
-            stat:
-              CircuitBreaker:
-                responsesRejected: "1"
-                responsesSent: "2"
-              FaultInjection:
-                responsesRejected: "1"
-                responsesSent: "2"
-              HealthCheck:
-                responsesRejected: "1"
-                responsesSent: "2"
-              Ingress:
-                responsesRejected: "1"
-                responsesSent: "2"
-              Mesh:
-                responsesRejected: "1"
-                responsesSent: "2"
-              ProxyTemplate:
-                responsesRejected: "1"
-                responsesSent: "2"
-              Secret:
-                responsesRejected: "1"
-                responsesSent: "2"
-              TrafficLog:
-                responsesRejected: "1"
-                responsesSent: "2"
-              TrafficPermission:
-                responsesRejected: "1"
-                responsesSent: "2"
-              TrafficRoute:
-                responsesRejected: "1"
-                responsesSent: "2"
-              TrafficTrace:
-                responsesRejected: "1"
-                responsesSent: "2"
-            total:
-              responsesRejected: "11"
-              responsesSent: "22"
-          version:
-            kumaCp:
-              buildDate: "2019-08-07T11:26:06Z"
-              gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
-              gitTag: v1.0.0
-              version: 1.0.0
-        - connectTime: "2019-07-17T16:05:36.995Z"
-          globalInstanceId: node-002
-          id: "2"
-          status:
-            total:
-              responsesRejected: "2"
-              responsesSent: "20"
-          version:
-            kumaCp:
-              buildDate: "2019-08-07T11:26:06Z"
-              gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
-              gitTag: v1.0.0
-              version: 1.0.0
-  - creationTime: "2018-07-17T16:05:36.995Z"
-    modificationTime: "2019-07-17T18:08:41Z"
-    name: zone-2
-    type: ZoneOverview
-    zone:
-      enabled: true
-    zoneInsight:
-      subscriptions:
-        - globalInstanceId: node-001
-          id: "1"
-        - globalInstanceId: node-002
-          id: "2"
-        - globalInstanceId: node-003
-          id: "3"
-  - creationTime: "2018-07-17T16:05:36.995Z"
-    modificationTime: "2019-07-17T18:08:41Z"
-    name: zone-3
-    type: ZoneOverview
-    zone:
-      enabled: false
-    zoneInsight:
-      subscriptions:
-        - connectTime: "2019-07-17T16:05:36.995Z"
-          globalInstanceId: node-001
-          id: "1"
-          version:
-            kumaCp:
-              buildDate: "2019-08-07T11:26:06Z"
-              gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
-              gitTag: v1.0.0
-              version: 1.0.0
+- creationTime: "2018-07-17T16:05:36.995Z"
+  modificationTime: "2019-07-17T18:08:41Z"
+  name: zone-1
+  type: ZoneOverview
+  zone:
+    enabled: true
+  zoneInsight:
+    subscriptions:
+    - connectTime: "2018-07-17T16:05:36.995Z"
+      globalInstanceId: node-001
+      id: "1"
+      status:
+        stat:
+          CircuitBreaker:
+            responsesRejected: "1"
+            responsesSent: "2"
+          FaultInjection:
+            responsesRejected: "1"
+            responsesSent: "2"
+          HealthCheck:
+            responsesRejected: "1"
+            responsesSent: "2"
+          Ingress:
+            responsesRejected: "1"
+            responsesSent: "2"
+          Mesh:
+            responsesRejected: "1"
+            responsesSent: "2"
+          ProxyTemplate:
+            responsesRejected: "1"
+            responsesSent: "2"
+          RateLimit:
+            responsesRejected: "1"
+            responsesSent: "2"
+          Secret:
+            responsesRejected: "1"
+            responsesSent: "2"
+          TrafficLog:
+            responsesRejected: "1"
+            responsesSent: "2"
+          TrafficPermission:
+            responsesRejected: "1"
+            responsesSent: "2"
+          TrafficRoute:
+            responsesRejected: "1"
+            responsesSent: "2"
+          TrafficTrace:
+            responsesRejected: "1"
+            responsesSent: "2"
+        total:
+          responsesRejected: "11"
+          responsesSent: "22"
+      version:
+        kumaCp:
+          buildDate: "2019-08-07T11:26:06Z"
+          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+          gitTag: v1.0.0
+          version: 1.0.0
+    - connectTime: "2019-07-17T16:05:36.995Z"
+      globalInstanceId: node-002
+      id: "2"
+      status:
+        total:
+          responsesRejected: "2"
+          responsesSent: "20"
+      version:
+        kumaCp:
+          buildDate: "2019-08-07T11:26:06Z"
+          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+          gitTag: v1.0.0
+          version: 1.0.0
+- creationTime: "2018-07-17T16:05:36.995Z"
+  modificationTime: "2019-07-17T18:08:41Z"
+  name: zone-2
+  type: ZoneOverview
+  zone:
+    enabled: true
+  zoneInsight:
+    subscriptions:
+    - globalInstanceId: node-001
+      id: "1"
+    - globalInstanceId: node-002
+      id: "2"
+    - globalInstanceId: node-003
+      id: "3"
+- creationTime: "2018-07-17T16:05:36.995Z"
+  modificationTime: "2019-07-17T18:08:41Z"
+  name: zone-3
+  type: ZoneOverview
+  zone:
+    enabled: false
+  zoneInsight:
+    subscriptions:
+    - connectTime: "2019-07-17T16:05:36.995Z"
+      globalInstanceId: node-001
+      id: "1"
+      version:
+        kumaCp:
+          buildDate: "2019-08-07T11:26:06Z"
+          gitCommit: 91ce236824a9d875601679aa80c63783fb0e8725
+          gitTag: v1.0.0
+          version: 1.0.0
 next: null
 total: 3

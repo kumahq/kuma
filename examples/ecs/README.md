@@ -1,6 +1,6 @@
 # Running Kuma on ECS
 
-The ECS example templates are divided into three sections: `vpc`, `kuma-cp` and `workload`. The Kuma CP deployment can be `standalone`, `global` or `remote`. 
+The ECS example templates are divided into three sections: `vpc`, `kuma-cp` and `workload`. The Kuma CP deployment can be `standalone`, `global` or `zone`.
 
 ## Deploy the VPC stack
 
@@ -38,7 +38,7 @@ aws cloudformation delete-stack --stack-name kuma-cp
 
 ### Global
 
-Deplyng a global control plane is simple as it does not have many setting to tune.
+Deploying a global control plane is simple as it does not have many setting to tune.
 
 ```bash
 aws cloudformation deploy \
@@ -47,20 +47,20 @@ aws cloudformation deploy \
     --template-file kuma-cp-global.yaml
 ```
 
-### Remote
+### Zone
 
-Setting up a remote `kuma-cp` is a three step process. First, deploy the kuma-cp itself:
+Setting up a zone `kuma-cp` is a three-step process. First, deploy the kuma-cp itself:
 
 ```bash
 aws cloudformation deploy \
     --capabilities CAPABILITY_IAM \
     --stack-name kuma-cp \
-    --template-file kuma-cp-remote.yaml
+    --template-file kuma-cp-zone.yaml
 ```
 
 
 #### OPTIONAL: Configure `kumactl` to access the API 
-Find the public IP address fo the remote or standalone `kuma-cp` and use it in the command below.
+Find the public IP address fo the zone or standalone `kuma-cp` and use it in the command below.
 
 ```bash
 export PUBLIC_IP=<ip address>
@@ -72,7 +72,7 @@ kumactl config control-planes add --name=ecs --address=http://$PUBLIC_IP:5681 --
 For cross-zone communication Kuma needs the Ingress DP deployed. As every dataplane (see details in the `workload` chapter below) it needs a dataplane token generated 
 
 ```shell
-ssh root@<kuma-cp-remote-ip> "wget --header='Content-Type: application/json' --post-data='{\"mesh\": \"default\", \"type\": \"ingress\"}' -qO- http://localhost:5681/tokens"
+ssh root@<kuma-cp-zone-ip> "wget --header='Content-Type: application/json' --post-data='{\"mesh\": \"default\", \"type\": \"ingress\"}' -qO- http://localhost:5681/tokens"
 ```
 
 Then simply deploy the ingress itself:
@@ -81,7 +81,7 @@ Then simply deploy the ingress itself:
 aws cloudformation deploy \
     --capabilities CAPABILITY_IAM \
     --stack-name ingress \
-    --template-file remote-ingress.yaml \
+    --template-file zone-ingress.yaml \
     --parameter-overrides \
       DPToken="<DP_TOKEN_VALUE>"
 ```
@@ -134,7 +134,7 @@ aws cloudformation deploy \
       DPToken="<DP_TOKEN_VALUE>"
 ```
 
-#### Remote
+#### Zone
 
 ```bash
 aws cloudformation deploy \
@@ -160,8 +160,8 @@ export KEY=$(cat key.pem)
 export CERT=$(cat cert.pem)
 aws cloudformation deploy \
     --capabilities CAPABILITY_IAM \
-    --stack-name kuma-cp-remote-2 \
-    --template-file kuma-cp-remote.yaml \
+    --stack-name kuma-cp-zone-2 \
+    --template-file kuma-cp-zone.yaml \
     --parameter-overrides \
       ServerCert=$CERT \
       ServerKey=$KEY \
@@ -207,4 +207,3 @@ The default mode for deploying `kuma-cp` in these examples is to use the ephemer
     	KUMA_STORE_POSTGRES_TLS_KEY_PATH=
     	KUMA_STORE_POSTGRES_TLS_CA_PATH=
  * call `kuma-cp migrate up` with all aforementioned environments set
-

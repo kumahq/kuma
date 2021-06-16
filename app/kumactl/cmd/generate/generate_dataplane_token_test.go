@@ -76,7 +76,7 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 			result: "token-for-example-default--",
 		}),
 		Entry("for all arguments", testCase{
-			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--name=example", "--type=dataplane", "--tag", "kuma.io/service=web"},
+			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--name=example", "--proxy-type=dataplane", "--tag", "kuma.io/service=web"},
 			result: "token-for-example-demo-kuma.io/service=web-dataplane",
 		}),
 	)

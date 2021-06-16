@@ -37,8 +37,10 @@ func testEchoServer(port int) error {
 }
 
 func KICKubernetes() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
+	// IPv6 curently not supported by Kong Ingress Controller
+	// https://github.com/Kong/kubernetes-ingress-controller/issues/1017
+	if IsIPv6() {
+		fmt.Println("Test not supported on API v2 or IPv6")
 		return
 	}
 
@@ -55,15 +57,13 @@ metadata:
 	var ingressNamespace string
 	var altIngressNamespace = "kuma-yawetag"
 	var kubernetes Cluster
-	var kubernetesOps []DeployOptionsFunc
+	var kubernetesOps = KumaK8sDeployOpts
 	E2EBeforeSuite(func() {
 		k8sClusters, err := NewK8sClusters([]string{Kuma1}, Silent)
 		Expect(err).ToNot(HaveOccurred())
 		// Global
 		kubernetes = k8sClusters.GetCluster(Kuma1)
-		kubernetesOps = []DeployOptionsFunc{
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"),
-		}
+		kubernetesOps = append(kubernetesOps, WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"))
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Standalone, kubernetesOps...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).

@@ -87,7 +87,7 @@ var _ = Describe("Reconcile", func() {
 			},
 		}
 
-		It("should generate a Snaphot per Envoy Node", func() {
+		It("should generate a Snapshot per Envoy Node", func() {
 			// given
 			snapshots := make(chan envoy_cache.Snapshot, 3)
 			snapshots <- snapshot               // initial Dataplane configuration
@@ -115,10 +115,7 @@ var _ = Describe("Reconcile", func() {
 			By("simulating discovery event")
 			// when
 			proxy := &xds_model.Proxy{
-				Id: xds_model.ProxyId{
-					Mesh: "demo",
-					Name: "example",
-				},
+				Id:        *xds_model.BuildProxyId("demo", "example"),
 				Dataplane: dataplane,
 			}
 			err := r.Reconcile(xds_context.Context{}, proxy)

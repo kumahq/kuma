@@ -1,5 +1,5 @@
 .PHONY: ecs/clean ecs/deploy \
-		ecs/kuma-vpc/deploy ecs/kuma-cp/deploy ecs/kuma-cp-global/deploy ecs/kuma-cp-remote/deploy \
+		ecs/kuma-vpc/deploy ecs/kuma-cp/deploy ecs/kuma-cp-global/deploy ecs/kuma-cp-zone/deploy \
 		ecs/workloads/deploy ecs/httpbin/deploy ecs/ssh-client/deploy
 
 ecs/clean: ecs/httpbin/clean ecs/ssh-client/clean ecs/kuma-cp/clean ecs/kuma-vpc/clean
@@ -27,11 +27,11 @@ ecs/kuma-cp-global/deploy:
         --stack-name kuma-cp-global \
         --template-file kuma-cp-global.yaml
 
-ecs/kuma-cp-remote/deploy:
+ecs/kuma-cp-zone/deploy:
 	aws cloudformation deploy \
             --capabilities CAPABILITY_IAM \
-            --stack-name kuma-cp-remote \
-            --template-file kuma-cp-remote.yaml
+            --stack-name kuma-cp-zone \
+            --template-file kuma-cp-zone.yaml
 
 ecs/workloads/deploy: ecs/httpbin/deploy ecs/ssh-client/deploy
 

@@ -1,7 +1,7 @@
 resources:
 - name: backend.kuma-system
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: backend.kuma-system
     endpoints:
     - lbEndpoints:
@@ -13,7 +13,7 @@ resources:
         loadBalancingWeight: 1
 - name: db-_0_
   resource:
-    '@type': type.googleapis.com/envoy.api.v2.ClusterLoadAssignment
+    '@type': type.googleapis.com/envoy.config.endpoint.v3.ClusterLoadAssignment
     clusterName: db
 - name: backend.kuma-system
   resource:
@@ -24,9 +24,13 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    http2ProtocolOptions: {}
     name: backend.kuma-system
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: db-_0_
   resource:
     '@type': type.googleapis.com/envoy.config.cluster.v3.Cluster
@@ -35,9 +39,13 @@ resources:
       edsConfig:
         ads: {}
         resourceApiVersion: V3
-    http2ProtocolOptions: {}
     name: db-_0_
     type: EDS
+    typedExtensionProtocolOptions:
+      envoy.extensions.upstreams.http.v3.HttpProtocolOptions:
+        '@type': type.googleapis.com/envoy.extensions.upstreams.http.v3.HttpProtocolOptions
+        explicitHttpConfig:
+          http2ProtocolOptions: {}
 - name: outbound:127.0.0.1:18080
   resource:
     '@type': type.googleapis.com/envoy.config.listener.v3.Listener

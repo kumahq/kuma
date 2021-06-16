@@ -2,6 +2,7 @@ package os
 
 import (
 	"fmt"
+	"runtime"
 
 	"golang.org/x/sys/unix"
 )
@@ -24,6 +25,14 @@ func RaiseFileLimit() error {
 	limit := unix.Rlimit{}
 	if err := unix.Getrlimit(unix.RLIMIT_NOFILE, &limit); err != nil {
 		return fmt.Errorf("failed to query open file limits: %w", err)
+	}
+
+	// Darwin sets the max to unlimited, but it is actually limited
+	// (typically to 24K) by the "kern.maxfilesperproc" systune.
+	// Since we only run on Darwin for test purposes, just clip this
+	// to a reasonable value.
+	if runtime.GOOS == "darwin" && limit.Max > 10240 {
+		limit.Max = 10240
 	}
 
 	return setFileLimit(limit.Max)

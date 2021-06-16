@@ -52,7 +52,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id: model.ProxyId{Name: "demo.backend-01"},
+				Id: *model.BuildProxyId("", "demo.backend-01"),
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name: "backend-01",
@@ -75,7 +75,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+				Id:         *model.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
@@ -121,7 +121,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+				Id:         *model.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
@@ -168,7 +168,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+				Id:         *model.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
@@ -243,7 +243,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+				Id:         *model.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
@@ -288,7 +288,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+				Id:         *model.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
@@ -360,7 +360,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+				Id:         *model.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
@@ -423,7 +423,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+				Id:         *model.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
@@ -487,7 +487,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 				},
 			},
 			proxy: &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.backend-01"},
+				Id:         *model.BuildProxyId("", "demo.backend-01"),
 				APIVersion: envoy_common.APIV3,
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
@@ -542,7 +542,7 @@ var _ = Describe("PrometheusEndpointGenerator", func() {
 					},
 				}
 				proxy := &model.Proxy{
-					Id:         model.ProxyId{Name: "demo.backend-01"},
+					Id:         *model.BuildProxyId("", "demo.backend-01"),
 					APIVersion: envoy_common.APIV3,
 					Dataplane: &mesh_core.DataplaneResource{
 						Meta: &test_model.ResourceMeta{

@@ -97,8 +97,13 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		By("getting CLA for the first time")
 		cla, err := claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
+		// 1 Get request:
+		// - GetMesh
 		Expect(countingManager.getQueries).To(Equal(1))
-		Expect(countingManager.listQueries).To(Equal(1))
+		// 2 List request:
+		// - GetDataplanes
+		// - GetZoneIngresses
+		Expect(countingManager.listQueries).To(Equal(2))
 
 		expected, err := ioutil.ReadFile(filepath.Join("testdata", "cla.get.0.json"))
 		Expect(err).ToNot(HaveOccurred())
@@ -111,7 +116,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		_, err = claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(1))
-		Expect(countingManager.listQueries).To(Equal(1))
+		Expect(countingManager.listQueries).To(Equal(2))
 
 		By("updating Dataplane in store and waiting until cache invalidation")
 		dp := core_mesh.NewDataplaneResource()
@@ -126,7 +131,7 @@ var _ = Describe("ClusterLoadAssignment Cache", func() {
 		cla, err = claCache.GetCLA(context.Background(), "mesh-0", "", envoy_common.NewCluster(envoy_common.WithService("backend")), envoy_common.APIV3)
 		Expect(err).ToNot(HaveOccurred())
 		Expect(countingManager.getQueries).To(Equal(2))
-		Expect(countingManager.listQueries).To(Equal(2))
+		Expect(countingManager.listQueries).To(Equal(4))
 
 		expected, err = ioutil.ReadFile(filepath.Join("testdata", "cla.get.1.json"))
 		Expect(err).ToNot(HaveOccurred())

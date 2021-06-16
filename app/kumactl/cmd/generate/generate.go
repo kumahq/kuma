@@ -14,6 +14,7 @@ func NewGenerateCmd(pctx *kumactl_cmd.RootContext) *cobra.Command {
 	}
 	// sub-commands
 	cmd.AddCommand(NewGenerateDataplaneTokenCmd(pctx))
+	cmd.AddCommand(NewGenerateZoneIngressTokenCmd(pctx))
 	cmd.AddCommand(NewGenerateCertificateCmd(pctx))
 	return cmd
 }

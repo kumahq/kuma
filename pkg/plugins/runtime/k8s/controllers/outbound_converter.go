@@ -22,10 +22,12 @@ import (
 func (p *PodConverter) OutboundInterfacesFor(
 	pod *kube_core.Pod,
 	others []*mesh_k8s.Dataplane,
+	zoneIngresses []*mesh_k8s.ZoneIngress,
 	externalServices []*mesh_k8s.ExternalService,
 	vips vips.List,
 ) ([]*mesh_proto.Dataplane_Networking_Outbound, error) {
 	var outbounds []*mesh_proto.Dataplane_Networking_Outbound
+
 	dataplanes := []*core_mesh.DataplaneResource{}
 	for _, other := range others {
 		dp := core_mesh.NewDataplaneResource()
@@ -35,6 +37,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 		}
 		dataplanes = append(dataplanes, dp)
 	}
+
 	externalServicesRes := []*core_mesh.ExternalServiceResource{}
 	for _, es := range externalServices {
 		res := core_mesh.NewExternalServiceResource()
@@ -43,6 +46,16 @@ func (p *PodConverter) OutboundInterfacesFor(
 			continue // one invalid ExternalService definition should not break the entire mesh
 		}
 		externalServicesRes = append(externalServicesRes, res)
+	}
+
+	zoneIngressesRes := []*core_mesh.ZoneIngressResource{}
+	for _, zi := range zoneIngresses {
+		res := core_mesh.NewZoneIngressResource()
+		if err := p.ResourceConverter.ToCoreResource(zi, res); err != nil {
+			converterLog.Error(err, "failed to parse ZoneIngress", "zoneIngress", zi.Spec)
+			continue
+		}
+		zoneIngressesRes = append(zoneIngressesRes, res)
 	}
 
 	endpoints := endpointsByService(dataplanes)
@@ -89,7 +102,7 @@ func (p *PodConverter) OutboundInterfacesFor(
 		Mesh: MeshFor(pod),
 		Name: pod.Name,
 	}
-	outbounds = append(outbounds, dns.VIPOutbounds(resourceKey, dataplanes, vips, externalServicesRes)...)
+	outbounds = append(outbounds, dns.VIPOutbounds(resourceKey, dataplanes, zoneIngressesRes, vips, externalServicesRes)...)
 	return outbounds, nil
 }
 
