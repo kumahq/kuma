@@ -6,6 +6,7 @@ import (
 	_struct "github.com/golang/protobuf/ptypes/struct"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
@@ -26,6 +27,7 @@ const (
 	fieldDataplaneDataplaneResource = "dataplane.resource"
 	fieldDynamicMetadata            = "dynamicMetadata"
 	fieldDataplaneProxyType         = "dataplane.proxyType"
+	fieldVersion                    = "version"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -52,6 +54,7 @@ type DataplaneMetadata struct {
 	EmptyDNSPort        uint32
 	DynamicMetadata     map[string]string
 	ProxyType           mesh_proto.ProxyType
+	Version             *mesh_proto.Version
 }
 
 func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
@@ -117,6 +120,13 @@ func (m *DataplaneMetadata) GetDynamicMetadata(key string) string {
 	return m.DynamicMetadata[key]
 }
 
+func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
+	if m == nil {
+		return nil
+	}
+	return m.Version
+}
+
 func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMetadata {
 	metadata := DataplaneMetadata{}
 	if xdsMetadata == nil {
@@ -154,6 +164,14 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 			dynamicMetadata[field] = val.GetStringValue()
 		}
 		metadata.DynamicMetadata = dynamicMetadata
+	}
+
+	if value := xdsMetadata.Fields[fieldVersion]; value.GetStructValue() != nil {
+		version := &mesh_proto.Version{}
+		if err := util_proto.ToTyped(value.GetStructValue(), version); err != nil {
+			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldVersion, "value", value)
+		}
+		metadata.Version = version
 	}
 	return &metadata
 }
