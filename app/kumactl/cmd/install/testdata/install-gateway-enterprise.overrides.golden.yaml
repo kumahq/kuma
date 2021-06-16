@@ -603,20 +603,6 @@ spec:
     app: ingress-kong
   type: LoadBalancer
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: kong-validation-webhook
-  namespace: notdefault
-spec:
-  ports:
-  - name: webhook
-    port: 443
-    protocol: TCP
-    targetPort: 8080
-  selector:
-    app: ingress-kong
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
