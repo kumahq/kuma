@@ -41,7 +41,69 @@ Changes in values in Kuma's HELM chart
 
 ### Suggested Upgrade Path on Universal
 
-1. Dataplane Ingress resource should be replaced with ZoneIngress resource:
+1. Zone Control Planes should be started using new environment variables
+
+   * `KUMA_MODE` accepts now values: `standalone`, `zone` and `global` (`remote` changed to `zone`)
+
+     Old:
+     ```sh
+     KUMA_MODE="remote" [...] kuma-cp run
+     ```
+
+     New:
+     ```sh
+     KUMA_MODE="zone" [...] kuma-cp run
+     ```
+
+   * `KUMA_MULTIZONE_REMOTE_ZONE` was renamed to `KUMA_MULTIZONE_ZONE_NAME`
+
+     Old:
+     ```sh
+     KUMA_MULTIZONE_REMOTE_ZONE="remote-1" [...] kuma-cp run
+     ```
+
+     New:
+     ```sh
+     KUMA_MULTIZONE_ZONE_NAME="remote-1" [...] kuma-cp run
+     ```
+
+   * `KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS` was renamed to `KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS`
+
+     Old:
+     ```sh
+     KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="grpcs://localhost:5685" [...] kuma-cp run
+     ```
+
+     New:
+     ```sh
+     KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS="grpcs://localhost:5685" [...]  kuma-cp run
+     ```
+
+   * `KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE` was renamed to `KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE`
+
+     Old:
+     ```sh
+     KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE="/rootCa" [...] kuma-cp run
+     ```
+
+     New:
+     ```sh
+     KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE="/rootCa" [...] kuma-cp run
+     ```
+
+   * `KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE` was renamed to `KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE`
+
+     Old:
+     ```sh
+     KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL="9s" [...] kuma-cp run
+     ```
+
+     New:
+     ```sh
+     KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL="9s" [...] kuma-cp run
+     ```
+
+2. Dataplane Ingress resource should be replaced with ZoneIngress resource:
 
     Old:
     ```yaml
@@ -74,13 +136,13 @@ Changes in values in Kuma's HELM chart
     The old Dataplane resource is still supported but it's considered deprecated and will be removed in the next major version of Kuma
 
 
-2. Since ZoneIngress resource is not bound to a Mesh, it requires another token type that is bound to a Zone:
+3. Since ZoneIngress resource is not bound to a Mesh, it requires another token type that is bound to a Zone:
    
     ```shell
     kumactl generate zone-ingress-token --zone=zone-1 > /tmp/zone-ingress-token
     ```
 
-3. `kuma-dp run` command should be updated with a new flag `--proxy-type=ingress`:
+4. `kuma-dp run` command should be updated with a new flag `--proxy-type=ingress`:
 
     ```sh
     kuma-dp run \
