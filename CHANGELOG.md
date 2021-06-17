@@ -1,11 +1,11 @@
 # CHANGELOG
 
-## [1.2.0-rc1]
-> Released on  2021/06/14
+## [1.2.0]
+> Released on  2021/06/17
 
 Changes:
 
-* feat: Introduce ZoneIngress [#2147](https://github.com//kumahq/kuma/pull/2147)
+* feat: Introduce ZoneIngress [#2147](https://github.com//kumahq/kuma/pull/2147) [#2169](https://github.com//kumahq/kuma/pull/2169)
 * feat: enable dataplane dns by default [#2152](https://github.com//kumahq/kuma/pull/2152)
 * feat: add --verbose flag to kuma-init [#2156](https://github.com//kumahq/kuma/pull/2156)
 * feat: log rotation [#2100](https://github.com//kumahq/kuma/pull/2100)
@@ -18,9 +18,9 @@ Changes:
   👍contributed by @austince
 * feat: add RateLimit policy [#2083](https://github.com//kumahq/kuma/pull/2083)
 * feat: TrafficRoute L7  [#2013](https://github.com//kumahq/kuma/pull/2013)
-  [#2042](https://github.com//kumahq/kuma/pull/2042)  
-  [#2062](https://github.com//kumahq/kuma/pull/2062)
-  [#2072](https://github.com//kumahq/kuma/pull/2072)
+  [#2042](https://github.com//kumahq/kuma/pull/2042) [#2062](https://github.com//kumahq/kuma/pull/2062)
+  [#2072](https://github.com//kumahq/kuma/pull/2072) [#2168](https://github.com//kumahq/kuma/pull/2168)
+
 * feat: allow renegotiation for TLS in ExternalServices [#2135](https://github.com//kumahq/kuma/pull/2135)
 * feat: pass header when communicating with CP [#2049](https://github.com//kumahq/kuma/pull/2049)
   👍contributed by sudeeptoroy
@@ -41,6 +41,10 @@ Changes:
 * chore: dockerfiles, add a user for kuma-cp [#2129](https://github.com//kumahq/kuma/pull/2129)
 * chore: bump cni version to 0.0.9 [#2137](https://github.com//kumahq/kuma/pull/2137)
 * chore: rename remote cp to zone cp [#2125](https://github.com//kumahq/kuma/pull/2125)
+* chore: bump versions of logging, metrics, tracing [#2178](https://github.com//kumahq/kuma/pull/2178)
+* chore: parametrize bitnami/kubectl [#2151](https://github.com//kumahq/kuma/pull/2151)
+* chore: backwards compatible metrics [#2173](https://github.com//kumahq/kuma/pull/2173)
+* chore: upgrade Envoy version to 1.18.3 [#2145](https://github.com//kumahq/kuma/pull/2145)
 * chore updated go-control-plane [#2082](https://github.com//kumahq/kuma/pull/2082)
   👍contributed by @sudeeptoroy
 * chore: fix misspelled words [#1984](https://github.com//kumahq/kuma/pull/1984)
@@ -55,6 +59,9 @@ Changes:
   👍contributed by @lahabana
 * chore: upgrade to apiextensions.k8s.io/v1 [#1108](https://github.com//kumahq/kuma/pull/1108)
   👍contributed by @austince
+* fix: Clear snapshots from cache on disconnect [#2172](https://github.com//kumahq/kuma/pull/2172)
+  👍contributed by @lahabana
+* fix: use service account name to identify sync [#2127](https://github.com//kumahq/kuma/pull/2127)
 * fix: raise the regex program size limit [#2139](https://github.com//kumahq/kuma/pull/2139)
 * fix: pass query parameters through the metrics hijacker [#2124](https://github.com//kumahq/kuma/pull/2124)
 * fix: matching endpoints by tags [#2096](https://github.com//kumahq/kuma/pull/2096)

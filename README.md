@@ -1,6 +1,6 @@
 [![][kuma-logo]][kuma-url]
 
-[![CircleCI](https://circleci.com/gh/kumahq/kuma/tree/release-1.1.svg?style=svg&circle-token=e3f6c5429ee47ca0eb4bd2542e4b8801a7856373)](https://circleci.com/gh/kumahq/kuma/tree/release-1.1)
+[![CircleCI](https://circleci.com/gh/kumahq/kuma/tree/release-1.2.svg?style=svg&circle-token=e3f6c5429ee47ca0eb4bd2542e4b8801a7856373)](https://circleci.com/gh/kumahq/kuma/tree/release-1.2)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kumahq/kuma)](https://goreportcard.com/report/github.com/kumahq/kuma)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/kumahq/kuma/blob/master/LICENSE)
 [![Artifact HUB](https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/kuma)](https://artifacthub.io/packages/search?repo=kuma)
