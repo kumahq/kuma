@@ -70,7 +70,17 @@ Changes in values in Kuma's HELM chart
       advertisedPort: <PUBLIC_PORT>
     ```
 
-2. `kuma-dp run` command should be updated with a new flag `--proxy-type=ingress`:
+    NOTE: ZoneIngress resource is a global scoped resource, it's not bound to a Mesh
+    The old Dataplane resource is still supported but it's considered deprecated and will be removed in the next major version of Kuma
+
+
+2. Since ZoneIngress resource is not bound to a Mesh, it requires another token type that is bounded to a Zone:
+   
+    ```shell
+    kumactl generate zone-ingress-token --zone=zone-1 > /tmp/zone-ingress-token
+    ```
+
+3. `kuma-dp run` command should be updated with a new flag `--proxy-type=ingress`:
 
     ```sh
     kuma-dp run \
