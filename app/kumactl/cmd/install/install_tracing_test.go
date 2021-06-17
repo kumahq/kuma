@@ -2,7 +2,6 @@ package install_test
 
 import (
 	"bytes"
-	"fmt"
 	"path/filepath"
 
 	. "github.com/onsi/ginkgo"
@@ -40,7 +39,6 @@ var _ = Describe("kumactl install tracing", func() {
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			fmt.Println(stderr.String())
 			Expect(stderr.Bytes()).To(BeNil())
 
 			// and output matches golden files
