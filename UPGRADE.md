@@ -8,7 +8,8 @@ does not have any particular instructions.
 
 ## Upgrade to `1.2.0`
 
-One of the changes introduced by Kuma 1.2.0 is renaming `Remote Control Planes` to `Zone Control Planes`. We think this change makes the naming more consistent with the rest of the application and also removes some of unnecessary confusion.
+One of the changes introduced by Kuma 1.2.0 is renaming `Remote Control Planes` to `Zone Control Planes` and `Dataplane Ingress` to `Zone Ingress`. 
+We think this change makes the naming more consistent with the rest of the application and also removes some of unnecessary confusion.
 
 As a result of this renaming, some values and arguments in multizone/kubernetes environment changed. You can read below more.
 
@@ -37,6 +38,47 @@ Changes in values in Kuma's HELM chart
 * `controlPlane.globalRemoteSyncService` was renamed to `controlPlane.globalZoneSyncService`
 
 * `controlPlane.tls.kdsRemoteClient` was renamed to `controlPlane.tls.kdsZoneClient`
+
+### Suggested Upgrade Path on Universal
+
+1. Dataplane Ingress resource should be replaced with ZoneIngress resource:
+
+    Old:
+    ```yaml
+    type: Dataplane
+    name: dp-ingress
+    mesh: default
+    networking:
+      address: <ADDRESS>
+      ingress:
+        publicAddress: <PUBLIC_ADDRESS>
+        publicPort: <PUBLIC_PORT>
+      inbound:
+      - port: <PORT>
+        tags:
+          kuma.io/service: ingress
+    ```
+
+    New:
+    ```yaml
+    type: ZoneIngress
+    name: zone-ingress
+    networking:
+      address: <ADDRESS>
+      port: <PORT>
+      advertisedAddress: <PUBLIC_ADDRESS>
+      advertisedPort: <PUBLIC_PORT>
+    ```
+
+2. `kuma-dp run` command should be updated with a new flag `--proxy-type=ingress`:
+
+    ```sh
+    kuma-dp run \
+      --proxy-type=ingress \
+      --dataplane-token-file=/tmp/zone-ingress-token \
+      --dataplane-file=zone-ingress.yaml
+    ```
+
 
 ## Upgrade to `1.1.0`
 
