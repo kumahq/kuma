@@ -650,7 +650,7 @@ spec:
           value: /dev/stderr
         - name: KONG_PROXY_ERROR_LOG
           value: /dev/stderr
-        image: kong/kong-gateway:2.3.3.2-alpine
+        image: kong/kong-gateway:2.4.1.0-alpine
         lifecycle:
           preStop:
             exec:
@@ -706,7 +706,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: kong/kubernetes-ingress-controller:1.2
+        image: kong/kubernetes-ingress-controller:1.3
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3
