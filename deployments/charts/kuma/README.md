@@ -69,6 +69,9 @@ A Helm chart for the Kuma Control Plane
 | ingress.annotations | object | `{}` | Additional deployment annotation |
 | ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
+| kubectl.image.registry | string | `"bitnami"` | The kubectl image registry |
+| kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
+| kubectl.image.tag | string | `"1.20"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 
 ## Custom Resource Definitions
