@@ -74,7 +74,7 @@ Changes in values in Kuma's HELM chart
     The old Dataplane resource is still supported but it's considered deprecated and will be removed in the next major version of Kuma
 
 
-2. Since ZoneIngress resource is not bound to a Mesh, it requires another token type that is bounded to a Zone:
+2. Since ZoneIngress resource is not bound to a Mesh, it requires another token type that is bound to a Zone:
    
     ```shell
     kumactl generate zone-ingress-token --zone=zone-1 > /tmp/zone-ingress-token
