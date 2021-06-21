@@ -30,7 +30,7 @@ var _ = Describe("HttpConnectionManagerConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
-					Configure(HttpConnectionManager(given.statsName, true)))).
+					Configure(HttpConnectionManager(given.statsName)))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())

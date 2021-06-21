@@ -67,7 +67,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 			listener, err := NewListenerBuilder(envoy_common.APIV3).
 				Configure(InboundListener(given.listenerName, given.listenerAddress, given.listenerPort, given.listenerProtocol)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy_common.APIV3).
-					Configure(HttpConnectionManager(given.statsName, true)).
+					Configure(HttpConnectionManager(given.statsName)).
 					Configure(HttpInboundRoutes(given.service, given.routes)))).
 				Build()
 			// then

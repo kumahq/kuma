@@ -9,7 +9,7 @@ import (
 )
 
 type HttpConnectionManagerConfigurer struct {
-	StatsName                string
+	StatsName string
 }
 
 func (c *HttpConnectionManagerConfigurer) Configure(filterChain *envoy_listener.FilterChain) error {

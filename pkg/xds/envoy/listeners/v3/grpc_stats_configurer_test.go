@@ -18,7 +18,7 @@ var _ = Describe("gRPCStatsConfigurer", func() {
 		func(given testCase) {
 			// when
 			filterChain, err := NewFilterChainBuilder(envoy.APIV3).
-				Configure(HttpConnectionManager("stats", false)).
+				Configure(HttpConnectionManager("stats")).
 				Configure(GrpcStats()).
 				Build()
 			// then
