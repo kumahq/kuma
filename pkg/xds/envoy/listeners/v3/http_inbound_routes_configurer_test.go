@@ -98,9 +98,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
               - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                  forwardClientCertDetails: SANITIZE_SET
-                  setCurrentClientCertDetails:
-                    uri: true
                   httpFilters:
                   - name: envoy.filters.http.router
                   routeConfig:
@@ -165,9 +162,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
               - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                  forwardClientCertDetails: SANITIZE_SET
-                  setCurrentClientCertDetails:
-                    uri: true
                   httpFilters:
                   - name: envoy.filters.http.router
                   routeConfig:
@@ -262,9 +256,6 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
               - name: envoy.filters.network.http_connection_manager
                 typedConfig:
                   '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
-                  forwardClientCertDetails: SANITIZE_SET
-                  setCurrentClientCertDetails:
-                    uri: true
                   httpFilters:
                   - name: envoy.filters.http.router
                   routeConfig:
