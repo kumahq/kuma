@@ -33,13 +33,19 @@ var _ = Describe("kumactl config control-planes remove", func() {
 	})
 
 	var rootCmd *cobra.Command
-	var outbuf, errbuf *bytes.Buffer
+	var outbuf *bytes.Buffer
 
 	BeforeEach(func() {
 		rootCmd = cmd.DefaultRootCmd()
-		outbuf, errbuf = &bytes.Buffer{}, &bytes.Buffer{}
+
+		// Different versions of cobra might emit errors to stdout
+		// or stderr. It's too fragile to depend on precidely what
+		// it does, and that's not something that needs to be tested
+		// within Kuma anyway. So we just combine all the output
+		// and validate the aggregate.
+		outbuf = &bytes.Buffer{}
 		rootCmd.SetOut(outbuf)
-		rootCmd.SetErr(errbuf)
+		rootCmd.SetErr(outbuf)
 	})
 
 	Describe("error cases", func() {
@@ -55,8 +61,6 @@ var _ = Describe("kumactl config control-planes remove", func() {
 			// and
 			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "name" not set
 `))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		It("should fail to remove unknown Control Plane", func() {
@@ -71,8 +75,6 @@ var _ = Describe("kumactl config control-planes remove", func() {
 			// and
 			Expect(outbuf.String()).To(Equal(`Error: there is no Control Plane with name "example"
 `))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 	})
 
@@ -115,8 +117,6 @@ var _ = Describe("kumactl config control-planes remove", func() {
 				Expect(actual).To(MatchYAML(expected))
 				// and
 				Expect(outbuf.String()).To(Equal(strings.TrimLeftFunc(given.expectedOut, unicode.IsSpace)))
-				// and
-				Expect(errbuf.Bytes()).To(BeEmpty())
 			},
 			Entry("should remove active Control Plane", testCase{
 				configFile: "config-control-planes-remove.11.initial.yaml",

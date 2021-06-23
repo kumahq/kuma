@@ -38,10 +38,9 @@ var _ = Describe("kumactl delete mesh", func() {
 	}
 
 	Describe("Delete Mesh", func() {
-
 		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
-		var outbuf, errbuf *bytes.Buffer
+		var outbuf *bytes.Buffer
 		var store core_store.ResourceStore
 
 		BeforeEach(func() {
@@ -60,10 +59,15 @@ var _ = Describe("kumactl delete mesh", func() {
 			}
 
 			rootCmd = cmd.NewRootCmd(rootCtx)
+
+			// Different versions of cobra might emit errors to stdout
+			// or stderr. It's too fragile to depend on precidely what
+			// it does, and that's not something that needs to be tested
+			// within Kuma anyway. So we just combine all the output
+			// and validate the aggregate.
 			outbuf = &bytes.Buffer{}
-			errbuf = &bytes.Buffer{}
 			rootCmd.SetOut(outbuf)
-			rootCmd.SetErr(errbuf)
+			rootCmd.SetErr(outbuf)
 		})
 
 		It("should throw an error in case of no args", func() {
@@ -81,8 +85,6 @@ var _ = Describe("kumactl delete mesh", func() {
 			Expect(err.Error()).To(Equal("accepts 2 arg(s), received 1"))
 			// and
 			Expect(outbuf.String()).To(MatchRegexp(`Error: accepts 2 arg\(s\), received 1`))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		It("should throw an error in case of a non existing mesh", func() {
@@ -100,8 +102,6 @@ var _ = Describe("kumactl delete mesh", func() {
 			Expect(err.Error()).To(Equal("there is no Mesh with name \"some-non-existing-mesh\""))
 			// and
 			Expect(outbuf.String()).To(Equal("Error: there is no Mesh with name \"some-non-existing-mesh\"\n"))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		It("should delete the mesh if exists", func() {
@@ -115,9 +115,6 @@ var _ = Describe("kumactl delete mesh", func() {
 			err := rootCmd.Execute()
 			// then
 			Expect(err).ToNot(HaveOccurred())
-			// and
-			// and
-			Expect(errbuf.String()).To(BeEmpty())
 			// and
 			Expect(outbuf.String()).To(Equal("deleted Mesh \"mesh2\"\n"))
 

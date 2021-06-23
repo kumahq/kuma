@@ -35,7 +35,7 @@ func (c *testApiServerClient) GetVersion() (*types.IndexResponse, error) {
 var _ = Describe("kumactl get [resource] NAME", func() {
 	var rootCtx *kumactl_cmd.RootContext
 	var rootCmd *cobra.Command
-	var outbuf, errbuf *bytes.Buffer
+	var outbuf *bytes.Buffer
 	var store core_store.ResourceStore
 	var testClient *testApiServerClient
 	rootTime, _ := time.Parse(time.RFC3339, "2008-04-01T16:05:36.995Z")
@@ -52,12 +52,18 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 				},
 			},
 		}
+
 		store = core_store.NewPaginationStore(memory_resources.NewStore())
 		rootCmd = cmd.NewRootCmd(rootCtx)
+
+		// Different versions of cobra might emit errors to stdout
+		// or stderr. It's too fragile to depend on precidely what
+		// it does, and that's not something that needs to be tested
+		// within Kuma anyway. So we just combine all the output
+		// and validate the aggregate.
 		outbuf = &bytes.Buffer{}
-		errbuf = &bytes.Buffer{}
 		rootCmd.SetOut(outbuf)
-		rootCmd.SetErr(errbuf)
+		rootCmd.SetErr(outbuf)
 	})
 
 	entries := []TableEntry{
@@ -90,7 +96,6 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 			Expect(err).To(HaveOccurred())
 			Expect(err.Error()).To(Equal("requires at least 1 arg(s), only received 0"))
 			Expect(outbuf.String()).To(MatchRegexp(`Error: requires at least 1 arg\(s\), only received 0`))
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		},
 		entries...,
 	)
@@ -112,11 +117,6 @@ var _ = Describe("kumactl get [resource] NAME", func() {
 			} else {
 				Expect(outbuf.String()).To(Equal("Error: No resources found in default mesh\n"))
 			}
-
-			fmt.Println(errbuf.String())
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
-
 		},
 		entries...,
 	)

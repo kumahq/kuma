@@ -2,10 +2,6 @@
 
 Output shell completions for bash
 
-### Synopsis
-
-Output shell completions for bash
-
 ```
 kumactl completion bash [flags]
 ```
