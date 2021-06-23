@@ -22,7 +22,12 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIR) -name '*.pb.validate.go' -delete
 
 .PHONY: generate
-generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins ## Dev: Run code generators
+generate:  ## Dev: Run code generators
+generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/mesh
+
+.PHONY: resources/mesh
+resources/mesh:
+	go run ./tools/resource-gen.go -package mesh > pkg/core/resources/apis/mesh/resources.go
 
 .PHONY: protoc/pkg/config/app/kumactl/v1alpha1
 protoc/pkg/config/app/kumactl/v1alpha1:
