@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -12,6 +13,7 @@ import (
 	kuma_dp "github.com/kumahq/kuma/app/kuma-dp/cmd"
 	kuma_prometheus_sd "github.com/kumahq/kuma/app/kuma-prometheus-sd/cmd"
 	kumactl "github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 // GetenvOr returns the value of the environment variable named by env,
@@ -54,7 +56,7 @@ func man(path string, header *doc.GenManHeader, cmd *cobra.Command) {
 	must(doc.GenManTree(cmd, header, path))
 }
 
-type commandWithManHeader struct {
+type command struct {
 	command *cobra.Command
 	header  *doc.GenManHeader
 }
@@ -63,29 +65,41 @@ func main() {
 	prefix := GetenvOr("DESTDIR", ".")
 	format := GetenvOr("FORMAT", "markdown")
 
-	apps := map[string]commandWithManHeader{
-		path.Join(prefix, "kuma-cp"): commandWithManHeader{
+	apps := map[string]command{
+		path.Join(prefix, "kuma-cp"): command{
 			command: kuma_cp.DefaultRootCmd(),
 			header: &doc.GenManHeader{
-				Title: "kuma-cp manual",
+				Title:   "KUMA-CP",
+				Section: "8",
+				Source:  fmt.Sprintf("%s %s", version.Product, version.Build.Version),
+				Manual:  version.Product,
 			},
 		},
-		path.Join(prefix, "kuma-dp"): commandWithManHeader{
+		path.Join(prefix, "kuma-dp"): command{
 			command: kuma_dp.DefaultRootCmd(),
 			header: &doc.GenManHeader{
-				Title: "kuma-dp manual",
+				Title:   "KUMA-DP",
+				Section: "8",
+				Source:  fmt.Sprintf("%s %s", version.Product, version.Build.Version),
+				Manual:  version.Product,
 			},
 		},
-		path.Join(prefix, "kuma-prometheus-sd"): commandWithManHeader{
+		path.Join(prefix, "kuma-prometheus-sd"): command{
 			command: kuma_prometheus_sd.DefaultRootCmd(),
 			header: &doc.GenManHeader{
-				Title: "kuma-prometheus-sd manual",
+				Title:   "KUMA-PROMETHEUS-SD",
+				Section: "8",
+				Source:  fmt.Sprintf("%s %s", version.Product, version.Build.Version),
+				Manual:  version.Product,
 			},
 		},
-		path.Join(prefix, "kumactl"): commandWithManHeader{
+		path.Join(prefix, "kumactl"): command{
 			command: kumactl.DefaultRootCmd(),
 			header: &doc.GenManHeader{
-				Title: "kumactl manual",
+				Title:   "KUMACTL",
+				Section: "1",
+				Source:  fmt.Sprintf("%s %s", version.Product, version.Build.Version),
+				Manual:  version.Product,
 			},
 		},
 	}
