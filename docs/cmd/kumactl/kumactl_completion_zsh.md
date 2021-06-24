@@ -2,10 +2,6 @@
 
 Output shell completions for zsh
 
-### Synopsis
-
-Output shell completions for zsh
-
 ```
 kumactl completion zsh [flags]
 ```

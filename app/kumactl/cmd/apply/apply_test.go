@@ -355,6 +355,7 @@ var _ = Describe("kumactl apply", func() {
 		)
 		buf := &bytes.Buffer{}
 		rootCmd.SetOut(buf)
+		rootCmd.SetErr(buf)
 
 		// when
 		err := rootCmd.Execute()
@@ -391,6 +392,7 @@ var _ = Describe("kumactl apply", func() {
 		})
 		buf := &bytes.Buffer{}
 		rootCmd.SetOut(buf)
+		rootCmd.SetErr(buf)
 
 		// when
 		err = rootCmd.Execute()
