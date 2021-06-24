@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/gruntwork-io/terratest/modules/k8s"
 	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -68,13 +69,14 @@ metadata:
 			Install(Kuma(config_core.Standalone, kubernetesOps...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(EchoServerK8s("default")).
-			Install(EchoServerK8sIngress()).
 			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
 		err = kubernetes.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 	E2EAfterEach(func() {
+		err := k8s.RunKubectlE(kubernetes.GetTesting(), kubernetes.GetKubectlOptions(), "delete", "ingress", "--all", "-n", "kuma-test")
+		Expect(err).ToNot(HaveOccurred())
 		Expect(kubernetes.DeleteNamespace(ingressNamespace)).To(Succeed())
 	})
 	E2EAfterSuite(func() {
@@ -88,6 +90,7 @@ metadata:
 		err := NewClusterSetup().
 			Install(kic.KongIngressController()).
 			Install(kic.KongIngressNodePort()).
+			Install(EchoServerK8sIngress()).
 			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -109,6 +112,7 @@ metadata:
 		err := NewClusterSetup().
 			Install(kic.KongIngressController(kic.WithNamespace(ingressNamespace))).
 			Install(kic.KongIngressNodePort(kic.WithNamespace(ingressNamespace))).
+			Install(EchoServerK8sIngressWithMeshDNS()).
 			Setup(kubernetes)
 		Expect(err).ToNot(HaveOccurred())
 

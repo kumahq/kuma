@@ -6,4 +6,4 @@ import (
 	"github.com/kumahq/kuma/test/e2e/helm"
 )
 
-var _ = FDescribe("Test App deployment with Helm chart", helm.AppDeploymentWithHelmChart)
+var _ = Describe("Test App deployment with Helm chart", helm.AppDeploymentWithHelmChart)

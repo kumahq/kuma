@@ -35,7 +35,7 @@ var _ = Describe("DNSGenerator", func() {
 			dnsResolver := resolver.NewDNSResolver("mesh")
 			dnsResolver.SetVIPs(map[string]string{
 				"backend_test-ns_svc_8080": "240.0.0.0",
-				"httpbin": "240.0.0.1",
+				"httpbin":                  "240.0.0.1",
 			})
 			ctx := xds_context.Context{
 				ConnectionInfo: xds_context.ConnectionInfo{
