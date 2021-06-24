@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
 	"path"
@@ -12,6 +13,7 @@ import (
 	kuma_dp "github.com/kumahq/kuma/app/kuma-dp/cmd"
 	kuma_prometheus_sd "github.com/kumahq/kuma/app/kuma-prometheus-sd/cmd"
 	kumactl "github.com/kumahq/kuma/app/kumactl/cmd"
+	"github.com/kumahq/kuma/pkg/version"
 )
 
 // GetenvOr returns the value of the environment variable named by env,
@@ -49,21 +51,67 @@ func markdown(path string, cmd *cobra.Command) {
 	must(doc.GenMarkdownTree(cmd, path))
 }
 
+func man(path string, header *doc.GenManHeader, cmd *cobra.Command) {
+	must(os.MkdirAll(path, 0755))
+	must(doc.GenManTree(cmd, header, path))
+}
+
+type command struct {
+	command *cobra.Command
+	header  *doc.GenManHeader
+}
+
 func main() {
 	prefix := GetenvOr("DESTDIR", ".")
 	format := GetenvOr("FORMAT", "markdown")
 
-	apps := map[string]*cobra.Command{
-		path.Join(prefix, "kuma-cp"):            kuma_cp.DefaultRootCmd(),
-		path.Join(prefix, "kumactl"):            kumactl.DefaultRootCmd(),
-		path.Join(prefix, "kuma-dp"):            kuma_dp.DefaultRootCmd(),
-		path.Join(prefix, "kuma-prometheus-sd"): kuma_prometheus_sd.DefaultRootCmd(),
+	apps := map[string]command{
+		path.Join(prefix, "kuma-cp"): command{
+			command: kuma_cp.DefaultRootCmd(),
+			header: &doc.GenManHeader{
+				Title:   "KUMA-CP",
+				Section: "8",
+				Source:  fmt.Sprintf("%s %s", version.Product, version.Build.Version),
+				Manual:  version.Product,
+			},
+		},
+		path.Join(prefix, "kuma-dp"): command{
+			command: kuma_dp.DefaultRootCmd(),
+			header: &doc.GenManHeader{
+				Title:   "KUMA-DP",
+				Section: "8",
+				Source:  fmt.Sprintf("%s %s", version.Product, version.Build.Version),
+				Manual:  version.Product,
+			},
+		},
+		path.Join(prefix, "kuma-prometheus-sd"): command{
+			command: kuma_prometheus_sd.DefaultRootCmd(),
+			header: &doc.GenManHeader{
+				Title:   "KUMA-PROMETHEUS-SD",
+				Section: "8",
+				Source:  fmt.Sprintf("%s %s", version.Product, version.Build.Version),
+				Manual:  version.Product,
+			},
+		},
+		path.Join(prefix, "kumactl"): command{
+			command: kumactl.DefaultRootCmd(),
+			header: &doc.GenManHeader{
+				Title:   "KUMACTL",
+				Section: "1",
+				Source:  fmt.Sprintf("%s %s", version.Product, version.Build.Version),
+				Manual:  version.Product,
+			},
+		},
 	}
 
 	switch format {
 	case "markdown":
 		for p, c := range apps {
-			markdown(p, disableAutogen(c))
+			markdown(p, disableAutogen(c.command))
+		}
+	case "man":
+		for p, c := range apps {
+			man(p, c.header, disableAutogen(c.command))
 		}
 	default:
 		log.Fatalf("unsupported reference format %q", format)
