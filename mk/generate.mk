@@ -27,7 +27,7 @@ generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/api
 
 .PHONY: resources/mesh
 resources/mesh:
-	go run ./tools/resource-gen.go -package mesh > pkg/core/resources/apis/mesh/resources.go
+	$(GO_RUN) ./tools/resource-gen.go -package mesh > pkg/core/resources/apis/mesh/resources.go
 
 .PHONY: protoc/pkg/config/app/kumactl/v1alpha1
 protoc/pkg/config/app/kumactl/v1alpha1:
