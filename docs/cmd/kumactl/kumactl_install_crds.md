@@ -2,10 +2,6 @@
 
 Install Kuma Custom Resource Definitions on Kubernetes
 
-### Synopsis
-
-Install Kuma Custom Resource Definitions on Kubernetes
-
 ```
 kumactl install crds [flags]
 ```

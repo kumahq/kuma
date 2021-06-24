@@ -44,13 +44,19 @@ var _ = Describe("kumactl config control-planes add", func() {
 	})
 
 	var rootCmd *cobra.Command
-	var outbuf, errbuf *bytes.Buffer
+	var outbuf *bytes.Buffer
 
 	BeforeEach(func() {
 		rootCmd = cmd.DefaultRootCmd()
-		outbuf, errbuf = &bytes.Buffer{}, &bytes.Buffer{}
+
+		// Different versions of cobra might emit errors to stdout
+		// or stderr. It's too fragile to depend on precidely what
+		// it does, and that's not something that needs to be tested
+		// within Kuma anyway. So we just combine all the output
+		// and validate the aggregate.
+		outbuf = &bytes.Buffer{}
 		rootCmd.SetOut(outbuf)
-		rootCmd.SetErr(errbuf)
+		rootCmd.SetErr(outbuf)
 	})
 
 	Describe("error cases", func() {
@@ -66,8 +72,6 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// and
 			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "address", "name" not set
 `))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		It("should require API Server URL", func() {
@@ -82,8 +86,6 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// and
 			Expect(outbuf.String()).To(Equal(`Error: required flag(s) "address" not set
 `))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		It("should fail to add a new Control Plane with duplicate name", func() {
@@ -103,8 +105,6 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// and
 			Expect(outbuf.String()).To(Equal(`Error: Control Plane with name "example" already exists. Use --overwrite to replace an existing one.
 `))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		It("should fail when CP timeouts", func() {
@@ -133,7 +133,6 @@ var _ = Describe("kumactl config control-planes add", func() {
 			Expect(err.Error()).To(ContainSubstring("Client.Timeout exceeded"))
 			Expect(outbuf.String()).To(ContainSubstring(`Error: could not connect to the Control Plane API Server`))
 			Expect(outbuf.String()).To(ContainSubstring(`Client.Timeout exceeded`))
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		It("should fail on invalid api server", func() {
@@ -156,8 +155,6 @@ var _ = Describe("kumactl config control-planes add", func() {
 			// and
 			Expect(outbuf.String()).To(Equal(`Error: provided address is not valid Kuma Control Plane API Server
 `))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 	})
 
@@ -218,8 +215,6 @@ var _ = Describe("kumactl config control-planes add", func() {
 				Expect(actual).To(MatchYAML(expected))
 				// and
 				Expect(outbuf.String()).To(Equal(strings.TrimLeftFunc(given.expectedOut, unicode.IsSpace)))
-				// and
-				Expect(errbuf.Bytes()).To(BeEmpty())
 			},
 			Entry("should add a first Control Plane", testCase{
 				configFile: "config-control-planes-add.01.initial.yaml",
