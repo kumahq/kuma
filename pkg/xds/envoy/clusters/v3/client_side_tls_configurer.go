@@ -1,6 +1,8 @@
 package clusters
 
 import (
+	"fmt"
+
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	pstruct "github.com/golang/protobuf/ptypes/struct"
@@ -26,7 +28,9 @@ func (c *ClientSideTLSConfigurer) Configure(cluster *envoy_cluster.Cluster) erro
 				ep.ExternalService.ClientCert,
 				ep.ExternalService.ClientKey,
 				ep.ExternalService.AllowRenegotiation,
-				ep.Target)
+				ep.Target,
+				fmt.Sprintf("%s:%d", ep.Target, ep.Port),
+			)
 			if err != nil {
 				return err
 			}
