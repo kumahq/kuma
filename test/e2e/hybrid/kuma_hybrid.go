@@ -79,7 +79,7 @@ metadata:
 			WithIngress(),
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithCNI(),
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"))
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false")) // check if old resolving still works
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone1...)).
@@ -95,7 +95,8 @@ metadata:
 		zone2 = k8sClusters.GetCluster(Kuma2)
 		optsZone2 = append(optsZone2,
 			WithIngress(),
-			WithGlobalAddress(globalCP.GetKDSServerAddress()))
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false"))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone2...)).
