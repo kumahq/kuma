@@ -18,6 +18,18 @@ controlPlane:
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
 
+  # -- Kuma CP log rotation path
+  logOutputPath: ""
+
+  # -- Maximum number of days to retain old log files
+  logMaxAge: 30
+
+  # -- Maximum number of the old log files to retain
+  logMaxRetain: 1000
+
+  # -- Maximum size in megabytes of a log file before it gets rotated
+  logMaxSize: 100
+
   # -- Kuma CP modes: one of standalone,zone,global
   mode: "standalone"
 

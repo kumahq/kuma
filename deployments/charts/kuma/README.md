@@ -15,6 +15,10 @@ A Helm chart for the Kuma Control Plane
 | patchSystemNamespace | bool | `true` | Whether or not to patch the target namespace with the system label |
 | installCrdsOnUpgrade | object | `{"enabled":true,"imagePullSecrets":[]}` | Whether ot not install new CRDs before upgrade  (if any were introduced    with the new version of Kuma) |
 | controlPlane.logLevel | string | `"info"` | Kuma CP log level: one of off,info,debug |
+| controlPlane.logOutputPath | string | `""` | Kuma CP log rotation path |
+| controlPlane.logMaxAge | int | `30` | Maximum number of days to retain old log files |
+| controlPlane.logMaxRetain | int | `1000` | Maximum number of the old log files to retain |
+| controlPlane.logMaxSize | int | `100` | Maximum size in megabytes of a log file before it gets rotated |
 | controlPlane.mode | string | `"standalone"` | Kuma CP modes: one of standalone,zone,global |
 | controlPlane.zone | string | `nil` | Kuma CP zone, if running multizone |
 | controlPlane.kdsGlobalAddress | string | `""` | Only used in `zone` mode |
