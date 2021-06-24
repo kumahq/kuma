@@ -23,11 +23,11 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-// ZoneInsight defines the desired state of ZoneInsight
-type ZoneInsightSpec = map[string]interface{}
+// ZoneIngressInsight defines the desired state of ZoneIngressInsight
+type ZoneIngressInsightSpec = map[string]interface{}
 
-// ZoneInsight is the Schema for the zone API
-type ZoneInsight struct {
+// ZoneIngressInsight is the Schema for the zone API
+type ZoneIngressInsight struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
@@ -35,13 +35,13 @@ type ZoneInsight struct {
 	Spec ZoneIngressInsightSpec `json:"spec,omitempty"`
 }
 
-// ZoneInsightList contains a list of Zone
-type ZoneInsightList struct {
+// ZoneIngressInsightList contains a list of ZoneIngressInsight
+type ZoneIngressInsightList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []ZoneInsight `json:"items"`
+	Items           []ZoneIngressInsight `json:"items"`
 }
 
 func init() {
-	SchemeBuilder.Register(&ZoneInsight{}, &ZoneInsightList{})
+	SchemeBuilder.Register(&ZoneIngressInsight{}, &ZoneIngressInsightList{})
 }
