@@ -207,7 +207,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		return err
 	}
 
-	builtindns := opts.builtindns != nil || *opts.builtindns
+	builtindns := opts.builtindns == nil || *opts.builtindns
 	if transparent {
 		app.setupTransparent(c.apps[AppModeCP].ip, builtindns)
 	}
