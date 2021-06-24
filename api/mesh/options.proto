@@ -6,7 +6,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh";
 
 import "google/protobuf/descriptor.proto";
 
-message KumaResource {
+message KumaResourceOptions {
   // Name of the Kuma resource struct.
   string name = 1;
 
@@ -27,5 +27,5 @@ message KumaResource {
 }
 
 extend google.protobuf.MessageOptions {
-  KumaResource resource = 43534533; // 'kuma'
+  KumaResourceOptions resource = 43534533; // 'kuma'
 }

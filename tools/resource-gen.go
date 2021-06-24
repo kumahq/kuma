@@ -136,9 +136,9 @@ func init() {
 `))
 
 // KumaResourceForMessage fishes the Kuma resource option out of a message.
-func KumaResourceForMessage(m protoreflect.MessageType) *mesh.KumaResource {
+func KumaResourceForMessage(m protoreflect.MessageType) *mesh.KumaResourceOptions {
 	ext := proto.GetExtension(m.Descriptor().Options(), mesh.E_Resource)
-	if r, ok := ext.(*mesh.KumaResource); ok {
+	if r, ok := ext.(*mesh.KumaResourceOptions); ok {
 		return r
 	}
 
