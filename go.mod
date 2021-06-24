@@ -44,10 +44,9 @@ require (
 	github.com/spiffe/spire v0.12.1
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
 	go.uber.org/multierr v1.7.0
-	go.uber.org/zap v1.13.0
+	go.uber.org/zap v1.17.0
 	golang.org/x/sys v0.0.0-20210525143221-35b2ab0089ea
 	golang.org/x/time v0.0.0-20200630173020-3af7569d3a1e
-	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/genproto v0.0.0-20201030142918-24207fddd1c3
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.25.0
