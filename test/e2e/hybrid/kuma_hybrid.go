@@ -118,8 +118,8 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone3...)).
-			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal", echoServerToken, WithTransparentProxy(true))).
-			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
+			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal", echoServerToken, WithTransparentProxy(true), WithBuiltinDNS(false))).
+			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(false))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone3)
 		Expect(err).ToNot(HaveOccurred())

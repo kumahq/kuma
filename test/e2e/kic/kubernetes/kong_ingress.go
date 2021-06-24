@@ -64,7 +64,6 @@ metadata:
 		Expect(err).ToNot(HaveOccurred())
 		// Global
 		kubernetes = k8sClusters.GetCluster(Kuma1)
-		kubernetesOps = append(kubernetesOps, WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"))
 		err = NewClusterSetup().
 			Install(Kuma(config_core.Standalone, kubernetesOps...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
