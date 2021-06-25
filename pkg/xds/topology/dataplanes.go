@@ -50,14 +50,14 @@ func ResolveAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.Datap
 	if dataplane.Spec.Networking.Address != ips[0].String() {
 		update_ip = true
 	}
-	if dataplane.Spec.Networking.AdvertiseAddress != "" {
-		if aips, err = lookupIPFunc(dataplane.Spec.Networking.AdvertiseAddress); err != nil {
+	if dataplane.Spec.Networking.AdvertisedAddress != "" {
+		if aips, err = lookupIPFunc(dataplane.Spec.Networking.AdvertisedAddress); err != nil {
 			return nil, err
 		}
 		if len(aips) == 0 {
-			return nil, errors.Errorf("can't resolve address %v", dataplane.Spec.Networking.AdvertiseAddress)
+			return nil, errors.Errorf("can't resolve address %v", dataplane.Spec.Networking.AdvertisedAddress)
 		}
-		if dataplane.Spec.Networking.AdvertiseAddress != aips[0].String() {
+		if dataplane.Spec.Networking.AdvertisedAddress != aips[0].String() {
 			update_aip = true
 		}
 	}
@@ -68,7 +68,7 @@ func ResolveAddress(lookupIPFunc lookup.LookupIPFunc, dataplane *core_mesh.Datap
 			dpSpec.Networking.Address = ips[0].String()
 		}
 		if update_aip {
-			dpSpec.Networking.AdvertiseAddress = aips[0].String()
+			dpSpec.Networking.AdvertisedAddress = aips[0].String()
 		}
 		return &core_mesh.DataplaneResource{
 			Meta: dataplane.Meta,

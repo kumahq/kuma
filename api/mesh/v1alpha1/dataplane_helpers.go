@@ -51,11 +51,11 @@ func (d *Dataplane) DpType() DpType {
 }
 
 type InboundInterface struct {
-	DataplaneAdvertiseIP string
-	DataplaneIP          string
-	DataplanePort        uint32
-	WorkloadIP           string
-	WorkloadPort         uint32
+	DataplaneAdvertisedIP string
+	DataplaneIP           string
+	DataplanePort         uint32
+	WorkloadIP            string
+	WorkloadPort          uint32
 }
 
 func (i InboundInterface) String() string {
@@ -130,10 +130,10 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 	} else {
 		iface.DataplaneIP = n.Address
 	}
-	if n.AdvertiseAddress != "" {
-		iface.DataplaneAdvertiseIP = n.AdvertiseAddress
+	if n.AdvertisedAddress != "" {
+		iface.DataplaneAdvertisedIP = n.AdvertisedAddress
 	} else {
-		iface.DataplaneAdvertiseIP = iface.DataplaneIP
+		iface.DataplaneAdvertisedIP = iface.DataplaneIP
 	}
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress

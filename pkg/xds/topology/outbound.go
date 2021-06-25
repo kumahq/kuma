@@ -81,7 +81,7 @@ func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_co
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
-				Target:   iface.DataplaneAdvertiseIP,
+				Target:   iface.DataplaneAdvertisedIP,
 				Port:     iface.DataplanePort,
 				Tags:     inbound.Tags,
 				Weight:   endpointWeight,
