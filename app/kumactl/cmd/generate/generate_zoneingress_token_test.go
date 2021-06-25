@@ -50,8 +50,10 @@ var _ = Describe("kumactl generate zone-ingress-token", func() {
 		}
 
 		rootCmd = cmd.NewRootCmd(ctx)
+
 		buf = &bytes.Buffer{}
 		rootCmd.SetOut(buf)
+		rootCmd.SetErr(buf)
 	})
 
 	type testCase struct {

@@ -2,10 +2,6 @@
 
 Output shell completions for fish
 
-### Synopsis
-
-Output shell completions for fish
-
 ```
 kumactl completion fish [flags]
 ```
