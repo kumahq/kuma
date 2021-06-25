@@ -45,7 +45,6 @@ func ControlPlaneAutoscalingWithHelmChart() {
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
-			Install(KumaDNS()).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
