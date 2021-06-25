@@ -356,6 +356,42 @@ var _ = Describe("Dataplane with inbound", func() {
 	})
 })
 
+var _ = Describe("Dataplane classification", func() {
+	Describe("with normal networking", func() {
+		It("should be a dataplane", func() {
+			dp := Dataplane{
+				Networking: &Dataplane_Networking{},
+			}
+			Expect(dp.IsGateway()).To(BeFalse())
+			Expect(dp.IsIngress()).To(BeFalse())
+		})
+	})
+
+	Describe("with gateway networking", func() {
+		It("should be a gateway", func() {
+			gw := Dataplane{
+				Networking: &Dataplane_Networking{
+					Gateway: &Dataplane_Networking_Gateway{},
+				},
+			}
+			Expect(gw.IsGateway()).To(BeTrue())
+			Expect(gw.IsIngress()).To(BeFalse())
+		})
+	})
+
+	Describe("with ingress networking", func() {
+		It("should be an ingress gateway", func() {
+			in := Dataplane{
+				Networking: &Dataplane_Networking{
+					Ingress: &Dataplane_Networking_Ingress{},
+				},
+			}
+			Expect(in.IsGateway()).To(BeFalse())
+			Expect(in.IsIngress()).To(BeTrue())
+		})
+	})
+})
+
 var _ = Describe("Dataplane with gateway", func() {
 	d := Dataplane{
 		Networking: &Dataplane_Networking{
