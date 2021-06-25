@@ -204,6 +204,37 @@ spec:
 	return YamlK8s(ingress)
 }
 
+func EchoServerK8sIngressWithMeshDNS() InstallFunc {
+	ingress := `
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: echo-server-externalname
+  namespace: kuma-test
+spec:
+  type: ExternalName
+  externalName: echo-server.kuma-test.svc.80.mesh
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  namespace: kuma-test
+  name: k8s-ingress-dot-mesh
+  annotations:
+    kubernetes.io/ingress.class: kong
+spec:
+  rules:
+  - http:
+      paths:
+      - path: /
+        backend:
+          serviceName: echo-server-externalname
+          servicePort: 80
+`
+	return YamlK8s(ingress)
+}
+
 func EchoServerK8s(mesh string) InstallFunc {
 	const name = "echo-server"
 	service := `
