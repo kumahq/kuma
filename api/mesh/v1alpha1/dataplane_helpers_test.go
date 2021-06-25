@@ -138,8 +138,8 @@ var _ = Describe("Dataplane_Networking", func() {
 						},
 					},
 					expected: []InboundInterface{
-						{DataplaneAdvertiseIP: "192.168.0.1", DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "127.0.0.1", WorkloadPort: 80},
-						{DataplaneAdvertiseIP: "192.168.0.2", DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
+						{DataplaneAdvertisedIP: "192.168.0.1", DataplaneIP: "192.168.0.1", DataplanePort: 80, WorkloadIP: "127.0.0.1", WorkloadPort: 80},
+						{DataplaneAdvertisedIP: "192.168.0.2", DataplaneIP: "192.168.0.2", DataplanePort: 443, WorkloadIP: "192.168.0.3", WorkloadPort: 8443},
 					},
 				}),
 			)
