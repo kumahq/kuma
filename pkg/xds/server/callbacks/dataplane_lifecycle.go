@@ -6,6 +6,8 @@ import (
 
 	"github.com/pkg/errors"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -32,6 +34,7 @@ type DataplaneLifecycle struct {
 	// createdDpForStream stores map from StreamID to created ResourceKey of Dataplane.
 	// we store nil values for streams without Dataplane in metadata to avoid accessing metadata with every DiscoveryRequest
 	createdDpForStream map[xds.StreamID]*model.ResourceKey
+	proxyTypeForStream map[xds.StreamID]mesh_proto.ProxyType
 	sync.RWMutex       // protects createdDpForStream
 	shutdownCh         <-chan struct{}
 }
@@ -42,6 +45,7 @@ func NewDataplaneLifecycle(resManager manager.ResourceManager, shutdownCh <-chan
 	return &DataplaneLifecycle{
 		resManager:         resManager,
 		createdDpForStream: map[xds.StreamID]*model.ResourceKey{},
+		proxyTypeForStream: map[xds.StreamID]mesh_proto.ProxyType{},
 		shutdownCh:         shutdownCh,
 	}
 }
@@ -61,12 +65,28 @@ func (d *DataplaneLifecycle) OnStreamClosed(streamID int64) {
 	d.Lock()
 	defer d.Unlock()
 	key := d.createdDpForStream[streamID]
+	proxyType := d.proxyTypeForStream[streamID]
 	delete(d.createdDpForStream, streamID)
-	if key != nil {
+	delete(d.proxyTypeForStream, streamID)
+
+	if key == nil {
+		return
+	}
+
+	if proxyType == mesh_proto.DataplaneProxyType {
 		lifecycleLog.Info("unregistering dataplane", "dataplaneKey", key, "streamID", streamID)
 		if err := d.unregisterDataplane(*key); err != nil {
 			lifecycleLog.Error(err, "could not unregister dataplane")
 		}
+		return
+	}
+
+	if proxyType == mesh_proto.IngressProxyType {
+		lifecycleLog.Info("unregistering zone ingress", "zoneIngressKey", key, "streamID", streamID)
+		if err := d.unregisterZoneIngress(*key); err != nil {
+			lifecycleLog.Error(err, "could not unregister zone ingress")
+		}
+		return
 	}
 }
 
@@ -81,17 +101,32 @@ func (d *DataplaneLifecycle) OnStreamRequest(streamID int64, request util_xds.Di
 
 	d.Lock()
 	defer d.Unlock()
+
 	md := xds.DataplaneMetadataFromXdsMetadata(request.Metadata())
-	if md.DataplaneResource != nil {
-		lifecycleLog.Info("registering dataplane", "dataplane", md.DataplaneResource, "streamID", streamID, "nodeID", request.NodeId())
-		if err := d.registerDataplane(md.DataplaneResource); err != nil {
+
+	if md.GetProxyType() == mesh_proto.DataplaneProxyType && md.GetDataplaneResource() != nil {
+		lifecycleLog.Info("registering dataplane", "dataplane", md.GetDataplaneResource(), "streamID", streamID, "nodeID", request.NodeId())
+		if err := d.registerDataplane(md.GetDataplaneResource()); err != nil {
 			return errors.Wrap(err, "could not register dataplane passed in kuma-dp run")
 		}
-		key := model.MetaToResourceKey(md.DataplaneResource.GetMeta())
+		key := model.MetaToResourceKey(md.GetDataplaneResource().GetMeta())
 		d.createdDpForStream[streamID] = &key
-	} else {
-		d.createdDpForStream[streamID] = nil // put nil so we don't have to read metadata every time
+		d.proxyTypeForStream[streamID] = mesh_proto.DataplaneProxyType
+		return nil
 	}
+
+	if md.GetProxyType() == mesh_proto.IngressProxyType && md.ZoneIngressResource != nil {
+		lifecycleLog.Info("registering zone ingress", "zoneIngress", md.ZoneIngressResource, "streamID", streamID, "nodeID", request.NodeId())
+		if err := d.registerZoneIngress(md.ZoneIngressResource); err != nil {
+			return errors.Wrap(err, "could not register zone ingress passed in kuma-dp run")
+		}
+		key := model.MetaToResourceKey(md.ZoneIngressResource.GetMeta())
+		d.createdDpForStream[streamID] = &key
+		d.proxyTypeForStream[streamID] = mesh_proto.IngressProxyType
+		return nil
+	}
+
+	d.createdDpForStream[streamID] = nil // put nil so we don't have to read metadata every time
 	return nil
 }
 
@@ -110,6 +145,18 @@ func (d *DataplaneLifecycle) registerDataplane(dp *core_mesh.DataplaneResource) 
 	})
 }
 
+func (d *DataplaneLifecycle) registerZoneIngress(zi *core_mesh.ZoneIngressResource) error {
+	key := model.MetaToResourceKey(zi.GetMeta())
+	existing := core_mesh.NewZoneIngressResource()
+	return manager.Upsert(d.resManager, key, existing, func(resource model.Resource) {
+		_ = existing.SetSpec(zi.GetSpec()) // ignore error because the spec type is the same
+	})
+}
+
 func (d *DataplaneLifecycle) unregisterDataplane(key model.ResourceKey) error {
 	return d.resManager.Delete(context.Background(), core_mesh.NewDataplaneResource(), store.DeleteBy(key))
+}
+
+func (d *DataplaneLifecycle) unregisterZoneIngress(key model.ResourceKey) error {
+	return d.resManager.Delete(context.Background(), core_mesh.NewZoneIngressResource(), store.DeleteBy(key))
 }

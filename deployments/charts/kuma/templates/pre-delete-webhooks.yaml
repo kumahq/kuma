@@ -2,7 +2,6 @@
 # But even that the policy of this webhook is Ignore, it fails because Kuma does not have permission to access Secrets anymore.
 # Therefore we first need to delete webhook so we can delete the rest of the deployment
 {{- $serviceAccountName := printf "%s-pre-delete-job" (include "kuma.name" .) }}
-{{- $kubeMinor := .Capabilities.KubeVersion.Minor | replace "+" "" }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -78,9 +77,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: pre-delete-job
-          {{- /* bitnami maintains an image for all k8s versions */}}
-          {{- /* see: https://hub.docker.com/r/bitnami/kubectl */}}
-          image: {{ printf "%s/%s:%s.%s" "bitnami" "kubectl" .Capabilities.KubeVersion.Major $kubeMinor }}
+          image: {{ include "kubectl.formatImage" (dict "image" .Values.kubectl.image "root" $) | quote }}
           command:
             - 'kubectl'
             - 'delete'

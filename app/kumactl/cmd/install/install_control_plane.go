@@ -41,7 +41,7 @@ This command requires that the KUBECONFIG environment is set`,
 			var kubeClientConfig *rest.Config
 			if !args.WithoutKubernetesConnection {
 				var err error
-				kubeClientConfig, err = k8s.DefaultClientConfig()
+				kubeClientConfig, err = k8s.DefaultClientConfig("", "")
 				if err != nil {
 					return errors.Wrap(err, "could not detect Kubernetes configuration")
 				}

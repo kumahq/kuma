@@ -34,8 +34,8 @@ var _ = Describe("DNSGenerator", func() {
 
 			dnsResolver := resolver.NewDNSResolver("mesh")
 			dnsResolver.SetVIPs(map[string]string{
-				"backend": "240.0.0.0",
-				"httpbin": "240.0.0.1",
+				"backend_test-ns_svc_8080": "240.0.0.0",
+				"httpbin":                  "240.0.0.1",
 			})
 			ctx := xds_context.Context{
 				ConnectionInfo: xds_context.ConnectionInfo{
@@ -70,7 +70,7 @@ var _ = Describe("DNSGenerator", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 			proxy := &model.Proxy{
-				Id: model.ProxyId{Name: "side-car"},
+				Id: *model.BuildProxyId("", "side-car"),
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Version: "1",

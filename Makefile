@@ -24,3 +24,4 @@ include mk/kind.mk
 include mk/k3d.mk
 include mk/e2e.mk
 include mk/e2e.new.mk
+include mk/docs.mk

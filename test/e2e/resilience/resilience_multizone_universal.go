@@ -14,7 +14,7 @@ import (
 
 func ResilienceMultizoneUniversal() {
 	var global, zone1 Cluster
-	var optsGlobal, optsZone1 []DeployOptionsFunc
+	var optsGlobal, optsZone1 = KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -24,7 +24,6 @@ func ResilienceMultizoneUniversal() {
 
 		// Global
 		global = clusters.GetCluster(Kuma1)
-		optsGlobal = []DeployOptionsFunc{}
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
 			Setup(global)
@@ -36,9 +35,7 @@ func ResilienceMultizoneUniversal() {
 
 		// Cluster 1
 		zone1 = clusters.GetCluster(Kuma2)
-		optsZone1 = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		optsZone1 = append(optsZone1, WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone1...)).

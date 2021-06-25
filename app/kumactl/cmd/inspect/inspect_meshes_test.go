@@ -3,10 +3,11 @@ package inspect_test
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/kumahq/kuma/pkg/test/matchers"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -48,6 +49,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 					string(mesh.TrafficPermissionType): {Total: 7},
 					string(mesh.ProxyTemplateType):     {Total: 8},
 					string(mesh.ExternalServiceType):   {Total: 9},
+					string(mesh.RateLimitType):         {Total: 10},
 				},
 			},
 		},
@@ -69,6 +71,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 					string(mesh.TrafficPermissionType): {Total: 70},
 					string(mesh.ProxyTemplateType):     {Total: 80},
 					string(mesh.ExternalServiceType):   {Total: 90},
+					string(mesh.RateLimitType):         {Total: 100},
 				},
 			},
 		},
@@ -121,13 +124,7 @@ var _ = Describe("kumactl inspect meshes", func() {
 				err := rootCmd.Execute()
 				// then
 				Expect(err).ToNot(HaveOccurred())
-
-				// when
-				expected, err := ioutil.ReadFile(filepath.Join("testdata", given.goldenFile))
-				// then
-				Expect(err).ToNot(HaveOccurred())
-				// and
-				Expect(buf.String()).To(given.matcher(expected))
+				Expect(buf.String()).To(matchers.MatchGoldenEqual(filepath.Join("testdata", given.goldenFile)))
 			},
 			Entry("should support Table output by default", testCase{
 				outputFormat: "",

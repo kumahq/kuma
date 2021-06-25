@@ -172,17 +172,32 @@ func BuildServiceSet(rm manager.ReadOnlyResourceManager, mesh string) (ServiceSe
 	}
 
 	for _, dp := range filteredDataplanes.Items {
+		// backwards compatibility
 		if dp.Spec.IsIngress() {
-			for _, service := range dp.Spec.Networking.Ingress.AvailableServices {
+			for _, service := range dp.Spec.GetNetworking().GetIngress().GetAvailableServices() {
 				if service.Mesh != mesh {
 					continue
 				}
 				serviceSet[service.Tags[mesh_proto.ServiceTag]] = true
 			}
 		} else {
-			for _, inbound := range dp.Spec.Networking.Inbound {
+			for _, inbound := range dp.Spec.GetNetworking().GetInbound() {
 				serviceSet[inbound.GetService()] = true
 			}
+		}
+	}
+
+	zoneIngresses := core_mesh.ZoneIngressResourceList{}
+	if err := rm.List(context.Background(), &zoneIngresses); err != nil {
+		return nil, err
+	}
+
+	for _, zi := range zoneIngresses.Items {
+		for _, service := range zi.Spec.GetAvailableServices() {
+			if service.Mesh != mesh {
+				continue
+			}
+			serviceSet[service.Tags[mesh_proto.ServiceTag]] = true
 		}
 	}
 

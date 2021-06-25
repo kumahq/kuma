@@ -268,3 +268,17 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 		&tls.Config{},
 	)
 }
+
+func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
+	return http_helper.HTTPDoWithRetryE(
+		c.t,
+		"POST",
+		fmt.Sprintf("http://localhost:%d/tokens/zone-ingress", c.portFwd.localAPIPort),
+		[]byte(fmt.Sprintf(`{"zone": "%s"}`, zone)),
+		map[string]string{"content-type": "application/json"},
+		200,
+		DefaultRetries,
+		DefaultTimeout,
+		&tls.Config{},
+	)
+}

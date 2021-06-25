@@ -4,6 +4,7 @@ go 1.16
 
 require (
 	cirello.io/pglock v1.8.0
+	github.com/Masterminds/semver/v3 v3.1.1
 	github.com/Masterminds/sprig v2.22.0+incompatible
 	github.com/Nordix/simple-ipam v1.0.0
 	github.com/asaskevich/govalidator v0.0.0-20210307081110-f21760c49a8d
@@ -16,7 +17,6 @@ require (
 	github.com/go-kit/kit v0.10.0
 	github.com/go-logr/logr v0.1.0
 	github.com/go-logr/zapr v0.1.1
-	github.com/gogo/protobuf v1.3.2
 	github.com/golang-migrate/migrate/v4 v4.14.1
 	github.com/golang/protobuf v1.4.3
 	github.com/grpc-ecosystem/go-grpc-prometheus v1.2.0
@@ -39,7 +39,7 @@ require (
 	github.com/sethvargo/go-retry v0.1.0
 	github.com/slok/go-http-metrics v0.9.0
 	github.com/soheilhy/cmux v0.1.5
-	github.com/spf13/cobra v1.0.0
+	github.com/spf13/cobra v1.1.3
 	github.com/spiffe/go-spiffe v0.0.0-20190820222348-6adcf1eecbcc
 	github.com/spiffe/spire v0.12.1
 	github.com/spiffe/spire/proto/spire v0.12.0 // indirect
@@ -51,6 +51,7 @@ require (
 	google.golang.org/genproto v0.0.0-20201030142918-24207fddd1c3
 	google.golang.org/grpc v1.38.0
 	google.golang.org/protobuf v1.25.0
+	gopkg.in/natefinch/lumberjack.v2 v2.0.0
 	gopkg.in/yaml.v2 v2.4.0
 	helm.sh/helm/v3 v3.3.4
 	k8s.io/api v0.18.14

@@ -2,7 +2,7 @@
 
 A Helm chart for the Kuma Control Plane
 
-![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.5.7](https://img.shields.io/badge/Version-0.5.7-informational?style=flat-square) ![AppVersion: 1.1.6](https://img.shields.io/badge/AppVersion-1.1.6-informational?style=flat-square)
+![Type: application](https://img.shields.io/badge/Type-application-informational?style=flat-square) ![Version: 0.6.0](https://img.shields.io/badge/Version-0.6.0-informational?style=flat-square) ![AppVersion: 1.2.0](https://img.shields.io/badge/AppVersion-1.2.0-informational?style=flat-square)
 
 **Homepage:** <https://github.com/kumahq/kuma>
 
@@ -61,7 +61,6 @@ A Helm chart for the Kuma Control Plane
 | dataPlane.image.pullPolicy | string | `"IfNotPresent"` | Kuma DP ImagePullPolicy |
 | dataPlane.initImage.repository | string | `"kuma-init"` | The Kuma DP init image repository |
 | ingress.enabled | bool | `false` | If true, it deploys Ingress for cross cluster communication |
-| ingress.mesh | string | `"default"` | Mesh to which Dataplane Ingress belongs to |
 | ingress.drainTime | string | `"30s"` | Time for which old listener will still be active as draining |
 | ingress.replicas | int | `1` | Number of replicas of the Ingress |
 | ingress.service.type | string | `"LoadBalancer"` | Service type of the Ingress |
@@ -70,6 +69,9 @@ A Helm chart for the Kuma Control Plane
 | ingress.annotations | object | `{}` | Additional deployment annotation |
 | ingress.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node Selector for the Ingress pods |
 | kumactl.image.repository | string | `"kumactl"` | The kumactl image repository |
+| kubectl.image.registry | string | `"bitnami"` | The kubectl image registry |
+| kubectl.image.repository | string | `"kubectl"` | The kubectl image repository |
+| kubectl.image.tag | string | `"1.20"` | The kubectl image tag |
 | hooks.nodeSelector | object | `{"kubernetes.io/arch":"amd64","kubernetes.io/os":"linux"}` | Node selector for the HELM hooks |
 
 ## Custom Resource Definitions

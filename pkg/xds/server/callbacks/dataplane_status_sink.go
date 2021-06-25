@@ -106,6 +106,13 @@ type dataplaneInsightStore struct {
 }
 
 func (s *dataplaneInsightStore) Upsert(dataplaneId core_model.ResourceKey, subscription *mesh_proto.DiscoverySubscription) error {
+	if dataplaneId.Mesh == core_model.NoMesh {
+		// hack in order to support ZoneIngress which is the only supported Global-scope ProxyType today
+		return manager.Upsert(s.resManager, dataplaneId, mesh_core.NewZoneIngressInsightResource(), func(resource core_model.Resource) {
+			insight := resource.(*mesh_core.ZoneIngressInsightResource)
+			insight.Spec.UpdateSubscription(subscription)
+		})
+	}
 	return manager.Upsert(s.resManager, dataplaneId, mesh_core.NewDataplaneInsightResource(), func(resource core_model.Resource) {
 		insight := resource.(*mesh_core.DataplaneInsightResource)
 		insight.Spec.UpdateSubscription(subscription)

@@ -201,7 +201,7 @@ func googleGrpcSdsSpecifier(context xds_context.Context, name string, metadata *
 	}, nil
 }
 
-func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool, hostname string) (*envoy_tls.UpstreamTlsContext, error) {
+func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool, hostname string, sni string) (*envoy_tls.UpstreamTlsContext, error) {
 	var tlsCertificates []*envoy_tls.TlsCertificate
 	if cert != nil && key != nil {
 		tlsCertificates = []*envoy_tls.TlsCertificate{
@@ -230,6 +230,7 @@ func UpstreamTlsContextOutsideMesh(ca, cert, key []byte, allowRenegotiation bool
 
 	return &envoy_tls.UpstreamTlsContext{
 		AllowRenegotiation: allowRenegotiation,
+		Sni:                sni,
 		CommonTlsContext: &envoy_tls.CommonTlsContext{
 			TlsCertificates:       tlsCertificates,
 			ValidationContextType: validationContextType,

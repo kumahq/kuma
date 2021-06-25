@@ -4,6 +4,7 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -11,6 +12,9 @@ import "validate/validate.proto";
 
 // Dataplane defines configuration of a side-car proxy.
 message Dataplane {
+
+  option (kuma.mesh.resource).name = "DataplaneResource";
+  option (kuma.mesh.resource).type = "Dataplane";
 
   // Networking describes inbound and outbound interfaces of a dataplane.
   message Networking {

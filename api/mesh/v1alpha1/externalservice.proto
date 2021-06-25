@@ -4,6 +4,7 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "validate/validate.proto";
 import "google/protobuf/wrappers.proto";
 
@@ -18,6 +19,10 @@ option (doc.config) = {
 
 // ExternalService defines configuration of the externally accessible service
 message ExternalService {
+
+  option (kuma.mesh.resource).name = "ExternalServiceResource";
+  option (kuma.mesh.resource).type = "ExternalService";
+  option (kuma.mesh.resource).package = "mesh";
 
   // Networking describes the properties of the external service connectivity
   message Networking {

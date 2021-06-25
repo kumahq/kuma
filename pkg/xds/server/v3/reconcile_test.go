@@ -87,7 +87,7 @@ var _ = Describe("Reconcile", func() {
 			},
 		}
 
-		It("should generate a Snaphot per Envoy Node", func() {
+		It("should generate a Snapshot per Envoy Node", func() {
 			// given
 			snapshots := make(chan envoy_cache.Snapshot, 3)
 			snapshots <- snapshot               // initial Dataplane configuration
@@ -115,10 +115,7 @@ var _ = Describe("Reconcile", func() {
 			By("simulating discovery event")
 			// when
 			proxy := &xds_model.Proxy{
-				Id: xds_model.ProxyId{
-					Mesh: "demo",
-					Name: "example",
-				},
+				Id:        *xds_model.BuildProxyId("demo", "example"),
 				Dataplane: dataplane,
 			}
 			err := r.Reconcile(xds_context.Context{}, proxy)
@@ -175,6 +172,22 @@ var _ = Describe("Reconcile", func() {
 			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal("v8"))
 			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal("v9"))
 			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal("v10"))
+
+			By("simulating clear")
+			// when
+			err = r.Clear(&proxy.Id)
+			Expect(err).ToNot(HaveOccurred())
+			snapshot, err = xdsContext.Cache().GetSnapshot("demo.example")
+
+			// then
+			Expect(err).To(HaveOccurred())
+			Expect(err.Error()).To(ContainSubstring("no snapshot found"))
+
+			Expect(snapshot.Resources[envoy_types.Listener].Version).To(Equal(""))
+			Expect(snapshot.Resources[envoy_types.Route].Version).To(Equal(""))
+			Expect(snapshot.Resources[envoy_types.Cluster].Version).To(Equal(""))
+			Expect(snapshot.Resources[envoy_types.Endpoint].Version).To(Equal(""))
+			Expect(snapshot.Resources[envoy_types.Secret].Version).To(Equal(""))
 		})
 	})
 })

@@ -11,10 +11,11 @@ import (
 )
 
 var (
-	Log       = kube_log.Log
-	NewLogger = kuma_log.NewLogger
-	SetLogger = kube_log.SetLogger
-	Now       = time.Now
+	Log                   = kube_log.Log
+	NewLogger             = kuma_log.NewLogger
+	NewLoggerWithRotation = kuma_log.NewLoggerWithRotation
+	SetLogger             = kube_log.SetLogger
+	Now                   = time.Now
 
 	SetupSignalHandler = kube_signals.SetupSignalHandler
 

@@ -2,7 +2,7 @@ package ingress
 
 import (
 	. "github.com/onsi/ginkgo"
-	"github.com/onsi/gomega"
+	. "github.com/onsi/gomega"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -11,9 +11,12 @@ import (
 
 var _ = Describe("Ingress BuildDestinationMap", func() {
 	It("should generate destination map by ingress", func() {
-		ingress := &mesh.DataplaneResource{
+		ingress, err := mesh.NewZoneIngressResourceFromDataplane(&mesh.DataplaneResource{
 			Spec: &mesh_proto.Dataplane{
 				Networking: &mesh_proto.Dataplane_Networking{
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+						Port: 10001,
+					}},
 					Ingress: &mesh_proto.Dataplane_Networking_Ingress{
 						AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
 							{
@@ -29,7 +32,9 @@ var _ = Describe("Ingress BuildDestinationMap", func() {
 					},
 				},
 			},
-		}
+		})
+		Expect(err).ToNot(HaveOccurred())
+
 		actual := BuildDestinationMap(ingress)
 		expected := xds.DestinationMap{
 			"backend": []mesh_proto.TagSelector{
@@ -50,6 +55,6 @@ var _ = Describe("Ingress BuildDestinationMap", func() {
 				},
 			},
 		}
-		gomega.Expect(actual).To(gomega.Equal(expected))
+		Expect(actual).To(Equal(expected))
 	})
 })
