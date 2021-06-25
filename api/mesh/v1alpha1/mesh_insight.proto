@@ -4,10 +4,17 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "google/protobuf/timestamp.proto";
 
 // MeshInsight defines the observed state of a Mesh.
 message MeshInsight {
+
+  option (kuma.mesh.resource).name = "MeshInsightResource";
+  option (kuma.mesh.resource).type = "MeshInsight";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).package = "mesh";
+  option (kuma.mesh.resource).skip_validation = true;
 
   // last_sync is a time of the last synchronization
   google.protobuf.Timestamp last_sync = 1;

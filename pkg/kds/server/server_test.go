@@ -12,7 +12,7 @@ import (
 	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds"

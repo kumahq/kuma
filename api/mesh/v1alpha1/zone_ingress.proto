@@ -4,6 +4,7 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -13,6 +14,11 @@ import "validate/validate.proto";
 // mode, dataplane has only inbound interfaces. Every inbound interface matches
 // with services that reside in that cluster.
 message ZoneIngress {
+
+  option (kuma.mesh.resource).name = "ZoneIngressResource";
+  option (kuma.mesh.resource).type = "ZoneIngress";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).package = "mesh";
 
   // Zone field contains Zone name where ingress is serving, field will be
   // automatically set by Global Kuma CP

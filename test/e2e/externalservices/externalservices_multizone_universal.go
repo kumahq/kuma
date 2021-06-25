@@ -90,7 +90,7 @@ networking:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone1...)).
-			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone1.VerifyKuma()
@@ -104,7 +104,7 @@ networking:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone2...)).
-			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(true))).
+			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
 			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
 		err = zone2.VerifyKuma()

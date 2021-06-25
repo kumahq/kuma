@@ -82,7 +82,7 @@ metadata:
 			WithIngress(),
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithCNI(),
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"))
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false")) // check if old resolving still works
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone1...)).
@@ -98,7 +98,8 @@ metadata:
 		zone2 = k8sClusters.GetCluster(Kuma2)
 		optsZone2 = append(optsZone2,
 			WithIngress(),
-			WithGlobalAddress(globalCP.GetKDSServerAddress()))
+			WithGlobalAddress(globalCP.GetKDSServerAddress()),
+			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "false"))
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone2...)).
@@ -120,8 +121,8 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone3...)).
-			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal", echoServerToken, WithTransparentProxy(true))).
-			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true))).
+			Install(EchoServerUniversal(AppModeEchoServer, nonDefaultMesh, "universal", echoServerToken, WithTransparentProxy(true), WithBuiltinDNS(false))).
+			Install(DemoClientUniversal(AppModeDemoClient, nonDefaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(false))).
 			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zone3)
 		Expect(err).ToNot(HaveOccurred())
