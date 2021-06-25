@@ -5,6 +5,9 @@ import (
 
 	_struct "github.com/golang/protobuf/ptypes/struct"
 
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
 
@@ -23,6 +26,8 @@ const (
 	fieldDataplaneDNSEmptyPort      = "dataplane.dns.empty.port"
 	fieldDataplaneDataplaneResource = "dataplane.resource"
 	fieldDynamicMetadata            = "dynamicMetadata"
+	fieldDataplaneProxyType         = "dataplane.proxyType"
+	fieldVersion                    = "version"
 )
 
 // DataplaneMetadata represents environment-specific part of a dataplane configuration.
@@ -40,13 +45,16 @@ const (
 // This way, xDS server will be able to use Envoy node metadata
 // to generate xDS resources that depend on environment-specific configuration.
 type DataplaneMetadata struct {
-	DataplaneTokenPath string
-	DataplaneToken     string
-	DataplaneResource  *core_mesh.DataplaneResource
-	AdminPort          uint32
-	DNSPort            uint32
-	EmptyDNSPort       uint32
-	DynamicMetadata    map[string]string
+	DataplaneTokenPath  string
+	DataplaneToken      string
+	DataplaneResource   *core_mesh.DataplaneResource
+	ZoneIngressResource *core_mesh.ZoneIngressResource
+	AdminPort           uint32
+	DNSPort             uint32
+	EmptyDNSPort        uint32
+	DynamicMetadata     map[string]string
+	ProxyType           mesh_proto.ProxyType
+	Version             *mesh_proto.Version
 }
 
 func (m *DataplaneMetadata) GetDataplaneTokenPath() string {
@@ -68,6 +76,20 @@ func (m *DataplaneMetadata) GetDataplaneResource() *core_mesh.DataplaneResource 
 		return nil
 	}
 	return m.DataplaneResource
+}
+
+func (m *DataplaneMetadata) GetZoneIngressResource() *core_mesh.ZoneIngressResource {
+	if m == nil {
+		return nil
+	}
+	return m.ZoneIngressResource
+}
+
+func (m *DataplaneMetadata) GetProxyType() mesh_proto.ProxyType {
+	if m == nil || m.ProxyType == "" {
+		return mesh_proto.DataplaneProxyType
+	}
+	return m.ProxyType
 }
 
 func (m *DataplaneMetadata) GetAdminPort() uint32 {
@@ -98,6 +120,13 @@ func (m *DataplaneMetadata) GetDynamicMetadata(key string) string {
 	return m.DynamicMetadata[key]
 }
 
+func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
+	if m == nil {
+		return nil
+	}
+	return m.Version
+}
+
 func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMetadata {
 	metadata := DataplaneMetadata{}
 	if xdsMetadata == nil {
@@ -109,6 +138,9 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 	if field := xdsMetadata.Fields[fieldDataplaneToken]; field != nil {
 		metadata.DataplaneToken = field.GetStringValue()
 	}
+	if field := xdsMetadata.Fields[fieldDataplaneProxyType]; field != nil {
+		metadata.ProxyType = mesh_proto.ProxyType(field.GetStringValue())
+	}
 	metadata.AdminPort = uint32Metadata(xdsMetadata, fieldDataplaneAdminPort)
 	metadata.DNSPort = uint32Metadata(xdsMetadata, fieldDataplaneDNSPort)
 	metadata.EmptyDNSPort = uint32Metadata(xdsMetadata, fieldDataplaneDNSEmptyPort)
@@ -117,11 +149,14 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 		if err != nil {
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
 		}
-		dp, ok := res.(*core_mesh.DataplaneResource)
-		if !ok {
+		switch r := res.(type) {
+		case *core_mesh.DataplaneResource:
+			metadata.DataplaneResource = r
+		case *core_mesh.ZoneIngressResource:
+			metadata.ZoneIngressResource = r
+		default:
 			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldDataplaneDataplaneResource, "value", value)
 		}
-		metadata.DataplaneResource = dp
 	}
 	if value := xdsMetadata.Fields[fieldDynamicMetadata]; value != nil {
 		dynamicMetadata := map[string]string{}
@@ -129,6 +164,14 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 			dynamicMetadata[field] = val.GetStringValue()
 		}
 		metadata.DynamicMetadata = dynamicMetadata
+	}
+
+	if value := xdsMetadata.Fields[fieldVersion]; value.GetStructValue() != nil {
+		version := &mesh_proto.Version{}
+		if err := util_proto.ToTyped(value.GetStructValue(), version); err != nil {
+			metadataLog.Error(err, "invalid value in dataplane metadata", "field", fieldVersion, "value", value)
+		}
+		metadata.Version = version
 	}
 	return &metadata
 }

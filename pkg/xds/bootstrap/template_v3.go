@@ -23,6 +23,9 @@ node:
 {{if .EmptyDNSPort }}
     dataplane.dns.empty.port: "{{ .EmptyDNSPort }}"
 {{ end }}
+{{if .ProxyType }}
+    dataplane.proxyType: "{{ .ProxyType }}"
+{{ end }}
     version:
       kumaDp:
         version: "{{ .KumaDpVersion }}"

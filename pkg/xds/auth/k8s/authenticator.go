@@ -56,3 +56,36 @@ func (k *kubeAuthenticator) Authenticate(ctx context.Context, dataplane *core_me
 	}
 	return nil
 }
+
+func (k *kubeAuthenticator) AuthenticateZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
+	if credential == "" {
+		return errors.New("authentication failed: k8s token is missing")
+	}
+	tokenReview := &kube_auth.TokenReview{
+		Spec: kube_auth.TokenReviewSpec{
+			Token: credential,
+		},
+	}
+	if err := k.client.Create(ctx, tokenReview); err != nil {
+		return errors.Wrap(err, "authentication failed: call to TokenReview API failed")
+	}
+	if !tokenReview.Status.Authenticated {
+		return errors.Errorf("authentication failed: token doesn't belong to a valid user")
+	}
+	userInfo := strings.Split(tokenReview.Status.User.Username, ":")
+	if len(userInfo) != 4 {
+		return errors.Errorf("authentication failed: username inside TokenReview response has unexpected format: %q", tokenReview.Status.User.Username)
+	}
+	if !(userInfo[0] == "system" && userInfo[1] == "serviceaccount") {
+		return errors.Errorf("authentication failed: token must belong to a k8s system account, got %q", tokenReview.Status.User.Username)
+	}
+	_, proxyNamespace, err := util_k8s.CoreNameToK8sName(zoneIngress.Meta.GetName())
+	if err != nil {
+		return err
+	}
+	namespace := userInfo[2]
+	if namespace != proxyNamespace {
+		return errors.Errorf("authentication failed: token belongs to a namespace (%q) different from proxyId (%q)", namespace, proxyNamespace)
+	}
+	return nil
+}

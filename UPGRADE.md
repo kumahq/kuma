@@ -6,6 +6,152 @@ with `x.y.z` being the version you are planning to upgrade to.
 If such a section does not exist, the upgrade you want to perform
 does not have any particular instructions.
 
+## Upgrade to `1.2.0`
+
+One of the changes introduced by Kuma 1.2.0 is renaming `Remote Control Planes` to `Zone Control Planes` and `Dataplane Ingress` to `Zone Ingress`. 
+We think this change makes the naming more consistent with the rest of the application and also removes some of unnecessary confusion.
+
+As a result of this renaming, some values and arguments in multizone/kubernetes environment changed. You can read below more.
+
+### Upgrading with `kumactl` on Kubernetes
+
+1. Changes in arguments/flags for `kumactl install control-plane`
+
+   * `--mode` accepts now values: `standalone`, `zone` and `global` (`remote` changed to `zone`)
+
+   * `--tls-kds-remote-client-secret` flag was renamed to `--tls-kds-zone-client-secret`
+
+2. Service `kuma-global-remote-sync` changed to `kuma-global-zone-sync` so after upgrading `global` control plane you have to manually remote old service. For example:
+
+   ```sh
+   kubectl delete -n kuma-system service/kuma-global-zone-sync 
+   ```
+
+    Hint: It's worth to remember that often at this point the IP address/hostname which is used as a KDS address when installing Kuma Zone Control Planes will change. Make sure that you update the address when upgrading the Remote CPs to the newest version.
+
+### Upgrading with `helm` on Kubernetes
+
+Changes in values in Kuma's HELM chart
+
+* `controlPlane.mode` accepts now values: `standalone`, `zone` and `global` (`remote` changed to `zone`)
+
+* `controlPlane.globalRemoteSyncService` was renamed to `controlPlane.globalZoneSyncService`
+
+* `controlPlane.tls.kdsRemoteClient` was renamed to `controlPlane.tls.kdsZoneClient`
+
+### Suggested Upgrade Path on Universal
+
+1. Zone Control Planes should be started using new environment variables
+
+   * `KUMA_MODE` accepts now values: `standalone`, `zone` and `global` (`remote` changed to `zone`)
+
+     Old:
+     ```sh
+     KUMA_MODE="remote" [...] kuma-cp run
+     ```
+
+     New:
+     ```sh
+     KUMA_MODE="zone" [...] kuma-cp run
+     ```
+
+   * `KUMA_MULTIZONE_REMOTE_ZONE` was renamed to `KUMA_MULTIZONE_ZONE_NAME`
+
+     Old:
+     ```sh
+     KUMA_MULTIZONE_REMOTE_ZONE="remote-1" [...] kuma-cp run
+     ```
+
+     New:
+     ```sh
+     KUMA_MULTIZONE_ZONE_NAME="remote-1" [...] kuma-cp run
+     ```
+
+   * `KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS` was renamed to `KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS`
+
+     Old:
+     ```sh
+     KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS="grpcs://localhost:5685" [...] kuma-cp run
+     ```
+
+     New:
+     ```sh
+     KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS="grpcs://localhost:5685" [...]  kuma-cp run
+     ```
+
+   * `KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE` was renamed to `KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE`
+
+     Old:
+     ```sh
+     KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE="/rootCa" [...] kuma-cp run
+     ```
+
+     New:
+     ```sh
+     KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE="/rootCa" [...] kuma-cp run
+     ```
+
+   * `KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE` was renamed to `KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE`
+
+     Old:
+     ```sh
+     KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL="9s" [...] kuma-cp run
+     ```
+
+     New:
+     ```sh
+     KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL="9s" [...] kuma-cp run
+     ```
+
+2. Dataplane Ingress resource should be replaced with ZoneIngress resource:
+
+    Old:
+    ```yaml
+    type: Dataplane
+    name: dp-ingress
+    mesh: default
+    networking:
+      address: <ADDRESS>
+      ingress:
+        publicAddress: <PUBLIC_ADDRESS>
+        publicPort: <PUBLIC_PORT>
+      inbound:
+      - port: <PORT>
+        tags:
+          kuma.io/service: ingress
+    ```
+
+    New:
+    ```yaml
+    type: ZoneIngress
+    name: zone-ingress
+    networking:
+      address: <ADDRESS>
+      port: <PORT>
+      advertisedAddress: <PUBLIC_ADDRESS>
+      advertisedPort: <PUBLIC_PORT>
+    ```
+
+    NOTE: ZoneIngress resource is a global scoped resource, it's not bound to a Mesh
+    The old Dataplane resource is still supported but it's considered deprecated and will be removed in the next major version of Kuma
+
+
+3. Since ZoneIngress resource is not bound to a Mesh, it requires another token type that is bound to a Zone:
+   
+    ```shell
+    kumactl generate zone-ingress-token --zone=zone-1 > /tmp/zone-ingress-token
+    ```
+
+4. `kuma-dp run` command should be updated with a new flag `--proxy-type=ingress`:
+
+    ```sh
+    kuma-dp run \
+      --proxy-type=ingress \
+      --dataplane-token-file=/tmp/zone-ingress-token \
+      --dataplane-file=zone-ingress.yaml
+    ```
+
+
 ## Upgrade to `1.1.0`
 
 The major change in this release is the migration to XDSv3 for the `kuma-cp` to `envoy` data plane proxy communication. The

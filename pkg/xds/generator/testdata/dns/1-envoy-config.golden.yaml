@@ -29,7 +29,13 @@ resources:
                 addressList:
                   address:
                   - 240.0.0.0
-              name: backend.mesh
+              name: backend.test-ns.svc.8080.mesh
+            - answerTtl: 30s
+              endpoint:
+                addressList:
+                  address:
+                  - 240.0.0.0
+              name: backend_test-ns_svc_8080.mesh
             - answerTtl: 30s
               endpoint:
                 addressList:

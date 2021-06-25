@@ -122,17 +122,24 @@ func (d *TrafficRouteResource) validateModificationHeaders(
 	headers *mesh_proto.TrafficRoute_Http_Modify_Headers,
 ) (err validators.ValidationError) {
 	for i, add := range headers.GetAdd() {
-		if add.GetName() == "" {
-			err.AddViolationAt(pathBuilder.Field("add").Index(i).Field("name"), "cannot be empty")
-		}
+		err.Add(validateHeaderName(pathBuilder.Field("add").Index(i).Field("name"), add.GetName()))
 		if add.GetValue() == "" {
 			err.AddViolationAt(pathBuilder.Field("add").Index(i).Field("value"), "cannot be empty")
 		}
 	}
 	for i, remove := range headers.GetRemove() {
-		if remove.GetName() == "" {
-			err.AddViolationAt(pathBuilder.Field("add").Index(i).Field("remove"), "cannot be empty")
-		}
+		err.Add(validateHeaderName(pathBuilder.Field("remove").Index(i).Field("name"), remove.GetName()))
+	}
+	return
+}
+
+func validateHeaderName(pathBuilder validators.PathBuilder, headerName string) (err validators.ValidationError) {
+	if headerName == "" {
+		err.AddViolationAt(pathBuilder, "cannot be empty")
+		return
+	}
+	if headerName[0] == ':' || headerName == "host" || headerName == "Host" {
+		err.AddViolationAt(pathBuilder, "host header and HTTP/2 pseudo-headers are not allowed to be modified")
 	}
 	return
 }

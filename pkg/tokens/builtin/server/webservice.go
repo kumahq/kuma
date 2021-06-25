@@ -5,6 +5,8 @@ import (
 
 	"github.com/emicklei/go-restful"
 
+	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/rest/errors"
@@ -15,27 +17,31 @@ import (
 
 var log = core.Log.WithName("dataplane-token-ws")
 
-type dataplaneTokenWebService struct {
-	issuer issuer.DataplaneTokenIssuer
+type tokenWebService struct {
+	issuer            issuer.DataplaneTokenIssuer
+	zoneIngressIssuer zoneingress.TokenIssuer
 }
 
-func NewWebservice(issuer issuer.DataplaneTokenIssuer) *restful.WebService {
-	ws := dataplaneTokenWebService{
-		issuer: issuer,
+func NewWebservice(issuer issuer.DataplaneTokenIssuer, zoneIngressIssuer zoneingress.TokenIssuer) *restful.WebService {
+	ws := tokenWebService{
+		issuer:            issuer,
+		zoneIngressIssuer: zoneIngressIssuer,
 	}
 	return ws.createWs()
 }
 
-func (d *dataplaneTokenWebService) createWs() *restful.WebService {
+func (d *tokenWebService) createWs() *restful.WebService {
 	ws := new(restful.WebService).
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
 	ws.Path("/tokens").
-		Route(ws.POST("").To(d.handleIdentityRequest))
+		Route(ws.POST("").To(d.handleIdentityRequest)). // backwards compatibility
+		Route(ws.POST("/dataplane").To(d.handleIdentityRequest)).
+		Route(ws.POST("/zone-ingress").To(d.handleZoneIngressIdentityRequest))
 	return ws
 }
 
-func (d *dataplaneTokenWebService) handleIdentityRequest(request *restful.Request, response *restful.Response) {
+func (d *tokenWebService) handleIdentityRequest(request *restful.Request, response *restful.Response) {
 	idReq := types.DataplaneTokenRequest{}
 	if err := request.ReadEntity(&idReq); err != nil {
 		log.Error(err, "Could not read a request")
@@ -53,7 +59,7 @@ func (d *dataplaneTokenWebService) handleIdentityRequest(request *restful.Reques
 	token, err := d.issuer.Generate(issuer.DataplaneIdentity{
 		Mesh: idReq.Mesh,
 		Name: idReq.Name,
-		Type: idReq.Type,
+		Type: mesh_proto.ProxyType(idReq.Type),
 		Tags: mesh_proto.MultiValueTagSetFrom(idReq.Tags),
 	})
 	if err != nil {
@@ -63,6 +69,28 @@ func (d *dataplaneTokenWebService) handleIdentityRequest(request *restful.Reques
 
 	response.Header().Set("content-type", "text/plain")
 	if _, err := response.Write([]byte(token)); err != nil {
-		log.Error(err, "Could write a response")
+		log.Error(err, "Could not write a response")
+	}
+}
+
+func (d *tokenWebService) handleZoneIngressIdentityRequest(request *restful.Request, response *restful.Response) {
+	idReq := types.ZoneIngressTokenRequest{}
+	if err := request.ReadEntity(&idReq); err != nil {
+		log.Error(err, "Could not read a request")
+		response.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	token, err := d.zoneIngressIssuer.Generate(zoneingress.Identity{
+		Zone: idReq.Zone,
+	})
+	if err != nil {
+		errors.HandleError(response, err, "Could not issue a token")
+		return
+	}
+
+	response.Header().Set("content-type", "text/plain")
+	if _, err := response.Write([]byte(token)); err != nil {
+		log.Error(err, "Could not write a response")
 	}
 }

@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "mesh/options.proto";
+import "mesh/v1alpha1/metrics.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/wrappers.proto";
+import "validate/validate.proto";
+
+// ZoneIngress allows us to configure dataplane in the Ingress mode. In this
+// mode, dataplane has only inbound interfaces. Every inbound interface matches
+// with services that reside in that cluster.
+message ZoneIngress {
+
+  option (kuma.mesh.resource).name = "ZoneIngressResource";
+  option (kuma.mesh.resource).type = "ZoneIngress";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).package = "mesh";
+
+  // Zone field contains Zone name where ingress is serving, field will be
+  // automatically set by Global Kuma CP
+  string zone = 1;
+
+  message Networking {
+    // Address on which inbound listener will be exposed
+    string address = 1;
+
+    // AdvertisedAddress defines IP or DNS name on which ZoneIngress is
+    // accessible to other Kuma clusters.
+    string advertisedAddress = 2;
+
+    // Port of the inbound interface that will forward requests to the service.
+    uint32 port = 3;
+
+    // AdvertisedPort defines port on which ZoneIngress is accessible to other
+    // Kuma clusters.
+    uint32 advertisedPort = 4;
+  }
+
+  // Networking defines the address and port of the Ingress to listen on.
+  // Additionally publicly advertised address and port could be specified.
+  Networking networking = 2;
+
+  message AvailableService {
+    // tags of the service
+    map<string, string> tags = 1;
+    // number of instances available for given tags
+    uint32 instances = 2;
+    // mesh of the instances available for given tags
+    string mesh = 3;
+  }
+
+  // AvailableService contains tags that represent unique subset of
+  // endpoints
+  repeated AvailableService availableServices = 3;
+}

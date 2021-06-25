@@ -7,6 +7,7 @@ import (
 	kube_core "k8s.io/api/core/v1"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+
 	"github.com/kumahq/kuma/pkg/plugins/runtime/k8s/metadata"
 )
 
@@ -21,7 +22,7 @@ var NodePortAddressPriority = []kube_core.NodeAddressType{
 	kube_core.NodeInternalIP,
 }
 
-func (p *PodConverter) IngressFor(dp *mesh_proto.Dataplane, pod *kube_core.Pod, services []*kube_core.Service) error {
+func (p *PodConverter) IngressFor(zoneIngress *mesh_proto.ZoneIngress, pod *kube_core.Pod, services []*kube_core.Service) error {
 	if len(services) != 1 {
 		return errors.Errorf("ingress should be matched by exactly one service. Matched %d services", len(services))
 	}
@@ -32,15 +33,15 @@ func (p *PodConverter) IngressFor(dp *mesh_proto.Dataplane, pod *kube_core.Pod, 
 	if len(ifaces) != 1 {
 		return errors.Errorf("generated %d inbound interfaces, expected 1. Interfaces: %v", len(ifaces), ifaces)
 	}
-	if dp.Networking == nil {
-		dp.Networking = &mesh_proto.Dataplane_Networking{
-			Ingress: &mesh_proto.Dataplane_Networking_Ingress{},
-		}
-	}
-	dp.Networking.Inbound = ifaces
-	dp.Networking.Address = pod.Status.PodIP
 
-	coords, err := p.coordinatesFromAnnotations(metadata.Annotations(pod.Annotations))
+	if zoneIngress.Networking == nil {
+		zoneIngress.Networking = &mesh_proto.ZoneIngress_Networking{}
+	}
+
+	zoneIngress.Networking.Address = pod.Status.PodIP
+	zoneIngress.Networking.Port = ifaces[0].Port
+
+	coords, err := p.coordinatesFromAnnotations(pod.Annotations)
 	if err != nil {
 		return err
 	}
@@ -53,8 +54,8 @@ func (p *PodConverter) IngressFor(dp *mesh_proto.Dataplane, pod *kube_core.Pod, 
 	}
 
 	if coords != nil {
-		dp.Networking.Ingress.PublicAddress = coords.address
-		dp.Networking.Ingress.PublicPort = coords.port
+		zoneIngress.Networking.AdvertisedAddress = coords.address
+		zoneIngress.Networking.AdvertisedPort = coords.port
 	}
 	return nil
 }

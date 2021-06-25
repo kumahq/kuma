@@ -191,6 +191,8 @@ func (o OutboundProxyGenerator) generateCDS(ctx xds_context.Context, proxy *mode
 						proxy.Dataplane.IsIPv6())).
 					Configure(envoy_clusters.ClientSideTLS(proxy.Routing.OutboundTargets[serviceName]))
 				switch protocol {
+				case mesh_core.ProtocolHTTP:
+					edsClusterBuilder.Configure(envoy_clusters.Http())
 				case mesh_core.ProtocolHTTP2, mesh_core.ProtocolGRPC:
 					edsClusterBuilder.Configure(envoy_clusters.Http2())
 				default:
@@ -226,7 +228,7 @@ func (_ OutboundProxyGenerator) generateEDS(ctx xds_context.Context, services en
 			for _, cluster := range services[serviceName].Clusters() {
 				loadAssignment, err := ctx.ControlPlane.CLACache.GetCLA(context.Background(), ctx.Mesh.Resource.Meta.GetName(), ctx.Mesh.Hash, cluster, apiVersion)
 				if err != nil {
-					return nil, errors.Wrapf(err, "could not get ClusterLoadAssingment for %s", serviceName)
+					return nil, errors.Wrapf(err, "could not get ClusterLoadAssignment for %s", serviceName)
 				}
 				resources.Add(&model.Resource{
 					Name:     cluster.Name(),

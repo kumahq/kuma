@@ -33,6 +33,31 @@ metadata:
 `, namespace)
 	}
 
+	trafficRoutePolicy := func(namespace string, policyname string, weight int) string {
+		return fmt.Sprintf(`
+apiVersion: kuma.io/v1alpha1
+kind: TrafficRoute
+mesh: default
+metadata:
+  namespace: %s
+  name: %s
+spec:
+  sources:
+    - match:
+        kuma.io/service: '*'
+  destinations:
+    - match:
+        kuma.io/service: '*'
+  conf:
+    loadBalancer:
+      roundRobin: {}
+    split:
+      - weight: %d
+        destination:
+          kuma.io/service: '*'
+`, namespace, policyname, weight)
+	}
+
 	var clusters Clusters
 	var c1, c2 Cluster
 	var global, zone ControlPlane
@@ -65,7 +90,6 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone...)).
-			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
 			Install(EchoServerK8s("default")).
@@ -151,5 +175,31 @@ metadata:
 			Expect(err).ToNot(HaveOccurred())
 			return output
 		}, "5s", "500ms").Should(ContainSubstring("kuma-2-zone.demo-client"))
+
+		policy_create := trafficRoutePolicy(KumaNamespace, "traffic-default", 100)
+		policy_update := trafficRoutePolicy(KumaNamespace, "traffic-default", 101)
+
+		// Deny policy CREATE on zone
+		err := k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)
+		Expect(err.Error()).To(ContainSubstring("should be only applied on global"))
+
+		// Accept policy CREATE on global
+		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_create)
+		Expect(err).ToNot(HaveOccurred())
+
+		// TrafficRoute synced to zone
+		Eventually(func() string {
+			output, err := k8s.RunKubectlAndGetOutputE(c2.GetTesting(), c2.GetKubectlOptions("default"), "get", "TrafficRoute")
+			Expect(err).ToNot(HaveOccurred())
+			return output
+		}, "5s", "500ms").Should(ContainSubstring("traffic-default"))
+
+		// Deny policy UPDATE on zone
+		err = k8s.KubectlApplyFromStringE(c2.GetTesting(), c2.GetKubectlOptions(), policy_update)
+		Expect(err.Error()).To(ContainSubstring("should be only applied on global"))
+
+		// Accept policy UPDATE on global
+		err = k8s.KubectlApplyFromStringE(c1.GetTesting(), c1.GetKubectlOptions(), policy_update)
+		Expect(err).ToNot(HaveOccurred())
 	})
 }

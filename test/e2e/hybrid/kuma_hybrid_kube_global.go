@@ -42,19 +42,19 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("default", "ingress")
-		Expect(err).ToNot(HaveOccurred())
 
 		// Zone
 		zoneCluster = universalClusters.GetCluster(Kuma3)
 		optsZone = append(optsZone,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZone...)).
 			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)).
-			Install(IngressUniversal("default", ingressToken)).
+			Install(IngressUniversal(ingressTokenKuma3)).
 			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = zoneCluster.VerifyKuma()

@@ -574,20 +574,6 @@ subjects:
 apiVersion: v1
 kind: Service
 metadata:
-  name: kong-validation-webhook
-  namespace: kuma-gateway
-spec:
-  ports:
-  - name: webhook
-    port: 443
-    protocol: TCP
-    targetPort: 8080
-  selector:
-    app: ingress-kong
----
-apiVersion: v1
-kind: Service
-metadata:
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
     service.beta.kubernetes.io/aws-load-balancer-type: nlb
@@ -649,7 +635,7 @@ spec:
           value: /dev/stderr
         - name: KONG_PROXY_ERROR_LOG
           value: /dev/stderr
-        image: kong:2.3
+        image: kong:2.4
         lifecycle:
           preStop:
             exec:
@@ -705,7 +691,7 @@ spec:
             fieldRef:
               apiVersion: v1
               fieldPath: metadata.namespace
-        image: kong/kubernetes-ingress-controller:1.2
+        image: kong/kubernetes-ingress-controller:1.3
         imagePullPolicy: IfNotPresent
         livenessProbe:
           failureThreshold: 3

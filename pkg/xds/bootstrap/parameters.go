@@ -28,4 +28,5 @@ type configParameters struct {
 	DynamicMetadata    map[string]string
 	DNSPort            uint32
 	EmptyDNSPort       uint32
+	ProxyType          string
 }

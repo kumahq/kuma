@@ -173,7 +173,14 @@ func (c *UniversalCluster) DeleteNamespace(namespace string) error {
 func (c *UniversalCluster) CreateDP(app *UniversalApp, appname, ip, dpyaml, token string, builtindns bool) error {
 	cpIp := c.apps[AppModeCP].ip
 	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
-	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns)
+	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns, false)
+	return app.dpApp.Start()
+}
+
+func (c *UniversalCluster) CreateZoneIngress(app *UniversalApp, appname, ip, dpyaml, token string, builtindns bool) error {
+	cpIp := c.apps[AppModeCP].ip
+	cpAddress := "https://" + net.JoinHostPort(cpIp, "5678")
+	app.CreateDP(token, cpAddress, appname, ip, dpyaml, builtindns, true)
 	return app.dpApp.Start()
 }
 
@@ -200,8 +207,9 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		return err
 	}
 
+	builtindns := opts.builtindns == nil || *opts.builtindns
 	if transparent {
-		app.setupTransparent(c.apps[AppModeCP].ip, opts.builtindns)
+		app.setupTransparent(c.apps[AppModeCP].ip, builtindns)
 	}
 
 	ip := app.ip
@@ -212,7 +220,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		}
 	}
 
-	err = c.CreateDP(app, opts.name, ip, dpyaml, token, opts.builtindns)
+	err = c.CreateDP(app, opts.name, ip, dpyaml, token, builtindns)
 	if err != nil {
 		return err
 	}

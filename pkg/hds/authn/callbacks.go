@@ -148,7 +148,7 @@ func (a *authn) authenticate(credential xds_auth.Credential, nodeID string) erro
 	backoff, _ := retry.NewConstant(a.dpNotFoundRetry.Backoff)
 	backoff = retry.WithMaxRetries(uint64(a.dpNotFoundRetry.MaxTimes), backoff)
 	err = retry.Do(context.Background(), backoff, func(ctx context.Context) error {
-		err := a.resManager.Get(context.Background(), dataplane, core_store.GetByKey(proxyId.Name, proxyId.Mesh))
+		err := a.resManager.Get(context.Background(), dataplane, core_store.GetBy(proxyId.ToResourceKey()))
 		if core_store.IsResourceNotFound(err) {
 			return retry.RetryableError(errors.New("dataplane not found. Create Dataplane in Kuma CP first or pass it as an argument to kuma-dp"))
 		}

@@ -30,10 +30,8 @@ type reconciler struct {
 }
 
 func (r *reconciler) Clear(proxyId *model.ProxyId) error {
-	// cache.Clear() operation does not push a new (empty) configuration to Envoy.
-	// That is why instead of calling cache.Clear() we set configuration to an empty Snapshot.
-	// This fake value will be removed from cache on Envoy disconnect.
-	return r.cacher.Cache(&envoy_core.Node{Id: proxyId.String()}, envoy_cache.Snapshot{})
+	r.cacher.Clear(&envoy_core.Node{Id: proxyId.String()})
+	return nil
 }
 
 func (r *reconciler) Reconcile(ctx xds_context.Context, proxy *model.Proxy) error {

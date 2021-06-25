@@ -11785,7 +11785,7 @@ spec:
       serviceAccountName: prometheus-node-exporter
       containers:
         - name: prometheus-node-exporter
-          image: "prom/node-exporter:v1.1.1"
+          image: "prom/node-exporter:v1.1.2"
           imagePullPolicy: "IfNotPresent"
           args:
             - --path.procfs=/host/proc
@@ -11843,7 +11843,7 @@ spec:
         runAsUser: 472
       containers:
         - name: grafana
-          image: "grafana/grafana:7.4.3"
+          image: "grafana/grafana:7.5.8"
           imagePullPolicy: IfNotPresent
           volumeMounts:
             - name: config
@@ -12003,7 +12003,7 @@ spec:
       serviceAccountName: prometheus-kube-state-metrics
       containers:
         - name: prometheus-kube-state-metrics
-          image: "quay.io/coreos/kube-state-metrics:v1.9.7"
+          image: "quay.io/coreos/kube-state-metrics:v1.9.8"
           imagePullPolicy: "IfNotPresent"
           ports:
             - name: metrics
@@ -12038,7 +12038,7 @@ spec:
       serviceAccountName: prometheus-pushgateway
       containers:
         - name: prometheus-pushgateway
-          image: "prom/pushgateway:v1.4.0"
+          image: "prom/pushgateway:v1.4.1"
           imagePullPolicy: "IfNotPresent"
           args:
           ports:
@@ -12085,7 +12085,7 @@ spec:
               mountPath: /etc/config
               readOnly: true
         - name: prometheus-server
-          image: "prom/prometheus:v2.25.0"
+          image: "prom/prometheus:v2.27.1"
           imagePullPolicy: "IfNotPresent"
           args:
             - --storage.tsdb.retention.time=15d

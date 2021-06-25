@@ -3,6 +3,8 @@ package sync
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/core/ratelimits"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -31,6 +33,7 @@ type DataplaneProxyBuilder struct {
 	PermissionMatcher     permissions.TrafficPermissionsMatcher
 	LogsMatcher           logs.TrafficLogsMatcher
 	FaultInjectionMatcher faultinjections.FaultInjectionMatcher
+	RateLimitMatcher      ratelimits.RateLimitMatcher
 
 	Zone       string
 	apiVersion envoy.APIVersion
@@ -92,6 +95,11 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 		return nil, nil, err
 	}
 
+	zoneIngresses, err := xds_topology.GetZoneIngresses(syncLog, ctx, p.CachingResManager, p.LookupIP)
+	if err != nil {
+		return nil, nil, err
+	}
+
 	matchedExternalServices, err := p.PermissionMatcher.MatchExternalServices(ctx, dataplane, externalServices)
 	if err != nil {
 		return nil, nil, err
@@ -107,7 +115,7 @@ func (p *DataplaneProxyBuilder) resolveRouting(
 	destinations := xds_topology.BuildDestinationMap(dataplane, routes)
 
 	// resolve all endpoints that match given selectors
-	outbound := xds_topology.BuildEndpointMap(meshContext.Resource, p.Zone, meshContext.Dataplanes.Items, matchedExternalServices, p.DataSourceLoader)
+	outbound := xds_topology.BuildEndpointMap(meshContext.Resource, p.Zone, meshContext.Dataplanes.Items, zoneIngresses.Items, matchedExternalServices, p.DataSourceLoader)
 
 	routing := &xds.Routing{
 		TrafficRoutes:   routes,
@@ -161,6 +169,11 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		return nil, err
 	}
 
+	ratelimits, err := p.RateLimitMatcher.Match(ctx, dataplane, meshContext.Resource)
+	if err != nil {
+		return nil, err
+	}
+
 	matchedPolicies := &xds.MatchedPolicies{
 		TrafficPermissions: matchedPermissions,
 		Logs:               matchedLogs,
@@ -171,6 +184,7 @@ func (p *DataplaneProxyBuilder) matchPolicies(ctx context.Context, meshContext *
 		FaultInjections:    faultInjection,
 		Retries:            retries,
 		Timeouts:           timeouts,
+		RateLimits:         ratelimits,
 	}
 	return matchedPolicies, nil
 }

@@ -13,9 +13,9 @@ type generateDataplaneTokenContext struct {
 	*kumactl_cmd.RootContext
 
 	args struct {
-		name   string
-		dpType string
-		tags   map[string]string
+		name      string
+		proxyType string
+		tags      map[string]string
 	}
 }
 
@@ -49,7 +49,7 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 				tags[k] = strings.Split(v, ",")
 			}
 			name := ctx.args.name
-			token, err := client.Generate(name, pctx.Args.Mesh, tags, ctx.args.dpType)
+			token, err := client.Generate(name, pctx.Args.Mesh, tags, ctx.args.proxyType)
 			if err != nil {
 				return errors.Wrap(err, "failed to generate a dataplane token")
 			}
@@ -58,7 +58,9 @@ $ kumactl generate dataplane-token --mesh demo --tag kuma.io/service=web,web-api
 		},
 	}
 	cmd.Flags().StringVar(&ctx.args.name, "name", "", "name of the Dataplane")
-	cmd.Flags().StringVar(&ctx.args.dpType, "type", "", `type of the Dataplane ("dataplane", "ingress")`)
+	cmd.Flags().StringVar(&ctx.args.proxyType, "type", "", `type of the Dataplane ("dataplane", "ingress")`)
+	_ = cmd.Flags().MarkDeprecated("type", "please use --proxyType instead")
+	cmd.Flags().StringVar(&ctx.args.proxyType, "proxy-type", "", `type of the Dataplane ("dataplane", "ingress")`)
 	cmd.Flags().StringToStringVar(&ctx.args.tags, "tag", nil, "required tag values for dataplane (split values by comma to provide multiple values)")
 	return cmd
 }

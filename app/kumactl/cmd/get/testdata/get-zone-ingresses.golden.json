@@ -1,0 +1,71 @@
+{
+  "total": 2,
+  "items": [
+    {
+      "type": "ZoneIngress",
+      "name": "ingress-zone-1",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "networking": {
+        "address": "1.1.1.1",
+        "advertisedAddress": "2.2.2.2",
+        "port": 10001,
+        "advertisedPort": 20002
+      },
+      "availableServices": [
+        {
+          "tags": {
+            "kuma.io/service": "svc-1"
+          },
+          "mesh": "mesh-1"
+        },
+        {
+          "tags": {
+            "kuma.io/service": "svc-2"
+          },
+          "mesh": "mesh-2"
+        },
+        {
+          "tags": {
+            "kuma.io/service": "svc-3"
+          },
+          "mesh": "mesh-3"
+        }
+      ]
+    },
+    {
+      "type": "ZoneIngress",
+      "name": "ingress-zone-2",
+      "creationTime": "0001-01-01T00:00:00Z",
+      "modificationTime": "0001-01-01T00:00:00Z",
+      "zone": "us-east",
+      "networking": {
+        "address": "3.3.3.3",
+        "advertisedAddress": "4.4.4.4",
+        "port": 30003,
+        "advertisedPort": 40004
+      },
+      "availableServices": [
+        {
+          "tags": {
+            "kuma.io/service": "svc-2"
+          },
+          "mesh": "mesh-3"
+        },
+        {
+          "tags": {
+            "kuma.io/service": "svc-3"
+          },
+          "mesh": "mesh-4"
+        },
+        {
+          "tags": {
+            "kuma.io/service": "svc-4"
+          },
+          "mesh": "mesh-5"
+        }
+      ]
+    }
+  ],
+  "next": null
+}

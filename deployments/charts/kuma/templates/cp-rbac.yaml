@@ -50,9 +50,11 @@ rules:
       - meshes
       - zones
       - zoneinsights
+      - zoneingresses
       - meshinsights
       - serviceinsights
       - proxytemplates
+      - ratelimits
       - trafficpermissions
       - trafficroutes
       - timeouts

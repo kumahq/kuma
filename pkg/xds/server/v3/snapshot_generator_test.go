@@ -67,7 +67,7 @@ var _ = Describe("Reconcile", func() {
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 
 			proxy := &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.web1"},
+				Id:         *model.BuildProxyId("", "demo.web1"),
 				APIVersion: envoy_common.APIV3,
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{

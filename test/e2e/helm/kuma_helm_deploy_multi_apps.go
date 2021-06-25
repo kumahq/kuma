@@ -63,7 +63,6 @@ metadata:
 
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
-			Install(KumaDNS()).
 			Install(YamlK8s(defaultMesh)).
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
@@ -110,6 +109,12 @@ metadata:
 		Eventually(func() (string, error) {
 			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_80.mesh")
+			return stderr, err
+		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
+
+		Eventually(func() (string, error) { // should access a service with . instead of _
+			_, stderr, err := cluster.ExecWithRetries(TestNamespace, clientPod.GetName(), "demo-client",
+				"curl", "-v", "-m", "3", "--fail", "echo-server.kuma-test.svc.80.mesh")
 			return stderr, err
 		}, "10s", "1s").Should(ContainSubstring("HTTP/1.1 200 OK"))
 	})

@@ -8,11 +8,13 @@ controlPlane:
 dataplane:
   drainTime: 30s
   bootstrapVersion: ""
+  proxyType: dataplane
 dataplaneRuntime:
   binaryPath: envoy
 dns:
   coreDnsBinaryPath: coredns
   coreDnsEmptyPort: 15055
   coreDnsPort: 15053
+  enabled: true
   envoyDnsPort: 15054
   prometheusPort: 19153
