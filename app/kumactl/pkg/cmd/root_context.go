@@ -194,7 +194,6 @@ func (rc *RootContext) CurrentZoneIngressOverviewClient() (kumactl_resources.Zon
 	return rc.Runtime.NewZoneIngressOverviewClient(controlPlane.Coordinates.ApiServer)
 }
 
-
 func (rc *RootContext) CurrentServiceOverviewClient() (kumactl_resources.ServiceOverviewClient, error) {
 	controlPlane, err := rc.CurrentControlPlane()
 	if err != nil {

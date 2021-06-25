@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"regexp"
 
-	"github.com/kumahq/kuma/pkg/config/core"
 	"github.com/pkg/errors"
+
+	"github.com/kumahq/kuma/pkg/config/core"
 
 	"github.com/gruntwork-io/terratest/modules/k8s"
 	. "github.com/onsi/ginkgo"
@@ -193,7 +194,7 @@ metadata:
 		}, "30s", "1s").ShouldNot(HaveOccurred())
 
 		// todo (lobkovilya): echo-server is restarting because of ncat problem, uncomment this as soon as it will be replaces with test-server
-		//Eventually(func() error {
+		// Eventually(func() error {
 		//	output, err := global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "dataplanes", "--mesh", "non-default")
 		//	if err != nil {
 		//		return err
@@ -204,7 +205,7 @@ metadata:
 		//		return errors.New("not all dataplanes are online")
 		//	}
 		//	return nil
-		//}, "30s", "1s").ShouldNot(HaveOccurred())
+		// }, "30s", "1s").ShouldNot(HaveOccurred())
 	})
 
 	It("should access allservices", func() {
