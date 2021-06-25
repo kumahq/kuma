@@ -67,7 +67,6 @@ metadata:
 		zoneK8s = k8sClusters.GetCluster(Kuma2)
 		err = NewClusterSetup().
 			Install(Kuma(core.Zone, optsZoneK8s...)).
-			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
 			Setup(zoneK8s)
