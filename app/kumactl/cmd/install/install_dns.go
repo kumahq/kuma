@@ -51,7 +51,7 @@ func newInstallDNS() *cobra.Command {
 		Long: `Install the DNS forwarding to the CoreDNS ConfigMap in the configured Kubernetes Cluster.
 This command requires that the KUBECONFIG environment is set`,
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			kubeClientConfig, err := k8s.DefaultClientConfig()
+			kubeClientConfig, err := k8s.DefaultClientConfig("", "")
 			if err != nil {
 				return errors.Wrap(err, "could not detect Kubernetes configuration")
 			}
