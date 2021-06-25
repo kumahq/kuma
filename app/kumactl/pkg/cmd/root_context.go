@@ -25,15 +25,16 @@ type RootArgs struct {
 }
 
 type RootRuntime struct {
-	Config                     config_proto.Configuration
-	Now                        func() time.Time
-	NewResourceStore           func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
-	NewDataplaneOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
-	NewZoneOverviewClient      func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ZoneOverviewClient, error)
-	NewServiceOverviewClient   func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ServiceOverviewClient, error)
-	NewDataplaneTokenClient    func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error)
-	NewZoneIngressTokenClient  func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.ZoneIngressTokenClient, error)
-	NewAPIServerClient         func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
+	Config                       config_proto.Configuration
+	Now                          func() time.Time
+	NewResourceStore             func(*config_proto.ControlPlaneCoordinates_ApiServer) (core_store.ResourceStore, error)
+	NewDataplaneOverviewClient   func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.DataplaneOverviewClient, error)
+	NewZoneIngressOverviewClient func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ZoneIngressOverviewClient, error)
+	NewZoneOverviewClient        func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ZoneOverviewClient, error)
+	NewServiceOverviewClient     func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ServiceOverviewClient, error)
+	NewDataplaneTokenClient      func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.DataplaneTokenClient, error)
+	NewZoneIngressTokenClient    func(*config_proto.ControlPlaneCoordinates_ApiServer) (tokens.ZoneIngressTokenClient, error)
+	NewAPIServerClient           func(*config_proto.ControlPlaneCoordinates_ApiServer) (kumactl_resources.ApiServerClient, error)
 }
 
 // RootContext contains variables, functions and components that can be overridden when extending kumactl or running the test.
@@ -61,14 +62,15 @@ type RootContext struct {
 func DefaultRootContext() *RootContext {
 	return &RootContext{
 		Runtime: RootRuntime{
-			Now:                        time.Now,
-			NewResourceStore:           kumactl_resources.NewResourceStore,
-			NewDataplaneOverviewClient: kumactl_resources.NewDataplaneOverviewClient,
-			NewZoneOverviewClient:      kumactl_resources.NewZoneOverviewClient,
-			NewServiceOverviewClient:   kumactl_resources.NewServiceOverviewClient,
-			NewDataplaneTokenClient:    tokens.NewDataplaneTokenClient,
-			NewZoneIngressTokenClient:  tokens.NewZoneIngressTokenClient,
-			NewAPIServerClient:         kumactl_resources.NewAPIServerClient,
+			Now:                          time.Now,
+			NewResourceStore:             kumactl_resources.NewResourceStore,
+			NewDataplaneOverviewClient:   kumactl_resources.NewDataplaneOverviewClient,
+			NewZoneIngressOverviewClient: kumactl_resources.NewZoneIngressOverviewClient,
+			NewZoneOverviewClient:        kumactl_resources.NewZoneOverviewClient,
+			NewServiceOverviewClient:     kumactl_resources.NewServiceOverviewClient,
+			NewDataplaneTokenClient:      tokens.NewDataplaneTokenClient,
+			NewZoneIngressTokenClient:    tokens.NewZoneIngressTokenClient,
+			NewAPIServerClient:           kumactl_resources.NewAPIServerClient,
 		},
 		TypeArgs: map[string]core_model.ResourceType{
 			"circuit-breaker":    core_mesh.CircuitBreakerType,
@@ -183,6 +185,15 @@ func (rc *RootContext) CurrentZoneOverviewClient() (kumactl_resources.ZoneOvervi
 	}
 	return rc.Runtime.NewZoneOverviewClient(controlPlane.Coordinates.ApiServer)
 }
+
+func (rc *RootContext) CurrentZoneIngressOverviewClient() (kumactl_resources.ZoneIngressOverviewClient, error) {
+	controlPlane, err := rc.CurrentControlPlane()
+	if err != nil {
+		return nil, err
+	}
+	return rc.Runtime.NewZoneIngressOverviewClient(controlPlane.Coordinates.ApiServer)
+}
+
 
 func (rc *RootContext) CurrentServiceOverviewClient() (kumactl_resources.ServiceOverviewClient, error) {
 	controlPlane, err := rc.CurrentControlPlane()
