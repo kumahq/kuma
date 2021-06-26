@@ -138,10 +138,11 @@ var _ = Describe("InboundProxyGenerator", func() {
 					},
 					RateLimits: model.RateLimitsMap{
 						mesh_proto.InboundInterface{
-							DataplaneIP:   "192.168.0.1",
-							DataplanePort: 80,
-							WorkloadIP:    "127.0.0.1",
-							WorkloadPort:  8080,
+							DataplaneAdvertisedIP: "192.168.0.1",
+							DataplaneIP:           "192.168.0.1",
+							DataplanePort:         80,
+							WorkloadIP:            "127.0.0.1",
+							WorkloadPort:          8080,
 						}: []*mesh_proto.RateLimit{
 							{
 								Sources: []*mesh_proto.Selector{
