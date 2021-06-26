@@ -1,28 +1,21 @@
 function envoy_on_request(request_handle)
-    xfcc = request_handle:headers():get("x-forwarded-client-cert")
+    if request_handle:connection():ssl() and request_handle:streamInfo():downstreamSslConnection() then
+        local cert_uris = request_handle:streamInfo():downstreamSslConnection():uriSanPeerCertificate()
+        for _, uri in pairs(cert_uris) do
+            if uri:find("^spiffe://") ~= nil then
+                request_handle:headers():add("X-Kuma-Forwarded-Client-Cert", uri)
+            end
 
-    if xfcc == nil or xfcc == '' then
-        return
-    end
+            local service = uri:match("^kuma://kuma.io/service/(.+)$")
+            if service ~= nil and service ~= '' then
+                request_handle:headers():add("X-Kuma-Forwarded-Client-Service", service)
+            end
 
-    spiffe = nil
-    service = nil
-
-    for str in string.gmatch(xfcc, "([^;]+)") do
-        uri_match_result = str:match("URI=(%S+)")
-        if uri_match_result ~= nil then
-            spiffe = uri_match_result
-            mesh = spiffe:match("spiffe://(%S+)/")
-            service = spiffe:match("spiffe://" .. mesh .. "/(%S+)")
+            local zone = uri:match("^kuma://kuma.io/zone/(.+)$")
+            if zone ~= nil and zone ~= '' then
+                request_handle:headers():add("X-Kuma-Forwarded-Client-Zone", zone)
+            end
         end
-    end
-
-    if spiffe ~= nil then
-        request_handle:headers():add("X-Kuma-Forwarded-Client-Cert", spiffe)
-    end
-
-    if service ~= nil then
-        request_handle:headers():add("X-Kuma-Forwarded-Client-Service", service)
     end
 end
 
