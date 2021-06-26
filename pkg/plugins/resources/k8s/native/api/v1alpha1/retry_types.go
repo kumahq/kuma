@@ -16,21 +16,26 @@ limitations under the License.
 
 package v1alpha1
 
-import metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+import (
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-// RetrySpec defined the desired state of Retry
-type RetrySpec = map[string]interface{}
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
+)
 
-// Retry is the Schema for the retry API
+// Retry is the Schema for the Retry API.
+//
+// +kubebuilder:object:root=true
 type Retry struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 	Mesh              string `json:"mesh,omitempty"`
 
-	Spec RetrySpec `json:"spec,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// RetryList contains a list of Retry
+// RetryList contains a list of Retries.
+//
+// +kubebuilder:object:root=true
 type RetryList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`

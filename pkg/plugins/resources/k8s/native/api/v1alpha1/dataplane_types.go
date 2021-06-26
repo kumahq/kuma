@@ -18,21 +18,24 @@ package v1alpha1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s/native/pkg/model"
 )
 
-// DataplaneSpec defines the desired state of Dataplane
-type DataplaneSpec = map[string]interface{}
-
-// Dataplane is the Schema for the Dataplane API
+// Dataplane is the Schema for the Dataplane API.
+//
+// +kubebuilder:object:root=true
 type Dataplane struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Mesh string        `json:"mesh,omitempty"`
-	Spec DataplaneSpec `json:"spec,omitempty"`
+	Mesh string           `json:"mesh,omitempty"`
+	Spec model.RawMessage `json:"spec,omitempty"`
 }
 
-// DataplaneList contains a list of Dataplane
+// DataplaneList contains a list of Dataplane.
+//
+// +kubebuilder:object:root=true
 type DataplaneList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
