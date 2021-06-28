@@ -51,6 +51,7 @@ rules:
       - zones
       - zoneinsights
       - zoneingresses
+      - zoneingressinsights
       - meshinsights
       - serviceinsights
       - proxytemplates

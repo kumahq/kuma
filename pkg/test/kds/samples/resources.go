@@ -110,6 +110,11 @@ var (
 			}},
 		},
 	}
+	ZoneIngressInsight = &mesh_proto.ZoneIngressInsight{
+		Subscriptions: []*mesh_proto.DiscoverySubscription{{
+			Id: "1",
+		}},
+	}
 	ExternalService = &mesh_proto.ExternalService{
 		Networking: &mesh_proto.ExternalService_Networking{
 			Address: "192.168.0.1",

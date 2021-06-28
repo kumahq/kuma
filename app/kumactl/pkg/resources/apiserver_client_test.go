@@ -2,6 +2,7 @@ package resources
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -36,7 +37,7 @@ var _ = Describe("httpApiServerClient", func() {
 			}
 
 			// when
-			version, err := client.GetVersion()
+			version, err := client.GetVersion(context.Background())
 			// then
 			Expect(err).ToNot(HaveOccurred())
 			// and
@@ -58,7 +59,7 @@ var _ = Describe("httpApiServerClient", func() {
 			}
 
 			// when
-			_, err := client.GetVersion()
+			_, err := client.GetVersion(context.Background())
 
 			// then
 			Expect(err).To(MatchError("(400): some error from server"))

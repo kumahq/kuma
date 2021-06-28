@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package kuma.mesh.v1alpha1;
+
+option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
+
+import "mesh/v1alpha1/dataplane_insight.proto";
+
+// ZoneIngressInsight defines the observed state of a Zone Ingress.
+message ZoneIngressInsight {
+
+  // List of ADS subscriptions created by a given Zone Kuma CP.
+  repeated DiscoverySubscription subscriptions = 1;
+}

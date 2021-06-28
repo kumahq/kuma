@@ -66,6 +66,7 @@ var _ = Describe("KDS Server", func() {
 			kds_samples.CircuitBreaker,
 			kds_samples.Ingress, // mesh.DataplaneType
 			kds_samples.ZoneIngress,
+			kds_samples.ZoneIngressInsight,
 			kds_samples.DataplaneInsight,
 			kds_samples.ExternalService,
 			kds_samples.FaultInjection,

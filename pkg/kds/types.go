@@ -17,6 +17,7 @@ var (
 		mesh.CircuitBreakerType,
 		mesh.DataplaneType,
 		mesh.ZoneIngressType,
+		mesh.ZoneIngressInsightType,
 		mesh.DataplaneInsightType,
 		mesh.ExternalServiceType,
 		mesh.FaultInjectionType,
