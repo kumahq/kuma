@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 
+	tp_k8s "github.com/kumahq/kuma/pkg/transparentproxy/kubernetes"
+
 	"github.com/pkg/errors"
 	kube_intstr "k8s.io/apimachinery/pkg/util/intstr"
 
@@ -409,26 +411,9 @@ func (i *KumaInjector) FindServiceAccountToken(pod *kube_core.Pod) *kube_core.Vo
 }
 
 func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container, error) {
-	redirectInbound := "true"
-	enabled, exist, err := metadata.Annotations(pod.Annotations).GetEnabled(metadata.KumaGatewayAnnotation)
+	podRedirect, err := tp_k8s.NewPodRedirectForPod(pod)
 	if err != nil {
 		return kube_core.Container{}, err
-	}
-	if exist && enabled {
-		redirectInbound = "false"
-	}
-	excludeInboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeInboundPorts)
-	excludeOutboundPorts, _ := metadata.Annotations(pod.Annotations).GetString(metadata.KumaTrafficExcludeOutboundPorts)
-
-	dnsArg := []string{
-		"--skip-resolv-conf",
-	}
-
-	if i.cfg.BuiltinDNS.Enabled {
-		dnsArg = append(dnsArg,
-			"--redirect-all-dns-traffic",
-			"--redirect-dns-port", strconv.FormatInt(int64(i.cfg.BuiltinDNS.Port), 10),
-		)
 	}
 
 	return kube_core.Container{
@@ -436,23 +421,7 @@ func (i *KumaInjector) NewInitContainer(pod *kube_core.Pod) (kube_core.Container
 		Image:           i.cfg.InitContainer.Image,
 		ImagePullPolicy: kube_core.PullIfNotPresent,
 		Command:         []string{"/usr/bin/kumactl", "install", "transparent-proxy"},
-		Args: append([]string{
-			// changes here shall be reflected in CNI iptables.go
-			"--redirect-outbound-port",
-			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortOutbound),
-			"--redirect-inbound=" + redirectInbound,
-			"--redirect-inbound-port",
-			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
-			"--redirect-inbound-port-v6",
-			fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6),
-			"--kuma-dp-uid",
-			fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
-			"--exclude-inbound-ports",
-			excludeInboundPorts,
-			"--exclude-outbound-ports",
-			excludeOutboundPorts,
-			"--verbose",
-		}, dnsArg...),
+		Args:            podRedirect.AsKumactlCommandLine(),
 		SecurityContext: &kube_core.SecurityContext{
 			RunAsUser:  new(int64), // way to get pointer to int64(0)
 			RunAsGroup: new(int64),
@@ -479,6 +448,7 @@ func (i *KumaInjector) NewAnnotations(pod *kube_core.Pod, mesh *mesh_core.MeshRe
 	annotations := map[string]string{
 		metadata.KumaMeshAnnotation:                             mesh.GetMeta().GetName(), // either user-defined value or default
 		metadata.KumaSidecarInjectedAnnotation:                  fmt.Sprintf("%t", true),
+		metadata.KumaSidecarUID:                                 fmt.Sprintf("%d", i.cfg.SidecarContainer.UID),
 		metadata.KumaTransparentProxyingAnnotation:              metadata.AnnotationEnabled,
 		metadata.KumaTransparentProxyingInboundPortAnnotation:   fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInbound),
 		metadata.KumaTransparentProxyingInboundPortAnnotationV6: fmt.Sprintf("%d", i.cfg.SidecarContainer.RedirectPortInboundV6),
