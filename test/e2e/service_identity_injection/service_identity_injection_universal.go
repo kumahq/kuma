@@ -81,6 +81,6 @@ mtls:
 
 		Expect(response.Received.Headers).To(HaveKeyWithValue("X-Kuma-Forwarded-Client-Cert", []string{"spiffe://default/dp-demo-client"}))
 		Expect(response.Received.Headers).To(HaveKeyWithValue("X-Kuma-Forwarded-Client-Service", []string{"dp-demo-client"}))
-		//Expect(response.Received.Headers).To(HaveKeyWithValue("X-Kuma-Forwarded-Client-Zone", []string{"eu-west-1"}))
+		// Expect(response.Received.Headers).To(HaveKeyWithValue("X-Kuma-Forwarded-Client-Zone", []string{"eu-west-1"}))
 	})
 }
