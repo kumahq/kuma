@@ -69,7 +69,7 @@ networking:
     redirectPortInboundV6: %s
     redirectPortOutbound: %s
 `,
-	mesh, demoClientAppName, demoClientAppZone, RedirectPortInbound, RedirectPortInboundV6, RedirectPortOutbound)
+			mesh, demoClientAppName, demoClientAppZone, RedirectPortInbound, RedirectPortInboundV6, RedirectPortOutbound)
 		err = DemoClientUniversalYaml(demoClientAppName, mesh, demoClientToken, demoClientDataplaneYaml,
 			WithTransparentProxy(true), WithBuiltinDNS(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
