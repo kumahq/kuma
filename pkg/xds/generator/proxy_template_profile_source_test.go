@@ -21,7 +21,7 @@ import (
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
-	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v2"
+	"github.com/kumahq/kuma/pkg/xds/envoy/endpoints/v3"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -99,7 +99,7 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
 			proxy := &model.Proxy{
-				Id: model.ProxyId{Name: "demo.backend-01"},
+				Id: *model.BuildProxyId("", "demo.backend-01"),
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
 						Name:    "backend-01",
@@ -156,6 +156,11 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 				},
 				Metadata: &model.DataplaneMetadata{
 					AdminPort: 9902,
+					Version: &mesh_proto.Version{
+						KumaDp: &mesh_proto.KumaDpVersion{
+							Version: "1.2.0",
+						},
+					},
 				},
 			}
 

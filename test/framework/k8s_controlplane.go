@@ -114,7 +114,7 @@ func (c *K8sControlPlane) GetKumaCPSvcs() []v1.Service {
 	return k8s.ListServices(c.t,
 		c.GetKubectlOptions(KumaNamespace),
 		metav1.ListOptions{
-			FieldSelector: "metadata.name=" + KumaGlobalRemoteSyncServiceName,
+			FieldSelector: "metadata.name=" + KumaGlobalZoneSyncServiceName,
 		},
 	)
 }
@@ -148,7 +148,7 @@ func (c *K8sControlPlane) VerifyKumaREST() error {
 }
 
 func (c *K8sControlPlane) VerifyKumaGUI() error {
-	if c.mode == core.Remote {
+	if c.mode == core.Zone {
 		return nil
 	}
 
@@ -222,7 +222,7 @@ func (c *K8sControlPlane) InjectDNS(args ...string) error {
 		yaml)
 }
 
-// A naive implementation to find the URL where Remote CP exposes its API
+// A naive implementation to find the URL where Zone CP exposes its API
 func (c *K8sControlPlane) GetKDSServerAddress() string {
 	// As EKS and AWS generally returns dns records of load balancers instead of
 	//  IP addresses, accessing this data (hostname) was only tested there,
@@ -261,6 +261,20 @@ func (c *K8sControlPlane) GenerateDpToken(mesh, service string) (string, error) 
 		"POST",
 		fmt.Sprintf("http://localhost:%d/tokens", c.portFwd.localAPIPort),
 		[]byte(fmt.Sprintf(`{"mesh": "%s", "type": "%s", "tags": {"kuma.io/service": ["%s"]}}`, mesh, dpType, service)),
+		map[string]string{"content-type": "application/json"},
+		200,
+		DefaultRetries,
+		DefaultTimeout,
+		&tls.Config{},
+	)
+}
+
+func (c *K8sControlPlane) GenerateZoneIngressToken(zone string) (string, error) {
+	return http_helper.HTTPDoWithRetryE(
+		c.t,
+		"POST",
+		fmt.Sprintf("http://localhost:%d/tokens/zone-ingress", c.portFwd.localAPIPort),
+		[]byte(fmt.Sprintf(`{"zone": "%s"}`, zone)),
 		map[string]string{"content-type": "application/json"},
 		200,
 		DefaultRetries,

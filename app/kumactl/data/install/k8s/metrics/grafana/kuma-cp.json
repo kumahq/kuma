@@ -2290,7 +2290,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "This metric presents if policies are properly propagated from Global to Remotes. All instances of global and remotes in the system should have the same number of policies. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
+      "description": "This metric presents if policies are properly propagated from Global to Zones. All instances of global and zones in the system should have the same number of policies. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2387,7 +2387,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "This metric presents if Dataplanes are properly propagated from Remotes to Global. Keep in mind that Dataplanes from all remotes != Dataplanes from global. All remotes receive additional one dataplane of Ingress from other Remotes. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
+      "description": "This metric presents if Dataplanes are properly propagated from Zones to Global. Keep in mind that Dataplanes from all zones != Dataplanes from global. All zones receive additional one dataplane of Ingress from other Zones. This metric have additional latency of 1 minute (it is not computed on the fly when scraping is done)",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2484,7 +2484,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Number of KDS messages exchanged between Global Control Plane and Remote Control Plane over KDS. Global sends to Remote policies and Ingress Dataplanes",
+      "description": "Number of KDS messages exchanged between Global Control Plane and Zone Control Plane over KDS. Global sends to Zone policies and Ingress Dataplanes",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2626,7 +2626,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Number of remote CP connected to Global.",
+      "description": "Number of zone CP connected to Global.",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2828,7 +2828,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "How much it took to generate KDS configuration for a single remote control plane",
+      "description": "How much it took to generate KDS configuration for a single zone control plane",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -2923,7 +2923,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Number of KDS messages exchanged between Global Control Plane and Remote Control Plane over KDS. Remote sends to Global its Dataplanes and DataplaneInsights",
+      "description": "Number of KDS messages exchanged between Global Control Plane and Zone Control Plane over KDS. Zone sends to Global its Dataplanes and DataplaneInsights",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3020,7 +3020,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Remote - KDS message exchange",
+      "title": "Zone - KDS message exchange",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3065,7 +3065,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Number of global CP connected to Remote.",
+      "description": "Number of global CP connected to Zone.",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3115,7 +3115,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Remote - KDS active connections",
+      "title": "Zone - KDS active connections",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3160,7 +3160,7 @@
       "dashLength": 10,
       "dashes": false,
       "datasource": "${DS_PROMETHEUS}",
-      "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL",
+      "description": "Number of KDS config generations per second. Config is sent only when it's different than previously generated. The value should be the number of connected control planes * KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL",
       "fieldConfig": {
         "defaults": {
           "custom": {}
@@ -3222,7 +3222,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Remote - KDS config generations",
+      "title": "Zone - KDS config generations",
       "tooltip": {
         "shared": true,
         "sort": 0,
@@ -3317,7 +3317,7 @@
       "timeFrom": null,
       "timeRegions": [],
       "timeShift": null,
-      "title": "Remote - Latency of KDS config generation (99th percentile)",
+      "title": "Zone - Latency of KDS config generation (99th percentile)",
       "tooltip": {
         "shared": true,
         "sort": 0,

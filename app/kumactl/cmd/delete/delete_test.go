@@ -26,7 +26,7 @@ var _ = Describe("kumactl delete ", func() {
 	Describe("Delete Command", func() {
 		var rootCtx *kumactl_cmd.RootContext
 		var rootCmd *cobra.Command
-		var outbuf, errbuf *bytes.Buffer
+		var outbuf *bytes.Buffer
 		var store core_store.ResourceStore
 
 		BeforeEach(func() {
@@ -38,10 +38,15 @@ var _ = Describe("kumactl delete ", func() {
 			store = core_store.NewPaginationStore(memory_resources.NewStore())
 
 			rootCmd = cmd.NewRootCmd(rootCtx)
+
+			// Different versions of cobra might emit errors to stdout
+			// or stderr. It's too fragile to depend on precidely what
+			// it does, and that's not something that needs to be tested
+			// within Kuma anyway. So we just combine all the output
+			// and validate the aggregate.
 			outbuf = &bytes.Buffer{}
-			errbuf = &bytes.Buffer{}
 			rootCmd.SetOut(outbuf)
-			rootCmd.SetErr(errbuf)
+			rootCmd.SetErr(outbuf)
 		})
 
 		It("should throw an error in case of no args", func() {
@@ -59,8 +64,6 @@ var _ = Describe("kumactl delete ", func() {
 			Expect(err.Error()).To(Equal("accepts 2 arg(s), received 0"))
 			// and
 			Expect(outbuf.String()).To(MatchRegexp(`Error: accepts 2 arg\(s\), received 0`))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		It("should throw an error in case of unsupported resource type", func() {
@@ -78,8 +81,6 @@ var _ = Describe("kumactl delete ", func() {
 			Expect(err.Error()).To(ContainSubstring("unknown TYPE: some-type. Allowed values:"))
 			// and
 			Expect(outbuf.String()).To(ContainSubstring("unknown TYPE: some-type. Allowed values:"))
-			// and
-			Expect(errbuf.Bytes()).To(BeEmpty())
 		})
 
 		Describe("kumactl delete TYPE NAME", func() {
@@ -117,7 +118,6 @@ var _ = Describe("kumactl delete ", func() {
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					// and
-					Expect(errbuf.String()).To(BeEmpty())
 					Expect(outbuf.String()).To(Equal(given.expectedMessage))
 
 					By("verifying that resource under test was actually deleted")
@@ -180,6 +180,12 @@ var _ = Describe("kumactl delete ", func() {
 					resource:        func() core_model.Resource { return mesh_core.NewRetryResource() },
 					expectedMessage: "deleted Retry \"web-to-backend\"\n",
 				}),
+				Entry("rate-limits", testCase{
+					typ:             "rate-limit",
+					name:            "100-rps",
+					resource:        func() core_model.Resource { return mesh_core.NewRateLimitResource() },
+					expectedMessage: "deleted RateLimit \"100-rps\"\n",
+				}),
 				Entry("timeouts", testCase{
 					typ:             "timeout",
 					name:            "web",
@@ -241,7 +247,6 @@ var _ = Describe("kumactl delete ", func() {
 					// then
 					Expect(err).ToNot(HaveOccurred())
 					// and
-					Expect(errbuf.String()).To(BeEmpty())
 					Expect(outbuf.String()).To(Equal(given.expectedMessage))
 
 					By("verifying that resource under test was actually deleted")
@@ -284,8 +289,6 @@ var _ = Describe("kumactl delete ", func() {
 					Expect(err).To(HaveOccurred())
 					// and
 					Expect(outbuf.String()).To(Equal(given.expectedMessage))
-					// and
-					Expect(errbuf.Bytes()).To(BeEmpty())
 				},
 				Entry("dataplanes", testCase{
 					typ:             "dataplane",

@@ -3,6 +3,7 @@ package test
 import (
 	"time"
 
+	"github.com/onsi/ginkgo"
 	"github.com/onsi/gomega"
 )
 
@@ -16,6 +17,7 @@ func Within(timeout time.Duration, task func()) func() {
 		done := make(chan interface{})
 
 		go func() {
+			defer ginkgo.GinkgoRecover()
 			defer close(done)
 			task()
 		}()

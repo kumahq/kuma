@@ -43,8 +43,8 @@ metadata:
 `, namespace)
 	}
 
-	var global, remoteK8s, remoteUniversal Cluster
-	var optsK8s, optsRemoteK8s, optsRemoteUniversal = KumaK8sDeployOpts, KumaRemoteK8sDeployOpts, KumaUniversalDeployOpts
+	var globalK8s, zoneK8s, zoneUniversal Cluster
+	var optsGlobalK8s, optsZoneK8s, optsZoneUniversal = KumaK8sDeployOpts, KumaZoneK8sDeployOpts, KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters([]string{Kuma1, Kuma2}, Silent)
@@ -53,44 +53,44 @@ metadata:
 		universalClusters, err := NewUniversalClusters([]string{Kuma3}, Silent)
 		Expect(err).ToNot(HaveOccurred())
 
-		global = k8sClusters.GetCluster(Kuma1)
+		globalK8s = k8sClusters.GetCluster(Kuma1)
 		err = NewClusterSetup().
-			Install(Kuma(core.Global, optsK8s...)).
+			Install(Kuma(core.Global, optsGlobalK8s...)).
 			Install(YamlK8s(meshMTLSOn("default"))).
-			Setup(global)
+			Setup(globalK8s)
 		Expect(err).ToNot(HaveOccurred())
 
-		optsRemoteK8s = append(optsRemoteK8s,
+		optsZoneK8s = append(optsZoneK8s,
 			WithIngress(),
-			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))
+			WithGlobalAddress(globalK8s.GetKuma().GetKDSServerAddress()))
 
-		remoteK8s = k8sClusters.GetCluster(Kuma2)
+		zoneK8s = k8sClusters.GetCluster(Kuma2)
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemoteK8s...)).
-			Install(KumaDNS()).
+			Install(Kuma(core.Zone, optsZoneK8s...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
-			Setup(remoteK8s)
+			Setup(zoneK8s)
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := global.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
-		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := global.GetKuma().GenerateDpToken("default", "ingress")
+		echoServerToken, err := globalK8s.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
 
-		optsRemoteUniversal = append(optsRemoteUniversal,
-			WithGlobalAddress(global.GetKuma().GetKDSServerAddress()))
+		optsZoneUniversal = append(optsZoneUniversal,
+			WithGlobalAddress(globalK8s.GetKuma().GetKDSServerAddress()))
 
-		remoteUniversal = universalClusters.GetCluster(Kuma3)
+		zoneUniversal = universalClusters.GetCluster(Kuma3)
+		ingressTokenKuma3, err := globalK8s.GetKuma().GenerateZoneIngressToken(Kuma3)
+		Expect(err).ToNot(HaveOccurred())
+
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemoteUniversal...)).
+			Install(Kuma(core.Zone, optsZoneUniversal...)).
 			Install(EchoServerUniversal("dp-echo-1", "default", "echo-universal-1", echoServerToken, WithProtocol("tcp"))).
 			Install(EchoServerUniversal("dp-echo-2", "default", "echo-universal-2", echoServerToken, WithProtocol("tcp"), ProxyOnly(), ServiceProbe())).
 			Install(EchoServerUniversal("dp-echo-3", "default", "echo-universal-3", echoServerToken, WithProtocol("tcp"))).
-			Install(IngressUniversal("default", ingressToken)).
-			Setup(remoteUniversal)
+			Install(IngressUniversal(ingressTokenKuma3)).
+			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteUniversal.VerifyKuma()
+		err = zoneUniversal.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -99,25 +99,25 @@ metadata:
 			return
 		}
 
-		Expect(remoteK8s.DeleteNamespace(TestNamespace)).To(Succeed())
-		err := remoteK8s.DeleteKuma(optsRemoteK8s...)
+		Expect(zoneK8s.DeleteNamespace(TestNamespace)).To(Succeed())
+		err := zoneK8s.DeleteKuma(optsZoneK8s...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteK8s.DismissCluster()
-		Expect(err).ToNot(HaveOccurred())
-
-		err = remoteUniversal.DeleteKuma(optsRemoteUniversal...)
-		Expect(err).ToNot(HaveOccurred())
-		err = remoteUniversal.DismissCluster()
+		err = zoneK8s.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = global.DeleteKuma()
+		err = zoneUniversal.DeleteKuma(optsZoneUniversal...)
 		Expect(err).ToNot(HaveOccurred())
-		err = global.DismissCluster()
+		err = zoneUniversal.DismissCluster()
+		Expect(err).ToNot(HaveOccurred())
+
+		err = globalK8s.DeleteKuma()
+		Expect(err).ToNot(HaveOccurred())
+		err = globalK8s.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	It("should not load balance requests to unhealthy instance", func() {
-		pods, err := k8s.ListPodsE(remoteK8s.GetTesting(), remoteK8s.GetKubectlOptions(TestNamespace), metav1.ListOptions{
+		pods, err := k8s.ListPodsE(zoneK8s.GetTesting(), zoneK8s.GetKubectlOptions(TestNamespace), metav1.ListOptions{
 			LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
 		})
 		Expect(err).ToNot(HaveOccurred())
@@ -128,9 +128,9 @@ metadata:
 		instances := []string{"echo-universal-1", "echo-universal-3"}
 		instanceSet := map[string]bool{}
 
-		_, err = retry.DoWithRetryE(remoteK8s.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pods[0].GetName(), strings.Join(cmd, " ")),
+		_, err = retry.DoWithRetryE(zoneK8s.GetTesting(), fmt.Sprintf("kubectl exec %s -- %s", pods[0].GetName(), strings.Join(cmd, " ")),
 			100, 500*time.Millisecond, func() (string, error) {
-				stdout, _, err := remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
+				stdout, _, err := zoneK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
 				if err != nil {
 					return "", err
 				}
@@ -153,7 +153,7 @@ metadata:
 		for i := 0; i < numOfRequest; i++ {
 			var stdout string
 
-			stdout, _, err = remoteK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
+			stdout, _, err = zoneK8s.Exec(TestNamespace, pods[0].GetName(), "demo-client", cmd...)
 			Expect(err).ToNot(HaveOccurred())
 
 			switch {

@@ -67,7 +67,7 @@ var _ = Describe("Reconcile", func() {
 			Expect(util_proto.FromYAML(dpBytes, &dataplane)).To(Succeed())
 
 			proxy := &model.Proxy{
-				Id:         model.ProxyId{Name: "demo.web1"},
+				Id:         *model.BuildProxyId("", "demo.web1"),
 				APIVersion: envoy_common.APIV3,
 				Dataplane: &mesh_core.DataplaneResource{
 					Meta: &test_model.ResourceMeta{
@@ -80,10 +80,11 @@ var _ = Describe("Reconcile", func() {
 				Policies: model.MatchedPolicies{
 					TrafficPermissions: model.TrafficPermissionMap{
 						mesh_proto.InboundInterface{
-							DataplaneIP:   "192.168.0.1",
-							DataplanePort: 80,
-							WorkloadIP:    "127.0.0.1",
-							WorkloadPort:  8080,
+							DataplaneAdvertisedIP: "192.168.0.1",
+							DataplaneIP:           "192.168.0.1",
+							DataplanePort:         80,
+							WorkloadIP:            "127.0.0.1",
+							WorkloadPort:          8080,
 						}: &mesh_core.TrafficPermissionResource{
 							Meta: &test_model.ResourceMeta{
 								Name: "tp-1",

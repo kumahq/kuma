@@ -25,7 +25,7 @@ func ServiceProbes() {
 
 		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
+		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "dp-demo-client")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = EchoServerUniversal("dp-echo-server", "default", "universal", echoServerToken, ProxyOnly(), ServiceProbe())(cluster)

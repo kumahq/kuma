@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 var meshCacheLog = core.Log.WithName("mesh-cache")
@@ -47,6 +48,7 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 			if err := rm.List(ctx, dataplanes); err != nil {
 				return nil, err
 			}
+			// backwards compatibility
 			meshedDpsAndIngresses := &core_mesh.DataplaneResourceList{}
 			for _, d := range dataplanes.Items {
 				if d.GetMeta().GetMesh() == meshName || d.Spec.IsIngress() {
@@ -54,6 +56,12 @@ func GetMeshSnapshot(ctx context.Context, meshName string, rm manager.ReadOnlyRe
 				}
 			}
 			snapshot.resources[typ] = meshedDpsAndIngresses
+		case core_mesh.ZoneIngressType:
+			zoneIngresses := &core_mesh.ZoneIngressResourceList{}
+			if err := rm.List(ctx, zoneIngresses); err != nil {
+				return nil, err
+			}
+			snapshot.resources[typ] = zoneIngresses
 		case system.ConfigType:
 			configs := &system.ConfigResourceList{}
 			var items []*system.ConfigResource
@@ -92,7 +100,7 @@ func (m *meshSnapshot) hash() string {
 	for _, rl := range m.resources {
 		resources = append(resources, rl.GetItems()...)
 	}
-	return m.hashResources(resources...)
+	return sha256.Hash(m.hashResources(resources...))
 }
 
 func (m *meshSnapshot) hashResources(rs ...core_model.Resource) string {
@@ -118,6 +126,15 @@ func (m *meshSnapshot) hashResource(r core_model.Resource) string {
 				v.GetMeta().GetVersion(),
 				m.hashResolvedIPs(v.Spec.GetNetworking().GetAddress()),
 				m.hashResolvedIPs(v.Spec.GetNetworking().GetIngress().GetPublicAddress()),
+			}, ":")
+	case *core_mesh.ZoneIngressResource:
+		return strings.Join(
+			[]string{string(v.GetType()),
+				v.GetMeta().GetMesh(),
+				v.GetMeta().GetName(),
+				v.GetMeta().GetVersion(),
+				m.hashResolvedIPs(v.Spec.GetNetworking().GetAddress()),
+				m.hashResolvedIPs(v.Spec.GetNetworking().GetAdvertisedAddress()),
 			}, ":")
 	default:
 		return strings.Join(

@@ -12,7 +12,7 @@ import (
 	kds_samples "github.com/kumahq/kuma/pkg/test/kds/samples"
 	kds_setup "github.com/kumahq/kuma/pkg/test/kds/setup"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
 	"github.com/kumahq/kuma/pkg/kds"
@@ -65,12 +65,15 @@ var _ = Describe("KDS Server", func() {
 		Expect([]proto.Message{
 			kds_samples.CircuitBreaker,
 			kds_samples.Ingress, // mesh.DataplaneType
+			kds_samples.ZoneIngress,
+			kds_samples.ZoneIngressInsight,
 			kds_samples.DataplaneInsight,
 			kds_samples.ExternalService,
 			kds_samples.FaultInjection,
 			kds_samples.HealthCheck,
 			kds_samples.Mesh1,
 			kds_samples.ProxyTemplate,
+			kds_samples.RateLimit,
 			kds_samples.Retry,
 			kds_samples.Timeout,
 			kds_samples.TrafficLog,
@@ -78,6 +81,7 @@ var _ = Describe("KDS Server", func() {
 			kds_samples.TrafficRoute,
 			kds_samples.TrafficTrace,
 			kds_samples.Secret,
+			kds_samples.GlobalSecret,
 			kds_samples.Config,
 		}).
 			To(HaveLen(len(kds.SupportedTypes)))
@@ -91,6 +95,7 @@ var _ = Describe("KDS Server", func() {
 			Exec(kds_verifier.Create(ctx, &mesh.HealthCheckResource{Spec: kds_samples.HealthCheck}, store.CreateByKey("hc-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.MeshResource{Spec: kds_samples.Mesh1}, store.CreateByKey("mesh-1", model.NoMesh))).
 			Exec(kds_verifier.Create(ctx, &mesh.ProxyTemplateResource{Spec: kds_samples.ProxyTemplate}, store.CreateByKey("pt-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.RateLimitResource{Spec: kds_samples.RateLimit}, store.CreateByKey("rl-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.RetryResource{Spec: kds_samples.Retry}, store.CreateByKey("retry-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.TimeoutResource{Spec: kds_samples.Timeout}, store.CreateByKey("timeout-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.TrafficLogResource{Spec: kds_samples.TrafficLog}, store.CreateByKey("tl-1", "mesh-1"))).
@@ -172,6 +177,11 @@ var _ = Describe("KDS Server", func() {
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))
 				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.Timeout))
+			})).
+			Exec(kds_verifier.DiscoveryRequest(node, mesh.RateLimitType)).
+			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
+				Expect(rs).To(HaveLen(1))
+				Expect(rs[0].GetSpec()).To(MatchProto(kds_samples.RateLimit))
 			})).
 			Exec(kds_verifier.CloseStream())
 

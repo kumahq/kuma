@@ -31,7 +31,7 @@ store:
     maxOpenConnections: 0 # ENV: KUMA_STORE_POSTGRES_MAX_OPEN_CONNECTIONS
     # Maximum number of connections in the idle connection pool
     # <0 value means no idle connections and 0 means default max idle connections
-    maxIdleConnections: 0  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS   
+    maxIdleConnections: 0  # ENV: KUMA_STORE_POSTGRES_MAX_IDLE_CONNECTIONS
     # TLS settings
     tls:
       # Mode of TLS connection. Available values (disable, verifyNone, verifyCa, verifyFull)
@@ -100,8 +100,8 @@ monitoringAssignmentServer:
     - v1
   # Interval for re-generating monitoring assignments for clients connected to the Control Plane.
   assignmentRefreshInterval: 1s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL
-  # Timeout for a single HTTP fetch-based discovery
-  fetchTimeout: 30s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_FETCH_TIMEOUT
+  # The default timeout for a single fetch-based discovery request, if not specified
+  defaultFetchTimeout: 30s # ENV: KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT
 
 # Envoy XDS server configuration
 xdsServer:
@@ -177,7 +177,7 @@ runtime:
       #	i.e :8080/health/readiness -> :9000/8080/health/readiness where 9000 is virtualProbesPort
       virtualProbesEnabled: true # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED
       # VirtualProbesPort is a port for exposing virtual probes which are not secured by mTLS
-      virtualProbesPort: 9000 # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_ENABLED
+      virtualProbesPort: 9000 # ENV: KUMA_RUNTIME_KUBERNETES_VIRTUAL_PROBES_PORT
       # CaCertFile is CA certificate which will be used to verify a connection to the control plane.
       caCertFile:  # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_CA_CERT_FILE
       # SidecarContainer defines configuration of the Kuma sidecar container.
@@ -250,7 +250,7 @@ runtime:
         excludeOutboundPorts: [ ] # ENV: KUMA_RUNTIME_KUBERNETES_SIDECAR_TRAFFIC_EXCLUDE_OUTBOUND_PORTS
       builtinDNS:
         # Use the built-in DNS
-        enabled: false # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
+        enabled: true # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED
         # Redirect port for DNS
         port: 15053 # ENV: KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_PORT
     marshalingCacheExpirationTime: 5m # ENV: KUMA_RUNTIME_KUBERNETES_MARSHALING_CACHE_EXPIRATION_TIME
@@ -326,16 +326,16 @@ multizone:
       tlsCertFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE
       # TTlsKeyFile defines a path to a file with PEM-encoded TLS key.
       tlsKeyFile: # ENV: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
-  remote:
-    # Kuma Zone name used to mark the remote dataplane resources
-    zone: "" # ENV: KUMA_MULTIZONE_REMOTE_ZONE
+  zone:
+    # Kuma Zone name used to mark the zone dataplane resources
+    name: "" # ENV: KUMA_MULTIZONE_ZONE_NAME
     # GlobalAddress URL of Global Kuma CP
-    globalAddress: # ENV KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
+    globalAddress: # ENV KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
     kds:
       # Interval for refreshing state of the world
-      refreshInterval: 1s # ENV: KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL
+      refreshInterval: 1s # ENV: KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL
       # RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify server by using it.
-      rootCaFile: # ENV: KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE
+      rootCaFile: # ENV: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
 
 # Diagnostics configuration
 diagnostics:

@@ -14,11 +14,6 @@ import (
 )
 
 func ExternalServicesOnMultizoneUniversal() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
-
 	meshDefaulMtlsOn := `
 type: Mesh
 name: default
@@ -51,8 +46,8 @@ networking:
 
 	const defaultMesh = "default"
 
-	var global, remote_1, remote_2, external Cluster
-	var optsGlobal, optsRemote1, optsRemote2 = KumaUniversalDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
+	var global, zone1, zone2, external Cluster
+	var optsGlobal, optsZone1, optsZone2 = KumaUniversalDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		clusters, err := NewUniversalClusters(
@@ -88,31 +83,31 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 1
-		remote_1 = clusters.GetCluster(Kuma4)
-		optsRemote1 = append(optsRemote1,
+		zone1 = clusters.GetCluster(Kuma4)
+		optsZone1 = append(optsZone1,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithHDS(false))
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote1...)).
-			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(true))).
-			Setup(remote_1)
+			Install(Kuma(core.Zone, optsZone1...)).
+			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
+			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_1.VerifyKuma()
+		err = zone1.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 2
-		remote_2 = clusters.GetCluster(Kuma5)
-		optsRemote2 = append(optsRemote2,
+		zone2 = clusters.GetCluster(Kuma5)
+		optsZone2 = append(optsZone2,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
 			WithHDS(false))
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote2...)).
-			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true), WithBuiltinDNS(true))).
-			Setup(remote_2)
+			Install(Kuma(core.Zone, optsZone2...)).
+			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
+			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_2.VerifyKuma()
+		err = zone2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -124,14 +119,14 @@ networking:
 		err := external.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remote_1.DeleteKuma(optsRemote1...)
+		err = zone1.DeleteKuma(optsZone1...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_1.DismissCluster()
+		err = zone1.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remote_2.DeleteKuma(optsRemote2...)
+		err = zone2.DeleteKuma(optsZone2...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_2.DismissCluster()
+		err = zone2.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.DeleteKuma(optsGlobal...)
@@ -147,25 +142,25 @@ networking:
 			"false", ""))(global)
 		Expect(err).ToNot(HaveOccurred())
 
-		stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
+		stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 
-		stdout, _, err = remote_1.ExecWithRetries("", "", "demo-client",
+		stdout, _, err = zone1.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server:80")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 
-		stdout, _, err = remote_2.ExecWithRetries("", "", "demo-client",
+		stdout, _, err = zone2.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "external-service-1.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).ToNot(ContainSubstring("HTTPS"))
 
-		stdout, _, err = remote_2.ExecWithRetries("", "", "demo-client",
+		stdout, _, err = zone2.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "kuma-3_externalservice-http-server:80")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
@@ -183,7 +178,7 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service fails
-		_, _, err = remote_1.ExecWithRetries("", "", "demo-client",
+		_, _, err = zone1.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
 		Expect(err).To(HaveOccurred())
 
@@ -199,13 +194,13 @@ networking:
 		Expect(err).ToNot(HaveOccurred())
 
 		// then accessing the secured external service succeeds
-		stdout, _, err := remote_1.ExecWithRetries("", "", "demo-client",
+		stdout, _, err := zone1.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 		Expect(stdout).To(ContainSubstring("HTTPS"))
 
-		stdout, _, err = remote_2.ExecWithRetries("", "", "demo-client",
+		stdout, _, err = zone2.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "http://kuma-3_externalservice-https-server:443")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))

@@ -1,4 +1,4 @@
-package metrics_test
+package metrics
 
 import (
 	"testing"

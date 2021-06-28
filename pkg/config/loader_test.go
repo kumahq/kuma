@@ -135,7 +135,7 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.MonitoringAssignmentServer.GrpcPort).To(Equal(uint32(3333)))
 			Expect(cfg.MonitoringAssignmentServer.Port).To(Equal(uint32(2222)))
 			Expect(cfg.MonitoringAssignmentServer.AssignmentRefreshInterval).To(Equal(12 * time.Second))
-			Expect(cfg.MonitoringAssignmentServer.FetchTimeout).To(Equal(45 * time.Second))
+			Expect(cfg.MonitoringAssignmentServer.DefaultFetchTimeout).To(Equal(45 * time.Second))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(HaveLen(1))
 			Expect(cfg.MonitoringAssignmentServer.ApiVersions).To(ContainElements("v1"))
 
@@ -189,8 +189,8 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.General.WorkDir).To(Equal("/custom/work/dir"))
 
 			Expect(cfg.GuiServer.ApiServerUrl).To(Equal("http://localhost:1234"))
-			Expect(cfg.Mode).To(Equal(config_core.Remote))
-			Expect(cfg.Multizone.Remote.Zone).To(Equal("zone-1"))
+			Expect(cfg.Mode).To(Equal(config_core.Zone))
+			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
 
 			Expect(cfg.Multizone.Global.PollTimeout).To(Equal(750 * time.Millisecond))
 			Expect(cfg.Multizone.Global.KDS.GrpcPort).To(Equal(uint32(1234)))
@@ -198,10 +198,10 @@ var _ = Describe("Config loader", func() {
 			Expect(cfg.Multizone.Global.KDS.ZoneInsightFlushInterval).To(Equal(time.Second * 5))
 			Expect(cfg.Multizone.Global.KDS.TlsCertFile).To(Equal("/cert"))
 			Expect(cfg.Multizone.Global.KDS.TlsKeyFile).To(Equal("/key"))
-			Expect(cfg.Multizone.Remote.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
-			Expect(cfg.Multizone.Remote.Zone).To(Equal("zone-1"))
-			Expect(cfg.Multizone.Remote.KDS.RootCAFile).To(Equal("/rootCa"))
-			Expect(cfg.Multizone.Remote.KDS.RefreshInterval).To(Equal(9 * time.Second))
+			Expect(cfg.Multizone.Zone.GlobalAddress).To(Equal("grpc://1.1.1.1:5685"))
+			Expect(cfg.Multizone.Zone.Name).To(Equal("zone-1"))
+			Expect(cfg.Multizone.Zone.KDS.RootCAFile).To(Equal("/rootCa"))
+			Expect(cfg.Multizone.Zone.KDS.RefreshInterval).To(Equal(9 * time.Second))
 
 			Expect(cfg.Defaults.SkipMeshCreation).To(BeTrue())
 
@@ -298,7 +298,7 @@ apiServer:
 monitoringAssignmentServer:
   grpcPort: 3333
   port: 2222
-  fetchTimeout: 45s
+  defaultFetchTimeout: 45s
   apiVersions: [v1]
   assignmentRefreshInterval: 12s
 runtime:
@@ -371,7 +371,7 @@ general:
   workDir: /custom/work/dir
 guiServer:
   apiServerUrl: http://localhost:1234
-mode: remote
+mode: zone
 multizone:
   global:
     pollTimeout: 750ms
@@ -381,9 +381,9 @@ multizone:
       zoneInsightFlushInterval: 5s
       tlsCertFile: /cert
       tlsKeyFile: /key
-  remote:
+  zone:
     globalAddress: "grpc://1.1.1.1:5685"
-    zone: "zone-1"
+    name: "zone-1"
     kds:
       refreshInterval: 9s
       rootCaFile: /rootCa
@@ -473,7 +473,7 @@ sdsServer:
 				"KUMA_API_SERVER_AUTH_ALLOW_FROM_LOCALHOST":                                                "false",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_GRPC_PORT":                                              "3333",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_PORT":                                                   "2222",
-				"KUMA_MONITORING_ASSIGNMENT_SERVER_FETCH_TIMEOUT":                                          "45s",
+				"KUMA_MONITORING_ASSIGNMENT_SERVER_DEFAULT_FETCH_TIMEOUT":                                  "45s",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_API_VERSIONS":                                           "v1",
 				"KUMA_MONITORING_ASSIGNMENT_SERVER_ASSIGNMENT_REFRESH_INTERVAL":                            "12s",
 				"KUMA_REPORTS_ENABLED":                                                                     "false",
@@ -524,16 +524,16 @@ sdsServer:
 				"KUMA_DNS_SERVER_DOMAIN":                                                                   "test-domain",
 				"KUMA_DNS_SERVER_PORT":                                                                     "15653",
 				"KUMA_DNS_SERVER_CIDR":                                                                     "127.1.0.0/16",
-				"KUMA_MODE":                                                                                "remote",
+				"KUMA_MODE":                                                                                "zone",
 				"KUMA_MULTIZONE_GLOBAL_POLL_TIMEOUT":                                                       "750ms",
 				"KUMA_MULTIZONE_GLOBAL_KDS_GRPC_PORT":                                                      "1234",
 				"KUMA_MULTIZONE_GLOBAL_KDS_REFRESH_INTERVAL":                                               "2s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_CERT_FILE":                                                  "/cert",
 				"KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE":                                                   "/key",
-				"KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS":                                                     "grpc://1.1.1.1:5685",
-				"KUMA_MULTIZONE_REMOTE_ZONE":                                                               "zone-1",
-				"KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE":                                                   "/rootCa",
-				"KUMA_MULTIZONE_REMOTE_KDS_REFRESH_INTERVAL":                                               "9s",
+				"KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS":                                                       "grpc://1.1.1.1:5685",
+				"KUMA_MULTIZONE_ZONE_NAME":                                                                 "zone-1",
+				"KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE":                                                     "/rootCa",
+				"KUMA_MULTIZONE_ZONE_KDS_REFRESH_INTERVAL":                                                 "9s",
 				"KUMA_MULTIZONE_GLOBAL_KDS_ZONE_INSIGHT_FLUSH_INTERVAL":                                    "5s",
 				"KUMA_DEFAULTS_SKIP_MESH_CREATION":                                                         "true",
 				"KUMA_DIAGNOSTICS_SERVER_PORT":                                                             "5003",

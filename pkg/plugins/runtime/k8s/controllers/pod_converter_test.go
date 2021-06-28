@@ -7,13 +7,14 @@ import (
 	"io/ioutil"
 	"path/filepath"
 
-	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-	"github.com/kumahq/kuma/pkg/dns/vips"
-	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
-
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
+	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
+	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/plugins/resources/k8s"
+	. "github.com/kumahq/kuma/pkg/test/matchers"
 
 	"github.com/ghodss/yaml"
 	"github.com/pkg/errors"
@@ -139,7 +140,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 
 			// when
 			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, vips.List{})
+			err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, otherDataplanes, nil, vips.List{})
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -270,17 +271,15 @@ var _ = Describe("PodToDataplane(..)", func() {
 			}
 
 			// when
-			dataplane := &mesh_k8s.Dataplane{}
-			err = converter.PodToIngress(dataplane, pod, services)
+			ingress := &mesh_k8s.ZoneIngress{}
+			err = converter.PodToIngress(ingress, pod, services)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())
 
-			actual, err := json.Marshal(dataplane)
+			actual, err := yaml.Marshal(ingress)
 			Expect(err).ToNot(HaveOccurred())
-			expected, err := ioutil.ReadFile(filepath.Join("testdata", "ingress", given.dataplane))
-			Expect(err).ToNot(HaveOccurred())
-			Expect(actual).To(MatchYAML(expected))
+			Expect(actual).To(MatchGoldenYAML(filepath.Join("testdata", "ingress", given.dataplane)))
 		},
 		Entry("01. Ingress with load balancer service and hostname", testCase{ // AWS use case
 			pod:            "01.pod.yaml",
@@ -338,7 +337,7 @@ var _ = Describe("PodToDataplane(..)", func() {
 				dataplane := &mesh_k8s.Dataplane{}
 
 				// when
-				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, vips.List{})
+				err = converter.PodToDataplane(dataplane, pod, services, []*mesh_k8s.ExternalService{}, nil, nil, vips.List{})
 
 				// then
 				Expect(err).To(HaveOccurred())

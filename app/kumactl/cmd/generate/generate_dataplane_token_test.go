@@ -33,7 +33,6 @@ func (s *staticDataplaneTokenGenerator) Generate(name string, mesh string, tags 
 }
 
 var _ = Describe("kumactl generate dataplane-token", func() {
-
 	var rootCmd *cobra.Command
 	var buf *bytes.Buffer
 	var generator *staticDataplaneTokenGenerator
@@ -51,8 +50,10 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 		}
 
 		rootCmd = cmd.NewRootCmd(ctx)
+
 		buf = &bytes.Buffer{}
 		rootCmd.SetOut(buf)
+		rootCmd.SetErr(buf)
 	})
 
 	type testCase struct {
@@ -76,7 +77,7 @@ var _ = Describe("kumactl generate dataplane-token", func() {
 			result: "token-for-example-default--",
 		}),
 		Entry("for all arguments", testCase{
-			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--name=example", "--type=dataplane", "--tag", "kuma.io/service=web"},
+			args:   []string{"generate", "dataplane-token", "--mesh=demo", "--name=example", "--proxy-type=dataplane", "--tag", "kuma.io/service=web"},
 			result: "token-for-example-demo-kuma.io/service=web-dataplane",
 		}),
 	)

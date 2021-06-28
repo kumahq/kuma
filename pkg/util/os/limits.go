@@ -31,8 +31,8 @@ func RaiseFileLimit() error {
 	// (typically to 24K) by the "kern.maxfilesperproc" systune.
 	// Since we only run on Darwin for test purposes, just clip this
 	// to a reasonable value.
-	if runtime.GOOS == "darwin" && limit.Max > 4096 {
-		limit.Max = 4096
+	if runtime.GOOS == "darwin" && limit.Max > 10240 {
+		limit.Max = 10240
 	}
 
 	return setFileLimit(limit.Max)

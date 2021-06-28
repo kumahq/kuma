@@ -1,16 +1,8 @@
-mesh: default
 metadata:
   creationTimestamp: null
 spec:
   networking:
     address: 192.168.0.1
-    inbound:
-      - port: 10001
-        tags:
-          app: kuma-ingress
-          kuma.io/protocol: tcp
-          kuma.io/service: kuma-ingress_kuma-system_svc_10001
-          kuma.io/zone: zone-1
-    ingress:
-      publicAddress: 192.168.100.1
-      publicPort: 10001
+    advertisedAddress: 192.168.100.1
+    advertisedPort: 10001
+    port: 10001

@@ -27,10 +27,11 @@ func BuildEndpointMap(
 	mesh *mesh_core.MeshResource,
 	zone string,
 	dataplanes []*mesh_core.DataplaneResource,
+	zoneIngresses []*mesh_core.ZoneIngressResource,
 	externalServices []*mesh_core.ExternalServiceResource,
 	loader datasource.Loader,
 ) core_xds.EndpointMap {
-	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes)
+	outbound := BuildEdsEndpointMap(mesh, zone, dataplanes, zoneIngresses)
 	fillExternalServicesOutbounds(outbound, externalServices, mesh, loader)
 	return outbound
 }
@@ -39,9 +40,10 @@ func BuildEdsEndpointMap(
 	mesh *mesh_core.MeshResource,
 	zone string,
 	dataplanes []*mesh_core.DataplaneResource,
+	zoneIngresses []*mesh_core.ZoneIngressResource,
 ) core_xds.EndpointMap {
 	outbound := core_xds.EndpointMap{}
-	ingressInstances := fillIngressOutbounds(outbound, dataplanes, zone, mesh)
+	ingressInstances := fillIngressOutbounds(outbound, zoneIngresses, dataplanes, zone, mesh)
 	endpointWeight := uint32(1)
 	if ingressInstances > 0 {
 		endpointWeight = ingressInstances
@@ -81,7 +83,7 @@ func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_co
 			// TODO(yskopets): do we need to dedup?
 			// TODO(yskopets): sort ?
 			outbound[service] = append(outbound[service], core_xds.Endpoint{
-				Target:   iface.DataplaneIP,
+				Target:   iface.DataplaneAdvertisedIP,
 				Port:     iface.DataplanePort,
 				Tags:     inbound.Tags,
 				Weight:   endpointWeight,
@@ -91,13 +93,52 @@ func fillDataplaneOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_co
 	}
 }
 
-func fillIngressOutbounds(outbound core_xds.EndpointMap, dataplanes []*mesh_core.DataplaneResource, zone string, mesh *mesh_core.MeshResource) uint32 {
+func fillIngressOutbounds(
+	outbound core_xds.EndpointMap,
+	zoneIngresses []*mesh_core.ZoneIngressResource,
+	dataplanes []*mesh_core.DataplaneResource,
+	zone string,
+	mesh *mesh_core.MeshResource,
+) uint32 {
 	ingressInstances := map[string]bool{}
+
+	for _, zi := range zoneIngresses {
+		if !zi.IsRemoteIngress(zone) {
+			continue
+		}
+		if !mesh.MTLSEnabled() {
+			// Ingress routes the request by TLS SNI, therefore for cross cluster communication MTLS is required
+			// We ignore Ingress from endpoints if MTLS is disabled, otherwise we would fail anyway.
+			continue
+		}
+		if !zi.HasPublicAddress() {
+			continue // Zone Ingress is not reachable yet from other clusters. This may happen when Ingress Service is pending waiting on External IP on Kubernetes.
+		}
+		ingressCoordinates := net.JoinHostPort(zi.Spec.GetNetworking().GetAdvertisedAddress(), strconv.FormatUint(uint64(zi.Spec.GetNetworking().GetAdvertisedPort()), 10))
+		if ingressInstances[ingressCoordinates] {
+			continue // many Ingress instances can be placed in front of one load balancer (all instances can have the same public address and port). In this case we only need one Instance avoiding creating unnecessary duplicated endpoints
+		}
+		for _, service := range zi.Spec.GetAvailableServices() {
+			if service.Mesh != mesh.GetMeta().GetName() {
+				continue
+			}
+			serviceName := service.Tags[mesh_proto.ServiceTag]
+			outbound[serviceName] = append(outbound[serviceName], core_xds.Endpoint{
+				Target:   zi.Spec.GetNetworking().GetAdvertisedAddress(),
+				Port:     zi.Spec.GetNetworking().GetAdvertisedPort(),
+				Tags:     service.Tags,
+				Weight:   service.Instances,
+				Locality: localityFromTags(mesh, priorityRemote, service.Tags),
+			})
+		}
+	}
+
+	// backwards compatibility
 	for _, dataplane := range dataplanes {
 		if !dataplane.Spec.IsIngress() {
 			continue
 		}
-		if !dataplane.Spec.IsRemoteIngress(zone) {
+		if !dataplane.Spec.IsZoneIngress(zone) {
 			continue // we only need Ingress for other zones, we don't want to direct request to the same zone through Ingress
 		}
 		if !mesh.MTLSEnabled() {
@@ -156,6 +197,7 @@ func buildExternalServiceEndpoint(externalService *mesh_core.ExternalServiceReso
 		ClientKey: convertToEnvoy(
 			externalService.Spec.GetNetworking().GetTls().GetClientKey(),
 			mesh.GetMeta().GetName(), loader),
+		AllowRenegotiation: externalService.Spec.GetNetworking().GetTls().GetAllowRenegotiation().GetValue(),
 	}
 
 	tags := externalService.Spec.GetTags()

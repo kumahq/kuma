@@ -1,1173 +1,159 @@
 #compdef _kumactl kumactl
 
-
-function _kumactl {
-  local -a commands
-
-  _arguments -C \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    "1: :->cmnds" \
-    "*::arg:->args"
-
-  case $state in
-  cmnds)
-    commands=(
-      "apply:Create or modify Kuma resources"
-      "completion:Output shell completion code for bash, fish or zsh"
-      "config:Manage kumactl config"
-      "delete:Delete Kuma resources"
-      "generate:Generate resources, tokens, etc"
-      "get:Show Kuma resources"
-      "help:Help about any command"
-      "inspect:Inspect Kuma resources"
-      "install:Install various Kuma components."
-      "uninstall:Uninstall various Kuma components."
-      "version:Print version"
-    )
-    _describe "command" commands
-    ;;
-  esac
-
-  case "$words[1]" in
-  apply)
-    _kumactl_apply
-    ;;
-  completion)
-    _kumactl_completion
-    ;;
-  config)
-    _kumactl_config
-    ;;
-  delete)
-    _kumactl_delete
-    ;;
-  generate)
-    _kumactl_generate
-    ;;
-  get)
-    _kumactl_get
-    ;;
-  help)
-    _kumactl_help
-    ;;
-  inspect)
-    _kumactl_inspect
-    ;;
-  install)
-    _kumactl_install
-    ;;
-  uninstall)
-    _kumactl_uninstall
-    ;;
-  version)
-    _kumactl_version
-    ;;
-  esac
-}
-
-function _kumactl_apply {
-  _arguments \
-    '--dry-run[Resolve variable and prints result out without actual applying]' \
-    '(-f --file)'{-f,--file}'[Path to file to apply. Pass `-` to read from stdin]:' \
-    '(-v --var)'{-v,--var}'[Variable to replace in configuration]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-
-function _kumactl_completion {
-  local -a commands
-
-  _arguments -C \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    "1: :->cmnds" \
-    "*::arg:->args"
-
-  case $state in
-  cmnds)
-    commands=(
-      "bash:Output shell completions for bash"
-      "fish:Output shell completions for fish"
-      "zsh:Output shell completions for zsh"
-    )
-    _describe "command" commands
-    ;;
-  esac
-
-  case "$words[1]" in
-  bash)
-    _kumactl_completion_bash
-    ;;
-  fish)
-    _kumactl_completion_fish
-    ;;
-  zsh)
-    _kumactl_completion_zsh
-    ;;
-  esac
-}
-
-function _kumactl_completion_bash {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_completion_fish {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_completion_zsh {
-  _arguments \
-    '(-h --help)'{-h,--help}'[help for zsh]' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-
-function _kumactl_config {
-  local -a commands
-
-  _arguments -C \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    "1: :->cmnds" \
-    "*::arg:->args"
-
-  case $state in
-  cmnds)
-    commands=(
-      "control-planes:Manage known Control Planes"
-      "view:Show kumactl config"
-    )
-    _describe "command" commands
-    ;;
-  esac
-
-  case "$words[1]" in
-  control-planes)
-    _kumactl_config_control-planes
-    ;;
-  view)
-    _kumactl_config_view
-    ;;
-  esac
-}
-
-
-function _kumactl_config_control-planes {
-  local -a commands
-
-  _arguments -C \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    "1: :->cmnds" \
-    "*::arg:->args"
-
-  case $state in
-  cmnds)
-    commands=(
-      "add:Add a Control Plane"
-      "list:List Control Planes"
-      "remove:Remove a Control Plane"
-      "switch:Switch active Control Plane"
-    )
-    _describe "command" commands
-    ;;
-  esac
-
-  case "$words[1]" in
-  add)
-    _kumactl_config_control-planes_add
-    ;;
-  list)
-    _kumactl_config_control-planes_list
-    ;;
-  remove)
-    _kumactl_config_control-planes_remove
-    ;;
-  switch)
-    _kumactl_config_control-planes_switch
-    ;;
-  esac
-}
-
-function _kumactl_config_control-planes_add {
-  _arguments \
-    '--address[URL of the Control Plane API Server (required). Example: http://localhost:5681 or https://localhost:5682)]:' \
-    '--ca-cert-file[path to the certificate authority which will be used to verify the Control Plane certificate (kumactl stores only a reference to this file)]:' \
-    '--client-cert-file[path to the certificate of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)]:' \
-    '--client-key-file[path to the certificate key of a client that is authorized to use the Admin operations of the Control Plane (kumactl stores only a reference to this file)]:' \
-    '--headers[add these headers while communicating to control plane, format key=value]:' \
-    '--name[reference name for the Control Plane (required)]:' \
-    '--overwrite[overwrite existing Control Plane with the same reference name]' \
-    '--skip-verify[skip CA verification]' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_config_control-planes_list {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_config_control-planes_remove {
-  _arguments \
-    '--name[reference name for the Control Plane (required)]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_config_control-planes_switch {
-  _arguments \
-    '--name[reference name for the Control Plane (required)]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_config_view {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_delete {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-
-function _kumactl_generate {
-  local -a commands
-
-  _arguments -C \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    "1: :->cmnds" \
-    "*::arg:->args"
-
-  case $state in
-  cmnds)
-    commands=(
-      "dataplane-token:Generate Dataplane Token"
-      "tls-certificate:Generate a TLS certificate"
-    )
-    _describe "command" commands
-    ;;
-  esac
-
-  case "$words[1]" in
-  dataplane-token)
-    _kumactl_generate_dataplane-token
-    ;;
-  tls-certificate)
-    _kumactl_generate_tls-certificate
-    ;;
-  esac
-}
-
-function _kumactl_generate_dataplane-token {
-  _arguments \
-    '--name[name of the Dataplane]:' \
-    '--tag[required tag values for dataplane (split values by comma to provide multiple values)]:' \
-    '--type[type of the Dataplane ("dataplane", "ingress")]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_generate_tls-certificate {
-  _arguments \
-    '--cert-file[path to a file with a generated TLS certificate]:' \
-    '*--cp-hostname[DNS name of the control plane]:' \
-    '--key-file[path to a file with a generated private key]:' \
-    '--type[type of the certificate: one of client|server]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-
-function _kumactl_get {
-  local -a commands
-
-  _arguments -C \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    "1: :->cmnds" \
-    "*::arg:->args"
-
-  case $state in
-  cmnds)
-    commands=(
-      "circuit-breaker:Show a single CircuitBreaker resource"
-      "circuit-breakers:Show CircuitBreaker"
-      "dataplane:Show a single Dataplane resource"
-      "dataplanes:Show Dataplane"
-      "external-service:Show a single ExternalService resource"
-      "external-services:Show ExternalService"
-      "fault-injection:Show a single FaultInjection resource"
-      "fault-injections:Show FaultInjection"
-      "global-secret:Show a single GlobalSecret resource"
-      "global-secrets:Show GlobalSecret"
-      "healthcheck:Show a single HealthCheck resource"
-      "healthchecks:Show HealthCheck"
-      "mesh:Show a single Mesh resource"
-      "meshes:Show Mesh"
-      "proxytemplate:Show a single ProxyTemplate resource"
-      "proxytemplates:Show ProxyTemplate"
-      "retries:Show Retry"
-      "retry:Show a single Retry resource"
-      "secret:Show a single Secret resource"
-      "secrets:Show Secret"
-      "timeout:Show a single Timeout resource"
-      "timeouts:Show Timeout"
-      "traffic-log:Show a single TrafficLog resource"
-      "traffic-logs:Show TrafficLog"
-      "traffic-permission:Show a single TrafficPermission resource"
-      "traffic-permissions:Show TrafficPermission"
-      "traffic-route:Show a single TrafficRoute resource"
-      "traffic-routes:Show TrafficRoute"
-      "traffic-trace:Show a single TrafficTrace resource"
-      "traffic-traces:Show TrafficTrace"
-      "zone:Show a single Retry resource"
-      "zones:Show Zone"
-    )
-    _describe "command" commands
-    ;;
-  esac
-
-  case "$words[1]" in
-  circuit-breaker)
-    _kumactl_get_circuit-breaker
-    ;;
-  circuit-breakers)
-    _kumactl_get_circuit-breakers
-    ;;
-  dataplane)
-    _kumactl_get_dataplane
-    ;;
-  dataplanes)
-    _kumactl_get_dataplanes
-    ;;
-  external-service)
-    _kumactl_get_external-service
-    ;;
-  external-services)
-    _kumactl_get_external-services
-    ;;
-  fault-injection)
-    _kumactl_get_fault-injection
-    ;;
-  fault-injections)
-    _kumactl_get_fault-injections
-    ;;
-  global-secret)
-    _kumactl_get_global-secret
-    ;;
-  global-secrets)
-    _kumactl_get_global-secrets
-    ;;
-  healthcheck)
-    _kumactl_get_healthcheck
-    ;;
-  healthchecks)
-    _kumactl_get_healthchecks
-    ;;
-  mesh)
-    _kumactl_get_mesh
-    ;;
-  meshes)
-    _kumactl_get_meshes
-    ;;
-  proxytemplate)
-    _kumactl_get_proxytemplate
-    ;;
-  proxytemplates)
-    _kumactl_get_proxytemplates
-    ;;
-  retries)
-    _kumactl_get_retries
-    ;;
-  retry)
-    _kumactl_get_retry
-    ;;
-  secret)
-    _kumactl_get_secret
-    ;;
-  secrets)
-    _kumactl_get_secrets
-    ;;
-  timeout)
-    _kumactl_get_timeout
-    ;;
-  timeouts)
-    _kumactl_get_timeouts
-    ;;
-  traffic-log)
-    _kumactl_get_traffic-log
-    ;;
-  traffic-logs)
-    _kumactl_get_traffic-logs
-    ;;
-  traffic-permission)
-    _kumactl_get_traffic-permission
-    ;;
-  traffic-permissions)
-    _kumactl_get_traffic-permissions
-    ;;
-  traffic-route)
-    _kumactl_get_traffic-route
-    ;;
-  traffic-routes)
-    _kumactl_get_traffic-routes
-    ;;
-  traffic-trace)
-    _kumactl_get_traffic-trace
-    ;;
-  traffic-traces)
-    _kumactl_get_traffic-traces
-    ;;
-  zone)
-    _kumactl_get_zone
-    ;;
-  zones)
-    _kumactl_get_zones
-    ;;
-  esac
-}
-
-function _kumactl_get_circuit-breaker {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_circuit-breakers {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_dataplane {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_dataplanes {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_external-service {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_external-services {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_fault-injection {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_fault-injections {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_global-secret {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_global-secrets {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_healthcheck {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_healthchecks {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_mesh {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_meshes {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_proxytemplate {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_proxytemplates {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_retries {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_retry {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_secret {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_secrets {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_timeout {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_timeouts {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_traffic-log {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_traffic-logs {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_traffic-permission {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_traffic-permissions {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_traffic-route {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_traffic-routes {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_traffic-trace {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_traffic-traces {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_zone {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_get_zones {
-  _arguments \
-    '--offset[the offset that indicates starting element of the resources list to retrieve]:' \
-    '--size[maximum number of elements to return]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_help {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-
-function _kumactl_inspect {
-  local -a commands
-
-  _arguments -C \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    "1: :->cmnds" \
-    "*::arg:->args"
-
-  case $state in
-  cmnds)
-    commands=(
-      "dataplanes:Inspect Dataplanes"
-      "meshes:Inspect Meshes"
-      "services:Inspect Services"
-      "zones:Inspect Zones"
-    )
-    _describe "command" commands
-    ;;
-  esac
-
-  case "$words[1]" in
-  dataplanes)
-    _kumactl_inspect_dataplanes
-    ;;
-  meshes)
-    _kumactl_inspect_meshes
-    ;;
-  services)
-    _kumactl_inspect_services
-    ;;
-  zones)
-    _kumactl_inspect_zones
-    ;;
-  esac
-}
-
-function _kumactl_inspect_dataplanes {
-  _arguments \
-    '--gateway[filter gateway dataplanes]' \
-    '--ingress[filter ingress dataplanes]' \
-    '--tag[filter by tag in format of key=value. You can provide many tags]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_inspect_meshes {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_inspect_services {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-function _kumactl_inspect_zones {
-  _arguments \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    '(-o --output)'{-o,--output}'[output format: one of table|yaml|json]:'
-}
-
-
-function _kumactl_install {
-  local -a commands
-
-  _arguments -C \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    "1: :->cmnds" \
-    "*::arg:->args"
-
-  case $state in
-  cmnds)
-    commands=(
-      "control-plane:Install Kuma Control Plane on Kubernetes"
-      "crds:Install Kuma Custom Resource Definitions on Kubernetes"
-      "demo:Install Kuma demo on Kubernetes"
-      "dns:Install DNS to Kubernetes"
-      "gateway:Install ingress gateway on Kubernetes"
-      "logging:Install Logging backend in Kubernetes cluster (Loki)"
-      "metrics:Install Metrics backend in Kubernetes cluster (Prometheus + Grafana)"
-      "tracing:Install Tracing backend in Kubernetes cluster (Jaeger)"
-      "transparent-proxy:Install Transparent Proxy pre-requisites on the host"
-    )
-    _describe "command" commands
-    ;;
-  esac
-
-  case "$words[1]" in
-  control-plane)
-    _kumactl_install_control-plane
-    ;;
-  crds)
-    _kumactl_install_crds
-    ;;
-  demo)
-    _kumactl_install_demo
-    ;;
-  dns)
-    _kumactl_install_dns
-    ;;
-  gateway)
-    _kumactl_install_gateway
-    ;;
-  logging)
-    _kumactl_install_logging
-    ;;
-  metrics)
-    _kumactl_install_metrics
-    ;;
-  tracing)
-    _kumactl_install_tracing
-    ;;
-  transparent-proxy)
-    _kumactl_install_transparent-proxy
-    ;;
-  esac
-}
-
-function _kumactl_install_control-plane {
-  _arguments \
-    '--cni-bin-dir[set the CNI binary directory]:' \
-    '--cni-chained[enable chained CNI installation]' \
-    '--cni-conf-name[set the CNI configuration name]:' \
-    '--cni-enabled[install Kuma with CNI instead of proxy init container]' \
-    '--cni-net-dir[set the CNI install directory]:' \
-    '--cni-registry[registry for the image of the Kuma CNI component]:' \
-    '--cni-repository[repository for the image of the Kuma CNI component]:' \
-    '--cni-version[version of the image of the Kuma CNI component]:' \
-    '--control-plane-registry[registry for the image of the Kuma Control Plane component]:' \
-    '--control-plane-repository[repository for the image of the Kuma Control Plane component]:' \
-    '--control-plane-service-name[Service name of the Kuma Control Plane]:' \
-    '--control-plane-version[version of the image of the Kuma Control Plane component]:' \
-    '--dataplane-init-registry[registry for the init image of the Kuma DataPlane component]:' \
-    '--dataplane-init-repository[repository for the init image of the Kuma DataPlane component]:' \
-    '--dataplane-init-version[version of the init image of the Kuma DataPlane component]:' \
-    '--dataplane-registry[registry for the image of the Kuma DataPlane component]:' \
-    '--dataplane-repository[repository for the image of the Kuma DataPlane component]:' \
-    '--dataplane-version[version of the image of the Kuma DataPlane component]:' \
-    '--env-var[environment variables that will be passed to the control plane]:' \
-    '--image-pull-policy[image pull policy that applies to all components of the Kuma Control Plane]:' \
-    '--ingress-drain-time[drain time for Envoy proxy]:' \
-    '--ingress-enabled[install Kuma with an Ingress deployment, using the Data Plane image]' \
-    '--ingress-use-node-port[use NodePort instead of LoadBalancer for the Ingress Service]' \
-    '--injector-failure-policy[failue policy of the mutating web hook implemented by the Kuma Injector component]:' \
-    '--kds-global-address[URL of Global Kuma CP (example: grpcs://192.168.0.1:5685)]:' \
-    '--mode[kuma cp modes: one of standalone|remote|global]:' \
-    '--namespace[namespace to install Kuma Control Plane to]:' \
-    '--tls-api-server-client-certs-secret[Secret that contains list of .pem certificates that can access admin endpoints of Kuma API on HTTPS]:' \
-    '--tls-api-server-secret[Secret that contains tls.crt, key.crt for protecting Kuma API on HTTPS]:' \
-    '--tls-general-ca-bundle[Base64 encoded CA certificate (the same as in controlPlane.tls.general.secret#ca.crt)]:' \
-    '--tls-general-secret[Secret that contains tls.crt, key.crt and ca.crt for protecting Kuma in-cluster communication]:' \
-    '--tls-kds-global-server-secret[Secret that contains tls.crt, key.crt for protecting cross cluster communication]:' \
-    '--tls-kds-remote-client-secret[Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification]:' \
-    '--use-node-port[use NodePort instead of LoadBalancer]' \
-    '--without-kubernetes-connection[install without connection to Kubernetes cluster. This can be used for initial Kuma installation, but not for upgrades]' \
-    '--zone[set the Kuma zone name]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_install_crds {
-  _arguments \
-    '--only-missing[install only resources which are not already present in a cluster]' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_install_demo {
-  _arguments \
-    '--namespace[Namespace to install demo to]:' \
-    '--zone[Zone in which to install demo]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_install_dns {
-  _arguments \
-    '--namespace[namespace to look for Kuma Control Plane service]:' \
-    '--port[port of the Kuma DNS server]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-
-function _kumactl_install_gateway {
-  local -a commands
-
-  _arguments -C \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    "1: :->cmnds" \
-    "*::arg:->args"
-
-  case $state in
-  cmnds)
-    commands=(
-      "kong:Install Kong ingress gateway on Kubernetes"
-      "kong-enterprise:Install Kong ingress gateway on Kubernetes"
-    )
-    _describe "command" commands
-    ;;
-  esac
-
-  case "$words[1]" in
-  kong)
-    _kumactl_install_gateway_kong
-    ;;
-  kong-enterprise)
-    _kumactl_install_gateway_kong-enterprise
-    ;;
-  esac
-}
-
-function _kumactl_install_gateway_kong {
-  _arguments \
-    '--namespace[namespace to install gateway to]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_install_gateway_kong-enterprise {
-  _arguments \
-    '--license-path[path to license file]:' \
-    '--namespace[namespace to install gateway to]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_install_logging {
-  _arguments \
-    '--namespace[namespace to install logging to]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_install_metrics {
-  _arguments \
-    '--kuma-cp-address[the address of Kuma CP]:' \
-    '--kuma-prometheus-sd-image[image name of Kuma Prometheus SD]:' \
-    '--kuma-prometheus-sd-version[version of Kuma Prometheus SD]:' \
-    '--namespace[namespace to install metrics to]:' \
-    '--without-grafana[disable Grafana resources generation]' \
-    '--without-prometheus[disable Prometheus resources generation]' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_install_tracing {
-  _arguments \
-    '--namespace[namespace to install tracing to]:' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_install_transparent-proxy {
-  _arguments \
-    '--dry-run[dry run]' \
-    '--exclude-inbound-ports[a comma separated list of inbound ports to exclude from redirect to Envoy]:' \
-    '--exclude-outbound-ports[a comma separated list of outbound ports to exclude from redirect to Envoy]:' \
-    '--kuma-cp-ip[the IP address of the Kuma CP which exposes the DNS service on port 53.]:' \
-    '--kuma-dp-uid[the UID of the user that will run kuma-dp]:' \
-    '--kuma-dp-user[the user that will run kuma-dp]:' \
-    '--modify-iptables[modify the host iptables to redirect the traffic to Envoy]' \
-    '--redirect-all-dns-traffic[redirect all DNS requests to a specified port. Implies --redirect-dns.]' \
-    '--redirect-dns[redirect all DNS requests to the servers in /etc/resolv.conf to a specified port]' \
-    '--redirect-dns-port[the port where the DNS agent is listening]:' \
-    '--redirect-dns-upstream-target-chain[(optional) the iptables chain where the upstream DNS requests should be directed to. It is only applied for IP V4. Use with care.]:' \
-    '--redirect-inbound[redirect the inbound traffic to the Envoy. Should be disabled for Gateway data plane proxies.]' \
-    '--redirect-inbound-port[inbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortInbound`]:' \
-    '--redirect-inbound-port-v6[IPv6 inbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortInboundV6`]:' \
-    '--redirect-outbound-port[outbound port redirected to Envoy, as specified in dataplane'\''s `networking.transparentProxying.redirectPortOutbound`]:' \
-    '--skip-resolv-conf[skip modifying the host `/etc/resolv.conf`]' \
-    '--store-firewalld[store the iptables changes with firewalld]' \
-    '--verbose[verbose]' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-
-function _kumactl_uninstall {
-  local -a commands
-
-  _arguments -C \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]' \
-    "1: :->cmnds" \
-    "*::arg:->args"
-
-  case $state in
-  cmnds)
-    commands=(
-      "transparent-proxy:Uninstall Transparent Proxy pre-requisites on the host"
-    )
-    _describe "command" commands
-    ;;
-  esac
-
-  case "$words[1]" in
-  transparent-proxy)
-    _kumactl_uninstall_transparent-proxy
-    ;;
-  esac
-}
-
-function _kumactl_uninstall_transparent-proxy {
-  _arguments \
-    '--dry-run[dry run]' \
-    '--verbose[verbose]' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
-function _kumactl_version {
-  _arguments \
-    '(-a --detailed)'{-a,--detailed}'[Print detailed version]' \
-    '--config-file[path to the configuration file to use]:' \
-    '--log-level[log level: one of off|info|debug]:' \
-    '(-m --mesh)'{-m,--mesh}'[mesh to use]:' \
-    '--no-config[if set no config file and config directory will be created]'
-}
-
+# zsh completion for kumactl                              -*- shell-script -*-
+
+__kumactl_debug()
+{
+    local file="$BASH_COMP_DEBUG_FILE"
+    if [[ -n ${file} ]]; then
+        echo "$*" >> "${file}"
+    fi
+}
+
+_kumactl()
+{
+    local shellCompDirectiveError=1
+    local shellCompDirectiveNoSpace=2
+    local shellCompDirectiveNoFileComp=4
+    local shellCompDirectiveFilterFileExt=8
+    local shellCompDirectiveFilterDirs=16
+
+    local lastParam lastChar flagPrefix requestComp out directive compCount comp lastComp
+    local -a completions
+
+    __kumactl_debug "\n========= starting completion logic =========="
+    __kumactl_debug "CURRENT: ${CURRENT}, words[*]: ${words[*]}"
+
+    # The user could have moved the cursor backwards on the command-line.
+    # We need to trigger completion from the $CURRENT location, so we need
+    # to truncate the command-line ($words) up to the $CURRENT location.
+    # (We cannot use $CURSOR as its value does not work when a command is an alias.)
+    words=("${=words[1,CURRENT]}")
+    __kumactl_debug "Truncated words[*]: ${words[*]},"
+
+    lastParam=${words[-1]}
+    lastChar=${lastParam[-1]}
+    __kumactl_debug "lastParam: ${lastParam}, lastChar: ${lastChar}"
+
+    # For zsh, when completing a flag with an = (e.g., kumactl -n=<TAB>)
+    # completions must be prefixed with the flag
+    setopt local_options BASH_REMATCH
+    if [[ "${lastParam}" =~ '-.*=' ]]; then
+        # We are dealing with a flag with an =
+        flagPrefix="-P ${BASH_REMATCH}"
+    fi
+
+    # Prepare the command to obtain completions
+    requestComp="${words[1]} __complete ${words[2,-1]}"
+    if [ "${lastChar}" = "" ]; then
+        # If the last parameter is complete (there is a space following it)
+        # We add an extra empty parameter so we can indicate this to the go completion code.
+        __kumactl_debug "Adding extra empty parameter"
+        requestComp="${requestComp} \"\""
+    fi
+
+    __kumactl_debug "About to call: eval ${requestComp}"
+
+    # Use eval to handle any environment variables and such
+    out=$(eval ${requestComp} 2>/dev/null)
+    __kumactl_debug "completion output: ${out}"
+
+    # Extract the directive integer following a : from the last line
+    local lastLine
+    while IFS='\n' read -r line; do
+        lastLine=${line}
+    done < <(printf "%s\n" "${out[@]}")
+    __kumactl_debug "last line: ${lastLine}"
+
+    if [ "${lastLine[1]}" = : ]; then
+        directive=${lastLine[2,-1]}
+        # Remove the directive including the : and the newline
+        local suffix
+        (( suffix=${#lastLine}+2))
+        out=${out[1,-$suffix]}
+    else
+        # There is no directive specified.  Leave $out as is.
+        __kumactl_debug "No directive found.  Setting do default"
+        directive=0
+    fi
+
+    __kumactl_debug "directive: ${directive}"
+    __kumactl_debug "completions: ${out}"
+    __kumactl_debug "flagPrefix: ${flagPrefix}"
+
+    if [ $((directive & shellCompDirectiveError)) -ne 0 ]; then
+        __kumactl_debug "Completion received error. Ignoring completions."
+        return
+    fi
+
+    compCount=0
+    while IFS='\n' read -r comp; do
+        if [ -n "$comp" ]; then
+            # If requested, completions are returned with a description.
+            # The description is preceded by a TAB character.
+            # For zsh's _describe, we need to use a : instead of a TAB.
+            # We first need to escape any : as part of the completion itself.
+            comp=${comp//:/\\:}
+
+            local tab=$(printf '\t')
+            comp=${comp//$tab/:}
+
+            ((compCount++))
+            __kumactl_debug "Adding completion: ${comp}"
+            completions+=${comp}
+            lastComp=$comp
+        fi
+    done < <(printf "%s\n" "${out[@]}")
+
+    if [ $((directive & shellCompDirectiveFilterFileExt)) -ne 0 ]; then
+        # File extension filtering
+        local filteringCmd
+        filteringCmd='_files'
+        for filter in ${completions[@]}; do
+            if [ ${filter[1]} != '*' ]; then
+                # zsh requires a glob pattern to do file filtering
+                filter="\*.$filter"
+            fi
+            filteringCmd+=" -g $filter"
+        done
+        filteringCmd+=" ${flagPrefix}"
+
+        __kumactl_debug "File filtering command: $filteringCmd"
+        _arguments '*:filename:'"$filteringCmd"
+    elif [ $((directive & shellCompDirectiveFilterDirs)) -ne 0 ]; then
+        # File completion for directories only
+        local subDir
+        subdir="${completions[1]}"
+        if [ -n "$subdir" ]; then
+            __kumactl_debug "Listing directories in $subdir"
+            pushd "${subdir}" >/dev/null 2>&1
+        else
+            __kumactl_debug "Listing directories in ."
+        fi
+
+        _arguments '*:dirname:_files -/'" ${flagPrefix}"
+        if [ -n "$subdir" ]; then
+            popd >/dev/null 2>&1
+        fi
+    elif [ $((directive & shellCompDirectiveNoSpace)) -ne 0 ] && [ ${compCount} -eq 1 ]; then
+        __kumactl_debug "Activating nospace."
+        # We can use compadd here as there is no description when
+        # there is only one completion.
+        compadd -S '' "${lastComp}"
+    elif [ ${compCount} -eq 0 ]; then
+        if [ $((directive & shellCompDirectiveNoFileComp)) -ne 0 ]; then
+            __kumactl_debug "deactivating file completion"
+        else
+            # Perform file completion
+            __kumactl_debug "activating file completion"
+            _arguments '*:filename:_files'" ${flagPrefix}"
+        fi
+    else
+        _describe "completions" completions $(echo $flagPrefix)
+    fi
+}
+
+# don't run the completion function when being source-ed or eval-ed
+if [ "$funcstack[1]" = "_kumactl" ]; then
+	_kumactl
+fi

@@ -22,7 +22,12 @@ clean/proto: ## Dev: Remove auto-generated Protobuf files
 	find $(PROTO_DIR) -name '*.pb.validate.go' -delete
 
 .PHONY: generate
-generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins ## Dev: Run code generators
+generate:  ## Dev: Run code generators
+generate: clean/proto protoc/pkg/config/app/kumactl/v1alpha1 protoc/pkg/test/apis/sample/v1alpha1 protoc/plugins resources/mesh
+
+.PHONY: resources/mesh
+resources/mesh:
+	$(GO_RUN) ./tools/resource-gen.go -package mesh > pkg/core/resources/apis/mesh/resources.go
 
 .PHONY: protoc/pkg/config/app/kumactl/v1alpha1
 protoc/pkg/config/app/kumactl/v1alpha1:
@@ -58,15 +63,3 @@ generate/envoy-imports:
 	echo 'import (' >> ${ENVOY_IMPORTS}
 	go list github.com/envoyproxy/go-control-plane/... | grep "github.com/envoyproxy/go-control-plane/envoy/" | awk '{printf "\t_ \"%s\"\n", $$1}' >> ${ENVOY_IMPORTS}
 	echo ')' >> ${ENVOY_IMPORTS}
-
-.PHONY: docs
-docs: ## Dev: Generate all docs
-	# re-build `kumactl` binary with a predictable `version`
-	$(MAKE) _docs_ BUILD_INFO_VERSION=latest
-
-.PHONY: _docs_
-_docs_: docs/kumactl
-
-.PHONY: docs/kumactl
-docs/kumactl: build/kumactl ## Dev: Generate `kumactl` docs
-	tools/docs/kumactl/gen_help.sh ${BUILD_KUMACTL_DIR}/kumactl >docs/cmd/kumactl/HELP.md

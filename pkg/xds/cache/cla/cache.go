@@ -7,6 +7,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
+
 	"github.com/kumahq/kuma/pkg/core/xds"
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -56,12 +58,18 @@ func NewCache(
 }
 
 func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error) {
-	key := fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, cluster.Hash(), meshHash)
+	key := sha256.Hash(fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, cluster.Hash(), meshHash))
+
 	elt, err := c.cache.GetOrRetrieve(ctx, key, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
 		dataplanes, err := topology.GetDataplanes(claCacheLog, ctx, c.rm, c.ipFunc, meshName)
 		if err != nil {
 			return nil, err
 		}
+		zoneIngresses, err := topology.GetZoneIngresses(claCacheLog, ctx, c.rm, c.ipFunc)
+		if err != nil {
+			return nil, err
+		}
+
 		mesh := core_mesh.NewMeshResource()
 		if err := c.rm.Get(ctx, mesh, core_store.GetByKey(meshName, model.NoMesh)); err != nil {
 			return nil, err
@@ -71,7 +79,7 @@ func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster e
 		// This also solves the problem that if the ExternalService is blocked by TrafficPermission
 		// OutboundProxyGenerate treats this as EDS cluster and tries to get endpoints via GetCLA
 		// Since GetCLA is consistent for a mesh, it would return an endpoint with address which is not valid for EDS.
-		endpointMap := topology.BuildEdsEndpointMap(mesh, c.zone, dataplanes.Items)
+		endpointMap := topology.BuildEdsEndpointMap(mesh, c.zone, dataplanes.Items, zoneIngresses.Items)
 		endpoints := []xds.Endpoint{}
 		for _, endpoint := range endpointMap[cluster.Service()] {
 			if endpoint.ContainsTags(cluster.Tags()) {

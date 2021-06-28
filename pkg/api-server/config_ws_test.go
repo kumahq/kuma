@@ -146,7 +146,7 @@ var _ = Describe("Config WS", func() {
 			  "v1"
 			],
 			"assignmentRefreshInterval": "1s",
-			"fetchTimeout": "30s",
+			"defaultFetchTimeout": "30s",
 			"grpcPort": 0,
 			"port": 5676
 		  },
@@ -161,7 +161,7 @@ var _ = Describe("Config WS", func() {
 			  },
 			  "pollTimeout": "500ms"
 			},
-			"remote": {
+			"zone": {
 			  "kds": {
 				"refreshInterval": "1s",
 				"rootCaFile": ""
@@ -182,6 +182,7 @@ var _ = Describe("Config WS", func() {
 			  "injector": {
 				"caCertFile": "",
 				"builtinDNS": {
+                  "enabled": true,
                   "port": 15053
                 },
                 "cniEnabled": false,

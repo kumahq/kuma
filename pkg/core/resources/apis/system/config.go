@@ -28,15 +28,19 @@ func NewConfigResource() *ConfigResource {
 func (t *ConfigResource) GetType() model.ResourceType {
 	return ConfigType
 }
+
 func (t *ConfigResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
+
 func (t *ConfigResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
+
 func (t *ConfigResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
+
 func (t *ConfigResource) SetSpec(spec model.ResourceSpec) error {
 	value, ok := spec.(*config_proto.Config)
 	if !ok {
@@ -46,9 +50,11 @@ func (t *ConfigResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+
 func (t *ConfigResource) Validate() error {
 	return nil
 }
+
 func (t *ConfigResource) Scope() model.ResourceScope {
 	return model.ScopeGlobal
 }
@@ -67,12 +73,15 @@ func (l *ConfigResourceList) GetItems() []model.Resource {
 	}
 	return res
 }
+
 func (l *ConfigResourceList) GetItemType() model.ResourceType {
 	return ConfigType
 }
+
 func (l *ConfigResourceList) NewItem() model.Resource {
 	return NewConfigResource()
 }
+
 func (l *ConfigResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*ConfigResource); ok {
 		l.Items = append(l.Items, trr)
@@ -81,6 +90,7 @@ func (l *ConfigResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*ConfigResource)(nil), r)
 	}
 }
+
 func (l *ConfigResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }

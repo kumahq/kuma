@@ -30,31 +30,42 @@ const (
 	// External service tag
 	ExternalServiceTag = "kuma.io/external-service-name"
 
-	RegularDpType DpType = "regular"
-	IngressDpType DpType = "ingress"
-	GatewayDpType DpType = "gateway"
-
 	// Used for Service-less dataplanes
 	TCPPortReserved = 49151 // IANA Reserved
 )
 
-type DpType string
+type ProxyType string
 
-func (d *Dataplane) DpType() DpType {
+const (
+	DataplaneProxyType ProxyType = "dataplane"
+	IngressProxyType   ProxyType = "ingress"
+	GatewayProxyType   ProxyType = "gateway"
+)
+
+func (t ProxyType) IsValid() error {
+	switch t {
+	case DataplaneProxyType, IngressProxyType, GatewayProxyType:
+		return nil
+	}
+	return errors.Errorf("%s is not a valid proxy type", t)
+}
+
+func (d *Dataplane) ProxyType() ProxyType {
 	if d.IsIngress() {
-		return IngressDpType
+		return IngressProxyType
 	}
 	if d.GetNetworking().GetGateway() != nil {
-		return GatewayDpType
+		return GatewayProxyType
 	}
-	return RegularDpType
+	return DataplaneProxyType
 }
 
 type InboundInterface struct {
-	DataplaneIP   string
-	DataplanePort uint32
-	WorkloadIP    string
-	WorkloadPort  uint32
+	DataplaneAdvertisedIP string
+	DataplaneIP           string
+	DataplanePort         uint32
+	WorkloadIP            string
+	WorkloadPort          uint32
 }
 
 func (i InboundInterface) String() string {
@@ -128,6 +139,11 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		iface.DataplaneIP = inbound.Address
 	} else {
 		iface.DataplaneIP = n.Address
+	}
+	if n.AdvertisedAddress != "" {
+		iface.DataplaneAdvertisedIP = n.AdvertisedAddress
+	} else {
+		iface.DataplaneAdvertisedIP = iface.DataplaneIP
 	}
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress
@@ -407,7 +423,7 @@ func (d *Dataplane) HasAvailableServices() bool {
 	return len(d.Networking.Ingress.AvailableServices) != 0
 }
 
-func (d *Dataplane) IsRemoteIngress(localZone string) bool {
+func (d *Dataplane) IsZoneIngress(localZone string) bool {
 	if !d.IsIngress() {
 		return false
 	}

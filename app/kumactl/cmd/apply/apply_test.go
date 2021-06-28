@@ -72,6 +72,7 @@ var _ = Describe("kumactl apply", func() {
 		// and
 		Expect(resource.Spec.Networking.Outbound).To(HaveLen(1))
 		Expect(resource.Spec.Networking.Outbound[0].Port).To(Equal(uint32(3000)))
+		// nolint:staticcheck
 		Expect(resource.Spec.Networking.Outbound[0].Service).To(Equal("postgres"))
 	}
 
@@ -178,7 +179,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// when
 		resource := mesh.NewMeshResource()
-		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
+		// with production code, the mesh is not required for zone store. API Server then infer mesh from the name
 		err = store.Get(context.Background(), resource, core_store.GetByKey("sample", ""))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -265,7 +266,7 @@ var _ = Describe("kumactl apply", func() {
 
 		// when
 		resource := mesh.NewMeshResource()
-		// with production code, the mesh is not required for remote store. API Server then infer mesh from the name
+		// with production code, the mesh is not required for zone store. API Server then infer mesh from the name
 		err = store.Get(context.Background(), resource, core_store.GetByKey("meshinit", ""))
 		Expect(err).ToNot(HaveOccurred())
 
@@ -354,6 +355,7 @@ var _ = Describe("kumactl apply", func() {
 		)
 		buf := &bytes.Buffer{}
 		rootCmd.SetOut(buf)
+		rootCmd.SetErr(buf)
 
 		// when
 		err := rootCmd.Execute()
@@ -390,6 +392,7 @@ var _ = Describe("kumactl apply", func() {
 		})
 		buf := &bytes.Buffer{}
 		rootCmd.SetOut(buf)
+		rootCmd.SetErr(buf)
 
 		// when
 		err = rootCmd.Execute()

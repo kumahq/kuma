@@ -9,7 +9,6 @@ import (
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
-	"github.com/kumahq/kuma/pkg/core/xds"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
@@ -35,10 +34,7 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
 			sourceService := "backend"
 			destinationService := "db"
 			proxy := &core_xds.Proxy{
-				Id: xds.ProxyId{
-					Name: "backend",
-					Mesh: "example",
-				},
+				Id: *core_xds.BuildProxyId("example", "backend"),
 				Dataplane: &mesh_core.DataplaneResource{
 					Spec: &mesh_proto.Dataplane{
 						Networking: &mesh_proto.Dataplane_Networking{
@@ -131,15 +127,16 @@ var _ = Describe("NetworkAccessLogConfigurer", func() {
                   - name: envoy.access_loggers.file
                     typedConfig:
                       '@type': type.googleapis.com/envoy.extensions.access_loggers.file.v3.FileAccessLog
-                      format: |+
-                        [%START_TIME%] %RESPONSE_FLAGS% demo 192.168.0.1(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
-
+                      logFormat:
+                        textFormatSource:
+                          inlineString: |+
+                            [%START_TIME%] %RESPONSE_FLAGS% demo 192.168.0.1(backend)->%UPSTREAM_HOST%(db) took %DURATION%ms, sent %BYTES_SENT% bytes, received: %BYTES_RECEIVED% bytes
+            
                       path: /tmp/log
                   cluster: db
                   statPrefix: db
             name: outbound:127.0.0.1:5432
-            trafficDirection: OUTBOUND
-`,
+            trafficDirection: OUTBOUND`,
 		}),
 		Entry("basic tcp_proxy with tcp access log", testCase{
 			listenerName:    "outbound:127.0.0.1:5432",

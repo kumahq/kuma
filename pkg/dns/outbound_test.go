@@ -72,7 +72,7 @@ var _ = Describe("VIPOutbounds", func() {
 		}
 
 		// when
-		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, vipList, externalServices.Items)
+		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, nil, vipList, externalServices.Items)
 		// and
 		Expect(outbounds).To(HaveLen(5))
 		// and
@@ -141,7 +141,7 @@ var _ = Describe("VIPOutbounds", func() {
 		}
 
 		// when
-		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, vipList, externalServices.Items)
+		outbounds := dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), dataplanes.Items, nil, vipList, externalServices.Items)
 		// and
 		Expect(outbounds).To(HaveLen(1))
 		// and
@@ -234,7 +234,7 @@ var _ = Describe("VIPOutbounds", func() {
 		vipList["third-external-service"] = "240.0.0.8"
 
 		actual := &mesh_proto.Dataplane_Networking{}
-		actual.Outbound = dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, vipList, externalServices)
+		actual.Outbound = dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, nil, vipList, externalServices)
 
 		expected := `
      outbound:
@@ -278,6 +278,89 @@ var _ = Describe("VIPOutbounds", func() {
         port: 80
         tags:
           kuma.io/service: third-external-service
+`
+		Expect(proto.ToYAML(actual)).To(MatchYAML(expected))
+	})
+
+	It("should take ingresses into account", func() {
+		dataplane := &core_mesh.DataplaneResource{
+			Meta: &test_model.ResourceMeta{Name: "dp1", Mesh: "default"},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Address: "192.168.0.1",
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+						Port: 8080,
+						Tags: map[string]string{
+							"kuma.io/service": "backend",
+						}},
+					},
+				},
+			},
+		}
+
+		vipList := vips.List{
+			"old-ingress-svc-1": "240.0.0.0",
+			"old-ingress-svc-2": "240.0.0.1",
+			"new-ingress-svc-1": "240.0.0.2",
+			"new-ingress-svc-2": "240.0.0.3",
+		}
+
+		otherDataplanes := []*core_mesh.DataplaneResource{{
+			Meta: &test_model.ResourceMeta{Name: "old-ingress", Mesh: "default"},
+			Spec: &mesh_proto.Dataplane{
+				Networking: &mesh_proto.Dataplane_Networking{
+					Inbound: []*mesh_proto.Dataplane_Networking_Inbound{{
+						Port:    10001,
+						Address: "192.168.0.2",
+						Tags: map[string]string{
+							"kuma.io/service": "ingress",
+						},
+					}},
+					Ingress: &mesh_proto.Dataplane_Networking_Ingress{
+						AvailableServices: []*mesh_proto.Dataplane_Networking_Ingress_AvailableService{
+							{Mesh: "default", Tags: map[string]string{mesh_proto.ServiceTag: "old-ingress-svc-1"}},
+							{Mesh: "default", Tags: map[string]string{mesh_proto.ServiceTag: "old-ingress-svc-2"}},
+						},
+					},
+				},
+			},
+		}}
+
+		zoneIngresses := []*core_mesh.ZoneIngressResource{{
+			Meta: &test_model.ResourceMeta{Name: "new-ingress", Mesh: model.NoMesh},
+			Spec: &mesh_proto.ZoneIngress{
+				Networking: &mesh_proto.ZoneIngress_Networking{
+					Address: "192.168.0.3",
+					Port:    10001,
+				},
+				AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{
+					{Mesh: "default", Tags: map[string]string{mesh_proto.ServiceTag: "new-ingress-svc-1"}},
+					{Mesh: "default", Tags: map[string]string{mesh_proto.ServiceTag: "new-ingress-svc-2"}},
+				},
+			},
+		}}
+
+		actual := &mesh_proto.Dataplane_Networking{}
+		actual.Outbound = dns.VIPOutbounds(model.MetaToResourceKey(dataplane.Meta), otherDataplanes, zoneIngresses, vipList, nil)
+
+		expected := `
+     outbound:
+      - address: 240.0.0.2
+        port: 80
+        tags:
+          kuma.io/service: new-ingress-svc-1
+      - address: 240.0.0.3
+        port: 80
+        tags:
+          kuma.io/service: new-ingress-svc-2
+      - address: 240.0.0.0
+        port: 80
+        tags:
+          kuma.io/service: old-ingress-svc-1
+      - address: 240.0.0.1
+        port: 80
+        tags:
+          kuma.io/service: old-ingress-svc-2
 `
 		Expect(proto.ToYAML(actual)).To(MatchYAML(expected))
 	})

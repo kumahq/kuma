@@ -71,7 +71,55 @@ var _ = Describe("ClientSideTLSConfigurer", func() {
             typedConfig:
               '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
               commonTlsContext: {}
+              sni: httpbin.org:3000
         type: EDS
+`}),
+		Entry("cluster with mTLS and certs", testCase{
+			clusterName: "testCluster",
+			endpoints: []xds.Endpoint{
+				{
+					Target: "httpbin.org",
+					Port:   3000,
+					Tags:   nil,
+					Weight: 100,
+					ExternalService: &xds.ExternalService{
+						TLSEnabled:         true,
+						CaCert:             []byte("cacert"),
+						ClientCert:         []byte("clientcert"),
+						ClientKey:          []byte("clientkey"),
+						AllowRenegotiation: true,
+					},
+				},
+			},
+
+			expected: `
+            connectTimeout: 5s
+            edsClusterConfig:
+              edsConfig:
+                ads: {}
+                resourceApiVersion: V3
+            name: testCluster
+            transportSocketMatches:
+            - match: {}
+              name: httpbin.org
+              transportSocket:
+                name: envoy.transport_sockets.tls
+                typedConfig:
+                  '@type': type.googleapis.com/envoy.extensions.transport_sockets.tls.v3.UpstreamTlsContext
+                  allowRenegotiation: true
+                  commonTlsContext:
+                    tlsCertificates:
+                    - certificateChain:
+                        inlineBytes: Y2xpZW50Y2VydA==
+                      privateKey:
+                        inlineBytes: Y2xpZW50a2V5
+                    validationContext:
+                      matchSubjectAltNames:
+                      - exact: httpbin.org
+                      trustedCa:
+                        inlineBytes: Y2FjZXJ0
+                  sni: httpbin.org:3000
+            type: EDS
 `}),
 	)
 })

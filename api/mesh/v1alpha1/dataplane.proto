@@ -4,6 +4,7 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "mesh/v1alpha1/metrics.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
@@ -11,6 +12,9 @@ import "validate/validate.proto";
 
 // Dataplane defines configuration of a side-car proxy.
 message Dataplane {
+
+  option (kuma.mesh.resource).name = "DataplaneResource";
+  option (kuma.mesh.resource).type = "Dataplane";
 
   // Networking describes inbound and outbound interfaces of a dataplane.
   message Networking {
@@ -45,6 +49,13 @@ message Dataplane {
 
     // Public IP on which the dataplane is accessible in the network.
     string address = 5;
+
+    // In some situation, dataplane resides in a private network and not
+    // reachable via 'address'. advertisedAddress is configured with public
+    // routable address for such dataplane so that other dataplanes in the mesh
+    // can connect to it over advertisedAddress and not via address
+    // Note: Envoy binds to the address not advertisedAddress
+    string advertisedAddress = 7;
 
     // Inbound describes a service implemented by the dataplane.
     message Inbound {
@@ -114,7 +125,8 @@ message Dataplane {
 
       // DEPRECATED: use networking.outbound[].tags
       // Service name.
-      string service = 2 [ (validate.rules).string.hostname = true ];
+      string service = 2
+          [ (validate.rules).string.hostname = true, deprecated = true ];
 
       // Tags
       map<string, string> tags = 5;

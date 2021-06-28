@@ -17,11 +17,6 @@ import (
 )
 
 func TracingK8S() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
-
 	namespaceWithSidecarInjection := func(namespace string) string {
 		return fmt.Sprintf(`
 apiVersion: v1
@@ -70,12 +65,8 @@ spec:
 		c, err := NewK8SCluster(NewTestingT(), Kuma1, Silent)
 		Expect(err).ToNot(HaveOccurred())
 		cluster = c
-		deployOptsFuncs = append(deployOptsFuncs,
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"))
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
-			Install(KumaDNS()).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
 			Install(EchoServerK8s("default")).

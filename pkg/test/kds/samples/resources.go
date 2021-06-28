@@ -97,6 +97,24 @@ var (
 			Address: "192.168.0.1",
 		},
 	}
+	ZoneIngress = &mesh_proto.ZoneIngress{
+		Networking: &mesh_proto.ZoneIngress_Networking{
+			Address:           "127.0.0.1",
+			Port:              80,
+			AdvertisedAddress: "192.168.0.1",
+			AdvertisedPort:    10001,
+		},
+		AvailableServices: []*mesh_proto.ZoneIngress_AvailableService{{
+			Tags: map[string]string{
+				"service": "backend",
+			}},
+		},
+	}
+	ZoneIngressInsight = &mesh_proto.ZoneIngressInsight{
+		Subscriptions: []*mesh_proto.DiscoverySubscription{{
+			Id: "1",
+		}},
+	}
 	ExternalService = &mesh_proto.ExternalService{
 		Networking: &mesh_proto.ExternalService_Networking{
 			Address: "192.168.0.1",
@@ -275,7 +293,22 @@ var (
 	Secret = &system_proto.Secret{
 		Data: &wrappers.BytesValue{Value: []byte("secret key")},
 	}
+	GlobalSecret = &system_proto.Secret{
+		Data: &wrappers.BytesValue{Value: []byte("global secret key")},
+	}
 	Config = &system_proto.Config{
 		Config: "sample config",
+	}
+	RateLimit = &mesh_proto.RateLimit{
+		Sources: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "*",
+			},
+		}},
+		Destinations: []*mesh_proto.Selector{{
+			Match: map[string]string{
+				"kuma.io/service": "*",
+			},
+		}},
 	}
 )

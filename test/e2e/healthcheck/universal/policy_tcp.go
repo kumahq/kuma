@@ -13,10 +13,6 @@ import (
 )
 
 func PolicyTCP() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
 	healthCheck := func(send, recv string) string {
 		sendBase64 := base64.StdEncoding.EncodeToString([]byte(send))
 		recvBase64 := base64.StdEncoding.EncodeToString([]byte(recv))
@@ -61,13 +57,13 @@ conf:
 		err = cluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
+		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "dp-demo-client")
 		Expect(err).ToNot(HaveOccurred())
 		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 
 		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken,
-			WithTransparentProxy(true), WithBuiltinDNS(true))(cluster)
+			WithTransparentProxy(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 		err = TestServerUniversal("test-server", "default", testServerToken,
 			WithArgs([]string{"health-check", "tcp"}),

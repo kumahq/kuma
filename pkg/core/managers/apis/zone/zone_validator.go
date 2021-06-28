@@ -27,7 +27,7 @@ func (v *Validator) ValidateDelete(ctx context.Context, name string) error {
 		return errors.Wrap(err, "unable to get ZoneInsight")
 	}
 	if zi.Spec.IsOnline() {
-		validationErr.AddViolation("zone", "unable to delete Zone, Remote CP is still connected, please shut it down first")
+		validationErr.AddViolation("zone", "unable to delete Zone, Zone CP is still connected, please shut it down first")
 		return validationErr
 	}
 	return nil

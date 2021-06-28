@@ -68,10 +68,11 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	if err := initializeConfigStore(cfg, builder); err != nil {
 		return nil, err
 	}
-	// we add Secret store to unified ResourceStore so global<->remote synchronizer can use unified interface
+	// we add Secret store to unified ResourceStore so global<->zone synchronizer can use unified interface
 	builder.WithResourceStore(core_store.NewCustomizableResourceStore(builder.ResourceStore(), map[core_model.ResourceType]core_store.ResourceStore{
-		system.SecretType: builder.SecretStore(),
-		system.ConfigType: builder.ConfigStore(),
+		system.SecretType:       builder.SecretStore(),
+		system.GlobalSecretType: builder.SecretStore(),
+		system.ConfigType:       builder.ConfigStore(),
 	}))
 
 	if err := initializeConfigManager(cfg, builder); err != nil {
@@ -98,7 +99,7 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 	builder.WithAPIManager(customization.NewAPIList())
 	builder.WithXDSHooks(&xds_hooks.Hooks{})
 	builder.WithDpServer(server.NewDpServer(*cfg.DpServer, builder.Metrics()))
-	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Remote.Zone))
+	builder.WithKDSContext(kds_context.DefaultContext(builder.ResourceManager(), cfg.Multizone.Zone.Name))
 
 	if err := initializeAfterBootstrap(cfg, builder); err != nil {
 		return nil, err
@@ -121,16 +122,16 @@ func buildRuntime(cfg kuma_cp.Config, closeCh <-chan struct{}) (core_runtime.Run
 }
 
 func initializeMetrics(builder *core_runtime.Builder) error {
-	zone := ""
+	zoneName := ""
 	switch builder.Config().Mode {
-	case config_core.Remote:
-		zone = builder.Config().Multizone.Remote.Zone
+	case config_core.Zone:
+		zoneName = builder.Config().Multizone.Zone.Name
 	case config_core.Global:
-		zone = "Global"
+		zoneName = "Global"
 	case config_core.Standalone:
-		zone = "Standalone"
+		zoneName = "Standalone"
 	}
-	metrics, err := metrics.NewMetrics(zone)
+	metrics, err := metrics.NewMetrics(zoneName)
 	if err != nil {
 		return err
 	}
@@ -296,7 +297,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	meshManager := mesh_managers.NewMeshManager(builder.ResourceStore(), customizableManager, builder.CaManagers(), registry.Global(), meshValidator)
 	customManagers[mesh.MeshType] = meshManager
 
-	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Remote.Zone)
+	dpManager := dataplane.NewDataplaneManager(builder.ResourceStore(), builder.Config().Multizone.Zone.Name)
 	customManagers[mesh.DataplaneType] = dpManager
 
 	dpInsightManager := dataplaneinsight.NewDataplaneInsightManager(builder.ResourceStore(), builder.Config().Metrics.Dataplane)
@@ -320,7 +321,7 @@ func initializeResourceManager(cfg kuma_cp.Config, builder *core_runtime.Builder
 	}
 	var secretValidator secret_manager.SecretValidator
 	switch cfg.Mode {
-	case config_core.Remote:
+	case config_core.Zone:
 		secretValidator = secret_manager.ValidateDelete(func(ctx context.Context, secretName string, secretMesh string) error { return nil })
 	default:
 		secretValidator = secret_manager.NewSecretValidator(builder.CaManagers(), builder.ResourceStore())

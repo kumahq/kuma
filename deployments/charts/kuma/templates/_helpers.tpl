@@ -36,9 +36,9 @@ Create chart name and version as used by the chart label.
 {{ printf "%s" (default $defaultSvcName .Values.controlPlane.service.name) }}
 {{- end }}
 
-{{- define "kuma.controlPlane.globalRemoteSync.serviceName" -}}
-{{- $defaultSvcName := printf "%s-global-remote-sync" (include "kuma.name" .) -}}
-{{ printf "%s" (default $defaultSvcName .Values.controlPlane.globalRemoteSyncService.name) }}
+{{- define "kuma.controlPlane.globalZoneSync.serviceName" -}}
+{{- $defaultSvcName := printf "%s-global-zone-sync" (include "kuma.name" .) -}}
+{{ printf "%s" (default $defaultSvcName .Values.controlPlane.globalZoneSyncService.name) }}
 {{- end }}
 
 {{- define "kuma.ingress.serviceName" -}}
@@ -110,8 +110,8 @@ env:
   value: /var/run/secrets/kuma.io/tls-cert/tls.crt
 - name: KUMA_GENERAL_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/tls-cert/tls.key
-{{- if eq .Values.controlPlane.mode "remote" }}
-- name: KUMA_MULTIZONE_REMOTE_GLOBAL_ADDRESS
+{{- if eq .Values.controlPlane.mode "zone" }}
+- name: KUMA_MULTIZONE_ZONE_GLOBAL_ADDRESS
   value: {{ .Values.controlPlane.kdsGlobalAddress }}
 {{- end }}
 - name: KUMA_DP_SERVER_HDS_ENABLED
@@ -135,7 +135,7 @@ env:
 - name: KUMA_MODE
   value: {{ .Values.controlPlane.mode | quote }}
 {{- if .Values.controlPlane.zone }}
-- name: KUMA_MULTIZONE_REMOTE_ZONE
+- name: KUMA_MULTIZONE_ZONE_NAME
   value: {{ .Values.controlPlane.zone | quote }}
 {{- end }}
 {{- if .Values.controlPlane.tls.apiServer.secretName }}
@@ -154,10 +154,22 @@ env:
 - name: KUMA_MULTIZONE_GLOBAL_KDS_TLS_KEY_FILE
   value: /var/run/secrets/kuma.io/kds-server-tls-cert/tls.key
 {{- end }}
-{{- if .Values.controlPlane.tls.kdsRemoteClient.secretName }}
-- name: KUMA_MULTIZONE_REMOTE_KDS_ROOT_CA_FILE
+{{- if .Values.controlPlane.tls.kdsZoneClient.secretName }}
+- name: KUMA_MULTIZONE_ZONE_KDS_ROOT_CA_FILE
   value: /var/run/secrets/kuma.io/kds-client-tls-cert/ca.crt
 {{- end }}
 {{- end }}
 
-
+{{/*
+params: { image: { registry?, repository, tag? }, root: $ }
+returns: formatted image string
+*/}}
+{{- define "kubectl.formatImage" -}}
+{{- $img := .image }}
+{{- $tag := .tag }}
+{{- $root := .root }}
+{{- $registry := ($img.registry | default $root.Values.kubectl.image.registry) -}}
+{{- $repo := ($img.repository | default $root.Values.kubectl.image.repository) -}}
+{{- $imageTag := ($tag | default $root.Values.kubectl.image.tag) -}}
+{{- printf "%s/%s:%s" $registry $repo $imageTag -}}
+{{- end -}}

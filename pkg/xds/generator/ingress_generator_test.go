@@ -8,6 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
+	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
@@ -15,7 +17,6 @@ import (
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	"github.com/kumahq/kuma/pkg/xds/generator"
 )
 
@@ -34,15 +35,17 @@ var _ = Describe("IngressGenerator", func() {
 			dataplane := &mesh_proto.Dataplane{}
 			Expect(util_proto.FromYAML([]byte(given.dataplane), dataplane)).To(Succeed())
 
-			proxy := &core_xds.Proxy{
-				Id: core_xds.ProxyId{Name: "ingress", Mesh: "default"},
-				Dataplane: &mesh_core.DataplaneResource{
-					Meta: &test_model.ResourceMeta{
-						Version: "1",
-					},
-					Spec: dataplane,
+			zoneIngress, err := mesh_core.NewZoneIngressResourceFromDataplane(&mesh_core.DataplaneResource{
+				Meta: &test_model.ResourceMeta{
+					Version: "1",
 				},
-				APIVersion: envoy_common.APIV3,
+				Spec: dataplane,
+			})
+			Expect(err).ToNot(HaveOccurred())
+			proxy := &core_xds.Proxy{
+				Id:          *core_xds.BuildProxyId("default", "ingress"),
+				ZoneIngress: zoneIngress,
+				APIVersion:  envoy_common.APIV3,
 				Routing: core_xds.Routing{
 					OutboundTargets:  given.outboundTargets,
 					TrafficRouteList: given.trafficRoutes,

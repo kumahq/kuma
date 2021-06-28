@@ -28,15 +28,19 @@ func NewSecretResource() *SecretResource {
 func (t *SecretResource) GetType() model.ResourceType {
 	return SecretType
 }
+
 func (t *SecretResource) GetMeta() model.ResourceMeta {
 	return t.Meta
 }
+
 func (t *SecretResource) SetMeta(m model.ResourceMeta) {
 	t.Meta = m
 }
+
 func (t *SecretResource) GetSpec() model.ResourceSpec {
 	return t.Spec
 }
+
 func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
 	value, ok := spec.(*system_proto.Secret)
 	if !ok {
@@ -46,9 +50,11 @@ func (t *SecretResource) SetSpec(spec model.ResourceSpec) error {
 		return nil
 	}
 }
+
 func (t *SecretResource) Validate() error {
 	return nil
 }
+
 func (t *SecretResource) Scope() model.ResourceScope {
 	return model.ScopeMesh
 }
@@ -67,12 +73,15 @@ func (l *SecretResourceList) GetItems() []model.Resource {
 	}
 	return res
 }
+
 func (l *SecretResourceList) GetItemType() model.ResourceType {
 	return SecretType
 }
+
 func (l *SecretResourceList) NewItem() model.Resource {
 	return NewSecretResource()
 }
+
 func (l *SecretResourceList) AddItem(r model.Resource) error {
 	if trr, ok := r.(*SecretResource); ok {
 		l.Items = append(l.Items, trr)
@@ -81,6 +90,7 @@ func (l *SecretResourceList) AddItem(r model.Resource) error {
 		return model.ErrorInvalidItemType((*SecretResource)(nil), r)
 	}
 }
+
 func (l *SecretResourceList) GetPagination() *model.Pagination {
 	return &l.Pagination
 }

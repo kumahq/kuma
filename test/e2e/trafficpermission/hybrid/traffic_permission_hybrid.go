@@ -14,8 +14,8 @@ import (
 )
 
 func TrafficPermissionHybrid() {
-	var globalCluster, remoteUniversal, remoteKube Cluster
-	var optsGlobal, optsRemoteUniversal, optsRemoteKube = KumaK8sDeployOpts, KumaUniversalDeployOpts, KumaRemoteK8sDeployOpts
+	var globalCluster, zoneUniversal, zoneKube Cluster
+	var optsGlobal, optsZoneUniversal, optsZoneKube = KumaK8sDeployOpts, KumaUniversalDeployOpts, KumaZoneK8sDeployOpts
 	var clientPodName string
 
 	namespaceWithSidecarInjection := func(namespace string) string {
@@ -69,41 +69,40 @@ spec:
 
 		echoServerToken, err := globalCP.GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("default", "ingress")
+
+		// Zone universal
+		zoneUniversal = universalClusters.GetCluster(Kuma3)
+		optsZoneUniversal = append(optsZoneUniversal,
+			WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
 		Expect(err).ToNot(HaveOccurred())
 
-		// Remote universal
-		remoteUniversal = universalClusters.GetCluster(Kuma3)
-		optsRemoteUniversal = append(optsRemoteUniversal,
-			WithGlobalAddress(globalCP.GetKDSServerAddress()))
-
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Remote, optsRemoteUniversal...)).
+			Install(Kuma(config_core.Zone, optsZoneUniversal...)).
 			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
-			Install(IngressUniversal("default", ingressToken)).
-			Setup(remoteUniversal)
+			Install(IngressUniversal(ingressTokenKuma3)).
+			Setup(zoneUniversal)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteUniversal.VerifyKuma()
+		err = zoneUniversal.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
-		// Remote kubernetes
-		remoteKube = k8sClusters.GetCluster(Kuma2)
-		optsRemoteKube = append(optsRemoteKube,
+		// Zone kubernetes
+		zoneKube = k8sClusters.GetCluster(Kuma2)
+		optsZoneKube = append(optsZoneKube,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()))
 
 		err = NewClusterSetup().
-			Install(Kuma(config_core.Remote, optsRemoteKube...)).
-			Install(KumaDNS()).
+			Install(Kuma(config_core.Zone, optsZoneKube...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).
 			Install(DemoClientK8s("default")).
-			Setup(remoteKube)
+			Setup(zoneKube)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteKube.VerifyKuma()
+		err = zoneKube.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		pods, err := k8s.ListPodsE(
-			remoteKube.GetTesting(),
-			remoteKube.GetKubectlOptions(TestNamespace),
+			zoneKube.GetTesting(),
+			zoneKube.GetKubectlOptions(TestNamespace),
 			metav1.ListOptions{
 				LabelSelector: fmt.Sprintf("app=%s", "demo-client"),
 			},
@@ -144,19 +143,19 @@ spec:
 		err = globalCluster.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remoteUniversal.DeleteKuma(optsRemoteUniversal...)
+		err = zoneUniversal.DeleteKuma(optsZoneUniversal...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteUniversal.DismissCluster()
+		err = zoneUniversal.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remoteKube.DeleteKuma(optsRemoteKube...)
+		err = zoneKube.DeleteKuma(optsZoneKube...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteKube.DismissCluster()
+		err = zoneKube.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	trafficAllowed := func() {
-		stdout, _, err := remoteKube.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
+		stdout, _, err := zoneKube.ExecWithRetries(TestNamespace, clientPodName, "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("Echo universal"))
@@ -164,7 +163,7 @@ spec:
 
 	trafficBlocked := func() {
 		Eventually(func() error {
-			_, _, err := remoteKube.Exec(TestNamespace, clientPodName, "demo-client",
+			_, _, err := zoneKube.Exec(TestNamespace, clientPodName, "demo-client",
 				"curl", "-v", "-m", "3", "--fail", "echo-server_kuma-test_svc_8080.mesh")
 			return err
 		}, "30s", "1s").Should(HaveOccurred())
@@ -203,7 +202,7 @@ metadata:
 spec:
   sources:
     - match:
-        kuma.io/zone: kuma-2-remote
+        kuma.io/zone: kuma-2-zone
   destinations:
     - match:
         kuma.io/zone: kuma-3
@@ -266,7 +265,7 @@ spec:
 		Expect(err).ToNot(HaveOccurred())
 
 		// and when Kubernetes pod is labeled
-		err = k8s.RunKubectlE(remoteKube.GetTesting(), remoteKube.GetKubectlOptions(TestNamespace), "label", "pod", clientPodName, "newtag=client")
+		err = k8s.RunKubectlE(zoneKube.GetTesting(), zoneKube.GetKubectlOptions(TestNamespace), "label", "pod", clientPodName, "newtag=client")
 		Expect(err).ToNot(HaveOccurred())
 
 		// then

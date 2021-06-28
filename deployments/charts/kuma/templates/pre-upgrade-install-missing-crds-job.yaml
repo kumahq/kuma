@@ -112,7 +112,7 @@ spec:
       restartPolicy: OnFailure
       containers:
         - name: pre-upgrade-job
-          image: bitnami/kubectl:1.18.8
+          image: {{ include "kubectl.formatImage" (dict "image" .Values.kubectl.image "root" $) | quote }}
           command:
             - '/kuma/scripts/install_missing_crds.sh'
           volumeMounts:

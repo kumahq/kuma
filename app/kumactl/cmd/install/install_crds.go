@@ -44,7 +44,7 @@ func newInstallCrdsCmd(ctx *install_context.InstallCrdsContext) *cobra.Command {
 				return errors.Wrap(err, "Failed mapping CRD files with CRD names")
 			}
 
-			kubeClientConfig, err := k8s.DefaultClientConfig()
+			kubeClientConfig, err := k8s.DefaultClientConfig("", "")
 			if err != nil {
 				return errors.Wrap(err, "Could not detect Kubernetes configuration")
 			}

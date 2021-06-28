@@ -17,11 +17,6 @@ import (
 )
 
 func ExternalServicesOnKubernetes() {
-	if IsApiV2() {
-		fmt.Println("Test not supported on API v2")
-		return
-	}
-
 	meshDefaulMtlsOn := `
 apiVersion: kuma.io/v1alpha1
 kind: Mesh
@@ -96,9 +91,6 @@ metadata:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma1)
-		deployOptsFuncs = append(deployOptsFuncs,
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"))
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).

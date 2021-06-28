@@ -17,7 +17,7 @@ var log = core.Log.WithName("clusterID")
 // clusterIDReader tries to read cluster ID and sets it in the runtime. Cluster ID does not change during CP lifecycle
 // therefore once cluster ID is read and set, the component exits.
 // In standalone setup, followers are waiting until leader creates a cluster ID
-// In Multi-zone setup, the global followers and all remotes waits until global leader creates a cluster ID
+// In Multi-zone setup, the global followers and all zones waits until global leader creates a cluster ID
 type clusterIDReader struct {
 	rt core_runtime.Runtime
 }

@@ -11,6 +11,7 @@ import (
 	k8s_common "github.com/kumahq/kuma/pkg/plugins/common/k8s"
 
 	admissionv1beta1 "k8s.io/api/admission/v1beta1"
+	authenticationv1 "k8s.io/api/authentication/v1"
 	kube_meta "k8s.io/apimachinery/pkg/apis/meta/v1"
 	kube_runtime "k8s.io/apimachinery/pkg/runtime"
 	kube_types "k8s.io/apimachinery/pkg/types"
@@ -39,12 +40,13 @@ var _ = Describe("Validation", func() {
 		obj         string
 		mode        core.CpMode
 		resp        kube_admission.Response
+		username    string
 	}
 	DescribeTable("Validation",
 		func(given testCase) {
 			// given
 			webhook := &admission.Webhook{
-				Handler: webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode),
+				Handler: webhooks.NewValidatingWebhook(converter, core_registry.Global(), k8s_registry.Global(), given.mode, "kuma-system"),
 			}
 			Expect(webhook.InjectScheme(scheme)).To(Succeed())
 
@@ -61,6 +63,9 @@ var _ = Describe("Validation", func() {
 						Version: obj.GetObjectKind().GroupVersionKind().Version,
 						Kind:    obj.GetObjectKind().GroupVersionKind().Kind,
 					},
+					UserInfo: authenticationv1.UserInfo{
+						Username: given.username,
+					},
 				},
 			}
 
@@ -73,6 +78,7 @@ var _ = Describe("Validation", func() {
 		Entry("should pass validation", testCase{
 			mode:        core.Standalone,
 			objTemplate: &mesh_proto.TrafficRoute{},
+			username:    "cli-user",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -119,9 +125,10 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should pass default mesh on remote", testCase{
-			mode:        core.Remote,
+		Entry("should pass default mesh on zone", testCase{
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.Mesh{},
+			username:    "cli-user",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -143,9 +150,10 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should pass validation for synced policy from Global to Remote", testCase{
-			mode:        core.Remote,
+		Entry("should pass validation for synced policy from Global to Zone", testCase{
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.TrafficRoute{},
+			username:    "system:serviceaccount:kuma-system:mesh",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -195,9 +203,10 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should pass validation for synced policy from Remote to Global", testCase{
-			mode:        core.Remote,
+		Entry("should pass validation for synced policy from Zone to Global", testCase{
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.Dataplane{},
+			username:    "system:serviceaccount:kuma-system:kuma-control-plane",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -235,9 +244,10 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should pass validation for not synced Dataplane in Remote", testCase{
-			mode:        core.Remote,
+		Entry("should pass validation for not synced Dataplane in Zone", testCase{
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.Dataplane{},
+			username:    "cli-user",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",
@@ -275,6 +285,7 @@ var _ = Describe("Validation", func() {
 		Entry("should fail validation due to invalid spec", testCase{
 			mode:        core.Global,
 			objTemplate: &mesh_proto.TrafficRoute{},
+			username:    "cli-user",
 			obj: `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
@@ -322,9 +333,10 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should fail validation due to applying policy manually on Remote CP", testCase{
-			mode:        core.Remote,
+		Entry("should fail validation due to applying policy manually on Zone CP", testCase{
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.TrafficRoute{},
+			username:    "cli-user",
 			obj: `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
@@ -342,7 +354,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a TrafficRoute on remote CP. In multizone setup, it should be only applied on global CP and synced to remote CP.",
+						Message: "You are trying to apply a TrafficRoute on zone CP. In multizone setup, it should be only applied on global CP and synced to zone CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -361,6 +373,7 @@ var _ = Describe("Validation", func() {
 		Entry("should fail validation due to applying Dataplane manually on Global CP", testCase{
 			mode:        core.Global,
 			objTemplate: &mesh_proto.Dataplane{},
+			username:    "cli-user",
 			obj: `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
@@ -379,7 +392,7 @@ var _ = Describe("Validation", func() {
 					Allowed: false,
 					Result: &kube_meta.Status{
 						Status:  "Failure",
-						Message: "You are trying to apply a Dataplane on global CP. In multizone setup, it should be only applied on remote CP and synced to global CP.",
+						Message: "You are trying to apply a Dataplane on global CP. In multizone setup, it should be only applied on zone CP and synced to global CP.",
 						Reason:  "Forbidden",
 						Details: &kube_meta.StatusDetails{
 							Causes: []kube_meta.StatusCause{
@@ -398,6 +411,7 @@ var _ = Describe("Validation", func() {
 		Entry("should pass validation due to applying Zone on Global CP", testCase{
 			mode:        core.Global,
 			objTemplate: &system_proto.Zone{},
+			username:    "cli-user",
 			obj: `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
@@ -424,9 +438,10 @@ var _ = Describe("Validation", func() {
 				},
 			},
 		}),
-		Entry("should fail validation due to applying Zone on Remote CP", testCase{
-			mode:        core.Remote,
+		Entry("should fail validation due to applying Zone on Zone CP", testCase{
+			mode:        core.Zone,
 			objTemplate: &system_proto.Zone{},
+			username:    "cli-user",
 			obj: `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
@@ -459,6 +474,7 @@ var _ = Describe("Validation", func() {
 		Entry("should fail validation due to applying Zone on Standalone CP", testCase{
 			mode:        core.Standalone,
 			objTemplate: &system_proto.Zone{},
+			username:    "cli-user",
 			obj: `
 			{
 			  "apiVersion": "kuma.io/v1alpha1",
@@ -489,8 +505,9 @@ var _ = Describe("Validation", func() {
 			},
 		}),
 		Entry("should fail validation on missing mesh object", testCase{
-			mode:        core.Remote,
+			mode:        core.Zone,
 			objTemplate: &mesh_proto.TrafficRoute{},
+			username:    "system:serviceaccount:kuma-system:mesh",
 			obj: `
             {
               "apiVersion":"kuma.io/v1alpha1",

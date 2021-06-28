@@ -1,12 +1,13 @@
 package generator
 
 import (
+	"strings"
+
 	"github.com/asaskevich/govalidator"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	xds_context "github.com/kumahq/kuma/pkg/xds/context"
-	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 	envoy_listeners "github.com/kumahq/kuma/pkg/xds/envoy/listeners"
 	"github.com/kumahq/kuma/pkg/xds/envoy/names"
 )
@@ -22,10 +23,6 @@ func (g DNSGenerator) Generate(ctx xds_context.Context, proxy *core_xds.Proxy) (
 	emptyDnsPort := proxy.Metadata.GetEmptyDNSPort()
 	if dnsPort == 0 || emptyDnsPort == 0 {
 		return nil, nil
-	}
-
-	if proxy.APIVersion == envoy_common.APIV2 {
-		return nil, nil // DNS is not available for API V2
 	}
 
 	if proxy.Dataplane.Spec.GetNetworking().GetTransparentProxying() == nil {
@@ -57,6 +54,7 @@ func (g DNSGenerator) computeVIPs(ctx xds_context.Context, proxy *core_xds.Proxy
 		if domain, ok := domainsByIPs[outbound.Address]; ok {
 			// add regular .mesh domain
 			meshedVips[domain+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
+			meshedVips[strings.ReplaceAll(domain, "_", ".")+"."+ctx.ControlPlane.DNSResolver.GetDomain()] = outbound.Address
 			// add hostname from address in external service
 			endpoints := proxy.Routing.OutboundTargets[outbound.Tags[mesh_proto.ServiceTag]]
 			for _, endpoint := range endpoints {

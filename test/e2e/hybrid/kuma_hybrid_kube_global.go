@@ -13,8 +13,8 @@ import (
 )
 
 func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
-	var globalCluster, remoteCluster Cluster
-	var optsGlobal, optsRemote = KumaK8sDeployOpts, KumaUniversalDeployOpts
+	var globalCluster, zoneCluster Cluster
+	var optsGlobal, optsZone = KumaK8sDeployOpts, KumaUniversalDeployOpts
 
 	BeforeEach(func() {
 		k8sClusters, err := NewK8sClusters(
@@ -42,22 +42,22 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken("default", "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken("default", "ingress")
-		Expect(err).ToNot(HaveOccurred())
 
-		// Remote
-		remoteCluster = universalClusters.GetCluster(Kuma3)
-		optsRemote = append(optsRemote,
+		// Zone
+		zoneCluster = universalClusters.GetCluster(Kuma3)
+		optsZone = append(optsZone,
 			WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote...)).
+			Install(Kuma(core.Zone, optsZone...)).
 			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
 			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)).
-			Install(IngressUniversal("default", ingressToken)).
-			Setup(remoteCluster)
+			Install(IngressUniversal(ingressTokenKuma3)).
+			Setup(zoneCluster)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteCluster.VerifyKuma()
+		err = zoneCluster.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -70,22 +70,22 @@ func KubernetesUniversalDeploymentWhenGlobalIsOnK8S() {
 		err = globalCluster.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remoteCluster.DeleteKuma(optsRemote...)
+		err = zoneCluster.DeleteKuma(optsZone...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remoteCluster.DismissCluster()
+		err = zoneCluster.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("communication in between apps in remote zone works", func() {
-		stdout, _, err := remoteCluster.ExecWithRetries("", "", "demo-client",
+	It("communication in between apps in zone works", func() {
+		stdout, _, err := zoneCluster.ExecWithRetries("", "", "demo-client",
 			"curl", "-v", "-m", "3", "--fail", "localhost:4001")
 		Expect(err).ToNot(HaveOccurred())
 		Expect(stdout).To(ContainSubstring("HTTP/1.1 200 OK"))
 
-		retry.DoWithRetry(remoteCluster.GetTesting(), "curl remote service",
+		retry.DoWithRetry(zoneCluster.GetTesting(), "curl remote service",
 			DefaultRetries, DefaultTimeout,
 			func() (string, error) {
-				stdout, _, err = remoteCluster.ExecWithRetries("", "", "demo-client",
+				stdout, _, err = zoneCluster.ExecWithRetries("", "", "demo-client",
 					"curl", "-v", "-m", "3", "localhost:4001")
 				if err != nil {
 					return "should retry", err

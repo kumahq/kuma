@@ -12,19 +12,19 @@ patchSystemNamespace: true
 #    with the new version of Kuma)
 installCrdsOnUpgrade:
   enabled: true
-  imagePullSecrets: []
+  imagePullSecrets: [ ]
 
 controlPlane:
   # -- Kuma CP log level: one of off,info,debug
   logLevel: "info"
 
-  # -- Kuma CP modes: one of standalone,remote,global
+  # -- Kuma CP modes: one of standalone,zone,global
   mode: "standalone"
 
   # -- (string) Kuma CP zone, if running multizone
   zone:
 
-  # -- Only used in `remote` mode
+  # -- Only used in `zone` mode
   kdsGlobalAddress: ""
 
   # -- Number of replicas of the Kuma CP. Ignored when autoscaling is enabled
@@ -67,15 +67,15 @@ controlPlane:
     type: ClusterIP
 
     # -- Additional annotations to put on the Kuma Control Plane
-    annotations: {}
+    annotations: { }
 
   # -- URL of Global Kuma CP
-  globalRemoteSyncService:
-    # -- Service type of the Global-Remote sync
+  globalZoneSyncService:
+    # -- Service type of the Global-zone sync
     type: LoadBalancer
-    # -- Additional annotations to put on the Global Remote Sync Service
-    annotations: {}
-    # -- Port on which Global Remote Sync Service is exposed
+    # -- Additional annotations to put on the Global Zone Sync Service
+    annotations: { }
+    # -- Port on which Global Zone Sync Service is exposed
     port: 5685
 
   defaults:
@@ -104,7 +104,7 @@ controlPlane:
     kdsGlobalServer:
       # -- Secret that contains tls.crt, key.crt for protecting cross cluster communication
       secretName: ""
-    kdsRemoteClient:
+    kdsZoneClient:
       # -- Secret that contains ca.crt which was used to sign KDS Global server. Used for CP verification
       secretName: ""
 
@@ -121,7 +121,7 @@ controlPlane:
   secrets:
 
   # -- Additional environment variables that will be passed to the control plane
-  envVars: {}
+  envVars: { }
 
   webhooks:
     validator:
@@ -155,7 +155,7 @@ cni:
     # -- CNI image repository
     repository: "lobkovilya/install-cni"
     # -- CNI image tag
-    tag: "0.0.8"
+    tag: "0.0.9"
 
 dataPlane:
   image:
@@ -171,8 +171,6 @@ dataPlane:
 ingress:
   # -- If true, it deploys Ingress for cross cluster communication
   enabled: false
-  # -- Mesh to which Dataplane Ingress belongs to
-  mesh: default
   # -- Time for which old listener will still be active as draining
   drainTime: 30s
   # -- Number of replicas of the Ingress
@@ -181,11 +179,11 @@ ingress:
     # -- Service type of the Ingress
     type: LoadBalancer
     # -- Additional annotations to put on the Ingress service
-    annotations: {}
+    annotations: { }
     # -- Port on which Ingress is exposed
     port: 10001
   # -- Additional deployment annotation
-  annotations: {}
+  annotations: { }
   # -- Node Selector for the Ingress pods
   nodeSelector:
     kubernetes.io/os: linux
@@ -196,6 +194,16 @@ kumactl:
     # -- The kumactl image repository
     repository: kumactl
 
+kubectl:
+  # bitnami maintains an image for all k8s versions */ } }
+  # see: https://hub.docker.com/r/bitnami/kubectl */ } }
+  image:
+    # -- The kubectl image registry
+    registry: bitnami
+    # -- The kubectl image repository
+    repository: kubectl
+    # -- The kubectl image tag
+    tag: "1.20"
 hooks:
   # -- Node selector for the HELM hooks
   nodeSelector:

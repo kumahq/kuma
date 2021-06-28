@@ -26,7 +26,7 @@ func KumaStandalone() {
 		universal = clusters.GetCluster(Kuma3)
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Standalone)).
+			Install(Kuma(core.Standalone, KumaUniversalDeployOpts...)).
 			Setup(universal)
 		Expect(err).ToNot(HaveOccurred())
 		err = universal.VerifyKuma()
@@ -505,9 +505,6 @@ conf:
 		})
 
 		It("should modify host", func() {
-			if IsApiV2() {
-				return // host.fromPath is not available in API V2
-			}
 			const trafficRoute = `
 type: TrafficRoute
 name: modify-host
@@ -526,10 +523,6 @@ conf:
     modify:
       host:
         value: "modified-host"
-      requestHeaders:
-        add:
-        - name: "host" # host section takes precedence
-          value: xyz
     destination:
       kuma.io/service: test-server
   - match:

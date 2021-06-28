@@ -29,8 +29,8 @@ routing:
 
 	const defaultMesh = "default"
 
-	var global, remote_1, remote_2 Cluster
-	var optsGlobal, optsRemote1, optsRemote2 []DeployOptionsFunc
+	var global, zone1, zone2 Cluster
+	var optsGlobal, optsZone1, optsZone2 = KumaUniversalDeployOpts, KumaUniversalDeployOpts, KumaUniversalDeployOpts
 
 	E2EBeforeSuite(func() {
 		clusters, err := NewUniversalClusters(
@@ -40,7 +40,6 @@ routing:
 
 		// Global
 		global = clusters.GetCluster(Kuma5)
-		optsGlobal = []DeployOptionsFunc{}
 		err = NewClusterSetup().
 			Install(Kuma(core.Global, optsGlobal...)).
 			Install(YamlUniversal(meshMTLSOn(defaultMesh, "false"))).
@@ -57,32 +56,30 @@ routing:
 		Expect(err).ToNot(HaveOccurred())
 		demoClientToken, err := globalCP.GenerateDpToken(defaultMesh, "demo-client")
 		Expect(err).ToNot(HaveOccurred())
-		ingressToken, err := globalCP.GenerateDpToken(defaultMesh, "ingress")
-		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 1
-		remote_1 = clusters.GetCluster(Kuma3)
-		optsRemote1 = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		zone1 = clusters.GetCluster(Kuma3)
+		optsZone1 = append(optsZone1, WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma3, err := globalCP.GenerateZoneIngressToken(Kuma3)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote1...)).
+			Install(Kuma(core.Zone, optsZone1...)).
 			Install(DemoClientUniversal(AppModeDemoClient, defaultMesh, demoClientToken, WithTransparentProxy(true))).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
-			Setup(remote_1)
+			Install(IngressUniversal(ingressTokenKuma3)).
+			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_1.VerifyKuma()
+		err = zone1.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 
 		// Cluster 2
-		remote_2 = clusters.GetCluster(Kuma4)
-		optsRemote2 = []DeployOptionsFunc{
-			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-		}
+		zone2 = clusters.GetCluster(Kuma4)
+		optsZone2 = append(optsZone2, WithGlobalAddress(globalCP.GetKDSServerAddress()))
+		ingressTokenKuma4, err := globalCP.GenerateZoneIngressToken(Kuma4)
+		Expect(err).ToNot(HaveOccurred())
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote2...)).
+			Install(Kuma(core.Zone, optsZone2...)).
 			Install(TestServerUniversal("dp-echo-1", defaultMesh, testServerToken,
 				WithArgs([]string{"echo", "--instance", "echo-v1"}),
 				WithProtocol("http"),
@@ -113,10 +110,10 @@ routing:
 				WithServiceName("another-test-server"),
 				WithTransparentProxy(true),
 			)).
-			Install(IngressUniversal(defaultMesh, ingressToken)).
-			Setup(remote_2)
+			Install(IngressUniversal(ingressTokenKuma4)).
+			Setup(zone2)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_2.VerifyKuma()
+		err = zone2.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -134,11 +131,11 @@ routing:
 	})
 
 	E2EAfterSuite(func() {
-		Expect(remote_1.DeleteKuma(optsRemote1...)).To(Succeed())
-		Expect(remote_1.DismissCluster()).To(Succeed())
+		Expect(zone1.DeleteKuma(optsZone1...)).To(Succeed())
+		Expect(zone1.DismissCluster()).To(Succeed())
 
-		Expect(remote_2.DeleteKuma(optsRemote2...)).To(Succeed())
-		Expect(remote_2.DismissCluster()).To(Succeed())
+		Expect(zone2.DeleteKuma(optsZone2...)).To(Succeed())
+		Expect(zone2.DismissCluster()).To(Succeed())
 
 		Expect(global.DeleteKuma(optsGlobal...)).To(Succeed())
 		Expect(global.DismissCluster()).To(Succeed())
@@ -175,7 +172,7 @@ conf:
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(remote_1, "demo-client", "test-server.mesh")
+			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(3),
@@ -207,7 +204,7 @@ conf:
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(remote_1, "demo-client", "test-server.mesh")
+			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(1),
@@ -246,7 +243,7 @@ conf:
 		Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 		Eventually(func() (map[string]int, error) {
-			return CollectResponsesByInstance(remote_1, "demo-client", "test-server.mesh", WithNumberOfRequests(100))
+			return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh", WithNumberOfRequests(100))
 		}, "30s", "500ms").Should(
 			And(
 				HaveLen(2),
@@ -304,16 +301,16 @@ conf:
 			Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(remote_1, "demo-client", "test-server.mesh/version1")
+				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh/version1")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v1"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(remote_1, "demo-client", "test-server.mesh/version2")
+				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh/version2")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v2"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(remote_1, "demo-client", "test-server.mesh/version3")
+				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh/version3")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v3"))
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(remote_1, "demo-client", "test-server.mesh")
+				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh")
 			}, "30s", "500ms").Should(HaveOnlyResponseFrom("echo-v4"))
 		})
 
@@ -357,7 +354,7 @@ conf:
 			Expect(YamlUniversal(trafficRoute)(global)).To(Succeed())
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(remote_1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh/split", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
@@ -367,7 +364,7 @@ conf:
 			)
 
 			Eventually(func() (map[string]int, error) {
-				return CollectResponsesByInstance(remote_1, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
+				return CollectResponsesByInstance(zone1, "demo-client", "test-server.mesh", WithNumberOfRequests(10))
 			}, "30s", "500ms").Should(
 				And(
 					HaveLen(2),
