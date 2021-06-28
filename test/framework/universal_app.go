@@ -55,7 +55,6 @@ networking:
     tags:
       kuma.io/service: %s
       kuma.io/protocol: %s
-      kuma.io/zone: eu-west-1
       team: server-owners
       version: %s
 `
@@ -74,7 +73,6 @@ networking:
     tags:
       kuma.io/service: %s
       kuma.io/protocol: %s
-      kuma.io/zone: eu-west-1
       team: server-owners
       version: %s
 `
@@ -91,7 +89,6 @@ networking:
     tags:
       kuma.io/service: %s
       kuma.io/protocol: %s
-      kuma.io/zone: eu-west-1
       team: server-owners
       version: %s
   transparentProxying:
@@ -112,7 +109,6 @@ networking:
     servicePort: %s
     tags:
       kuma.io/service: %s
-      kuma.io/zone: us-east-1
       team: client-owners
   outbound:
   - port: 4000
@@ -139,7 +135,6 @@ networking:
       tcp: {}
     tags:
       kuma.io/service: %s
-      kuma.io/zone: us-east-1
       team: client-owners
   outbound:
   - port: 4000
@@ -163,7 +158,6 @@ networking:
   - port: %s
     tags:
       kuma.io/service: %s
-      kuma.io/zone: us-east-1
       team: client-owners
   transparentProxying:
     redirectPortInbound: %s
