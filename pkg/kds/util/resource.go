@@ -67,8 +67,8 @@ func AddSuffixToNames(rs []model.Resource, suffix string) {
 
 func ZoneTag(r model.Resource) string {
 	dp := r.GetSpec().(*mesh_proto.Dataplane)
-	if dp.Networking.GetGateway() != nil {
-		return dp.Networking.GetGateway().GetTags()[mesh_proto.ZoneTag]
+	if dp.IsGateway() {
+		return dp.GetNetworking().GetGateway().GetTags()[mesh_proto.ZoneTag]
 	}
 	return dp.GetNetworking().GetInbound()[0].GetTags()[mesh_proto.ZoneTag]
 }
