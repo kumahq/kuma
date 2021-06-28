@@ -1,12 +1,12 @@
 package service_identity_injection
 
 import (
-	"strings"
+	"encoding/json"
 
-	"github.com/go-errors/errors"
-	"github.com/gruntwork-io/terratest/modules/retry"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	"github.com/kumahq/kuma/test/server/types"
 
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
@@ -44,19 +44,20 @@ mtls:
 			Setup(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = cluster.VerifyKuma()
+		Expect(cluster.VerifyKuma()).To(Succeed())
+
+		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "dp-demo-client")
+		Expect(err).ToNot(HaveOccurred())
+		testServerToken, err := cluster.GetKuma().GenerateDpToken("default", "test-server")
 		Expect(err).ToNot(HaveOccurred())
 
-		demoClientToken, err := cluster.GetKuma().GenerateDpToken("default", "demo-client")
+		err = DemoClientUniversal("dp-demo-client", "default", demoClientToken,
+			WithTransparentProxy(true), WithBuiltinDNS(true))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 
-		echoServerToken, err := cluster.GetKuma().GenerateDpToken("default", "echo-server_kuma-test_svc_8080")
-		Expect(err).ToNot(HaveOccurred())
-
-		err = NewClusterSetup().
-			Install(DemoClientUniversal(AppModeDemoClient, "default", demoClientToken)).
-			Install(EchoServerUniversal(AppModeEchoServer, "default", "universal", echoServerToken)).
-			Setup(cluster)
+		err = TestServerUniversal("test-server", "default", testServerToken,
+			WithArgs([]string{"echo"}),
+			WithTransparentProxy(true), WithProtocol("http"))(cluster)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -72,27 +73,14 @@ mtls:
 	})
 
 	It("server should receive X-Kuma-Forwarded-Client-* headers", func() {
-		retry.DoWithRetry(cluster.GetTesting(), "curl local service",
-			DefaultRetries, DefaultTimeout,
-			func() (string, error) {
-				stdout, _, err := cluster.ExecWithRetries("", "", "demo-client",
-					"curl", "-v", "-m", "3", "--fail", "localhost:4001")
-				if err != nil {
-					return "should retry", err
-				}
-				if strings.Contains(stdout, "HTTP/1.1 200 OK") {
-					return "Accessing service successful", nil
-				}
-				return "should retry", errors.Errorf("should retry")
-			})
-
-		_, stderr, err := cluster.Exec("", "", "demo-client", "curl", "-v", "-m", "8", "--fail", "localhost:4001")
+		var response types.EchoResponse
+		cmd := []string{"curl", "--fail", "test-server.mesh/content"}
+		stdout, _, err := cluster.ExecWithRetries("", "", "dp-demo-client", cmd...)
 		Expect(err).ToNot(HaveOccurred())
-		Expect(stderr).To(BeEmpty())
+		Expect(json.Unmarshal([]byte(stdout), &response)).To(Succeed())
 
-		appStdout := cluster.(*UniversalCluster).GetApp(AppModeEchoServer).GetMainApp().Out()
-		Expect(appStdout).To(ContainSubstring("X-Kuma-Forwarded-Client-Cert: spiffe://default/demo-client"))
-		Expect(appStdout).To(ContainSubstring("X-Kuma-Forwarded-Client-Service: demo-client"))
-		Expect(appStdout).To(ContainSubstring("X-Kuma-Forwarded-Client-Zone: us-east-1"))
+		Expect(response.Received.Headers).To(HaveKeyWithValue("X-Kuma-Forwarded-Client-Cert", []string{"spiffe://default/dp-demo-client"}))
+		Expect(response.Received.Headers).To(HaveKeyWithValue("X-Kuma-Forwarded-Client-Service", []string{"dp-demo-client"}))
+		Expect(response.Received.Headers).To(HaveKeyWithValue("X-Kuma-Forwarded-Client-Zone", []string{"us-east-1"}))
 	})
 }
