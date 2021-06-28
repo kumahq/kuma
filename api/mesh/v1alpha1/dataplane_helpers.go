@@ -61,10 +61,11 @@ func (d *Dataplane) ProxyType() ProxyType {
 }
 
 type InboundInterface struct {
-	DataplaneIP   string
-	DataplanePort uint32
-	WorkloadIP    string
-	WorkloadPort  uint32
+	DataplaneAdvertisedIP string
+	DataplaneIP           string
+	DataplanePort         uint32
+	WorkloadIP            string
+	WorkloadPort          uint32
 }
 
 func (i InboundInterface) String() string {
@@ -138,6 +139,11 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		iface.DataplaneIP = inbound.Address
 	} else {
 		iface.DataplaneIP = n.Address
+	}
+	if n.AdvertisedAddress != "" {
+		iface.DataplaneAdvertisedIP = n.AdvertisedAddress
+	} else {
+		iface.DataplaneAdvertisedIP = iface.DataplaneIP
 	}
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress

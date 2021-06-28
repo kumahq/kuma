@@ -140,7 +140,11 @@ func (d *DataplaneResource) GetIP() string {
 	if d == nil {
 		return ""
 	}
-	return d.Spec.Networking.Address
+	if d.Spec.Networking.AdvertisedAddress != "" {
+		return d.Spec.Networking.AdvertisedAddress
+	} else {
+		return d.Spec.Networking.Address
+	}
 }
 
 func (d *DataplaneResource) IsIPv6() bool {
