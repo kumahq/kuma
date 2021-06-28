@@ -50,6 +50,13 @@ message Dataplane {
     // Public IP on which the dataplane is accessible in the network.
     string address = 5;
 
+    // In some situation, dataplane resides in a private network and not
+    // reachable via 'address'. advertisedAddress is configured with public
+    // routable address for such dataplane so that other dataplanes in the mesh
+    // can connect to it over advertisedAddress and not via address
+    // Note: Envoy binds to the address not advertisedAddress
+    string advertisedAddress = 7;
+
     // Inbound describes a service implemented by the dataplane.
     message Inbound {
       // Port of the inbound interface that will forward requests to the
