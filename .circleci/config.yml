@@ -865,7 +865,7 @@ jobs:
               curl --location --silent "${URL}/${VERSION}/SHA${i}SUM"
             )
           done
-          bash ./codecov -f build/coverage/*.out
+          bash ./codecov -f "build/coverage/*.out"
     - store_artifacts:
         path: build/coverage
         destination: /coverage
