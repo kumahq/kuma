@@ -2,6 +2,7 @@ package get_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"path/filepath"
 	"time"
@@ -25,7 +26,7 @@ import (
 type testApiServerClient struct {
 }
 
-func (c *testApiServerClient) GetVersion() (*types.IndexResponse, error) {
+func (c *testApiServerClient) GetVersion(_ context.Context) (*types.IndexResponse, error) {
 	return &types.IndexResponse{
 		Version: kuma_version.Build.Version,
 		Tagline: kuma_version.Product,

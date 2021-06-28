@@ -28,5 +28,6 @@ Inspect Kuma resources.
 * [kumactl inspect dataplanes](kumactl_inspect_dataplanes.md)	 - Inspect Dataplanes
 * [kumactl inspect meshes](kumactl_inspect_meshes.md)	 - Inspect Meshes
 * [kumactl inspect services](kumactl_inspect_services.md)	 - Inspect Services
+* [kumactl inspect zone-ingresses](kumactl_inspect_zone-ingresses.md)	 - Inspect Zone Ingresses
 * [kumactl inspect zones](kumactl_inspect_zones.md)	 - Inspect Zones
 
