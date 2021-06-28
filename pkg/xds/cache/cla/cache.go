@@ -3,11 +3,11 @@ package cla
 import (
 	"context"
 	"fmt"
-	"crypto/sha256"
-	"encoding/base64"
 	"time"
 
 	"github.com/golang/protobuf/proto"
+
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 
@@ -58,13 +58,7 @@ func NewCache(
 }
 
 func (c *Cache) GetCLA(ctx context.Context, meshName, meshHash string, cluster envoy_common.Cluster, apiVersion envoy_common.APIVersion) (proto.Message, error) {
-	hash := sha256.New()
-	_, err := hash.Write([]byte(fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, cluster.Hash(), meshHash)))
-	if err != nil {
-		return nil, err
-	}
-
-	key := base64.StdEncoding.EncodeToString(hash.Sum(nil))
+	key := sha256.Hash(fmt.Sprintf("%s:%s:%s:%s", apiVersion, meshName, cluster.Hash(), meshHash))
 
 	elt, err := c.cache.GetOrRetrieve(ctx, key, once.RetrieverFunc(func(ctx context.Context, key string) (interface{}, error) {
 		dataplanes, err := topology.GetDataplanes(claCacheLog, ctx, c.rm, c.ipFunc, meshName)
