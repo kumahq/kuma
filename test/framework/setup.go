@@ -295,7 +295,7 @@ func EchoServerUniversal(name, mesh, echo, token string, fs ...DeployOptionsFunc
 		switch {
 		case opts.transparent:
 			appYaml = fmt.Sprintf(EchoServerDataplaneTransparentProxy, mesh, "8080", "80", opts.serviceName,
-				opts.protocol, opts.serviceVersion, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+				opts.protocol, opts.serviceVersion, RedirectPortInbound, RedirectPortInboundV6, RedirectPortOutbound)
 		case opts.serviceProbe:
 			appYaml = fmt.Sprintf(EchoServerDataplaneWithServiceProbe, mesh, "8080", "80", opts.serviceName,
 				opts.protocol, opts.serviceVersion)
@@ -418,17 +418,23 @@ spec:
 }
 
 func DemoClientUniversal(name, mesh, token string, fs ...DeployOptionsFunc) InstallFunc {
+	emptyYamlApp := ""
+	return DemoClientUniversalYaml(name, mesh, token, emptyYamlApp, fs...)
+}
+
+func DemoClientUniversalYaml(name, mesh, token, appYaml string, fs ...DeployOptionsFunc) InstallFunc {
 	return func(cluster Cluster) error {
 		opts := newDeployOpt(fs...)
 		args := []string{"ncat", "-lvk", "-p", "3000"}
-		appYaml := ""
-		if opts.transparent {
-			appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
-		} else {
-			if opts.serviceProbe {
-				appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, "80", "8080")
+		if appYaml == "" {
+			if opts.transparent {
+				appYaml = fmt.Sprintf(DemoClientDataplaneTransparentProxy, mesh, "3000", name, RedirectPortInbound, RedirectPortInboundV6, RedirectPortOutbound)
 			} else {
-				appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, "80", "8080")
+				if opts.serviceProbe {
+					appYaml = fmt.Sprintf(DemoClientDataplaneWithServiceProbe, mesh, "13000", "3000", name, "80", "8080")
+				} else {
+					appYaml = fmt.Sprintf(DemoClientDataplane, mesh, "13000", "3000", name, "80", "8080")
+				}
 			}
 		}
 		fs = append(fs, WithName(name), WithMesh(mesh), WithAppname(AppModeDemoClient), WithToken(token), WithArgs(args), WithYaml(appYaml), WithIPv6(IsIPv6()))
@@ -471,7 +477,7 @@ networking:
     redirectPortInbound: %s
     redirectPortInboundV6: %s
     redirectPortOutbound: %s
-`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, redirectPortInbound, redirectPortInboundV6, redirectPortOutbound)
+`, mesh, "80", "8080", opts.serviceName, opts.protocol, opts.serviceVersion, RedirectPortInbound, RedirectPortInboundV6, RedirectPortOutbound)
 
 		fs = append(fs,
 			WithName(name),
