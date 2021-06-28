@@ -27,6 +27,7 @@ var (
 	kdsZoneLog    = core.Log.WithName("kds-zone")
 	ProvidedTypes = []model.ResourceType{
 		mesh.ZoneIngressType,
+		mesh.ZoneIngressInsightType,
 		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
 	}

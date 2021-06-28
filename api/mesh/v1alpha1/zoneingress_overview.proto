@@ -5,12 +5,12 @@ package kuma.mesh.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/v1alpha1/zone_ingress.proto";
-import "mesh/v1alpha1/dataplane_insight.proto";
+import "mesh/v1alpha1/zone_ingress_insight.proto";
 
 // ZoneIngressOverview defines the projected state of a ZoneIngress.
 message ZoneIngressOverview {
 
   ZoneIngress zone_ingress = 1;
 
-  DataplaneInsight zone_ingress_insight = 2;
+  ZoneIngressInsight zone_ingress_insight = 2;
 }

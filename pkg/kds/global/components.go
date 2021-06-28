@@ -53,8 +53,9 @@ var (
 	}
 	ConsumedTypes = []model.ResourceType{
 		core_mesh.DataplaneType,
-		core_mesh.ZoneIngressType,
 		core_mesh.DataplaneInsightType,
+		core_mesh.ZoneIngressType,
+		core_mesh.ZoneIngressInsightType,
 	}
 )
 

@@ -85,6 +85,9 @@ func ZoneProvidedFilter(clusterName string) reconcile.ResourceFilter {
 		if r.GetType() == mesh.ZoneIngressType && !r.(*mesh.ZoneIngressResource).IsRemoteIngress(clusterName) {
 			return true
 		}
+		if r.GetType() == mesh.ZoneIngressInsightType {
+			return true
+		}
 		return false
 	}
 }
