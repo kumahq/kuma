@@ -3,6 +3,8 @@ package universal
 import (
 	"context"
 
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+
 	"github.com/pkg/errors"
 
 	"github.com/kumahq/kuma/pkg/tokens/builtin/zoneingress"
@@ -36,7 +38,20 @@ type universalAuthenticator struct {
 	zone              string
 }
 
-func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
+var _ auth.Authenticator = &universalAuthenticator{}
+
+func (u *universalAuthenticator) Authenticate(ctx context.Context, resource model.Resource, credential auth.Credential) error {
+	switch resource := resource.(type) {
+	case *core_mesh.DataplaneResource:
+		return u.authDataplane(ctx, resource, credential)
+	case *core_mesh.ZoneIngressResource:
+		return u.authZoneIngress(ctx, resource, credential)
+	default:
+		return errors.Errorf("no matching authenticator for %s resource", resource.GetType())
+	}
+}
+
+func (u *universalAuthenticator) authDataplane(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
 	dpIdentity, err := u.issuer.Validate(credential, dataplane.Meta.GetMesh())
 	if err != nil {
 		return err
@@ -57,7 +72,7 @@ func (u *universalAuthenticator) Authenticate(ctx context.Context, dataplane *co
 	return nil
 }
 
-func (u *universalAuthenticator) AuthenticateZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
+func (u *universalAuthenticator) authZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
 	identity, err := u.zoneIngressIssuer.Validate(credential)
 	if err != nil {
 		return err
