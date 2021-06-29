@@ -392,6 +392,63 @@ func (x *TracingBackend) GetConf() *_struct.Struct {
 	return nil
 }
 
+type DatadogTracingBackendConfig struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// IP address of datadog collector.
+	Address string `protobuf:"bytes,1,opt,name=address,proto3" json:"address,omitempty"`
+	// Port of datadog collecot
+	PortValue string `protobuf:"bytes,2,opt,name=port_value,json=portValue,proto3" json:"port_value,omitempty"`
+}
+
+func (x *DatadogTracingBackendConfig) Reset() {
+	*x = DatadogTracingBackendConfig{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[5]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *DatadogTracingBackendConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DatadogTracingBackendConfig) ProtoMessage() {}
+
+func (x *DatadogTracingBackendConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[5]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DatadogTracingBackendConfig.ProtoReflect.Descriptor instead.
+func (*DatadogTracingBackendConfig) Descriptor() ([]byte, []int) {
+	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DatadogTracingBackendConfig) GetAddress() string {
+	if x != nil {
+		return x.Address
+	}
+	return ""
+}
+
+func (x *DatadogTracingBackendConfig) GetPortValue() string {
+	if x != nil {
+		return x.PortValue
+	}
+	return ""
+}
+
 type ZipkinTracingBackendConfig struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -414,7 +471,7 @@ type ZipkinTracingBackendConfig struct {
 func (x *ZipkinTracingBackendConfig) Reset() {
 	*x = ZipkinTracingBackendConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[5]
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[6]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -427,7 +484,7 @@ func (x *ZipkinTracingBackendConfig) String() string {
 func (*ZipkinTracingBackendConfig) ProtoMessage() {}
 
 func (x *ZipkinTracingBackendConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[5]
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[6]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -440,7 +497,7 @@ func (x *ZipkinTracingBackendConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ZipkinTracingBackendConfig.ProtoReflect.Descriptor instead.
 func (*ZipkinTracingBackendConfig) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{5}
+	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ZipkinTracingBackendConfig) GetUrl() string {
@@ -485,7 +542,7 @@ type Logging struct {
 func (x *Logging) Reset() {
 	*x = Logging{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[6]
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[7]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -498,7 +555,7 @@ func (x *Logging) String() string {
 func (*Logging) ProtoMessage() {}
 
 func (x *Logging) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[6]
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[7]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -511,7 +568,7 @@ func (x *Logging) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Logging.ProtoReflect.Descriptor instead.
 func (*Logging) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{6}
+	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Logging) GetDefaultBackend() string {
@@ -550,7 +607,7 @@ type LoggingBackend struct {
 func (x *LoggingBackend) Reset() {
 	*x = LoggingBackend{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[7]
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[8]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -563,7 +620,7 @@ func (x *LoggingBackend) String() string {
 func (*LoggingBackend) ProtoMessage() {}
 
 func (x *LoggingBackend) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[7]
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[8]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -576,7 +633,7 @@ func (x *LoggingBackend) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LoggingBackend.ProtoReflect.Descriptor instead.
 func (*LoggingBackend) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{7}
+	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *LoggingBackend) GetName() string {
@@ -620,7 +677,7 @@ type FileLoggingBackendConfig struct {
 func (x *FileLoggingBackendConfig) Reset() {
 	*x = FileLoggingBackendConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[8]
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[9]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -633,7 +690,7 @@ func (x *FileLoggingBackendConfig) String() string {
 func (*FileLoggingBackendConfig) ProtoMessage() {}
 
 func (x *FileLoggingBackendConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[8]
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[9]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -646,7 +703,7 @@ func (x *FileLoggingBackendConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use FileLoggingBackendConfig.ProtoReflect.Descriptor instead.
 func (*FileLoggingBackendConfig) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{8}
+	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *FileLoggingBackendConfig) GetPath() string {
@@ -669,7 +726,7 @@ type TcpLoggingBackendConfig struct {
 func (x *TcpLoggingBackendConfig) Reset() {
 	*x = TcpLoggingBackendConfig{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[9]
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[10]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -682,7 +739,7 @@ func (x *TcpLoggingBackendConfig) String() string {
 func (*TcpLoggingBackendConfig) ProtoMessage() {}
 
 func (x *TcpLoggingBackendConfig) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[9]
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[10]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -695,7 +752,7 @@ func (x *TcpLoggingBackendConfig) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use TcpLoggingBackendConfig.ProtoReflect.Descriptor instead.
 func (*TcpLoggingBackendConfig) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{9}
+	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *TcpLoggingBackendConfig) GetAddress() string {
@@ -718,7 +775,7 @@ type Routing struct {
 func (x *Routing) Reset() {
 	*x = Routing{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[10]
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[11]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -731,7 +788,7 @@ func (x *Routing) String() string {
 func (*Routing) ProtoMessage() {}
 
 func (x *Routing) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[10]
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[11]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -744,7 +801,7 @@ func (x *Routing) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Routing.ProtoReflect.Descriptor instead.
 func (*Routing) Descriptor() ([]byte, []int) {
-	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{10}
+	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *Routing) GetLocalityAwareLoadBalancing() bool {
@@ -769,7 +826,7 @@ type Mesh_Mtls struct {
 func (x *Mesh_Mtls) Reset() {
 	*x = Mesh_Mtls{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[11]
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[12]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -782,7 +839,7 @@ func (x *Mesh_Mtls) String() string {
 func (*Mesh_Mtls) ProtoMessage() {}
 
 func (x *Mesh_Mtls) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[11]
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[12]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -825,7 +882,7 @@ type CertificateAuthorityBackend_DpCert struct {
 func (x *CertificateAuthorityBackend_DpCert) Reset() {
 	*x = CertificateAuthorityBackend_DpCert{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[12]
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[13]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -838,7 +895,7 @@ func (x *CertificateAuthorityBackend_DpCert) String() string {
 func (*CertificateAuthorityBackend_DpCert) ProtoMessage() {}
 
 func (x *CertificateAuthorityBackend_DpCert) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[12]
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[13]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -874,7 +931,7 @@ type CertificateAuthorityBackend_DpCert_Rotation struct {
 func (x *CertificateAuthorityBackend_DpCert_Rotation) Reset() {
 	*x = CertificateAuthorityBackend_DpCert_Rotation{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[13]
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[14]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -887,7 +944,7 @@ func (x *CertificateAuthorityBackend_DpCert_Rotation) String() string {
 func (*CertificateAuthorityBackend_DpCert_Rotation) ProtoMessage() {}
 
 func (x *CertificateAuthorityBackend_DpCert_Rotation) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[13]
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[14]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -923,7 +980,7 @@ type Networking_Outbound struct {
 func (x *Networking_Outbound) Reset() {
 	*x = Networking_Outbound{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[14]
+		mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[15]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -936,7 +993,7 @@ func (x *Networking_Outbound) String() string {
 func (*Networking_Outbound) ProtoMessage() {}
 
 func (x *Networking_Outbound) ProtoReflect() protoreflect.Message {
-	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[14]
+	mi := &file_mesh_v1alpha1_mesh_proto_msgTypes[15]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1048,49 +1105,54 @@ var file_mesh_v1alpha1_mesh_proto_rawDesc = []byte{
 	0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x2b, 0x0a,
 	0x04, 0x63, 0x6f, 0x6e, 0x66, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f,
 	0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74,
-	0x72, 0x75, 0x63, 0x74, 0x52, 0x04, 0x63, 0x6f, 0x6e, 0x66, 0x22, 0xbe, 0x01, 0x0a, 0x1a, 0x5a,
-	0x69, 0x70, 0x6b, 0x69, 0x6e, 0x54, 0x72, 0x61, 0x63, 0x69, 0x6e, 0x67, 0x42, 0x61, 0x63, 0x6b,
-	0x65, 0x6e, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x10, 0x0a, 0x03, 0x75, 0x72, 0x6c,
-	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x75, 0x72, 0x6c, 0x12, 0x24, 0x0a, 0x0d, 0x74,
-	0x72, 0x61, 0x63, 0x65, 0x49, 0x64, 0x31, 0x32, 0x38, 0x62, 0x69, 0x74, 0x18, 0x02, 0x20, 0x01,
-	0x28, 0x08, 0x52, 0x0d, 0x74, 0x72, 0x61, 0x63, 0x65, 0x49, 0x64, 0x31, 0x32, 0x38, 0x62, 0x69,
-	0x74, 0x12, 0x1e, 0x0a, 0x0a, 0x61, 0x70, 0x69, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18,
-	0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x61, 0x70, 0x69, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f,
-	0x6e, 0x12, 0x48, 0x0a, 0x11, 0x73, 0x68, 0x61, 0x72, 0x65, 0x64, 0x53, 0x70, 0x61, 0x6e, 0x43,
-	0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67,
-	0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42,
-	0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65, 0x52, 0x11, 0x73, 0x68, 0x61, 0x72, 0x65, 0x64,
-	0x53, 0x70, 0x61, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x22, 0x71, 0x0a, 0x07, 0x4c,
-	0x6f, 0x67, 0x67, 0x69, 0x6e, 0x67, 0x12, 0x26, 0x0a, 0x0e, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c,
-	0x74, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e,
-	0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x12, 0x3e,
-	0x0a, 0x08, 0x62, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b,
-	0x32, 0x22, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e, 0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61,
-	0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4c, 0x6f, 0x67, 0x67, 0x69, 0x6e, 0x67, 0x42, 0x61, 0x63,
-	0x6b, 0x65, 0x6e, 0x64, 0x52, 0x08, 0x62, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x73, 0x22, 0x7d,
-	0x0a, 0x0e, 0x4c, 0x6f, 0x67, 0x67, 0x69, 0x6e, 0x67, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64,
-	0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04,
-	0x6e, 0x61, 0x6d, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x02,
-	0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x12, 0x12, 0x0a, 0x04,
-	0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65,
-	0x12, 0x2b, 0x0a, 0x04, 0x63, 0x6f, 0x6e, 0x66, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17,
-	0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66,
-	0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52, 0x04, 0x63, 0x6f, 0x6e, 0x66, 0x22, 0x2e, 0x0a,
-	0x18, 0x46, 0x69, 0x6c, 0x65, 0x4c, 0x6f, 0x67, 0x67, 0x69, 0x6e, 0x67, 0x42, 0x61, 0x63, 0x6b,
-	0x65, 0x6e, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x61, 0x74,
-	0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x70, 0x61, 0x74, 0x68, 0x22, 0x33, 0x0a,
-	0x17, 0x54, 0x63, 0x70, 0x4c, 0x6f, 0x67, 0x67, 0x69, 0x6e, 0x67, 0x42, 0x61, 0x63, 0x6b, 0x65,
-	0x6e, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x18, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72,
-	0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65,
-	0x73, 0x73, 0x22, 0x49, 0x0a, 0x07, 0x52, 0x6f, 0x75, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x3e, 0x0a,
-	0x1a, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x69, 0x74, 0x79, 0x41, 0x77, 0x61, 0x72, 0x65, 0x4c, 0x6f,
-	0x61, 0x64, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x69, 0x6e, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x08, 0x52, 0x1a, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x69, 0x74, 0x79, 0x41, 0x77, 0x61, 0x72, 0x65,
-	0x4c, 0x6f, 0x61, 0x64, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63, 0x69, 0x6e, 0x67, 0x42, 0x2a, 0x5a,
-	0x28, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e, 0x63, 0x6f, 0x6d, 0x2f, 0x6b, 0x75, 0x6d, 0x61,
-	0x68, 0x71, 0x2f, 0x6b, 0x75, 0x6d, 0x61, 0x2f, 0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68,
-	0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f,
-	0x33,
+	0x72, 0x75, 0x63, 0x74, 0x52, 0x04, 0x63, 0x6f, 0x6e, 0x66, 0x22, 0x56, 0x0a, 0x1b, 0x44, 0x61,
+	0x74, 0x61, 0x64, 0x6f, 0x67, 0x54, 0x72, 0x61, 0x63, 0x69, 0x6e, 0x67, 0x42, 0x61, 0x63, 0x6b,
+	0x65, 0x6e, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67, 0x12, 0x18, 0x0a, 0x07, 0x61, 0x64, 0x64,
+	0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72,
+	0x65, 0x73, 0x73, 0x12, 0x1d, 0x0a, 0x0a, 0x70, 0x6f, 0x72, 0x74, 0x5f, 0x76, 0x61, 0x6c, 0x75,
+	0x65, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x09, 0x70, 0x6f, 0x72, 0x74, 0x56, 0x61, 0x6c,
+	0x75, 0x65, 0x22, 0xbe, 0x01, 0x0a, 0x1a, 0x5a, 0x69, 0x70, 0x6b, 0x69, 0x6e, 0x54, 0x72, 0x61,
+	0x63, 0x69, 0x6e, 0x67, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x12, 0x10, 0x0a, 0x03, 0x75, 0x72, 0x6c, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03,
+	0x75, 0x72, 0x6c, 0x12, 0x24, 0x0a, 0x0d, 0x74, 0x72, 0x61, 0x63, 0x65, 0x49, 0x64, 0x31, 0x32,
+	0x38, 0x62, 0x69, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x0d, 0x74, 0x72, 0x61, 0x63,
+	0x65, 0x49, 0x64, 0x31, 0x32, 0x38, 0x62, 0x69, 0x74, 0x12, 0x1e, 0x0a, 0x0a, 0x61, 0x70, 0x69,
+	0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0a, 0x61,
+	0x70, 0x69, 0x56, 0x65, 0x72, 0x73, 0x69, 0x6f, 0x6e, 0x12, 0x48, 0x0a, 0x11, 0x73, 0x68, 0x61,
+	0x72, 0x65, 0x64, 0x53, 0x70, 0x61, 0x6e, 0x43, 0x6f, 0x6e, 0x74, 0x65, 0x78, 0x74, 0x18, 0x04,
+	0x20, 0x01, 0x28, 0x0b, 0x32, 0x1a, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e, 0x70, 0x72,
+	0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x42, 0x6f, 0x6f, 0x6c, 0x56, 0x61, 0x6c, 0x75, 0x65,
+	0x52, 0x11, 0x73, 0x68, 0x61, 0x72, 0x65, 0x64, 0x53, 0x70, 0x61, 0x6e, 0x43, 0x6f, 0x6e, 0x74,
+	0x65, 0x78, 0x74, 0x22, 0x71, 0x0a, 0x07, 0x4c, 0x6f, 0x67, 0x67, 0x69, 0x6e, 0x67, 0x12, 0x26,
+	0x0a, 0x0e, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x0e, 0x64, 0x65, 0x66, 0x61, 0x75, 0x6c, 0x74, 0x42,
+	0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x12, 0x3e, 0x0a, 0x08, 0x62, 0x61, 0x63, 0x6b, 0x65, 0x6e,
+	0x64, 0x73, 0x18, 0x02, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x6b, 0x75, 0x6d, 0x61, 0x2e,
+	0x6d, 0x65, 0x73, 0x68, 0x2e, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61, 0x31, 0x2e, 0x4c, 0x6f,
+	0x67, 0x67, 0x69, 0x6e, 0x67, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x52, 0x08, 0x62, 0x61,
+	0x63, 0x6b, 0x65, 0x6e, 0x64, 0x73, 0x22, 0x7d, 0x0a, 0x0e, 0x4c, 0x6f, 0x67, 0x67, 0x69, 0x6e,
+	0x67, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65,
+	0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x16, 0x0a, 0x06,
+	0x66, 0x6f, 0x72, 0x6d, 0x61, 0x74, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09, 0x52, 0x06, 0x66, 0x6f,
+	0x72, 0x6d, 0x61, 0x74, 0x12, 0x12, 0x0a, 0x04, 0x74, 0x79, 0x70, 0x65, 0x18, 0x03, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x04, 0x74, 0x79, 0x70, 0x65, 0x12, 0x2b, 0x0a, 0x04, 0x63, 0x6f, 0x6e, 0x66,
+	0x18, 0x04, 0x20, 0x01, 0x28, 0x0b, 0x32, 0x17, 0x2e, 0x67, 0x6f, 0x6f, 0x67, 0x6c, 0x65, 0x2e,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x62, 0x75, 0x66, 0x2e, 0x53, 0x74, 0x72, 0x75, 0x63, 0x74, 0x52,
+	0x04, 0x63, 0x6f, 0x6e, 0x66, 0x22, 0x2e, 0x0a, 0x18, 0x46, 0x69, 0x6c, 0x65, 0x4c, 0x6f, 0x67,
+	0x67, 0x69, 0x6e, 0x67, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69,
+	0x67, 0x12, 0x12, 0x0a, 0x04, 0x70, 0x61, 0x74, 0x68, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52,
+	0x04, 0x70, 0x61, 0x74, 0x68, 0x22, 0x33, 0x0a, 0x17, 0x54, 0x63, 0x70, 0x4c, 0x6f, 0x67, 0x67,
+	0x69, 0x6e, 0x67, 0x42, 0x61, 0x63, 0x6b, 0x65, 0x6e, 0x64, 0x43, 0x6f, 0x6e, 0x66, 0x69, 0x67,
+	0x12, 0x18, 0x0a, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
+	0x09, 0x52, 0x07, 0x61, 0x64, 0x64, 0x72, 0x65, 0x73, 0x73, 0x22, 0x49, 0x0a, 0x07, 0x52, 0x6f,
+	0x75, 0x74, 0x69, 0x6e, 0x67, 0x12, 0x3e, 0x0a, 0x1a, 0x6c, 0x6f, 0x63, 0x61, 0x6c, 0x69, 0x74,
+	0x79, 0x41, 0x77, 0x61, 0x72, 0x65, 0x4c, 0x6f, 0x61, 0x64, 0x42, 0x61, 0x6c, 0x61, 0x6e, 0x63,
+	0x69, 0x6e, 0x67, 0x18, 0x01, 0x20, 0x01, 0x28, 0x08, 0x52, 0x1a, 0x6c, 0x6f, 0x63, 0x61, 0x6c,
+	0x69, 0x74, 0x79, 0x41, 0x77, 0x61, 0x72, 0x65, 0x4c, 0x6f, 0x61, 0x64, 0x42, 0x61, 0x6c, 0x61,
+	0x6e, 0x63, 0x69, 0x6e, 0x67, 0x42, 0x2a, 0x5a, 0x28, 0x67, 0x69, 0x74, 0x68, 0x75, 0x62, 0x2e,
+	0x63, 0x6f, 0x6d, 0x2f, 0x6b, 0x75, 0x6d, 0x61, 0x68, 0x71, 0x2f, 0x6b, 0x75, 0x6d, 0x61, 0x2f,
+	0x61, 0x70, 0x69, 0x2f, 0x6d, 0x65, 0x73, 0x68, 0x2f, 0x76, 0x31, 0x61, 0x6c, 0x70, 0x68, 0x61,
+	0x31, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -1105,47 +1167,48 @@ func file_mesh_v1alpha1_mesh_proto_rawDescGZIP() []byte {
 	return file_mesh_v1alpha1_mesh_proto_rawDescData
 }
 
-var file_mesh_v1alpha1_mesh_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_mesh_v1alpha1_mesh_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_mesh_v1alpha1_mesh_proto_goTypes = []interface{}{
 	(*Mesh)(nil),                                        // 0: kuma.mesh.v1alpha1.Mesh
 	(*CertificateAuthorityBackend)(nil),                 // 1: kuma.mesh.v1alpha1.CertificateAuthorityBackend
 	(*Networking)(nil),                                  // 2: kuma.mesh.v1alpha1.Networking
 	(*Tracing)(nil),                                     // 3: kuma.mesh.v1alpha1.Tracing
 	(*TracingBackend)(nil),                              // 4: kuma.mesh.v1alpha1.TracingBackend
-	(*ZipkinTracingBackendConfig)(nil),                  // 5: kuma.mesh.v1alpha1.ZipkinTracingBackendConfig
-	(*Logging)(nil),                                     // 6: kuma.mesh.v1alpha1.Logging
-	(*LoggingBackend)(nil),                              // 7: kuma.mesh.v1alpha1.LoggingBackend
-	(*FileLoggingBackendConfig)(nil),                    // 8: kuma.mesh.v1alpha1.FileLoggingBackendConfig
-	(*TcpLoggingBackendConfig)(nil),                     // 9: kuma.mesh.v1alpha1.TcpLoggingBackendConfig
-	(*Routing)(nil),                                     // 10: kuma.mesh.v1alpha1.Routing
-	(*Mesh_Mtls)(nil),                                   // 11: kuma.mesh.v1alpha1.Mesh.Mtls
-	(*CertificateAuthorityBackend_DpCert)(nil),          // 12: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
-	(*CertificateAuthorityBackend_DpCert_Rotation)(nil), // 13: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
-	(*Networking_Outbound)(nil),                         // 14: kuma.mesh.v1alpha1.Networking.Outbound
-	(*Metrics)(nil),                                     // 15: kuma.mesh.v1alpha1.Metrics
-	(*_struct.Struct)(nil),                              // 16: google.protobuf.Struct
-	(*wrappers.DoubleValue)(nil),                        // 17: google.protobuf.DoubleValue
-	(*wrappers.BoolValue)(nil),                          // 18: google.protobuf.BoolValue
+	(*DatadogTracingBackendConfig)(nil),                 // 5: kuma.mesh.v1alpha1.DatadogTracingBackendConfig
+	(*ZipkinTracingBackendConfig)(nil),                  // 6: kuma.mesh.v1alpha1.ZipkinTracingBackendConfig
+	(*Logging)(nil),                                     // 7: kuma.mesh.v1alpha1.Logging
+	(*LoggingBackend)(nil),                              // 8: kuma.mesh.v1alpha1.LoggingBackend
+	(*FileLoggingBackendConfig)(nil),                    // 9: kuma.mesh.v1alpha1.FileLoggingBackendConfig
+	(*TcpLoggingBackendConfig)(nil),                     // 10: kuma.mesh.v1alpha1.TcpLoggingBackendConfig
+	(*Routing)(nil),                                     // 11: kuma.mesh.v1alpha1.Routing
+	(*Mesh_Mtls)(nil),                                   // 12: kuma.mesh.v1alpha1.Mesh.Mtls
+	(*CertificateAuthorityBackend_DpCert)(nil),          // 13: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
+	(*CertificateAuthorityBackend_DpCert_Rotation)(nil), // 14: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
+	(*Networking_Outbound)(nil),                         // 15: kuma.mesh.v1alpha1.Networking.Outbound
+	(*Metrics)(nil),                                     // 16: kuma.mesh.v1alpha1.Metrics
+	(*_struct.Struct)(nil),                              // 17: google.protobuf.Struct
+	(*wrappers.DoubleValue)(nil),                        // 18: google.protobuf.DoubleValue
+	(*wrappers.BoolValue)(nil),                          // 19: google.protobuf.BoolValue
 }
 var file_mesh_v1alpha1_mesh_proto_depIdxs = []int32{
-	11, // 0: kuma.mesh.v1alpha1.Mesh.mtls:type_name -> kuma.mesh.v1alpha1.Mesh.Mtls
+	12, // 0: kuma.mesh.v1alpha1.Mesh.mtls:type_name -> kuma.mesh.v1alpha1.Mesh.Mtls
 	3,  // 1: kuma.mesh.v1alpha1.Mesh.tracing:type_name -> kuma.mesh.v1alpha1.Tracing
-	6,  // 2: kuma.mesh.v1alpha1.Mesh.logging:type_name -> kuma.mesh.v1alpha1.Logging
-	15, // 3: kuma.mesh.v1alpha1.Mesh.metrics:type_name -> kuma.mesh.v1alpha1.Metrics
+	7,  // 2: kuma.mesh.v1alpha1.Mesh.logging:type_name -> kuma.mesh.v1alpha1.Logging
+	16, // 3: kuma.mesh.v1alpha1.Mesh.metrics:type_name -> kuma.mesh.v1alpha1.Metrics
 	2,  // 4: kuma.mesh.v1alpha1.Mesh.networking:type_name -> kuma.mesh.v1alpha1.Networking
-	10, // 5: kuma.mesh.v1alpha1.Mesh.routing:type_name -> kuma.mesh.v1alpha1.Routing
-	12, // 6: kuma.mesh.v1alpha1.CertificateAuthorityBackend.dpCert:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
-	16, // 7: kuma.mesh.v1alpha1.CertificateAuthorityBackend.conf:type_name -> google.protobuf.Struct
-	14, // 8: kuma.mesh.v1alpha1.Networking.outbound:type_name -> kuma.mesh.v1alpha1.Networking.Outbound
+	11, // 5: kuma.mesh.v1alpha1.Mesh.routing:type_name -> kuma.mesh.v1alpha1.Routing
+	13, // 6: kuma.mesh.v1alpha1.CertificateAuthorityBackend.dpCert:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert
+	17, // 7: kuma.mesh.v1alpha1.CertificateAuthorityBackend.conf:type_name -> google.protobuf.Struct
+	15, // 8: kuma.mesh.v1alpha1.Networking.outbound:type_name -> kuma.mesh.v1alpha1.Networking.Outbound
 	4,  // 9: kuma.mesh.v1alpha1.Tracing.backends:type_name -> kuma.mesh.v1alpha1.TracingBackend
-	17, // 10: kuma.mesh.v1alpha1.TracingBackend.sampling:type_name -> google.protobuf.DoubleValue
-	16, // 11: kuma.mesh.v1alpha1.TracingBackend.conf:type_name -> google.protobuf.Struct
-	18, // 12: kuma.mesh.v1alpha1.ZipkinTracingBackendConfig.sharedSpanContext:type_name -> google.protobuf.BoolValue
-	7,  // 13: kuma.mesh.v1alpha1.Logging.backends:type_name -> kuma.mesh.v1alpha1.LoggingBackend
-	16, // 14: kuma.mesh.v1alpha1.LoggingBackend.conf:type_name -> google.protobuf.Struct
+	18, // 10: kuma.mesh.v1alpha1.TracingBackend.sampling:type_name -> google.protobuf.DoubleValue
+	17, // 11: kuma.mesh.v1alpha1.TracingBackend.conf:type_name -> google.protobuf.Struct
+	19, // 12: kuma.mesh.v1alpha1.ZipkinTracingBackendConfig.sharedSpanContext:type_name -> google.protobuf.BoolValue
+	8,  // 13: kuma.mesh.v1alpha1.Logging.backends:type_name -> kuma.mesh.v1alpha1.LoggingBackend
+	17, // 14: kuma.mesh.v1alpha1.LoggingBackend.conf:type_name -> google.protobuf.Struct
 	1,  // 15: kuma.mesh.v1alpha1.Mesh.Mtls.backends:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend
-	13, // 16: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.rotation:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
-	18, // 17: kuma.mesh.v1alpha1.Networking.Outbound.passthrough:type_name -> google.protobuf.BoolValue
+	14, // 16: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.rotation:type_name -> kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
+	19, // 17: kuma.mesh.v1alpha1.Networking.Outbound.passthrough:type_name -> google.protobuf.BoolValue
 	18, // [18:18] is the sub-list for method output_type
 	18, // [18:18] is the sub-list for method input_type
 	18, // [18:18] is the sub-list for extension type_name
@@ -1221,7 +1284,7 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_mesh_proto_msgTypes[5].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*ZipkinTracingBackendConfig); i {
+			switch v := v.(*DatadogTracingBackendConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1233,7 +1296,7 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_mesh_proto_msgTypes[6].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Logging); i {
+			switch v := v.(*ZipkinTracingBackendConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1245,7 +1308,7 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_mesh_proto_msgTypes[7].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*LoggingBackend); i {
+			switch v := v.(*Logging); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1257,7 +1320,7 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_mesh_proto_msgTypes[8].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*FileLoggingBackendConfig); i {
+			switch v := v.(*LoggingBackend); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1269,7 +1332,7 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_mesh_proto_msgTypes[9].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*TcpLoggingBackendConfig); i {
+			switch v := v.(*FileLoggingBackendConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1281,7 +1344,7 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_mesh_proto_msgTypes[10].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Routing); i {
+			switch v := v.(*TcpLoggingBackendConfig); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1293,7 +1356,7 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_mesh_proto_msgTypes[11].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Mesh_Mtls); i {
+			switch v := v.(*Routing); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1305,7 +1368,7 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_mesh_proto_msgTypes[12].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CertificateAuthorityBackend_DpCert); i {
+			switch v := v.(*Mesh_Mtls); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1317,7 +1380,7 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_mesh_proto_msgTypes[13].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*CertificateAuthorityBackend_DpCert_Rotation); i {
+			switch v := v.(*CertificateAuthorityBackend_DpCert); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -1329,6 +1392,18 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			}
 		}
 		file_mesh_v1alpha1_mesh_proto_msgTypes[14].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*CertificateAuthorityBackend_DpCert_Rotation); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_mesh_v1alpha1_mesh_proto_msgTypes[15].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Networking_Outbound); i {
 			case 0:
 				return &v.state
@@ -1347,7 +1422,7 @@ func file_mesh_v1alpha1_mesh_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_mesh_v1alpha1_mesh_proto_rawDesc,
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

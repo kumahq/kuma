@@ -117,6 +117,14 @@ message TracingBackend {
   google.protobuf.Struct conf = 4;
 }
 
+message DatadogTracingBackendConfig {
+  // IP address of datadog collector.
+  string address = 1;
+
+  // Port of datadog collecot
+  string port_value = 2;
+}
+
 message ZipkinTracingBackendConfig {
   // Address of Zipkin collector.
   string url = 1;
