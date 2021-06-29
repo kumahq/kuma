@@ -60,7 +60,7 @@ func (tp *IstioTransparentProxy) Setup(cfg *config.TransparentProxyConfig) (stri
 	}()
 
 	if err := install.GetCommand().Execute(); err != nil {
-		return tp.getStdOutStdErr(), errors.Wrapf(err, "setting istio")
+		return tp.getStdOutStdErr(), errors.Wrapf(err, "setting kuma transparent proxy")
 	}
 
 	return tp.getStdOutStdErr(), nil

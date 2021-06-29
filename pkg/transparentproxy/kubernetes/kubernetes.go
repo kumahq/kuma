@@ -89,7 +89,7 @@ func (pr *PodRedirect) AsTransparentProxyConfig() *config.TransparentProxyConfig
 	return &config.TransparentProxyConfig{
 
 		DryRun:                 false,
-		Verbose:                true,
+		Verbose:                false,
 		RedirectPortOutBound:   fmt.Sprintf("%d", pr.RedirectPortOutbound),
 		RedirectInBound:        pr.RedirectInbound,
 		RedirectPortInBound:    fmt.Sprintf("%d", pr.RedirectPortInbound),

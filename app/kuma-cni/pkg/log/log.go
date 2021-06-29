@@ -15,8 +15,13 @@ func NewLogger() *logrus.Logger {
 	}
 
 	pathMap := lfshook.PathMap{
-		logrus.InfoLevel:  logFilePath,
+		logrus.PanicLevel: logFilePath,
+		logrus.FatalLevel: logFilePath,
 		logrus.ErrorLevel: logFilePath,
+		logrus.WarnLevel:  logFilePath,
+		logrus.InfoLevel:  logFilePath,
+		logrus.DebugLevel: logFilePath,
+		logrus.TraceLevel: logFilePath,
 	}
 
 	Log = logrus.New()
