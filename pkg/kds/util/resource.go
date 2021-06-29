@@ -5,7 +5,7 @@ import (
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	proto2 "github.com/golang/protobuf/proto"
+	old_proto "github.com/golang/protobuf/proto"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
@@ -85,7 +85,7 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		if err != nil {
 			return nil, err
 		}
-		err = anypb.UnmarshalTo(kr.Spec, proto2.MessageV2(obj.GetSpec()), proto.UnmarshalOptions{})
+		err = anypb.UnmarshalTo(kr.Spec, old_proto.MessageV2(obj.GetSpec()), proto.UnmarshalOptions{})
 		if err != nil {
 			return nil, err
 		}
