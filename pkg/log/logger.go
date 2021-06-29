@@ -76,7 +76,7 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		lvl = zap.NewAtomicLevelAt(zap.InfoLevel)
 		opts = append(opts,
 			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-				return zapcore.NewSampler(core, time.Second, 100, 100)
+				return zapcore.NewSamplerWithOptions(core, time.Second, 100, 100)
 			}))
 	}
 	encCfg := zap.NewDevelopmentEncoderConfig()
