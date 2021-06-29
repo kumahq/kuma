@@ -6,6 +6,7 @@ option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
 import "mesh/options.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 import "validate/validate.proto";
 
 // DataplaneInsight defines the observed state of a Dataplane.
@@ -59,6 +60,10 @@ message DiscoverySubscription {
 
   // Time when a given Dataplane disconnected from the Control Plane.
   google.protobuf.Timestamp disconnect_time = 4;
+
+  google.protobuf.Timestamp last_seen = 7;
+
+  google.protobuf.Duration last_seen_delta = 8;
 
   // Status of the ADS subscription.
   DiscoverySubscriptionStatus status = 5

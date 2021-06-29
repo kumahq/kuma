@@ -10,7 +10,7 @@ import (
 )
 
 func ResilienceMultizoneUniversalPostgres() {
-	var global, remote_1 Cluster
+	var global, zone1 Cluster
 	var optsGlobal, optsRemote1 []DeployOptionsFunc
 
 	BeforeEach(func() {
@@ -42,31 +42,31 @@ func ResilienceMultizoneUniversalPostgres() {
 		globalCP := global.GetKuma()
 
 		// Cluster 1
-		remote_1 = clusters.GetCluster(Kuma2)
+		zone1 = clusters.GetCluster(Kuma2)
 
 		err = NewClusterSetup().
 			Install(postgres.Install(Kuma2)).
-			Setup(remote_1)
+			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 
 		optsRemote1 = []DeployOptionsFunc{
 			WithGlobalAddress(globalCP.GetKDSServerAddress()),
-			WithPostgres(postgres.From(remote_1, Kuma2).GetEnvVars()),
+			WithPostgres(postgres.From(zone1, Kuma2).GetEnvVars()),
 		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote1...)).
-			Setup(remote_1)
+			Install(Kuma(core.Zone, optsRemote1...)).
+			Setup(zone1)
 		Expect(err).ToNot(HaveOccurred())
 
-		err = remote_1.VerifyKuma()
+		err = zone1.VerifyKuma()
 		Expect(err).ToNot(HaveOccurred())
 	})
 
 	E2EAfterEach(func() {
-		err := remote_1.DeleteKuma(optsRemote1...)
+		err := zone1.DeleteKuma(optsRemote1...)
 		Expect(err).ToNot(HaveOccurred())
-		err = remote_1.DismissCluster()
+		err = zone1.DismissCluster()
 		Expect(err).ToNot(HaveOccurred())
 
 		err = global.DeleteKuma(optsGlobal...)
@@ -92,7 +92,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		Expect(err).ToNot(HaveOccurred())
 
 		// and zone is killed while global is down
-		_, _, err = remote_1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
+		_, _, err = zone1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
 		Expect(err).ToNot(HaveOccurred())
 
 		// and global is restarted
@@ -103,6 +103,6 @@ func ResilienceMultizoneUniversalPostgres() {
 		// then zone is offline
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
-		}, "30s", "1s").Should(ContainSubstring("Offline"))
+		}, "40s", "1s").Should(ContainSubstring("Offline"))
 	})
 }

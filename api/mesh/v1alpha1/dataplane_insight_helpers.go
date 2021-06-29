@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 func NewSubscriptionStatus() *DiscoverySubscriptionStatus {
@@ -33,12 +34,14 @@ func NewVersion() *Version {
 }
 
 func (ds *DataplaneInsight) IsOnline() bool {
-	for _, s := range ds.GetSubscriptions() {
-		if s.ConnectTime != nil && s.DisconnectTime == nil {
-			return true
-		}
+	subscription, _ := ds.GetLatestSubscription()
+	if subscription.GetDisconnectTime() != nil {
+		return false
 	}
-	return false
+	return subscription.GetLastSeen().AsTime().
+		Add(subscription.GetLastSeenDelta().AsDuration()).
+		After(time.Now())
+
 }
 
 func (ds *DataplaneInsight) GetSubscription(id string) (int, *DiscoverySubscription) {
@@ -136,4 +139,10 @@ func (s *DiscoverySubscriptionStatus) StatsOf(typeUrl string) *DiscoveryServiceS
 	default:
 		return &DiscoveryServiceStats{}
 	}
+}
+
+func (x *DiscoverySubscription) SetLastSeen(t time.Time, delta time.Duration) {
+	tp, _ := ptypes.TimestampProto(t)
+	x.LastSeen = tp
+	x.LastSeenDelta = durationpb.New(delta)
 }

@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 func NewSubscriptionStatus() *KDSSubscriptionStatus {
@@ -42,12 +43,13 @@ func (m *ZoneInsight) GetLatestSubscription() (*KDSSubscription, *time.Time) {
 }
 
 func (m *ZoneInsight) IsOnline() bool {
-	for _, s := range m.GetSubscriptions() {
-		if s.ConnectTime != nil && s.DisconnectTime == nil {
-			return true
-		}
+	subscription, _ := m.GetLatestSubscription()
+	if subscription.GetDisconnectTime() != nil {
+		return false
 	}
-	return false
+	return subscription.GetLastSeen().AsTime().
+		Add(subscription.GetLastSeenDelta().AsDuration()).
+		After(time.Now())
 }
 
 func (m *ZoneInsight) Sum(v func(*KDSSubscription) uint64) uint64 {
@@ -79,4 +81,10 @@ func NewVersion() *Version {
 			BuildDate: "",
 		},
 	}
+}
+
+func (x *KDSSubscription) SetLastSeen(t time.Time, delta time.Duration) {
+	tp, _ := ptypes.TimestampProto(t)
+	x.LastSeen = tp
+	x.LastSeenDelta = durationpb.New(delta)
 }

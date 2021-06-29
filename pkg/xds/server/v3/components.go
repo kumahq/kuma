@@ -7,6 +7,8 @@ import (
 	envoy_service_discovery "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v3"
 
+	"github.com/kumahq/kuma/pkg/core/passivehealth"
+
 	"github.com/kumahq/kuma/pkg/core"
 	core_runtime "github.com/kumahq/kuma/pkg/core/runtime"
 	v3 "github.com/kumahq/kuma/pkg/core/xds/v3"
@@ -103,6 +105,10 @@ func DefaultDataplaneStatusTracker(rt core_runtime.Runtime) xds_callbacks.Datapl
 			},
 			rt.Config().XdsServer.DataplaneStatusFlushInterval/10,
 			xds_callbacks.NewDataplaneInsightStore(rt.ResourceManager()),
+			passivehealth.NewChecker(
+				2*rt.Config().XdsServer.DataplaneStatusFlushInterval,
+				3*rt.Config().XdsServer.DataplaneStatusFlushInterval/2,
+			),
 		)
 	})
 }

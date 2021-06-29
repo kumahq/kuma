@@ -28,12 +28,13 @@ func (x *ZoneIngressInsight) UpdateSubscription(s *DiscoverySubscription) {
 }
 
 func (x *ZoneIngressInsight) IsOnline() bool {
-	for _, s := range x.GetSubscriptions() {
-		if s.ConnectTime != nil && s.DisconnectTime == nil {
-			return true
-		}
+	subscription, _ := x.GetLatestSubscription()
+	if subscription.GetDisconnectTime() != nil {
+		return false
 	}
-	return false
+	return subscription.GetLastSeen().AsTime().
+		Add(subscription.GetLastSeenDelta().AsDuration()).
+		After(time.Now())
 }
 
 func (x *ZoneIngressInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {

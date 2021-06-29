@@ -1,9 +1,12 @@
 package callbacks
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/golang/protobuf/proto"
+
+	"github.com/kumahq/kuma/pkg/core/passivehealth"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -27,12 +30,14 @@ func NewDataplaneInsightSink(
 	accessor SubscriptionStatusAccessor,
 	newTicker func() *time.Ticker,
 	flushBackoff time.Duration,
-	store DataplaneInsightStore) DataplaneInsightSink {
+	store DataplaneInsightStore,
+	checker *passivehealth.Checker) DataplaneInsightSink {
 	return &dataplaneInsightSink{
 		newTicker:    newTicker,
 		accessor:     accessor,
 		flushBackoff: flushBackoff,
 		store:        store,
+		checker:      checker,
 	}
 }
 
@@ -43,6 +48,7 @@ type dataplaneInsightSink struct {
 	accessor     SubscriptionStatusAccessor
 	store        DataplaneInsightStore
 	flushBackoff time.Duration
+	checker      *passivehealth.Checker
 }
 
 func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
@@ -53,6 +59,7 @@ func (s *dataplaneInsightSink) Start(stop <-chan struct{}) {
 
 	flush := func(closing bool) {
 		dataplaneId, currentState := s.accessor.GetStatus()
+		s.checker.MarkAsAlive(fmt.Sprintf("%s.%s", dataplaneId.Mesh, dataplaneId.Name), currentState)
 		if proto.Equal(currentState, lastStoredState) {
 			return
 		}

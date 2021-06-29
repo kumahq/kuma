@@ -5,6 +5,7 @@ package kuma.system.v1alpha1;
 option go_package = "github.com/kumahq/kuma/api/system/v1alpha1";
 
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/duration.proto";
 import "validate/validate.proto";
 
 // ZoneInsight defines the observed state of a Zone Kuma CP.
@@ -38,6 +39,10 @@ message KDSSubscription {
 
   // Time when a given Zone disconnected from the Global.
   google.protobuf.Timestamp disconnect_time = 4;
+
+  google.protobuf.Timestamp last_seen = 7;
+
+  google.protobuf.Duration last_seen_delta = 8;
 
   // Status of the KDS subscription.
   KDSSubscriptionStatus status = 5 [ (validate.rules).message.required = true ];

@@ -4,6 +4,8 @@ import (
 	"context"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/passivehealth"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 	"github.com/kumahq/kuma/pkg/xds/server/callbacks"
 
@@ -35,6 +37,10 @@ var _ = Describe("DataplaneInsightSink", func() {
 		BeforeEach(func() {
 			recorder = &DataplaneInsightStoreRecorder{Upserts: make(chan DataplaneInsightUpsert)}
 			stop = make(chan struct{})
+
+			core.Now = func() time.Time {
+				return t0
+			}
 		})
 
 		AfterEach(func() {
@@ -58,7 +64,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 			var latestUpsert *DataplaneInsightUpsert
 
 			// given
-			sink := callbacks.NewDataplaneInsightSink(accessor, func() *time.Ticker { return ticker }, 1*time.Millisecond, recorder)
+			sink := callbacks.NewDataplaneInsightSink(accessor, func() *time.Ticker { return ticker }, 1*time.Millisecond, recorder, passivehealth.NewChecker(10*time.Second, 5*time.Second))
 			go sink.Start(stop)
 
 			// when
@@ -76,6 +82,8 @@ var _ = Describe("DataplaneInsightSink", func() {
 			// and
 			Expect(util_proto.ToYAML(latestUpsert.DiscoverySubscription)).To(MatchYAML(`
             connectTime: "2019-07-01T00:00:00Z"
+            lastSeen: "2019-07-01T00:00:00Z"
+            lastSeenDelta: 15s
             controlPlaneInstanceId: control-plane-01
             id: 3287995C-7E11-41FB-9479-7D39337F845D
             status:
@@ -107,6 +115,8 @@ var _ = Describe("DataplaneInsightSink", func() {
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: control-plane-01
             id: 3287995C-7E11-41FB-9479-7D39337F845D
+            lastSeen: "2019-07-01T00:00:00Z"
+            lastSeenDelta: 15s
             status:
               lastUpdateTime: "2019-07-01T00:00:02Z"
               cds: {}

@@ -3,10 +3,11 @@ package server
 import (
 	"time"
 
+	"github.com/go-logr/logr"
+
+	"github.com/kumahq/kuma/pkg/core/passivehealth"
 	core_model "github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/store"
-
-	"github.com/go-logr/logr"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/apis/system"
@@ -29,6 +30,7 @@ func NewZoneInsightSink(
 	newTicker func() *time.Ticker,
 	flushBackoff time.Duration,
 	store ZoneInsightStore,
+	checker *passivehealth.Checker,
 	log logr.Logger) ZoneInsightSink {
 	return &zoneInsightSink{
 		newTicker:    newTicker,
@@ -36,6 +38,7 @@ func NewZoneInsightSink(
 		accessor:     accessor,
 		store:        store,
 		log:          log,
+		checker:      checker,
 	}
 }
 
@@ -47,6 +50,7 @@ type zoneInsightSink struct {
 	accessor     StatusAccessor
 	store        ZoneInsightStore
 	log          logr.Logger
+	checker      *passivehealth.Checker
 }
 
 func (s *zoneInsightSink) Start(stop <-chan struct{}) {
@@ -57,6 +61,7 @@ func (s *zoneInsightSink) Start(stop <-chan struct{}) {
 
 	flush := func() {
 		zone, currentState := s.accessor.GetStatus()
+		s.checker.MarkAsAlive(zone, currentState)
 		if proto.Equal(currentState, lastStoredState) {
 			return
 		}

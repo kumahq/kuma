@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/kumahq/kuma/pkg/core/passivehealth"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
@@ -56,6 +57,10 @@ func DefaultStatusTracker(rt core_runtime.Runtime, log logr.Logger) StatusTracke
 			},
 			rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval/10,
 			NewZonesInsightStore(rt.ResourceManager()),
+			passivehealth.NewChecker(
+				2*rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval,
+				3*rt.Config().Multizone.Global.KDS.ZoneInsightFlushInterval/2,
+			),
 			l)
 	}, log)
 }

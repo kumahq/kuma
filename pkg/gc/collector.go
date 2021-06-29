@@ -59,12 +59,12 @@ func (d *collector) cleanup() error {
 			continue
 		}
 		if s, _ := di.Spec.GetLatestSubscription(); s != nil {
-			dt, err := ptypes.Timestamp(s.GetDisconnectTime())
+			lastSeen, err := ptypes.Timestamp(s.GetLastSeen())
 			if err != nil {
-				gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime())
+				gcLog.Error(err, "unable to parse LastSeen", "last seen", s.GetLastSeen())
 				continue
 			}
-			if core.Now().Sub(dt) > d.cleanupAge {
+			if core.Now().Sub(lastSeen) > d.cleanupAge {
 				onDelete = append(onDelete, model.ResourceKey{Name: di.GetMeta().GetName(), Mesh: di.GetMeta().GetMesh()})
 			}
 		}
