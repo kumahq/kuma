@@ -40,8 +40,10 @@ message KDSSubscription {
   // Time when a given Zone disconnected from the Global.
   google.protobuf.Timestamp disconnect_time = 4;
 
+  // Time when a given Zone was last seen alive
   google.protobuf.Timestamp last_seen = 7;
 
+  // Period of time since last_seen when Zone is considered dead
   google.protobuf.Duration last_seen_delta = 8;
 
   // Status of the KDS subscription.

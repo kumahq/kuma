@@ -61,8 +61,10 @@ message DiscoverySubscription {
   // Time when a given Dataplane disconnected from the Control Plane.
   google.protobuf.Timestamp disconnect_time = 4;
 
+  // Time when a given Dataplane was last seen alive
   google.protobuf.Timestamp last_seen = 7;
 
+  // Period of time since last_seen when Dataplane is considered dead
   google.protobuf.Duration last_seen_delta = 8;
 
   // Status of the ADS subscription.

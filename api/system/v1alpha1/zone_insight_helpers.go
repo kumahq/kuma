@@ -47,6 +47,10 @@ func (m *ZoneInsight) IsOnline() bool {
 	if subscription.GetDisconnectTime() != nil {
 		return false
 	}
+	// backward compatibility for old ZoneInsights without lastSeen
+	if subscription.GetConnectTime() != nil && subscription.GetLastSeen() == nil {
+		return true
+	}
 	return subscription.GetLastSeen().AsTime().
 		Add(subscription.GetLastSeenDelta().AsDuration()).
 		After(time.Now())

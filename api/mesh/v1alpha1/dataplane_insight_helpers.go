@@ -38,6 +38,10 @@ func (ds *DataplaneInsight) IsOnline() bool {
 	if subscription.GetDisconnectTime() != nil {
 		return false
 	}
+	// backward compatibility for old DataplaneInsights without lastSeen
+	if subscription.GetConnectTime() != nil && subscription.GetLastSeen() == nil {
+		return true
+	}
 	return subscription.GetLastSeen().AsTime().
 		Add(subscription.GetLastSeenDelta().AsDuration()).
 		After(time.Now())

@@ -109,8 +109,10 @@ type DiscoverySubscription struct {
 	ConnectTime *timestamp.Timestamp `protobuf:"bytes,3,opt,name=connect_time,json=connectTime,proto3" json:"connect_time,omitempty"`
 	// Time when a given Dataplane disconnected from the Control Plane.
 	DisconnectTime *timestamp.Timestamp `protobuf:"bytes,4,opt,name=disconnect_time,json=disconnectTime,proto3" json:"disconnect_time,omitempty"`
-	LastSeen       *timestamp.Timestamp `protobuf:"bytes,7,opt,name=last_seen,json=lastSeen,proto3" json:"last_seen,omitempty"`
-	LastSeenDelta  *duration.Duration   `protobuf:"bytes,8,opt,name=last_seen_delta,json=lastSeenDelta,proto3" json:"last_seen_delta,omitempty"`
+	// Time when a given Dataplane was last seen alive
+	LastSeen *timestamp.Timestamp `protobuf:"bytes,7,opt,name=last_seen,json=lastSeen,proto3" json:"last_seen,omitempty"`
+	// Period of time since last_seen when Dataplane is considered dead
+	LastSeenDelta *duration.Duration `protobuf:"bytes,8,opt,name=last_seen_delta,json=lastSeenDelta,proto3" json:"last_seen_delta,omitempty"`
 	// Status of the ADS subscription.
 	Status *DiscoverySubscriptionStatus `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
 	// Version of Envoy and Kuma dataplane

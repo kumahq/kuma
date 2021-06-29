@@ -61,8 +61,13 @@ func (d *collector) cleanup() error {
 		if s, _ := di.Spec.GetLatestSubscription(); s != nil {
 			lastSeen, err := ptypes.Timestamp(s.GetLastSeen())
 			if err != nil {
-				gcLog.Error(err, "unable to parse LastSeen", "last seen", s.GetLastSeen())
-				continue
+				// backwards compatibility
+				dt, err := ptypes.Timestamp(s.GetDisconnectTime())
+				if err != nil {
+					gcLog.Error(err, "unable to parse neither DisconnectTime nor LastSeen", "disconnect time", s.GetLastSeen(), "last seen", s.GetLastSeen())
+					continue
+				}
+				lastSeen = dt
 			}
 			if core.Now().Sub(lastSeen) > d.cleanupAge {
 				onDelete = append(onDelete, model.ResourceKey{Name: di.GetMeta().GetName(), Mesh: di.GetMeta().GetMesh()})

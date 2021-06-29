@@ -29,6 +29,12 @@ var _ = Describe("DataplaneInsightSink", func() {
 
 	t0, _ := time.Parse(time.RFC3339, "2019-07-01T00:00:00+00:00")
 
+	setNow := func(t time.Time) {
+		core.Now = func() time.Time {
+			return t
+		}
+	}
+
 	Describe("DataplaneInsightSink", func() {
 
 		var recorder *DataplaneInsightStoreRecorder
@@ -37,10 +43,6 @@ var _ = Describe("DataplaneInsightSink", func() {
 		BeforeEach(func() {
 			recorder = &DataplaneInsightStoreRecorder{Upserts: make(chan DataplaneInsightUpsert)}
 			stop = make(chan struct{})
-
-			core.Now = func() time.Time {
-				return t0
-			}
 		})
 
 		AfterEach(func() {
@@ -64,11 +66,13 @@ var _ = Describe("DataplaneInsightSink", func() {
 			var latestUpsert *DataplaneInsightUpsert
 
 			// given
-			sink := callbacks.NewDataplaneInsightSink(accessor, func() *time.Ticker { return ticker }, 1*time.Millisecond, recorder, passivehealth.NewChecker(10*time.Second, 5*time.Second))
+			setNow(t0)
+			sink := callbacks.NewDataplaneInsightSink(accessor, func() *time.Ticker { return ticker }, 1*time.Millisecond, recorder, passivehealth.NewChecker(15*time.Second, 15*time.Second))
 			go sink.Start(stop)
 
 			// when
-			ticks <- t0.Add(1 * time.Second)
+			setNow(t0.Add(10 * time.Second))
+			ticks <- t0.Add(10 * time.Second)
 			// then
 			Eventually(func() bool {
 				select {
@@ -82,8 +86,8 @@ var _ = Describe("DataplaneInsightSink", func() {
 			// and
 			Expect(util_proto.ToYAML(latestUpsert.DiscoverySubscription)).To(MatchYAML(`
             connectTime: "2019-07-01T00:00:00Z"
-            lastSeen: "2019-07-01T00:00:00Z"
-            lastSeenDelta: 15s
+            lastSeen: "2019-07-01T00:00:10Z"
+            lastSeenDelta: 30s
             controlPlaneInstanceId: control-plane-01
             id: 3287995C-7E11-41FB-9479-7D39337F845D
             status:
@@ -99,7 +103,8 @@ var _ = Describe("DataplaneInsightSink", func() {
 			subscription.Status.Lds.ResponsesSent += 1
 			subscription.Status.Total.ResponsesSent += 1
 			// and
-			ticks <- t0.Add(2 * time.Second)
+			setNow(t0.Add(10 * time.Second))
+			ticks <- t0.Add(10 * time.Second)
 			// then
 			Eventually(func() bool {
 				select {
@@ -115,8 +120,8 @@ var _ = Describe("DataplaneInsightSink", func() {
             connectTime: "2019-07-01T00:00:00Z"
             controlPlaneInstanceId: control-plane-01
             id: 3287995C-7E11-41FB-9479-7D39337F845D
-            lastSeen: "2019-07-01T00:00:00Z"
-            lastSeenDelta: 15s
+            lastSeen: "2019-07-01T00:00:10Z"
+            lastSeenDelta: 30s
             status:
               lastUpdateTime: "2019-07-01T00:00:02Z"
               cds: {}
@@ -129,7 +134,7 @@ var _ = Describe("DataplaneInsightSink", func() {
 `))
 
 			// when - time tick without changes
-			ticks <- t0.Add(3 * time.Second)
+			ticks <- t0.Add(10 * time.Second)
 			// then
 			select {
 			case <-recorder.Upserts:
