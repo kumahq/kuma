@@ -24,17 +24,19 @@ import (
 )
 
 var (
-	kdsZoneLog    = core.Log.WithName("kds-zone")
+	kdsZoneLog = core.Log.WithName("kds-zone")
+
 	ProvidedTypes = []model.ResourceType{
-		mesh.ZoneIngressType,
-		mesh.ZoneIngressInsightType,
-		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
+		mesh.DataplaneType,
+		mesh.ZoneIngressInsightType,
+		mesh.ZoneIngressType,
 	}
+
+	// ConsumedTypes is the list of Kuma resource types that a KDS instance will request from its peer.
 	ConsumedTypes = []model.ResourceType{
 		mesh.CircuitBreakerType,
 		mesh.DataplaneType,
-		mesh.ZoneIngressType,
 		mesh.ExternalServiceType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,
@@ -47,9 +49,10 @@ var (
 		mesh.TrafficPermissionType,
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
-		system.SecretType,
-		system.GlobalSecretType,
+		mesh.ZoneIngressType,
 		system.ConfigType,
+		system.GlobalSecretType,
+		system.SecretType,
 	}
 )
 
