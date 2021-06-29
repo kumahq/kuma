@@ -8,6 +8,7 @@ metadata:
     kuma.io/mesh: default
     kuma.io/sidecar-env-vars: KUMA_DATAPLANE_DRAIN_TIME=5s;NEW_ENV_VAR=123
     kuma.io/sidecar-injected: "true"
+    kuma.io/sidecar-uid: "5678"
     kuma.io/transparent-proxying: enabled
     kuma.io/transparent-proxying-inbound-port: "15006"
     kuma.io/transparent-proxying-inbound-v6-port: "15010"

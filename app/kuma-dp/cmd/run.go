@@ -57,18 +57,19 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			}
 
 			var err error
-			if mesh_proto.ProxyType(cfg.Dataplane.ProxyType) == mesh_proto.IngressProxyType {
+			switch mesh_proto.ProxyType(cfg.Dataplane.ProxyType) {
+			case mesh_proto.IngressProxyType:
 				proxyResource, err = readZoneIngressResource(cmd, cfg)
-				if err != nil {
-					runLog.Error(err, "unable to read provided zone ingress")
-					return err
-				}
-			} else {
+			case mesh_proto.DataplaneProxyType:
 				proxyResource, err = readDataplaneResource(cmd, cfg)
-				if err != nil {
-					runLog.Error(err, "unable to read provided dataplane")
-					return err
-				}
+			default:
+				return errors.Errorf("invalid proxy type %q (must be either %q or %q)",
+					cfg.Dataplane.ProxyType, mesh_proto.DataplaneProxyType, mesh_proto.IngressProxyType)
+			}
+
+			if err != nil {
+				runLog.Error(err, "unable to read provided %s policy", cfg.Dataplane.ProxyType)
+				return err
 			}
 
 			if proxyResource != nil {

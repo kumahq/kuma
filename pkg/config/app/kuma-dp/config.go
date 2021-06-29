@@ -8,7 +8,6 @@ import (
 	"go.uber.org/multierr"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 )
@@ -188,19 +187,30 @@ func (d *Dataplane) Sanitize() {
 
 func (d *Dataplane) Validate() (errs error) {
 	proxyType := mesh_proto.ProxyType(d.ProxyType)
-	if err := proxyType.IsValid(); err != nil {
-		errs = multierr.Append(errs, errors.Wrap(err, ".ProxyType is not valid"))
+	switch proxyType {
+	case mesh_proto.DataplaneProxyType, mesh_proto.IngressProxyType:
+	default:
+		if err := proxyType.IsValid(); err != nil {
+			errs = multierr.Append(errs, errors.Wrap(err, ".ProxyType is not valid"))
+		} else {
+			// Not all Dataplane types are allowed to be set directly in config.
+			errs = multierr.Append(errs, errors.Errorf(".ProxyType %q is not supported", proxyType))
+		}
 	}
+
 	if d.Mesh == "" && proxyType != mesh_proto.IngressProxyType {
 		errs = multierr.Append(errs, errors.Errorf(".Mesh must be non-empty"))
 	}
+
 	if d.Name == "" {
 		errs = multierr.Append(errs, errors.Errorf(".Name must be non-empty"))
 	}
+
 	// Notice that d.AdminPort is always valid by design of PortRange
 	if d.DrainTime <= 0 {
 		errs = multierr.Append(errs, errors.Errorf(".DrainTime must be positive"))
 	}
+
 	return
 }
 
