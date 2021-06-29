@@ -14,7 +14,6 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
 
-	"github.com/golang/protobuf/ptypes"
 	pduration "github.com/golang/protobuf/ptypes/duration"
 )
 
@@ -124,12 +123,11 @@ func ValidateDuration(path validators.PathBuilder, duration *pduration.Duration)
 		errs.AddViolationAt(path, "must have a positive value")
 		return
 	}
-	d, err := ptypes.Duration(duration)
-	if err != nil {
+	if err := duration.CheckValid(); err != nil {
 		errs.AddViolationAt(path, "must have a valid value")
 		return
 	}
-	if d == 0 {
+	if duration.AsDuration() == 0 {
 		errs.AddViolationAt(path, "must have a positive value")
 	}
 	return

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
@@ -161,25 +160,24 @@ func (f FieldOperator) formatDuration(dur *duration.Duration) (string, error) {
 	if dur == nil {
 		return "", nil
 	}
-	durNanos, err := ptypes.Duration(dur)
-	if err != nil {
+	if err := dur.CheckValid(); err != nil {
 		return "", err
 	}
-	return f.formatInt(int64(durNanos / time.Millisecond))
+	return f.formatInt(int64(dur.AsDuration() / time.Millisecond))
 }
 
 func (f FieldOperator) formatDurationDelta(outer *duration.Duration, inner *duration.Duration) (string, error) {
 	if outer == nil || inner == nil {
 		return "", nil
 	}
-	outerNanos, err := ptypes.Duration(outer)
-	if err != nil {
+	if err := outer.CheckValid(); err != nil {
 		return "", err
 	}
-	innerNanos, err := ptypes.Duration(inner)
-	if err != nil {
+	outerNanos := outer.AsDuration()
+	if err := inner.CheckValid(); err != nil {
 		return "", err
 	}
+	innerNanos := inner.AsDuration()
 	return f.formatInt(int64((outerNanos - innerNanos) / time.Millisecond))
 }
 

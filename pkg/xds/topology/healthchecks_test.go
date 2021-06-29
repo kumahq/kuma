@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/kumahq/kuma/pkg/xds/topology"
@@ -19,8 +20,6 @@ import (
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	memory_resources "github.com/kumahq/kuma/pkg/plugins/resources/memory"
 	test_model "github.com/kumahq/kuma/pkg/test/resources/model"
-
-	"github.com/golang/protobuf/ptypes"
 )
 
 var _ = Describe("HealthCheck", func() {
@@ -94,8 +93,8 @@ var _ = Describe("HealthCheck", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:           ptypes.DurationProto(5 * time.Second),
-						Timeout:            ptypes.DurationProto(4 * time.Second),
+						Interval:           durationpb.New(5 * time.Second),
+						Timeout:            durationpb.New(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
 					},
@@ -114,8 +113,8 @@ var _ = Describe("HealthCheck", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:           ptypes.DurationProto(5 * time.Second),
-						Timeout:            ptypes.DurationProto(4 * time.Second),
+						Interval:           durationpb.New(5 * time.Second),
+						Timeout:            durationpb.New(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
 					},
@@ -134,8 +133,8 @@ var _ = Describe("HealthCheck", func() {
 						{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 					},
 					Conf: &mesh_proto.HealthCheck_Conf{
-						Interval:           ptypes.DurationProto(5 * time.Second),
-						Timeout:            ptypes.DurationProto(4 * time.Second),
+						Interval:           durationpb.New(5 * time.Second),
+						Timeout:            durationpb.New(4 * time.Second),
 						UnhealthyThreshold: 3,
 						HealthyThreshold:   2,
 					},
@@ -258,8 +257,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -277,8 +276,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -328,8 +327,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -348,8 +347,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -393,8 +392,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -412,8 +411,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -457,8 +456,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -476,8 +475,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -521,8 +520,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -540,8 +539,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -586,8 +585,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "redis"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},
@@ -606,8 +605,8 @@ var _ = Describe("HealthCheck", func() {
 								{Match: mesh_proto.TagSelector{"kuma.io/service": "*"}},
 							},
 							Conf: &mesh_proto.HealthCheck_Conf{
-								Interval:           ptypes.DurationProto(5 * time.Second),
-								Timeout:            ptypes.DurationProto(4 * time.Second),
+								Interval:           durationpb.New(5 * time.Second),
+								Timeout:            durationpb.New(4 * time.Second),
 								UnhealthyThreshold: 3,
 								HealthyThreshold:   2,
 							},

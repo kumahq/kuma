@@ -7,6 +7,7 @@ import (
 	envoy_extensions_filters_http_local_ratelimit_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/http/local_ratelimit/v3"
 	envoy_type_v3 "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/any"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
 
@@ -14,7 +15,6 @@ import (
 
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_type_matcher "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -170,7 +170,7 @@ func (c RoutesConfigurer) hasExternal(clusters []envoy_common.Cluster) bool {
 func (c RoutesConfigurer) routeAction(clusters []envoy_common.Cluster, modify *mesh_proto.TrafficRoute_Http_Modify) *envoy_route.RouteAction {
 	routeAction := &envoy_route.RouteAction{}
 	if len(clusters) != 0 {
-		routeAction.Timeout = ptypes.DurationProto(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
+		routeAction.Timeout = durationpb.New(clusters[0].Timeout().GetHttp().GetRequestTimeout().AsDuration())
 	}
 	if len(clusters) == 1 {
 		routeAction.ClusterSpecifier = &envoy_route.RouteAction_Cluster{

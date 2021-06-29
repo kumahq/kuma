@@ -12,7 +12,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/emicklei/go-restful"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -268,7 +269,7 @@ var _ = Describe("MADS http service", func() {
 
 			// when
 			assignment := &observability_v1.MonitoringAssignment{}
-			err = ptypes.UnmarshalAny(discoveryRes.Resources[0], assignment)
+			err = anypb.UnmarshalTo(discoveryRes.Resources[0], assignment, proto.UnmarshalOptions{})
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

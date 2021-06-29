@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package kuma.observability.v1;
 
-option go_package = "v1";
+option go_package = "observability/mads/v1";
 
 import "envoy/service/discovery/v3/discovery.proto";
 import "google/api/annotations.proto";

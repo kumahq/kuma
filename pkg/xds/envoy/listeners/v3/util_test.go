@@ -5,6 +5,7 @@ import (
 
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/anypb"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
@@ -12,8 +13,7 @@ import (
 
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/proto"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -54,7 +54,7 @@ var _ = Describe("UpdateFilterConfig()", func() {
 				expected:    `{}`,
 			}),
 			Entry("1 filter", func() testCase {
-				pbst, err := ptypes.MarshalAny(&envoy_tcp.TcpProxy{})
+				pbst, err := anypb.New(&envoy_tcp.TcpProxy{})
 				util_error.MustNot(err)
 				return testCase{
 					filterChain: &envoy_listener.FilterChain{
@@ -83,7 +83,7 @@ var _ = Describe("UpdateFilterConfig()", func() {
 				}
 			}()),
 			Entry("2 filters", func() testCase {
-				pbst, err := ptypes.MarshalAny(&envoy_tcp.TcpProxy{})
+				pbst, err := anypb.New(&envoy_tcp.TcpProxy{})
 				util_error.MustNot(err)
 				return testCase{
 					filterChain: &envoy_listener.FilterChain{
@@ -149,7 +149,7 @@ var _ = Describe("UpdateFilterConfig()", func() {
 				expectedErr: `filters[0]: config cannot be 'nil'`,
 			}),
 			Entry("1 filter with a wrong config type", func() testCase {
-				pbst, err := ptypes.MarshalAny(&envoy_hcm.HttpConnectionManager{})
+				pbst, err := anypb.New(&envoy_hcm.HttpConnectionManager{})
 				util_error.MustNot(err)
 				return testCase{
 					filterChain: &envoy_listener.FilterChain{

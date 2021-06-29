@@ -68,7 +68,7 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 					Resource: `
 `,
 				}},
-				err: "raw.resources[0]{name=\"raw-name\"}.resource: message type url \"\" is invalid",
+				err: `raw.resources[0]{name="raw-name"}.resource: proto: invalid empty type URL`,
 			}),
 			Entry("should fail when `resource` field is neither a YAML nor a JSON", testCase{
 				proxy: &model.Proxy{

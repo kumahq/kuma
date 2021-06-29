@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
@@ -130,7 +130,7 @@ var _ = Describe("FieldOperator", func() {
 				field: "REQUEST_DURATION",
 				entry: &accesslog_data.HTTPAccessLogEntry{
 					CommonProperties: &accesslog_data.AccessLogCommon{
-						TimeToLastRxByte: ptypes.DurationProto(57000 * time.Microsecond),
+						TimeToLastRxByte: durationpb.New(57000 * time.Microsecond),
 					},
 				},
 				expected: `57`, // time in millis
@@ -143,7 +143,7 @@ var _ = Describe("FieldOperator", func() {
 				field: "RESPONSE_DURATION",
 				entry: &accesslog_data.HTTPAccessLogEntry{
 					CommonProperties: &accesslog_data.AccessLogCommon{
-						TimeToFirstUpstreamRxByte: ptypes.DurationProto(102000 * time.Microsecond),
+						TimeToFirstUpstreamRxByte: durationpb.New(102000 * time.Microsecond),
 					},
 				},
 				expected: `102`, // time in millis
@@ -156,7 +156,7 @@ var _ = Describe("FieldOperator", func() {
 				field: "RESPONSE_TX_DURATION",
 				entry: &accesslog_data.HTTPAccessLogEntry{
 					CommonProperties: &accesslog_data.AccessLogCommon{
-						TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+						TimeToLastDownstreamTxByte: durationpb.New(123000 * time.Microsecond),
 					},
 				},
 				expected: ``,
@@ -165,7 +165,7 @@ var _ = Describe("FieldOperator", func() {
 				field: "RESPONSE_TX_DURATION",
 				entry: &accesslog_data.HTTPAccessLogEntry{
 					CommonProperties: &accesslog_data.AccessLogCommon{
-						TimeToFirstUpstreamRxByte: ptypes.DurationProto(102000 * time.Microsecond),
+						TimeToFirstUpstreamRxByte: durationpb.New(102000 * time.Microsecond),
 					},
 				},
 				expected: ``,
@@ -174,8 +174,8 @@ var _ = Describe("FieldOperator", func() {
 				field: "RESPONSE_TX_DURATION",
 				entry: &accesslog_data.HTTPAccessLogEntry{
 					CommonProperties: &accesslog_data.AccessLogCommon{
-						TimeToFirstUpstreamRxByte:  ptypes.DurationProto(102000 * time.Microsecond),
-						TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+						TimeToFirstUpstreamRxByte:  durationpb.New(102000 * time.Microsecond),
+						TimeToLastDownstreamTxByte: durationpb.New(123000 * time.Microsecond),
 					},
 				},
 				expected: `21`, // time in millis
@@ -274,7 +274,7 @@ var _ = Describe("FieldOperator", func() {
 				field: "REQUEST_DURATION",
 				entry: &accesslog_data.TCPAccessLogEntry{
 					CommonProperties: &accesslog_data.AccessLogCommon{
-						TimeToLastRxByte: ptypes.DurationProto(57000 * time.Microsecond),
+						TimeToLastRxByte: durationpb.New(57000 * time.Microsecond),
 					},
 				},
 				expected: ``, // replicate Envoy's behaviour
@@ -287,7 +287,7 @@ var _ = Describe("FieldOperator", func() {
 				field: "RESPONSE_DURATION",
 				entry: &accesslog_data.TCPAccessLogEntry{
 					CommonProperties: &accesslog_data.AccessLogCommon{
-						TimeToFirstUpstreamRxByte: ptypes.DurationProto(102000 * time.Microsecond),
+						TimeToFirstUpstreamRxByte: durationpb.New(102000 * time.Microsecond),
 					},
 				},
 				expected: ``, // replicate Envoy's behaviour
@@ -300,7 +300,7 @@ var _ = Describe("FieldOperator", func() {
 				field: "RESPONSE_TX_DURATION",
 				entry: &accesslog_data.TCPAccessLogEntry{
 					CommonProperties: &accesslog_data.AccessLogCommon{
-						TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+						TimeToLastDownstreamTxByte: durationpb.New(123000 * time.Microsecond),
 					},
 				},
 				expected: ``, // replicate Envoy's behaviour
@@ -309,7 +309,7 @@ var _ = Describe("FieldOperator", func() {
 				field: "RESPONSE_TX_DURATION",
 				entry: &accesslog_data.TCPAccessLogEntry{
 					CommonProperties: &accesslog_data.AccessLogCommon{
-						TimeToFirstUpstreamRxByte: ptypes.DurationProto(102000 * time.Microsecond),
+						TimeToFirstUpstreamRxByte: durationpb.New(102000 * time.Microsecond),
 					},
 				},
 				expected: ``, // replicate Envoy's behaviour
@@ -318,8 +318,8 @@ var _ = Describe("FieldOperator", func() {
 				field: "RESPONSE_TX_DURATION",
 				entry: &accesslog_data.TCPAccessLogEntry{
 					CommonProperties: &accesslog_data.AccessLogCommon{
-						TimeToFirstUpstreamRxByte:  ptypes.DurationProto(102000 * time.Microsecond),
-						TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+						TimeToFirstUpstreamRxByte:  durationpb.New(102000 * time.Microsecond),
+						TimeToLastDownstreamTxByte: durationpb.New(123000 * time.Microsecond),
 					},
 				},
 				expected: ``, // replicate Envoy's behaviour
@@ -376,7 +376,7 @@ var _ = Describe("FieldOperator", func() {
 			Entry("DURATION: `123`", testCase{
 				field: "DURATION",
 				commonProperties: &accesslog_data.AccessLogCommon{
-					TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+					TimeToLastDownstreamTxByte: durationpb.New(123000 * time.Microsecond),
 				},
 				expected: `123`,
 			}),

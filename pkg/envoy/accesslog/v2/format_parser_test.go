@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v2"
 
-	"github.com/golang/protobuf/ptypes"
 	"github.com/golang/protobuf/ptypes/wrappers"
 
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
@@ -24,9 +24,9 @@ var _ = Describe("ParseFormat()", func() {
 
 		commonProperties := &accesslog_data.AccessLogCommon{
 			StartTime:                  util_proto.MustTimestampProto(time.Unix(1582062737, 987654321)),
-			TimeToLastRxByte:           ptypes.DurationProto(57000 * time.Microsecond),
-			TimeToFirstUpstreamRxByte:  ptypes.DurationProto(102000 * time.Microsecond),
-			TimeToLastDownstreamTxByte: ptypes.DurationProto(123000 * time.Microsecond),
+			TimeToLastRxByte:           durationpb.New(57000 * time.Microsecond),
+			TimeToFirstUpstreamRxByte:  durationpb.New(102000 * time.Microsecond),
+			TimeToLastDownstreamTxByte: durationpb.New(123000 * time.Microsecond),
 			ResponseFlags: &accesslog_data.ResponseFlags{
 				UpstreamConnectionFailure:  true,
 				UpstreamRetryLimitExceeded: true,
