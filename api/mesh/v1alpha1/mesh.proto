@@ -4,12 +4,18 @@ package kuma.mesh.v1alpha1;
 
 option go_package = "github.com/kumahq/kuma/api/mesh/v1alpha1";
 
+import "mesh/options.proto";
 import "mesh/v1alpha1/metrics.proto";
 import "google/protobuf/wrappers.proto";
 import "google/protobuf/struct.proto";
 
 // Mesh defines configuration of a single mesh.
 message Mesh {
+
+  option (kuma.mesh.resource).name = "MeshResource";
+  option (kuma.mesh.resource).type = "Mesh";
+  option (kuma.mesh.resource).global = true;
+  option (kuma.mesh.resource).package = "mesh";
 
   // mTLS settings of a Mesh.
   message Mtls {

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"os"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd/uninstall"
@@ -73,7 +74,7 @@ func NewRootCmd(root *kumactl_cmd.RootContext) *cobra.Command {
 			if err != nil {
 				kumactlLog.Error(err, "Unable to get index client")
 			} else {
-				kumaBuildVersion, _ = client.GetVersion()
+				kumaBuildVersion, _ = client.GetVersion(context.Background())
 			}
 
 			if kumaBuildVersion != nil && (kumaBuildVersion.Version != kuma_version.Build.Version || kumaBuildVersion.Tagline != kuma_version.Product) {

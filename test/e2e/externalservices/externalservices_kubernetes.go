@@ -91,9 +91,6 @@ metadata:
 
 		// Global
 		cluster = clusters.GetCluster(Kuma1)
-		deployOptsFuncs = append(deployOptsFuncs,
-			WithEnv("KUMA_RUNTIME_KUBERNETES_INJECTOR_BUILTIN_DNS_ENABLED", "true"))
-
 		err = NewClusterSetup().
 			Install(Kuma(core.Standalone, deployOptsFuncs...)).
 			Install(YamlK8s(namespaceWithSidecarInjection(TestNamespace))).

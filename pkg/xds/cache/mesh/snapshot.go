@@ -14,6 +14,7 @@ import (
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
 	core_store "github.com/kumahq/kuma/pkg/core/resources/store"
 	"github.com/kumahq/kuma/pkg/dns/vips"
+	"github.com/kumahq/kuma/pkg/xds/cache/sha256"
 )
 
 var meshCacheLog = core.Log.WithName("mesh-cache")
@@ -99,7 +100,7 @@ func (m *meshSnapshot) hash() string {
 	for _, rl := range m.resources {
 		resources = append(resources, rl.GetItems()...)
 	}
-	return m.hashResources(resources...)
+	return sha256.Hash(m.hashResources(resources...))
 }
 
 func (m *meshSnapshot) hashResources(rs ...core_model.Resource) string {

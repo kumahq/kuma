@@ -7,9 +7,14 @@ import (
 	"k8s.io/client-go/tools/clientcmd"
 )
 
-func DefaultClientConfig() (*rest.Config, error) {
+func DefaultClientConfig(kubeconfig, context string) (*rest.Config, error) {
 	loadingRules := clientcmd.NewDefaultClientConfigLoadingRules()
-	configOverrides := &clientcmd.ConfigOverrides{}
+	loadingRules.DefaultClientConfig = &clientcmd.DefaultClientConfig
+	loadingRules.ExplicitPath = kubeconfig
+	configOverrides := &clientcmd.ConfigOverrides{
+		ClusterDefaults: clientcmd.ClusterDefaults,
+		CurrentContext:  context,
+	}
 	clientConfig := clientcmd.NewNonInteractiveDeferredLoadingClientConfig(loadingRules, configOverrides)
 	config, err := clientConfig.ClientConfig()
 	if err != nil {

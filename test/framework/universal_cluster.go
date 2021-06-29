@@ -207,8 +207,9 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		return err
 	}
 
+	builtindns := opts.builtindns == nil || *opts.builtindns
 	if transparent {
-		app.setupTransparent(c.apps[AppModeCP].ip, opts.builtindns)
+		app.setupTransparent(c.apps[AppModeCP].ip, builtindns)
 	}
 
 	ip := app.ip
@@ -219,7 +220,7 @@ func (c *UniversalCluster) DeployApp(fs ...DeployOptionsFunc) error {
 		}
 	}
 
-	err = c.CreateDP(app, opts.name, ip, dpyaml, token, opts.builtindns)
+	err = c.CreateDP(app, opts.name, ip, dpyaml, token, builtindns)
 	if err != nil {
 		return err
 	}

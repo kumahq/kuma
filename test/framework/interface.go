@@ -48,7 +48,7 @@ type deployOptions struct {
 	appArgs        []string
 	token          string
 	transparent    bool
-	builtindns     bool
+	builtindns     *bool // true by default
 	protocol       string
 	serviceName    string
 	serviceVersion string
@@ -251,7 +251,7 @@ func WithTransparentProxy(transparent bool) DeployOptionsFunc {
 
 func WithBuiltinDNS(builtindns bool) DeployOptionsFunc {
 	return func(o *deployOptions) {
-		o.builtindns = builtindns
+		o.builtindns = &builtindns
 	}
 }
 

@@ -50,21 +50,12 @@ func (t ProxyType) IsValid() error {
 	return errors.Errorf("%s is not a valid proxy type", t)
 }
 
-func (d *Dataplane) ProxyType() ProxyType {
-	if d.IsIngress() {
-		return IngressProxyType
-	}
-	if d.GetNetworking().GetGateway() != nil {
-		return GatewayProxyType
-	}
-	return DataplaneProxyType
-}
-
 type InboundInterface struct {
-	DataplaneIP   string
-	DataplanePort uint32
-	WorkloadIP    string
-	WorkloadPort  uint32
+	DataplaneAdvertisedIP string
+	DataplaneIP           string
+	DataplanePort         uint32
+	WorkloadIP            string
+	WorkloadPort          uint32
 }
 
 func (i InboundInterface) String() string {
@@ -138,6 +129,11 @@ func (n *Dataplane_Networking) ToInboundInterface(inbound *Dataplane_Networking_
 		iface.DataplaneIP = inbound.Address
 	} else {
 		iface.DataplaneIP = n.Address
+	}
+	if n.AdvertisedAddress != "" {
+		iface.DataplaneAdvertisedIP = n.AdvertisedAddress
+	} else {
+		iface.DataplaneAdvertisedIP = iface.DataplaneIP
 	}
 	if inbound.ServiceAddress != "" {
 		iface.WorkloadIP = inbound.ServiceAddress
@@ -396,15 +392,29 @@ func (d *Dataplane) GetIdentifyingService() string {
 	return ServiceUnknown
 }
 
+// IsIngress returns true if this Dataplane specifies an ingress
+// configuration.
+//
+// Deprecated in favor of ZoneIngress.
 func (d *Dataplane) IsIngress() bool {
 	if d.GetNetworking() == nil {
 		return false
 	}
-	return d.Networking.Ingress != nil
+	return d.GetNetworking().GetIngress() != nil
+}
+
+// IsDataplane returns true if this Dataplane specifies a gateway
+// configuration.
+func (d *Dataplane) IsGateway() bool {
+	if d.GetNetworking() == nil {
+		return false
+	}
+
+	return d.GetNetworking().GetGateway() != nil
 }
 
 func (d *Dataplane) HasPublicAddress() bool {
-	if d.Networking.Ingress == nil {
+	if !d.IsIngress() {
 		return false
 	}
 	return d.Networking.Ingress.PublicAddress != "" && d.Networking.Ingress.PublicPort != 0
