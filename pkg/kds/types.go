@@ -15,7 +15,7 @@ const (
 )
 
 var (
-	// SupportedTypes is a list of Kuma types that are exchanged by KDS peers.
+	// SupportedTypes is a list of Kuma types that may be exchanged by KDS peers.
 	SupportedTypes = []model.ResourceType{
 		mesh.CircuitBreakerType,
 		mesh.DataplaneInsightType,

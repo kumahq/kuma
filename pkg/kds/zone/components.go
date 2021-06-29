@@ -26,6 +26,8 @@ import (
 var (
 	kdsZoneLog = core.Log.WithName("kds-zone")
 
+	// ProvidedTypes lists the resource types provided by the Zone
+	// CP to the Global CP.
 	ProvidedTypes = []model.ResourceType{
 		mesh.DataplaneInsightType,
 		mesh.DataplaneType,
@@ -33,7 +35,8 @@ var (
 		mesh.ZoneIngressType,
 	}
 
-	// ConsumedTypes is the list of Kuma resource types that a KDS instance will request from its peer.
+	// ConsumedTypes lists the resource types consumed from the
+	// Global CP by the Zone CP.
 	ConsumedTypes = []model.ResourceType{
 		mesh.CircuitBreakerType,
 		mesh.DataplaneType,
