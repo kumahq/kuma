@@ -1,6 +1,8 @@
 package resilience
 
 import (
+	"time"
+
 	"github.com/kumahq/kuma/pkg/config/core"
 	. "github.com/kumahq/kuma/test/framework"
 	"github.com/kumahq/kuma/test/framework/deployments/postgres"
@@ -55,7 +57,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		}
 
 		err = NewClusterSetup().
-			Install(Kuma(core.Remote, optsRemote1...)).
+			Install(Kuma(core.Zone, optsRemote1...)).
 			Setup(remote_1)
 		Expect(err).ToNot(HaveOccurred())
 
@@ -75,7 +77,7 @@ func ResilienceMultizoneUniversalPostgres() {
 		Expect(err).ToNot(HaveOccurred())
 	})
 
-	It("should mark zone as offline after remote control-plane is killed forcefully when global control-plane is down", func() {
+	PIt("should mark zone as offline after zone control-plane is killed forcefully when global control-plane is down", func() {
 		// given zone connected to global
 		Eventually(func() (string, error) {
 			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
@@ -99,6 +101,39 @@ func ResilienceMultizoneUniversalPostgres() {
 		Expect(kumaCP.ReStart()).Should(Succeed())
 
 		Eventually(global.VerifyKuma, "30s", "1s").ShouldNot(HaveOccurred())
+
+		// then zone is offline
+		Eventually(func() (string, error) {
+			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+		}, "30s", "1s").Should(ContainSubstring("Offline"))
+	})
+
+	It("should mark zone as offline after global control-plane is ungracefully restarted", func() {
+		// given zone connected to global
+		Eventually(func() (string, error) {
+			return global.GetKumactlOptions().RunKumactlAndGetOutput("inspect", "zones")
+		}, "30s", "1s").Should(ContainSubstring("Online"))
+
+		g, ok := global.(*UniversalCluster)
+		Expect(ok).To(BeTrue())
+
+		kumaCP := g.GetApp(AppModeCP)
+		Expect(kumaCP).ToNot(BeNil())
+
+		// when global is killed
+		_, _, err := global.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
+		Expect(err).ToNot(HaveOccurred())
+
+		// and global is restarted
+		Expect(kumaCP.ReStart()).Should(Succeed())
+
+		Eventually(global.VerifyKuma, "30s", "1s").ShouldNot(HaveOccurred())
+
+		<-time.After(10 * time.Second) // ZoneInsightFlushInterval
+
+		// and zone is killed
+		_, _, err = remote_1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")
+		Expect(err).ToNot(HaveOccurred())
 
 		// then zone is offline
 		Eventually(func() (string, error) {

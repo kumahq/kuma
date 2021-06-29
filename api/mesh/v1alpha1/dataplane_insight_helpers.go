@@ -76,8 +76,19 @@ func (ds *DataplaneInsight) UpdateSubscription(s *DiscoverySubscription) {
 	if old != nil {
 		ds.Subscriptions[i] = s
 	} else {
+		ds.finalizeSubscriptions()
 		ds.Subscriptions = append(ds.Subscriptions, s)
 	}
+}
+
+func (ds *DataplaneInsight) finalizeSubscriptions() bool {
+	now := ptypes.TimestampNow()
+	for _, subscription := range ds.GetSubscriptions() {
+		if subscription.DisconnectTime == nil {
+			subscription.DisconnectTime = now
+		}
+	}
+	return true
 }
 
 func (ds *DataplaneInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {

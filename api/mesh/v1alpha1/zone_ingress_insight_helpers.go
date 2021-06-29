@@ -23,8 +23,19 @@ func (x *ZoneIngressInsight) UpdateSubscription(s *DiscoverySubscription) {
 	if old != nil {
 		x.Subscriptions[i] = s
 	} else {
+		x.finalizeSubscriptions()
 		x.Subscriptions = append(x.Subscriptions, s)
 	}
+}
+
+func (x *ZoneIngressInsight) finalizeSubscriptions() bool {
+	now := ptypes.TimestampNow()
+	for _, subscription := range x.GetSubscriptions() {
+		if subscription.DisconnectTime == nil {
+			subscription.DisconnectTime = now
+		}
+	}
+	return true
 }
 
 func (x *ZoneIngressInsight) IsOnline() bool {

@@ -66,8 +66,19 @@ func (m *ZoneInsight) UpdateSubscription(s *KDSSubscription) {
 	if old != nil {
 		m.Subscriptions[i] = s
 	} else {
+		m.finalizeSubscriptions()
 		m.Subscriptions = append(m.Subscriptions, s)
 	}
+}
+
+func (m *ZoneInsight) finalizeSubscriptions() bool {
+	now := ptypes.TimestampNow()
+	for _, subscription := range m.GetSubscriptions() {
+		if subscription.DisconnectTime == nil {
+			subscription.DisconnectTime = now
+		}
+	}
+	return true
 }
 
 func NewVersion() *Version {
