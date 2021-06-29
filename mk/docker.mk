@@ -81,7 +81,7 @@ image/kumactl: build/kumactl/linux-amd64 docker/build/kumactl ## Dev: Rebuild `k
 image/kuma-init: docker/build/kuma-init ## Dev: Rebuild `kuma-init` Docker image
 
 .PHONY: image/kuma-cni
-image/kuma-cni: build/kuma-cni/linux-amd64 docker/build/kuma-cni
+image/kuma-cni: build/kuma-cni/linux-amd64 build/kuma-cni-install/linux-amd64 docker/build/kuma-cni
 
 .PHONY: image/kuma-prometheus-sd
 image/kuma-prometheus-sd: build/kuma-prometheus-sd/linux-amd64 docker/build/kuma-prometheus-sd ## Dev: Rebuild `kuma-prometheus-sd` Docker image

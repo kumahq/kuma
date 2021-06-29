@@ -136,8 +136,10 @@ func NsEnter(nsList []Namespace, toRun func() error) error {
 				return fmt.Errorf("error switching to ns %v: %v", pair.targetNS.Name(), err)
 			}
 			// Switch back to initial namespace after closure return.
+			threadNS := pair.threadNS
+			_nsType := nsType
 			defer func() {
-				_ = setNS(pair.threadNS, nsType)
+				_ = setNS(threadNS, _nsType)
 			}()
 		}
 
