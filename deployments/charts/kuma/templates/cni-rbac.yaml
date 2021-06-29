@@ -1,6 +1,12 @@
 {{- if .Values.cni.enabled }}
 apiVersion: v1
 kind: ServiceAccount
+  {{- if .Values.global.imagePullSecrets }}
+imagePullSecrets:
+  {{- range .Values.global.imagePullSecrets }}
+  - name: {{ . }}
+  {{- end }}
+  {{- end }}
 metadata:
   name: {{ include "kuma.name" . }}-cni
   namespace: kube-system

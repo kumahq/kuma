@@ -1,4 +1,7 @@
 {{- if .Values.cni.enabled }}
+# This manifest installs the Kuma install-cni container, as well
+# as the Kuma CNI plugin and config on
+# each master and worker node in a Kubernetes cluster.
 kind: DaemonSet
 apiVersion: apps/v1
 metadata:
@@ -40,20 +43,35 @@ spec:
           operator: Exists
         - effect: NoExecute
           operator: Exists
-      priorityClassName: system-cluster-critical
+      priorityClassName: system-node-critical
       serviceAccountName: {{ include "kuma.name" . }}-cni
       # Minimize downtime during a rolling upgrade or deletion; tell Kubernetes to do a "force
       # deletion": https://kubernetes.io/docs/concepts/workloads/pods/pod/#termination-of-pods.
       terminationGracePeriodSeconds: 5
       containers:
+        # This container installs the Kuma CNI binaries
+        # and CNI network config file on each node.
         - name: install-cni
           image: {{ include "kuma.formatImage" (dict "image" .Values.cni.image "root" $) | quote }}
-          imagePullPolicy: Always
-          command: ["/install-cni.sh"]
+          {{- if .Values.cni.pullPolicy }}
+          imagePullPolicy: {{ .Values.cni.pullPolicy }}
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+          command: ["kuma-cni-install"]
           env:
+            {{- if .Values.cni.confName }}
             # Name of the CNI config file to create.
             - name: CNI_CONF_NAME
               value: "{{ .Values.cni.confName }}"
+            {{- end }}
             # The CNI network config to install on each node.
             - name: CNI_NETWORK_CONFIG
               valueFrom:
@@ -61,8 +79,8 @@ spec:
                   name: {{ include "kuma.name" . }}-cni-config
                   key: cni_network_config
             - name: CNI_NET_DIR
-              value: "{{ .Values.cni.netDir }}"
-            # If true, deploy as a chained CNI plugin, otherwise deploy as a standalone CNI
+              value: {{ default "/etc/cni/net.d" .Values.cni.netDir }}
+            # Deploy as a standalone CNI plugin or as chained?
             - name: CHAINED_CNI_PLUGIN
               value: "{{ .Values.cni.chained }}"
           volumeMounts:
@@ -74,8 +92,8 @@ spec:
         # Used to install CNI.
         - name: cni-bin-dir
           hostPath:
-            path: {{ .Values.cni.binDir }}
+            path: {{ default "/opt/cni/bin" .Values.cni.binDir }}
         - name: cni-net-dir
           hostPath:
-            path: {{ .Values.cni.netDir }}
+            path: {{ default "/etc/cni/net.d" .Values.cni.netDir }}
   {{- end }}
