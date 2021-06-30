@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+
 	"github.com/vishvananda/netns"
 
 	. "github.com/kumahq/kuma/app/kuma-cni/pkg/log"
