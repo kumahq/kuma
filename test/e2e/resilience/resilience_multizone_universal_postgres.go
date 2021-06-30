@@ -129,7 +129,7 @@ func ResilienceMultizoneUniversalPostgres() {
 
 		Eventually(global.VerifyKuma, "30s", "1s").ShouldNot(HaveOccurred())
 
-		<-time.After(10 * time.Second) // ZoneInsightFlushInterval
+		time.Sleep(10 * time.Second) // ZoneInsightFlushInterval
 
 		// and zone is killed
 		_, _, err = remote_1.Exec("", "", AppModeCP, "pkill", "-9", "kuma-cp")

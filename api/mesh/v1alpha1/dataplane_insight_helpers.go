@@ -81,14 +81,16 @@ func (ds *DataplaneInsight) UpdateSubscription(s *DiscoverySubscription) {
 	}
 }
 
-func (ds *DataplaneInsight) finalizeSubscriptions() bool {
+// If Kuma CP was killed ungracefully then we can get a subscription without a DisconnectTime.
+// Because of the way we process subscriptions the lack of DisconnectTime on old subscription
+// will cause wrong status.
+func (ds *DataplaneInsight) finalizeSubscriptions() {
 	now := ptypes.TimestampNow()
 	for _, subscription := range ds.GetSubscriptions() {
 		if subscription.DisconnectTime == nil {
 			subscription.DisconnectTime = now
 		}
 	}
-	return true
 }
 
 func (ds *DataplaneInsight) GetLatestSubscription() (*DiscoverySubscription, *time.Time) {

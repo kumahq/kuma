@@ -71,14 +71,16 @@ func (m *ZoneInsight) UpdateSubscription(s *KDSSubscription) {
 	}
 }
 
-func (m *ZoneInsight) finalizeSubscriptions() bool {
+// If Global CP was killed ungracefully then we can get a subscription without a DisconnectTime.
+// Because of the way we process subscriptions the lack of DisconnectTime on old subscription
+// will cause wrong status.
+func (m *ZoneInsight) finalizeSubscriptions() {
 	now := ptypes.TimestampNow()
 	for _, subscription := range m.GetSubscriptions() {
 		if subscription.DisconnectTime == nil {
 			subscription.DisconnectTime = now
 		}
 	}
-	return true
 }
 
 func NewVersion() *Version {

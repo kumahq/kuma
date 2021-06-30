@@ -28,14 +28,16 @@ func (x *ZoneIngressInsight) UpdateSubscription(s *DiscoverySubscription) {
 	}
 }
 
-func (x *ZoneIngressInsight) finalizeSubscriptions() bool {
+// If Kuma CP was killed ungracefully then we can get a subscription without a DisconnectTime.
+// Because of the way we process subscriptions the lack of DisconnectTime on old subscription
+// will cause wrong status.
+func (x *ZoneIngressInsight) finalizeSubscriptions() {
 	now := ptypes.TimestampNow()
 	for _, subscription := range x.GetSubscriptions() {
 		if subscription.DisconnectTime == nil {
 			subscription.DisconnectTime = now
 		}
 	}
-	return true
 }
 
 func (x *ZoneIngressInsight) IsOnline() bool {
