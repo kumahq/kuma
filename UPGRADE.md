@@ -29,7 +29,7 @@ As a result of this renaming, some values and arguments in multizone/kubernetes 
 2. Service `kuma-global-remote-sync` changed to `kuma-global-zone-sync` so after upgrading `global` control plane you have to manually remote old service. For example:
 
    ```sh
-   kubectl delete -n kuma-system service/kuma-global-zone-sync 
+   kubectl delete -n kuma-system service/kuma-global-remote-sync 
    ```
 
     Hint: It's worth to remember that often at this point the IP address/hostname which is used as a KDS address when installing Kuma Zone Control Planes will change. Make sure that you update the address when upgrading the Remote CPs to the newest version.
