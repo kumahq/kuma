@@ -1,7 +1,10 @@
 package log
 
 import (
-	"github.com/rifflock/lfshook"
+	"fmt"
+	"io"
+	"os"
+
 	"github.com/sirupsen/logrus"
 )
 
@@ -9,29 +12,31 @@ const logFilePath = "/var/log/kuma-cni.log"
 
 var Log *logrus.Logger
 
-func NewLogger() *logrus.Logger {
-	if Log != nil {
-		return Log
-	}
-
-	pathMap := lfshook.PathMap{
-		logrus.PanicLevel: logFilePath,
-		logrus.FatalLevel: logFilePath,
-		logrus.ErrorLevel: logFilePath,
-		logrus.WarnLevel:  logFilePath,
-		logrus.InfoLevel:  logFilePath,
-		logrus.DebugLevel: logFilePath,
-		logrus.TraceLevel: logFilePath,
-	}
-
-	Log = logrus.New()
-	Log.Hooks.Add(lfshook.NewHook(
-		pathMap,
-		&logrus.JSONFormatter{},
-	))
-	return Log
+type logger struct {
+	Log     *logrus.Logger
+	logFile *os.File
 }
 
-func init() {
-	Log = NewLogger()
+func NewLogger() *logger {
+	logFile, err := os.OpenFile(logFilePath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0600)
+	if err != nil {
+		panic(fmt.Errorf("unable to open %s: %v", logFilePath, err))
+	}
+
+	result := &logger{
+		Log:     logrus.New(),
+		logFile: logFile,
+	}
+
+	result.Log.SetOutput(io.MultiWriter(os.Stderr, logFile))
+	result.Log.SetFormatter(&logrus.JSONFormatter{})
+
+	return result
+}
+
+func (l *logger) Exit(code int) {
+	if l.logFile != nil {
+		l.logFile.Close()
+	}
+	l.Log.Exit(code)
 }

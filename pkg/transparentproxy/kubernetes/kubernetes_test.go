@@ -158,7 +158,7 @@ var _ = Describe("kubernetes", func() {
 			},
 			tpConfig: &config.TransparentProxyConfig{
 				DryRun:                 false,
-				Verbose:                true,
+				Verbose:                false,
 				RedirectPortOutBound:   "25100",
 				RedirectInBound:        true,
 				RedirectPortInBound:    "25204",
@@ -188,7 +188,7 @@ var _ = Describe("kubernetes", func() {
 			},
 			tpConfig: &config.TransparentProxyConfig{
 				DryRun:                 false,
-				Verbose:                true,
+				Verbose:                false,
 				RedirectPortOutBound:   "25100",
 				RedirectInBound:        true,
 				RedirectPortInBound:    "25204",
@@ -221,7 +221,7 @@ var _ = Describe("kubernetes", func() {
 			},
 			tpConfig: &config.TransparentProxyConfig{
 				DryRun:                 false,
-				Verbose:                true,
+				Verbose:                false,
 				RedirectPortOutBound:   "25100",
 				RedirectInBound:        false,
 				RedirectPortInBound:    "25204",
