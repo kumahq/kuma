@@ -99,6 +99,33 @@ var _ = Describe("DataplaneHelpers", func() {
                     total: {}
 `))
 			})
+
+			It("should leave subscriptions in a valid state", func() {
+				// given
+				dataplaneInsight := &DataplaneInsight{
+					Subscriptions: []*DiscoverySubscription{
+						{
+							Id:             "1",
+							ConnectTime:    util_proto.MustTimestampProto(t1),
+							DisconnectTime: util_proto.MustTimestampProto(t1.Add(1 * time.Hour)),
+						},
+						{
+							Id:          "2",
+							ConnectTime: util_proto.MustTimestampProto(t1.Add(2 * time.Hour)),
+						},
+					},
+				}
+
+				// when
+				dataplaneInsight.UpdateSubscription(&DiscoverySubscription{
+					Id:          "3",
+					ConnectTime: util_proto.MustTimestampProto(t1.Add(3 * time.Hour)),
+				})
+
+				// then
+				_, subscription := dataplaneInsight.GetSubscription("2")
+				Expect(subscription.DisconnectTime).ToNot(BeNil())
+			})
 		})
 
 		Describe("GetLatestSubscription()", func() {
