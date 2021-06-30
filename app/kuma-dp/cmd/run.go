@@ -9,18 +9,18 @@ import (
 	"github.com/spf13/cobra"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
-
 	kumadp_config "github.com/kumahq/kuma/app/kuma-dp/pkg/config"
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
-	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
-	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
-	"github.com/kumahq/kuma/pkg/core/runtime/component"
-
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/accesslogs"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/dnsserver"
 	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/envoy"
+	"github.com/kumahq/kuma/app/kuma-dp/pkg/dataplane/metrics"
 	"github.com/kumahq/kuma/pkg/config"
 	config_types "github.com/kumahq/kuma/pkg/config/types"
 	"github.com/kumahq/kuma/pkg/core"
+	"github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
+	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/core/runtime/component"
 	util_net "github.com/kumahq/kuma/pkg/util/net"
 	kuma_version "github.com/kumahq/kuma/pkg/version"
 )
@@ -33,9 +33,9 @@ var runLog = dataplaneLog.WithName("run")
 // To extend Kuma DP, plug your code in RunE. Use RootContext.Config and add components to RootContext.ComponentManager
 func newRunCmd(rootCtx *RootContext) *cobra.Command {
 	cfg := rootCtx.Config
-	var proxyResource *rest.Resource
 	var tmpDir string
 	var adminPort uint32
+	var proxyResource model.Resource
 	cmd := &cobra.Command{
 		Use:   "run",
 		Short: "Launch Dataplane (Envoy)",
@@ -44,11 +44,14 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			return nil
 		},
 		PreRunE: func(cmd *cobra.Command, args []string) error {
+			var err error
+
 			// only support configuration via environment variables and args
 			if err := config.Load("", cfg); err != nil {
 				runLog.Error(err, "unable to load configuration")
 				return err
 			}
+
 			if conf, err := config.ToJson(cfg); err == nil {
 				runLog.Info("effective configuration", "config", string(conf))
 			} else {
@@ -56,28 +59,34 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 
-			var err error
-			switch mesh_proto.ProxyType(cfg.Dataplane.ProxyType) {
-			case mesh_proto.IngressProxyType:
-				proxyResource, err = readZoneIngressResource(cmd, cfg)
-			case mesh_proto.DataplaneProxyType:
-				proxyResource, err = readDataplaneResource(cmd, cfg)
-			default:
-				return errors.Errorf("invalid proxy type %q (must be either %q or %q)",
-					cfg.Dataplane.ProxyType, mesh_proto.DataplaneProxyType, mesh_proto.IngressProxyType)
+			// Map the resource types that are acceptable depending on the value of the `--proxy-type` flag.
+			proxyTypeMap := map[string]model.ResourceType{
+				string(mesh_proto.DataplaneProxyType): mesh.DataplaneType,
+				string(mesh_proto.IngressProxyType):   mesh.ZoneIngressType,
 			}
 
+			if _, ok := proxyTypeMap[cfg.Dataplane.ProxyType]; !ok {
+				return errors.Errorf("invalid proxy type %q", cfg.Dataplane.ProxyType)
+			}
+
+			proxyResource, err = readResource(cmd, &cfg.DataplaneRuntime)
 			if err != nil {
-				runLog.Error(err, "unable to read provided %s policy", cfg.Dataplane.ProxyType)
+				runLog.Error(err, "failed to read %s policy", cfg.Dataplane.ProxyType)
 				return err
 			}
 
 			if proxyResource != nil {
-				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {
-					return errors.New("--name and --mesh cannot be specified when dataplane definition is provided, mesh and name will be read from the dataplane definition")
+				if resType := proxyTypeMap[cfg.Dataplane.ProxyType]; resType != proxyResource.GetType() {
+					return errors.Errorf("invalid proxy resource type %q, expected %s",
+						proxyResource.GetType(), resType)
 				}
-				cfg.Dataplane.Mesh = proxyResource.Meta.GetMesh()
-				cfg.Dataplane.Name = proxyResource.Meta.GetName()
+
+				if cfg.Dataplane.Name != "" || cfg.Dataplane.Mesh != "" {
+					return errors.New("--name and --mesh cannot be specified when a dataplane definition is provided, mesh and name will be read from the dataplane definition")
+				}
+
+				cfg.Dataplane.Mesh = proxyResource.GetMeta().GetMesh()
+				cfg.Dataplane.Name = proxyResource.GetMeta().GetName()
 			}
 
 			if !cfg.Dataplane.AdminPort.Empty() {
@@ -149,7 +158,7 @@ func newRunCmd(rootCtx *RootContext) *cobra.Command {
 			opts := envoy.Opts{
 				Config:          *cfg,
 				Generator:       rootCtx.BootstrapGenerator,
-				Dataplane:       proxyResource,
+				Dataplane:       rest.NewFromModel(proxyResource),
 				DynamicMetadata: rootCtx.BootstrapDynamicMetadata,
 				Stdout:          cmd.OutOrStdout(),
 				Stderr:          cmd.OutOrStderr(),
