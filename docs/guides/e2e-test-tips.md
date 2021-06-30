@@ -14,7 +14,7 @@ When e2e tests are executed here are the steps
 If you use `-j` containers are build in parallel using all cores and 2) and 3) step is also parallelized.  Tests are executed as usual.
 
 ```
-make -j test/e2e
+make -j build && make -j test/e2e
 ```
 
 ## Execute single test
