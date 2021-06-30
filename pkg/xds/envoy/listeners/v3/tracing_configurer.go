@@ -18,6 +18,9 @@ import (
 
 type TracingConfigurer struct {
 	Backend *mesh_proto.TracingBackend
+
+	// Opaque string which envoy will assign to tracer collector cluster, on those
+	// which support association of named "service" tags on traces. Consumed by datadog.
 	Service string
 }
 

@@ -165,8 +165,8 @@ func validateDatadog(cfgStr *structpb.Struct) validators.ValidationError {
 		verr.AddViolation("address", "cannot be empty")
 	}
 
-	if cfg.PortValue == "" {
-		verr.AddViolation("port_value", "cannot be empty")
+	if cfg.Port > 0xFFFF || cfg.Port < 1 {
+		verr.AddViolation("port", "must be in the range 1 to 65535")
 	}
 
 	return verr

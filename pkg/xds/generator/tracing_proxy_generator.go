@@ -80,14 +80,14 @@ func (t TracingProxyGenerator) datadogCluster(backend *mesh_proto.TracingBackend
 	if err := proto.ToTyped(backend.Conf, &cfg); err != nil {
 		return nil, errors.Wrap(err, "could not convert backend")
 	}
-	port, err := strconv.Atoi(cfg.PortValue)
-	if err != nil {
-		return nil, err
+
+	if cfg.Port > 0xFFFF || cfg.Port < 1 {
+		return nil, errors.Errorf("invalid Datadog port number %d. Must be in range 1-65535", cfg.Port)
 	}
 
 	clusterName := names.GetTracingClusterName(backend.Name)
 	cluster, err := clusters.NewClusterBuilder(apiVersion).
-		Configure(clusters.DNSCluster(clusterName, cfg.Address, uint32(port))).
+		Configure(clusters.DNSCluster(clusterName, cfg.Address, cfg.Port)).
 		Build()
 	if err != nil {
 		return nil, err
