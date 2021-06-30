@@ -170,7 +170,7 @@ var _ = Describe("kubernetes", func() {
 				RedirectDNS:            true,
 				RedirectAllDNSTraffic:  false,
 				AgentDNSListenerPort:   "25053",
-				DNSUpstreamTargetChain: "",
+				DNSUpstreamTargetChain: "RETURN",
 			},
 		}),
 		Entry("should generate no builtin DNS", testCaseTransparentProxyConfig{
@@ -200,7 +200,7 @@ var _ = Describe("kubernetes", func() {
 				RedirectDNS:            false,
 				RedirectAllDNSTraffic:  false,
 				AgentDNSListenerPort:   "0",
-				DNSUpstreamTargetChain: "",
+				DNSUpstreamTargetChain: "RETURN",
 			},
 		}),
 		Entry("should generate for Gateway", testCaseTransparentProxyConfig{
@@ -233,7 +233,7 @@ var _ = Describe("kubernetes", func() {
 				RedirectDNS:            true,
 				RedirectAllDNSTraffic:  false,
 				AgentDNSListenerPort:   "25053",
-				DNSUpstreamTargetChain: "",
+				DNSUpstreamTargetChain: "RETURN",
 			},
 		}),
 	)
