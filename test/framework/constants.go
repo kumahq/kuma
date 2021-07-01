@@ -40,9 +40,9 @@ const (
 	kumaCPAPIPort        = 5681
 	kumaCPAPIPortFwdBase = 32000 + kumaCPAPIPort
 
-	redirectPortInbound   = "15006"
-	redirectPortInboundV6 = "15010"
-	redirectPortOutbound  = "15001"
+	RedirectPortInbound   = "15006"
+	RedirectPortInboundV6 = "15010"
+	RedirectPortOutbound  = "15001"
 	cidrIPv6              = "fd00:fd00::/64"
 )
 

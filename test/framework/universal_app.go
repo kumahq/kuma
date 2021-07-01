@@ -447,6 +447,10 @@ func (s *UniversalApp) getIP(isipv6 bool) (string, error) {
 	return "", errors.Errorf(errString)
 }
 
+func (s *UniversalApp) GetMainApp() *SshApp {
+	return s.mainApp
+}
+
 type SshApp struct {
 	cmd    *exec.Cmd
 	stdout bytes.Buffer

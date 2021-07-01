@@ -73,19 +73,21 @@ func (g InboundProxyGenerator) Generate(ctx xds_context.Context, proxy *model.Pr
 			// configuration for HTTP case
 			case mesh_core.ProtocolHTTP, mesh_core.ProtocolHTTP2:
 				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
+					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
-					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
+					Configure(envoy_listeners.HttpInboundRoutes(service, routes)).
+					Configure(envoy_listeners.ServiceIdentityInjection())
 			case mesh_core.ProtocolGRPC:
 				filterChainBuilder.
-					Configure(envoy_listeners.HttpConnectionManager(localClusterName, true)).
+					Configure(envoy_listeners.HttpConnectionManager(localClusterName)).
 					Configure(envoy_listeners.GrpcStats()).
 					Configure(envoy_listeners.FaultInjection(proxy.Policies.FaultInjections[endpoint])).
 					Configure(envoy_listeners.RateLimit(proxy.Policies.RateLimits[endpoint])).
 					Configure(envoy_listeners.Tracing(proxy.Policies.TracingBackend)).
-					Configure(envoy_listeners.HttpInboundRoutes(service, routes))
+					Configure(envoy_listeners.HttpInboundRoutes(service, routes)).
+					Configure(envoy_listeners.ServiceIdentityInjection())
 			case mesh_core.ProtocolKafka:
 				filterChainBuilder.
 					Configure(envoy_listeners.Kafka(localClusterName)).
