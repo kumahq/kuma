@@ -37,8 +37,8 @@ if [ -n "$(git tag --list "$NEWVERS")" ]; then
 fi
 
 case "$NEWVERS" in
-# Match a leading 'v' followed by any combination of nimbers and
-# dots. Optional hyphen-separate trailer can contain anything.
+# Match a leading 'v' followed by any combination of numbers and
+# dots. Optional hyphen-separated trailer can contain anything.
 v+([0-9.])?([-]*))
     ;;
 *)
