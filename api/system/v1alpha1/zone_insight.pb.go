@@ -8,9 +8,9 @@ package v1alpha1
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -91,9 +91,9 @@ type KDSSubscription struct {
 	// Global CP instance that handled given subscription.
 	GlobalInstanceId string `protobuf:"bytes,2,opt,name=global_instance_id,json=globalInstanceId,proto3" json:"global_instance_id,omitempty"`
 	// Time when a given Zone connected to the Global.
-	ConnectTime *timestamp.Timestamp `protobuf:"bytes,3,opt,name=connect_time,json=connectTime,proto3" json:"connect_time,omitempty"`
+	ConnectTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=connect_time,json=connectTime,proto3" json:"connect_time,omitempty"`
 	// Time when a given Zone disconnected from the Global.
-	DisconnectTime *timestamp.Timestamp `protobuf:"bytes,4,opt,name=disconnect_time,json=disconnectTime,proto3" json:"disconnect_time,omitempty"`
+	DisconnectTime *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=disconnect_time,json=disconnectTime,proto3" json:"disconnect_time,omitempty"`
 	// Status of the KDS subscription.
 	Status *KDSSubscriptionStatus `protobuf:"bytes,5,opt,name=status,proto3" json:"status,omitempty"`
 	// Version of Zone Kuma CP.
@@ -146,14 +146,14 @@ func (x *KDSSubscription) GetGlobalInstanceId() string {
 	return ""
 }
 
-func (x *KDSSubscription) GetConnectTime() *timestamp.Timestamp {
+func (x *KDSSubscription) GetConnectTime() *timestamppb.Timestamp {
 	if x != nil {
 		return x.ConnectTime
 	}
 	return nil
 }
 
-func (x *KDSSubscription) GetDisconnectTime() *timestamp.Timestamp {
+func (x *KDSSubscription) GetDisconnectTime() *timestamppb.Timestamp {
 	if x != nil {
 		return x.DisconnectTime
 	}
@@ -181,7 +181,7 @@ type KDSSubscriptionStatus struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Time when status of a given KDS subscription was most recently updated.
-	LastUpdateTime *timestamp.Timestamp `protobuf:"bytes,1,opt,name=last_update_time,json=lastUpdateTime,proto3" json:"last_update_time,omitempty"`
+	LastUpdateTime *timestamppb.Timestamp `protobuf:"bytes,1,opt,name=last_update_time,json=lastUpdateTime,proto3" json:"last_update_time,omitempty"`
 	// Total defines an aggregate over individual KDS stats.
 	Total *KDSServiceStats            `protobuf:"bytes,2,opt,name=total,proto3" json:"total,omitempty"`
 	Stat  map[string]*KDSServiceStats `protobuf:"bytes,3,rep,name=stat,proto3" json:"stat,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
@@ -219,7 +219,7 @@ func (*KDSSubscriptionStatus) Descriptor() ([]byte, []int) {
 	return file_system_v1alpha1_zone_insight_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *KDSSubscriptionStatus) GetLastUpdateTime() *timestamp.Timestamp {
+func (x *KDSSubscriptionStatus) GetLastUpdateTime() *timestamppb.Timestamp {
 	if x != nil {
 		return x.LastUpdateTime
 	}
@@ -541,7 +541,7 @@ var file_system_v1alpha1_zone_insight_proto_goTypes = []interface{}{
 	(*Version)(nil),               // 4: kuma.system.v1alpha1.Version
 	(*KumaCpVersion)(nil),         // 5: kuma.system.v1alpha1.KumaCpVersion
 	nil,                           // 6: kuma.system.v1alpha1.KDSSubscriptionStatus.StatEntry
-	(*timestamp.Timestamp)(nil),   // 7: google.protobuf.Timestamp
+	(*timestamppb.Timestamp)(nil), // 7: google.protobuf.Timestamp
 }
 var file_system_v1alpha1_zone_insight_proto_depIdxs = []int32{
 	1,  // 0: kuma.system.v1alpha1.ZoneInsight.subscriptions:type_name -> kuma.system.v1alpha1.KDSSubscription

@@ -7,9 +7,9 @@
 package v1alpha1
 
 import (
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -30,7 +30,7 @@ type Zone struct {
 
 	// enable allows to turn the zone on/off and exclude the whole zone from
 	// balancing traffic on it
-	Enabled *wrappers.BoolValue `protobuf:"bytes,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Enabled *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=enabled,proto3" json:"enabled,omitempty"`
 }
 
 func (x *Zone) Reset() {
@@ -65,7 +65,7 @@ func (*Zone) Descriptor() ([]byte, []int) {
 	return file_system_v1alpha1_zone_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Zone) GetEnabled() *wrappers.BoolValue {
+func (x *Zone) GetEnabled() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Enabled
 	}
@@ -104,8 +104,8 @@ func file_system_v1alpha1_zone_proto_rawDescGZIP() []byte {
 
 var file_system_v1alpha1_zone_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_system_v1alpha1_zone_proto_goTypes = []interface{}{
-	(*Zone)(nil),               // 0: kuma.system.v1alpha1.Zone
-	(*wrappers.BoolValue)(nil), // 1: google.protobuf.BoolValue
+	(*Zone)(nil),                 // 0: kuma.system.v1alpha1.Zone
+	(*wrapperspb.BoolValue)(nil), // 1: google.protobuf.BoolValue
 }
 var file_system_v1alpha1_zone_proto_depIdxs = []int32{
 	1, // 0: kuma.system.v1alpha1.Zone.enabled:type_name -> google.protobuf.BoolValue

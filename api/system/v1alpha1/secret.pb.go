@@ -7,9 +7,9 @@
 package v1alpha1
 
 import (
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -28,7 +28,7 @@ type Secret struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Value of the secret
-	Data *wrappers.BytesValue `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
+	Data *wrapperspb.BytesValue `protobuf:"bytes,1,opt,name=data,proto3" json:"data,omitempty"`
 }
 
 func (x *Secret) Reset() {
@@ -63,7 +63,7 @@ func (*Secret) Descriptor() ([]byte, []int) {
 	return file_system_v1alpha1_secret_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *Secret) GetData() *wrappers.BytesValue {
+func (x *Secret) GetData() *wrapperspb.BytesValue {
 	if x != nil {
 		return x.Data
 	}
@@ -102,8 +102,8 @@ func file_system_v1alpha1_secret_proto_rawDescGZIP() []byte {
 
 var file_system_v1alpha1_secret_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_system_v1alpha1_secret_proto_goTypes = []interface{}{
-	(*Secret)(nil),              // 0: kuma.system.v1alpha1.Secret
-	(*wrappers.BytesValue)(nil), // 1: google.protobuf.BytesValue
+	(*Secret)(nil),                // 0: kuma.system.v1alpha1.Secret
+	(*wrapperspb.BytesValue)(nil), // 1: google.protobuf.BytesValue
 }
 var file_system_v1alpha1_secret_proto_depIdxs = []int32{
 	1, // 0: kuma.system.v1alpha1.Secret.data:type_name -> google.protobuf.BytesValue

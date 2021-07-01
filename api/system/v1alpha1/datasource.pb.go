@@ -7,9 +7,9 @@
 package v1alpha1
 
 import (
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -88,7 +88,7 @@ func (x *DataSource) GetFile() string {
 	return ""
 }
 
-func (x *DataSource) GetInline() *wrappers.BytesValue {
+func (x *DataSource) GetInline() *wrapperspb.BytesValue {
 	if x, ok := x.GetType().(*DataSource_Inline); ok {
 		return x.Inline
 	}
@@ -118,7 +118,7 @@ type DataSource_File struct {
 
 type DataSource_Inline struct {
 	// Data source is inline bytes.
-	Inline *wrappers.BytesValue `protobuf:"bytes,3,opt,name=inline,proto3,oneof"`
+	Inline *wrapperspb.BytesValue `protobuf:"bytes,3,opt,name=inline,proto3,oneof"`
 }
 
 type DataSource_InlineString struct {
@@ -173,8 +173,8 @@ func file_system_v1alpha1_datasource_proto_rawDescGZIP() []byte {
 
 var file_system_v1alpha1_datasource_proto_msgTypes = make([]protoimpl.MessageInfo, 1)
 var file_system_v1alpha1_datasource_proto_goTypes = []interface{}{
-	(*DataSource)(nil),          // 0: kuma.system.v1alpha1.DataSource
-	(*wrappers.BytesValue)(nil), // 1: google.protobuf.BytesValue
+	(*DataSource)(nil),            // 0: kuma.system.v1alpha1.DataSource
+	(*wrapperspb.BytesValue)(nil), // 1: google.protobuf.BytesValue
 }
 var file_system_v1alpha1_datasource_proto_depIdxs = []int32{
 	1, // 0: kuma.system.v1alpha1.DataSource.inline:type_name -> google.protobuf.BytesValue

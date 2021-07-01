@@ -8,12 +8,12 @@ package v1alpha1
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/kumahq/kuma/api/mesh"
 	v1alpha1 "github.com/kumahq/kuma/api/system/v1alpha1"
 	_ "github.com/kumahq/protoc-gen-kumadoc/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -158,7 +158,7 @@ type ExternalService_Networking_TLS struct {
 	// It's not recommended to set this to true because of security reasons.
 	// However, some servers requires this setting, especially when using
 	// mTLS.
-	AllowRenegotiation *wrappers.BoolValue `protobuf:"bytes,5,opt,name=allowRenegotiation,proto3" json:"allowRenegotiation,omitempty"`
+	AllowRenegotiation *wrapperspb.BoolValue `protobuf:"bytes,5,opt,name=allowRenegotiation,proto3" json:"allowRenegotiation,omitempty"`
 }
 
 func (x *ExternalService_Networking_TLS) Reset() {
@@ -221,7 +221,7 @@ func (x *ExternalService_Networking_TLS) GetClientKey() *v1alpha1.DataSource {
 	return nil
 }
 
-func (x *ExternalService_Networking_TLS) GetAllowRenegotiation() *wrappers.BoolValue {
+func (x *ExternalService_Networking_TLS) GetAllowRenegotiation() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.AllowRenegotiation
 	}
@@ -314,7 +314,7 @@ var file_mesh_v1alpha1_externalservice_proto_goTypes = []interface{}{
 	nil,                                    // 2: kuma.mesh.v1alpha1.ExternalService.TagsEntry
 	(*ExternalService_Networking_TLS)(nil), // 3: kuma.mesh.v1alpha1.ExternalService.Networking.TLS
 	(*v1alpha1.DataSource)(nil),            // 4: kuma.system.v1alpha1.DataSource
-	(*wrappers.BoolValue)(nil),             // 5: google.protobuf.BoolValue
+	(*wrapperspb.BoolValue)(nil),           // 5: google.protobuf.BoolValue
 }
 var file_mesh_v1alpha1_externalservice_proto_depIdxs = []int32{
 	1, // 0: kuma.mesh.v1alpha1.ExternalService.networking:type_name -> kuma.mesh.v1alpha1.ExternalService.Networking

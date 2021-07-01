@@ -7,11 +7,11 @@
 package v1alpha1
 
 import (
-	duration "github.com/golang/protobuf/ptypes/duration"
 	_ "github.com/kumahq/kuma/api/mesh"
 	_ "github.com/kumahq/protoc-gen-kumadoc/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -94,10 +94,10 @@ type Timeout_Conf struct {
 	unknownFields protoimpl.UnknownFields
 
 	// ConnectTimeout defines time to establish connection
-	ConnectTimeout *duration.Duration `protobuf:"bytes,1,opt,name=connect_timeout,json=connectTimeout,proto3" json:"connect_timeout,omitempty"`
-	Tcp            *Timeout_Conf_Tcp  `protobuf:"bytes,2,opt,name=tcp,proto3" json:"tcp,omitempty"`
-	Http           *Timeout_Conf_Http `protobuf:"bytes,3,opt,name=http,proto3" json:"http,omitempty"`
-	Grpc           *Timeout_Conf_Grpc `protobuf:"bytes,4,opt,name=grpc,proto3" json:"grpc,omitempty"`
+	ConnectTimeout *durationpb.Duration `protobuf:"bytes,1,opt,name=connect_timeout,json=connectTimeout,proto3" json:"connect_timeout,omitempty"`
+	Tcp            *Timeout_Conf_Tcp    `protobuf:"bytes,2,opt,name=tcp,proto3" json:"tcp,omitempty"`
+	Http           *Timeout_Conf_Http   `protobuf:"bytes,3,opt,name=http,proto3" json:"http,omitempty"`
+	Grpc           *Timeout_Conf_Grpc   `protobuf:"bytes,4,opt,name=grpc,proto3" json:"grpc,omitempty"`
 }
 
 func (x *Timeout_Conf) Reset() {
@@ -132,7 +132,7 @@ func (*Timeout_Conf) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_timeout_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *Timeout_Conf) GetConnectTimeout() *duration.Duration {
+func (x *Timeout_Conf) GetConnectTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.ConnectTimeout
 	}
@@ -168,7 +168,7 @@ type Timeout_Conf_Tcp struct {
 
 	// IdleTimeout is defined as the period in which there are no bytes sent
 	// or received on either the upstream or downstream connection
-	IdleTimeout *duration.Duration `protobuf:"bytes,1,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
+	IdleTimeout *durationpb.Duration `protobuf:"bytes,1,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
 }
 
 func (x *Timeout_Conf_Tcp) Reset() {
@@ -203,7 +203,7 @@ func (*Timeout_Conf_Tcp) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_timeout_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
-func (x *Timeout_Conf_Tcp) GetIdleTimeout() *duration.Duration {
+func (x *Timeout_Conf_Tcp) GetIdleTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.IdleTimeout
 	}
@@ -219,10 +219,10 @@ type Timeout_Conf_Http struct {
 	// RequestTimeout is a span between the point at which the entire
 	// downstream request (i.e. end-of-stream) has been processed and when the
 	// upstream response has been completely processed
-	RequestTimeout *duration.Duration `protobuf:"bytes,1,opt,name=request_timeout,json=requestTimeout,proto3" json:"request_timeout,omitempty"`
+	RequestTimeout *durationpb.Duration `protobuf:"bytes,1,opt,name=request_timeout,json=requestTimeout,proto3" json:"request_timeout,omitempty"`
 	// IdleTimeout is the time at which a downstream or upstream connection
 	// will be terminated if there are no active streams
-	IdleTimeout *duration.Duration `protobuf:"bytes,2,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
+	IdleTimeout *durationpb.Duration `protobuf:"bytes,2,opt,name=idle_timeout,json=idleTimeout,proto3" json:"idle_timeout,omitempty"`
 }
 
 func (x *Timeout_Conf_Http) Reset() {
@@ -257,14 +257,14 @@ func (*Timeout_Conf_Http) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_timeout_proto_rawDescGZIP(), []int{0, 0, 1}
 }
 
-func (x *Timeout_Conf_Http) GetRequestTimeout() *duration.Duration {
+func (x *Timeout_Conf_Http) GetRequestTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.RequestTimeout
 	}
 	return nil
 }
 
-func (x *Timeout_Conf_Http) GetIdleTimeout() *duration.Duration {
+func (x *Timeout_Conf_Http) GetIdleTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.IdleTimeout
 	}
@@ -279,10 +279,10 @@ type Timeout_Conf_Grpc struct {
 
 	// StreamIdleTimeout is the amount of time that the connection manager
 	// will allow a stream to exist with no upstream or downstream activity
-	StreamIdleTimeout *duration.Duration `protobuf:"bytes,1,opt,name=stream_idle_timeout,json=streamIdleTimeout,proto3" json:"stream_idle_timeout,omitempty"`
+	StreamIdleTimeout *durationpb.Duration `protobuf:"bytes,1,opt,name=stream_idle_timeout,json=streamIdleTimeout,proto3" json:"stream_idle_timeout,omitempty"`
 	// MaxStreamDuration is the maximum time that a stream’s lifetime will
 	// span
-	MaxStreamDuration *duration.Duration `protobuf:"bytes,2,opt,name=max_stream_duration,json=maxStreamDuration,proto3" json:"max_stream_duration,omitempty"`
+	MaxStreamDuration *durationpb.Duration `protobuf:"bytes,2,opt,name=max_stream_duration,json=maxStreamDuration,proto3" json:"max_stream_duration,omitempty"`
 }
 
 func (x *Timeout_Conf_Grpc) Reset() {
@@ -317,14 +317,14 @@ func (*Timeout_Conf_Grpc) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_timeout_proto_rawDescGZIP(), []int{0, 0, 2}
 }
 
-func (x *Timeout_Conf_Grpc) GetStreamIdleTimeout() *duration.Duration {
+func (x *Timeout_Conf_Grpc) GetStreamIdleTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.StreamIdleTimeout
 	}
 	return nil
 }
 
-func (x *Timeout_Conf_Grpc) GetMaxStreamDuration() *duration.Duration {
+func (x *Timeout_Conf_Grpc) GetMaxStreamDuration() *durationpb.Duration {
 	if x != nil {
 		return x.MaxStreamDuration
 	}
@@ -418,13 +418,13 @@ func file_mesh_v1alpha1_timeout_proto_rawDescGZIP() []byte {
 
 var file_mesh_v1alpha1_timeout_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_mesh_v1alpha1_timeout_proto_goTypes = []interface{}{
-	(*Timeout)(nil),           // 0: kuma.mesh.v1alpha1.Timeout
-	(*Timeout_Conf)(nil),      // 1: kuma.mesh.v1alpha1.Timeout.Conf
-	(*Timeout_Conf_Tcp)(nil),  // 2: kuma.mesh.v1alpha1.Timeout.Conf.Tcp
-	(*Timeout_Conf_Http)(nil), // 3: kuma.mesh.v1alpha1.Timeout.Conf.Http
-	(*Timeout_Conf_Grpc)(nil), // 4: kuma.mesh.v1alpha1.Timeout.Conf.Grpc
-	(*Selector)(nil),          // 5: kuma.mesh.v1alpha1.Selector
-	(*duration.Duration)(nil), // 6: google.protobuf.Duration
+	(*Timeout)(nil),             // 0: kuma.mesh.v1alpha1.Timeout
+	(*Timeout_Conf)(nil),        // 1: kuma.mesh.v1alpha1.Timeout.Conf
+	(*Timeout_Conf_Tcp)(nil),    // 2: kuma.mesh.v1alpha1.Timeout.Conf.Tcp
+	(*Timeout_Conf_Http)(nil),   // 3: kuma.mesh.v1alpha1.Timeout.Conf.Http
+	(*Timeout_Conf_Grpc)(nil),   // 4: kuma.mesh.v1alpha1.Timeout.Conf.Grpc
+	(*Selector)(nil),            // 5: kuma.mesh.v1alpha1.Selector
+	(*durationpb.Duration)(nil), // 6: google.protobuf.Duration
 }
 var file_mesh_v1alpha1_timeout_proto_depIdxs = []int32{
 	5,  // 0: kuma.mesh.v1alpha1.Timeout.sources:type_name -> kuma.mesh.v1alpha1.Selector

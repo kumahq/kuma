@@ -8,11 +8,11 @@ package v1alpha1
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/kumahq/kuma/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -773,15 +773,15 @@ type Dataplane_Networking_Inbound_ServiceProbe struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Interval between consecutive health checks.
-	Interval *duration.Duration `protobuf:"bytes,1,opt,name=interval,proto3" json:"interval,omitempty"`
+	Interval *durationpb.Duration `protobuf:"bytes,1,opt,name=interval,proto3" json:"interval,omitempty"`
 	// Maximum time to wait for a health check response.
-	Timeout *duration.Duration `protobuf:"bytes,2,opt,name=timeout,proto3" json:"timeout,omitempty"`
+	Timeout *durationpb.Duration `protobuf:"bytes,2,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	// Number of consecutive unhealthy checks before considering a host
 	// unhealthy.
-	UnhealthyThreshold *wrappers.UInt32Value `protobuf:"bytes,3,opt,name=unhealthy_threshold,json=unhealthyThreshold,proto3" json:"unhealthy_threshold,omitempty"`
+	UnhealthyThreshold *wrapperspb.UInt32Value `protobuf:"bytes,3,opt,name=unhealthy_threshold,json=unhealthyThreshold,proto3" json:"unhealthy_threshold,omitempty"`
 	// Number of consecutive healthy checks before considering a host
 	// healthy.
-	HealthyThreshold *wrappers.UInt32Value `protobuf:"bytes,4,opt,name=healthy_threshold,json=healthyThreshold,proto3" json:"healthy_threshold,omitempty"`
+	HealthyThreshold *wrapperspb.UInt32Value `protobuf:"bytes,4,opt,name=healthy_threshold,json=healthyThreshold,proto3" json:"healthy_threshold,omitempty"`
 	// Tcp checker tries to establish tcp connection with destination
 	Tcp *Dataplane_Networking_Inbound_ServiceProbe_Tcp `protobuf:"bytes,5,opt,name=tcp,proto3" json:"tcp,omitempty"`
 }
@@ -818,28 +818,28 @@ func (*Dataplane_Networking_Inbound_ServiceProbe) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_dataplane_proto_rawDescGZIP(), []int{0, 0, 1, 2}
 }
 
-func (x *Dataplane_Networking_Inbound_ServiceProbe) GetInterval() *duration.Duration {
+func (x *Dataplane_Networking_Inbound_ServiceProbe) GetInterval() *durationpb.Duration {
 	if x != nil {
 		return x.Interval
 	}
 	return nil
 }
 
-func (x *Dataplane_Networking_Inbound_ServiceProbe) GetTimeout() *duration.Duration {
+func (x *Dataplane_Networking_Inbound_ServiceProbe) GetTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.Timeout
 	}
 	return nil
 }
 
-func (x *Dataplane_Networking_Inbound_ServiceProbe) GetUnhealthyThreshold() *wrappers.UInt32Value {
+func (x *Dataplane_Networking_Inbound_ServiceProbe) GetUnhealthyThreshold() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.UnhealthyThreshold
 	}
 	return nil
 }
 
-func (x *Dataplane_Networking_Inbound_ServiceProbe) GetHealthyThreshold() *wrappers.UInt32Value {
+func (x *Dataplane_Networking_Inbound_ServiceProbe) GetHealthyThreshold() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.HealthyThreshold
 	}
@@ -1189,8 +1189,8 @@ var file_mesh_v1alpha1_dataplane_proto_goTypes = []interface{}{
 	nil,                               // 15: kuma.mesh.v1alpha1.Dataplane.Networking.Gateway.TagsEntry
 	(*Dataplane_Probes_Endpoint)(nil), // 16: kuma.mesh.v1alpha1.Dataplane.Probes.Endpoint
 	(*MetricsBackend)(nil),            // 17: kuma.mesh.v1alpha1.MetricsBackend
-	(*duration.Duration)(nil),         // 18: google.protobuf.Duration
-	(*wrappers.UInt32Value)(nil),      // 19: google.protobuf.UInt32Value
+	(*durationpb.Duration)(nil),       // 18: google.protobuf.Duration
+	(*wrapperspb.UInt32Value)(nil),    // 19: google.protobuf.UInt32Value
 }
 var file_mesh_v1alpha1_dataplane_proto_depIdxs = []int32{
 	1,  // 0: kuma.mesh.v1alpha1.Dataplane.networking:type_name -> kuma.mesh.v1alpha1.Dataplane.Networking

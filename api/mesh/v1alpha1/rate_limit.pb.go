@@ -8,11 +8,11 @@ package v1alpha1
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/kumahq/kuma/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -150,7 +150,7 @@ type RateLimit_Conf_Http struct {
 	Requests uint32 `protobuf:"varint,1,opt,name=requests,proto3" json:"requests,omitempty"`
 	// The the interval for which `requests` will be accounted.
 	// +required
-	Interval *duration.Duration `protobuf:"bytes,2,opt,name=interval,proto3" json:"interval,omitempty"`
+	Interval *durationpb.Duration `protobuf:"bytes,2,opt,name=interval,proto3" json:"interval,omitempty"`
 	// Describes the actions to take on RatelLimiter event
 	// +optional
 	OnRateLimit *RateLimit_Conf_Http_OnRateLimit `protobuf:"bytes,3,opt,name=onRateLimit,proto3" json:"onRateLimit,omitempty"`
@@ -195,7 +195,7 @@ func (x *RateLimit_Conf_Http) GetRequests() uint32 {
 	return 0
 }
 
-func (x *RateLimit_Conf_Http) GetInterval() *duration.Duration {
+func (x *RateLimit_Conf_Http) GetInterval() *durationpb.Duration {
 	if x != nil {
 		return x.Interval
 	}
@@ -216,7 +216,7 @@ type RateLimit_Conf_Http_OnRateLimit struct {
 
 	// The HTTP status code to be set on a RateLimit event
 	// +optional
-	Status *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
+	Status *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=status,proto3" json:"status,omitempty"`
 	// The Headers to be added to the HTTP response on a RateLimit event
 	// +optional
 	Headers []*RateLimit_Conf_Http_OnRateLimit_HeaderValue `protobuf:"bytes,3,rep,name=headers,proto3" json:"headers,omitempty"`
@@ -254,7 +254,7 @@ func (*RateLimit_Conf_Http_OnRateLimit) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_rate_limit_proto_rawDescGZIP(), []int{0, 0, 0, 0}
 }
 
-func (x *RateLimit_Conf_Http_OnRateLimit) GetStatus() *wrappers.UInt32Value {
+func (x *RateLimit_Conf_Http_OnRateLimit) GetStatus() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Status
 	}
@@ -281,7 +281,7 @@ type RateLimit_Conf_Http_OnRateLimit_HeaderValue struct {
 	Value string `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	// Should the header be appended
 	// +optional
-	Append *wrappers.BoolValue `protobuf:"bytes,3,opt,name=append,proto3" json:"append,omitempty"`
+	Append *wrapperspb.BoolValue `protobuf:"bytes,3,opt,name=append,proto3" json:"append,omitempty"`
 }
 
 func (x *RateLimit_Conf_Http_OnRateLimit_HeaderValue) Reset() {
@@ -330,7 +330,7 @@ func (x *RateLimit_Conf_Http_OnRateLimit_HeaderValue) GetValue() string {
 	return ""
 }
 
-func (x *RateLimit_Conf_Http_OnRateLimit_HeaderValue) GetAppend() *wrappers.BoolValue {
+func (x *RateLimit_Conf_Http_OnRateLimit_HeaderValue) GetAppend() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Append
 	}
@@ -427,9 +427,9 @@ var file_mesh_v1alpha1_rate_limit_proto_goTypes = []interface{}{
 	(*RateLimit_Conf_Http_OnRateLimit)(nil),             // 3: kuma.mesh.v1alpha1.RateLimit.Conf.Http.OnRateLimit
 	(*RateLimit_Conf_Http_OnRateLimit_HeaderValue)(nil), // 4: kuma.mesh.v1alpha1.RateLimit.Conf.Http.OnRateLimit.HeaderValue
 	(*Selector)(nil),                                    // 5: kuma.mesh.v1alpha1.Selector
-	(*duration.Duration)(nil),                           // 6: google.protobuf.Duration
-	(*wrappers.UInt32Value)(nil),                        // 7: google.protobuf.UInt32Value
-	(*wrappers.BoolValue)(nil),                          // 8: google.protobuf.BoolValue
+	(*durationpb.Duration)(nil),                         // 6: google.protobuf.Duration
+	(*wrapperspb.UInt32Value)(nil),                      // 7: google.protobuf.UInt32Value
+	(*wrapperspb.BoolValue)(nil),                        // 8: google.protobuf.BoolValue
 }
 var file_mesh_v1alpha1_rate_limit_proto_depIdxs = []int32{
 	5, // 0: kuma.mesh.v1alpha1.RateLimit.sources:type_name -> kuma.mesh.v1alpha1.Selector

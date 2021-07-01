@@ -7,10 +7,10 @@
 package v1alpha1
 
 import (
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	_ "github.com/kumahq/kuma/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -29,7 +29,7 @@ type MeshInsight struct {
 	unknownFields protoimpl.UnknownFields
 
 	// last_sync is a time of the last synchronization
-	LastSync   *timestamp.Timestamp               `protobuf:"bytes,1,opt,name=last_sync,json=lastSync,proto3" json:"last_sync,omitempty"`
+	LastSync   *timestamppb.Timestamp             `protobuf:"bytes,1,opt,name=last_sync,json=lastSync,proto3" json:"last_sync,omitempty"`
 	Dataplanes *MeshInsight_DataplaneStat         `protobuf:"bytes,2,opt,name=dataplanes,proto3" json:"dataplanes,omitempty"`
 	Policies   map[string]*MeshInsight_PolicyStat `protobuf:"bytes,3,rep,name=policies,proto3" json:"policies,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	DpVersions *MeshInsight_DpVersions            `protobuf:"bytes,4,opt,name=dpVersions,proto3" json:"dpVersions,omitempty"`
@@ -67,7 +67,7 @@ func (*MeshInsight) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_mesh_insight_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *MeshInsight) GetLastSync() *timestamp.Timestamp {
+func (x *MeshInsight) GetLastSync() *timestamppb.Timestamp {
 	if x != nil {
 		return x.LastSync
 	}
@@ -374,7 +374,7 @@ var file_mesh_v1alpha1_mesh_insight_proto_goTypes = []interface{}{
 	(*MeshInsight_DpVersions)(nil),    // 4: kuma.mesh.v1alpha1.MeshInsight.DpVersions
 	nil,                               // 5: kuma.mesh.v1alpha1.MeshInsight.DpVersions.KumaDpEntry
 	nil,                               // 6: kuma.mesh.v1alpha1.MeshInsight.DpVersions.EnvoyEntry
-	(*timestamp.Timestamp)(nil),       // 7: google.protobuf.Timestamp
+	(*timestamppb.Timestamp)(nil),     // 7: google.protobuf.Timestamp
 }
 var file_mesh_v1alpha1_mesh_insight_proto_depIdxs = []int32{
 	7, // 0: kuma.mesh.v1alpha1.MeshInsight.last_sync:type_name -> google.protobuf.Timestamp

@@ -8,12 +8,12 @@ package v1alpha1
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	duration "github.com/golang/protobuf/ptypes/duration"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/kumahq/kuma/api/mesh"
 	_ "github.com/kumahq/protoc-gen-kumadoc/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	durationpb "google.golang.org/protobuf/types/known/durationpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -216,9 +216,9 @@ type Retry_Conf_BackOff struct {
 	unknownFields protoimpl.UnknownFields
 
 	//  +required
-	BaseInterval *duration.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3" json:"base_interval,omitempty"`
+	BaseInterval *durationpb.Duration `protobuf:"bytes,1,opt,name=base_interval,json=baseInterval,proto3" json:"base_interval,omitempty"`
 	//  +optional
-	MaxInterval *duration.Duration `protobuf:"bytes,2,opt,name=max_interval,json=maxInterval,proto3" json:"max_interval,omitempty"`
+	MaxInterval *durationpb.Duration `protobuf:"bytes,2,opt,name=max_interval,json=maxInterval,proto3" json:"max_interval,omitempty"`
 }
 
 func (x *Retry_Conf_BackOff) Reset() {
@@ -253,14 +253,14 @@ func (*Retry_Conf_BackOff) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_retry_proto_rawDescGZIP(), []int{0, 0, 0}
 }
 
-func (x *Retry_Conf_BackOff) GetBaseInterval() *duration.Duration {
+func (x *Retry_Conf_BackOff) GetBaseInterval() *durationpb.Duration {
 	if x != nil {
 		return x.BaseInterval
 	}
 	return nil
 }
 
-func (x *Retry_Conf_BackOff) GetMaxInterval() *duration.Duration {
+func (x *Retry_Conf_BackOff) GetMaxInterval() *durationpb.Duration {
 	if x != nil {
 		return x.MaxInterval
 	}
@@ -273,9 +273,9 @@ type Retry_Conf_Http struct {
 	unknownFields protoimpl.UnknownFields
 
 	//  +optional
-	NumRetries *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=num_retries,json=numRetries,proto3" json:"num_retries,omitempty"`
+	NumRetries *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=num_retries,json=numRetries,proto3" json:"num_retries,omitempty"`
 	//  +optional
-	PerTryTimeout *duration.Duration `protobuf:"bytes,3,opt,name=per_try_timeout,json=perTryTimeout,proto3" json:"per_try_timeout,omitempty"`
+	PerTryTimeout *durationpb.Duration `protobuf:"bytes,3,opt,name=per_try_timeout,json=perTryTimeout,proto3" json:"per_try_timeout,omitempty"`
 	//  +optional
 	BackOff *Retry_Conf_BackOff `protobuf:"bytes,4,opt,name=back_off,json=backOff,proto3" json:"back_off,omitempty"`
 	//  +optional
@@ -314,14 +314,14 @@ func (*Retry_Conf_Http) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_retry_proto_rawDescGZIP(), []int{0, 0, 1}
 }
 
-func (x *Retry_Conf_Http) GetNumRetries() *wrappers.UInt32Value {
+func (x *Retry_Conf_Http) GetNumRetries() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.NumRetries
 	}
 	return nil
 }
 
-func (x *Retry_Conf_Http) GetPerTryTimeout() *duration.Duration {
+func (x *Retry_Conf_Http) GetPerTryTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.PerTryTimeout
 	}
@@ -398,9 +398,9 @@ type Retry_Conf_Grpc struct {
 	//  +optional
 	RetryOn []Retry_Conf_Grpc_RetryOn `protobuf:"varint,1,rep,packed,name=retry_on,json=retryOn,proto3,enum=kuma.mesh.v1alpha1.Retry_Conf_Grpc_RetryOn" json:"retry_on,omitempty"`
 	//  +optional
-	NumRetries *wrappers.UInt32Value `protobuf:"bytes,2,opt,name=num_retries,json=numRetries,proto3" json:"num_retries,omitempty"`
+	NumRetries *wrapperspb.UInt32Value `protobuf:"bytes,2,opt,name=num_retries,json=numRetries,proto3" json:"num_retries,omitempty"`
 	//  +optional
-	PerTryTimeout *duration.Duration `protobuf:"bytes,3,opt,name=per_try_timeout,json=perTryTimeout,proto3" json:"per_try_timeout,omitempty"`
+	PerTryTimeout *durationpb.Duration `protobuf:"bytes,3,opt,name=per_try_timeout,json=perTryTimeout,proto3" json:"per_try_timeout,omitempty"`
 	//  +optional
 	BackOff *Retry_Conf_BackOff `protobuf:"bytes,4,opt,name=back_off,json=backOff,proto3" json:"back_off,omitempty"`
 }
@@ -444,14 +444,14 @@ func (x *Retry_Conf_Grpc) GetRetryOn() []Retry_Conf_Grpc_RetryOn {
 	return nil
 }
 
-func (x *Retry_Conf_Grpc) GetNumRetries() *wrappers.UInt32Value {
+func (x *Retry_Conf_Grpc) GetNumRetries() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.NumRetries
 	}
 	return nil
 }
 
-func (x *Retry_Conf_Grpc) GetPerTryTimeout() *duration.Duration {
+func (x *Retry_Conf_Grpc) GetPerTryTimeout() *durationpb.Duration {
 	if x != nil {
 		return x.PerTryTimeout
 	}
@@ -582,16 +582,16 @@ func file_mesh_v1alpha1_retry_proto_rawDescGZIP() []byte {
 var file_mesh_v1alpha1_retry_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
 var file_mesh_v1alpha1_retry_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_mesh_v1alpha1_retry_proto_goTypes = []interface{}{
-	(Retry_Conf_Grpc_RetryOn)(0), // 0: kuma.mesh.v1alpha1.Retry.Conf.Grpc.RetryOn
-	(*Retry)(nil),                // 1: kuma.mesh.v1alpha1.Retry
-	(*Retry_Conf)(nil),           // 2: kuma.mesh.v1alpha1.Retry.Conf
-	(*Retry_Conf_BackOff)(nil),   // 3: kuma.mesh.v1alpha1.Retry.Conf.BackOff
-	(*Retry_Conf_Http)(nil),      // 4: kuma.mesh.v1alpha1.Retry.Conf.Http
-	(*Retry_Conf_Tcp)(nil),       // 5: kuma.mesh.v1alpha1.Retry.Conf.Tcp
-	(*Retry_Conf_Grpc)(nil),      // 6: kuma.mesh.v1alpha1.Retry.Conf.Grpc
-	(*Selector)(nil),             // 7: kuma.mesh.v1alpha1.Selector
-	(*duration.Duration)(nil),    // 8: google.protobuf.Duration
-	(*wrappers.UInt32Value)(nil), // 9: google.protobuf.UInt32Value
+	(Retry_Conf_Grpc_RetryOn)(0),   // 0: kuma.mesh.v1alpha1.Retry.Conf.Grpc.RetryOn
+	(*Retry)(nil),                  // 1: kuma.mesh.v1alpha1.Retry
+	(*Retry_Conf)(nil),             // 2: kuma.mesh.v1alpha1.Retry.Conf
+	(*Retry_Conf_BackOff)(nil),     // 3: kuma.mesh.v1alpha1.Retry.Conf.BackOff
+	(*Retry_Conf_Http)(nil),        // 4: kuma.mesh.v1alpha1.Retry.Conf.Http
+	(*Retry_Conf_Tcp)(nil),         // 5: kuma.mesh.v1alpha1.Retry.Conf.Tcp
+	(*Retry_Conf_Grpc)(nil),        // 6: kuma.mesh.v1alpha1.Retry.Conf.Grpc
+	(*Selector)(nil),               // 7: kuma.mesh.v1alpha1.Selector
+	(*durationpb.Duration)(nil),    // 8: google.protobuf.Duration
+	(*wrapperspb.UInt32Value)(nil), // 9: google.protobuf.UInt32Value
 }
 var file_mesh_v1alpha1_retry_proto_depIdxs = []int32{
 	7,  // 0: kuma.mesh.v1alpha1.Retry.sources:type_name -> kuma.mesh.v1alpha1.Selector

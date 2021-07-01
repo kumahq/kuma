@@ -8,11 +8,11 @@ package v1alpha1
 
 import (
 	_ "github.com/envoyproxy/protoc-gen-validate/validate"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/kumahq/kuma/api/mesh"
 	_ "github.com/kumahq/protoc-gen-kumadoc/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -106,7 +106,7 @@ type TrafficRoute_Split struct {
 	// Weights are not percentages. For example two destinations with
 	// weights the same weight "1" will receive both same amount of the traffic.
 	// 0 means that the destination will be ignored.
-	Weight *wrappers.UInt32Value `protobuf:"bytes,1,opt,name=weight,proto3" json:"weight,omitempty"`
+	Weight *wrapperspb.UInt32Value `protobuf:"bytes,1,opt,name=weight,proto3" json:"weight,omitempty"`
 	// Selector to match individual endpoints that comprise that destination.
 	//
 	// Notice that an endpoint can be either inside or outside the mesh.
@@ -147,7 +147,7 @@ func (*TrafficRoute_Split) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_traffic_route_proto_rawDescGZIP(), []int{0, 0}
 }
 
-func (x *TrafficRoute_Split) GetWeight() *wrappers.UInt32Value {
+func (x *TrafficRoute_Split) GetWeight() *wrapperspb.UInt32Value {
 	if x != nil {
 		return x.Weight
 	}
@@ -1600,8 +1600,8 @@ var file_mesh_v1alpha1_traffic_route_proto_goTypes = []interface{}{
 	(*TrafficRoute_Http_Modify_Headers)(nil),        // 20: kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Headers
 	(*TrafficRoute_Http_Modify_Headers_Add)(nil),    // 21: kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Headers.Add
 	(*TrafficRoute_Http_Modify_Headers_Remove)(nil), // 22: kuma.mesh.v1alpha1.TrafficRoute.Http.Modify.Headers.Remove
-	(*Selector)(nil),             // 23: kuma.mesh.v1alpha1.Selector
-	(*wrappers.UInt32Value)(nil), // 24: google.protobuf.UInt32Value
+	(*Selector)(nil),               // 23: kuma.mesh.v1alpha1.Selector
+	(*wrapperspb.UInt32Value)(nil), // 24: google.protobuf.UInt32Value
 }
 var file_mesh_v1alpha1_traffic_route_proto_depIdxs = []int32{
 	23, // 0: kuma.mesh.v1alpha1.TrafficRoute.sources:type_name -> kuma.mesh.v1alpha1.Selector

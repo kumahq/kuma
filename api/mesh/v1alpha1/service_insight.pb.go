@@ -7,10 +7,10 @@
 package v1alpha1
 
 import (
-	timestamp "github.com/golang/protobuf/ptypes/timestamp"
 	_ "github.com/kumahq/kuma/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -79,7 +79,7 @@ type ServiceInsight struct {
 	sizeCache     protoimpl.SizeCache
 	unknownFields protoimpl.UnknownFields
 
-	LastSync *timestamp.Timestamp               `protobuf:"bytes,1,opt,name=last_sync,json=lastSync,proto3" json:"last_sync,omitempty"`
+	LastSync *timestamppb.Timestamp             `protobuf:"bytes,1,opt,name=last_sync,json=lastSync,proto3" json:"last_sync,omitempty"`
 	Services map[string]*ServiceInsight_Service `protobuf:"bytes,2,rep,name=services,proto3" json:"services,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 
@@ -115,7 +115,7 @@ func (*ServiceInsight) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_service_insight_proto_rawDescGZIP(), []int{0}
 }
 
-func (x *ServiceInsight) GetLastSync() *timestamp.Timestamp {
+func (x *ServiceInsight) GetLastSync() *timestamppb.Timestamp {
 	if x != nil {
 		return x.LastSync
 	}
@@ -330,7 +330,7 @@ var file_mesh_v1alpha1_service_insight_proto_goTypes = []interface{}{
 	(*ServiceInsight_Service)(nil),     // 2: kuma.mesh.v1alpha1.ServiceInsight.Service
 	nil,                                // 3: kuma.mesh.v1alpha1.ServiceInsight.ServicesEntry
 	(*ServiceInsight_Service_DataplaneStat)(nil), // 4: kuma.mesh.v1alpha1.ServiceInsight.Service.DataplaneStat
-	(*timestamp.Timestamp)(nil),                  // 5: google.protobuf.Timestamp
+	(*timestamppb.Timestamp)(nil),                // 5: google.protobuf.Timestamp
 }
 var file_mesh_v1alpha1_service_insight_proto_depIdxs = []int32{
 	5, // 0: kuma.mesh.v1alpha1.ServiceInsight.last_sync:type_name -> google.protobuf.Timestamp

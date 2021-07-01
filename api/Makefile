@@ -42,11 +42,11 @@ protoc_search_go_packages := \
 protoc_search_go_paths := $(foreach go_package,$(protoc_search_go_packages),--proto_path=$(GOPATH_DIR)/pkg/mod/$(go_package))
 
 go_import_mapping_entries := \
-	google/protobuf/any.proto=github.com/golang/protobuf/ptypes/any \
-	google/protobuf/duration.proto=github.com/golang/protobuf/ptypes/duration \
-	google/protobuf/struct.proto=github.com/golang/protobuf/ptypes/struct \
-	google/protobuf/timestamp.proto=github.com/golang/protobuf/ptypes/timestamp \
-	google/protobuf/wrappers.proto=github.com/golang/protobuf/ptypes/wrappers \
+	google/protobuf/any.proto=google.golang.org/protobuf/types/known/anypb \
+	google/protobuf/duration.proto=google.golang.org/protobuf/types/known/durationpb \
+	google/protobuf/struct.proto=google.golang.org/protobuf/types/known/structpb \
+	google/protobuf/timestamp.proto=google.golang.org/protobuf/types/known/timestamppb \
+	google/protobuf/wrappers.proto=google.golang.org/protobuf/types/known/wrapperspb \
 	envoy/api/v2/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/api/v2 \
 	envoy/service/discovery/v3/discovery.proto=github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3 \
 	udpa/annotations/migrate.proto=github.com/cncf/udpa/go/udpa/annotations \

@@ -7,11 +7,11 @@
 package v1alpha1
 
 import (
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	_ "github.com/kumahq/kuma/api/mesh"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -139,7 +139,7 @@ type CertificateAuthorityBackend struct {
 	// Dataplane certificate settings
 	DpCert *CertificateAuthorityBackend_DpCert `protobuf:"bytes,3,opt,name=dpCert,proto3" json:"dpCert,omitempty"`
 	// Configuration of the backend
-	Conf *_struct.Struct `protobuf:"bytes,4,opt,name=conf,proto3" json:"conf,omitempty"`
+	Conf *structpb.Struct `protobuf:"bytes,4,opt,name=conf,proto3" json:"conf,omitempty"`
 }
 
 func (x *CertificateAuthorityBackend) Reset() {
@@ -195,7 +195,7 @@ func (x *CertificateAuthorityBackend) GetDpCert() *CertificateAuthorityBackend_D
 	return nil
 }
 
-func (x *CertificateAuthorityBackend) GetConf() *_struct.Struct {
+func (x *CertificateAuthorityBackend) GetConf() *structpb.Struct {
 	if x != nil {
 		return x.Conf
 	}
@@ -321,11 +321,11 @@ type TracingBackend struct {
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// Percentage of traces that will be sent to the backend (range 0.0 - 100.0).
 	// Empty value defaults to 100.0%
-	Sampling *wrappers.DoubleValue `protobuf:"bytes,2,opt,name=sampling,proto3" json:"sampling,omitempty"`
+	Sampling *wrapperspb.DoubleValue `protobuf:"bytes,2,opt,name=sampling,proto3" json:"sampling,omitempty"`
 	// Type of the backend (Kuma ships with 'zipkin')
 	Type string `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
 	// Configuration of the backend
-	Conf *_struct.Struct `protobuf:"bytes,4,opt,name=conf,proto3" json:"conf,omitempty"`
+	Conf *structpb.Struct `protobuf:"bytes,4,opt,name=conf,proto3" json:"conf,omitempty"`
 }
 
 func (x *TracingBackend) Reset() {
@@ -367,7 +367,7 @@ func (x *TracingBackend) GetName() string {
 	return ""
 }
 
-func (x *TracingBackend) GetSampling() *wrappers.DoubleValue {
+func (x *TracingBackend) GetSampling() *wrapperspb.DoubleValue {
 	if x != nil {
 		return x.Sampling
 	}
@@ -381,7 +381,7 @@ func (x *TracingBackend) GetType() string {
 	return ""
 }
 
-func (x *TracingBackend) GetConf() *_struct.Struct {
+func (x *TracingBackend) GetConf() *structpb.Struct {
 	if x != nil {
 		return x.Conf
 	}
@@ -404,7 +404,7 @@ type ZipkinTracingBackendConfig struct {
 	// Determines whether client and server spans will share the same span
 	// context. Default: true.
 	// https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/trace/v3/zipkin.proto#config-trace-v3-zipkinconfig
-	SharedSpanContext *wrappers.BoolValue `protobuf:"bytes,4,opt,name=sharedSpanContext,proto3" json:"sharedSpanContext,omitempty"`
+	SharedSpanContext *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=sharedSpanContext,proto3" json:"sharedSpanContext,omitempty"`
 }
 
 func (x *ZipkinTracingBackendConfig) Reset() {
@@ -460,7 +460,7 @@ func (x *ZipkinTracingBackendConfig) GetApiVersion() string {
 	return ""
 }
 
-func (x *ZipkinTracingBackendConfig) GetSharedSpanContext() *wrappers.BoolValue {
+func (x *ZipkinTracingBackendConfig) GetSharedSpanContext() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.SharedSpanContext
 	}
@@ -540,7 +540,7 @@ type LoggingBackend struct {
 	// Type of the backend (Kuma ships with 'tcp' and 'file')
 	Type string `protobuf:"bytes,3,opt,name=type,proto3" json:"type,omitempty"`
 	// Configuration of the backend
-	Conf *_struct.Struct `protobuf:"bytes,4,opt,name=conf,proto3" json:"conf,omitempty"`
+	Conf *structpb.Struct `protobuf:"bytes,4,opt,name=conf,proto3" json:"conf,omitempty"`
 }
 
 func (x *LoggingBackend) Reset() {
@@ -596,7 +596,7 @@ func (x *LoggingBackend) GetType() string {
 	return ""
 }
 
-func (x *LoggingBackend) GetConf() *_struct.Struct {
+func (x *LoggingBackend) GetConf() *structpb.Struct {
 	if x != nil {
 		return x.Conf
 	}
@@ -913,7 +913,7 @@ type Networking_Outbound struct {
 	unknownFields protoimpl.UnknownFields
 
 	// Control the passthrough cluster
-	Passthrough *wrappers.BoolValue `protobuf:"bytes,1,opt,name=passthrough,proto3" json:"passthrough,omitempty"`
+	Passthrough *wrapperspb.BoolValue `protobuf:"bytes,1,opt,name=passthrough,proto3" json:"passthrough,omitempty"`
 }
 
 func (x *Networking_Outbound) Reset() {
@@ -948,7 +948,7 @@ func (*Networking_Outbound) Descriptor() ([]byte, []int) {
 	return file_mesh_v1alpha1_mesh_proto_rawDescGZIP(), []int{2, 0}
 }
 
-func (x *Networking_Outbound) GetPassthrough() *wrappers.BoolValue {
+func (x *Networking_Outbound) GetPassthrough() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.Passthrough
 	}
@@ -1123,9 +1123,9 @@ var file_mesh_v1alpha1_mesh_proto_goTypes = []interface{}{
 	(*CertificateAuthorityBackend_DpCert_Rotation)(nil), // 13: kuma.mesh.v1alpha1.CertificateAuthorityBackend.DpCert.Rotation
 	(*Networking_Outbound)(nil),                         // 14: kuma.mesh.v1alpha1.Networking.Outbound
 	(*Metrics)(nil),                                     // 15: kuma.mesh.v1alpha1.Metrics
-	(*_struct.Struct)(nil),                              // 16: google.protobuf.Struct
-	(*wrappers.DoubleValue)(nil),                        // 17: google.protobuf.DoubleValue
-	(*wrappers.BoolValue)(nil),                          // 18: google.protobuf.BoolValue
+	(*structpb.Struct)(nil),                             // 16: google.protobuf.Struct
+	(*wrapperspb.DoubleValue)(nil),                      // 17: google.protobuf.DoubleValue
+	(*wrapperspb.BoolValue)(nil),                        // 18: google.protobuf.BoolValue
 }
 var file_mesh_v1alpha1_mesh_proto_depIdxs = []int32{
 	11, // 0: kuma.mesh.v1alpha1.Mesh.mtls:type_name -> kuma.mesh.v1alpha1.Mesh.Mtls

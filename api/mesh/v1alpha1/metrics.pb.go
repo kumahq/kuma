@@ -7,10 +7,10 @@
 package v1alpha1
 
 import (
-	_struct "github.com/golang/protobuf/ptypes/struct"
-	wrappers "github.com/golang/protobuf/ptypes/wrappers"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	structpb "google.golang.org/protobuf/types/known/structpb"
+	wrapperspb "google.golang.org/protobuf/types/known/wrapperspb"
 	reflect "reflect"
 	sync "sync"
 )
@@ -92,7 +92,7 @@ type MetricsBackend struct {
 	// Type of the backend (Kuma ships with 'prometheus')
 	Type string `protobuf:"bytes,2,opt,name=type,proto3" json:"type,omitempty"`
 	// Configuration of the backend
-	Conf *_struct.Struct `protobuf:"bytes,3,opt,name=conf,proto3" json:"conf,omitempty"`
+	Conf *structpb.Struct `protobuf:"bytes,3,opt,name=conf,proto3" json:"conf,omitempty"`
 }
 
 func (x *MetricsBackend) Reset() {
@@ -141,7 +141,7 @@ func (x *MetricsBackend) GetType() string {
 	return ""
 }
 
-func (x *MetricsBackend) GetConf() *_struct.Struct {
+func (x *MetricsBackend) GetConf() *structpb.Struct {
 	if x != nil {
 		return x.Conf
 	}
@@ -166,7 +166,7 @@ type PrometheusMetricsBackendConfig struct {
 	Tags map[string]string `protobuf:"bytes,3,rep,name=tags,proto3" json:"tags,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	// If true then endpoints for scraping metrics won't require mTLS even if mTLS
 	// is enabled in Mesh. If nil, then it is treated as false.
-	SkipMTLS *wrappers.BoolValue `protobuf:"bytes,4,opt,name=skipMTLS,proto3" json:"skipMTLS,omitempty"`
+	SkipMTLS *wrapperspb.BoolValue `protobuf:"bytes,4,opt,name=skipMTLS,proto3" json:"skipMTLS,omitempty"`
 }
 
 func (x *PrometheusMetricsBackendConfig) Reset() {
@@ -222,7 +222,7 @@ func (x *PrometheusMetricsBackendConfig) GetTags() map[string]string {
 	return nil
 }
 
-func (x *PrometheusMetricsBackendConfig) GetSkipMTLS() *wrappers.BoolValue {
+func (x *PrometheusMetricsBackendConfig) GetSkipMTLS() *wrapperspb.BoolValue {
 	if x != nil {
 		return x.SkipMTLS
 	}
@@ -293,8 +293,8 @@ var file_mesh_v1alpha1_metrics_proto_goTypes = []interface{}{
 	(*MetricsBackend)(nil),                 // 1: kuma.mesh.v1alpha1.MetricsBackend
 	(*PrometheusMetricsBackendConfig)(nil), // 2: kuma.mesh.v1alpha1.PrometheusMetricsBackendConfig
 	nil,                                    // 3: kuma.mesh.v1alpha1.PrometheusMetricsBackendConfig.TagsEntry
-	(*_struct.Struct)(nil),                 // 4: google.protobuf.Struct
-	(*wrappers.BoolValue)(nil),             // 5: google.protobuf.BoolValue
+	(*structpb.Struct)(nil),                // 4: google.protobuf.Struct
+	(*wrapperspb.BoolValue)(nil),           // 5: google.protobuf.BoolValue
 }
 var file_mesh_v1alpha1_metrics_proto_depIdxs = []int32{
 	1, // 0: kuma.mesh.v1alpha1.Metrics.backends:type_name -> kuma.mesh.v1alpha1.MetricsBackend
