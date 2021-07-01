@@ -28,7 +28,7 @@ type DPNotFoundRetry struct {
 	MaxTimes uint
 }
 
-func NewCallbacks(resManager core_manager.ResourceManager, authenticator Authenticator, dpNotFoundRetry DPNotFoundRetry) util_xds.Callbacks {
+func NewCallbacks(resManager core_manager.ReadOnlyResourceManager, authenticator Authenticator, dpNotFoundRetry DPNotFoundRetry) util_xds.Callbacks {
 	if dpNotFoundRetry.Backoff == 0 { // backoff cannot be 0
 		dpNotFoundRetry.Backoff = 1 * time.Millisecond
 	}
@@ -44,7 +44,7 @@ func NewCallbacks(resManager core_manager.ResourceManager, authenticator Authent
 // authCallback checks if the DiscoveryRequest is authorized, ie. if it has a valid Dataplane Token/Service Account Token.
 type authCallbacks struct {
 	util_xds.NoopCallbacks
-	resManager      core_manager.ResourceManager
+	resManager      core_manager.ReadOnlyResourceManager
 	authenticator   Authenticator
 	dpNotFoundRetry DPNotFoundRetry
 

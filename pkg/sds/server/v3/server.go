@@ -40,7 +40,7 @@ func RegisterSDS(rt core_runtime.Runtime, sdsMetrics *sds_metrics.Metrics) error
 	if err != nil {
 		return err
 	}
-	authCallbacks := xds_auth.NewCallbacks(rt.ResourceManager(), authenticator, xds_auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in ADS before we initiate SDS
+	authCallbacks := xds_auth.NewCallbacks(rt.ReadOnlyResourceManager(), authenticator, xds_auth.DPNotFoundRetry{}) // no need to retry on DP Not Found because we are creating DP in ADS before we initiate SDS
 
 	reconciler := DataplaneReconciler{
 		resManager:         rt.ResourceManager(),
