@@ -5,11 +5,12 @@ import (
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
 	envoy_resource "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
+	"github.com/pkg/errors"
+	"google.golang.org/protobuf/proto"
+
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	core_xds "github.com/kumahq/kuma/pkg/core/xds"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
-	"github.com/pkg/errors"
-	"google.golang.org/protobuf/proto"
 )
 
 // virtualHostModificator assumes that the routes are specified as `routeConfig` in Listeners, not through RDS

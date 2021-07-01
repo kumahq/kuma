@@ -16,9 +16,10 @@ import (
 	envoy_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/logr/testing"
 	"github.com/golang/protobuf/jsonpb"
-	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
