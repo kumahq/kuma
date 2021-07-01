@@ -29,7 +29,7 @@ var _ = Describe("TracingConfigurer", func() {
 				Configure(InboundListener("inbound:192.168.0.1:8080", "192.168.0.1", 8080, xds.SocketAddressProtocolTCP)).
 				Configure(FilterChain(NewFilterChainBuilder(envoy.APIV3).
 					Configure(HttpConnectionManager("localhost:8080", false)).
-					Configure(Tracing(given.backend)))).
+					Configure(Tracing(given.backend, "service")))).
 				Build()
 			// then
 			Expect(err).ToNot(HaveOccurred())
@@ -40,7 +40,7 @@ var _ = Describe("TracingConfigurer", func() {
 			// and
 			Expect(actual).To(MatchYAML(given.expected))
 		},
-		Entry("backend specified with sampling", testCase{
+		Entry("zipkin backend specified with sampling", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name:     "zipkin",
 				Sampling: &wrappers.DoubleValue{Value: 30.5},
@@ -76,7 +76,7 @@ var _ = Describe("TracingConfigurer", func() {
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND`,
 		}),
-		Entry("backend specified without sampling", testCase{
+		Entry("zipkin backend specified without sampling", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name: "zipkin",
 				Type: mesh_proto.TracingZipkinType,
@@ -109,6 +109,39 @@ var _ = Describe("TracingConfigurer", func() {
             name: inbound:192.168.0.1:8080
             trafficDirection: INBOUND`,
 		}),
+		Entry("datadog backend specified", testCase{
+			backend: &mesh_proto.TracingBackend{
+				Name: "datadog",
+				Type: mesh_proto.TracingDatadogType,
+				Conf: util_proto.MustToStruct(&mesh_proto.DatadogTracingBackendConfig{
+					Address: "1.1.1.1",
+					Port:    1111,
+				}),
+			},
+			expected: `
+        address:
+          socketAddress:
+            address: 192.168.0.1
+            portValue: 8080
+        filterChains:
+        - filters:
+          - name: envoy.filters.network.http_connection_manager
+            typedConfig:
+              '@type': type.googleapis.com/envoy.extensions.filters.network.http_connection_manager.v3.HttpConnectionManager
+              httpFilters:
+              - name: envoy.filters.http.router
+              statPrefix: localhost_8080
+              tracing:
+                provider:
+                  name: envoy.datadog
+                  typedConfig:
+                    '@type': type.googleapis.com/envoy.config.trace.v3.DatadogConfig
+                    collectorCluster: tracing:datadog
+                    serviceName: service
+        name: inbound:192.168.0.1:8080
+        trafficDirection: INBOUND`,
+		}),
+
 		Entry("no backend specified", testCase{
 			backend: nil,
 			expected: `

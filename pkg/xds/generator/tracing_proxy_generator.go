@@ -35,7 +35,14 @@ func (t TracingProxyGenerator) Generate(_ xds_context.Context, proxy *core_xds.P
 			return nil, errors.Wrap(err, "could not generate zipkin cluster")
 		}
 		resources.Add(res)
+	case mesh_proto.TracingDatadogType:
+		res, err := t.datadogCluster(proxy.Policies.TracingBackend, proxy.APIVersion)
+		if err != nil {
+			return nil, errors.Wrap(err, "could not generate datadog cluster")
+		}
+		resources.Add(res)
 	}
+
 	return resources, nil
 }
 
@@ -56,6 +63,31 @@ func (t TracingProxyGenerator) zipkinCluster(backend *mesh_proto.TracingBackend,
 	clusterName := names.GetTracingClusterName(backend.Name)
 	cluster, err := clusters.NewClusterBuilder(apiVersion).
 		Configure(clusters.DNSCluster(clusterName, url.Hostname(), uint32(port))).
+		Build()
+	if err != nil {
+		return nil, err
+	}
+
+	return &core_xds.Resource{
+		Name:     clusterName,
+		Origin:   OriginTracing,
+		Resource: cluster,
+	}, nil
+}
+
+func (t TracingProxyGenerator) datadogCluster(backend *mesh_proto.TracingBackend, apiVersion envoy.APIVersion) (*core_xds.Resource, error) {
+	cfg := mesh_proto.DatadogTracingBackendConfig{}
+	if err := proto.ToTyped(backend.Conf, &cfg); err != nil {
+		return nil, errors.Wrap(err, "could not convert backend")
+	}
+
+	if cfg.Port > 0xFFFF || cfg.Port < 1 {
+		return nil, errors.Errorf("invalid Datadog port number %d. Must be in range 1-65535", cfg.Port)
+	}
+
+	clusterName := names.GetTracingClusterName(backend.Name)
+	cluster, err := clusters.NewClusterBuilder(apiVersion).
+		Configure(clusters.DNSCluster(clusterName, cfg.Address, cfg.Port)).
 		Build()
 	if err != nil {
 		return nil, err
