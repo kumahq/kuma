@@ -8,17 +8,18 @@ import (
 )
 
 const (
-	googleApis   = "type.googleapis.com/"
+	googleApis = "type.googleapis.com/"
+
+	// KumaResource is the type URL of the KumaResource protobuf.
 	KumaResource = googleApis + "kuma.mesh.v1alpha1.KumaResource"
 )
 
 var (
+	// SupportedTypes is a list of Kuma types that may be exchanged by KDS peers.
 	SupportedTypes = []model.ResourceType{
 		mesh.CircuitBreakerType,
-		mesh.DataplaneType,
-		mesh.ZoneIngressType,
-		mesh.ZoneIngressInsightType,
 		mesh.DataplaneInsightType,
+		mesh.DataplaneType,
 		mesh.ExternalServiceType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,
@@ -31,8 +32,10 @@ var (
 		mesh.TrafficPermissionType,
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
-		system.SecretType,
-		system.GlobalSecretType,
+		mesh.ZoneIngressInsightType,
+		mesh.ZoneIngressType,
 		system.ConfigType,
+		system.GlobalSecretType,
+		system.SecretType,
 	}
 )
