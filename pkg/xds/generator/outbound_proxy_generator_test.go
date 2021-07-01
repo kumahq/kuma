@@ -3,10 +3,10 @@ package generator_test
 import (
 	"path/filepath"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -253,17 +253,17 @@ var _ = Describe("OutboundProxyGenerator", func() {
 							Spec: &mesh_proto.TrafficRoute{
 								Conf: &mesh_proto.TrafficRoute_Conf{
 									Split: []*mesh_proto.TrafficRoute_Split{{
-										Weight: &wrappers.UInt32Value{
+										Weight: &wrapperspb.UInt32Value{
 											Value: 10,
 										},
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "master"},
 									}, {
-										Weight: &wrappers.UInt32Value{
+										Weight: &wrapperspb.UInt32Value{
 											Value: 90,
 										},
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "replica"},
 									}, {
-										Weight: &wrappers.UInt32Value{
+										Weight: &wrapperspb.UInt32Value{
 											Value: 0,
 										}, // should be excluded from Envoy configuration
 										Destination: mesh_proto.TagSelector{"kuma.io/service": "db", "role": "canary"},

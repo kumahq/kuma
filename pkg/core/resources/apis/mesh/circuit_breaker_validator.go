@@ -1,7 +1,7 @@
 package mesh
 
 import (
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
@@ -65,7 +65,7 @@ func (c *CircuitBreakerResource) validateConf() (err validators.ValidationError)
 	return
 }
 
-func (c *CircuitBreakerResource) validatePercentage(path validators.PathBuilder, value *wrappers.UInt32Value) (err validators.ValidationError) {
+func (c *CircuitBreakerResource) validatePercentage(path validators.PathBuilder, value *wrapperspb.UInt32Value) (err validators.ValidationError) {
 	if value.GetValue() < 0.0 || value.GetValue() > 100.0 {
 		err.AddViolationAt(path, "has to be in [0.0 - 100.0] range")
 	}

@@ -9,7 +9,7 @@ import (
 
 	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v2"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 
@@ -75,7 +75,7 @@ var _ = Describe("StartTimeOperator", func() {
 
 			// given
 			commonProperties := &accesslog_data.AccessLogCommon{
-				StartTime: &timestamp.Timestamp{
+				StartTime: &timestamppb.Timestamp{
 					Nanos: -1, // is considered invalid
 				},
 			}

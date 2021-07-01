@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -160,7 +160,7 @@ func validateConfProtocolBackOff(
 
 func validateUint32_GreaterThan0OrNil(
 	path validators.PathBuilder,
-	value *wrappers.UInt32Value,
+	value *wrapperspb.UInt32Value,
 ) (err validators.ValidationError) {
 	if value == nil {
 		return

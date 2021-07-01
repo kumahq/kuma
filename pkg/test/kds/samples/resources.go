@@ -1,8 +1,8 @@
 package samples
 
 import (
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -54,8 +54,8 @@ var (
 		}},
 		Conf: &mesh_proto.FaultInjection_Conf{
 			Abort: &mesh_proto.FaultInjection_Conf_Abort{
-				Percentage: &wrappers.DoubleValue{Value: 90},
-				HttpStatus: &wrappers.UInt32Value{Value: 404},
+				Percentage: &wrapperspb.DoubleValue{Value: 90},
+				HttpStatus: &wrapperspb.UInt32Value{Value: 404},
 			},
 		},
 	}
@@ -195,7 +195,7 @@ var (
 		}},
 		Conf: &mesh_proto.TrafficRoute_Conf{
 			Split: []*mesh_proto.TrafficRoute_Split{{
-				Weight: &wrappers.UInt32Value{
+				Weight: &wrapperspb.UInt32Value{
 					Value: 10,
 				},
 				Destination: map[string]string{
@@ -233,7 +233,7 @@ var (
 		}},
 		Conf: &mesh_proto.Retry_Conf{
 			Http: &mesh_proto.Retry_Conf_Http{
-				NumRetries: &wrappers.UInt32Value{
+				NumRetries: &wrapperspb.UInt32Value{
 					Value: 5,
 				},
 				PerTryTimeout: &durationpb.Duration{
@@ -291,10 +291,10 @@ var (
 		},
 	}
 	Secret = &system_proto.Secret{
-		Data: &wrappers.BytesValue{Value: []byte("secret key")},
+		Data: &wrapperspb.BytesValue{Value: []byte("secret key")},
 	}
 	GlobalSecret = &system_proto.Secret{
-		Data: &wrappers.BytesValue{Value: []byte("global secret key")},
+		Data: &wrapperspb.BytesValue{Value: []byte("global secret key")},
 	}
 	Config = &system_proto.Config{
 		Config: "sample config",

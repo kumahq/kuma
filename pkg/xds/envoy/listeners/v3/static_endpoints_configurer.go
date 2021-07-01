@@ -5,7 +5,7 @@ import (
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_route "github.com/envoyproxy/go-control-plane/envoy/config/route/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	xds_tls "github.com/kumahq/kuma/pkg/xds/envoy/tls/v3"
 
@@ -69,7 +69,7 @@ func (c *StaticEndpointsConfigurer) Configure(filterChain *envoy_listener.Filter
 					Domains: []string{"*"},
 					Routes:  routes,
 				}},
-				ValidateClusters: &wrappers.BoolValue{
+				ValidateClusters: &wrapperspb.BoolValue{
 					Value: false,
 				},
 			},

@@ -3,10 +3,10 @@ package generator_test
 import (
 	"path/filepath"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_common "github.com/kumahq/kuma/pkg/xds/envoy"
 
@@ -233,7 +233,7 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrappers.UInt32Value{
+										Weight: &wrapperspb.UInt32Value{
 											Value: 10,
 										},
 										Destination: map[string]string{
@@ -242,7 +242,7 @@ var _ = Describe("IngressGenerator", func() {
 										},
 									},
 									{
-										Weight: &wrappers.UInt32Value{
+										Weight: &wrapperspb.UInt32Value{
 											Value: 90,
 										},
 										Destination: map[string]string{
@@ -405,7 +405,7 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrappers.UInt32Value{
+										Weight: &wrapperspb.UInt32Value{
 											Value: 10,
 										},
 										Destination: map[string]string{
@@ -414,7 +414,7 @@ var _ = Describe("IngressGenerator", func() {
 										},
 									},
 									{
-										Weight: &wrappers.UInt32Value{
+										Weight: &wrapperspb.UInt32Value{
 											Value: 90,
 										},
 										Destination: map[string]string{
@@ -437,7 +437,7 @@ var _ = Describe("IngressGenerator", func() {
 							Conf: &mesh_proto.TrafficRoute_Conf{
 								Split: []*mesh_proto.TrafficRoute_Split{
 									{
-										Weight: &wrappers.UInt32Value{
+										Weight: &wrapperspb.UInt32Value{
 											Value: 10,
 										},
 										Destination: map[string]string{
@@ -447,7 +447,7 @@ var _ = Describe("IngressGenerator", func() {
 										},
 									},
 									{
-										Weight: &wrappers.UInt32Value{
+										Weight: &wrapperspb.UInt32Value{
 											Value: 90,
 										},
 										Destination: map[string]string{

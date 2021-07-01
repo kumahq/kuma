@@ -6,11 +6,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v2"
-
-	"github.com/golang/protobuf/ptypes/wrappers"
 
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
@@ -102,7 +102,7 @@ var _ = Describe("FieldOperator", func() {
 				field: "RESPONSE_CODE",
 				entry: &accesslog_data.HTTPAccessLogEntry{
 					Response: &accesslog_data.HTTPResponseProperties{
-						ResponseCode: &wrappers.UInt32Value{
+						ResponseCode: &wrapperspb.UInt32Value{
 							Value: 200,
 						},
 					},
@@ -833,7 +833,7 @@ var _ = Describe("FieldOperator", func() {
 				field: "DOWNSTREAM_TLS_CIPHER",
 				commonProperties: &accesslog_data.AccessLogCommon{
 					TlsProperties: &accesslog_data.TLSProperties{
-						TlsCipherSuite: &wrappers.UInt32Value{
+						TlsCipherSuite: &wrapperspb.UInt32Value{
 							Value: uint32(TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305),
 						},
 					},

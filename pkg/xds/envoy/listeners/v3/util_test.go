@@ -4,16 +4,15 @@ import (
 	"errors"
 
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 
 	. "github.com/kumahq/kuma/pkg/xds/envoy/listeners/v3"
-
-	"google.golang.org/protobuf/proto"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -196,7 +195,7 @@ var _ = Describe("NewUnexpectedFilterConfigTypeError()", func() {
 
 var _ = Describe("ConvertPercentage", func() {
 	type testCase struct {
-		input    *wrappers.DoubleValue
+		input    *wrapperspb.DoubleValue
 		expected *envoy_type.FractionalPercent
 	}
 	DescribeTable("should properly converts from percent to fractional percen",
@@ -205,23 +204,23 @@ var _ = Describe("ConvertPercentage", func() {
 			Expect(fpercent).To(Equal(given.expected))
 		},
 		Entry("integer input", testCase{
-			input:    &wrappers.DoubleValue{Value: 50},
+			input:    &wrapperspb.DoubleValue{Value: 50},
 			expected: &envoy_type.FractionalPercent{Numerator: 50, Denominator: envoy_type.FractionalPercent_HUNDRED},
 		}),
 		Entry("fractional input with 1 digit after dot", testCase{
-			input:    &wrappers.DoubleValue{Value: 50.1},
+			input:    &wrapperspb.DoubleValue{Value: 50.1},
 			expected: &envoy_type.FractionalPercent{Numerator: 501000, Denominator: envoy_type.FractionalPercent_TEN_THOUSAND},
 		}),
 		Entry("fractional input with 5 digit after dot", testCase{
-			input:    &wrappers.DoubleValue{Value: 50.12345},
+			input:    &wrapperspb.DoubleValue{Value: 50.12345},
 			expected: &envoy_type.FractionalPercent{Numerator: 50123450, Denominator: envoy_type.FractionalPercent_MILLION},
 		}),
 		Entry("fractional input with 7 digit after dot, last digit less than 5", testCase{
-			input:    &wrappers.DoubleValue{Value: 50.1234561},
+			input:    &wrapperspb.DoubleValue{Value: 50.1234561},
 			expected: &envoy_type.FractionalPercent{Numerator: 50123456, Denominator: envoy_type.FractionalPercent_MILLION},
 		}),
 		Entry("fractional input with 7 digit after dot, last digit more than 5", testCase{
-			input:    &wrappers.DoubleValue{Value: 50.1234567},
+			input:    &wrapperspb.DoubleValue{Value: 50.1234567},
 			expected: &envoy_type.FractionalPercent{Numerator: 50123457, Denominator: envoy_type.FractionalPercent_MILLION},
 		}),
 	)

@@ -10,7 +10,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 
-	"github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/kumahq/kuma/app/kumactl/cmd"
 	"github.com/kumahq/kuma/app/kumactl/pkg/resources"
@@ -147,10 +147,10 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							},
 						},
 						MTLS: &mesh_proto.DataplaneInsight_MTLS{
-							CertificateExpirationTime: &timestamp.Timestamp{
+							CertificateExpirationTime: &timestamppb.Timestamp{
 								Seconds: 1588926502,
 							},
-							LastCertificateRegeneration: &timestamp.Timestamp{
+							LastCertificateRegeneration: &timestamppb.Timestamp{
 								Seconds: 1563306488,
 							},
 							CertificateRegenerations: 10,
@@ -238,10 +238,10 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							},
 						},
 						MTLS: &mesh_proto.DataplaneInsight_MTLS{
-							CertificateExpirationTime: &timestamp.Timestamp{
+							CertificateExpirationTime: &timestamppb.Timestamp{
 								Seconds: 1588926502,
 							},
-							LastCertificateRegeneration: &timestamp.Timestamp{
+							LastCertificateRegeneration: &timestamppb.Timestamp{
 								Seconds: 1563306488,
 							},
 							CertificateRegenerations: 10,
@@ -330,10 +330,10 @@ var _ = Describe("kumactl inspect dataplanes", func() {
 							},
 						},
 						MTLS: &mesh_proto.DataplaneInsight_MTLS{
-							CertificateExpirationTime: &timestamp.Timestamp{
+							CertificateExpirationTime: &timestamppb.Timestamp{
 								Seconds: 1588926502,
 							},
-							LastCertificateRegeneration: &timestamp.Timestamp{
+							LastCertificateRegeneration: &timestamppb.Timestamp{
 								Seconds: 1563306488,
 							},
 							CertificateRegenerations: 10,

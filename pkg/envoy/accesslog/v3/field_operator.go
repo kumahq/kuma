@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/extensions/access_loggers/grpc/v3"
@@ -285,7 +285,7 @@ func (f FieldOperator) formatUriSans(sans []*accesslog_data.TLSProperties_Certif
 	return strings.Join(values, ","), nil
 }
 
-func (f FieldOperator) formatTlsCipherSuite(value *wrappers.UInt32Value) (string, error) {
+func (f FieldOperator) formatTlsCipherSuite(value *wrapperspb.UInt32Value) (string, error) {
 	if value == nil || value.GetValue() == 0xFFFF {
 		return "", nil
 	}

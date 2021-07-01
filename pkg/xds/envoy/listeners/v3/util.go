@@ -6,10 +6,10 @@ import (
 	"strconv"
 
 	envoy_type "github.com/envoyproxy/go-control-plane/envoy/type/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	envoy_listener "github.com/envoyproxy/go-control-plane/envoy/config/listener/v3"
 	envoy_hcm "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/network/http_connection_manager/v3"
@@ -68,7 +68,7 @@ func NewUnexpectedFilterConfigTypeError(actual, expected proto.Message) error {
 	return errors.Errorf("filter config has unexpected type: expected %T, got %T", expected, actual)
 }
 
-func ConvertPercentage(percentage *wrappers.DoubleValue) *envoy_type.FractionalPercent {
+func ConvertPercentage(percentage *wrapperspb.DoubleValue) *envoy_type.FractionalPercent {
 	const tenThousand = 10000
 	const million = 1000000
 

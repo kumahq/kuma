@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	. "github.com/kumahq/kuma/pkg/test/matchers"
 	. "github.com/kumahq/kuma/pkg/xds/topology"
@@ -125,7 +125,7 @@ var _ = Describe("Retry", func() {
 					},
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
-							NumRetries: &wrappers.UInt32Value{
+							NumRetries: &wrapperspb.UInt32Value{
 								Value: 3,
 							},
 							PerTryTimeout: &durationpb.Duration{
@@ -166,7 +166,7 @@ var _ = Describe("Retry", func() {
 					},
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
-							NumRetries: &wrappers.UInt32Value{
+							NumRetries: &wrapperspb.UInt32Value{
 								Value: 7,
 							},
 							PerTryTimeout: &durationpb.Duration{
@@ -206,7 +206,7 @@ var _ = Describe("Retry", func() {
 					},
 					Conf: &mesh_proto.Retry_Conf{
 						Http: &mesh_proto.Retry_Conf_Http{
-							NumRetries: &wrappers.UInt32Value{
+							NumRetries: &wrapperspb.UInt32Value{
 								Value: 5,
 							},
 						},
@@ -383,7 +383,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 7,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -422,7 +422,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 3,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -505,7 +505,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 3,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -546,7 +546,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 7,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -623,7 +623,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 3,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -664,7 +664,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 7,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -741,7 +741,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 3,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -781,7 +781,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 7,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -858,7 +858,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 3,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -898,7 +898,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 7,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -976,7 +976,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 3,
 									},
 									PerTryTimeout: &durationpb.Duration{
@@ -1017,7 +1017,7 @@ var _ = Describe("Retry", func() {
 							},
 							Conf: &mesh_proto.Retry_Conf{
 								Http: &mesh_proto.Retry_Conf_Http{
-									NumRetries: &wrappers.UInt32Value{
+									NumRetries: &wrapperspb.UInt32Value{
 										Value: 7,
 									},
 									PerTryTimeout: &durationpb.Duration{

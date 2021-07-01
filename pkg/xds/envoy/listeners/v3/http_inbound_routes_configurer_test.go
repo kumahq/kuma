@@ -1,11 +1,11 @@
 package v3_test
 
 import (
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -137,14 +137,14 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 							Seconds: 3,
 						},
 						OnRateLimit: &v1alpha1.RateLimit_Conf_Http_OnRateLimit{
-							Status: &wrappers.UInt32Value{
+							Status: &wrapperspb.UInt32Value{
 								Value: 404,
 							},
 							Headers: []*v1alpha1.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
 								{
 									Key:   "x-local-rate-limit",
 									Value: "true",
-									Append: &wrappers.BoolValue{
+									Append: &wrapperspb.BoolValue{
 										Value: false,
 									},
 								},
@@ -234,14 +234,14 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 							Seconds: 3,
 						},
 						OnRateLimit: &v1alpha1.RateLimit_Conf_Http_OnRateLimit{
-							Status: &wrappers.UInt32Value{
+							Status: &wrapperspb.UInt32Value{
 								Value: 404,
 							},
 							Headers: []*v1alpha1.RateLimit_Conf_Http_OnRateLimit_HeaderValue{
 								{
 									Key:   "x-local-rate-limit",
 									Value: "true",
-									Append: &wrappers.BoolValue{
+									Append: &wrapperspb.BoolValue{
 										Value: false,
 									},
 								},
