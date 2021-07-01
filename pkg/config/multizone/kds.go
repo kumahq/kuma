@@ -20,6 +20,9 @@ type KdsServerConfig struct {
 	TlsCertFile string `yaml:"tlsCertFile" envconfig:"kuma_multizone_global_kds_tls_cert_file"`
 	// TlsKeyFile defines a path to a file with PEM-encoded TLS key.
 	TlsKeyFile string `yaml:"tlsKeyFile" envconfig:"kuma_multizone_global_kds_tls_key_file"`
+	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
+	// In practice this means a limit on full list of one resource type.
+	MaxMsgSize uint32 `yaml:"maxMsgSize" envconfig:"kuma_multizone_global_kds_max_msg_size"`
 }
 
 var _ config.Config = &KdsServerConfig{}
@@ -51,6 +54,9 @@ type KdsClientConfig struct {
 	RefreshInterval time.Duration `yaml:"refreshInterval" envconfig:"kuma_multizone_zone_kds_refresh_interval"`
 	// RootCAFile defines a path to a file with PEM-encoded Root CA. Client will verify the server by using it.
 	RootCAFile string `yaml:"rootCaFile" envconfig:"kuma_multizone_zone_kds_root_ca_file"`
+	// MaxMsgSize defines a maximum size of the message that is exchanged using KDS.
+	// In practice this means a limit on full list of one resource type.
+	MaxMsgSize uint32 `yaml:"maxMsgSize" envconfig:"kuma_multizone_zone_kds_max_msg_size"`
 }
 
 var _ config.Config = &KdsClientConfig{}
