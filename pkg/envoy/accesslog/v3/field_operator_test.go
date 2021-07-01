@@ -12,7 +12,6 @@ import (
 
 	. "github.com/kumahq/kuma/pkg/envoy/accesslog/v3"
 
-
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v3"
 )
 

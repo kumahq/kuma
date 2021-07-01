@@ -6,8 +6,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	"google.golang.org/protobuf/types/known/wrapperspb"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type LbConfigurer struct {
