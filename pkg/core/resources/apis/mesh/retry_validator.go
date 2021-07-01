@@ -5,8 +5,8 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -105,7 +105,7 @@ func getRepeatedRetryOnViolations(
 
 func validateDuration_GreaterThan0(
 	path validators.PathBuilder,
-	duration *duration.Duration,
+	duration *durationpb.Duration,
 ) (err validators.ValidationError) {
 	if duration.Seconds == 0 && duration.Nanos == 0 {
 		err.AddViolationAt(path, HasToBeGreaterThan0Violation)
@@ -115,7 +115,7 @@ func validateDuration_GreaterThan0(
 }
 func validateDuration_GreaterThan0OrNil(
 	path validators.PathBuilder,
-	duration *duration.Duration,
+	duration *durationpb.Duration,
 ) (err validators.ValidationError) {
 	if duration == nil {
 		return

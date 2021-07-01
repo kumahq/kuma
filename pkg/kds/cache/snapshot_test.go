@@ -15,7 +15,10 @@ import (
 
 var _ = Describe("Snapshot", func() {
 	mustMarshalAny := func(pb proto.Message) *anypb.Any {
-		a, _ := anypb.New(pb)
+		a, err := anypb.New(pb)
+		if err != nil {
+			panic(err)
+		}
 		return a
 	}
 

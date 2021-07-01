@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
@@ -50,8 +50,8 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 					},
 				},
 				Conf: &kuma_mesh.CircuitBreaker_Conf{
-					Interval:                    &duration.Duration{Seconds: 5},
-					BaseEjectionTime:            &duration.Duration{Seconds: 5},
+					Interval:                    &durationpb.Duration{Seconds: 5},
+					BaseEjectionTime:            &durationpb.Duration{Seconds: 5},
 					MaxEjectionPercent:          &wrappers.UInt32Value{Value: 50},
 					SplitExternalAndLocalErrors: false,
 					Detectors: &kuma_mesh.CircuitBreaker_Conf_Detectors{
@@ -86,8 +86,8 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 					},
 				},
 				Conf: &kuma_mesh.CircuitBreaker_Conf{
-					Interval:                    &duration.Duration{Seconds: 5},
-					BaseEjectionTime:            &duration.Duration{Seconds: 5},
+					Interval:                    &durationpb.Duration{Seconds: 5},
+					BaseEjectionTime:            &durationpb.Duration{Seconds: 5},
 					MaxEjectionPercent:          &wrappers.UInt32Value{Value: 50},
 					SplitExternalAndLocalErrors: false,
 					Detectors: &kuma_mesh.CircuitBreaker_Conf_Detectors{

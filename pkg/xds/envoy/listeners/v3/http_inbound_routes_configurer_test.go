@@ -1,11 +1,11 @@
 package v3_test
 
 import (
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	v3 "github.com/kumahq/kuma/pkg/xds/envoy/routes/v3"
 	"github.com/kumahq/kuma/pkg/xds/envoy/tags"
@@ -133,7 +133,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Conf: &v1alpha1.RateLimit_Conf{
 					Http: &v1alpha1.RateLimit_Conf_Http{
 						Requests: 100,
-						Interval: &duration.Duration{
+						Interval: &durationpb.Duration{
 							Seconds: 3,
 						},
 						OnRateLimit: &v1alpha1.RateLimit_Conf_Http_OnRateLimit{
@@ -230,7 +230,7 @@ var _ = Describe("HttpInboundRouteConfigurer", func() {
 				Conf: &v1alpha1.RateLimit_Conf{
 					Http: &v1alpha1.RateLimit_Conf_Http{
 						Requests: 100,
-						Interval: &duration.Duration{
+						Interval: &durationpb.Duration{
 							Seconds: 3,
 						},
 						OnRateLimit: &v1alpha1.RateLimit_Conf_Http_OnRateLimit{

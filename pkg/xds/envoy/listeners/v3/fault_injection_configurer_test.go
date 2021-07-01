@@ -1,11 +1,11 @@
 package v3_test
 
 import (
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -46,7 +46,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 				Conf: &mesh_proto.FaultInjection_Conf{
 					Delay: &mesh_proto.FaultInjection_Conf_Delay{
 						Percentage: &wrappers.DoubleValue{Value: 50},
-						Value:      &duration.Duration{Seconds: 5},
+						Value:      &durationpb.Duration{Seconds: 5},
 					},
 				},
 			},
@@ -91,7 +91,7 @@ var _ = Describe("FaultInjectionConfigurer", func() {
 				Conf: &mesh_proto.FaultInjection_Conf{
 					Delay: &mesh_proto.FaultInjection_Conf_Delay{
 						Percentage: &wrappers.DoubleValue{Value: 50},
-						Value:      &duration.Duration{Seconds: 5},
+						Value:      &durationpb.Duration{Seconds: 5},
 					},
 				},
 			},

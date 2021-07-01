@@ -8,7 +8,7 @@ import (
 	envoy_data_dns "github.com/envoyproxy/go-control-plane/envoy/data/dns/v3"
 	envoy_dns "github.com/envoyproxy/go-control-plane/envoy/extensions/filters/udp/dns_filter/v3alpha"
 	v3 "github.com/envoyproxy/go-control-plane/envoy/type/matcher/v3"
-	"github.com/golang/protobuf/ptypes/duration"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/kumahq/kuma/pkg/util/proto"
 )
@@ -47,7 +47,7 @@ func (c *DNSConfigurer) dnsFilter() *envoy_dns.DnsFilterConfig {
 					},
 				},
 			},
-			AnswerTtl: &duration.Duration{
+			AnswerTtl: &durationpb.Duration{
 				Seconds: 30,
 			},
 		})

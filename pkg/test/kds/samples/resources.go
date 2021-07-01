@@ -1,8 +1,8 @@
 package samples
 
 import (
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -151,8 +151,8 @@ var (
 			},
 		}},
 		Conf: &mesh_proto.HealthCheck_Conf{
-			Interval: &duration.Duration{Seconds: 5},
-			Timeout:  &duration.Duration{Seconds: 7},
+			Interval: &durationpb.Duration{Seconds: 5},
+			Timeout:  &durationpb.Duration{Seconds: 7},
 		},
 	}
 	TrafficLog = &mesh_proto.TrafficLog{
@@ -236,14 +236,14 @@ var (
 				NumRetries: &wrappers.UInt32Value{
 					Value: 5,
 				},
-				PerTryTimeout: &duration.Duration{
+				PerTryTimeout: &durationpb.Duration{
 					Seconds: 200000000,
 				},
 				BackOff: &mesh_proto.Retry_Conf_BackOff{
-					BaseInterval: &duration.Duration{
+					BaseInterval: &durationpb.Duration{
 						Nanos: 200000000,
 					},
-					MaxInterval: &duration.Duration{
+					MaxInterval: &durationpb.Duration{
 						Seconds: 1,
 					},
 				},
@@ -264,27 +264,27 @@ var (
 		}},
 		Conf: &mesh_proto.Timeout_Conf{
 
-			ConnectTimeout: &duration.Duration{
+			ConnectTimeout: &durationpb.Duration{
 				Seconds: 5,
 			},
 			Tcp: &mesh_proto.Timeout_Conf_Tcp{
-				IdleTimeout: &duration.Duration{
+				IdleTimeout: &durationpb.Duration{
 					Seconds: 5,
 				},
 			},
 			Http: &mesh_proto.Timeout_Conf_Http{
-				RequestTimeout: &duration.Duration{
+				RequestTimeout: &durationpb.Duration{
 					Seconds: 5,
 				},
-				IdleTimeout: &duration.Duration{
+				IdleTimeout: &durationpb.Duration{
 					Seconds: 5,
 				},
 			},
 			Grpc: &mesh_proto.Timeout_Conf_Grpc{
-				StreamIdleTimeout: &duration.Duration{
+				StreamIdleTimeout: &durationpb.Duration{
 					Seconds: 5,
 				},
-				MaxStreamDuration: &duration.Duration{
+				MaxStreamDuration: &durationpb.Duration{
 					Seconds: 5,
 				},
 			},

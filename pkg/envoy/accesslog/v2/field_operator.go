@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
 	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/durationpb"
 
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
@@ -156,7 +156,7 @@ func (f FieldOperator) formatInt(value int64) (string, error) {
 	return strconv.FormatInt(value, 10), nil
 }
 
-func (f FieldOperator) formatDuration(dur *duration.Duration) (string, error) {
+func (f FieldOperator) formatDuration(dur *durationpb.Duration) (string, error) {
 	if dur == nil {
 		return "", nil
 	}
@@ -166,7 +166,7 @@ func (f FieldOperator) formatDuration(dur *duration.Duration) (string, error) {
 	return f.formatInt(int64(dur.AsDuration() / time.Millisecond))
 }
 
-func (f FieldOperator) formatDurationDelta(outer *duration.Duration, inner *duration.Duration) (string, error) {
+func (f FieldOperator) formatDurationDelta(outer *durationpb.Duration, inner *durationpb.Duration) (string, error) {
 	if outer == nil || inner == nil {
 		return "", nil
 	}
