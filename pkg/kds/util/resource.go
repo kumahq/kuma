@@ -5,10 +5,6 @@ import (
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	old_proto "github.com/golang/protobuf/proto"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
-
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
@@ -20,7 +16,7 @@ func ToCoreResourceList(response *envoy.DiscoveryResponse) (model.ResourceList, 
 	krs := []*mesh_proto.KumaResource{}
 	for _, r := range response.Resources {
 		kr := &mesh_proto.KumaResource{}
-		if err := anypb.UnmarshalTo(r, kr, proto.UnmarshalOptions{}); err != nil {
+		if err := util_proto.UnmarshalAnyTo(r, kr); err != nil {
 			return nil, err
 		}
 		krs = append(krs, kr)
@@ -85,8 +81,7 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		if err != nil {
 			return nil, err
 		}
-		err = anypb.UnmarshalTo(kr.Spec, old_proto.MessageV2(obj.GetSpec()), proto.UnmarshalOptions{})
-		if err != nil {
+		if err = util_proto.UnmarshalAnyToV2(kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
 		}
 		obj.SetMeta(kumaResourceMetaToResourceMeta(kr.Meta))

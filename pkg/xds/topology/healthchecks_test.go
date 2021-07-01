@@ -7,6 +7,7 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
+
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	. "github.com/kumahq/kuma/pkg/test/matchers"

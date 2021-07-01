@@ -7,14 +7,12 @@ import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
 	"github.com/envoyproxy/go-control-plane/pkg/cache/v3"
+	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 	"github.com/pkg/errors"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/anypb"
-
-	hds_callbacks "github.com/kumahq/kuma/pkg/hds/callbacks"
 
 	envoy_cache "github.com/kumahq/kuma/pkg/hds/cache"
 )
@@ -108,7 +106,7 @@ func (s *server) process(stream Stream, reqOrRespCh chan *envoy_service_health.H
 		}
 
 		hcs := &envoy_service_health.HealthCheckSpecifier{}
-		if err := anypb.UnmarshalTo(out.Resources[0], hcs, proto.UnmarshalOptions{}); err != nil {
+		if err := util_proto.UnmarshalAnyTo(out.Resources[0], hcs); err != nil {
 			return err
 		}
 		lastVersion, err = resp.GetVersion()
