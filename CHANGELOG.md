@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## [1.2.1]
+> Released on  2021/06/30
+
+Changes:
+* fix: Dataplane/ZoneIngress/Zone status problem when control plane forcefully exits [#2246](https://github.com//kumahq/kuma/pull/2246)
+* chore: reduce memory usage by reducing cache key size [#2214](https://github.com//kumahq/kuma/pull/2214) [#2230](https://github.com//kumahq/kuma/pull/2230) 
+  👍contributed by nhamlh
+* fix: ZoneIngress always shows up as 'offline' [#2209](https://github.com//kumahq/kuma/pull/2209)
+* feat: dataplane use advertise address to add a routable ip if address is not public ip [#2116](https://github.com//kumahq/kuma/pull/2116)
+  👍contributed by sudeeptoroy
+* fix: builtin DNS resolve alias with dots [#2208](https://github.com//kumahq/kuma/pull/2208)
+* feat: add SNI to TLSed ExternalServices [#2211](https://github.com//kumahq/kuma/pull/2211)
+* fix: fix race condition in cache [#2202](https://github.com//kumahq/kuma/pull/2202)
+  👍contributed by nhamlh
+* fix: supported versions of Kuma DP in the GUI [#2193](https://github.com//kumahq/kuma/pull/2193)
+
 ## [1.2.0]
 > Released on  2021/06/17
 
