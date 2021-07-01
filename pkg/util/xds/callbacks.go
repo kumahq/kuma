@@ -3,7 +3,7 @@ package xds
 import (
 	"context"
 
-	_struct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // DiscoveryRequest defines interface over real Envoy's DiscoveryRequest.
@@ -11,7 +11,7 @@ type DiscoveryRequest interface {
 	NodeId() string
 	// Node returns either a v2 or v3 Node
 	Node() interface{}
-	Metadata() *_struct.Struct
+	Metadata() *structpb.Struct
 	VersionInfo() string
 	GetTypeUrl() string
 	GetResponseNonce() string
