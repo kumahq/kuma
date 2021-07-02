@@ -66,6 +66,8 @@ func (s *server) Start(stop <-chan struct{}) error {
 			MinTime:             grpcKeepAliveTime,
 			PermitWithoutStream: true,
 		}),
+		grpc.MaxRecvMsgSize(int(s.config.MaxMsgSize)),
+		grpc.MaxSendMsgSize(int(s.config.MaxMsgSize)),
 	}
 	grpcOptions = append(grpcOptions, s.metrics.GRPCServerInterceptors()...)
 	useTLS := s.config.TlsCertFile != ""
