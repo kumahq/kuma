@@ -63,8 +63,8 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
-					Name:    "raw-name",
-					Version: "raw-version",
+					Name:     "raw-name",
+					Version:  "raw-version",
 					Resource: ``,
 				}},
 				err: "raw.resources[0]{name=\"raw-name\"}.resource: proto: invalid empty type URL",
