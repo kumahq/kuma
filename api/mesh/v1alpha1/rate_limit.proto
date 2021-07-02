@@ -9,7 +9,6 @@ import "mesh/v1alpha1/selector.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/wrappers.proto";
 import "validate/validate.proto";
-import "config.proto";
 
 message RateLimit {
   // List of selectors to match dataplanes that rate limit will be applied for

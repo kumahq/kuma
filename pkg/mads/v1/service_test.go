@@ -11,15 +11,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/ptypes"
-
 	"github.com/emicklei/go-restful"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_v3 "github.com/envoyproxy/go-control-plane/envoy/service/discovery/v3"
 	"github.com/go-logr/logr/testing"
+	"github.com/golang/protobuf/jsonpb"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	observability_v1 "github.com/kumahq/kuma/api/observability/v1"
@@ -268,7 +268,7 @@ var _ = Describe("MADS http service", func() {
 
 			// when
 			assignment := &observability_v1.MonitoringAssignment{}
-			err = ptypes.UnmarshalAny(discoveryRes.Resources[0], assignment)
+			err = util_proto.UnmarshalAnyTo(discoveryRes.Resources[0], assignment)
 
 			// then
 			Expect(err).ToNot(HaveOccurred())

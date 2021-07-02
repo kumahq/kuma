@@ -63,12 +63,11 @@ var _ = Describe("ProxyTemplateRawSource", func() {
 					APIVersion: envoy_common.APIV3,
 				},
 				raw: []*mesh_proto.ProxyTemplateRawResource{{
-					Name:    "raw-name",
-					Version: "raw-version",
-					Resource: `
-`,
+					Name:     "raw-name",
+					Version:  "raw-version",
+					Resource: ``,
 				}},
-				err: "raw.resources[0]{name=\"raw-name\"}.resource: message type url \"\" is invalid",
+				err: "raw.resources[0]{name=\"raw-name\"}.resource: proto: invalid empty type URL",
 			}),
 			Entry("should fail when `resource` field is neither a YAML nor a JSON", testCase{
 				proxy: &model.Proxy{

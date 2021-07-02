@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
@@ -40,7 +40,7 @@ var _ = Describe("kumactl get global-secrets", func() {
 					Name: "sec-1",
 				},
 				Spec: &system_proto.Secret{
-					Data: &wrappers.BytesValue{
+					Data: &wrapperspb.BytesValue{
 						Value: []byte("test"),
 					},
 				},
@@ -51,7 +51,7 @@ var _ = Describe("kumactl get global-secrets", func() {
 					Name: "sec-2",
 				},
 				Spec: &system_proto.Secret{
-					Data: &wrappers.BytesValue{
+					Data: &wrapperspb.BytesValue{
 						Value: []byte("test2"),
 					},
 				},

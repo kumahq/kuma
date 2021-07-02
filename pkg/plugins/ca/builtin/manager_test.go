@@ -8,7 +8,7 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -93,7 +93,7 @@ var _ = Describe("Builtin CA Manager", func() {
 				Type: "builtin",
 				Conf: proto.MustToStruct(&config.BuiltinCertificateAuthorityConfig{
 					CaCert: &config.BuiltinCertificateAuthorityConfig_CaCert{
-						RSAbits: &wrappers.UInt32Value{
+						RSAbits: &wrapperspb.UInt32Value{
 							Value: uint32(2048),
 						},
 						Expiration: "1m",

@@ -3,11 +3,11 @@ package clusters_test
 import (
 	"time"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	mesh_core "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
@@ -45,10 +45,10 @@ var _ = Describe("CircuitBreakerConfigurer", func() {
 				Spec: &mesh_proto.CircuitBreaker{
 					Conf: &mesh_proto.CircuitBreaker_Conf{
 						Thresholds: &mesh_proto.CircuitBreaker_Conf_Thresholds{
-							MaxConnections:     &wrappers.UInt32Value{Value: 2},
-							MaxPendingRequests: &wrappers.UInt32Value{Value: 3},
-							MaxRequests:        &wrappers.UInt32Value{Value: 4},
-							MaxRetries:         &wrappers.UInt32Value{Value: 5},
+							MaxConnections:     &wrapperspb.UInt32Value{Value: 2},
+							MaxPendingRequests: &wrapperspb.UInt32Value{Value: 3},
+							MaxRequests:        &wrapperspb.UInt32Value{Value: 4},
+							MaxRetries:         &wrapperspb.UInt32Value{Value: 5},
 						},
 					},
 				},

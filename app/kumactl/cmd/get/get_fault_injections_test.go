@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
@@ -51,16 +51,16 @@ var _ = Describe("kumactl get fault-injections", func() {
 				},
 				Conf: &v1alpha1.FaultInjection_Conf{
 					Delay: &v1alpha1.FaultInjection_Conf_Delay{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						Value:      &duration.Duration{Seconds: 5},
+						Percentage: &wrapperspb.DoubleValue{Value: 50},
+						Value:      &durationpb.Duration{Seconds: 5},
 					},
 					Abort: &v1alpha1.FaultInjection_Conf_Abort{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						HttpStatus: &wrappers.UInt32Value{Value: 500},
+						Percentage: &wrapperspb.DoubleValue{Value: 50},
+						HttpStatus: &wrapperspb.UInt32Value{Value: 500},
 					},
 					ResponseBandwidth: &v1alpha1.FaultInjection_Conf_ResponseBandwidth{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						Limit:      &wrappers.StringValue{Value: "50 mbps"},
+						Percentage: &wrapperspb.DoubleValue{Value: 50},
+						Limit:      &wrapperspb.StringValue{Value: "50 mbps"},
 					},
 				},
 			},
@@ -88,16 +88,16 @@ var _ = Describe("kumactl get fault-injections", func() {
 				},
 				Conf: &v1alpha1.FaultInjection_Conf{
 					Delay: &v1alpha1.FaultInjection_Conf_Delay{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						Value:      &duration.Duration{Seconds: 5},
+						Percentage: &wrapperspb.DoubleValue{Value: 50},
+						Value:      &durationpb.Duration{Seconds: 5},
 					},
 					Abort: &v1alpha1.FaultInjection_Conf_Abort{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						HttpStatus: &wrappers.UInt32Value{Value: 500},
+						Percentage: &wrapperspb.DoubleValue{Value: 50},
+						HttpStatus: &wrapperspb.UInt32Value{Value: 500},
 					},
 					ResponseBandwidth: &v1alpha1.FaultInjection_Conf_ResponseBandwidth{
-						Percentage: &wrappers.DoubleValue{Value: 50},
-						Limit:      &wrappers.StringValue{Value: "50 mbps"},
+						Percentage: &wrapperspb.DoubleValue{Value: 50},
+						Limit:      &wrapperspb.StringValue{Value: "50 mbps"},
 					},
 				},
 			},

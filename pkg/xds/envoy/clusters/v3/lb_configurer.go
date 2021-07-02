@@ -6,8 +6,8 @@ import (
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
 	envoy_cluster "github.com/envoyproxy/go-control-plane/envoy/config/cluster/v3"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 )
 
 type LbConfigurer struct {
@@ -33,7 +33,7 @@ func (e *LbConfigurer) Configure(c *envoy_cluster.Cluster) error {
 		lbConfig := e.Lb.GetLeastRequest()
 		c.LbConfig = &envoy_cluster.Cluster_LeastRequestLbConfig_{
 			LeastRequestLbConfig: &envoy_cluster.Cluster_LeastRequestLbConfig{
-				ChoiceCount: &wrappers.UInt32Value{
+				ChoiceCount: &wrapperspb.UInt32Value{
 					Value: lbConfig.ChoiceCount,
 				},
 			},
@@ -51,10 +51,10 @@ func (e *LbConfigurer) Configure(c *envoy_cluster.Cluster) error {
 		c.LbConfig = &envoy_cluster.Cluster_RingHashLbConfig_{
 			RingHashLbConfig: &envoy_cluster.Cluster_RingHashLbConfig{
 				HashFunction: envoy_cluster.Cluster_RingHashLbConfig_HashFunction(hashfn),
-				MinimumRingSize: &wrappers.UInt64Value{
+				MinimumRingSize: &wrapperspb.UInt64Value{
 					Value: lbConfig.MinRingSize,
 				},
-				MaximumRingSize: &wrappers.UInt64Value{
+				MaximumRingSize: &wrapperspb.UInt64Value{
 					Value: lbConfig.MaxRingSize,
 				},
 			},

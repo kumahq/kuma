@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-
 	"github.com/kumahq/kuma/pkg/core"
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -59,12 +57,11 @@ func (d *collector) cleanup() error {
 			continue
 		}
 		if s, _ := di.Spec.GetLatestSubscription(); s != nil {
-			dt, err := ptypes.Timestamp(s.GetDisconnectTime())
-			if err != nil {
+			if err := s.GetDisconnectTime().CheckValid(); err != nil {
 				gcLog.Error(err, "unable to parse DisconnectTime", "disconnect time", s.GetDisconnectTime())
 				continue
 			}
-			if core.Now().Sub(dt) > d.cleanupAge {
+			if core.Now().Sub(s.GetDisconnectTime().AsTime()) > d.cleanupAge {
 				onDelete = append(onDelete, model.ResourceKey{Name: di.GetMeta().GetName(), Mesh: di.GetMeta().GetMesh()})
 			}
 		}

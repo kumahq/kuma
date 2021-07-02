@@ -2,7 +2,7 @@ package envoy
 
 import (
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 
@@ -16,7 +16,7 @@ func EndpointMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
 	}
 	fields := MetadataFields(tags)
 	metadata := &envoy_core.Metadata{
-		FilterMetadata: map[string]*pstruct.Struct{
+		FilterMetadata: map[string]*structpb.Struct{
 			"envoy.lb": {
 				Fields: fields,
 			},
@@ -35,7 +35,7 @@ func LbMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
 	}
 	fields := MetadataFields(tags)
 	metadata := &envoy_core.Metadata{
-		FilterMetadata: map[string]*pstruct.Struct{
+		FilterMetadata: map[string]*structpb.Struct{
 			"envoy.lb": {
 				Fields: fields,
 			},
@@ -44,14 +44,14 @@ func LbMetadata(tags envoy_common.Tags) *envoy_core.Metadata {
 	return metadata
 }
 
-func MetadataFields(tags envoy_common.Tags) map[string]*pstruct.Value {
-	fields := map[string]*pstruct.Value{}
+func MetadataFields(tags envoy_common.Tags) map[string]*structpb.Value {
+	fields := map[string]*structpb.Value{}
 	for key, value := range tags {
 		if key == mesh_proto.ServiceTag {
 			continue
 		}
-		fields[key] = &pstruct.Value{
-			Kind: &pstruct.Value_StringValue{
+		fields[key] = &structpb.Value{
+			Kind: &structpb.Value_StringValue{
 				StringValue: value,
 			},
 		}

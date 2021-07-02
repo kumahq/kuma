@@ -3,8 +3,6 @@ package v2
 import (
 	"fmt"
 
-	"github.com/golang/protobuf/ptypes"
-
 	accesslog_config "github.com/envoyproxy/go-control-plane/envoy/config/accesslog/v2"
 	accesslog_data "github.com/envoyproxy/go-control-plane/envoy/data/accesslog/v2"
 )
@@ -29,10 +27,10 @@ func (f StartTimeOperator) format(entry *accesslog_data.AccessLogCommon) (string
 	if entry.GetStartTime() == nil {
 		return "", nil
 	}
-	startTime, err := ptypes.Timestamp(entry.GetStartTime())
-	if err != nil {
+	if err := entry.GetStartTime().CheckValid(); err != nil {
 		return "", err
 	}
+	startTime := entry.GetStartTime().AsTime()
 	// TODO(yskopets): take format string parameter into account
 	return startTime.Format(defaultStartTimeFormat), nil
 }

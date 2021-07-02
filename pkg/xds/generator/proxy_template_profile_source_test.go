@@ -6,7 +6,8 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/durationpb"
+
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
@@ -145,8 +146,8 @@ var _ = Describe("ProxyTemplateProfileSource", func() {
 									{Match: mesh_proto.TagSelector{"kuma.io/service": "elastic"}},
 								},
 								Conf: &mesh_proto.HealthCheck_Conf{
-									Interval:           ptypes.DurationProto(5 * time.Second),
-									Timeout:            ptypes.DurationProto(4 * time.Second),
+									Interval:           durationpb.New(5 * time.Second),
+									Timeout:            durationpb.New(4 * time.Second),
 									UnhealthyThreshold: 3,
 									HealthyThreshold:   2,
 								},

@@ -3,7 +3,7 @@ package xds
 import (
 	"strconv"
 
-	_struct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	util_proto "github.com/kumahq/kuma/pkg/util/proto"
@@ -127,7 +127,7 @@ func (m *DataplaneMetadata) GetVersion() *mesh_proto.Version {
 	return m.Version
 }
 
-func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMetadata {
+func DataplaneMetadataFromXdsMetadata(xdsMetadata *structpb.Struct) *DataplaneMetadata {
 	metadata := DataplaneMetadata{}
 	if xdsMetadata == nil {
 		return &metadata
@@ -176,7 +176,7 @@ func DataplaneMetadataFromXdsMetadata(xdsMetadata *_struct.Struct) *DataplaneMet
 	return &metadata
 }
 
-func uint32Metadata(xdsMetadata *_struct.Struct, field string) uint32 {
+func uint32Metadata(xdsMetadata *structpb.Struct, field string) uint32 {
 	value := xdsMetadata.Fields[field]
 	if value == nil {
 		return 0

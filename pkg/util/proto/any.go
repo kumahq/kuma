@@ -7,6 +7,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/golang/protobuf/ptypes/any"
 	"github.com/pkg/errors"
+	proto2 "google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 const googleApis = "type.googleapis.com/"
@@ -23,6 +25,14 @@ func MarshalAnyDeterministic(pb proto.Message) (*any.Any, error) {
 		return nil, err
 	}
 	return &any.Any{TypeUrl: googleApis + proto.MessageName(pb), Value: buffer.Bytes()}, nil
+}
+
+func UnmarshalAnyTo(src *anypb.Any, dst proto2.Message) error {
+	return anypb.UnmarshalTo(src, dst, proto2.UnmarshalOptions{})
+}
+
+func UnmarshalAnyToV2(src *anypb.Any, dst proto.Message) error {
+	return anypb.UnmarshalTo(src, proto.MessageV2(dst), proto2.UnmarshalOptions{})
 }
 
 // MergeAnys merges two Any messages of the same type. We cannot just use proto#Merge on Any directly because values are encoded in byte slices.

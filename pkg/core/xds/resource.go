@@ -8,7 +8,7 @@ import (
 	envoy_resource_v2 "github.com/envoyproxy/go-control-plane/pkg/resource/v2"
 	envoy_resource_v3 "github.com/envoyproxy/go-control-plane/pkg/resource/v3"
 	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 // ResourcePayload is a convenience type alias.
@@ -27,7 +27,7 @@ type ResourceList []*Resource
 func (rs ResourceList) ToDeltaDiscoveryResponse() (*envoy.DeltaDiscoveryResponse, error) {
 	resp := &envoy.DeltaDiscoveryResponse{}
 	for _, r := range rs {
-		pbany, err := ptypes.MarshalAny(r.Resource)
+		pbany, err := anypb.New(proto.MessageV2(r.Resource))
 		if err != nil {
 			return nil, err
 		}

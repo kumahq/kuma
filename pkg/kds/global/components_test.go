@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kumahq/kuma/pkg/test/resources/apis/sample"
 
@@ -68,7 +68,7 @@ var _ = Describe("Global Sync", func() {
 
 		// Create Zone resources for each Kuma CP Zone
 		for i := 0; i < numOfZones; i++ {
-			zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: &wrappers.BoolValue{Value: true}}}
+			zone := &system.ZoneResource{Spec: &system_proto.Zone{Enabled: &wrapperspb.BoolValue{Value: true}}}
 			err := globalStore.Create(context.Background(), zone, store.CreateByKey(fmt.Sprintf(zoneName, i), model.NoMesh))
 			Expect(err).ToNot(HaveOccurred())
 		}

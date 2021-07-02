@@ -3,9 +3,9 @@ package callbacks_test
 import (
 	v2 "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_core "github.com/envoyproxy/go-control-plane/envoy/api/v2/core"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 	util_xds_v2 "github.com/kumahq/kuma/pkg/util/xds/v2"
@@ -20,10 +20,10 @@ var _ = Describe("Dataplane Metadata Tracker", func() {
 	req := v2.DiscoveryRequest{
 		Node: &envoy_core.Node{
 			Id: "default.example",
-			Metadata: &pstruct.Struct{
-				Fields: map[string]*pstruct.Value{
-					"dataplaneTokenPath": &pstruct.Value{
-						Kind: &pstruct.Value_StringValue{
+			Metadata: &structpb.Struct{
+				Fields: map[string]*structpb.Value{
+					"dataplaneTokenPath": &structpb.Value{
+						Kind: &structpb.Value_StringValue{
 							StringValue: "/tmp/token",
 						},
 					},
