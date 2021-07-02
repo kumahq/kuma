@@ -3,7 +3,6 @@ package log
 import (
 	"io"
 	"os"
-	"time"
 
 	"github.com/go-logr/logr"
 	"github.com/go-logr/zapr"
@@ -74,10 +73,6 @@ func newZapLoggerTo(destWriter io.Writer, level LogLevel, opts ...zap.Option) *z
 		opts = append(opts, zap.Development(), zap.AddStacktrace(zap.ErrorLevel))
 	default:
 		lvl = zap.NewAtomicLevelAt(zap.InfoLevel)
-		opts = append(opts,
-			zap.WrapCore(func(core zapcore.Core) zapcore.Core {
-				return zapcore.NewSampler(core, time.Second, 100, 100)
-			}))
 	}
 	encCfg := zap.NewDevelopmentEncoderConfig()
 	enc := zapcore.NewConsoleEncoder(encCfg)
