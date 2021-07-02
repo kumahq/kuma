@@ -177,7 +177,7 @@ func DefaultConfig() Config {
 		Metrics: &Metrics{
 			Dataplane: &DataplaneMetrics{
 				Enabled:           true,
-				SubscriptionLimit: 10,
+				SubscriptionLimit: 2,
 			},
 			Zone: &ZoneMetrics{
 				Enabled:           true,

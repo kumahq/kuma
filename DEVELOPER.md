@@ -50,7 +50,7 @@ docker run --name kuma-build -ti \
   --volume `pwd`:/go/src/github.com/kumahq/kuma \
   --workdir /go/src/github.com/kumahq/kuma \
   --env GO111MODULE=on \
-  golang:1.12.12 \
+  golang:1.16 \
   bash -c 'apt update && apt install -y unzip && export PATH=$HOME/bin:$PATH && bash'
 ```
 

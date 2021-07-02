@@ -24,17 +24,22 @@ import (
 )
 
 var (
-	kdsZoneLog    = core.Log.WithName("kds-zone")
+	kdsZoneLog = core.Log.WithName("kds-zone")
+
+	// ProvidedTypes lists the resource types provided by the Zone
+	// CP to the Global CP.
 	ProvidedTypes = []model.ResourceType{
-		mesh.ZoneIngressType,
-		mesh.ZoneIngressInsightType,
-		mesh.DataplaneType,
 		mesh.DataplaneInsightType,
+		mesh.DataplaneType,
+		mesh.ZoneIngressInsightType,
+		mesh.ZoneIngressType,
 	}
+
+	// ConsumedTypes lists the resource types consumed from the
+	// Global CP by the Zone CP.
 	ConsumedTypes = []model.ResourceType{
 		mesh.CircuitBreakerType,
 		mesh.DataplaneType,
-		mesh.ZoneIngressType,
 		mesh.ExternalServiceType,
 		mesh.FaultInjectionType,
 		mesh.HealthCheckType,
@@ -47,9 +52,10 @@ var (
 		mesh.TrafficPermissionType,
 		mesh.TrafficRouteType,
 		mesh.TrafficTraceType,
-		system.SecretType,
-		system.GlobalSecretType,
+		mesh.ZoneIngressType,
 		system.ConfigType,
+		system.GlobalSecretType,
+		system.SecretType,
 	}
 )
 

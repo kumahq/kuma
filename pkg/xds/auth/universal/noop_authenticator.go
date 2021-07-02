@@ -3,7 +3,10 @@ package universal
 import (
 	"context"
 
+	"github.com/pkg/errors"
+
 	core_mesh "github.com/kumahq/kuma/pkg/core/resources/apis/mesh"
+	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/xds/auth"
 )
 
@@ -14,10 +17,15 @@ func NewNoopAuthenticator() auth.Authenticator {
 type noopAuthenticator struct {
 }
 
-func (u *noopAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, _ auth.Credential) error {
-	return nil
-}
+var _ auth.Authenticator = &noopAuthenticator{}
 
-func (u *noopAuthenticator) AuthenticateZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, _ auth.Credential) error {
-	return nil
+func (u *noopAuthenticator) Authenticate(ctx context.Context, resource model.Resource, _ auth.Credential) error {
+	switch resource := resource.(type) {
+	case *core_mesh.DataplaneResource:
+		return nil
+	case *core_mesh.ZoneIngressResource:
+		return nil
+	default:
+		return errors.Errorf("no matching authenticator for %s resource", resource.GetType())
+	}
 }

@@ -128,7 +128,7 @@ var _ = Describe("Config WS", func() {
 		  "metrics": {
 			"dataplane": {
 			  "enabled": true,
-			  "subscriptionLimit": 10
+			  "subscriptionLimit": 2
 			},
 			"mesh": {
 			  "maxResyncTimeout": "20s",
@@ -157,14 +157,15 @@ var _ = Describe("Config WS", func() {
 				"refreshInterval": "1s",
 				"tlsCertFile": "",
 				"tlsKeyFile": "",
-				"zoneInsightFlushInterval": "10s"
-			  },
-			  "pollTimeout": "500ms"
+				"zoneInsightFlushInterval": "10s",
+				"maxMsgSize": 10485760
+			  }
 			},
 			"zone": {
 			  "kds": {
 				"refreshInterval": "1s",
-				"rootCaFile": ""
+				"rootCaFile": "",
+				"maxMsgSize": 10485760
 			  }
 			}
 		  },

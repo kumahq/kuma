@@ -64,32 +64,38 @@ var _ = Describe("KDS Server", func() {
 		// Do not forget to update this test after updating 'kds.SupportedTypes
 		Expect([]proto.Message{
 			kds_samples.CircuitBreaker,
-			kds_samples.Ingress, // mesh.DataplaneType
-			kds_samples.ZoneIngress,
-			kds_samples.ZoneIngressInsight,
 			kds_samples.DataplaneInsight,
 			kds_samples.ExternalService,
 			kds_samples.FaultInjection,
+			kds_samples.GlobalSecret,
 			kds_samples.HealthCheck,
+			kds_samples.Ingress, // mesh.DataplaneType
 			kds_samples.Mesh1,
 			kds_samples.ProxyTemplate,
 			kds_samples.RateLimit,
 			kds_samples.Retry,
+			kds_samples.Secret,
 			kds_samples.Timeout,
 			kds_samples.TrafficLog,
 			kds_samples.TrafficPermission,
 			kds_samples.TrafficRoute,
 			kds_samples.TrafficTrace,
-			kds_samples.Secret,
-			kds_samples.GlobalSecret,
+			kds_samples.ZoneIngress,
+			kds_samples.ZoneIngressInsight,
 			kds_samples.Config,
 		}).
 			To(HaveLen(len(kds.SupportedTypes)))
 
 		vrf := kds_verifier.New().
+			// NOTE: The resources all have to be created before any DiscoveryRequests are made.
+			// This is because in the initial state, there are no snapshots. The first DiscoveryRequest
+			// won't get a response until the first snapshot is generated after the reconciliation
+			// period expires. Then all the subsequent DiscoveryRequests will be served from the
+			// same snapshot, so resources that aren't already present won't be reported.
+
 			Exec(kds_verifier.Create(ctx, &mesh.CircuitBreakerResource{Spec: kds_samples.CircuitBreaker}, store.CreateByKey("cb-1", "mesh-1"))).
-			Exec(kds_verifier.Create(ctx, &mesh.DataplaneResource{Spec: kds_samples.Ingress}, store.CreateByKey("Ingress-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.DataplaneInsightResource{Spec: kds_samples.DataplaneInsight}, store.CreateByKey("insight-1", "mesh-1"))).
+			Exec(kds_verifier.Create(ctx, &mesh.DataplaneResource{Spec: kds_samples.Ingress}, store.CreateByKey("Ingress-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.ExternalServiceResource{Spec: kds_samples.ExternalService}, store.CreateByKey("es-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.FaultInjectionResource{Spec: kds_samples.FaultInjection}, store.CreateByKey("fi-1", "mesh-1"))).
 			Exec(kds_verifier.Create(ctx, &mesh.HealthCheckResource{Spec: kds_samples.HealthCheck}, store.CreateByKey("hc-1", "mesh-1"))).
@@ -272,10 +278,7 @@ var _ = Describe("KDS Server", func() {
 					return err
 				}
 				meshRes.Spec = kds_samples.Mesh2
-				if err := tc.Store().Update(ctx, meshRes); err != nil {
-					return err
-				}
-				return nil
+				return tc.Store().Update(ctx, meshRes)
 			}).
 			Exec(kds_verifier.WaitResponse(defaultTimeout, func(rs []model.Resource) {
 				Expect(rs).To(HaveLen(1))

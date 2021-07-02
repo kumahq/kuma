@@ -404,7 +404,7 @@ var _ = Describe("Mesh", func() {
                 - field: logging.backends[0].type
                   message: 'unknown backend type. Available backends: "tcp", "file"'
                 - field: tracing.backends[0].type
-                  message: 'unknown backend type. Available backends: "zipkin"'
+                  message: 'unknown backend type. Available backends: "zipkin", "datadog"'
                 - field: metrics.backends[0].type
                   message: 'unknown backend type. Available backends: "prometheus"'`,
 			}),
