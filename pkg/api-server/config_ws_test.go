@@ -128,7 +128,7 @@ var _ = Describe("Config WS", func() {
 		  "metrics": {
 			"dataplane": {
 			  "enabled": true,
-			  "subscriptionLimit": 10
+			  "subscriptionLimit": 2
 			},
 			"mesh": {
 			  "maxResyncTimeout": "20s",
