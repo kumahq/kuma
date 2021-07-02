@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
@@ -107,7 +107,7 @@ func createZoneIfAbsent(name string, resManager manager.ResourceManager) error {
 		kdsGlobalLog.Info("creating Zone", "name", name)
 		zone := &system.ZoneResource{
 			Spec: &system_proto.Zone{
-				Enabled: &wrappers.BoolValue{Value: true},
+				Enabled: &wrapperspb.BoolValue{Value: true},
 			},
 		}
 		if err := resManager.Create(context.Background(), zone, store.CreateByKey(name, model.NoMesh)); err != nil {

@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/go-kit/kit/ratelimit"
-	"github.com/golang/protobuf/ptypes"
 	"github.com/pkg/errors"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
@@ -395,11 +394,10 @@ func (r *resyncer) needResyncServiceInsight(mesh string) (bool, error) {
 		}
 		return true, nil
 	}
-	lastSync, err := ptypes.Timestamp(serviceInsight.Spec.LastSync)
-	if err != nil {
+	if err := serviceInsight.Spec.LastSync.CheckValid(); err != nil {
 		return false, errors.Wrapf(err, "lastSync has wrong value: %s", serviceInsight.Spec.LastSync)
 	}
-	if core.Now().Sub(lastSync) < r.minResyncTimeout {
+	if core.Now().Sub(serviceInsight.Spec.LastSync.AsTime()) < r.minResyncTimeout {
 		return false, nil
 	}
 	return true, nil
@@ -413,11 +411,10 @@ func (r *resyncer) needResyncMeshInsight(mesh string) (bool, error) {
 		}
 		return true, nil
 	}
-	lastSync, err := ptypes.Timestamp(meshInsight.Spec.LastSync)
-	if err != nil {
+	if err := meshInsight.Spec.LastSync.CheckValid(); err != nil {
 		return false, errors.Wrapf(err, "lastSync has wrong value: %s", meshInsight.Spec.LastSync)
 	}
-	if core.Now().Sub(lastSync) < r.minResyncTimeout {
+	if core.Now().Sub(meshInsight.Spec.LastSync.AsTime()) < r.minResyncTimeout {
 		return false, nil
 	}
 	return true, nil

@@ -5,20 +5,19 @@ import (
 
 	envoy "github.com/envoyproxy/go-control-plane/envoy/api/v2"
 	envoy_types "github.com/envoyproxy/go-control-plane/pkg/cache/types"
-	"github.com/golang/protobuf/ptypes"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model"
 	"github.com/kumahq/kuma/pkg/core/resources/registry"
-	"github.com/kumahq/kuma/pkg/util/proto"
+	util_proto "github.com/kumahq/kuma/pkg/util/proto"
 )
 
 func ToCoreResourceList(response *envoy.DiscoveryResponse) (model.ResourceList, error) {
 	krs := []*mesh_proto.KumaResource{}
 	for _, r := range response.Resources {
 		kr := &mesh_proto.KumaResource{}
-		if err := ptypes.UnmarshalAny(r, kr); err != nil {
+		if err := util_proto.UnmarshalAnyTo(r, kr); err != nil {
 			return nil, err
 		}
 		krs = append(krs, kr)
@@ -29,7 +28,7 @@ func ToCoreResourceList(response *envoy.DiscoveryResponse) (model.ResourceList, 
 func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) {
 	rv := make([]envoy_types.Resource, 0, len(rlist.GetItems()))
 	for _, r := range rlist.GetItems() {
-		pbany, err := proto.MarshalAnyDeterministic(r.GetSpec())
+		pbany, err := util_proto.MarshalAnyDeterministic(r.GetSpec())
 		if err != nil {
 			return nil, err
 		}
@@ -37,8 +36,8 @@ func ToEnvoyResources(rlist model.ResourceList) ([]envoy_types.Resource, error) 
 			Meta: &mesh_proto.KumaResource_Meta{
 				Name:             r.GetMeta().GetName(),
 				Mesh:             r.GetMeta().GetMesh(),
-				CreationTime:     proto.MustTimestampProto(r.GetMeta().GetCreationTime()),
-				ModificationTime: proto.MustTimestampProto(r.GetMeta().GetModificationTime()),
+				CreationTime:     util_proto.MustTimestampProto(r.GetMeta().GetCreationTime()),
+				ModificationTime: util_proto.MustTimestampProto(r.GetMeta().GetModificationTime()),
 				Version:          r.GetMeta().GetVersion(),
 			},
 			Spec: pbany,
@@ -83,8 +82,7 @@ func toResources(resourceType model.ResourceType, krs []*mesh_proto.KumaResource
 		if err != nil {
 			return nil, err
 		}
-		err = ptypes.UnmarshalAny(kr.Spec, obj.GetSpec())
-		if err != nil {
+		if err = util_proto.UnmarshalAnyToV2(kr.Spec, obj.GetSpec()); err != nil {
 			return nil, err
 		}
 		obj.SetMeta(kumaResourceMetaToResourceMeta(kr.Meta))

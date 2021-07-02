@@ -1,7 +1,7 @@
 package v3_test
 
 import (
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kumahq/kuma/pkg/core/xds"
 
@@ -43,7 +43,7 @@ var _ = Describe("TracingConfigurer", func() {
 		Entry("zipkin backend specified with sampling", testCase{
 			backend: &mesh_proto.TracingBackend{
 				Name:     "zipkin",
-				Sampling: &wrappers.DoubleValue{Value: 30.5},
+				Sampling: &wrapperspb.DoubleValue{Value: 30.5},
 				Type:     mesh_proto.TracingZipkinType,
 				Conf: util_proto.MustToStruct(&mesh_proto.ZipkinTracingBackendConfig{
 					Url: "http://zipkin.us:9090/v2/spans",

@@ -1,7 +1,7 @@
 package mesh
 
 import (
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kumahq/kuma/pkg/core/validators"
 )
@@ -115,7 +115,7 @@ func (d *HealthCheckResource) validateConf() (err validators.ValidationError) {
 	return
 }
 
-func (d *HealthCheckResource) validatePercentage(path validators.PathBuilder, value *wrappers.FloatValue) (err validators.ValidationError) {
+func (d *HealthCheckResource) validatePercentage(path validators.PathBuilder, value *wrapperspb.FloatValue) (err validators.ValidationError) {
 	if value.GetValue() < 0.0 || value.GetValue() > 100.0 {
 		err.AddViolationAt(path, "must be in range [0.0 - 100.0]")
 	}

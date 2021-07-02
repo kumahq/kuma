@@ -6,8 +6,8 @@ import (
 
 	"github.com/kumahq/kuma/pkg/core/resources/manager"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
 	"github.com/pkg/errors"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
@@ -84,7 +84,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 
 	certSecret := &core_system.SecretResource{
 		Spec: &system_proto.Secret{
-			Data: &wrappers.BytesValue{
+			Data: &wrapperspb.BytesValue{
 				Value: keyPair.CertPEM,
 			},
 		},
@@ -95,7 +95,7 @@ func (b *builtinCaManager) create(ctx context.Context, mesh string, backend *mes
 
 	keySecret := &core_system.SecretResource{
 		Spec: &system_proto.Secret{
-			Data: &wrappers.BytesValue{
+			Data: &wrapperspb.BytesValue{
 				Value: keyPair.KeyPEM,
 			},
 		},

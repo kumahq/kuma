@@ -5,7 +5,7 @@ import (
 	"time"
 
 	envoy_server "github.com/envoyproxy/go-control-plane/pkg/server/v2"
-	pstruct "github.com/golang/protobuf/ptypes/struct"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	mesh_proto "github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core"
@@ -217,15 +217,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			discoveryRequest := &envoy.DiscoveryRequest{
 				Node: &envoy_core.Node{
 					Id: "default.example-001",
-					Metadata: &pstruct.Struct{
-						Fields: map[string]*pstruct.Value{
+					Metadata: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
 							"dataplaneTokenPath": {
-								Kind: &pstruct.Value_StringValue{
+								Kind: &structpb.Value_StringValue{
 									StringValue: "/tmp/token",
 								},
 							},
 							"version": {
-								Kind: &pstruct.Value_StructValue{
+								Kind: &structpb.Value_StructValue{
 									StructValue: version,
 								},
 							},
@@ -641,7 +641,7 @@ var _ = Describe("DataplaneStatusTracker", func() {
 	)
 
 	type versionTestCase struct {
-		version *pstruct.Value
+		version *structpb.Value
 	}
 
 	DescribeTable("should read node.metadata without error",
@@ -652,8 +652,8 @@ var _ = Describe("DataplaneStatusTracker", func() {
 				TypeUrl: "type.googleapis.com/envoy.api.v2.Listener",
 				Node: &envoy_core.Node{
 					Id: "default.example-001",
-					Metadata: &pstruct.Struct{
-						Fields: map[string]*pstruct.Value{
+					Metadata: &structpb.Struct{
+						Fields: map[string]*structpb.Value{
 							"version": given.version,
 						},
 					},
@@ -674,15 +674,15 @@ var _ = Describe("DataplaneStatusTracker", func() {
 			Expect(sub.GetVersion()).To(MatchProto(mesh_proto.NewVersion()))
 		},
 		Entry("when version is a nil struct", versionTestCase{
-			version: &pstruct.Value{
-				Kind: &pstruct.Value_StructValue{
+			version: &structpb.Value{
+				Kind: &structpb.Value_StructValue{
 					StructValue: nil,
 				},
 			},
 		}),
 		Entry("when version is not a struct", versionTestCase{
-			version: &pstruct.Value{
-				Kind: &pstruct.Value_StringValue{
+			version: &structpb.Value{
+				Kind: &structpb.Value_StringValue{
 					StringValue: "v1.0.0",
 				},
 			},

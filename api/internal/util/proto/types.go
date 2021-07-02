@@ -3,14 +3,9 @@ package proto
 import (
 	"time"
 
-	"github.com/golang/protobuf/ptypes"
-	tspb "github.com/golang/protobuf/ptypes/timestamp"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func MustTimestampProto(t time.Time) *tspb.Timestamp {
-	ts, err := ptypes.TimestampProto(t)
-	if err != nil {
-		panic(err.Error())
-	}
-	return ts
+func MustTimestampProto(t time.Time) *timestamppb.Timestamp {
+	return timestamppb.New(t)
 }

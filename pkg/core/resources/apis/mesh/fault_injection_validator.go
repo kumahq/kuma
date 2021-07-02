@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/validators"
@@ -92,7 +92,7 @@ func validateResponseBandwidth(path validators.PathBuilder, bandwidth *v1alpha1.
 	return
 }
 
-func validatePercentage(path validators.PathBuilder, percentage *wrappers.DoubleValue) (err validators.ValidationError) {
+func validatePercentage(path validators.PathBuilder, percentage *wrapperspb.DoubleValue) (err validators.ValidationError) {
 	if percentage == nil {
 		err.AddViolationAt(path.Field("percentage"), "cannot be empty")
 		return
@@ -104,7 +104,7 @@ func validatePercentage(path validators.PathBuilder, percentage *wrappers.Double
 	return
 }
 
-func validateLimit(path validators.PathBuilder, limit *wrappers.StringValue) (err validators.ValidationError) {
+func validateLimit(path validators.PathBuilder, limit *wrapperspb.StringValue) (err validators.ValidationError) {
 	if limit == nil {
 		err.AddViolationAt(path.Field("limit"), "cannot be empty")
 		return
@@ -116,7 +116,7 @@ func validateLimit(path validators.PathBuilder, limit *wrappers.StringValue) (er
 	return
 }
 
-func validateHttpStatus(path validators.PathBuilder, httpStatus *wrappers.UInt32Value) (err validators.ValidationError) {
+func validateHttpStatus(path validators.PathBuilder, httpStatus *wrapperspb.UInt32Value) (err validators.ValidationError) {
 	if httpStatus == nil {
 		err.AddViolationAt(path.Field("httpStatus"), "cannot be empty")
 		return

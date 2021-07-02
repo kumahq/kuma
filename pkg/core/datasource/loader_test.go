@@ -9,7 +9,7 @@ import (
 
 	"io/ioutil"
 
-	"github.com/golang/protobuf/ptypes/wrappers"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	system_proto "github.com/kumahq/kuma/api/system/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/datasource"
@@ -38,7 +38,7 @@ var _ = Describe("DataSource Loader", func() {
 			// given
 			secretResource := system.SecretResource{
 				Spec: &system_proto.Secret{
-					Data: &wrappers.BytesValue{
+					Data: &wrapperspb.BytesValue{
 						Value: []byte("abc"),
 					},
 				},
@@ -109,7 +109,7 @@ var _ = Describe("DataSource Loader", func() {
 			// when
 			data, err := dataSourceLoader.Load(context.Background(), "default", &system_proto.DataSource{
 				Type: &system_proto.DataSource_Inline{
-					Inline: &wrappers.BytesValue{
+					Inline: &wrapperspb.BytesValue{
 						Value: []byte("abc"),
 					},
 				},

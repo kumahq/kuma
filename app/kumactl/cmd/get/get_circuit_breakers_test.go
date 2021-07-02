@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/duration"
-	"github.com/golang/protobuf/ptypes/wrappers"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/ginkgo/extensions/table"
 	. "github.com/onsi/gomega"
 	gomega_types "github.com/onsi/gomega/types"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	kumactl_resources "github.com/kumahq/kuma/app/kumactl/pkg/resources"
 
@@ -50,9 +50,9 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 					},
 				},
 				Conf: &kuma_mesh.CircuitBreaker_Conf{
-					Interval:                    &duration.Duration{Seconds: 5},
-					BaseEjectionTime:            &duration.Duration{Seconds: 5},
-					MaxEjectionPercent:          &wrappers.UInt32Value{Value: 50},
+					Interval:                    &durationpb.Duration{Seconds: 5},
+					BaseEjectionTime:            &durationpb.Duration{Seconds: 5},
+					MaxEjectionPercent:          &wrapperspb.UInt32Value{Value: 50},
 					SplitExternalAndLocalErrors: false,
 					Detectors: &kuma_mesh.CircuitBreaker_Conf_Detectors{
 						TotalErrors:       &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{},
@@ -86,23 +86,23 @@ var _ = Describe("kumactl get circuit-breakers", func() {
 					},
 				},
 				Conf: &kuma_mesh.CircuitBreaker_Conf{
-					Interval:                    &duration.Duration{Seconds: 5},
-					BaseEjectionTime:            &duration.Duration{Seconds: 5},
-					MaxEjectionPercent:          &wrappers.UInt32Value{Value: 50},
+					Interval:                    &durationpb.Duration{Seconds: 5},
+					BaseEjectionTime:            &durationpb.Duration{Seconds: 5},
+					MaxEjectionPercent:          &wrapperspb.UInt32Value{Value: 50},
 					SplitExternalAndLocalErrors: false,
 					Detectors: &kuma_mesh.CircuitBreaker_Conf_Detectors{
-						TotalErrors:   &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 20}},
-						GatewayErrors: &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 10}},
-						LocalErrors:   &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrappers.UInt32Value{Value: 2}},
+						TotalErrors:   &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrapperspb.UInt32Value{Value: 20}},
+						GatewayErrors: &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrapperspb.UInt32Value{Value: 10}},
+						LocalErrors:   &kuma_mesh.CircuitBreaker_Conf_Detectors_Errors{Consecutive: &wrapperspb.UInt32Value{Value: 2}},
 						StandardDeviation: &kuma_mesh.CircuitBreaker_Conf_Detectors_StandardDeviation{
-							RequestVolume: &wrappers.UInt32Value{Value: 20},
-							MinimumHosts:  &wrappers.UInt32Value{Value: 3},
-							Factor:        &wrappers.DoubleValue{Value: 1.9},
+							RequestVolume: &wrapperspb.UInt32Value{Value: 20},
+							MinimumHosts:  &wrapperspb.UInt32Value{Value: 3},
+							Factor:        &wrapperspb.DoubleValue{Value: 1.9},
 						},
 						Failure: &kuma_mesh.CircuitBreaker_Conf_Detectors_Failure{
-							RequestVolume: &wrappers.UInt32Value{Value: 20},
-							MinimumHosts:  &wrappers.UInt32Value{Value: 3},
-							Threshold:     &wrappers.UInt32Value{Value: 85},
+							RequestVolume: &wrapperspb.UInt32Value{Value: 20},
+							MinimumHosts:  &wrapperspb.UInt32Value{Value: 3},
+							Threshold:     &wrapperspb.UInt32Value{Value: 85},
 						},
 					},
 				},
