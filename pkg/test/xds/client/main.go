@@ -6,10 +6,9 @@ import (
 	"os"
 	"time"
 
-	xds_stream "github.com/Kong/kuma/pkg/test/xds/client/stream"
-
 	"github.com/kumahq/kuma/api/mesh/v1alpha1"
 	"github.com/kumahq/kuma/pkg/core/resources/model/rest"
+	"github.com/kumahq/kuma/pkg/test/xds/client/stream"
 
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
@@ -99,7 +98,7 @@ func newRunCmd() *cobra.Command {
 					// proceed
 
 					errCh <- func() (errs error) {
-						client, err := xds_stream.New(args.xdsServerAddress)
+						client, err := stream.New(args.xdsServerAddress)
 						if err != nil {
 							return errors.Wrap(err, "failed to connect to xDS server")
 						}
