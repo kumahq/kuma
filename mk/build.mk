@@ -29,11 +29,14 @@ COREDNS_VERSION ?= v1.8.3
 COREDNS_TMP_DIRECTORY ?= $(BUILD_DIR)/coredns
 COREDNS_PLUGIN_CFG_PATH ?= $(TOP)/tools/builds/coredns/templates/plugin.cfg
 
+# List of binaries that we have release build rules for.
+BUILD_RELEASE_BINARIES := kuma-cp kuma-dp kumactl kuma-prometheus-sd coredns
+
 .PHONY: build
 build: build/release build/test
 
 .PHONY: build/release
-build/release: build/kuma-cp build/kuma-dp build/kumactl build/kuma-prometheus-sd build/coredns ## Dev: Build all binaries
+build/release: $(patsubst %,build/%,$(BUILD_RELEASE_BINARIES)) ## Dev: Build all binaries
 
 .PHONY: build/test
 build/test: build/test-server
