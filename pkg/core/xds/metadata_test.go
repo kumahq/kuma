@@ -34,11 +34,6 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 		Entry("from non-empty node", testCase{
 			node: &structpb.Struct{
 				Fields: map[string]*structpb.Value{
-					"dataplaneTokenPath": &structpb.Value{
-						Kind: &structpb.Value_StringValue{
-							StringValue: "/tmp/token",
-						},
-					},
 					"dataplane.admin.port": &structpb.Value{
 						Kind: &structpb.Value_StringValue{
 							StringValue: "1234",
@@ -57,10 +52,9 @@ var _ = Describe("DataplaneMetadataFromXdsMetadata", func() {
 				},
 			},
 			expected: xds.DataplaneMetadata{
-				DataplaneTokenPath: "/tmp/token",
-				AdminPort:          1234,
-				DNSPort:            8000,
-				EmptyDNSPort:       8001,
+				AdminPort:    1234,
+				DNSPort:      8000,
+				EmptyDNSPort: 8001,
 			},
 		}),
 	)

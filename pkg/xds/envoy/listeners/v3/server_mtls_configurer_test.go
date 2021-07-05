@@ -166,7 +166,7 @@ var _ = Describe("ServerMtlsConfigurer", func() {
 				},
 			},
 			metadata: core_xds.DataplaneMetadata{
-				DataplaneTokenPath: "/var/secret/token",
+				DataplaneToken: "token",
 			},
 			expected: `
             address:
@@ -195,21 +195,11 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                           apiConfigSource:
                             apiType: GRPC
                             grpcServices:
-                            - googleGrpc:
-                                callCredentials:
-                                - fromPlugin:
-                                    name: envoy.grpc_credentials.file_based_metadata
-                                    typedConfig:
-                                      '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
-                                      secretData:
-                                        filename: /var/secret/token
-                                channelCredentials:
-                                  sslCredentials:
-                                    rootCerts:
-                                      inlineBytes: Q0VSVElGSUNBVEU=
-                                credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                                statPrefix: sds_mesh_ca
-                                targetUri: kuma-control-plane:5677
+                            - envoyGrpc:
+                                clusterName: ads_cluster
+                              initialMetadata:
+                              - key: authorization
+                                value: token
                             transportApiVersion: V3
                           resourceApiVersion: V3
                     tlsCertificateSdsSecretConfigs:
@@ -218,27 +208,16 @@ var _ = Describe("ServerMtlsConfigurer", func() {
                         apiConfigSource:
                           apiType: GRPC
                           grpcServices:
-                          - googleGrpc:
-                              callCredentials:
-                              - fromPlugin:
-                                  name: envoy.grpc_credentials.file_based_metadata
-                                  typedConfig:
-                                    '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
-                                    secretData:
-                                      filename: /var/secret/token
-                              channelCredentials:
-                                sslCredentials:
-                                  rootCerts:
-                                    inlineBytes: Q0VSVElGSUNBVEU=
-                              credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-                              statPrefix: sds_identity_cert
-                              targetUri: kuma-control-plane:5677
+                          - envoyGrpc:
+                              clusterName: ads_cluster
+                            initialMetadata:
+                            - key: authorization
+                              value: token
                           transportApiVersion: V3
                         resourceApiVersion: V3
                   requireClientCertificate: true
             name: inbound:192.168.0.1:8080
-            trafficDirection: INBOUND
-`,
+            trafficDirection: INBOUND`,
 		}),
 	)
 })

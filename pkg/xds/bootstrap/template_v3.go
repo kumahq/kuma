@@ -5,9 +5,6 @@ node:
   id: {{.Id}}
   cluster: {{.Service}}
   metadata:
-{{if .DataplaneTokenPath}}
-    dataplaneTokenPath: {{.DataplaneTokenPath}}
-{{end}}
 {{if .DataplaneToken }}
     dataplane.token: "{{.DataplaneToken}}"
 {{end}}
@@ -81,32 +78,12 @@ hds_config:
   transport_api_version: V3
   set_node_on_first_message_only: true
   grpc_services:
-{{ if .DataplaneTokenPath }}
-  - googleGrpc:
-      callCredentials:
-      - fromPlugin:
-          name: envoy.grpc_credentials.file_based_metadata
-          typedConfig:
-            '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
-            secretData:
-              filename: {{ .DataplaneTokenPath }}
-      credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-{{ if .CertBytes}}
-      channelCredentials:
-        sslCredentials:
-          rootCerts:
-            inlineBytes: {{ .CertBytes }}
-{{ end }}
-      statPrefix: hds
-      targetUri: "{{ .XdsUri }}"
-{{ else }}
     - envoy_grpc:
         cluster_name: ads_cluster
 {{ if .DataplaneToken }}
       initialMetadata:
       - key: "authorization"
         value: "{{ .DataplaneToken }}"
-{{ end }}
 {{ end }}
 {{ end }}
 
@@ -122,32 +99,12 @@ dynamic_resources:
     transport_api_version: V3
     timeout: {{ .XdsConnectTimeout }}
     grpc_services:
-{{ if .DataplaneTokenPath }}
-    - googleGrpc:
-        callCredentials:
-        - fromPlugin:
-            name: envoy.grpc_credentials.file_based_metadata
-            typedConfig:
-              '@type': type.googleapis.com/envoy.config.grpc_credential.v3.FileBasedMetadataConfig
-              secretData:
-                filename: {{ .DataplaneTokenPath }}
-        credentialsFactoryName: envoy.grpc_credentials.file_based_metadata
-{{ if .CertBytes}}
-        channelCredentials:
-          sslCredentials:
-            rootCerts:
-              inlineBytes: {{ .CertBytes }}
-{{ end }}
-        statPrefix: ads
-        targetUri: "{{ .XdsUri }}"
-{{ else }}
     - envoy_grpc:
         cluster_name: ads_cluster
 {{ if .DataplaneToken }}
       initialMetadata:
       - key: "authorization"
         value: "{{ .DataplaneToken }}"
-{{ end }}
 {{ end }}
 static_resources:
   clusters:

@@ -15,7 +15,6 @@ type configParameters struct {
 	XdsConnectTimeout  time.Duration
 	AccessLogPipe      string
 	DataplaneToken     string
-	DataplaneTokenPath string
 	DataplaneResource  string
 	CertBytes          string
 	KumaDpVersion      string
