@@ -3,6 +3,13 @@
 # make-release-tag.sh: This script assumes that you are on a branch and
 # have otherwise prepared the release. It creates an annotated tag with
 # a message containing the shortlog of commits from the previous version.
+#
+# Usage: make-release-tag.sh OLDVERS NEWVERS
+#
+# Since the log from OLDVERS to NEWVERS is used to generate the commit
+# message for the annotated tag, OLDVERS should be the last "fully released"
+# version, i.e. it's not that helpful to see the log from a last RC in
+# the final release tag.
 
 readonly PROGNAME=$(basename "$0")
 readonly OLDVERS="$1"
@@ -30,7 +37,10 @@ if [ -n "$(git tag --list "$NEWVERS")" ]; then
 fi
 
 case "$NEWVERS" in
-v+([0-9.])) ;;
+# Match a leading 'v' followed by any combination of numbers and
+# dots. Optional hyphen-separated trailer can contain anything.
+v+([0-9.])?([-]*))
+    ;;
 *)
     printf "%s: tag '%s' must be of the form vX.Y.X\n" "$PROGNAME" "$NEWVERS"
     exit 1

@@ -2,10 +2,10 @@ package authn_test
 
 import (
 	"context"
-	"errors"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
 	envoy_service_health_v3 "github.com/envoyproxy/go-control-plane/envoy/service/health/v3"
+	"github.com/pkg/errors"
 	"google.golang.org/grpc/metadata"
 
 	"github.com/kumahq/kuma/pkg/hds/authn"
@@ -30,20 +30,21 @@ type testAuthenticator struct {
 
 var _ auth.Authenticator = &testAuthenticator{}
 
-func (t *testAuthenticator) Authenticate(ctx context.Context, dataplane *core_mesh.DataplaneResource, credential auth.Credential) error {
-	t.callCounter++
-	if credential == "pass" {
-		return nil
+func (t *testAuthenticator) Authenticate(_ context.Context, resource model.Resource, credential auth.Credential) error {
+	switch resource := resource.(type) {
+	case *core_mesh.DataplaneResource:
+		t.callCounter++
+		if credential == "pass" {
+			return nil
+		}
+	default:
+		return errors.Errorf("no matching authenticator for %s resource", resource.GetType())
 	}
+
 	return errors.New("invalid credential")
 }
 
-func (t *testAuthenticator) AuthenticateZoneIngress(ctx context.Context, zoneIngress *core_mesh.ZoneIngressResource, credential auth.Credential) error {
-	return nil
-}
-
 var _ = Describe("Authn Callbacks", func() {
-
 	var testAuth *testAuthenticator
 	var resManager core_manager.ResourceManager
 	var callbacks hds_callbacks.Callbacks
